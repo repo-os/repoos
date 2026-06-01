@@ -1,0 +1,7 @@
+# RepoOS configuration. All fields optional — these are the defaults.
+
+workDir = "work"
+docsDir = "docs"
+defaultStatus = "inbox"
+defaultAssignee = "unassigned"
+cacheDir = ".repoos"

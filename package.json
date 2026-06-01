@@ -1,0 +1,49 @@
+{
+  "name": "repoos",
+  "version": "0.3.0",
+  "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
+  "type": "module",
+  "bin": {
+    "ros": "dist/cli/index.js"
+  },
+  "main": "dist/core/repoos.js",
+  "types": "dist/core/repoos.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core/repoos.d.ts",
+      "import": "./dist/core/repoos.js"
+    },
+    "./cli": "./dist/cli/index.js",
+    "./server": {
+      "types": "./dist/server/server.d.ts",
+      "import": "./dist/server/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "dev": "node --experimental-strip-types src/cli/index.ts",
+    "ros": "node --experimental-strip-types src/cli/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "monorepo",
+    "ai-agents",
+    "task-management",
+    "repo-native",
+    "markdown",
+    "orchestration",
+    "developer-tools"
+  ],
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^5.5.0"
+  }
+}
