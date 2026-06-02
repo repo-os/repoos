@@ -2,14 +2,14 @@
 id: "0010"
 title: Activity log and updated_at timestamps in task files
 type: feature
-status: review
-branch: "0010-activity-log"
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: nick
+branch: "0010-activity-log"
 created_at: "2026-06-02T00:00:00Z"
-updated_at: "2026-06-02T00:00:00Z"
+updated_at: "2026-06-02T17:48:10Z"
 ---
 ## Problem
 
@@ -115,3 +115,4 @@ FORMAT-SENSITIVE and SELF-MODIFYING — read the self-hosting section of
 ## Activity
 
 - 2026-06-02T00:00:00Z · created · (migrated)
+- 2026-06-02T17:48:10Z · status review→done

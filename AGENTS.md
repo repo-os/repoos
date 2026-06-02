@@ -53,3 +53,20 @@ cannot tell from the code alone:
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `ros init`, so change it deliberately and don't confuse
   it with this repo's own AGENTS.md.
+
+## Git setup: don't let a failed command skip branch creation
+
+A past agent ran `git pull --ff-only && git checkout -b <branch>`. The pull
+failed (no remote tracking branch), and `&&` short-circuited, so the branch was
+never created and all work landed on `main`. Lessons:
+
+- Do NOT chain git SETUP commands with `&&` such that one failure silently skips
+  branch creation. Create the branch as its own step and confirm it succeeded.
+- Do NOT `git pull` when branching from local `main` — there may be no tracking
+  branch, and you don't need it. Branch from local: `git checkout main` then
+  `git checkout -b <branch>`.
+- Before your FIRST commit, verify you are on the intended branch, not `main`
+  (`git branch --show-current`). If you're on `main`, stop and create the branch
+  first (stash, branch, re-apply if needed).
+- Once `ros start` exists, branch/worktree creation is RepoOS's job, not yours —
+  don't hand-roll git setup for a task.

@@ -2,14 +2,14 @@
 id: "0012"
 title: Build-staleness guardrail in ros (stale dist/ detection)
 type: feature
-status: review
+status: done
 priority: p1
 area: cli
 assigned_to: ai
 created_by: nick
 branch: feat/0008-build-staleness-check
-created_at: 2026-06-02T08:30:00Z
-updated_at: 2026-06-02T08:30:00Z
+created_at: "2026-06-02T08:30:00Z"
+updated_at: "2026-06-02T17:48:05Z"
 ---
 ## Problem
 
@@ -105,3 +105,7 @@ stale-build hazard impossible to forget, not to remind harder. Specifics:
 - Directly mitigates the stale-build hazard in the AGENTS.md self-hosting
   section and ADR-0003. This is the canonical example of converting a vigilance
   rule into a tool guardrail — a pattern worth repeating.
+
+## Activity
+
+- 2026-06-02T17:48:05Z · status review→done
