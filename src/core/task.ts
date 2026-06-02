@@ -27,9 +27,53 @@ const KEY_ORDER = [
   "created_by",
   "branch",
   "tags",
-  "created",
-  "updated",
+  "created_at",
+  "updated_at",
 ];
+
+const ACTIVITY_HEADING = "## Activity";
+
+/** ISO-8601 UTC timestamp to the second, e.g. 2026-06-01T09:14:02Z. */
+export function utcTimestamp(): string {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+/**
+ * Normalize a legacy date-only or partial timestamp to full ISO-8601 UTC.
+ * `2026-06-01` → `2026-06-01T00:00:00Z`. Null passthrough.
+ */
+export function normalizeTimestamp(value: string | null): string | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T00:00:00Z`;
+  return value;
+}
+
+/**
+ * Append a single activity entry to the body's Activity section.
+ * Creates the section if it does not exist. The Activity section is always
+ * the last thing in the body — append-only invariant.
+ */
+export function appendActivityEntry(body: string, line: string): string {
+  const trimmed = body.replace(/\s+$/, "");
+  const headingIndex = trimmed.lastIndexOf(`\n${ACTIVITY_HEADING}\n`);
+  if (headingIndex === -1) {
+    return `${trimmed}\n\n${ACTIVITY_HEADING}\n\n${line}\n`;
+  }
+  return `${trimmed}\n${line}\n`;
+}
+
+/**
+ * Single change-recording helper. Every mutation path MUST call this.
+ * Stamps `updated_at` and appends an activity log entry onto `task.body`.
+ *
+ * @param task  The task to record a change on (mutated in-place).
+ * @param entry The activity line content after the timestamp,
+ *              e.g. `status inbox→ready · nick`.
+ */
+export function recordChange(task: Task, entry: string): void {
+  task.updated_at = utcTimestamp();
+  task.body = appendActivityEntry(task.body, `- ${task.updated_at} · ${entry}`);
+}
 
 function deriveIdFromFilename(file: string): string {
   const name = basename(file).replace(/\.[^.]+$/, "");
@@ -86,6 +130,19 @@ export function parseTask(args: ParseTaskArgs): Task {
     if (!known.has(k)) extra[k] = v;
   }
 
+  // read created_at with fallback to deprecated created
+  const created_at = data.created_at
+    ? String(data.created_at)
+    : data.created
+      ? String(data.created)
+      : null;
+  // read updated_at with fallback to deprecated updated
+  const updated_at = data.updated_at
+    ? String(data.updated_at)
+    : data.updated
+      ? String(data.updated)
+      : null;
+
   return {
     id,
     title,
@@ -98,8 +155,8 @@ export function parseTask(args: ParseTaskArgs): Task {
     createdBy: String(data.created_by ?? ""),
     branch: String(data.branch ?? ""),
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-    created: data.created ? String(data.created) : null,
-    updated: data.updated ? String(data.updated) : null,
+    created_at,
+    updated_at,
     path: relPath,
     absPath,
     body,
@@ -122,8 +179,8 @@ export function serializeTask(task: Task): string {
     branch: task.branch,
   };
   if (task.tags.length) data.tags = task.tags;
-  if (task.created) data.created = task.created;
-  if (task.updated) data.updated = task.updated;
+  if (task.created_at) data.created_at = normalizeTimestamp(task.created_at);
+  if (task.updated_at) data.updated_at = normalizeTimestamp(task.updated_at);
   // re-attach preserved unknown keys
   for (const [k, v] of Object.entries(task.extra)) data[k] = v;
 

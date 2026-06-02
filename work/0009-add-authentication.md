@@ -8,8 +8,8 @@ area: api
 assigned_to: ai
 created_by: ""
 branch: ""
-created: 2026-05-30
-updated: 2026-05-30
+created_at: "2026-05-30T00:00:00Z"
+updated_at: "2026-05-30T00:00:00Z"
 ---
 ## Problem
 
@@ -26,3 +26,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-05-30T00:00:00Z · created · (migrated)

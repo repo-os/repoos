@@ -13,7 +13,7 @@ import {
 import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { buildIndex, writeIndexCache } from "./indexer.js";
-import { parseTask, serializeTask } from "./task.js";
+import { parseTask, serializeTask, recordChange, utcTimestamp, appendActivityEntry } from "./task.js";
 import { emptyGitInfo } from "./git.js";
 import {
   STATUSES,
@@ -93,8 +93,9 @@ export function createRepoOS(root?: string): RepoOS {
     return String(max + 1).padStart(4, "0");
   }
 
-  function rewrite(task: Task): Task {
-    task.updated = new Date().toISOString().slice(0, 10);
+  function rewrite(task: Task, entry?: string): Task {
+    if (entry) recordChange(task, entry);
+    else task.updated_at = utcTimestamp();
     writeFileSync(task.absPath, serializeTask(task));
     // refresh cache opportunistically; ignore failures
     try {
@@ -139,15 +140,21 @@ export function createRepoOS(root?: string): RepoOS {
       }
       const task = findFile(id);
       if (!task) throw new Error(`Task #${id} not found.`);
+      const old = task.status;
       task.status = status;
-      return rewrite(task);
+      return rewrite(task, old === status ? undefined : `status ${old}→${status}`);
     },
 
     updateTask(id, patch) {
       const task = findFile(id);
       if (!task) throw new Error(`Task #${id} not found.`);
+      const changed = Object.keys(patch).filter((k) => {
+        const v = (patch as Record<string, unknown>)[k];
+        return v !== undefined && v !== (task as unknown as Record<string, unknown>)[k];
+      });
       Object.assign(task, patch);
-      return rewrite(task);
+      const summary = changed.length ? `updated ${changed.join(", ")}` : "updated";
+      return rewrite(task, summary);
     },
 
     createTask(input: CreateTaskInput) {
@@ -163,7 +170,7 @@ export function createRepoOS(root?: string): RepoOS {
       const fileName = `${id}-${slug || "task"}.md`;
       const absPath = join(workDir, fileName);
 
-      const today = new Date().toISOString().slice(0, 10);
+      const ts = utcTimestamp();
       const task: Task = {
         id,
         title: input.title,
@@ -177,11 +184,14 @@ export function createRepoOS(root?: string): RepoOS {
         createdBy: input.createdBy ?? "",
         branch: input.branch ?? "",
         tags: [],
-        created: today,
-        updated: today,
+        created_at: ts,
+        updated_at: ts,
         path: join(config.workDir, fileName).split("\\").join("/"),
         absPath,
-        body: input.body ?? "",
+        body: appendActivityEntry(
+          input.body ?? "",
+          `- ${ts} · created · ${input.createdBy || "unknown"}`,
+        ),
         extra: {},
         git: emptyGitInfo(),
       };

@@ -45,8 +45,12 @@ export interface TaskFrontmatter {
   assigned_to?: string;
   created_by?: string;
   branch?: string;
-  created?: string; // ISO date
-  updated?: string; // ISO date
+  created_at?: string; // ISO-8601 UTC timestamp
+  updated_at?: string; // ISO-8601 UTC timestamp
+  /** @deprecated use created_at */
+  created?: string;
+  /** @deprecated use updated_at */
+  updated?: string;
   tags?: string[];
   [key: string]: unknown;
 }
@@ -66,8 +70,8 @@ export interface Task {
   createdBy: string;
   branch: string;
   tags: string[];
-  created: string | null;
-  updated: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 
   /** Path relative to repo root, e.g. "work/0012-company-dashboard.md". */
   path: string;

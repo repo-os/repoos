@@ -8,7 +8,7 @@ area: infra
 assigned_to: ai
 created_by: human
 branch: ""
-updated: 2026-05-29
+updated_at: "2026-05-29T00:00:00Z"
 ---
 ## Problem
 
@@ -30,3 +30,7 @@ Agents read these files directly for full context.
 
 Status is a frontmatter field — never move files between folders. Keep diffs
 small. Read AGENTS.md before starting any task.
+
+## Activity
+
+- 2026-05-29T00:00:00Z · created · (migrated)

@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
-import { parseTask, serializeTask } from "../core/task.js";
+import { parseTask, serializeTask, recordChange, utcTimestamp } from "../core/task.js";
 
 export interface TaskPatch {
   status?: Status;
@@ -60,14 +60,38 @@ export function patchTaskFile(
     defaultAssignee: config.defaultAssignee,
   });
 
+  // Track changes for activity log
+  const changes: string[] = [];
+
   // Merge requested fields onto the current state.
-  if (patch.status !== undefined) current.status = patch.status;
-  if (patch.title !== undefined) current.title = patch.title;
-  if (patch.priority !== undefined) current.priority = patch.priority;
-  if (patch.area !== undefined) current.area = patch.area;
-  if (patch.branch !== undefined) current.branch = patch.branch;
-  if (patch.type !== undefined) current.type = patch.type;
+  if (patch.status !== undefined) {
+    if (patch.status !== current.status) {
+      changes.push(`status ${current.status}→${patch.status}`);
+    }
+    current.status = patch.status;
+  }
+  if (patch.title !== undefined) {
+    if (patch.title !== current.title) changes.push("title");
+    current.title = patch.title;
+  }
+  if (patch.priority !== undefined) {
+    if (patch.priority !== current.priority) changes.push("priority");
+    current.priority = patch.priority;
+  }
+  if (patch.area !== undefined) {
+    if (patch.area !== current.area) changes.push("area");
+    current.area = patch.area;
+  }
+  if (patch.branch !== undefined) {
+    if (patch.branch !== current.branch) changes.push("branch");
+    current.branch = patch.branch;
+  }
+  if (patch.type !== undefined) {
+    if (patch.type !== current.type) changes.push("type");
+    current.type = patch.type;
+  }
   if (patch.assignedTo !== undefined) {
+    if (patch.assignedTo !== current.assignedTo) changes.push("assigned_to");
     current.assignedTo = patch.assignedTo;
     current.assignee =
       patch.assignedTo.toLowerCase() === "ai"
@@ -76,9 +100,16 @@ export function patchTaskFile(
           ? "human"
           : "unassigned";
   }
-  if (patch.body !== undefined) current.body = patch.body;
+  if (patch.body !== undefined) {
+    if (patch.body !== current.body) changes.push("body");
+    current.body = patch.body;
+  }
 
-  current.updated = new Date().toISOString().slice(0, 10);
+  if (changes.length) {
+    recordChange(current, changes.join(", "));
+  } else {
+    current.updated_at = utcTimestamp();
+  }
   writeFileSync(absPath, serializeTask(current));
 
   // Re-parse so the returned object reflects exactly what's on disk.

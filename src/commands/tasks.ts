@@ -104,8 +104,8 @@ export function cmdShow(id?: string): void {
   if (t.git.branchExists) row("git", c.green("branch exists locally"));
   if (t.git.lastCommit)
     row("last commit", c.dim(t.git.lastCommit + "  " + (t.git.lastCommitAt ?? "")));
-  if (t.created) row("created", t.created);
-  if (t.updated) row("updated", t.updated);
+  if (t.created_at) row("created", t.created_at);
+  if (t.updated_at) row("updated", t.updated_at);
   console.log(
     c.dim("  ─────────────────────────────────────────────────────────\n"),
   );
