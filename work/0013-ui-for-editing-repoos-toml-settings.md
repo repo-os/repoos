@@ -2,7 +2,7 @@
 id: "0013"
 title: UI for editing repoos.toml settings
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
