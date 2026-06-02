@@ -5,7 +5,7 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { RepoOSConfig, Status, Assignee } from "./types.js";
+import type { RepoOSConfig, Status, Assignee, Theme } from "./types.js";
 import { STATUSES } from "./types.js";
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
@@ -15,6 +15,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   defaultStatus: "inbox",
   defaultAssignee: "unassigned",
   cacheDir: ".repoos",
+  theme: "system",
 };
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
@@ -87,6 +88,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       cfg.defaultAssignee = get("defaultAssignee") as Assignee;
     if (typeof get("cacheDir") === "string") cfg.cacheDir = get("cacheDir") as string;
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
+    if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
   }
   return cfg;
 }
@@ -105,6 +107,20 @@ export interface ConfigFieldMeta {
 
 export function getConfigSchema(): ConfigFieldMeta[] {
   return [
+    {
+      key: "theme",
+      label: "Theme",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.theme,
+      options: [
+        { value: "system", label: "System (follow OS)" },
+        { value: "dark", label: "Dark" },
+        { value: "light", label: "Light" },
+      ],
+      description: "UI appearance — applies immediately, no restart",
+    },
     {
       key: "defaultStatus",
       label: "Default status",

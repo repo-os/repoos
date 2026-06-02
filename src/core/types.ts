@@ -31,6 +31,9 @@ export type TaskType = (typeof TASK_TYPES)[number];
 /** Who a task is assigned to. `ai` is a first-class assignee. */
 export type Assignee = "ai" | "human" | "unassigned";
 
+/** Theme preference for the web UI. */
+export type Theme = "dark" | "light" | "system";
+
 /**
  * The frontmatter we recognise. Unknown keys are preserved in `extra` so we
  * never destroy fields a user (or another tool) added.
@@ -113,6 +116,8 @@ export interface RepoOSConfig {
   cacheDir: string;
   /** When true, stale builds cause ros to exit with an error instead of warning. */
   strictBuild?: boolean;
+  /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
+  theme?: Theme;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

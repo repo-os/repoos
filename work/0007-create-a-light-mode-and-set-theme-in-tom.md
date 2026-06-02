@@ -2,7 +2,7 @@
 id: "0007"
 title: Light mode + theme setting in repoos.toml
 type: feature
-status: ready
+status: active
 priority: p3
 area: ui
 assigned_to: ai
