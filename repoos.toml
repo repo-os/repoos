@@ -3,5 +3,8 @@
 workDir = "work"
 docsDir = "docs"
 defaultStatus = "inbox"
-defaultAssignee = "unassigned"
+defaultAssignee = "ai"
 cacheDir = ".repoos"
+
+theme = "light"
+strictBuild = false
