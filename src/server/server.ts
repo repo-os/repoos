@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
+import { getConfigSchema, patchTomlConfig, loadConfig } from "../core/config.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, WriteError, type TaskPatch } from "./write.js";
@@ -268,6 +269,71 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const updated = patchTaskFile(config, existing.absPath, body);
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
+      }
+
+      // ---- config read / write ----
+      if (path === "/api/config" && method === "GET") {
+        return json(res, 200, {
+          config: ros.config,
+          schema: getConfigSchema(),
+        });
+      }
+      if (path === "/api/config" && method === "PATCH") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        const patch: Record<string, unknown> = {};
+
+        // Validate every field against the schema
+        const schema = getConfigSchema();
+        for (const field of schema) {
+          if (body[field.key] === undefined) continue;
+          const val = body[field.key];
+
+          if (field.type === "string") {
+            if (typeof val !== "string" || !val.toString().trim()) {
+              return json(res, 400, { error: `${field.label} must be a non-empty string` });
+            }
+            patch[field.key] = val.toString().trim();
+          } else if (field.type === "boolean") {
+            if (typeof val !== "boolean") {
+              return json(res, 400, { error: `${field.label} must be true or false` });
+            }
+            patch[field.key] = val;
+          } else if (field.type === "select") {
+            const valid = field.options?.map((o) => o.value) ?? [];
+            if (!valid.includes(val as string)) {
+              return json(res, 400, {
+                error: `${field.label} must be one of: ${valid.join(", ")}`,
+              });
+            }
+            patch[field.key] = val;
+          } else if (field.type === "array") {
+            if (!Array.isArray(val) || !val.length) {
+              return json(res, 400, { error: `${field.label} must be a non-empty array` });
+            }
+            for (const item of val) {
+              if (typeof item !== "string" || !item.trim()) {
+                return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
+              }
+            }
+            patch[field.key] = (val as string[]).map((s) => s.trim());
+          }
+        }
+
+        if (Object.keys(patch).length === 0) {
+          return json(res, 400, { error: "No valid fields to update" });
+        }
+
+        patchTomlConfig(join(config.root, "repoos.toml"), patch);
+
+        // Update in-memory config so live endpoints see fresh values
+        Object.assign(ros.config, loadConfig(config.root));
+
+        // Re-index if operational paths changed
+        if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
+          index.refreshAll();
+        }
+
+        return json(res, 200, { ok: true, config: ros.config });
       }
 
       // ---- static: UI + doc files ----

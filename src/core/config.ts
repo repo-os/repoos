@@ -3,9 +3,10 @@
  * can override any field. We parse only the flat subset of TOML we need, again
  * to avoid a runtime dependency.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Assignee } from "./types.js";
+import { STATUSES } from "./types.js";
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",
@@ -88,4 +89,143 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
   }
   return cfg;
+}
+
+/** Metadata describing a single config field for the Settings UI. */
+export interface ConfigFieldMeta {
+  key: string;
+  label: string;
+  type: "string" | "boolean" | "select" | "array";
+  tier: "live" | "restart" | "guarded";
+  restartRequired: boolean;
+  default: unknown;
+  options?: { value: string; label: string }[];
+  description: string;
+}
+
+export function getConfigSchema(): ConfigFieldMeta[] {
+  return [
+    {
+      key: "defaultStatus",
+      label: "Default status",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.defaultStatus,
+      options: STATUSES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })),
+      description: "Status assigned to new tasks",
+    },
+    {
+      key: "defaultAssignee",
+      label: "Default assignee",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.defaultAssignee,
+      options: [
+        { value: "unassigned", label: "Unassigned" },
+        { value: "ai", label: "AI agent" },
+        { value: "human", label: "Human" },
+      ],
+      description: "Default assignee for new tasks",
+    },
+    {
+      key: "strictBuild",
+      label: "Strict build check",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description: "Exit with error on stale build instead of warning",
+    },
+    {
+      key: "workDir",
+      label: "Work directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.workDir,
+      description: "Directory holding task files (relative to repo root)",
+    },
+    {
+      key: "docsDir",
+      label: "Docs directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.docsDir,
+      description: "Directory holding context docs (relative to repo root)",
+    },
+    {
+      key: "taskExtensions",
+      label: "Task extensions",
+      type: "array",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.taskExtensions,
+      description: "File extensions treated as tasks (comma-separated)",
+    },
+    {
+      key: "cacheDir",
+      label: "Cache directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.cacheDir,
+      description: "Directory for derived index cache (relative to repo root)",
+    },
+  ];
+}
+
+function serializeTomlVal(val: unknown): string {
+  if (typeof val === "string") return JSON.stringify(val);
+  if (typeof val === "number") return String(val);
+  if (typeof val === "boolean") return val ? "true" : "false";
+  if (Array.isArray(val)) {
+    return `[${val.map((v) => JSON.stringify(v)).join(", ")}]`;
+  }
+  return String(val);
+}
+
+/**
+ * Patch a repoos.toml file with the given key-value pairs, preserving all
+ * other lines (comments, formatting, unknown keys).
+ */
+export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>): void {
+  if (!existsSync(tomlPath)) {
+    writeFileSync(tomlPath, "", "utf8");
+  }
+
+  const text = readFileSync(tomlPath, "utf8");
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const result = [...lines];
+  let modified = false;
+
+  for (const [key, rawVal] of Object.entries(patch)) {
+    const serialized = serializeTomlVal(rawVal);
+    let found = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const stripped = lines[i].replace(/#.*$/, "").trim();
+      if (!stripped || stripped.startsWith("[")) continue;
+
+      const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
+      if (kv && kv[1] === key) {
+        const indent = lines[i].match(/^\s*/)?.[0] || "";
+        result[i] = `${indent}${key} = ${serialized}`;
+        modified = true;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      result.push(`${key} = ${serialized}`);
+      modified = true;
+    }
+  }
+
+  if (modified) {
+    writeFileSync(tomlPath, result.join("\n"), "utf8");
+  }
 }

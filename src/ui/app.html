@@ -214,6 +214,32 @@
   .empty-state .big{font-size:15px;color:var(--txt-dim);margin-bottom:8px;font-weight:600}
   .spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.8s linear infinite;margin:60px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* settings */
+  .setting-group{margin-bottom:16px}
+  .setting-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .setting-row:last-child{border-bottom:none}
+  .setting-info{flex:1;min-width:160px}
+  .setting-label{font-size:13px;font-weight:600}
+  .setting-desc{font-size:10.5px;color:var(--txt-faint);margin-top:2px}
+  .setting-input{flex-shrink:0}
+  .setting-input input[type="text"],.setting-input select{width:200px;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-size:12.5px;font-family:inherit}
+  .setting-input input:focus,.setting-input select:focus{outline:none;border-color:var(--border-bright)}
+  .setting-input input[type="text"][disabled],.setting-input select[disabled]{opacity:.5}
+  .restart-badge{font-size:9px;padding:3px 8px;border-radius:5px;background:rgba(255,180,84,0.12);color:var(--amber);font-family:'JetBrains Mono',monospace;white-space:nowrap;font-weight:600}
+  .toggle{position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .toggle-slider{position:absolute;inset:0;background:var(--panel-solid);border:1px solid var(--border);border-radius:22px;transition:.2s}
+  .toggle-slider::before{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--txt-faint);top:2px;left:2px;transition:.2s}
+  .toggle input:checked+.toggle-slider{background:var(--cyan-dim);border-color:var(--cyan)}
+  .toggle input:checked+.toggle-slider::before{background:var(--cyan);transform:translateX(18px)}
+  .adv-gate{padding:14px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .adv-gate .warning{font-size:11.5px;color:var(--txt-dim);flex:1;min-width:200px}
+  .adv-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--txt-dim);cursor:pointer;font-family:inherit;font-size:11.5px;transition:.15s}
+  .adv-btn:hover{border-color:var(--border-bright);color:var(--txt)}
+  .save-msg{font-size:12px;font-weight:600;padding:10px 0 0;font-family:'JetBrains Mono',monospace}
+  .save-msg.ok{color:var(--green)}
+  .save-msg.err{color:var(--red)}
 </style>
 </head>
 <body>
@@ -337,6 +363,72 @@
           <div class="glass doc-view"><div v-if="docContent"><div class="doc-title">{{ docTitle }}</div><div class="doc-path">{{ selDoc }}</div>{{ docContent }}</div><div v-else style="color:var(--txt-faint)">Select a document.</div></div>
         </div>
       </div>
+
+      <!-- SETTINGS -->
+      <div v-else-if="page==='settings'">
+        <div class="page-title">Settings</div>
+        <div class="page-desc">RepoOS configuration · <span class="mono" style="color:var(--cyan)">repoos.toml</span></div>
+
+        <div v-if="!configLoaded" class="spin"></div>
+
+        <div v-else>
+          <div class="glass" style="padding:0 18px 6px;margin-bottom:16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top:16px;margin-bottom:0"><span class="live-dot"></span>General</div>
+              <div v-for="f in visibleFields" :key="f.key" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">{{ f.label }}</div>
+                  <div class="setting-desc">{{ f.description }}</div>
+                </div>
+                <div class="setting-input">
+                  <select v-if="f.type==='select'" v-model="form[f.key]" :disabled="configSaving">
+                    <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
+                  </select>
+                  <label v-else-if="f.type==='boolean'" class="toggle">
+                    <input type="checkbox" v-model="form[f.key]" :disabled="configSaving" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass" style="padding:0 18px 6px;margin-bottom:16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top:16px;margin-bottom:0">
+                <span style="cursor:pointer;user-select:none" @click="showAdvanced=!showAdvanced">
+                  <span v-if="showAdvanced">▾</span><span v-else>▸</span> Advanced
+                </span>
+              </div>
+              <div v-if="showAdvanced">
+                <div class="adv-gate">
+                  <div class="warning">⚠ Changing these may break the running server. Edit with care.</div>
+                </div>
+                <div v-for="f in guardedFields" :key="f.key" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">{{ f.label }}</div>
+                    <div class="setting-desc">{{ f.description }}</div>
+                  </div>
+                  <div class="setting-input">
+                    <input v-if="f.type==='string'" type="text" v-model="form[f.key]" :disabled="configSaving" />
+                    <input v-else-if="f.type==='array'" type="text" v-model="form[f.key]" :disabled="configSaving" placeholder=".md, .markdown" />
+                  </div>
+                  <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <button class="btn primary" @click="saveConfig" :disabled="configSaving || !configLoaded">
+              {{ configSaving ? 'Saving…' : 'Save changes' }}
+            </button>
+            <div v-if="configMsg" class="save-msg ok">{{ configMsg }}</div>
+            <div v-if="configError" class="save-msg err">{{ configError }}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -418,6 +510,14 @@ createApp({
     const saving = ref(false);
     const flashId = ref(null);
     const eventCount = ref(0);
+    const configLoaded = ref(false);
+    const configSaving = ref(false);
+    const configMsg = ref('');
+    const configError = ref('');
+    const configSchema = ref([]);
+    const configData = ref(null);
+    const showAdvanced = ref(false);
+    const form = reactive({});
     let feedKey = 0;
 
     const nt = reactive({title:'',type:'feature',priority:'p2',area:'web',assignedTo:''});
@@ -426,6 +526,7 @@ createApp({
       {id:'dashboard',label:'Control',icon:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>'},
       {id:'work',label:'Work',icon:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="4" height="16" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>'},
       {id:'repo',label:'Context',icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8"/></svg>'},
+      {id:'settings',label:'Settings',icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008.4 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.12 15a1.65 1.65 0 00-1.51-1H2.5a2 2 0 010-4h.09A1.65 1.65 0 004.6 8.4a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 008.6 4.12a1.65 1.65 0 001-1.51V2.5a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21.5a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>'},
     ];
     const columns = [
       {id:'inbox',label:'Inbox',color:'#566081'},{id:'ready',label:'Ready',color:'#39e0ff'},
@@ -437,6 +538,8 @@ createApp({
     const total = computed(()=> tasks.value.length);
     const byStatus = (s)=> tasks.value.filter(t=>t.status===s);
     const aiTasks = computed(()=> tasks.value.filter(t=>t.assignee==='ai' && t.status!=='done'));
+    const visibleFields = computed(()=> configSchema.value.filter(f=>f.tier!=='guarded'));
+    const guardedFields = computed(()=> configSchema.value.filter(f=>f.tier==='guarded'));
 
     async function api(path, opts){
       const r = await fetch(origin + path, opts);
@@ -513,6 +616,50 @@ createApp({
       }catch(err){ pushFeed(`<span style="color:var(--red)">error: ${err.message}</span>`,'#ff6b7d','error'); }
       finally{ saving.value=false; }
     }
+    async function loadSettings(){
+      configLoaded.value = false;
+      configError.value = '';
+      configMsg.value = '';
+      try{
+        const res = await api('/api/config');
+        configData.value = res.config;
+        configSchema.value = res.schema;
+        for(const f of res.schema){
+          const val = res.config[f.key] ?? f.default;
+          if(f.type==='array') form[f.key] = Array.isArray(val) ? val.join(', ') : String(val);
+          else if(f.type==='boolean') form[f.key] = !!val;
+          else form[f.key] = val;
+        }
+        configLoaded.value = true;
+      }catch(err){ configError.value = err.message; }
+    }
+    async function saveConfig(){
+      configSaving.value = true;
+      configMsg.value = '';
+      configError.value = '';
+      try{
+        const body = {};
+        for(const f of configSchema.value){
+          if(f.tier==='guarded' && !showAdvanced.value) continue;
+          let val = form[f.key];
+          if(f.type==='array' && typeof val==='string'){
+            val = val.split(',').map(s=>s.trim()).filter(Boolean);
+          }
+          body[f.key] = val;
+        }
+        await api('/api/config', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        configMsg.value = 'Saved — restart server to apply changes.';
+        const res = await api('/api/config');
+        configData.value = res.config;
+        for(const f of res.schema){
+          const val = res.config[f.key] ?? f.default;
+          if(f.type==='array') form[f.key] = Array.isArray(val) ? val.join(', ') : String(val);
+          else if(f.type==='boolean') form[f.key] = !!val;
+          else form[f.key] = val;
+        }
+      }catch(err){ configError.value = err.message; }
+      finally{ configSaving.value = false; }
+    }
     async function loadDocs(){ try{ docs.value = await api('/api/docs'); if(docs.value.length && !selDoc.value) loadDoc(docs.value[0].path); }catch{} }
     async function loadDoc(path){
       selDoc.value = path;
@@ -524,7 +671,7 @@ createApp({
     }
 
     onMounted(async ()=>{
-      try{ health.value = await api('/api/health'); await refresh(); await loadDocs(); }
+      try{ health.value = await api('/api/health'); await refresh(); await loadDocs(); await loadSettings(); }
       catch(e){ /* server not reachable */ }
       finally{ loading.value=false; }
       connectSSE();
@@ -532,7 +679,9 @@ createApp({
 
     return {origin,page,loading,connected,tasks,counts,health,feed,docs,selDoc,docContent,docTitle,
       active,showNew,saving,flashId,eventCount,nt,nav,columns,statusColor,repoName,workDir,total,
-      byStatus,aiTasks,open,setStatus,createTask,loadDoc};
+      byStatus,aiTasks,open,setStatus,createTask,loadDoc,
+      configLoaded,configSaving,configMsg,configError,configSchema,configData,showAdvanced,form,
+      visibleFields,guardedFields,loadSettings,saveConfig};
   }
 }).mount('#app');
 </script>
