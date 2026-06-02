@@ -12,6 +12,8 @@ import {
   cmdIndex,
 } from "../commands/tasks.js";
 import { cmdServe } from "../commands/serve.js";
+import { checkBuild } from "../core/build.js";
+import { loadConfig } from "../core/config.js";
 import { c } from "./colors.js";
 
 const VERSION = "0.1.0";
@@ -44,6 +46,22 @@ function help(): void {
 
 function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
+
+  // Staleness check — skip for version/help since those read no source.
+  const skipCheck = new Set(["version", "--version", "-v", undefined, "help", "--help", "-h"]);
+  if (!skipCheck.has(cmd)) {
+    const result = checkBuild();
+    if (result.stale) {
+      const config = loadConfig();
+      const strict = config.strictBuild || process.env.REPOOS_STRICT_BUILD === "1" || process.argv.includes("--strict-build");
+      if (strict) {
+        console.error(c.red("  ✗ ") + result.message);
+        process.exit(1);
+      }
+      console.error(c.yellow("  ⚠ ") + result.message);
+    }
+  }
+
   switch (cmd) {
     case "init":
       cmdInit();

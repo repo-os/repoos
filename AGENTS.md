@@ -18,10 +18,11 @@ RepoOS manages its own roadmap. This means a few things are true that you
 cannot tell from the code alone:
 
 - The `ros` command is very likely a `bun link` dev build pointing at THIS
-  repo's `dist/`. It runs compiled JS, not the TypeScript source. **After
-  editing anything under `src/`, run `bun run build` before testing via
-  `ros`** — otherwise you are running stale code and your change will appear
-  to do nothing. This is the #1 way to waste time in this repo.
+  repo's `dist/`. It runs compiled JS, not the TypeScript source. **`ros`
+  warns automatically when the build is stale** (compares a hash of `src/`
+  against the build marker in `dist/.build-info.json`). If you see a staleness
+  warning, run `bun run build` before trusting any `ros` output or the UI.
+  This is the #1 way to waste time in this repo — the guardrail catches it.
 - Editing the task file format, frontmatter schema, or the parser is a
   SELF-MODIFYING act: it affects this repo's own `work/*.md` files, including
   the task you are working on. If you change the format, write a migration in

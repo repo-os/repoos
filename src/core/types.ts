@@ -111,6 +111,8 @@ export interface RepoOSConfig {
   defaultAssignee: Assignee;
   /** Where the derived index cache is written (relative to root). */
   cacheDir: string;
+  /** When true, stale builds cause ros to exit with an error instead of warning. */
+  strictBuild?: boolean;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

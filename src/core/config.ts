@@ -85,6 +85,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("defaultAssignee") === "string")
       cfg.defaultAssignee = get("defaultAssignee") as Assignee;
     if (typeof get("cacheDir") === "string") cfg.cacheDir = get("cacheDir") as string;
+    if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
   }
   return cfg;
 }
