@@ -395,10 +395,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
-      const url = `http://${host}:${port}`;
+      const actualPort = (server.address() as { port: number }).port;
+      const url = `http://${host}:${actualPort}`;
       resolve({
         url,
-        port,
+        port: actualPort,
         index,
         close: () =>
           new Promise<void>((res) => {

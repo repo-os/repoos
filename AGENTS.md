@@ -9,8 +9,19 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 2. Pick a task from `work/` whose `status: ready`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a branch named in the task's `branch:` field, or set one.
-5. Implement → test → open an MR.
-6. Set `status: review` when ready for human sign-off.
+5. Run `ros check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → open an MR.
+6. Set `status: review` when ready for human sign-off, and only after a green `ros check`.
+
+## Definition of done
+
+Before a task moves to review, `ros check` must pass. This runs:
+- Build staleness check (`src/` vs `dist/`)
+- Full build (`tsc` + asset copy)
+- Test suite (if any)
+- Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
+- The smoke test **skips with a clear message** if Playwright or the browser binary isn't installed
+
+One command — `ros check` — is the single bar for "did this break anything?"
 
 ## This repo is self-hosted — read this before running anything
 

@@ -257,13 +257,6 @@
   .status-btn.on{color:var(--status-on-color);border-color:var(--border-bright);background:var(--status-on-bg)}
   .md-h{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:9px;font-family:'JetBrains Mono',monospace}
 
-  /* new task modal */
-  .modal-card{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;width:440px;max-width:92vw;
-    background:var(--panel-gradient);border:1px solid var(--border-bright);border-radius:16px;
-    animation:pop .2s ease;box-shadow:0 30px 80px -20px rgba(0,0,0,0.7)}
-  @keyframes pop{from{transform:translate(-50%,-46%);opacity:0}to{transform:translate(-50%,-50%);opacity:1}}
-  .modal-card h3{padding:18px 20px 0;font-size:16px;font-weight:700}
-  .modal-body{padding:16px 20px 20px}
   .field{margin-bottom:13px}
   .field label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;display:block;margin-bottom:6px}
   .field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-size:13px;font-family:inherit}
@@ -418,7 +411,7 @@
       <div v-else-if="page==='work'">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px">
           <div><div class="page-title">Work Queue</div><div class="page-desc" style="margin:3px 0 0">Repo-native tasks · <span class="mono" style="color:var(--cyan)">{{ workDir }}/*.md</span></div></div>
-          <div class="new-btn" @click="showNew=true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>New task</div>
+          <div class="new-btn" @click="openNewTask"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>New task</div>
         </div>
         <div class="board">
           <div v-for="col in columns" :key="col.id">
@@ -551,48 +544,40 @@
     <div class="drawer-wrap" :style="{'width':drawerWidth+'px','max-width':'100vw'}">
       <div class="drawer-resize" @mousedown.prevent="startResize"></div>
       <div class="drawer">
-      <div class="drawer-head">
-        <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span class="tc-id mono">{{ active.path }}</span><span class="cdot" :style="{background:statusColor(active.status)}"></span><span :style="{color:statusColor(active.status),fontSize:'11px',fontWeight:600}">{{ active.status }}</span><span class="tc-prio" :class="active.priority" style="margin-left:auto">{{ active.priority }}</span></div>
-          <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em">{{ active.title }}</div></div>
-        <button class="close-x" @click="active=null"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      </div>
-      <div class="drawer-body">
-        <div class="md-h">move to</div>
-        <div class="status-row">
-          <button v-for="col in allStatuses" :key="col.id" class="status-btn" :class="{on:active.status===col.id}" @click="setStatus(active,col.id)" :disabled="saving">
-            <span class="cdot" :style="{background:col.color}"></span>{{ col.label }}
-          </button>
-        </div>
-        <div class="meta-grid" style="margin-top:16px">
-          <div class="meta-cell"><div class="k">type</div><div class="v">{{ active.type }}</div></div>
-          <div class="meta-cell"><div class="k">area</div><div class="v">{{ active.area }}</div></div>
-          <div class="meta-cell"><div class="k">assigned_to</div><div class="v" :style="{color:active.assignee==='ai'?'var(--violet)':'var(--txt)'}">{{ active.assignee==='ai'?'◆ AI agent':(active.assignedTo||'unassigned') }}</div></div>
-          <div class="meta-cell"><div class="k">branch</div><div class="v mono" style="color:var(--cyan);font-size:11px">{{ active.branch||'—' }}</div></div>
-          <div class="meta-cell"><div class="k">created</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.created_at) }}</div></div>
-          <div class="meta-cell"><div class="k">updated</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.updated_at) }}</div></div>
-        </div>
-        <div class="md-h" style="margin-top:18px">spec</div>
-        <div class="md-body">{{ active.body || '(no body)' }}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- new task modal -->
-  <div v-if="showNew">
-    <div class="overlay" @click="showNew=false"></div>
-    <div class="modal-card">
-      <h3>New task</h3>
-      <div class="modal-body">
-        <div class="field"><label>Title</label><input v-model="nt.title" placeholder="Add company dashboard" @keyup.enter="createTask" autofocus></div>
-        <div class="field-row">
-          <div class="field"><label>Type</label><select v-model="nt.type"><option>feature</option><option>bug</option><option>chore</option><option>spec</option><option>refactor</option></select></div>
-          <div class="field"><label>Priority</label><select v-model="nt.priority"><option>p0</option><option>p1</option><option selected>p2</option><option>p3</option></select></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>Area</label><input v-model="nt.area" placeholder="web"></div>
-          <div class="field"><label>Assign to</label><select v-model="nt.assignedTo"><option value="">unassigned</option><option value="ai">AI agent</option><option value="human">human</option></select></div>
-        </div>
-        <div class="btn-row"><button class="btn" @click="showNew=false">Cancel</button><button class="btn primary" @click="createTask" :disabled="saving||!nt.title">Create</button></div>
+        <template v-if="active._new">
+          <div class="drawer-head"><div style="font-size:18px;font-weight:700;letter-spacing:-0.02em">New task</div><button class="close-x" @click="active=null"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+          <div class="drawer-body">
+            <div class="field"><label>Title</label><input v-model="nt.title" placeholder="Add company dashboard" @keyup.enter="createTask" autofocus></div>
+            <div class="field-row"><div class="field"><label>Type</label><select v-model="nt.type"><option>feature</option><option>bug</option><option>chore</option><option>spec</option><option>refactor</option></select></div><div class="field"><label>Priority</label><select v-model="nt.priority"><option>p0</option><option>p1</option><option selected>p2</option><option>p3</option></select></div></div>
+            <div class="field-row"><div class="field"><label>Area</label><input v-model="nt.area" placeholder="web"></div><div class="field"><label>Assign to</label><select v-model="nt.assignedTo"><option value="">unassigned</option><option value="ai">AI agent</option><option value="human">human</option></select></div></div>
+            <div class="btn-row" style="margin-top:20px"><button class="btn" @click="active=null">Cancel</button><button class="btn primary" @click="createTask" :disabled="saving||!nt.title">Create</button></div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="drawer-head">
+            <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span class="tc-id mono">{{ active.path }}</span><span class="cdot" :style="{background:statusColor(active.status)}"></span><span :style="{color:statusColor(active.status),fontSize:'11px',fontWeight:600}">{{ active.status }}</span><span class="tc-prio" :class="active.priority" style="margin-left:auto">{{ active.priority }}</span></div>
+              <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em">{{ active.title }}</div></div>
+            <button class="close-x" @click="active=null"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="drawer-body">
+            <div class="md-h">move to</div>
+            <div class="status-row">
+              <button v-for="col in allStatuses" :key="col.id" class="status-btn" :class="{on:active.status===col.id}" @click="setStatus(active,col.id)" :disabled="saving">
+                <span class="cdot" :style="{background:col.color}"></span>{{ col.label }}
+              </button>
+            </div>
+            <div class="meta-grid" style="margin-top:16px">
+              <div class="meta-cell"><div class="k">type</div><div class="v">{{ active.type }}</div></div>
+              <div class="meta-cell"><div class="k">area</div><div class="v">{{ active.area }}</div></div>
+              <div class="meta-cell"><div class="k">assigned_to</div><div class="v" :style="{color:active.assignee==='ai'?'var(--violet)':'var(--txt)'}">{{ active.assignee==='ai'?'◆ AI agent':(active.assignedTo||'unassigned') }}</div></div>
+              <div class="meta-cell"><div class="k">branch</div><div class="v mono" style="color:var(--cyan);font-size:11px">{{ active.branch||'—' }}</div></div>
+              <div class="meta-cell"><div class="k">created</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.created_at) }}</div></div>
+              <div class="meta-cell"><div class="k">updated</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.updated_at) }}</div></div>
+            </div>
+            <div class="md-h" style="margin-top:18px">spec</div>
+            <div class="md-body">{{ active.body || '(no body)' }}</div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -615,8 +600,8 @@ createApp({
     const docContent = ref('');
     const docTitle = ref('');
     const active = ref(null);
-    const showNew = ref(false);
     const saving = ref(false);
+    function openNewTask(){ active.value = {_new: true}; nt.title=''; nt.area='web'; nt.priority='p2'; nt.type='feature'; nt.assignedTo=''; }
     const flashId = ref(null);
     const eventCount = ref(0);
     const configLoaded = ref(false);
@@ -734,7 +719,7 @@ createApp({
       saving.value=true;
       try{
         await api('/api/tasks', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...nt})});
-        showNew.value=false; nt.title=''; nt.area='web'; nt.priority='p2'; nt.type='feature'; nt.assignedTo='';
+        active.value=null; nt.title=''; nt.area='web'; nt.priority='p2'; nt.type='feature'; nt.assignedTo='';
         page.value='work';
       }catch(err){ pushFeed(`<span style="color:var(--red)">error: ${err.message}</span>`,'#ff6b7d','error'); }
       finally{ saving.value=false; }
@@ -808,8 +793,8 @@ createApp({
     });
 
     return {origin,page,loading,connected,tasks,counts,health,feed,docs,selDoc,docContent,docTitle,
-      active,showNew,saving,flashId,eventCount,nt,nav,columns,statusColor,repoName,workDir,total,
-      backlogCount,byStatus,aiTasks,fmtDate,allStatuses,drawerWidth,startResize,
+      active,saving,flashId,eventCount,nt,nav,columns,statusColor,repoName,workDir,total,
+      backlogCount,byStatus,aiTasks,fmtDate,allStatuses,drawerWidth,startResize,openNewTask,
       open,setStatus,createTask,loadDoc,
       configLoaded,configSaving,configMsg,configError,configSchema,configData,showAdvanced,form,
       visibleFields,guardedFields,loadSettings,saveConfig};
