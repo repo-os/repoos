@@ -8,6 +8,7 @@
 
 /** Canonical lifecycle states. Order matters: it defines board column order. */
 export const STATUSES = [
+  "draft",
   "inbox",
   "ready",
   "active",

@@ -1,2 +1,3 @@
 # RepoOS derived index cache
 .repoos/
+node_modules/

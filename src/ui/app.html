@@ -234,10 +234,12 @@
   /* drawer */
   .overlay{position:fixed;inset:0;background:var(--overlay-bg);backdrop-filter:blur(3px);z-index:90;animation:fade .2s}
   @keyframes fade{from{opacity:0}to{opacity:1}}
-  .drawer{position:fixed;top:0;right:0;bottom:0;width:540px;max-width:94vw;z-index:100;
+  .drawer-wrap{position:fixed;top:0;right:0;bottom:0;z-index:100}
+  .drawer{height:100%;width:100%;
     background:var(--panel-gradient);border-left:1px solid var(--border-bright);
     display:flex;flex-direction:column;animation:slideR .28s cubic-bezier(.2,.8,.2,1);box-shadow:var(--drawer-shadow)}
-  @media(max-width:600px){.drawer{width:100vw;border-radius:0}}
+  .drawer-resize{position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:col-resize;z-index:101}
+  @media(max-width:600px){.drawer-wrap{left:0;width:100vw!important}.drawer-resize{display:none}}
   @keyframes slideR{from{transform:translateX(40px);opacity:.5}to{transform:none;opacity:1}}
   .drawer-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
   .drawer-body{flex:1;overflow-y:auto;padding:20px 22px}
@@ -274,6 +276,12 @@
   .new-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;
     background:var(--btn-new-bg);border:1px solid var(--border-bright);color:var(--btn-new-color);font-family:inherit}
   .new-btn svg{width:14px;height:14px}
+
+  /* draft / proposed section */
+  .draft-section{margin-top:22px;padding:6px 4px}
+  .draft-head{display:flex;align-items:center;gap:8px;padding:0 4px 11px;font-size:12px;font-weight:600;color:var(--txt-faint)}
+  .draft-head .cdot{width:8px;height:8px;border-radius:50%}
+  .draft-body{display:flex;flex-direction:column;gap:10px;opacity:.7}
 
   /* mobile bottom nav */
   .tabbar{display:none}
@@ -335,7 +343,7 @@
     <div class="sidebar">
       <div v-for="n in nav" :key="n.id" class="nav-item" :class="{active:page===n.id}" @click="page=n.id">
         <span v-html="n.icon"></span>{{ n.label }}
-        <span v-if="n.id==='work'&&total" class="nav-badge">{{ total }}</span>
+        <span v-if="n.id==='work'&&backlogCount" class="nav-badge">{{ backlogCount }}</span>
       </div>
       <div class="side-foot">
         <div class="row"><span>server</span><b>{{ connected?'connected':'—' }}</b></div>
@@ -369,8 +377,12 @@
             <div class="stat-val" style="color:var(--green)">{{ counts.done||0 }}</div><div class="stat-label">done</div>
           </div>
           <div class="glass stat">
-            <div class="stat-top"><div class="stat-ico" style="background:var(--chip-bg);color:var(--txt-dim)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+            <div class="stat-top"><div class="stat-ico" style="background:rgba(138,150,180,0.12);color:var(--txt-dim)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
             <div class="stat-val">{{ counts.inbox||0 }}</div><div class="stat-label">inbox</div>
+          </div>
+          <div class="glass stat">
+            <div class="stat-top"><div class="stat-ico" style="background:var(--chip-bg);color:var(--txt-faint)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+            <div class="stat-val" style="color:var(--txt-faint)">{{ counts.draft||0 }}</div><div class="stat-label">drafts</div>
           </div>
         </div>
 
@@ -422,6 +434,23 @@
                 </div>
               </div>
               <div v-if="!byStatus(col.id).length" style="font-size:10.5px;color:var(--txt-faint);text-align:center;padding:14px 0;font-family:'JetBrains Mono',monospace">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROPOSED (draft tasks) -->
+        <div class="draft-section">
+          <div class="draft-head"><span class="cdot" style="background:var(--txt-faint)"></span>Proposed / Drafts<span class="col-count" style="margin-left:auto">{{ byStatus('draft').length }}</span></div>
+          <div class="draft-body">
+            <div v-if="!byStatus('draft').length" style="font-size:10.5px;color:var(--txt-faint);text-align:center;padding:14px 0;font-family:'JetBrains Mono',monospace">No drafts yet. Agent proposals land here.</div>
+            <div class="task-card" v-for="t in byStatus('draft')" :key="t.id" :class="{flash:flashId===t.id}" @click="open(t)">
+              <div class="tc-top"><span class="tc-id">#{{ t.id }}</span><span class="chip">{{ t.type }}</span><span class="tc-prio" :class="t.priority">{{ t.priority }}</span></div>
+              <div class="tc-title">{{ t.title }}</div>
+              <div class="tc-tags"><span class="chip">{{ t.area }}</span><span class="chip" :class="{ai:t.assignee==='ai'}">{{ t.assignee==='ai'?'◆ AI':(t.assignee==='human'?'◇ '+(t.assignedTo||'human'):'· open') }}</span></div>
+              <div class="tc-foot">
+                <span class="tc-branch" v-if="t.branch"><svg viewBox="0 0 24 24" fill="none"><path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="2"/></svg>{{ t.branch.split('/').pop() }}</span>
+                <span class="tc-git" v-if="t.git&&t.git.branchExists" title="branch exists locally">●</span>
+              </div>
             </div>
           </div>
         </div>
@@ -519,16 +548,18 @@
   <!-- task drawer -->
   <div v-if="active">
     <div class="overlay" @click="active=null"></div>
-    <div class="drawer">
+    <div class="drawer-wrap" :style="{'width':drawerWidth+'px','max-width':'100vw'}">
+      <div class="drawer-resize" @mousedown.prevent="startResize"></div>
+      <div class="drawer">
       <div class="drawer-head">
-        <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span class="tc-id mono">{{ active.path }}</span><span class="tc-prio" :class="active.priority" style="margin-left:auto">{{ active.priority }}</span></div>
+        <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span class="tc-id mono">{{ active.path }}</span><span class="cdot" :style="{background:statusColor(active.status)}"></span><span :style="{color:statusColor(active.status),fontSize:'11px',fontWeight:600}">{{ active.status }}</span><span class="tc-prio" :class="active.priority" style="margin-left:auto">{{ active.priority }}</span></div>
           <div style="font-size:18px;font-weight:700;letter-spacing:-0.02em">{{ active.title }}</div></div>
         <button class="close-x" @click="active=null"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </div>
       <div class="drawer-body">
         <div class="md-h">move to</div>
         <div class="status-row">
-          <button v-for="col in columns" :key="col.id" class="status-btn" :class="{on:active.status===col.id}" @click="setStatus(active,col.id)" :disabled="saving">
+          <button v-for="col in allStatuses" :key="col.id" class="status-btn" :class="{on:active.status===col.id}" @click="setStatus(active,col.id)" :disabled="saving">
             <span class="cdot" :style="{background:col.color}"></span>{{ col.label }}
           </button>
         </div>
@@ -537,9 +568,8 @@
           <div class="meta-cell"><div class="k">area</div><div class="v">{{ active.area }}</div></div>
           <div class="meta-cell"><div class="k">assigned_to</div><div class="v" :style="{color:active.assignee==='ai'?'var(--violet)':'var(--txt)'}">{{ active.assignee==='ai'?'◆ AI agent':(active.assignedTo||'unassigned') }}</div></div>
           <div class="meta-cell"><div class="k">branch</div><div class="v mono" style="color:var(--cyan);font-size:11px">{{ active.branch||'—' }}</div></div>
-        </div>
-        <div v-if="active.git&&active.git.lastCommit" class="meta-grid" style="grid-template-columns:1fr">
-          <div class="meta-cell"><div class="k">last commit</div><div class="v" style="font-size:11px">{{ active.git.lastCommit }}</div></div>
+          <div class="meta-cell"><div class="k">created</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.created_at) }}</div></div>
+          <div class="meta-cell"><div class="k">updated</div><div class="v mono" style="font-size:11px">{{ fmtDate(active.updated_at) }}</div></div>
         </div>
         <div class="md-h" style="margin-top:18px">spec</div>
         <div class="md-body">{{ active.body || '(no body)' }}</div>
@@ -577,7 +607,7 @@ createApp({
     const loading = ref(true);
     const connected = ref(false);
     const tasks = ref([]);
-    const counts = reactive({inbox:0,ready:0,active:0,review:0,done:0});
+    const counts = reactive({draft:0,inbox:0,ready:0,active:0,review:0,done:0});
     const health = ref(null);
     const feed = reactive([]);
     const docs = ref([]);
@@ -611,14 +641,28 @@ createApp({
       {id:'inbox',label:'Inbox',color:'#566081'},{id:'ready',label:'Ready',color:'#39e0ff'},
       {id:'active',label:'Active',color:'#9d7bff'},{id:'review',label:'Review',color:'#ffb454'},{id:'done',label:'Done',color:'#4ef0a8'},
     ];
-    const statusColor = (s)=>({inbox:'#566081',ready:'#39e0ff',active:'#9d7bff',review:'#ffb454',done:'#4ef0a8'}[s]||'#566081');
+    const statusColor = (s)=>({draft:'#3a4055',inbox:'#566081',ready:'#39e0ff',active:'#9d7bff',review:'#ffb454',done:'#4ef0a8'}[s]||'#566081');
     const repoName = computed(()=> health.value ? health.value.root.split('/').pop() : '');
     const workDir = computed(()=> health.value ? health.value.workDir : 'work');
     const total = computed(()=> tasks.value.length);
+    const backlogCount = computed(()=> tasks.value.filter(t=>t.status!=='draft').length);
+    const fmtDate = (s)=> s ? new Date(s).toLocaleString() : '—';
     const byStatus = (s)=> tasks.value.filter(t=>t.status===s);
     const aiTasks = computed(()=> tasks.value.filter(t=>t.assignee==='ai' && t.status!=='done'));
     const visibleFields = computed(()=> configSchema.value.filter(f=>f.tier!=='guarded'));
     const guardedFields = computed(()=> configSchema.value.filter(f=>f.tier==='guarded'));
+    const allStatuses = computed(()=> {
+      const ds = {id:'draft',label:'Draft',color:statusColor('draft')};
+      return [ds, ...columns];
+    });
+    const drawerWidth = ref(680);
+    function startResize(e){
+      const startX = e.clientX, startW = drawerWidth.value;
+      const onMove = (e) => { drawerWidth.value = Math.max(360, Math.min(window.innerWidth-40, startW + startX - e.clientX)); };
+      const onUp = () => { document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    }
 
     async function api(path, opts){
       const r = await fetch(origin + path, opts);
@@ -630,7 +674,7 @@ createApp({
       tasks.value = idx.tasks;
       Object.assign(counts, idx.counts);
     }
-    function recount(){ const c={inbox:0,ready:0,active:0,review:0,done:0}; for(const t of tasks.value)c[t.status]++; Object.assign(counts,c); }
+    function recount(){ const c={draft:0,inbox:0,ready:0,active:0,review:0,done:0}; for(const t of tasks.value)c[t.status]++; Object.assign(counts,c); }
 
     function pushFeed(msg, color, kind){
       feed.unshift({key:feedKey++, msg, color, kind, time:new Date().toTimeString().slice(0,8)});
@@ -765,7 +809,8 @@ createApp({
 
     return {origin,page,loading,connected,tasks,counts,health,feed,docs,selDoc,docContent,docTitle,
       active,showNew,saving,flashId,eventCount,nt,nav,columns,statusColor,repoName,workDir,total,
-      byStatus,aiTasks,open,setStatus,createTask,loadDoc,
+      backlogCount,byStatus,aiTasks,fmtDate,allStatuses,drawerWidth,startResize,
+      open,setStatus,createTask,loadDoc,
       configLoaded,configSaving,configMsg,configError,configSchema,configData,showAdvanced,form,
       visibleFields,guardedFields,loadSettings,saveConfig};
   }

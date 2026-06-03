@@ -2,7 +2,7 @@
 id: "0015"
 title: Add draft status for proposed (pre-backlog) tasks
 type: feature
-status: inbox
+status: review
 priority: p2
 area: core
 assigned_to: ai

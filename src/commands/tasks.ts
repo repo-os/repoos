@@ -33,10 +33,11 @@ export function cmdList(statusArg?: string): void {
     return;
   }
 
+  // Default view excludes drafts; explicit `ros list draft` shows them.
   const cols =
     statusArg && (STATUSES as readonly string[]).includes(statusArg)
       ? [statusArg as Status]
-      : [...STATUSES];
+      : STATUSES.filter((s) => s !== "draft");
 
   console.log(
     c.bold("\n  " + idx.root.split("/").pop()) +

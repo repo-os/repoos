@@ -19,6 +19,8 @@ export const c = {
 /** Color a status string consistently with the GUI palette. */
 export function statusColor(status: string): (s: string) => string {
   switch (status) {
+    case "draft":
+      return c.dim;
     case "ready":
       return c.cyan;
     case "active":

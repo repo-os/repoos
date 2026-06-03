@@ -147,7 +147,7 @@ export function parseTask(args: ParseTaskArgs): Task {
     id,
     title,
     type: String(data.type ?? "feature"),
-    status: normalizeStatus(data.status, defaultStatus),
+    status: normalizeStatus(data.status, "inbox" as Status),
     priority: String(data.priority ?? "p2"),
     area: String(data.area ?? "general"),
     assignee,

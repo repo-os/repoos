@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: nick
 branch: feat/0011-light-mode
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-05-29T00:00:00Z"
+updated_at: "2026-06-02T18:23:38Z"
 ---
 ## Activity
 
@@ -97,3 +97,8 @@ accordingly.
 
 - Pairs with settings UI (#0009) — theme is a cosmetic live-editable field there.
 - Pure UI; no server-logic change beyond exposing/accepting the `theme` config.
+
+## Activity
+
+- 2026-06-02T18:23:35Z · status done→draft
+- 2026-06-02T18:23:38Z · status draft→done
