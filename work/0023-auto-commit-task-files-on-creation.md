@@ -2,19 +2,20 @@
 id: "0023"
 title: Auto-commit task files on creation
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/0023-auto-commit-task-files
 created_at: "2026-08-04T09:13:42Z"
-updated_at: "2026-08-04T09:42:47Z"
+updated_at: "2026-08-04T09:45:41Z"
 ---
 ## Activity
 
 - 2026-08-04T09:13:42Z · created · unknown
 - 2026-08-04T09:42:47Z · status inbox→active
+- 2026-08-04T09:45:41Z · status active→review · implemented; ros check green
 
 ## Problem
 
