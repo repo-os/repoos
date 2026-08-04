@@ -31,6 +31,7 @@
     "lint": "oxlint",
     "fmt": "oxfmt src/ui-app/src src/ui-app/vite.config.ts src/ui-app/tests",
     "test": "vitest run --config src/ui-app/vite.config.ts",
+    "compare": "node scripts/dev-compare.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
