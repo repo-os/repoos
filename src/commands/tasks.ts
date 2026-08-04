@@ -173,6 +173,17 @@ export function cmdNew(args: string[]): void {
       t.title +
       c.dim("  → " + t.path),
   );
+  const res = ros.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
+  if (res.ok) {
+    console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
+  } else {
+    console.log(
+      "  " +
+        c.yellow("warning: ") +
+        c.dim("file left uncommitted — ") +
+        res.reason,
+    );
+  }
 }
 
 /** `ros index [--json]` — rebuild cache; optionally print machine-readable JSON. */

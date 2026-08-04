@@ -14,7 +14,11 @@ import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { buildIndex, writeIndexCache } from "./indexer.js";
 import { parseTask, serializeTask, recordChange, utcTimestamp, appendActivityEntry } from "./task.js";
-import { emptyGitInfo } from "./git.js";
+import {
+  commitNewFile as gitCommitNewFile,
+  emptyGitInfo,
+  type CommitNewFileResult,
+} from "./git.js";
 import {
   STATUSES,
   type RepoOSConfig,
@@ -51,6 +55,8 @@ export interface RepoOS {
   updateTask(id: string, patch: Partial<Omit<Task, "git" | "absPath" | "path">>): Task;
   /** Create a new task file under workDir. Returns the created task. */
   createTask(input: CreateTaskInput): Task;
+  /** Surgically commit a single new file (fail-soft; never touches other files). */
+  commitNewFile(absPath: string, message: string): CommitNewFileResult;
 }
 
 const TASK_TEMPLATE = (t: Task) => `${serializeTask(t)}
@@ -215,6 +221,10 @@ export function createRepoOS(root?: string): RepoOS {
           defaultAssignee: config.defaultAssignee,
         }) ?? task
       );
+    },
+
+    commitNewFile(absPath: string, message: string) {
+      return gitCommitNewFile(config.root, absPath, message);
     },
   };
 }
