@@ -2,14 +2,14 @@
 id: "0021"
 title: Re-architect web UI to Vite + Vue 3 SFC (Void(0) stack)
 type: refactor
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
 created_by: nick
 branch: feat/0021-vite-vue-sfc-ui
 created_at: "2026-06-20T00:00:00Z"
-updated_at: "2026-06-20T12:22:53Z"
+updated_at: "2026-08-04T08:22:19Z"
 ---
 ## Activity
 
@@ -128,3 +128,5 @@ from "is the new thing wired wrong." Phases, ideally separate commits:
 
 - 2026-06-20T12:07:56Z · status inbox→ready
 - 2026-06-20T12:22:53Z · status ready→active
+- 2026-08-04T08:22:19Z · phase 1+2 landed (Vite+Vue 3 SFC scaffold + behavior-preserving port) · 7468de0
+- 2026-08-04T08:22:19Z · phase 3 landed (PWA: manifest, service worker, per-instance icons) · 63ad140
