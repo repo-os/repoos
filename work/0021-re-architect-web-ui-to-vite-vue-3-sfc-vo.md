@@ -2,14 +2,14 @@
 id: "0021"
 title: Re-architect web UI to Vite + Vue 3 SFC (Void(0) stack)
 type: refactor
-status: review
+status: done
 priority: p1
 area: web
 assigned_to: ai
 created_by: nick
 branch: feat/0021-vite-vue-sfc-ui
 created_at: "2026-06-20T00:00:00Z"
-updated_at: "2026-08-04T08:22:19Z"
+updated_at: "2026-08-04T08:59:28Z"
 ---
 ## Activity
 
@@ -131,3 +131,5 @@ from "is the new thing wired wrong." Phases, ideally separate commits:
 - 2026-08-04T08:22:19Z · phase 1+2 landed (Vite+Vue 3 SFC scaffold + behavior-preserving port) · 7468de0
 - 2026-08-04T08:22:19Z · phase 3 landed (PWA: manifest, service worker, per-instance icons) · 63ad140
 - 2026-08-04T08:41:26Z · dev tool: `bun run compare` serves new + legacy UI side-by-side for manual review · cf8d718
+- 2026-08-04T08:59:28Z · status review→done · merged to main as 0021 (fast-forward); branch feat/0021-vite-vue-sfc-ui deleted
+- 2026-08-04T08:59:28Z · housekeeping swept in with this merge: pending ros bookkeeping (0004/0006 ready, 0012 review), new task files 0019 (marked done — PWA shipped by this task's Phase 3) + 0020 (inbox), ADR 0004 · 3a246c0
