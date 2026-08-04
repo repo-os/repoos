@@ -1,0 +1,108 @@
+import { computed, reactive, ref } from "vue";
+import { defineStore } from "pinia";
+import { api, JSON_OPTS } from "../api";
+import type { ConfigField } from "../types";
+
+export interface ConfigResponse {
+  config: Record<string, unknown>;
+  schema: ConfigField[];
+}
+
+export const useConfigStore = defineStore("config", () => {
+  const loaded = ref(false);
+  const saving = ref(false);
+  const msg = ref("");
+  const error = ref("");
+  const schema = ref<ConfigField[]>([]);
+  const data = ref<Record<string, unknown> | null>(null);
+  const showAdvanced = ref(false);
+  const form = reactive<Record<string, unknown>>({});
+
+  const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
+  const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
+
+  function applyTheme(t: string): void {
+    if (t === "system") {
+      document.documentElement.dataset.theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    } else {
+      document.documentElement.dataset.theme = t;
+    }
+  }
+
+  function fillForm(res: ConfigResponse): void {
+    for (const f of res.schema) {
+      const val = res.config[f.key] ?? f.default;
+      if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
+      else if (f.type === "boolean") form[f.key] = !!val;
+      else form[f.key] = val;
+    }
+  }
+
+  async function load(): Promise<void> {
+    loaded.value = false;
+    error.value = "";
+    msg.value = "";
+    try {
+      const res = await api<ConfigResponse>("/api/config");
+      data.value = res.config;
+      schema.value = res.schema;
+      fillForm(res);
+      applyTheme(String(res.config.theme ?? "system"));
+      loaded.value = true;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  async function save(): Promise<void> {
+    saving.value = true;
+    msg.value = "";
+    error.value = "";
+    try {
+      const body: Record<string, unknown> = {};
+      for (const f of schema.value) {
+        if (f.tier === "guarded" && !showAdvanced.value) continue;
+        let val = form[f.key];
+        if (f.type === "array" && typeof val === "string") {
+          val = val
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        body[f.key] = val;
+      }
+      await api("/api/config", JSON_OPTS("PATCH", body));
+      const needsRestart = Object.keys(body).some((k) => {
+        const f = schema.value.find((x) => x.key === k);
+        return f && f.restartRequired;
+      });
+      msg.value = needsRestart ? "Saved — restart server to apply some changes." : "Saved — applied live.";
+      const res = await api<ConfigResponse>("/api/config");
+      data.value = res.config;
+      fillForm(res);
+      applyTheme(String(res.config.theme ?? "system"));
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      saving.value = false;
+    }
+  }
+
+  return {
+    loaded,
+    saving,
+    msg,
+    error,
+    schema,
+    data,
+    showAdvanced,
+    form,
+    visibleFields,
+    guardedFields,
+    load,
+    save,
+    applyTheme,
+  };
+});

@@ -101,15 +101,56 @@ function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
   return out;
 }
 
-/** Locate the bundled UI html. Resolves relative to the compiled server.js. */
-function findUiHtml(): string | null {
-  const here = dirname(fileURLToPath(import.meta.url)); // dist/server
+/**
+ * Locate the bundled UI directory (Vite build output). Resolves relative to
+ * the compiled server.js so the same path works from dist/ and src/.
+ */
+function findUiDir(): string | null {
+  const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
   const candidates = [
-    join(here, "..", "ui", "app.html"), // dist/ui/app.html (shipped)
-    join(here, "..", "..", "src", "ui", "app.html"), // src during dev
+    join(here, "..", "ui"), // dist/ui (compiled, shipped)
+    join(here, "..", "..", "dist", "ui"), // repo-root dist/ui (dev mode)
   ];
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
+}
+
+/** Content type for a static UI asset by extension. */
+const UI_MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml; charset=utf-8",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".json": "application/json",
+  ".webmanifest": "application/manifest+json",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".map": "application/json",
+};
+
+/** Serve a static file from the UI build directory. Returns false on miss. */
+function serveStaticUi(
+  res: ServerResponse,
+  uiDir: string,
+  urlPath: string,
+): boolean {
+  const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
+  if (rel.includes("..")) return false;
+  const abs = resolve(uiDir, rel || "index.html");
+  if (!abs.startsWith(resolve(uiDir))) return false;
+  if (!existsSync(abs) || !statSync(abs).isFile()) return false;
+  const ext = extname(abs).toLowerCase();
+  res.writeHead(200, {
+    "Content-Type": UI_MIME[ext] ?? "application/octet-stream",
+    "Cache-Control": ext === ".html" ? "no-cache" : "max-age=86400",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(readFileSync(abs));
+  return true;
 }
 
 /** Guard against path traversal when serving repo doc files. */
@@ -129,20 +170,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  const uiPath = findUiHtml();
-  const uiHtml = uiPath ? readFileSync(uiPath, "utf8") : null;
-  const vendorVue = uiPath
-    ? (() => {
-        const v = join(dirname(uiPath), "vendor", "vue.global.prod.js");
-        return existsSync(v) ? readFileSync(v, "utf8") : null;
-      })()
-    : null;
-  const favicon = uiPath
-    ? (() => {
-        const f = join(dirname(uiPath), "favicon.svg");
-        return existsSync(f) ? readFileSync(f, "utf8") : null;
-      })()
-    : null;
+  const uiDir = findUiDir();
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
@@ -336,37 +364,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, { ok: true, config: ros.config });
       }
 
-      // ---- static: UI + doc files ----
-      if (path === "/vendor/vue.global.prod.js" && method === "GET") {
-        if (!vendorVue) return json(res, 500, { error: "vue asset missing" });
-        res.writeHead(200, {
-          "Content-Type": "application/javascript; charset=utf-8",
-          "Cache-Control": "max-age=86400",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(vendorVue);
-        return;
-      }
-      if (path === "/favicon.svg" && method === "GET") {
-        if (!favicon) return json(res, 404, { error: "favicon not found" });
-        res.writeHead(200, {
-          "Content-Type": "image/svg+xml; charset=utf-8",
-          "Cache-Control": "max-age=86400",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(favicon);
-        return;
-      }
-      if ((path === "/" || path === "/index.html") && method === "GET") {
-        if (!uiHtml) {
-          return json(res, 500, { error: "UI asset not found" });
-        }
-        res.writeHead(200, {
-          "Content-Type": "text/html; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(uiHtml);
-        return;
+      // ---- static: built UI + doc files ----
+      if (method === "GET" && uiDir) {
+        // Built SPA assets (index.html, /assets/*, favicon, manifest, …).
+        if (serveStaticUi(res, uiDir, path)) return;
       }
       if (method === "GET" && !path.startsWith("/api/")) {
         // serve markdown docs (AGENTS.md, docs/**.md) for the Context view
@@ -379,6 +380,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           res.end(readFileSync(docAbs, "utf8"));
           return;
         }
+      }
+      // SPA fallback: unknown GET paths (e.g. /work on refresh) render the app.
+      if (method === "GET" && uiDir) {
+        const index = join(uiDir, "index.html");
+        const legacy = join(uiDir, "app.html"); // pre-Vite build
+        const entry = existsSync(index) ? index : legacy;
+        if (existsSync(entry)) {
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+          });
+          res.end(readFileSync(entry));
+          return;
+        }
+        return json(res, 500, { error: "UI asset not found — run `bun run build`" });
       }
 
       return json(res, 404, { error: "Not found", path });

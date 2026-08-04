@@ -59,8 +59,12 @@ function hashSrcDir(root: string): string | null {
     }
     for (const e of entries) {
       const full = join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile()) files.push(full);
+      if (e.isDirectory()) {
+        if (e.name === "node_modules") continue;
+        walk(full);
+      } else if (e.isFile()) {
+        files.push(full);
+      }
     }
   }
   walk(srcDir);

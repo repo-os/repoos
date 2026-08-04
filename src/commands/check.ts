@@ -63,11 +63,13 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 3. Tests (if any) ───────────────────────────────────────────────
   heading("Tests");
-  const hasTestScript = existsSync("test") || existsSync("__tests__") || existsSync("tests");
   const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
-  if ((pkg.scripts && pkg.scripts.test) || hasTestScript) {
+  const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
+  const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
+  if (hasTestScript || hasTestFiles) {
+    const cmd = hasTestScript ? "bun run test" : "bun test";
     try {
-      execSync("bun test", { stdio: "inherit", timeout: 120_000 });
+      execSync(cmd, { stdio: "inherit", timeout: 120_000 });
       console.log(c.green("  ✔ Tests passed"));
       results.push(pass("tests"));
     } catch (e) {
@@ -131,11 +133,11 @@ async function runUISmokeTest(): Promise<void> {
   }
   const webkit = playwright.webkit;
 
-  // Start the server. We import the server start function dynamically so the
-  // compiled dist/ never loads server code at module import time.
+  // Start the server on an ephemeral port so the check works even when a
+  // `ros serve` instance is already running on the default port.
   const { startServer } = await import("../server/server.js");
   try {
-    server = await startServer({ host: "127.0.0.1" }) as unknown as { close: () => void; url: string };
+    server = await startServer({ host: "127.0.0.1", port: 0 }) as unknown as { close: () => void; url: string };
   } catch (e) {
     throw new Error("Failed to start server: " + (e as Error).message);
   }
@@ -158,6 +160,16 @@ async function runUISmokeTest(): Promise<void> {
       // Check page title is correct
       const title = await page.title();
       if (title !== "RepoOS") throw new Error(`Unexpected title: "${title}"`);
+
+      // Verify we are testing the BUILT Vite app, not the legacy app.html —
+      // the built SPA references hashed assets in /assets/.
+      const hashedAsset = await page.evaluate(() => {
+        const scripts = Array.from(document.querySelectorAll("script[src]"));
+        return scripts.some((s) => (s.getAttribute("src") ?? "").startsWith("/assets/"));
+      });
+      if (!hashedAsset) {
+        throw new Error("Served page is not the built Vite app (no /assets/ bundle)");
+      }
 
       // Check that the app MOUNTED — no unrendered mustache in the DOM
       const bodyText = await page.evaluate(() => document.body.innerText);
