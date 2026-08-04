@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
+import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
 const { health, connected } = storeToRefs(repo);
@@ -23,6 +24,7 @@ const { repoName } = storeToRefs(repo);
       <span class="mono">{{ repoName }}</span>
     </div>
     <div class="spacer"></div>
+    <SearchBar />
     <div class="conn" :class="connected ? 'live' : 'down'">
       <span class="dot"></span>{{ connected ? "live" : "offline" }}
     </div>

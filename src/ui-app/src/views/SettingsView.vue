@@ -1,7 +1,38 @@
 <script setup lang="ts">
+import { watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 
 const config = useConfigStore();
+const route = useRoute();
+const router = useRouter();
+
+function focusSetting(key: string): void {
+  const el = document.getElementById(`setting-${key}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash");
+  window.setTimeout(() => el.classList.remove("flash"), 2000);
+  const input = el.querySelector<HTMLElement>("input, select");
+  if (input) input.focus();
+}
+
+watch(
+  () => route.query.focus as string | undefined,
+  (key) => {
+    if (!key) return;
+    const tryFocus = (attempt = 0): void => {
+      if (config.loaded && document.getElementById(`setting-${key}`)) {
+        focusSetting(key);
+        void router.replace({ name: "settings" });
+      } else if (attempt < 20) {
+        window.setTimeout(() => tryFocus(attempt + 1), 100);
+      }
+    };
+    tryFocus();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -19,7 +50,7 @@ const config = useConfigStore();
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
             <span class="live-dot"></span>General
           </div>
-          <div v-for="f in config.visibleFields" :key="f.key" class="setting-row">
+          <div v-for="f in config.visibleFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
             <div class="setting-info">
               <div class="setting-label">{{ f.label }}</div>
               <div class="setting-desc">{{ f.description }}</div>
@@ -49,7 +80,7 @@ const config = useConfigStore();
             <div class="adv-gate">
               <div class="warning">⚠ Changing these may break the running server. Edit with care.</div>
             </div>
-            <div v-for="f in config.guardedFields" :key="f.key" class="setting-row">
+            <div v-for="f in config.guardedFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
               <div class="setting-info">
                 <div class="setting-label">{{ f.label }}</div>
                 <div class="setting-desc">{{ f.description }}</div>
