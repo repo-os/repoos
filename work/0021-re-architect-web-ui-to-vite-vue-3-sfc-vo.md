@@ -130,4 +130,4 @@ from "is the new thing wired wrong." Phases, ideally separate commits:
 - 2026-06-20T12:22:53Z · status ready→active
 - 2026-08-04T08:22:19Z · phase 1+2 landed (Vite+Vue 3 SFC scaffold + behavior-preserving port) · 7468de0
 - 2026-08-04T08:22:19Z · phase 3 landed (PWA: manifest, service worker, per-instance icons) · 63ad140
-- 2026-08-04T08:41:26Z · dev tool: `bun run compare` serves new + legacy UI side-by-side for manual review · 45bd06e
+- 2026-08-04T08:41:26Z · dev tool: `bun run compare` serves new + legacy UI side-by-side for manual review · cf8d718
