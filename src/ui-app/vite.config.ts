@@ -64,7 +64,7 @@ self.addEventListener("fetch", (e) => {
 }
 
 // RepoOS web UI — built by `bun run build:ui` into the repo-root dist/ui/,
-// which `ros serve` serves as the app shell + assets.
+// which `repoos serve` serves as the app shell + assets.
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
@@ -76,7 +76,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    // Dev-server proxy so the app can talk to a locally running `ros serve`.
+    // Dev-server proxy so the app can talk to a locally running `repoos serve`.
     proxy: {
       "/api": "http://127.0.0.1:7171",
     },

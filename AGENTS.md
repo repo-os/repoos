@@ -5,12 +5,12 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 
 ## Operating loop
 
-1. Read this file first and any relevant docs under `docs/`. Then run `ros list` to see current tasks.
+1. Read this file first and any relevant docs under `docs/`. Then run `repoos list` to see current tasks.
 2. Pick a task from `work/` whose `status: ready`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a branch named in the task's `branch:` field, or set one.
-5. Run `ros check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
-6. Set `status: review` when ready for human sign-off, and only after a green `ros check`. **Leave the branch open and do not merge it yourself** — see "Review and sign-off" below.
+5. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
+6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the branch open and do not merge it yourself** — see "Review and sign-off" below.
 
 ## Review and sign-off (review → done)
 
@@ -22,8 +22,8 @@ is moved to `done`.
 **No git remote (the common RepoOS case):**
 
 - Implementer: set `status: review`, leave the branch open, stop. Do not merge.
-- Reviewer: review the diff, run `ros check`. If changes are needed, request
-  them; the implementer fixes them on the SAME branch, re-runs `ros check`, and
+- Reviewer: review the diff, run `repoos check`. If changes are needed, request
+  them; the implementer fixes them on the SAME branch, re-runs `repoos check`, and
   re-sets `review` (still not merged).
 - Approval: the reviewer says **"move task <id> to done"**. Only then the
   implementer:
@@ -44,25 +44,25 @@ is moved to `done`.
 
 ## Definition of done
 
-Before a task moves to review, `ros check` must pass. This runs:
+Before a task moves to review, `repoos check` must pass. This runs:
 - Build staleness check (`src/` vs `dist/`)
 - Full build (`tsc` + asset copy)
 - Test suite (if any)
 - Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
 - The smoke test **skips with a clear message** if Playwright or the browser binary isn't installed
 
-One command — `ros check` — is the single bar for "did this break anything?"
+One command — `repoos check` — is the single bar for "did this break anything?"
 
 ## This repo is self-hosted — read this before running anything
 
 RepoOS manages its own roadmap. This means a few things are true that you
 cannot tell from the code alone:
 
-- The `ros` command is very likely a `bun link` dev build pointing at THIS
-  repo's `dist/`. It runs compiled JS, not the TypeScript source. **`ros`
+- The `repoos` command is very likely a `bun link` dev build pointing at THIS
+  repo's `dist/`. It runs compiled JS, not the TypeScript source. **`repoos`
   warns automatically when the build is stale** (compares a hash of `src/`
   against the build marker in `dist/.build-info.json`). If you see a staleness
-  warning, run `bun run build` before trusting any `ros` output or the UI.
+  warning, run `bun run build` before trusting any `repoos` output or the UI.
   This is the #1 way to waste time in this repo — the guardrail catches it.
 - Editing the task file format, frontmatter schema, or the parser is a
   SELF-MODIFYING act: it affects this repo's own `work/*.md` files, including
@@ -76,7 +76,7 @@ cannot tell from the code alone:
 ## Rules
 
 - **Never** move task files between folders. Status lives in frontmatter.
-- Keep frontmatter tidy; `ros` normalizes key order on write.
+- Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused branch.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
@@ -90,9 +90,9 @@ cannot tell from the code alone:
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
   `src/commands` (CLI), `src/ui` (the single-file web UI).
-- The AGENTS.md *template* that `ros init` scaffolds into other repos lives in
+- The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
-  ships to every future `ros init`, so change it deliberately and don't confuse
+  ships to every future `repoos init`, so change it deliberately and don't confuse
   it with this repo's own AGENTS.md.
 
 ## Git setup: don't let a failed command skip branch creation
@@ -109,5 +109,5 @@ never created and all work landed on `main`. Lessons:
 - Before your FIRST commit, verify you are on the intended branch, not `main`
   (`git branch --show-current`). If you're on `main`, stop and create the branch
   first (stash, branch, re-apply if needed).
-- Once `ros start` exists, branch/worktree creation is RepoOS's job, not yours —
+- Once `repoos start` exists, branch/worktree creation is RepoOS's job, not yours —
   don't hand-roll git setup for a task.

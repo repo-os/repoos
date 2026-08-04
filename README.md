@@ -42,17 +42,17 @@ npm i -D repoos
 Then in any repo:
 
 ```bash
-ros init        # scaffold work/, docs/, repoos.toml, AGENTS.md (idempotent)
+repoos init        # scaffold work/, docs/, repoos.toml, AGENTS.md (idempotent)
 ```
 
-Zero config required. `ros init` walks up to find your repo root, creates the
+Zero config required. `repoos init` walks up to find your repo root, creates the
 folders if missing, adds a sample task, and gitignores the derived cache.
 
 ## Core principles
 
 1. **Files are truth.** Every task is a markdown file. Delete the cache, lose
    nothing.
-2. **Status is a field, not a folder.** `ros mv 0012 active` edits the
+2. **Status is a field, not a folder.** `repoos mv 0012 active` edits the
    `status:` frontmatter — the file never moves. No git churn, no merge
    conflicts from two agents touching a queue.
 3. **The index is derived.** `.repoos/index.json` is a disposable cache,
@@ -64,22 +64,22 @@ folders if missing, adds a sample task, and gitignores the derived cache.
 ## Commands
 
 ```bash
-ros init                    Scaffold this repo for RepoOS
-ros list [status]           Show the board, or one column
-ros show <id>               Show a task's full spec
-ros mv <id> <status>        Move a task (inbox|ready|active|review|done)
-ros new "<title>" [flags]   Create a task
-ros index [--json]          Rebuild the derived index (--json for agents/tools)
-ros serve [--port N]        Start the local server: live API + SSE event stream
+repoos init                    Scaffold this repo for RepoOS
+repoos list [status]           Show the board, or one column
+repoos show <id>               Show a task's full spec
+repoos mv <id> <status>        Move a task (inbox|ready|active|review|done)
+repoos new "<title>" [flags]   Create a task
+repoos index [--json]          Rebuild the derived index (--json for agents/tools)
+repoos serve [--port N]        Start the local server: live API + SSE event stream
 ```
 
-**`ros new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`.
+**`repoos new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`.
 
 ```bash
-ros new "Add company dashboard" --ai --type feature --area web --priority p1
-ros mv 0012 active
-ros list ready
-ros index --json        # machine-readable, pipe to agents
+repoos new "Add company dashboard" --ai --type feature --area web --priority p1
+repoos mv 0012 active
+repoos list ready
+repoos index --json        # machine-readable, pipe to agents
 ```
 
 ## Task file format
@@ -122,14 +122,14 @@ The CLI is a thin shell over a programmatic API. The same API powers the
 ```ts
 import { createRepoOS } from "repoos";
 
-const ros = createRepoOS();              // resolves repo root + config
+const repoos = createRepoOS();              // resolves repo root + config
 
-ros.getTasks("active");                  // Task[]
-ros.getTask("0012");                     // Task | null
-ros.counts();                            // { inbox, ready, active, review, done }
-ros.updateStatus("0012", "review");      // edits frontmatter, returns Task
-ros.createTask({ title: "New thing", assignedTo: "ai", priority: "p1" });
-ros.reindex();                           // rebuild + cache the index
+repoos.getTasks("active");                  // Task[]
+repoos.getTask("0012");                     // Task | null
+repoos.counts();                            // { inbox, ready, active, review, done }
+repoos.updateStatus("0012", "review");      // edits frontmatter, returns Task
+repoos.createTask({ title: "New thing", assignedTo: "ai", priority: "p1" });
+repoos.reindex();                           // rebuild + cache the index
 ```
 
 ## Configuration
@@ -146,14 +146,14 @@ cacheDir = ".repoos"
 
 ## The local server
 
-`ros serve` starts a long-lived process that holds the index in memory, watches
+`repoos serve` starts a long-lived process that holds the index in memory, watches
 your task files, and serves a JSON API plus a live event stream. It adds no new
 business logic — it's a transport layer over the same core the CLI uses.
 
 ```bash
-ros serve                 # http://127.0.0.1:7171
-ros serve --port 8080     # custom port
-ros serve --quiet         # no terminal activity log
+repoos serve                 # http://127.0.0.1:7171
+repoos serve --port 8080     # custom port
+repoos serve --quiet         # no terminal activity log
 ```
 
 ### Endpoints
@@ -196,7 +196,7 @@ won't clobber a body edit an agent made a moment earlier.
 
 ## The web UI
 
-`ros serve` also serves a web UI at the root URL — open `http://127.0.0.1:7171`
+`repoos serve` also serves a web UI at the root URL — open `http://127.0.0.1:7171`
 in a browser. It's a live control plane: a dashboard, the work board, and a
 context-docs viewer, all reading from the API and updating in real time via the
 SSE stream. Edit a task file in your editor (or let an agent edit it) and the

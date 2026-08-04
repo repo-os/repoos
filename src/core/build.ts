@@ -1,7 +1,7 @@
 /**
  * Build-staleness detection for linked dev builds.
  *
- * When `ros` is run from a linked dev install (both `src/` and `dist/`
+ * When `repoos` is run from a linked dev install (both `src/` and `dist/`
  * exist beside the running binary), compares a hash of `src/` against the
  * marker written by the build pipeline. Stale builds produce a warning or
  * error; published installs (no `src/`) are a silent no-op.
@@ -102,7 +102,7 @@ export function checkBuild(): BuildCheckResult {
     return {
       stale: true,
       message:
-        "No build found — run `bun run build` before using `ros`.",
+        "No build found — run `bun run build` before using `repoos`.",
       code: "no-build",
     };
   }
@@ -140,7 +140,7 @@ export function checkBuild(): BuildCheckResult {
       stale: true,
       message:
         "Stale build: src/ has changed since the last `bun run build`.\n" +
-        "  You are running OLD compiled code, and `ros serve` serves the OLD UI.\n" +
+        "  You are running OLD compiled code, and `repoos serve` serves the OLD UI.\n" +
         "  Run `bun run build` to update.",
       code: "stale",
     };

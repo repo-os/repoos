@@ -1,5 +1,5 @@
 /**
- * `ros check` — the definition-of-done gate.
+ * `repoos check` — the definition-of-done gate.
  *
  * Runs, in sequence: build staleness check, full build (tsc + asset copy),
  * test suite (if present), and a headless browser smoke test that verifies
@@ -134,7 +134,7 @@ async function runUISmokeTest(): Promise<void> {
   const webkit = playwright.webkit;
 
   // Start the server on an ephemeral port so the check works even when a
-  // `ros serve` instance is already running on the default port.
+  // `repoos serve` instance is already running on the default port.
   const { startServer } = await import("../server/server.js");
   try {
     server = await startServer({ host: "127.0.0.1", port: 0 }) as unknown as { close: () => void; url: string };

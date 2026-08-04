@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RepoOS CLI entrypoint. Bin name: `ros`.
+ * RepoOS CLI entrypoint. Bin name: `repoos`.
  * Dependency-free arg routing — no commander/yargs needed for Stage 1.
  */
 import { cmdInit } from "../commands/init.js";
@@ -24,7 +24,7 @@ function help(): void {
   ${c.bold(c.cyan("RepoOS"))} ${c.dim("v" + VERSION)} — the repo is the operating system
 
   ${c.bold("USAGE")}
-    ros <command> [args]
+    repoos <command> [args]
 
   ${c.bold("COMMANDS")}
     ${c.cyan("check")}               Full definition-of-done: build, typecheck, tests, UI smoke check
@@ -37,12 +37,12 @@ function help(): void {
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
 
   ${c.bold("EXAMPLES")}
-    ${c.dim("$")} ros init
-    ${c.dim("$")} ros new "Add company dashboard" --ai --type feature --area web --priority p1
-    ${c.dim("$")} ros mv 0012 active
-    ${c.dim("$")} ros list ready
-    ${c.dim("$")} ros index --json   ${c.dim("# machine-readable, for agents/tools")}
-    ${c.dim("$")} ros serve          ${c.dim("# live API + SSE at http://127.0.0.1:7171")}
+    ${c.dim("$")} repoos init
+    ${c.dim("$")} repoos new "Add company dashboard" --ai --type feature --area web --priority p1
+    ${c.dim("$")} repoos mv 0012 active
+    ${c.dim("$")} repoos list ready
+    ${c.dim("$")} repoos index --json   ${c.dim("# machine-readable, for agents/tools")}
+    ${c.dim("$")} repoos serve          ${c.dim("# live API + SSE at http://127.0.0.1:7171")}
 `);
 }
 

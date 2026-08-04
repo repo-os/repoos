@@ -73,6 +73,6 @@ one does, it's a strategic event worth an ADR.
 
 - **Why specific decisions were made** → `docs/adr/` (immutable decision
   records).
-- **What we're building and in what order** → `docs/roadmap.md`, and `ros list`
+- **What we're building and in what order** → `docs/roadmap.md`, and `repoos list`
   for live task status.
 - **How the system is built right now** → `docs/architecture.md`.

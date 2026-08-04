@@ -1,5 +1,5 @@
 /**
- * `ros serve` — start the local RepoOS server: in-memory live index, file
+ * `repoos serve` — start the local RepoOS server: in-memory live index, file
  * watcher, JSON API, and SSE event stream. Stays running until interrupted.
  */
 import { startServer } from "../server/server.js";
@@ -24,7 +24,7 @@ export async function cmdServe(args: string[]): Promise<void> {
     if (msg.includes("EADDRINUSE")) {
       console.error(
         c.red(`  Port ${port} is in use.`) +
-          c.dim(` Try: ros serve --port ${port + 1}`),
+          c.dim(` Try: repoos serve --port ${port + 1}`),
       );
     } else {
       console.error(c.red("  Failed to start server: " + msg));

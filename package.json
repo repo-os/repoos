@@ -4,7 +4,7 @@
   "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
   "type": "module",
   "bin": {
-    "ros": "dist/cli/index.js"
+    "repoos": "dist/cli/index.js"
   },
   "main": "dist/core/repoos.js",
   "types": "dist/core/repoos.d.ts",
@@ -27,7 +27,7 @@
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && bun run build:ui",
     "build:ui": "vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts",
     "dev": "node --experimental-strip-types src/cli/index.ts",
-    "ros": "node --experimental-strip-types src/cli/index.ts",
+    "repoos": "node --experimental-strip-types src/cli/index.ts",
     "lint": "oxlint",
     "fmt": "oxfmt src/ui-app/src src/ui-app/vite.config.ts src/ui-app/tests",
     "test": "vitest run --config src/ui-app/vite.config.ts",

@@ -19,21 +19,21 @@ function pad(s: string, n: number): string {
   return s + " ".repeat(Math.max(0, n - visible.length));
 }
 
-/** `ros list [status]` — board overview or a single column. */
+/** `repoos list [status]` — board overview or a single column. */
 export function cmdList(statusArg?: string): void {
-  const ros = createRepoOS();
-  const idx = ros.reindex();
+  const repoos = createRepoOS();
+  const idx = repoos.reindex();
 
   if (idx.taskCount === 0) {
     console.log(
       c.dim("\n  No tasks yet. Create one with ") +
-        c.cyan('ros new "Title"') +
+        c.cyan('repoos new "Title"') +
         c.dim(".\n"),
     );
     return;
   }
 
-  // Default view excludes drafts; explicit `ros list draft` shows them.
+  // Default view excludes drafts; explicit `repoos list draft` shows them.
   const cols =
     statusArg && (STATUSES as readonly string[]).includes(statusArg)
       ? [statusArg as Status]
@@ -68,15 +68,15 @@ export function cmdList(statusArg?: string): void {
   }
 }
 
-/** `ros show <id>` — full task detail. */
+/** `repoos show <id>` — full task detail. */
 export function cmdShow(id?: string): void {
   if (!id) {
-    console.error(c.red("  Usage: ros show <id>"));
+    console.error(c.red("  Usage: repoos show <id>"));
     process.exitCode = 1;
     return;
   }
-  const ros = createRepoOS();
-  const t = ros.getTask(id);
+  const repoos = createRepoOS();
+  const t = repoos.getTask(id);
   if (!t) {
     console.error(c.red(`  Task #${id} not found.`));
     process.exitCode = 1;
@@ -115,19 +115,19 @@ export function cmdShow(id?: string): void {
   console.log("");
 }
 
-/** `ros mv <id> <status>` — change status (frontmatter edit). */
+/** `repoos mv <id> <status>` — change status (frontmatter edit). */
 export function cmdMv(id?: string, status?: string): void {
   if (!id || !status) {
     console.error(
-      c.red("  Usage: ros mv <id> <status>") +
+      c.red("  Usage: repoos mv <id> <status>") +
         c.dim(`   (${STATUSES.join(" | ")})`),
     );
     process.exitCode = 1;
     return;
   }
-  const ros = createRepoOS();
+  const repoos = createRepoOS();
   try {
-    const t = ros.updateStatus(id, status as Status);
+    const t = repoos.updateStatus(id, status as Status);
     console.log(
       "  " +
         c.green("moved ") +
@@ -141,7 +141,7 @@ export function cmdMv(id?: string, status?: string): void {
   }
 }
 
-/** `ros new <title> [--ai] [--type t] [--area a] [--priority p]` */
+/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p]` */
 export function cmdNew(args: string[]): void {
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
@@ -153,12 +153,12 @@ export function cmdNew(args: string[]): void {
   }
   const title = positional.join(" ").trim();
   if (!title) {
-    console.error(c.red('  Usage: ros new "Task title" [--ai] [--type bug] [--area web] [--priority p1]'));
+    console.error(c.red('  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1]'));
     process.exitCode = 1;
     return;
   }
-  const ros = createRepoOS();
-  const t = ros.createTask({
+  const repoos = createRepoOS();
+  const t = repoos.createTask({
     title,
     type: (flags.type as string) || undefined,
     area: (flags.area as string) || undefined,
@@ -173,7 +173,7 @@ export function cmdNew(args: string[]): void {
       t.title +
       c.dim("  → " + t.path),
   );
-  const res = ros.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
+  const res = repoos.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
   if (res.ok) {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
   } else {
@@ -186,10 +186,10 @@ export function cmdNew(args: string[]): void {
   }
 }
 
-/** `ros index [--json]` — rebuild cache; optionally print machine-readable JSON. */
+/** `repoos index [--json]` — rebuild cache; optionally print machine-readable JSON. */
 export function cmdIndex(args: string[]): void {
-  const ros = createRepoOS();
-  const idx = ros.reindex();
+  const repoos = createRepoOS();
+  const idx = repoos.reindex();
   if (args.includes("--json")) {
     console.log(JSON.stringify(idx, null, 2));
     return;
@@ -198,7 +198,7 @@ export function cmdIndex(args: string[]): void {
     "  " +
       c.green("indexed ") +
       idx.taskCount +
-      c.dim(" tasks  ·  cache → " + ros.config.cacheDir + "/index.json"),
+      c.dim(" tasks  ·  cache → " + repoos.config.cacheDir + "/index.json"),
   );
   const parts = STATUSES.map(
     (s) => statusColor(s)(s) + c.dim(" " + idx.counts[s]),

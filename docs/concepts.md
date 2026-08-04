@@ -78,7 +78,7 @@ How the code is organized, low to high:
 
 - **core** (`src/core`) — the engine: parse, index, mutate. Pure logic, the
   facade lives here.
-- **cli / commands** (`src/cli`, `src/commands`) — one-shot `ros` commands.
+- **cli / commands** (`src/cli`, `src/commands`) — one-shot `repoos` commands.
 - **server** (`src/server`) — the long-lived process adding *liveness*: an
   in-memory index, a file watcher, the JSON API, and the SSE stream.
 - **ui** (`src/ui`) — the web control plane, served by the server, updating live.
@@ -102,16 +102,16 @@ it's that cache, derived and disposable, not a data store.
 
 RepoOS manages its own development: this repo's roadmap lives as `work/*.md`,
 managed by the tool itself. This creates hazards that exist in no other repo —
-chiefly that editing `src/` doesn't affect the running `ros` until you rebuild.
+chiefly that editing `src/` doesn't affect the running `repoos` until you rebuild.
 If you're working in *this* repo, read the self-hosting section of `/AGENTS.md`
 before doing anything. (Rationale: ADR-0003.)
 
-## `ros init` vs the template
+## `repoos init` vs the template
 
-`ros init` scaffolds a repo for RepoOS (creates `work/`, `docs/`, `AGENTS.md`,
+`repoos init` scaffolds a repo for RepoOS (creates `work/`, `docs/`, `AGENTS.md`,
 `repoos.toml`). The `AGENTS.md` it writes comes from a **template** — a string
 in `src/commands/init.ts`. That template is *not* this repo's own `AGENTS.md`;
-editing it changes what every future `ros init` produces. Don't confuse the two.
+editing it changes what every future `repoos init` produces. Don't confuse the two.
 
 ## Quick reference
 

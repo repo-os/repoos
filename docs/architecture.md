@@ -17,7 +17,7 @@ of truth, and everything else is derived.
             |
        src/core      the engine: parse, index, mutate
             |
-       +-- src/cli + src/commands        one-shot commands (ros ...)
+       +-- src/cli + src/commands        one-shot commands (repoos ...)
        |
        +-- src/server                    long-lived: API + SSE + watcher
                   |

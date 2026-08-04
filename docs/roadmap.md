@@ -2,7 +2,7 @@
 
 This is the **staged arc** — the shape of where RepoOS is going, at a higher
 altitude than individual tasks. For live, current detail — what's in progress,
-what's ready, what's blocked — run `ros list` or open the board. The task files
+what's ready, what's blocked — run `repoos list` or open the board. The task files
 in `work/` are the source of truth for *what's happening now*; this document is
 the source of truth for *the overall direction*. When they disagree, `work/`
 wins on detail and this doc wins on intent.
@@ -13,7 +13,7 @@ The foundation is built and self-hosted: RepoOS now manages its own development
 via `work/*.md` (see `docs/adr/0003-self-hosting.md`).
 
 - **Stage 1 — core: parser, index, CLI.** Done. Repo-native tasks, the derived
-  index, and the `ros` commands (`init`, `list`, `show`, `mv`, `new`, `index`).
+  index, and the `repoos` commands (`init`, `list`, `show`, `mv`, `new`, `index`).
 - **Stage 2 — local server.** Done. In-memory live index, file watcher, JSON
   API, and an SSE event stream. Human edits, CLI edits, and agent file edits all
   converge into one live stream.

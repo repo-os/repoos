@@ -1,5 +1,5 @@
 /**
- * `ros init` — make any repo RepoOS-ready, idempotently. Safe to re-run: it
+ * `repoos init` — make any repo RepoOS-ready, idempotently. Safe to re-run: it
  * never overwrites existing files, only creates what's missing.
  */
 import {
@@ -32,13 +32,13 @@ and humans share. Tasks should live as markdown files, versioned in git.
 
 ## Desired UX
 
-Run \`ros list\` to see the board. Run \`ros show 0001\` to read a task.
+Run \`repoos list\` to see the board. Run \`repoos show 0001\` to read a task.
 Agents read these files directly for full context.
 
 ## Acceptance criteria
 
-- [ ] \`ros init\` has scaffolded work/, repoos.toml, AGENTS.md
-- [ ] \`ros list\` shows this task
+- [ ] \`repoos init\` has scaffolded work/, repoos.toml, AGENTS.md
+- [ ] \`repoos list\` shows this task
 - [ ] Editing the \`status:\` field moves it across the board
 
 ## Notes for AI
@@ -80,7 +80,7 @@ off; the implementer never merges to \`main\` at \`review\` time.
 
 - **Never** move task files between folders. Status lives in frontmatter.
 - **Never** deploy to production without human sign-off.
-- Keep frontmatter tidy; \`ros\` will normalize key order on write.
+- Keep frontmatter tidy; \`repoos\` will normalize key order on write.
 - One task = one focused branch.
 
 ## Conventions
@@ -149,11 +149,11 @@ export function cmdInit(): void {
   for (const f of skipped) console.log("  " + c.dim("exists  " + f));
   console.log(
     "\n  Next: " +
-      c.cyan("ros list") +
+      c.cyan("repoos list") +
       c.dim("  ·  ") +
-      c.cyan("ros show 0001") +
+      c.cyan("repoos show 0001") +
       c.dim("  ·  ") +
-      c.cyan('ros new "My task"') +
+      c.cyan('repoos new "My task"') +
       "\n",
   );
 }

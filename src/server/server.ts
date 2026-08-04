@@ -195,8 +195,8 @@ function safeRepoFile(root: string, urlPath: string): string | null {
 }
 
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
-  const ros = createRepoOS(opts.root);
-  const config = ros.config;
+  const repoos = createRepoOS(opts.root);
+  const config = repoos.config;
   const index = new LiveIndex(config);
   index.refreshAll();
 
@@ -305,7 +305,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!body.title || typeof body.title !== "string") {
           return json(res, 400, { error: "title is required" });
         }
-        const created = ros.createTask({
+        const created = repoos.createTask({
           title: body.title,
           type: body.type as string | undefined,
           area: body.area as string | undefined,
@@ -332,7 +332,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // ---- config read / write ----
       if (path === "/api/config" && method === "GET") {
         return json(res, 200, {
-          config: ros.config,
+          config: repoos.config,
           schema: getConfigSchema(),
         });
       }
@@ -384,14 +384,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         patchTomlConfig(join(config.root, "repoos.toml"), patch);
 
         // Update in-memory config so live endpoints see fresh values
-        Object.assign(ros.config, loadConfig(config.root));
+        Object.assign(repoos.config, loadConfig(config.root));
 
         // Re-index if operational paths changed
         if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
           index.refreshAll();
         }
 
-        return json(res, 200, { ok: true, config: ros.config });
+        return json(res, 200, { ok: true, config: repoos.config });
       }
 
       // ---- PWA: per-instance manifest + icons ----

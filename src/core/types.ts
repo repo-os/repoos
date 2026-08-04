@@ -115,7 +115,7 @@ export interface RepoOSConfig {
   defaultAssignee: Assignee;
   /** Where the derived index cache is written (relative to root). */
   cacheDir: string;
-  /** When true, stale builds cause ros to exit with an error instead of warning. */
+  /** When true, stale builds cause repoos to exit with an error instead of warning. */
   strictBuild?: boolean;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;

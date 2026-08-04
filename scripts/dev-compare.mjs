@@ -1,7 +1,7 @@
 // Dev helper: run the new (Vite + Vue 3 SFC) UI and the legacy (app.html) UI
 // side-by-side against the SAME repo data so they can be compared manually.
 //
-//   - Port 7171 (or $NEW_PORT): the built Vite app (dist/ui), same as `ros serve`.
+//   - Port 7171 (or $NEW_PORT): the built Vite app (dist/ui), same as `repoos serve`.
 //   - Port 7172 (or $LEGACY_PORT): the legacy src/ui/app.html oracle, served via
 //     a tiny static server that proxies /api (incl. SSE) to the new server.
 //
@@ -22,7 +22,7 @@ if (!existsSync(appHtml)) {
   process.exit(1);
 }
 
-// ---- new UI server (same as `ros serve`) ----
+// ---- new UI server (same as `repoos serve`) ----
 const newServer = await startServer({ root: ROOT, host: "127.0.0.1", port: NEW_PORT });
 
 // ---- legacy UI server: static files + reverse proxy to the new server ----
