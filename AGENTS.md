@@ -9,8 +9,38 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 2. Pick a task from `work/` whose `status: ready`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a branch named in the task's `branch:` field, or set one.
-5. Run `ros check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → open an MR.
-6. Set `status: review` when ready for human sign-off, and only after a green `ros check`.
+5. Run `ros check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
+6. Set `status: review` when ready for human sign-off, and only after a green `ros check`. **Leave the branch open and do not merge it yourself** — see "Review and sign-off" below.
+
+## Review and sign-off (review → done)
+
+A task in `review` is done with implementation; the branch stays open and the
+implementing agent stops. A human (or another AI) reviews it. The implementing
+agent NEVER merges to `main` at `review` time — that happens only when the task
+is moved to `done`.
+
+**No git remote (the common RepoOS case):**
+
+- Implementer: set `status: review`, leave the branch open, stop. Do not merge.
+- Reviewer: review the diff, run `ros check`. If changes are needed, request
+  them; the implementer fixes them on the SAME branch, re-runs `ros check`, and
+  re-sets `review` (still not merged).
+- Approval: the reviewer says **"move task <id> to done"**. Only then the
+  implementer:
+  1. sets `status: done` + activity entry and commits `docs(<id>): set status done`;
+  2. fast-forward merges the branch to `main`;
+  3. deletes the branch (`git branch -d <branch>`).
+  This is the only path to `done`, and only on explicit instruction.
+
+**With a git remote:**
+
+- Implementer: same as above, but at `review` time also open an MR/PR against
+  `main`. Never merge or self-approve your own MR.
+- Reviewer: approve/reject via the MR; request changes on the same branch as
+  needed (the MR is updated in place, never force-pushed).
+- Approval: the MR is merged — by the reviewer, or by the implementer ONLY on an
+  explicit "move task <id> to done". Then delete the remote + local branches and
+  set `status: done` with an activity entry (commit `docs(<id>): set status done`).
 
 ## Definition of done
 
