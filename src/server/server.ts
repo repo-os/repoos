@@ -19,7 +19,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join, dirname, resolve } from "node:path";
+import { extname, join, dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
@@ -28,6 +28,7 @@ import { getConfigSchema, patchTomlConfig, loadConfig } from "../core/config.js"
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, WriteError, type TaskPatch } from "./write.js";
+import { renderInstanceIcon } from "./icons.js";
 
 export interface ServeOptions {
   root?: string;
@@ -144,13 +145,42 @@ function serveStaticUi(
   if (!abs.startsWith(resolve(uiDir))) return false;
   if (!existsSync(abs) || !statSync(abs).isFile()) return false;
   const ext = extname(abs).toLowerCase();
+  // Service workers and the manifest must never be cached long-term, or
+  // installs/app updates would serve stale assets.
+  const noCache = rel === "sw.js" || rel === "manifest.webmanifest";
   res.writeHead(200, {
     "Content-Type": UI_MIME[ext] ?? "application/octet-stream",
-    "Cache-Control": ext === ".html" ? "no-cache" : "max-age=86400",
+    "Cache-Control": noCache ? "no-cache" : ext === ".html" ? "no-cache" : "max-age=86400",
     "Access-Control-Allow-Origin": "*",
   });
   res.end(readFileSync(abs));
   return true;
+}
+
+/** Per-instance PWA manifest so multiple RepoOS installs are distinguishable. */
+function manifestFor(root: string): string {
+  const name = basename(root) || "repoos";
+  return JSON.stringify(
+    {
+      id: "/",
+      name: `RepoOS · ${name}`,
+      short_name: `RepoOS · ${name}`,
+      description: `Repo-native task tracking for ${name}`,
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      orientation: "portrait-primary",
+      background_color: "#070a12",
+      theme_color: "#070a12",
+      icons: [
+        { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+        { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      ],
+    },
+    null,
+    2,
+  );
 }
 
 /** Guard against path traversal when serving repo doc files. */
@@ -362,6 +392,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
 
         return json(res, 200, { ok: true, config: ros.config });
+      }
+
+      // ---- PWA: per-instance manifest + icons ----
+      if (path === "/manifest.webmanifest" && method === "GET") {
+        res.writeHead(200, {
+          "Content-Type": "application/manifest+json; charset=utf-8",
+          "Cache-Control": "no-cache",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(manifestFor(config.root));
+        return;
+      }
+      const iconMatch = path.match(/^\/icons\/icon-(\d+)\.png$/);
+      if (iconMatch && method === "GET") {
+        const size = Math.min(1024, Math.max(16, Number(iconMatch[1]) || 512));
+        res.writeHead(200, {
+          "Content-Type": "image/png",
+          "Cache-Control": "max-age=86400",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(renderInstanceIcon(basename(config.root) || "repoos", size));
+        return;
       }
 
       // ---- static: built UI + doc files ----
