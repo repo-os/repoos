@@ -2,19 +2,20 @@
 id: "0031"
 title: "Work queue: independent column scroll, drafts left of inbox, collapsible columns"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0031-work-queue-scrolling-and-collapsible-cols
 created_at: "2026-08-05T07:13:06Z"
-updated_at: "2026-08-05T16:25:00Z"
+updated_at: "2026-08-05T23:40:00Z"
 ---
 ## Activity
 
 - 2026-08-05T07:13:06Z · created · unknown
 - 2026-08-05T16:25:00Z · status inbox→active · ai
+- 2026-08-05T23:40:00Z · status active→review · ai
 
 ## Problem
 
