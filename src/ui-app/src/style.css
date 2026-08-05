@@ -133,6 +133,7 @@
     --radius-lg:var(--radius); --radius-xl:calc(var(--radius) + 4px);
   }
   .cdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+  [role="combobox"] .cdot{margin-right:8px;vertical-align:middle}
   .mono{font-family:'JetBrains Mono',monospace}
   #app{height:100vh;height:100dvh;display:flex;flex-direction:column}
   ::-webkit-scrollbar{width:8px;height:8px}
