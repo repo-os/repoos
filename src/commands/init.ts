@@ -11,10 +11,11 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { findRepoRoot, loadConfig } from "../core/config.js";
@@ -168,6 +169,43 @@ function reportInit(root: string, created: string[], skipped: string[]): void {
   for (const f of skipped) console.log("  " + c.dim("exists  " + f));
 }
 
+/**
+ * Whether a directory already looks like a RepoOS project: has repoos.toml,
+ * or has a work/ dir containing a task file (id-prefixed .md, the shape
+ * `repoos init` scaffolds).
+ */
+function hasRepoOSLayout(dir: string): boolean {
+  if (existsSync(join(dir, "repoos.toml"))) return true;
+  const workDir = join(dir, "work");
+  if (!existsSync(workDir)) return false;
+  try {
+    return readdirSync(workDir).some((f) => /^\d{4}-.*\.md$/.test(f));
+  } catch {
+    return false;
+  }
+}
+
+/** Nearest ancestor (or the dir itself) that already has a RepoOS layout. */
+function findRepoOSDir(start: string): string | null {
+  let dir = resolve(start);
+  while (true) {
+    if (hasRepoOSLayout(dir)) return dir;
+    const parent = resolve(dir, "..");
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+function warnAlreadySetUp(dir: string, hint: string): void {
+  console.log(
+    c.yellow("\n  RepoOS is already set up in ") + c.cyan(dir) + c.yellow("."),
+  );
+  console.log(c.dim(`  ${hint}`));
+  console.log(
+    c.dim("  To initialize a brand-new project, run repoos init in a different (empty) directory."),
+  );
+}
+
 async function ask(question: string): Promise<string> {
   const rl = createInterface({ input, output });
   try {
@@ -224,6 +262,14 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   let target = cwd;
   if (projectName) {
     target = join(cwd, projectName);
+    if (hasRepoOSLayout(target)) {
+      warnAlreadySetUp(
+        target,
+        "Nothing to create — that project already exists.",
+      );
+      process.exitCode = 1;
+      return;
+    }
     console.log();
     const ok = await confirm(
       "  Create the project in a new subdirectory " + c.cyan(`./${projectName}`) + c.dim(`  →  ${target}`),
@@ -318,7 +364,22 @@ export async function cmdInit(args: string[]): Promise<void> {
     // existing-repo path — unchanged, idempotent, no prompts
     const root = findRepoRoot(cwd);
     const { created, skipped } = scaffoldInto(root, "");
+    if (created.length === 0) {
+      warnAlreadySetUp(root, "Nothing to initialize here.");
+      for (const f of skipped) console.log("  " + c.dim("exists  " + f));
+      return;
+    }
     reportInit(root, created, skipped);
+    return;
+  }
+
+  const alreadyHere = findRepoOSDir(cwd);
+  if (alreadyHere) {
+    warnAlreadySetUp(
+      alreadyHere,
+      "This directory isn't a git repo, but it sits inside an existing RepoOS setup.",
+    );
+    process.exitCode = 1;
     return;
   }
 

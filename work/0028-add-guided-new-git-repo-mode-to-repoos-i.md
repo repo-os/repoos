@@ -52,7 +52,13 @@ that can bootstrap a brand-new RepoOS project from scratch.
   then fail-softs (scaffolds anyway, leaves the repo uncommitted) instead of
   failing.
 - Running `repoos init` inside an existing git repo keeps today's behavior —
-  idempotent scaffold, no prompts.
+  idempotent scaffold, no prompts — but when the repo is ALREADY RepoOS-set-up
+  it now prints a clear warning ("RepoOS is already set up in <dir> … run in a
+  different (empty) directory") plus the exists list, instead of silently
+  re-printing "initialized". Same warning fires (exit 1) in a gitless dir that
+  already has a RepoOS layout (repoos.toml or a work/ with id-prefixed task
+  files), detected by walking up from the cwd and by checking the requested
+  project subdir before prompting.
 - Non-interactive (piped/CI) invocation never hangs: it prints what would
   happen and exits non-zero.
 
