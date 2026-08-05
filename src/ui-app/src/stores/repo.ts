@@ -24,7 +24,7 @@ export const STATUS_COLORS: Record<string, string> = {
 export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
 
 export interface Column {
-  id: "inbox" | "ready" | "active" | "review" | "done";
+  id: "draft" | "inbox" | "ready" | "active" | "review" | "done";
   label: string;
   color: string;
 }

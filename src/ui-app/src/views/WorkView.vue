@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { COLUMNS, useRepoStore } from "../stores/repo";
+import type { Column } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import BoardColumn from "../components/BoardColumn.vue";
-import TaskCard from "../components/TaskCard.vue";
 import Button from "../components/ui/button.vue";
+
+const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
+const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -42,31 +45,8 @@ const { workDir } = storeToRefs(repo);
     </div>
 
     <div class="board">
+      <BoardColumn :col="DRAFT_COL" :empty-text="DRAFT_EMPTY" />
       <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
-    </div>
-
-    <!-- PROPOSED (draft tasks) -->
-    <div class="draft-section">
-      <div class="draft-head">
-        <span class="cdot" style="background: var(--txt-faint)"></span>
-        Proposed / Drafts
-        <span class="col-count" style="margin-left: auto">{{ repo.byStatus("draft").length }}</span>
-      </div>
-      <div class="draft-body">
-        <div
-          v-if="!repo.byStatus('draft').length"
-          style="
-            font-size: 10.5px;
-            color: var(--txt-faint);
-            text-align: center;
-            padding: 14px 0;
-            font-family: &quot;JetBrains Mono&quot;, monospace;
-          "
-        >
-          No drafts yet. Agent proposals land here.
-        </div>
-        <TaskCard v-for="t in repo.byStatus('draft')" :key="t.id" :task="t" />
-      </div>
     </div>
   </div>
 </template>
