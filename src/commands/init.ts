@@ -4,8 +4,10 @@
  *
  * In a directory that is NOT inside a git repo, `repoos init` switches to a
  * guided, interactive flow that creates a brand-new RepoOS project from
- * scratch: optionally in a subdirectory, with an optional one-line project
- * description (seeded into the sample task) and an optional initial commit.
+ * scratch: optionally in a subdirectory, with a choice of layout (repo root
+ * vs. a `repoos/` subfolder, config file at root either way), an optional
+ * one-line project description (seeded into the sample task) and an optional
+ * initial commit.
  */
 import { spawn } from "node:child_process";
 import {
@@ -106,19 +108,24 @@ off; the implementer never merges to \`main\` at \`review\` time.
 Document stack-specific conventions here (framework, lint, test commands).
 `;
 
-const REPOOS_TOML = `# RepoOS configuration. All fields optional — these are the defaults.
+function repoosToml(layout: "root" | "repoos"): string {
+  const ns = layout === "repoos" ? `workDir = "repoos/work"\ndocsDir = "repoos/docs"\ncacheDir = "repoos/.repoos"\n` : "";
+  return `# RepoOS configuration. All fields optional — these are the defaults.
 
-workDir = "work"
-docsDir = "docs"
-defaultStatus = "inbox"
+${ns}defaultStatus = "inbox"
 defaultAssignee = "unassigned"
-cacheDir = ".repoos"
 `;
+}
 
 const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
-function scaffoldInto(root: string, description: string) {
-  const config = loadConfig(root);
+type ScaffoldLayout = "root" | "repoos";
+
+function scaffoldInto(
+  root: string,
+  description: string,
+  layout: ScaffoldLayout = "root",
+) {
   const created: string[] = [];
   const skipped: string[] = [];
 
@@ -141,9 +148,14 @@ function scaffoldInto(root: string, description: string) {
     }
   };
 
+  // Write config first so workDir/docsDir/cacheDir overrides are in effect
+  // before the dirs are created (namespace layout) — or so an existing
+  // config is respected untouched (existing-repo path).
+  ensureFile("repoos.toml", repoosToml(layout));
+  const config = loadConfig(root);
+
   ensureDir(config.workDir);
   ensureDir(config.docsDir);
-  ensureFile("repoos.toml", REPOOS_TOML);
   ensureFile("AGENTS.md", AGENTS_MD);
   ensureFile(join(config.workDir, "0001-set-up-repoos.md"), SAMPLE_TASK(description));
 
@@ -174,18 +186,20 @@ function reportInit(root: string, created: string[], skipped: string[]): void {
 
 /**
  * Whether a directory already looks like a RepoOS project: has repoos.toml,
- * or has a work/ dir containing a task file (id-prefixed .md, the shape
- * `repoos init` scaffolds).
+ * or has a work/ dir (root or repoos/ namespace) containing a task file —
+ * id-prefixed .md, the shape `repoos init` scaffolds.
  */
 function hasRepoOSLayout(dir: string): boolean {
   if (existsSync(join(dir, "repoos.toml"))) return true;
-  const workDir = join(dir, "work");
-  if (!existsSync(workDir)) return false;
-  try {
-    return readdirSync(workDir).some((f) => /^\d{4}-.*\.md$/.test(f));
-  } catch {
-    return false;
-  }
+  const hasTasks = (base: string) => {
+    if (!existsSync(base)) return false;
+    try {
+      return readdirSync(base).some((f) => /^\d{4}-.*\.md$/.test(f));
+    } catch {
+      return false;
+    }
+  };
+  return hasTasks(join(dir, "work")) || hasTasks(join(dir, "repoos", "work"));
 }
 
 /** Nearest ancestor (or the dir itself) that already has a RepoOS layout. */
@@ -224,6 +238,23 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
   const answer = (await ask(question + c.dim(hint) + " ")).toLowerCase();
   if (answer === "") return dflt;
   return answer === "y" || answer === "yes";
+}
+
+/** Ask where the scaffold should live: repo root (default) or a repoos/ subfolder. */
+async function askLayout(): Promise<ScaffoldLayout> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const answer = (
+      await ask(
+        "  Where should RepoOS live?" +
+          c.dim("  r = repo root (default), n = repoos/ subfolder — avoids clashing with existing dirs") +
+          ": ",
+      )
+    ).toLowerCase();
+    if (answer === "" || answer === "r" || answer === "root") return "root";
+    if (answer === "n" || answer === "namespace" || answer === "repoos") return "repoos";
+    console.log(c.yellow(`  "${answer}" — type r (root) or n (repoos/ subfolder).`));
+  }
+  return "root";
 }
 
 /** Open a URL in the default browser. Fail-soft (best effort, never blocks). */
@@ -337,11 +368,17 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     console.log(c.dim(`  →  Using the current directory: ${cwd}`));
   }
 
+  const layout = await askLayout();
+
   console.log();
+  const scaffoldFiles =
+    layout === "repoos"
+      ? "repoos/work/, repoos/docs/, AGENTS.md, repoos.toml, .gitignore"
+      : "work/, docs/, AGENTS.md, repoos.toml, .gitignore";
   const proceed = await confirm(
     "  Ready to " +
       c.cyan("git init") +
-      c.dim(" and scaffold work/, docs/, AGENTS.md, repoos.toml, .gitignore") +
+      c.dim(" and scaffold " + scaffoldFiles) +
       " in " +
       c.cyan(target),
     true,
@@ -375,7 +412,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     console.log(c.dim('    git config --global user.name "You" && git config --global user.email you@example.com'));
   }
 
-  const { created, skipped } = scaffoldInto(target, description);
+  const { created, skipped } = scaffoldInto(target, description, layout);
   reportInit(target, created, skipped);
 
   if (!gitOk) {

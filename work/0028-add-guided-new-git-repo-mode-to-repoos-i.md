@@ -67,6 +67,14 @@ that can bootstrap a brand-new RepoOS project from scratch.
   in use, opens the browser, and starts the server (indexing the new project —
   it chdirs into the subdir first when one was created). On no: prints the
   current CLI next-steps hint (list/show/new/serve).
+- The flow asks where the scaffold should live: the repo root (default — work/,
+  docs/ at the top level, unchanged from today) or a `repoos/` subfolder
+  (repoos/work/, repoos/docs/, cache at repoos/.repoos/) to avoid clashing
+  with existing dirs. `repoos.toml` ALWAYS stays at the repo root — it is the
+  root marker for gitless detection and governs the whole repo; only the
+  content dirs (which can collide) move. No auto-migration on later config
+  edits: changing workDir/docsDir in an existing repo is a manual, documented
+  action — RepoOS warns, never moves files.
 
 ## Acceptance criteria
 
@@ -84,6 +92,9 @@ that can bootstrap a brand-new RepoOS project from scratch.
       non-zero
 - [ ] Ends by offering to launch the web console: preferred-port prompt, free
       port fallback when busy, browser opens, server serves the new project
+- [ ] Asks where the scaffold should live (root default vs `repoos/` subfolder);
+      config file at root in both cases; `repoos list`/server read the
+      namespace layout correctly
 - [ ] No new runtime dependencies (prompts via `node:readline/promises`)
 - [ ] `repoos check` passes
 
