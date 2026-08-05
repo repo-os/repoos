@@ -28,7 +28,7 @@ function help(): void {
 
   ${c.bold("COMMANDS")}
     ${c.cyan("check")}               Full definition-of-done: build, typecheck, tests, UI smoke check
-    ${c.cyan("init")} [name]           Scaffold work/, repoos.toml, AGENTS.md; outside a git repo, runs a guided new-project flow (interactive)
+    ${c.cyan("init")} [name]           Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console
     ${c.cyan("list")} [status]        Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)

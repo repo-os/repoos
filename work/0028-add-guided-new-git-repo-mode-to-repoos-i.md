@@ -61,6 +61,12 @@ that can bootstrap a brand-new RepoOS project from scratch.
   project subdir before prompting.
 - Non-interactive (piped/CI) invocation never hangs: it prints what would
   happen and exits non-zero.
+- The flow ENDS by asking "Launch the RepoOS web console now to start
+  building? [Y/n]". On yes: prompts for a preferred port (default 7171, 0 = let
+  the OS pick), auto-falls back to the next free port if the preferred one is
+  in use, opens the browser, and starts the server (indexing the new project —
+  it chdirs into the subdir first when one was created). On no: prints the
+  current CLI next-steps hint (list/show/new/serve).
 
 ## Acceptance criteria
 
@@ -76,6 +82,8 @@ that can bootstrap a brand-new RepoOS project from scratch.
       installed, no identity) and fail-softs to "scaffolded, left uncommitted"
 - [ ] Non-TTY invocation does not block on input; prints guidance and exits
       non-zero
+- [ ] Ends by offering to launch the web console: preferred-port prompt, free
+      port fallback when busy, browser opens, server serves the new project
 - [ ] No new runtime dependencies (prompts via `node:readline/promises`)
 - [ ] `repoos check` passes
 

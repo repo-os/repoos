@@ -7,6 +7,7 @@
  * scratch: optionally in a subdirectory, with an optional one-line project
  * description (seeded into the sample task) and an optional initial commit.
  */
+import { spawn } from "node:child_process";
 import {
   appendFileSync,
   existsSync,
@@ -15,6 +16,7 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
+import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
@@ -27,6 +29,7 @@ import {
   isGitRepo,
 } from "../core/git.js";
 import { c } from "../cli/colors.js";
+import { cmdServe } from "./serve.js";
 
 const SAMPLE_TASK = (description: string) => `---
 id: "0001"
@@ -223,6 +226,57 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
   return answer === "y" || answer === "yes";
 }
 
+/** Open a URL in the default browser. Fail-soft (best effort, never blocks). */
+function openBrowser(url: string): void {
+  const cmd =
+    process.platform === "darwin"
+      ? ["open", url]
+      : process.platform === "win32"
+        ? ["cmd", "/c", "start", "", url]
+        : ["xdg-open", url];
+  try {
+    const child = spawn(cmd[0], cmd.slice(1), {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.on("error", () => {});
+    child.unref();
+  } catch {
+    /* fail-soft */
+  }
+}
+
+function probePort(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const srv = createServer();
+    srv.once("error", () => resolve(false));
+    srv.listen(port, "127.0.0.1", () => srv.close(() => resolve(true)));
+  });
+}
+
+/** First free port at or above `start` (bounded). Falls back to `start`. */
+async function nextFreePort(start: number): Promise<number> {
+  for (let p = start; p < start + 50; p++) {
+    if (await probePort(p)) return p;
+  }
+  return start;
+}
+
+async function askPort(): Promise<number> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const raw = await ask(
+      "  Preferred port" +
+        c.dim(" [7171] — Enter for default, 0 = let the OS pick a free port") +
+        ": ",
+    );
+    if (raw === "") return 7171;
+    const n = Number(raw);
+    if (Number.isInteger(n) && n >= 0 && n <= 65535) return n;
+    console.log(c.yellow(`  "${raw}" isn't a valid port.`));
+  }
+  return 7171;
+}
+
 async function guidedNewRepo(args: string[]): Promise<void> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.error(
@@ -345,6 +399,25 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     }
   }
 
+  if (await confirm("\n  Launch the RepoOS web console now to start building?", true)) {
+    const preferred = await askPort();
+    let port = preferred;
+    if (preferred > 0) {
+      const free = await nextFreePort(preferred);
+      if (free !== preferred) {
+        console.log(
+          c.yellow(`  Port ${preferred} is in use — using ${free} instead.`),
+        );
+        port = free;
+      }
+    }
+    if (target !== cwd) process.chdir(target);
+    if (port > 0) openBrowser(`http://127.0.0.1:${port}`);
+    console.log(c.dim("\n  Starting the RepoOS web console…"));
+    await cmdServe(["--port", String(port)]);
+    return;
+  }
+
   const dirHint = target === cwd ? "" : `cd ${target}  ·  `;
   console.log(
     "\n  Next: " +
@@ -353,6 +426,9 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       c.cyan("repoos show 0001") +
       c.dim("  ·  ") +
       c.cyan('repoos new "My task"') +
+      c.dim("  ·  ") +
+      c.cyan("repoos serve") +
+      c.dim(" to open the web console") +
       "\n",
   );
 }
