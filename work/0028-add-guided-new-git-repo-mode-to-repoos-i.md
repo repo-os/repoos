@@ -74,7 +74,11 @@ that can bootstrap a brand-new RepoOS project from scratch.
   root marker for gitless detection and governs the whole repo; only the
   content dirs (which can collide) move. No auto-migration on later config
   edits: changing workDir/docsDir in an existing repo is a manual, documented
-  action — RepoOS warns, never moves files.
+  action — RepoOS warns, never moves files. The "already set up" check keys
+  ONLY on `repoos.toml` presence (never scans for work/ dirs — a
+  `repoos/work/` folder could just be the actual repoos repo clone, which made
+  sibling directories false-positive), and the warning always states what it
+  detected (e.g. "Detected because <root>/repoos.toml exists").
 
 ## Acceptance criteria
 

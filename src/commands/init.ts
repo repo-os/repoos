@@ -14,7 +14,6 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
@@ -185,28 +184,23 @@ function reportInit(root: string, created: string[], skipped: string[]): void {
 }
 
 /**
- * Whether a directory already looks like a RepoOS project: has repoos.toml,
- * or has a work/ dir (root or repoos/ namespace) containing a task file —
- * id-prefixed .md, the shape `repoos init` scaffolds.
+ * The marker that identifies a RepoOS project root: repoos.toml. It lives at
+ * the root in BOTH layouts (root and repoos/ namespace), so this alone is a
+ * reliable, unambiguous signal. We deliberately do NOT scan for work/ dirs —
+ * a `repoos/work/` folder could just be the actual repoos repo clone (or any
+ * unrelated `work/`), which would make sibling directories false-positive as
+ * "already a RepoOS project".
  */
-function hasRepoOSLayout(dir: string): boolean {
-  if (existsSync(join(dir, "repoos.toml"))) return true;
-  const hasTasks = (base: string) => {
-    if (!existsSync(base)) return false;
-    try {
-      return readdirSync(base).some((f) => /^\d{4}-.*\.md$/.test(f));
-    } catch {
-      return false;
-    }
-  };
-  return hasTasks(join(dir, "work")) || hasTasks(join(dir, "repoos", "work"));
+function repoOSMarker(dir: string): string | null {
+  const p = join(dir, "repoos.toml");
+  return existsSync(p) ? p : null;
 }
 
 /** Nearest ancestor (or the dir itself) that already has a RepoOS layout. */
 function findRepoOSDir(start: string): string | null {
   let dir = resolve(start);
   while (true) {
-    if (hasRepoOSLayout(dir)) return dir;
+    if (repoOSMarker(dir)) return dir;
     const parent = resolve(dir, "..");
     if (parent === dir) return null;
     dir = parent;
@@ -217,7 +211,13 @@ function warnAlreadySetUp(dir: string, hint: string): void {
   console.log(
     c.yellow("\n  RepoOS is already set up in ") + c.cyan(dir) + c.yellow("."),
   );
-  console.log(c.dim(`  ${hint}`));
+  if (hint) console.log(c.dim(`  ${hint}`));
+  const marker = repoOSMarker(dir);
+  if (marker) {
+    console.log(
+      c.dim("  Detected because ") + c.cyan(marker) + c.dim(" exists."),
+    );
+  }
   console.log(
     c.dim("  To initialize a brand-new project, run repoos init in a different (empty) directory."),
   );
@@ -347,7 +347,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   let target = cwd;
   if (projectName) {
     target = join(cwd, projectName);
-    if (hasRepoOSLayout(target)) {
+    if (repoOSMarker(target)) {
       warnAlreadySetUp(
         target,
         "Nothing to create — that project already exists.",
