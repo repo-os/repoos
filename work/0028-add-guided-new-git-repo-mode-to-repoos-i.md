@@ -40,6 +40,10 @@ that can bootstrap a brand-new RepoOS project from scratch.
 - The flow: confirm → `git init` → scaffold the same files `repoos init`
   already produces (work/, docs/, repoos.toml, AGENTS.md, .gitignore, sample
   task 0001) → report what it did.
+- The flow OPTIONALLY asks for a one-line project description, plainly marked
+  as skippable. If given, it is seeded into the sample task 0001 body so the
+  AI/agents have initial context to guide the user on what to do next. If
+  skipped, no problem — the AI gathers that context later when it needs it.
 - Initial commit: the flow ASKS "Make an initial commit of the scaffold?
   [y/N]" (default yes). Before/while doing so it checks git health and WARNS
   loudly about anything wrong — git not installed, or no usable git identity —
@@ -57,6 +61,8 @@ that can bootstrap a brand-new RepoOS project from scratch.
       subdirectory, double-confirms the subdirectory choice, confirms before
       running, then `git init` + scaffold in place
 - [ ] `repoos init <project-name>` means subdir creation, still double-confirmed
+- [ ] Optionally prompts for a one-line project description (plainly skippable);
+      when provided, seeds it into the sample task 0001 body
 - [ ] Existing-repo behavior unchanged (no prompts, idempotent)
 - [ ] Prompts for the initial commit (default yes); warns on git problems (not
       installed, no identity) and fail-softs to "scaffolded, left uncommitted"
@@ -87,6 +93,11 @@ that can bootstrap a brand-new RepoOS project from scratch.
 - Prompt wording must make the current-dir default unambiguous — this is a
   deliberate anti-confusion requirement (the task owner cited confusing
   scaffolding tools as the motivation).
+- Project description prompt: single optional line, empty = skip. Home is the
+  seeded sample task 0001 BODY (agents read tasks directly). Do NOT add a
+  `description` field to repoos.toml/config schema in this task — that touches
+  `getConfigSchema()` and the settings editor UI and belongs in a follow-up if
+  the description should outlive the sample task.
 
 ## Scope
 
