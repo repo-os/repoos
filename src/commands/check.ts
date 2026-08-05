@@ -207,6 +207,62 @@ async function runUISmokeTest(): Promise<void> {
         consoleErrs.push("+New Task button not found in DOM");
       }
 
+      // ── CSS regression guard: utility spacing must actually apply ─────
+      // Tailwind v4 emits all its CSS inside cascade layers. If an
+      // UNLAYERED reset such as `*{padding:0;margin:0}` is ever added to
+      // style.css, it silently beats every spacing utility (unlayered rules
+      // take precedence over @layer rules), collapsing padding on shadcn
+      // controls while console stays clean. Flag any non-explicit-zero
+      // spacing utility whose computed value is 0.
+      const assertUtilitySpacing = async (where: string) => {
+        const offenders = await page.evaluate(() => {
+          const AXIS: Record<string, string[]> = {
+            p: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
+            px: ["paddingLeft", "paddingRight"],
+            py: ["paddingTop", "paddingBottom"],
+            pt: ["paddingTop"], pr: ["paddingRight"], pb: ["paddingBottom"], pl: ["paddingLeft"],
+            m: ["marginTop", "marginRight", "marginBottom", "marginLeft"],
+            mx: ["marginLeft", "marginRight"],
+            my: ["marginTop", "marginBottom"],
+            mt: ["marginTop"], mr: ["marginRight"], mb: ["marginBottom"], ml: ["marginLeft"],
+          };
+          const bad: string[] = [];
+          for (const el of Array.from(document.querySelectorAll("*"))) {
+            if (!(el instanceof HTMLElement)) continue;
+            const s = getComputedStyle(el) as unknown as Record<string, string>;
+            for (const cls of el.classList) {
+              if (cls.startsWith("-")) continue; // negative margins are intentional
+              const m = /^([pm])([trblxy]?)-(?:\[)?([1-9])/.exec(cls);
+              if (!m) continue;
+              for (const prop of AXIS[m[1] + m[2]] ?? []) {
+                if (parseFloat(s[prop] as string) <= 0) {
+                  bad.push(`${cls} → ${prop} = ${s[prop]} on <${el.tagName.toLowerCase()}>`);
+                  break;
+                }
+              }
+            }
+          }
+          return [...new Set(bad)];
+        });
+        if (offenders.length > 0) {
+          throw new Error(
+            "Utility spacing collapsed on " + where + ": " + offenders.slice(0, 6).join("; "),
+          );
+        }
+      };
+
+      await assertUtilitySpacing("dashboard");
+
+      // Re-run the guard on the settings page (covers shadcn Button + Select)
+      await page.evaluate(() => {
+        const navItems = document.querySelectorAll(".nav-item");
+        for (const item of Array.from(navItems)) {
+          if (item.textContent?.includes("Settings")) (item as HTMLElement).click();
+        }
+      });
+      await page.waitForTimeout(500);
+      await assertUtilitySpacing("settings");
+
       // Check for zero console errors
       if (consoleErrs.length > 0) {
         let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");

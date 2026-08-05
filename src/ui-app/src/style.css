@@ -110,7 +110,9 @@
     --destructive:#c93a4e; --destructive-foreground:#fff;
     --input:rgba(0,0,0,0.12); --ring:#0678b3; --radius:0.75rem;
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  @layer base{
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  }
   @theme inline{
     --color-background:var(--background); --color-foreground:var(--foreground);
     --color-card:var(--card); --color-card-foreground:var(--card-foreground);
