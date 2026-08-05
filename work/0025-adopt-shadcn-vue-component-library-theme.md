@@ -9,13 +9,14 @@ assigned_to: ai
 created_by: ""
 branch: feat/0025-shadcn-vue
 created_at: "2026-08-04T09:36:55Z"
-updated_at: "2026-08-05T08:00:14Z"
+updated_at: "2026-08-05T15:53:30Z"
 ---
 ## Activity
 
 - 2026-08-04T09:36:55Z · created · unknown
 - 2026-08-05T07:16:09Z · status inbox→active
 - 2026-08-05T08:00:14Z · status active→review · ai
+- 2026-08-05T15:53:30Z · review loop: layer global CSS reset under @layer base so Tailwind spacing utilities apply (unlayered reset was silently nullifying them); add spacing-collapse regression guard to UI smoke test · ai
 
 ## Problem
 
