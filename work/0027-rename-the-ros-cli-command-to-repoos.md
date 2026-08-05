@@ -2,20 +2,21 @@
 id: "0027"
 title: Rename the ros CLI command to repoos
 type: feature
-status: review
+status: done
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/0027-rename-ros-to-repoos
 created_at: "2026-08-04T10:48:34Z"
-updated_at: "2026-08-04T10:53:33Z"
+updated_at: "2026-08-05T05:21:56Z"
 ---
 ## Activity
 
 - 2026-08-04T10:48:34Z · created · unknown
 - 2026-08-04T10:51:29Z · status inbox→active
 - 2026-08-04T10:53:33Z · status active→review · implemented; repoos check green
+- 2026-08-05T05:21:56Z · status review→done · signed off; merged to main
 
 ## Problem
 
