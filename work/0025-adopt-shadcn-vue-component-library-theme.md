@@ -2,19 +2,20 @@
 id: "0025"
 title: Adopt shadcn-vue component library themed to existing design
 type: refactor
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0025-shadcn-vue
 created_at: "2026-08-04T09:36:55Z"
-updated_at: "2026-08-05T07:16:09Z"
+updated_at: "2026-08-05T08:00:14Z"
 ---
 ## Activity
 
 - 2026-08-04T09:36:55Z · created · unknown
 - 2026-08-05T07:16:09Z · status inbox→active
+- 2026-08-05T08:00:14Z · status active→review · ai
 
 ## Problem
 
