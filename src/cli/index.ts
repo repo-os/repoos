@@ -66,7 +66,7 @@ function main(): void {
 
   switch (cmd) {
     case "init":
-      cmdInit();
+      void cmdInit(rest);
       break;
     case "list":
     case "ls":

@@ -2,18 +2,19 @@
 id: "0028"
 title: Add guided new-git-repo mode to repoos init
 type: feature
-status: inbox
+status: active
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/0028-guided-repoos-init
 created_at: "2026-08-05T05:29:08Z"
-updated_at: "2026-08-05T05:29:08Z"
+updated_at: "2026-08-05T05:49:42Z"
 ---
 ## Activity
 
 - 2026-08-05T05:29:08Z · created · unknown
+- 2026-08-05T05:49:42Z · status inbox→active
 
 ## Problem
 

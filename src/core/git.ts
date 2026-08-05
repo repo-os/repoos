@@ -56,6 +56,33 @@ export function emptyGitInfo(): TaskGitInfo {
   return { branchExists: false, lastCommit: null, lastCommitAt: null };
 }
 
+/** Whether git is installed at all (independent of being inside a repo). */
+export function gitAvailable(root: string): boolean {
+  return git(root, ["--version"]) !== null;
+}
+
+/** `git config --get <key>` value, or null when unset or git is missing. */
+export function gitConfig(root: string, key: string): string | null {
+  const out = git(root, ["config", "--get", key]);
+  return out || null;
+}
+
+/** Run `git init` in root. True on success. */
+export function gitInit(root: string): boolean {
+  return git(root, ["init"]) !== null;
+}
+
+/**
+ * Commit the ENTIRE working tree. Only for a freshly scaffolded repo where
+ * nothing else is pre-staged (the guided `repoos init` flow) — do NOT use this
+ * where 0023's surgical `commitNewFile` applies. Fail-soft: null on failure.
+ */
+export function gitCommitAll(root: string, message: string): string | null {
+  if (git(root, ["add", "-A"]) === null) return null;
+  if (git(root, ["commit", "-m", message]) === null) return null;
+  return git(root, ["rev-parse", "--short", "HEAD"]);
+}
+
 export interface CommitNewFileResult {
   ok: boolean;
   /** Short commit hash (when committed). */
