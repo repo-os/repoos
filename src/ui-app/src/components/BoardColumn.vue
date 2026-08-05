@@ -1,19 +1,34 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useRepoStore } from "../stores/repo";
+import { computed, ref, watch } from "vue";
+import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
 import TaskCard from "./TaskCard.vue";
 
 const COLLAPSE_KEY = "repoos.board.collapsed";
 
-let saved: string[] = [];
-try {
-  saved = JSON.parse(localStorage.getItem(COLLAPSE_KEY) ?? "[]");
-} catch {
-  saved = [];
+function readSaved(): { ids: string[]; exists: boolean } {
+  try {
+    const raw = localStorage.getItem(COLLAPSE_KEY);
+    if (raw === null) return { ids: [], exists: false };
+    return { ids: JSON.parse(raw) ?? [], exists: true };
+  } catch {
+    return { ids: [], exists: false };
+  }
 }
 
-const collapsedIds = ref<Set<string>>(new Set(saved));
+const saved = readSaved();
+const collapsedIds = ref<Set<string>>(new Set(saved.ids));
+
+let defaultsApplied = false;
+const hasSavedState = saved.exists;
+
+function applyDefaults(repo: ReturnType<typeof useRepoStore>) {
+  if (defaultsApplied) return;
+  defaultsApplied = true;
+  if (hasSavedState) return;
+  const ids = ["draft", ...COLUMNS.map((c) => c.id)];
+  collapsedIds.value = new Set(ids.filter((id) => repo.byStatus(id).length === 0));
+}
 
 const props = withDefaults(
   defineProps<{ col: Column; emptyText?: string; barColor?: string }>(),
@@ -22,6 +37,14 @@ const props = withDefaults(
 
 const repo = useRepoStore();
 const collapsed = computed(() => collapsedIds.value.has(props.col.id));
+
+watch(
+  () => repo.loading,
+  (loading) => {
+    if (!loading) applyDefaults(repo);
+  },
+  { immediate: true }
+);
 
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
@@ -53,17 +76,17 @@ const toggle = () => {
       role="button"
       tabindex="0"
       :aria-expanded="!collapsed"
-      :style="collapsed ? { background: collapsedColor, color: barTextColor } : {}"
       @click="toggle"
       @keydown.enter="toggle"
       @keydown.space.prevent="toggle"
     >
-      <span
-        class="cdot"
-        :style="collapsed ? { background: 'currentColor' } : { background: col.color, boxShadow: '0 0 6px ' + col.color }"
-      ></span>
+      <span v-if="collapsed" class="col-cap" :style="{ background: collapsedColor }"></span>
+      <span v-else class="cdot" :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"></span>
       <span class="col-label">{{ col.label }}</span>
-      <span class="col-count">{{ repo.byStatus(col.id).length }}</span>
+      <span
+        class="col-count"
+        :style="collapsed ? { background: collapsedColor, color: barTextColor } : {}"
+      >{{ repo.byStatus(col.id).length }}</span>
       <svg class="col-chev" viewBox="0 0 24 24" fill="none">
         <path
           d="m6 9 6 6 6-6"
@@ -80,3 +103,4 @@ const toggle = () => {
     </div>
   </div>
 </template>
+
