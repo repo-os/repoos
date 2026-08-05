@@ -2,14 +2,14 @@
 id: "0025"
 title: Adopt shadcn-vue component library themed to existing design
 type: refactor
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0025-shadcn-vue
 created_at: "2026-08-04T09:36:55Z"
-updated_at: "2026-08-05T16:18:32Z"
+updated_at: "2026-08-05T16:22:31Z"
 ---
 ## Activity
 
@@ -19,6 +19,7 @@ updated_at: "2026-08-05T16:18:32Z"
 - 2026-08-05T15:53:30Z · review loop: layer global CSS reset under @layer base so Tailwind spacing utilities apply (unlayered reset was silently nullifying them); add spacing-collapse regression guard to UI smoke test · ai
 - 2026-08-05T16:20:00Z · review loop: give SelectItemText flex gap so status dot is no longer glued to its label; move html/body base rules into @layer base; add css-layers guard to repoos check (fails on any unlayered universal/bare-element selector) · ai
 - 2026-08-05T16:18:32Z · review loop: space the status dot in the select TRIGGER value (line-clamp forced display:-webkit-box over flex, so used margin on the combobox .cdot); verified 8px gap + centered vertically · ai
+- 2026-08-05T16:20:00Z · status review→done · nick
 
 ## Problem
 
