@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0031-work-queue-scrolling-and-collapsible-cols
 created_at: "2026-08-05T07:13:06Z"
-updated_at: "2026-08-05T23:40:00Z"
+updated_at: "2026-08-05T16:55:05Z"
 ---
 ## Activity
 
