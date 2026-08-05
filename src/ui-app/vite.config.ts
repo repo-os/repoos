@@ -71,6 +71,11 @@ export default defineConfig({
   root: appRoot,
   plugins: [vue(), tailwindcss(), repoosSw()],
   base: "/",
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   build: {
     outDir: "../../dist/ui",
     emptyOutDir: true,

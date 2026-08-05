@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Card from "./ui/card.vue";
+
 defineProps<{
   label: string;
   value: string | number;
@@ -9,7 +11,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="glass stat" :class="{ 'glow-cyan': glow }">
+  <Card class="stat" :class="{ 'glow-cyan': glow }">
     <div class="stat-top">
       <div class="stat-ico" :style="bg ? { background: bg, color: color } : {}">
         <slot></slot>
@@ -17,5 +19,5 @@ defineProps<{
     </div>
     <div class="stat-val" :style="color ? { color } : {}">{{ value }}</div>
     <div class="stat-label">{{ label }}</div>
-  </div>
+  </Card>
 </template>

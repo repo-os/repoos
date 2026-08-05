@@ -2,6 +2,16 @@
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
+import Button from "../components/ui/button.vue";
+import Card from "../components/ui/card.vue";
+import Input from "../components/ui/input.vue";
+import Switch from "../components/ui/switch.vue";
+import Select from "../components/ui/select/root.vue";
+import SelectContent from "../components/ui/select/content.vue";
+import SelectItem from "../components/ui/select/item.vue";
+import SelectTrigger from "../components/ui/select/trigger.vue";
+import SelectValue from "../components/ui/select/value.vue";
+import SelectViewport from "../components/ui/select/viewport.vue";
 
 const config = useConfigStore();
 const route = useRoute();
@@ -13,7 +23,7 @@ function focusSetting(key: string): void {
   el.scrollIntoView({ behavior: "smooth", block: "center" });
   el.classList.add("flash");
   window.setTimeout(() => el.classList.remove("flash"), 2000);
-  const input = el.querySelector<HTMLElement>("input, select");
+  const input = el.querySelector<HTMLElement>("input, select, [role='combobox']");
   if (input) input.focus();
 }
 
@@ -45,66 +55,108 @@ watch(
     <div v-if="!config.loaded" class="spin"></div>
 
     <div v-else>
-      <div class="glass" style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="setting-group">
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
             <span class="live-dot"></span>General
           </div>
-          <div v-for="f in config.visibleFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
+          <div
+            v-for="f in config.visibleFields"
+            :key="f.key"
+            :id="`setting-${f.key}`"
+            class="setting-row"
+          >
             <div class="setting-info">
               <div class="setting-label">{{ f.label }}</div>
               <div class="setting-desc">{{ f.description }}</div>
             </div>
             <div class="setting-input">
-              <select v-if="f.type === 'select'" v-model="config.form[f.key]" :disabled="config.saving">
-                <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
-              </select>
-              <label v-else-if="f.type === 'boolean'" class="toggle">
-                <input type="checkbox" v-model="config.form[f.key]" :disabled="config.saving" />
-                <span class="toggle-slider"></span>
-              </label>
+              <Select
+                v-if="f.type === 'select'"
+                :model-value="String(config.form[f.key])"
+                :disabled="config.saving"
+                @update:model-value="(v) => (config.form[f.key] = v)"
+              >
+                <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                      o.label
+                    }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <Switch
+                v-else-if="f.type === 'boolean'"
+                :checked="!!config.form[f.key]"
+                :disabled="config.saving"
+                @update:checked="(v) => (config.form[f.key] = v)"
+              />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div class="glass" style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="setting-group">
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span style="cursor: pointer; user-select: none" @click="config.showAdvanced = !config.showAdvanced">
+            <span
+              style="cursor: pointer; user-select: none"
+              @click="config.showAdvanced = !config.showAdvanced"
+            >
               <span v-if="config.showAdvanced">▾</span><span v-else>▸</span> Advanced
             </span>
           </div>
           <div v-if="config.showAdvanced">
             <div class="adv-gate">
-              <div class="warning">⚠ Changing these may break the running server. Edit with care.</div>
+              <div class="warning">
+                ⚠ Changing these may break the running server. Edit with care.
+              </div>
             </div>
-            <div v-for="f in config.guardedFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
+            <div
+              v-for="f in config.guardedFields"
+              :key="f.key"
+              :id="`setting-${f.key}`"
+              class="setting-row"
+            >
               <div class="setting-info">
                 <div class="setting-label">{{ f.label }}</div>
                 <div class="setting-desc">{{ f.description }}</div>
               </div>
               <div class="setting-input">
-                <input v-if="f.type === 'string'" type="text" v-model="config.form[f.key]" :disabled="config.saving" />
-                <input
-                  v-else-if="f.type === 'array'"
+                <Input
+                  v-if="f.type === 'string'"
+                  :model-value="String(config.form[f.key])"
                   type="text"
-                  v-model="config.form[f.key]"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (config.form[f.key] = v)"
+                />
+                <Input
+                  v-else-if="f.type === 'array'"
+                  :model-value="String(config.form[f.key])"
+                  type="text"
                   :disabled="config.saving"
                   placeholder=".md, .markdown"
+                  @update:model-value="(v) => (config.form[f.key] = v)"
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
-        <button class="btn primary" @click="config.save()" :disabled="config.saving || !config.loaded">
+        <Button
+          variant="default"
+          @click="config.save()"
+          :disabled="config.saving || !config.loaded"
+        >
           {{ config.saving ? "Saving…" : "Save changes" }}
-        </button>
+        </Button>
         <div v-if="config.msg" class="save-msg ok">{{ config.msg }}</div>
         <div v-if="config.error" class="save-msg err">{{ config.error }}</div>
       </div>
