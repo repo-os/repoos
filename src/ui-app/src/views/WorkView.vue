@@ -8,6 +8,7 @@ import Button from "../components/ui/button.vue";
 
 const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
+const DRAFT_BAR = "#3a4055";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -45,7 +46,7 @@ const { workDir } = storeToRefs(repo);
     </div>
 
     <div class="board">
-      <BoardColumn :col="DRAFT_COL" :empty-text="DRAFT_EMPTY" />
+      <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" />
       <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
     </div>
   </div>

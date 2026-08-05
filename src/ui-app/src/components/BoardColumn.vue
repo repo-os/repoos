@@ -15,12 +15,23 @@ try {
 
 const collapsedIds = ref<Set<string>>(new Set(saved));
 
-const props = withDefaults(defineProps<{ col: Column; emptyText?: string }>(), {
-  emptyText: "—",
-});
+const props = withDefaults(
+  defineProps<{ col: Column; emptyText?: string; barColor?: string }>(),
+  { emptyText: "—", barColor: "" }
+);
 
 const repo = useRepoStore();
 const collapsed = computed(() => collapsedIds.value.has(props.col.id));
+
+const collapsedColor = computed(() => props.barColor || props.col.color);
+
+const barTextColor = computed(() => {
+  const hex = collapsedColor.value.replace("#", "");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 140 ? "#0e1220" : "#ffffff";
+});
 
 const toggle = () => {
   const s = new Set(collapsedIds.value);
@@ -42,12 +53,15 @@ const toggle = () => {
       role="button"
       tabindex="0"
       :aria-expanded="!collapsed"
-      :style="collapsed ? { boxShadow: 'inset 3px 0 0 ' + col.color } : {}"
+      :style="collapsed ? { background: collapsedColor, color: barTextColor } : {}"
       @click="toggle"
       @keydown.enter="toggle"
       @keydown.space.prevent="toggle"
     >
-      <span class="cdot" :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"></span>
+      <span
+        class="cdot"
+        :style="collapsed ? { background: 'currentColor' } : { background: col.color, boxShadow: '0 0 6px ' + col.color }"
+      ></span>
       <span class="col-label">{{ col.label }}</span>
       <span class="col-count">{{ repo.byStatus(col.id).length }}</span>
       <svg class="col-chev" viewBox="0 0 24 24" fill="none">
