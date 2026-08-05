@@ -90,6 +90,9 @@ cannot tell from the code alone:
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
   `src/commands` (CLI), `src/ui` (the single-file web UI).
+- After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
+  and keep a `repoos serve` running (e.g. `repoos serve --port 7171`) so the user
+  can view the latest changes; verify with a browser probe before reporting done.
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse
