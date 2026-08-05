@@ -2,7 +2,7 @@
 id: "0031"
 title: "Work queue: independent column scroll, drafts left of inbox, collapsible columns"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -16,6 +16,7 @@ updated_at: "2026-08-05T23:40:00Z"
 - 2026-08-05T07:13:06Z · created · unknown
 - 2026-08-05T16:25:00Z · status inbox→active · ai
 - 2026-08-05T23:40:00Z · status active→review · ai
+- 2026-08-05T16:55:05Z · status review→done · human
 
 ## Problem
 
