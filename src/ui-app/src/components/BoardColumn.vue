@@ -80,13 +80,12 @@ const toggle = () => {
       @keydown.enter="toggle"
       @keydown.space.prevent="toggle"
     >
-      <span v-if="collapsed" class="col-cap" :style="{ background: collapsedColor }"></span>
+      <div v-if="collapsed" class="col-cap" :style="{ background: collapsedColor, color: barTextColor }">
+        <span class="col-cap-count">{{ repo.byStatus(col.id).length }}</span>
+      </div>
       <span v-else class="cdot" :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"></span>
       <span class="col-label">{{ col.label }}</span>
-      <span
-        class="col-count"
-        :style="collapsed ? { background: collapsedColor, color: barTextColor } : {}"
-      >{{ repo.byStatus(col.id).length }}</span>
+      <span v-if="!collapsed" class="col-count">{{ repo.byStatus(col.id).length }}</span>
       <svg class="col-chev" viewBox="0 0 24 24" fill="none">
         <path
           d="m6 9 6 6 6-6"
