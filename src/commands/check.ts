@@ -25,6 +25,83 @@ function fail(name: string, detail: string): CheckResult {
   return { name, ok: false, detail };
 }
 
+/**
+ * Split a CSS selector list on top-level commas (respecting parentheses,
+ * so `:not(.a,.b)` stays one group).
+ */
+function selectorGroups(sel: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of sel) {
+    if (ch === "(") {
+      depth++;
+      cur += ch;
+    } else if (ch === ")") {
+      depth--;
+      cur += ch;
+    } else if (ch === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
+
+/** True for a selector that targets every element of a kind: `*` or a bare tag. */
+function isBroadSelector(g: string): boolean {
+  if (g === "*") return true;
+  return /^[a-z][a-z0-9-]*([\s.#:\[>~+]|$)/.test(g);
+}
+
+/**
+ * Scan a stylesheet for UNLAYERED universal/bare-element selectors.
+ * With Tailwind v4 everything lives in cascade layers; an unlayered `*`
+ * or tag rule silently beats every utility (unlayered > @layer), which
+ * already collapsed all shadcn padding once. Scoped class/ID/attribute
+ * rules are intentional legacy overrides and stay allowed.
+ */
+function cssLayeringOffenders(css: string): string[] {
+  const out: string[] = [];
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const scopes: string[] = [];
+  const inLayer = () => scopes.includes("layer");
+  const inKeyframes = () => scopes.includes("keyframes");
+  src.split("\n").forEach((line, li) => {
+    let seg = "";
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === "{") {
+        const sel = seg.trim();
+        if (sel.startsWith("@")) {
+          if (/^@keyframes\b/.test(sel)) scopes.push("keyframes");
+          else if (/^@layer\b/.test(sel)) scopes.push("layer");
+          else scopes.push("");
+        } else {
+          if (!inLayer() && !inKeyframes()) {
+            for (const g of selectorGroups(sel)) {
+              if (isBroadSelector(g)) out.push(`${li + 1}: ${g}`);
+            }
+          }
+          scopes.push("");
+        }
+        seg = "";
+      } else if (ch === "}") {
+        scopes.pop();
+        seg = "";
+      } else if (ch === ";") {
+        seg = "";
+      } else {
+        seg += ch;
+      }
+    }
+  });
+  return out;
+}
+
 function heading(label: string): void {
   console.log(c.bold(c.cyan(`\n  ◆ ${label}`)));
 }
@@ -59,6 +136,29 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.red("  ✗ Build failed"));
     results.push(fail("build", msg));
     exitCode = 1;
+  }
+
+  // ── 2b. CSS layering guard ──────────────────────────────────────────
+  heading("CSS layering guard");
+  const cssPath = "src/ui-app/src/style.css";
+  const cssSrc = existsSync(cssPath) ? readFileSync(cssPath, "utf8") : "";
+  if (!cssSrc.includes('@import "tailwindcss"')) {
+    console.log(c.dim("  · No Tailwind v4 stylesheet — skipping"));
+    results.push(pass("css-layers", "skipped — no Tailwind v4 style.css"));
+  } else {
+    const offenders = cssLayeringOffenders(cssSrc);
+    if (offenders.length > 0) {
+      const msg =
+        "Unlayered universal/bare-element selectors (they silently beat all Tailwind utilities):\n    " +
+        offenders.slice(0, 8).join("\n    ") +
+        "\n    Wrap them in @layer base or scope them to a class/id.";
+      console.log(c.red("  ✗ " + msg.split("\n")[0]));
+      results.push(fail("css-layers", msg));
+      exitCode = 1;
+    } else {
+      console.log(c.green("  ✔ No unlayered universal/bare-element selectors"));
+      results.push(pass("css-layers"));
+    }
   }
 
   // ── 3. Tests (if any) ───────────────────────────────────────────────

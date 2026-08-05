@@ -38,7 +38,7 @@ const forwarded = useForwardProps(delegatedProps);
         <Check class="size-4 text-[var(--cyan)]" />
       </SelectItemIndicator>
     </span>
-    <SelectItemText>
+    <SelectItemText class="flex items-center gap-2">
       <slot />
     </SelectItemText>
   </SelectItem>

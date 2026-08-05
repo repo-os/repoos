@@ -112,6 +112,12 @@
   }
   @layer base{
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      font-family:'Sora',sans-serif;
+      background:var(--body-gradient),var(--bg);
+      background-attachment:fixed; color:var(--txt); -webkit-font-smoothing:antialiased;
+    }
   }
   @theme inline{
     --color-background:var(--background); --color-foreground:var(--foreground);
@@ -127,12 +133,6 @@
     --radius-lg:var(--radius); --radius-xl:calc(var(--radius) + 4px);
   }
   .cdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
-  html,body{height:100%}
-  body{
-    font-family:'Sora',sans-serif;
-    background:var(--body-gradient),var(--bg);
-    background-attachment:fixed; color:var(--txt); -webkit-font-smoothing:antialiased;
-  }
   .mono{font-family:'JetBrains Mono',monospace}
   #app{height:100vh;height:100dvh;display:flex;flex-direction:column}
   ::-webkit-scrollbar{width:8px;height:8px}
