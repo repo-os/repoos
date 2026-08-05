@@ -244,13 +244,16 @@
 
   /* board */
   .board{display:flex;gap:13px;align-items:stretch}
-  .board-col{display:flex;flex-direction:column;min-width:0;flex:1 1 0;height:calc(100vh - 211px)}
+  .board-col{display:flex;flex-direction:column;min-width:0;flex:1 1 0;height:calc(100vh - 211px);position:relative}
   .col-head{display:flex;align-items:center;gap:8px;padding:0 4px 11px;font-size:12px;font-weight:600;color:var(--txt-dim);cursor:pointer;user-select:none;flex-shrink:0;border-radius:11px}
   .col-head .cdot{width:8px;height:8px;border-radius:50%}
   .col-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .col-count{margin-left:auto;font-size:10.5px;color:var(--txt-faint);background:var(--panel);padding:1px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
   .col-chev{width:11px;height:11px;margin-left:10px;color:var(--txt-faint);flex-shrink:0;transition:transform .15s}
-  .col-body{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0;padding-right:3px}
+  .col-body{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0;padding-right:3px;scrollbar-width:none}
+  .col-body::-webkit-scrollbar{display:none}
+  .board-col.scrollable::after{content:"";position:absolute;left:0;right:3px;bottom:0;height:38px;pointer-events:none;background:linear-gradient(to top,var(--bg),transparent);z-index:1}
+  .board-col.collapsed::after{display:none}
   .col-empty{font-size:10.5px;color:var(--txt-faint);text-align:center;padding:14px 0;font-family:'JetBrains Mono',monospace}
 
   /* collapsed: slim neutral vertical bar, colored cap with count, bottom fades out */
@@ -272,6 +275,7 @@
     .board-col{flex:1 1 100%;height:auto}
     .board-col.collapsed{flex:0 0 auto;width:100%;-webkit-mask-image:none;mask-image:none}
     .col-body{overflow:visible;min-height:40px}
+    .board-col.scrollable::after{display:none}
     .board-col.collapsed .col-head{flex-direction:row;align-items:center;gap:8px;padding:9px 12px;flex:none}
     .board-col.collapsed .col-cap{width:22px;height:22px;border-radius:6px}
     .board-col.collapsed .col-cap-count{font-size:10.5px}

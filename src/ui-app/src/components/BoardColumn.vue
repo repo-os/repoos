@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
 import TaskCard from "./TaskCard.vue";
@@ -46,6 +46,36 @@ watch(
   { immediate: true }
 );
 
+const bodyEl = ref<HTMLElement | null>(null);
+const scrollable = ref(false);
+
+let mo: MutationObserver | null = null;
+let ro: ResizeObserver | null = null;
+
+const checkScroll = () => {
+  const el = bodyEl.value;
+  scrollable.value = !!(el && el.scrollHeight > el.clientHeight + 1);
+};
+
+onMounted(() => {
+  const el = bodyEl.value;
+  if (!el) return;
+  checkScroll();
+  mo = new MutationObserver(() => checkScroll());
+  mo.observe(el, { childList: true, subtree: true });
+  if ("ResizeObserver" in window) {
+    ro = new ResizeObserver(() => checkScroll());
+    ro.observe(el);
+  }
+  window.addEventListener("resize", checkScroll);
+});
+onUnmounted(() => {
+  mo?.disconnect();
+  ro?.disconnect();
+  window.removeEventListener("resize", checkScroll);
+});
+watch(collapsed, () => nextTick(checkScroll));
+
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
 const barTextColor = computed(() => {
@@ -70,7 +100,7 @@ const toggle = () => {
 </script>
 
 <template>
-  <div class="board-col" :class="{ collapsed }">
+  <div class="board-col" :class="{ collapsed, scrollable }">
     <div
       class="col-head"
       role="button"
@@ -96,7 +126,7 @@ const toggle = () => {
         />
       </svg>
     </div>
-    <div class="col-body">
+    <div ref="bodyEl" class="col-body">
       <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" />
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ emptyText }}</div>
     </div>
