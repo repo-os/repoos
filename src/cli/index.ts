@@ -28,7 +28,7 @@ function help(): void {
 
   ${c.bold("COMMANDS")}
     ${c.cyan("check")}               Full definition-of-done: build, typecheck, tests, UI smoke check
-    ${c.cyan("init")}                 Scaffold work/, repoos.toml, AGENTS.md in this repo
+    ${c.cyan("init")} [name]           Scaffold work/, repoos.toml, AGENTS.md; outside a git repo, runs a guided new-project flow (interactive)
     ${c.cyan("list")} [status]        Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
@@ -38,6 +38,7 @@ function help(): void {
 
   ${c.bold("EXAMPLES")}
     ${c.dim("$")} repoos init
+    ${c.dim("$")} repoos init myproject   # guided new-project flow outside a git repo
     ${c.dim("$")} repoos new "Add company dashboard" --ai --type feature --area web --priority p1
     ${c.dim("$")} repoos mv 0012 active
     ${c.dim("$")} repoos list ready
