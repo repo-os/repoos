@@ -14,7 +14,10 @@
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
+ *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
+ *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
+ *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -34,10 +37,12 @@ import {
   patchTomlConfig,
   loadConfig,
 } from "../core/config.js";
+import { ensureBranch } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
+import { AgentRunner, deriveBranch, resolveEngineer } from "./agents.js";
 
 export interface ServeOptions {
   root?: string;
@@ -255,7 +260,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // active SSE clients
   const clients = new Set<ServerResponse>();
-  const unsubscribe = index.on((e: RepoEvent) => {
+  const emitEvent = (e: RepoEvent) => {
     const frame = `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`;
     for (const res of clients) {
       try {
@@ -264,7 +269,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         clients.delete(res);
       }
     }
-  });
+  };
+  const unsubscribe = index.on(emitEvent);
+
+  // Track launched coding agents so Pause can signal them and the UI can
+  // reflect live running state without any polling.
+  const runner = new AgentRunner(config, emitEvent);
 
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
@@ -342,6 +352,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/skills" && method === "GET") {
         return json(res, 200, listSkills(config));
       }
+      if (path === "/api/agents/running" && method === "GET") {
+        return json(res, 200, { tasks: runner.running() });
+      }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
         const t = index.getTask(taskMatch[1]);
@@ -378,6 +391,68 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const updated = patchTaskFile(config, existing.absPath, body);
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
+      }
+      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause)$/);
+      if (actionMatch && method === "POST") {
+        const id = actionMatch[1];
+        const existing = index.getTask(id);
+        if (!existing) {
+          return json(res, 404, { error: `Task #${id} not found` });
+        }
+
+        if (actionMatch[2] === "start") {
+          if (existing.status !== "ready") {
+            return json(res, 400, {
+              error: `Only ready tasks can be started (#${id} is ${existing.status})`,
+            });
+          }
+          if (runner.isRunning(id)) {
+            return json(res, 400, { error: `Task #${id} is already running` });
+          }
+          const agent = resolveEngineer(config);
+          if (!agent) {
+            return json(res, 400, {
+              error: "No enabled engineer agent is configured on the Agents page",
+            });
+          }
+          // The task's branch wins; otherwise derive one from the title (the
+          // same rule the task drawer uses) and persist it with the transition.
+          const branch = existing.branch || deriveBranch(existing.title);
+          const branchRes = ensureBranch(config.root, branch);
+          const patch: TaskPatch = { status: "active" };
+          if (!existing.branch) patch.branch = branch;
+          const updated = patchTaskFile(config, existing.absPath, patch);
+          index.applyFileChange(updated.absPath);
+          index.refreshBranches();
+          // Best-effort spawn — never block the HTTP response on the agent.
+          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent);
+          return json(res, 200, {
+            ok: true,
+            task: index.getTask(updated.id),
+            branch,
+            git: branchRes.ok ? "ok" : branchRes.reason ?? "unknown",
+            spawn: {
+              ok: spawnRes.ok,
+              pid: spawnRes.pid,
+              reason: spawnRes.reason,
+            },
+          });
+        }
+
+        if (existing.status !== "active") {
+          return json(res, 400, {
+            error: `Only active tasks can be paused (#${id} is ${existing.status})`,
+          });
+        }
+        const stopRes = runner.stop(id);
+        const updated = patchTaskFile(config, existing.absPath, { status: "ready" });
+        index.applyFileChange(updated.absPath);
+        return json(res, 200, {
+          ok: true,
+          task: index.getTask(updated.id),
+          stopped: stopRes.stopped,
+          reason: stopRes.reason,
+        });
       }
       if (taskMatch && method === "DELETE") {
         const existing = index.getTask(taskMatch[1]);

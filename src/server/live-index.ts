@@ -25,6 +25,8 @@ export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
   | { type: "task.updated"; task: Task; prev: Partial<Task>; at: string }
   | { type: "task.deleted"; id: string; path: string; at: string }
+  | { type: "agent.running"; id: string; at: string }
+  | { type: "agent.exited"; id: string; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "hello"; taskCount: number; at: string };
 
@@ -144,6 +146,27 @@ export class LiveIndex {
       path: task?.path ?? absPath,
       at: now(),
     });
+  }
+
+  /**
+   * Re-scan local branches and re-apply `git.branchExists` to indexed tasks.
+   * Used after an agent launch creates a task's branch, so the UI's "branch
+   * exists locally" dot is correct without a full rebuild.
+   */
+  refreshBranches(): void {
+    this.useGit = isGitRepo(this.config.root);
+    this.branchCache = this.useGit
+      ? localBranches(this.config.root)
+      : new Set();
+    for (const [id, t] of this.byId) {
+      this.byId.set(id, {
+        ...t,
+        git: {
+          ...t.git,
+          branchExists: t.branch ? this.branchCache.has(t.branch) : false,
+        },
+      });
+    }
   }
 
   // ---- reads ----

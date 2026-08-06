@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X } from "lucide-vue-next";
+import { X, Play, Pause } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -68,6 +68,30 @@ async function setStatus(status: string): Promise<void> {
   ui.saving = true;
   try {
     await repo.setStatus(ui.active, status);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function startWork(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.startWork(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function pauseWork(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.pauseWork(ui.active);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -374,6 +398,31 @@ function cancelDraft(): void {
               </SelectViewport>
             </SelectContent>
           </Select>
+          <div v-if="ui.active.status === 'ready' || ui.active.status === 'active'" class="field" style="margin-top: 16px">
+            <Button
+              v-if="ui.active.status === 'ready'"
+              variant="accent"
+              class="w-full"
+              :disabled="ui.saving"
+              @click="startWork"
+            >
+              <Play class="size-3.5" />
+              Start work
+            </Button>
+            <Button
+              v-else
+              variant="outline"
+              class="w-full"
+              :disabled="ui.saving"
+              @click="pauseWork"
+            >
+              <Pause class="size-3.5" />
+              Pause work
+            </Button>
+            <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
+              <span class="tc-run"></span> agent running
+            </span>
+          </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
               <label>Type</label>

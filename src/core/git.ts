@@ -56,6 +56,36 @@ export function emptyGitInfo(): TaskGitInfo {
   return { branchExists: false, lastCommit: null, lastCommitAt: null };
 }
 
+export interface EnsureBranchResult {
+  ok: boolean;
+  created: boolean;
+  reason?: string;
+}
+
+/**
+ * Make sure the repo is on `branch`, creating it from the current HEAD when it
+ * does not exist. Fail-soft: returns `{ ok: false, reason }` when git is
+ * missing or the checkout fails, so agent launch can degrade gracefully instead
+ * of crashing the server.
+ */
+export function ensureBranch(root: string, branch: string): EnsureBranchResult {
+  if (!isGitRepo(root)) {
+    return { ok: false, created: false, reason: "not a git repository" };
+  }
+  const cur = currentBranch(root);
+  if (cur === branch) return { ok: true, created: false };
+  if (!localBranches(root).has(branch)) {
+    if (git(root, ["checkout", "-b", branch]) === null) {
+      return { ok: false, created: false, reason: "could not create branch" };
+    }
+    return { ok: true, created: true };
+  }
+  if (git(root, ["checkout", branch]) === null) {
+    return { ok: false, created: false, reason: "could not check out branch" };
+  }
+  return { ok: true, created: false };
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;

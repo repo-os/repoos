@@ -59,6 +59,12 @@ function mockFetch(): void {
       return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
     if (url.includes("/api/index"))
       return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+    if (url.includes("/api/agents/running"))
+      return json({ tasks: [] });
+    if (url.includes("/start"))
+      return json({ ok: true });
+    if (url.includes("/pause"))
+      return json({ ok: true });
     throw new Error("unexpected fetch: " + url);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -135,5 +141,40 @@ describe("repo store SSE ingestion", () => {
       es.emit("task.created", { type: "task.created", task: makeTask({ id: String(i).padStart(4, "0") }) });
     }
     expect(repo.feed.length).toBe(30);
+  });
+});
+
+describe("agent running state", () => {
+  it("marks a task running on agent.running and clears it on agent.exited", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    expect(repo.isRunning("0001")).toBe(false);
+
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    expect(repo.isRunning("0001")).toBe(true);
+    expect(repo.runningIds).toEqual(["0001"]);
+    expect(repo.feed[0].kind).toBe("agent.running");
+
+    es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+    expect(repo.isRunning("0001")).toBe(false);
+    expect(repo.runningIds).toEqual([]);
+  });
+
+  it("does not duplicate a task in the running list", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    expect(repo.runningIds).toEqual(["0001"]);
+  });
+
+  it("startWork and pauseWork hit the launch endpoints", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ status: "ready" });
+    await expect(repo.startWork(task)).resolves.toBeUndefined();
+    await expect(repo.pauseWork(makeTask({ status: "active" }))).resolves.toBeUndefined();
   });
 });

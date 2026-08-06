@@ -1,18 +1,49 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 
-defineProps<{ task: Task }>();
+const props = defineProps<{ task: Task }>();
 
 const ui = useUiStore();
 const repo = useRepoStore();
+
+const busy = ref(false);
+
+async function startWork(): Promise<void> {
+  if (busy.value) return;
+  busy.value = true;
+  try {
+    await repo.startWork(props.task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function pauseWork(): Promise<void> {
+  if (busy.value) return;
+  busy.value = true;
+  try {
+    await repo.pauseWork(props.task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
 </script>
 
 <template>
   <div
     class="task-card"
-    :class="{ flash: repo.flashId === task.id }"
+    :class="{
+      flash: repo.flashId === task.id,
+      running: repo.isRunning(task.id),
+      'has-action': task.status === 'ready' || task.status === 'active',
+    }"
     @click="ui.openTask(task)"
   >
     <div class="tc-top">
@@ -35,6 +66,33 @@ const repo = useRepoStore();
         {{ task.branch.split("/").pop() }}
       </span>
       <span class="tc-git" v-if="task.git && task.git.branchExists" title="branch exists locally">●</span>
+      <span v-if="task.status === 'active' && repo.isRunning(task.id)" class="tc-run" title="agent running">running</span>
+      <div class="tc-actions">
+        <button
+          v-if="task.status === 'ready'"
+          class="tc-btn start"
+          :disabled="busy"
+          title="Launch the engineer agent on this task"
+          @click.stop="startWork"
+        >
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M8 5v14l11-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          </svg>
+          Start work
+        </button>
+        <button
+          v-else-if="task.status === 'active'"
+          class="tc-btn pause"
+          :disabled="busy"
+          title="Stop the agent and return the task to ready"
+          @click.stop="pauseWork"
+        >
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M10 4H6v16h4zM18 4h-4v16h4z" stroke="currentColor" stroke-width="2" />
+          </svg>
+          Pause work
+        </button>
+      </div>
     </div>
   </div>
 </template>

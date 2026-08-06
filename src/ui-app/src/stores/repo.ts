@@ -47,6 +47,7 @@ export const useRepoStore = defineStore("repo", () => {
   const feed = reactive<FeedItem[]>([]);
   const eventCount = ref(0);
   const flashId = ref<string | null>(null);
+  const runningIds = ref<string[]>([]);
 
   let feedKey = 0;
   let es: EventSource | null = null;
@@ -113,6 +114,14 @@ export const useRepoStore = defineStore("repo", () => {
       if (ui.active && ui.active.id === e.id) ui.close();
       recount();
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
+    } else if (e.type === "agent.running") {
+      if (!runningIds.value.includes(e.id)) {
+        runningIds.value = [...runningIds.value, e.id];
+      }
+      pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
+    } else if (e.type === "agent.exited") {
+      runningIds.value = runningIds.value.filter((x) => x !== e.id);
+      pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
     } else if (e.type === "index.rebuilt") {
       void refresh();
     }
@@ -127,7 +136,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "agent.running", "agent.exited"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -158,6 +167,32 @@ export const useRepoStore = defineStore("repo", () => {
     await patchTask(t.id, { status });
   }
 
+  const isRunning = (id: string): boolean => runningIds.value.includes(id);
+
+  async function startWork(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/start`, {
+      method: "POST",
+    });
+    if (!r.ok) throw new Error(r.reason ?? "could not start work");
+  }
+
+  async function pauseWork(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/pause`, {
+      method: "POST",
+    });
+    if (!r.ok) throw new Error(r.reason ?? "could not pause work");
+  }
+
+  /** Hydrate the running marker on reload so a running agent is never phantom. */
+  async function fetchRunning(): Promise<void> {
+    try {
+      const r = await api<{ tasks: { id: string }[] }>("/api/agents/running");
+      runningIds.value = r.tasks.map((t) => t.id);
+    } catch {
+      /* endpoint unavailable — running state is best-effort */
+    }
+  }
+
   async function createTask(form: {
     title: string;
     type: string;
@@ -181,6 +216,7 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       health.value = await api<Health>("/api/health");
       await refresh();
+      await fetchRunning();
     } catch {
       /* server not reachable — UI still renders */
     } finally {
@@ -199,6 +235,7 @@ export const useRepoStore = defineStore("repo", () => {
     feed,
     eventCount,
     flashId,
+    runningIds,
     repoName,
     workDir,
     total,
@@ -214,6 +251,10 @@ export const useRepoStore = defineStore("repo", () => {
     patchTask,
     createTask,
     deleteTask,
+    isRunning,
+    startWork,
+    pauseWork,
+    fetchRunning,
     onError,
     init,
   };
