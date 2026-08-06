@@ -2,14 +2,14 @@
 id: "0037"
 title: Add start work / pause work buttons to task cards
 type: feature
-status: inbox
+status: active
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/0037-start-pause-work
 created_at: "2026-08-06T09:29:18Z"
-updated_at: "2026-08-06T09:29:18Z"
+updated_at: "2026-08-06T10:33:15Z"
 ---
 ## Activity
 
@@ -101,3 +101,8 @@ button that drives an AI agent:
 - 0035 established the Agents page (`cli`/`model`/`instructions` per agent)
   this task launches; 0036 is building freeform task creation via the PM agent,
   the first consumer of the same launch mechanics.
+
+## Activity
+
+- 2026-08-06T10:33:13Z · status inbox→ready
+- 2026-08-06T10:33:15Z · status ready→active
