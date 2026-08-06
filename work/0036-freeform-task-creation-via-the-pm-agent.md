@@ -2,14 +2,14 @@
 id: "0036"
 title: Freeform task creation via the PM agent
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0036-freeform-task-creation
 created_at: "2026-08-06T08:47:55Z"
-updated_at: "2026-08-06T21:36:00Z"
+updated_at: "2026-08-06T15:05:27Z"
 ---
 ## Activity
 
@@ -106,3 +106,7 @@ The **New task** drawer gains a freeform flow as its default:
 
 - 0035 (Agents page) provides the PM agent this task consumes.
 - 0004 (editable tasks) gives the drawer edit view the generated task opens in.
+
+## Activity
+
+- 2026-08-06T15:05:27Z · status review→done
