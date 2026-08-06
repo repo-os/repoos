@@ -2,14 +2,14 @@
 id: "0038"
 title: Add skills section to the Repo Context page
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0038-skills-section
 created_at: "2026-08-06T09:35:00Z"
-updated_at: "2026-08-06T09:56:09Z"
+updated_at: "2026-08-06T10:26:10Z"
 ---
 ## Activity
 
@@ -17,6 +17,7 @@ updated_at: "2026-08-06T09:56:09Z"
 - 2026-08-06T09:49:33Z · status inbox→ready
 - 2026-08-06T09:49:34Z · status ready→active
 - 2026-08-06T09:56:09Z · status active→review · implementation on feat/0038-skills-section (a71bac9)
+- 2026-08-06T10:26:10Z · status review→done · signed off; merged to main
 
 ## Problem
 
