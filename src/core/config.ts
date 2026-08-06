@@ -54,6 +54,7 @@ export const DEFAULT_AGENT_NAMES = DEFAULT_AGENTS.map((a) => a.name);
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",
   docsDir: "docs",
+  skillsDir: "skills",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
   defaultAssignee: "unassigned",
@@ -142,6 +143,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const get = (k: string) => parsed[k] ?? parsed[`repoos.${k}`];
     if (typeof get("workDir") === "string") cfg.workDir = get("workDir") as string;
     if (typeof get("docsDir") === "string") cfg.docsDir = get("docsDir") as string;
+    if (typeof get("skillsDir") === "string") cfg.skillsDir = get("skillsDir") as string;
     if (Array.isArray(get("taskExtensions")))
       cfg.taskExtensions = get("taskExtensions") as string[];
     if (typeof get("defaultStatus") === "string")
@@ -250,6 +252,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: DEFAULT_CONFIG.docsDir,
       description: "Directory holding context docs (relative to repo root)",
+    },
+    {
+      key: "skillsDir",
+      label: "Skills directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.skillsDir,
+      description: "Directory holding skills (relative to repo root)",
     },
     {
       key: "taskExtensions",

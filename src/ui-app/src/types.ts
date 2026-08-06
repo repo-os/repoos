@@ -86,3 +86,9 @@ export interface DocMeta {
   path: string;
   title: string;
 }
+
+export interface SkillMeta {
+  path: string;
+  name: string;
+  description: string;
+}

@@ -11,6 +11,7 @@
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
+ *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
@@ -22,7 +23,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RepoOSConfig, Status } from "../core/types.js";
+import type { RepoOSConfig, SkillMeta, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
 import {
@@ -107,6 +108,45 @@ function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
     }
   };
   walk(docsPath);
+  return out;
+}
+
+/** Read a field from a skill file's `---` frontmatter block, or null. */
+function skillField(text: string, field: string): string | null {
+  const fm = text.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!fm) return null;
+  const m = fm[1].match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
+  if (!m) return null;
+  return m[1].trim().replace(/^["']|["']$/g, "");
+}
+
+/**
+ * List repo skills: each is `skills/<name>/SKILL.md` with optional frontmatter
+ * (`name`, `description`). Malformed or unreadable skills are skipped, never
+ * fatal — a repo with no skills dir yields an empty list.
+ */
+function listSkills(config: RepoOSConfig): SkillMeta[] {
+  const out: SkillMeta[] = [];
+  const skillsPath = join(config.root, config.skillsDir);
+  if (!existsSync(skillsPath)) return out;
+  for (const e of readdirSync(skillsPath)) {
+    if (e.startsWith(".")) continue;
+    const dir = join(skillsPath, e);
+    if (!statSync(dir).isDirectory()) continue;
+    const file = join(dir, "SKILL.md");
+    if (!existsSync(file)) continue;
+    let text = "";
+    try {
+      text = readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+    out.push({
+      path: `${config.skillsDir.split("\\").join("/")}/${e}/SKILL.md`,
+      name: skillField(text, "name") ?? e,
+      description: skillField(text, "description") ?? "",
+    });
+  }
   return out;
 }
 
@@ -298,6 +338,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/docs" && method === "GET") {
         return json(res, 200, listDocs(config));
+      }
+      if (path === "/api/skills" && method === "GET") {
+        return json(res, 200, listSkills(config));
       }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
