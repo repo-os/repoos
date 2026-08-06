@@ -40,13 +40,13 @@ function applyDefaults(repo: ReturnType<typeof useRepoStore>) {
 }
 
 const props = withDefaults(
-  defineProps<{ col: Column; emptyText?: string; barColor?: string }>(),
-  { emptyText: "—", barColor: "" }
+  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean }>(),
+  { emptyText: "—", barColor: "", forceExpand: false }
 );
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const collapsed = computed(() => collapsedIds.value.has(props.col.id));
+const collapsed = computed(() => !props.forceExpand && collapsedIds.value.has(props.col.id));
 
 const displayEmpty = computed(() =>
   config.uiTheme === "gen z"

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
@@ -10,9 +12,22 @@ const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
 const DRAFT_BAR = "#3a4055";
 
+const STATUS_IDS = new Set(["draft", "inbox", "ready", "active", "review", "done"]);
+
 const repo = useRepoStore();
 const ui = useUiStore();
+const route = useRoute();
 const { workDir } = storeToRefs(repo);
+
+const statusFilter = computed<string | null>(() => {
+  const s = route.query.status;
+  return typeof s === "string" && STATUS_IDS.has(s) ? s : null;
+});
+
+const filterCol = computed<Column | null>(() => {
+  if (statusFilter.value === "draft") return DRAFT_COL;
+  return COLUMNS.find((c) => c.id === statusFilter.value) ?? null;
+});
 </script>
 
 <template>
@@ -45,9 +60,27 @@ const { workDir } = storeToRefs(repo);
       </Button>
     </div>
 
+    <div v-if="statusFilter" class="filter-bar">
+      <span class="filter-chip">
+        <span class="cdot" :style="{ background: filterCol!.color, boxShadow: '0 0 6px ' + filterCol!.color }"></span>
+        {{ filterCol!.label }} · {{ repo.byStatus(statusFilter).length }}
+      </span>
+      <router-link to="/work" class="filter-clear">Show all statuses</router-link>
+    </div>
+
     <div class="board">
-      <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" />
-      <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
+      <template v-if="statusFilter">
+        <BoardColumn
+          :col="filterCol!"
+          :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
+          :empty-text="filterCol!.id === 'draft' ? DRAFT_EMPTY : '—'"
+          force-expand
+        />
+      </template>
+      <template v-else>
+        <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" />
+        <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
+      </template>
     </div>
   </div>
 </template>

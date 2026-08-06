@@ -212,6 +212,10 @@
   /* stats */
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-bottom:22px}
   .stat{padding:15px 17px}
+  .stat-link{display:block;text-decoration:none;border-radius:15px;transition:transform .15s ease,box-shadow .15s ease}
+  .stat-link:hover{transform:translateY(-2px)}
+  .stat-link:hover .stat{box-shadow:var(--card-glow)}
+  .stat-link:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
   .stat-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
   .stat-ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center}
   .stat-ico svg{width:16px;height:16px}
@@ -244,6 +248,12 @@
   .feed-empty{padding:40px 17px;text-align:center;color:var(--txt-faint);font-size:12px;font-family:'JetBrains Mono',monospace}
 
   /* board */
+  .filter-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .filter-chip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--txt);background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:6px 13px}
+  .filter-chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .filter-clear{font-size:12px;font-weight:600;color:var(--cyan);text-decoration:none}
+  .filter-clear:hover{text-decoration:underline}
+
   .board{display:flex;gap:13px;align-items:stretch}
   .board-col{display:flex;flex-direction:column;min-width:0;flex:1 1 0;height:calc(100vh - 211px);position:relative}
   .col-head{display:flex;align-items:center;gap:8px;padding:0 4px 11px;font-size:12px;font-weight:600;color:var(--txt-dim);cursor:pointer;user-select:none;flex-shrink:0;border-radius:11px}
