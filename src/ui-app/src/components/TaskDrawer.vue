@@ -156,8 +156,10 @@ const specTextarea = ref<HTMLTextAreaElement | null>(null);
 function autoGrowSpec(): void {
   const el = specTextarea.value;
   if (!el) return;
+  // scrollHeight excludes the border (box-sizing: border-box); add it back so
+  // the box exactly fits its content and never shows an internal scrollbar.
   el.style.height = "auto";
-  el.style.height = `${el.scrollHeight}px`;
+  el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
 }
 
 watch(specEditing, (editing) => {

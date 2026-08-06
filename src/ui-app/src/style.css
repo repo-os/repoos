@@ -367,7 +367,7 @@
   .save-title{font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap}
   .save-sub{font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;white-space:nowrap}
   .save-actions{display:flex;gap:8px;margin-left:auto;flex:none}
-  .md-edit{width:100%;min-height:170px;padding:12px 14px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;resize:vertical;margin-bottom:6px}
+  .md-edit{width:100%;min-height:170px;padding:12px 14px 52px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;resize:none;overflow:hidden;margin-bottom:6px}
   .md-edit:focus{outline:none;border-color:var(--border-bright)}
   .md-card{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:text;margin-bottom:8px}
   .md-card-body{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--txt);padding:12px 14px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);white-space:pre-wrap;word-break:break-word;transition:border-color .15s}
