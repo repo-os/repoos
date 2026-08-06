@@ -2,7 +2,7 @@
 id: "0004"
 title: Make issues editable in UI
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -18,6 +18,7 @@ updated_at: "2026-08-06T08:03:43Z"
 - 2026-08-06T07:46:22Z · spec fleshed out: full edit form in task drawer · ai
 - 2026-08-06T07:50:00Z · status ready→active
 - 2026-08-06T07:58:00Z · status active→review
+- 2026-08-06T09:15:00Z · status review→done
 
 ## Problem
 
