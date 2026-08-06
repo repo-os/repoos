@@ -2,14 +2,14 @@
 id: "0037"
 title: Add start work / pause work buttons to task cards
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0037-start-pause-work
 created_at: "2026-08-06T09:29:18Z"
-updated_at: "2026-08-06T10:33:15Z"
+updated_at: "2026-08-06T10:41:00Z"
 ---
 ## Activity
 
@@ -106,3 +106,4 @@ button that drives an AI agent:
 
 - 2026-08-06T10:33:13Z · status inbox→ready
 - 2026-08-06T10:33:15Z · status ready→active
+- 2026-08-06T10:41:00Z · status active→review · implementation on feat/0037-start-pause-work (d09a11e): POST /api/tasks/:id/start|pause, AgentRunner spawn/registry (SIGTERM→SIGKILL), ensureBranch, agent.running/exited SSE events, Start/Pause buttons on cards + drawer
