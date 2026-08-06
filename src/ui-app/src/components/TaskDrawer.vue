@@ -97,14 +97,13 @@ interface TaskDraft {
   priority: string;
   area: string;
   assignedTo: string;
-  branch: string;
   body: string;
 }
 
-const DRAFT_FIELDS = ["title", "type", "priority", "area", "assignedTo", "branch", "body"] as const;
+const DRAFT_FIELDS = ["title", "type", "priority", "area", "assignedTo", "body"] as const;
 
 function emptyDraft(): TaskDraft {
-  return { title: "", type: "feature", priority: "p2", area: "", assignedTo: "", branch: "", body: "" };
+  return { title: "", type: "feature", priority: "p2", area: "", assignedTo: "", body: "" };
 }
 
 /** Editable field values while the drawer is open. */
@@ -122,7 +121,6 @@ function initDraft(t: Task): void {
   draft.priority = t.priority;
   draft.area = t.area;
   draft.assignedTo = t.assignedTo;
-  draft.branch = t.branch;
   draft.body = t.body;
   baseline();
 }
@@ -132,6 +130,26 @@ function changedFields(): (keyof TaskDraft)[] {
 }
 
 const dirty = computed(() => changedFields().length > 0);
+
+/** Title and branch are frozen once a task leaves the planning stages. */
+const locked = computed(() => {
+  const s = ui.active?.status;
+  return s === "active" || s === "review" || s === "done";
+});
+
+const slugify = (title: string): string =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+
+/** Branch is never typed: it derives from the title unless one is already set. */
+const derivedBranch = computed(() => `feat/${slugify(draft.title)}`);
+const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value);
+
+/** Spec body is a readable card that expands into a large textarea on click. */
+const specEditing = ref(false);
 
 let draftFromId = "";
 watch(
@@ -145,6 +163,7 @@ watch(
       // Different task (or drawer just reopened): load a fresh draft.
       initDraft(t);
       draftFromId = t.id;
+      specEditing.value = false;
       return;
     }
     // Same task got updated (SSE task.updated). Resync only when the user has
@@ -157,10 +176,21 @@ async function saveDraft(): Promise<void> {
   if (!ui.active || !dirty.value) return;
   const patch: Record<string, string> = {};
   for (const k of changedFields()) patch[k] = draft[k];
+  // Auto-derive the branch from the title for planning-stage tasks — but only
+  // when the branch is unset or was itself derived. Never clobber an explicit
+  // branch such as "feat/0026-delete-tasks".
+  if (!locked.value) {
+    const prevDerived = `feat/${slugify(original.title)}`;
+    const hadDerived = ui.active.branch === "" || ui.active.branch === prevDerived;
+    if (patch.title !== undefined && hadDerived && derivedBranch.value !== ui.active.branch) {
+      patch.branch = derivedBranch.value;
+    }
+  }
   ui.saving = true;
   try {
     await repo.patchTask(ui.active.id, patch);
     baseline();
+    specEditing.value = false;
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -170,6 +200,7 @@ async function saveDraft(): Promise<void> {
 
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
+  specEditing.value = false;
 }
 </script>
 
@@ -296,20 +327,24 @@ function cancelDraft(): void {
           </DialogClose>
         </div>
         <div class="drawer-body">
-          <div class="save-bar">
-            <span v-if="dirty" class="save-hint">unsaved changes</span>
-            <div class="save-actions">
-              <Button variant="outline" size="sm" :disabled="ui.saving || !dirty" @click="cancelDraft">
-                Cancel
-              </Button>
-              <Button variant="default" size="sm" :disabled="ui.saving || !dirty" @click="saveDraft">
-                Save
-              </Button>
+          <template v-if="!locked">
+            <div class="field">
+              <label for="et-title">Title</label>
+              <Input id="et-title" v-model="draft.title" placeholder="Task title" />
             </div>
-          </div>
+          </template>
+          <template v-else>
+            <div class="field">
+              <label>Title</label>
+              <div class="ro-value">{{ ui.active.title }}</div>
+            </div>
+          </template>
           <div class="field">
-            <label for="et-title">Title</label>
-            <Input id="et-title" v-model="draft.title" placeholder="Task title" />
+            <label>Branch</label>
+            <div class="ro-value mono" style="color: var(--cyan)">
+              {{ effectiveBranch || "—" }}
+              <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
+            </div>
           </div>
           <div class="md-h" style="margin-top: 14px">move to</div>
           <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
@@ -370,12 +405,14 @@ function cancelDraft(): void {
               </datalist>
             </div>
           </div>
-          <div class="field">
-            <label for="et-branch">Branch</label>
-            <Input id="et-branch" v-model="draft.branch" placeholder="feat/…" />
-          </div>
           <div class="md-h" style="margin-top: 18px">spec</div>
-          <textarea class="md-edit" v-model="draft.body" rows="10" placeholder="Markdown body"></textarea>
+          <button v-if="!specEditing" class="md-card" type="button" @click="specEditing = true">
+            <div class="md-card-body">{{ draft.body || "No spec yet — click to add." }}</div>
+          </button>
+          <template v-else>
+            <textarea class="md-edit" v-model="draft.body" rows="12" placeholder="Markdown body"></textarea>
+            <div class="spec-hint">Click Save to apply the spec.</div>
+          </template>
           <div class="md-h" style="margin-top: 4px">meta</div>
           <div class="meta-grid">
             <div class="meta-cell">
@@ -436,6 +473,23 @@ function cancelDraft(): void {
                 </Button>
               </div>
             </template>
+          </div>
+        </div>
+        <div v-if="dirty" class="save-bar">
+          <div class="save-callout">
+            <span class="save-dot"></span>
+            <div>
+              <div class="save-title">Unsaved changes</div>
+              <div class="save-sub">Save to apply your edits</div>
+            </div>
+          </div>
+          <div class="save-actions">
+            <Button variant="outline" size="sm" :disabled="ui.saving" @click="cancelDraft">
+              Cancel
+            </Button>
+            <Button variant="default" size="sm" :disabled="ui.saving" @click="saveDraft">
+              Save
+            </Button>
           </div>
         </div>
       </template>

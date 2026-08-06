@@ -7,9 +7,9 @@ priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: "feat/0004-edit-task-panel"
+branch: feat/0004-edit-task-panel
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-08-06T07:58:00Z"
+updated_at: "2026-08-06T08:03:43Z"
 ---
 ## Activity
 
@@ -41,16 +41,33 @@ editable; identity and server-managed metadata stay read-only.
 - priority (select: p0 / p1 / p2 / p3)
 - area (text input)
 - assigned_to (select: unassigned / ai / human, plus free text)
-- branch (text input)
 - body — the spec markdown (monospace textarea, edited verbatim)
 - status — keeps its existing instant-apply select (already shipped)
 
+**Branch is derived, not typed.** The branch field is read-only in the UI. It
+is auto-derived from the title (`feat/<slugified-title>`) and written on Save
+— but only when the branch is unset or was itself previously derived. An
+explicit branch such as `feat/0026-delete-tasks` is never clobbered by a
+title edit.
+
+**Title + branch lock once a task is in flight.** Title and branch are frozen
+(rendered read-only) once the task's status is `active`, `review`, or `done` —
+renaming a task you're already working on would break its git branch and
+agent references. They stay editable while the task is `inbox`/`draft`/`ready`.
+
+**Spec is a card, not a textarea.** The body renders as a readable card. Click
+it to expand it into a large monospace textarea; Save applies it and collapses
+back to the card.
+
 **Save model (recommended): explicit Save button.**
-- Edits stage into a local draft; the drawer shows a Save/Cancel row.
+- Edits stage into a local draft; nothing is written until Save.
+- While the draft is dirty, a highlighted callout bar appears at the BOTTOM of
+  the drawer (a footer pinned under the scroll area): an amber dot + "Unsaved
+  changes · Save to apply your edits" plus Cancel/Save buttons. It is hidden
+  entirely when the draft matches the on-disk task.
 - Save issues ONE `PATCH /api/tasks/:id` with only the changed fields → one
   disk write, one `task.updated` SSE event, one "updated #id (title, area…)"
-  feed entry, `updated_at` bumped once.
-- Save is disabled when nothing changed (dirty-tracking).
+  feed entry, `updated_at` bumped once. The bar disappears on save.
 - Cancel (or closing the drawer) discards the draft; a task is never written
   to disk mid-edit.
 - Status remains instant-apply and is NOT part of the draft (existing
@@ -69,8 +86,13 @@ editable; identity and server-managed metadata stay read-only.
 
 ## Acceptance criteria
 
-- [ ] title, type, priority, area, assigned_to, branch, and body are all
-      editable from the drawer and persist to the task file on Save
+- [ ] title, type, priority, area, assigned_to, and body are all editable from
+      the drawer and persist to the task file on Save
+- [ ] branch is read-only; a planning-stage title edit derives
+      `feat/<slugified-title>` on Save, and an explicit branch is preserved
+- [ ] title and branch render read-only once status is active/review/done
+- [ ] spec body renders as a readable card; clicking it opens a large
+      textarea, and Save applies and collapses it
 - [ ] Save sends a single PATCH with only the changed fields; no-op (disabled)
       when the draft matches the on-disk task
 - [ ] After Save: the file on disk reflects the edits, the feed logs an
@@ -124,3 +146,13 @@ editable; identity and server-managed metadata stay read-only.
   `deleteTaskFile` write path; this task extends the same drawer's editing
   surface.
 - Completes the edit story that today only works via direct file editing.
+
+## Activity
+
+- 2026-08-06T08:03:40Z · title
+- 2026-08-06T08:03:43Z · title
+- 2026-08-06T08:45:00Z · refined UX: branch auto-derived from title (not typed),
+  title+branch locked once status is active+, spec renders as a click-to-edit
+  card · ai
+- 2026-08-06T09:05:00Z · save bar moved from the top to a highlighted callout
+  footer at the bottom of the drawer, shown only while the draft is dirty · ai
