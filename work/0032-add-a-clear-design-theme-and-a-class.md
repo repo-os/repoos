@@ -2,14 +2,14 @@
 id: "0032"
 title: "Add a 'clear' design theme and a classic/clear theme toggle"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0032-clear-theme-toggle
 created_at: "2026-08-05T17:10:00Z"
-updated_at: "2026-08-05T18:50:00Z"
+updated_at: "2026-08-06T12:30:00Z"
 ---
 ## Activity
 
@@ -18,6 +18,8 @@ updated_at: "2026-08-05T18:50:00Z"
 - 2026-08-05T18:50:00Z · review→review · ai — review feedback: clear now uses its own
   font (Plus Jakarta Sans via `--font-sans`) and a comfortable-density pass
   (roomier paddings/gaps, taller line-heights); re-verified, `repoos check` green
+- 2026-08-06T12:30:00Z · review→done · ai — approved by human; merged to main as part
+  of 0033's stacked branch, branch deleted
 
 ## Problem
 
