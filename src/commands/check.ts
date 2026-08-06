@@ -2,8 +2,10 @@
  * `repoos check` — the definition-of-done gate.
  *
  * Runs, in sequence: build staleness check, full build (tsc + asset copy),
- * test suite (if present), and a headless browser smoke test that verifies
- * the UI mounts and has zero console errors.
+ * CSS layering guard, theme contrast guard (button-gradient validity + WCAG
+ * contrast on every theme's fg/bg token pairs), test suite (if present), and
+ * a headless browser smoke test that verifies the UI mounts and has zero
+ * console errors.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -106,6 +108,204 @@ function heading(label: string): void {
   console.log(c.bold(c.cyan(`\n  ◆ ${label}`)));
 }
 
+// ── Theme contrast guard ────────────────────────────────────────────────
+// Every theme (classic/clear/gen-z × dark/light) defines text/button tokens
+// as CSS custom properties in style.css. Buttons in components/ui/button.vue
+// consume `--btn-primary-bg` / `--btn-new-bg` via `background-image`, so a
+// solid-color value silently renders a transparent button (the clear-dark
+// "Save changes" bug). And hand-picked fg/bg pairs can drift into invisible
+// text. This gate parses each theme block and enforces both rules.
+
+interface ThemeBlock {
+  variant: string;
+  decls: Record<string, string>;
+}
+
+const THEME_VARIANTS: Record<string, string> = {
+  ":root": "classic-dark",
+  '[data-theme="light"]': "classic-light",
+  ':root[data-ui-theme="clear"]': "clear-dark",
+  ':root[data-ui-theme="clear"][data-theme="light"]': "clear-light",
+  ':root[data-ui-theme="gen-z"]': "gen-z-dark",
+  ':root[data-ui-theme="gen-z"][data-theme="light"]': "gen-z-light",
+};
+
+/** Which blocks each variant inherits from, in order (later wins). */
+const THEME_INHERIT: Record<string, string[]> = {
+  "classic-dark": ["classic-dark"],
+  "classic-light": ["classic-dark", "classic-light"],
+  "clear-dark": ["classic-dark", "clear-dark"],
+  "clear-light": ["classic-dark", "clear-dark", "clear-light"],
+  "gen-z-dark": ["classic-dark", "gen-z-dark"],
+  "gen-z-light": ["classic-dark", "gen-z-dark", "gen-z-light"],
+};
+
+/** (foreground token, background token) pairs checked for contrast. */
+const CONTRAST_PAIRS: [string, string][] = [
+  ["--txt", "--bg"],
+  ["--txt-dim", "--bg"],
+  ["--btn-primary-color", "--btn-primary-bg"],
+  ["--btn-new-color", "--btn-new-bg"],
+  ["--status-on-color", "--status-on-bg"],
+  ["--tag-stream-color", "--tag-stream-bg"],
+  ["--tag-reconnect-color", "--tag-reconnect-bg"],
+  ["--doc-row-sel-color", "--doc-row-sel-bg"],
+  ["--nav-active-color", "--nav-active-bg"],
+];
+
+/** Tokens consumed as `background-image` by components — must be gradients. */
+const GRADIENT_TOKENS = ["--btn-primary-bg", "--btn-new-bg"];
+
+const MIN_CONTRAST = 3.0;
+
+function parseThemeBlocks(css: string): ThemeBlock[] {
+  const blocks: ThemeBlock[] = [];
+  let cur: string | null = null;
+  let buf = "";
+  for (const raw of css.split("\n")) {
+    const t = raw.trim();
+    if (cur === null) {
+      if (t.endsWith("{") && !t.startsWith("@")) {
+        const sel = t.slice(0, -1).trim();
+        cur = THEME_VARIANTS[sel] ?? "";
+        buf = "";
+      }
+    } else if (t === "}") {
+      if (cur) {
+        const decls: Record<string, string> = {};
+        for (const pair of buf.split(";")) {
+          const idx = pair.indexOf(":");
+          if (idx > 0) {
+            const k = pair.slice(0, idx).trim();
+            const v = pair.slice(idx + 1).trim();
+            if (k.startsWith("--")) decls[k] = v;
+          }
+        }
+        blocks.push({ variant: cur, decls });
+      }
+      cur = null;
+    } else if (cur) {
+      buf += t;
+    }
+  }
+  return blocks;
+}
+
+function resolveVar(value: string, map: Record<string, string>, depth = 0): string {
+  if (depth > 6) return value;
+  const m = value.trim().match(/^var\(--([a-z0-9-]+)\)$/i);
+  if (!m) return value;
+  const next = map[`--${m[1]}`];
+  return next !== undefined ? resolveVar(next, map, depth + 1) : value;
+}
+
+interface RGB { r: number; g: number; b: number; a: number }
+
+function parseColor(v: string): RGB | null {
+  const s = v.trim().toLowerCase();
+  if (!s || s === "none") return null;
+  if (s === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
+  if (s.startsWith("#")) {
+    const h = s.slice(1);
+    if (h.length === 3 || h.length === 4) {
+      const full = h.split("").map((ch) => ch + ch).join("");
+      return parseColor("#" + full);
+    }
+    if (h.length === 6 || h.length === 8) {
+      const n = parseInt(h.slice(0, 6), 16);
+      const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a };
+    }
+    return null;
+  }
+  const m = s.match(/^rgba?\(([\d.]+),([\d.]+),([\d.]+)(?:,([\d.]+))?\)$/);
+  if (m) {
+    return {
+      r: parseInt(m[1], 10),
+      g: parseInt(m[2], 10),
+      b: parseInt(m[3], 10),
+      a: m[4] !== undefined ? parseFloat(m[4]) : 1,
+    };
+  }
+  return null;
+}
+
+function composite(fg: RGB, bg: { r: number; g: number; b: number }): { r: number; g: number; b: number } {
+  const a = fg.a;
+  return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a) };
+}
+
+function channelLum(ch: number): number {
+  const c = ch / 255;
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+function luminance(c: { r: number; g: number; b: number }): number {
+  return 0.2126 * channelLum(c.r) + 0.7152 * channelLum(c.g) + 0.0722 * channelLum(c.b);
+}
+
+function contrastRatio(a: number, b: number): number {
+  const [hi, lo] = a >= b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Resolve a token value to concrete colors (composited over `bg`). */
+function colorCandidates(raw: string, map: Record<string, string>, bg: { r: number; g: number; b: number }): { r: number; g: number; b: number }[] {
+  const resolved = resolveVar(raw, map);
+  const out: { r: number; g: number; b: number }[] = [];
+  if (resolved.includes("gradient(")) {
+    const re = /#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|transparent/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(resolved))) {
+      const c = parseColor(m[0]);
+      if (c) out.push(composite(c, bg));
+    }
+  } else {
+    const c = parseColor(resolved);
+    if (c) out.push(composite(c, bg));
+  }
+  return out;
+}
+
+function themeContrastOffenders(css: string): string[] {
+  const blocks = parseThemeBlocks(css);
+  if (!blocks.length) return [];
+  const byVariant: Record<string, ThemeBlock> = {};
+  for (const b of blocks) byVariant[b.variant] = b;
+  const out: string[] = [];
+
+  for (const variant of Object.keys(THEME_INHERIT)) {
+    const map: Record<string, string> = {};
+    for (const base of THEME_INHERIT[variant]) Object.assign(map, byVariant[base]?.decls ?? {});
+
+    for (const tk of GRADIENT_TOKENS) {
+      const raw = map[tk];
+      if (raw !== undefined && !resolveVar(raw, map).includes("gradient(")) {
+        out.push(`${variant} · ${tk} must be a gradient — button.vue consumes it via background-image`);
+      }
+    }
+
+    const bgColor = parseColor(resolveVar(map["--bg"] ?? "", map));
+    if (!bgColor) continue;
+    const bg = composite(bgColor, bgColor);
+    for (const [fgK, bgK] of CONTRAST_PAIRS) {
+      if (map[fgK] === undefined || map[bgK] === undefined) continue;
+      const fgs = colorCandidates(map[fgK], map, bg);
+      const bgs = colorCandidates(map[bgK], map, bg);
+      if (!fgs.length || !bgs.length) continue;
+      let worst = Infinity;
+      for (const f of fgs) for (const b of bgs) {
+        const c = contrastRatio(luminance(f), luminance(b));
+        if (c < worst) worst = c;
+      }
+      if (worst < MIN_CONTRAST) {
+        out.push(`${variant} · ${fgK} on ${bgK} → ${worst.toFixed(2)} (need ≥${MIN_CONTRAST})`);
+      }
+    }
+  }
+  return out;
+}
+
 export async function cmdCheck(): Promise<void> {
   let exitCode = 0;
   const results: CheckResult[] = [];
@@ -158,6 +358,26 @@ export async function cmdCheck(): Promise<void> {
     } else {
       console.log(c.green("  ✔ No unlayered universal/bare-element selectors"));
       results.push(pass("css-layers"));
+    }
+  }
+
+  // ── 2c. Theme contrast guard ────────────────────────────────────────
+  heading("Theme contrast guard");
+  if (!cssSrc.includes(":root{")) {
+    console.log(c.dim("  · No theme token blocks — skipping"));
+    results.push(pass("theme-contrast", "skipped — no theme tokens"));
+  } else {
+    const offenders = themeContrastOffenders(cssSrc);
+    if (offenders.length > 0) {
+      const msg =
+        "Low-contrast or invalid theme tokens (invisible text risk):\n    " +
+        offenders.slice(0, 10).join("\n    ");
+      console.log(c.red("  ✗ " + msg.split("\n")[0]));
+      results.push(fail("theme-contrast", msg));
+      exitCode = 1;
+    } else {
+      console.log(c.green("  ✔ Theme tokens have valid button gradients and ≥3:1 contrast"));
+      results.push(pass("theme-contrast"));
     }
   }
 
