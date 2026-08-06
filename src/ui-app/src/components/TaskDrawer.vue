@@ -363,7 +363,10 @@ const stick = ref(true);
 const logEl = ref<HTMLElement | null>(null);
 /** True when a turn is in flight (input disabled). */
 const agentBusy = computed(
-  () => !!ui.active && ui.active.status === "active" && repo.isRunning(ui.active.id),
+  () =>
+    !!ui.active &&
+    (ui.active.status === "active" || ui.active.status === "review") &&
+    repo.isRunning(ui.active.id),
 );
 
 watch(outputLines, () => {
@@ -859,7 +862,12 @@ async function sendTurn(): Promise<void> {
           <div v-if="agentBusy" class="agent-hint">
             <span class="tc-run"></span> agent is working — wait for this turn to finish
           </div>
-          <div v-else-if="ui.active && ui.active.status !== 'active'" class="agent-hint">
+          <div
+            v-else-if="
+              ui.active && ui.active.status !== 'active' && ui.active.status !== 'review'
+            "
+            class="agent-hint"
+          >
             Task is {{ ui.active.status }} — start work to run an agent turn.
           </div>
         </div>

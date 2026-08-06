@@ -73,7 +73,7 @@ async function openAgent(): Promise<void> {
       </span>
       <span class="tc-git" v-if="task.git && task.git.branchExists" title="branch exists locally">●</span>
       <span
-        v-if="task.status === 'active' && repo.isRunning(task.id)"
+        v-if="(task.status === 'active' || task.status === 'review') && repo.isRunning(task.id)"
         class="tc-run"
         title="agent running — click to watch the session"
         @click.stop="openAgent"

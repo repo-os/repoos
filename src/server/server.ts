@@ -17,7 +17,7 @@
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
  *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
- *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active)
+ *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
@@ -586,9 +586,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
 
         if (actionMatch[2] === "message") {
-          if (existing.status !== "active") {
+          if (existing.status !== "active" && existing.status !== "review") {
             return json(res, 400, {
-              error: `Only active tasks accept messages (#${id} is ${existing.status})`,
+              error: `Only active or review tasks accept messages (#${id} is ${existing.status})`,
             });
           }
           const agent = resolveEngineer(config);
