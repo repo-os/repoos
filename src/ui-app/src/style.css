@@ -358,6 +358,9 @@
   .btn:hover{border-color:var(--border-bright)}
   .btn.primary{background:var(--btn-primary-bg);border-color:var(--border-bright);color:var(--btn-primary-color)}
   .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+  .delete-zone{margin-top:22px;padding-top:18px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .delete-prompt{font-size:12px;color:var(--red);font-weight:500;margin:0;line-height:1.5}
+  .delete-actions{display:flex;gap:8px}
   .new-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;
     background:var(--btn-new-bg);border:1px solid var(--border-bright);color:var(--btn-new-color);font-family:inherit}
   .new-btn svg{width:14px;height:14px}

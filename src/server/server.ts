@@ -13,6 +13,7 @@
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
+ *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -27,7 +28,7 @@ import { createRepoOS } from "../core/repoos.js";
 import { getConfigSchema, patchTomlConfig, loadConfig } from "../core/config.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
-import { patchTaskFile, WriteError, type TaskPatch } from "./write.js";
+import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
 
 export interface ServeOptions {
@@ -327,6 +328,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const updated = patchTaskFile(config, existing.absPath, body);
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
+      }
+      if (taskMatch && method === "DELETE") {
+        const existing = index.getTask(taskMatch[1]);
+        if (!existing) {
+          return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
+        }
+        try {
+          deleteTaskFile(config, existing.absPath);
+        } catch (err) {
+          if (err instanceof PathGuardError) {
+            return json(res, 400, { error: err.message });
+          }
+          // Idempotent: the file is already gone, so the task no longer exists.
+          return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
+        }
+        index.applyFileDelete(existing.absPath);
+        return json(res, 200, { ok: true });
       }
 
       // ---- config read / write ----

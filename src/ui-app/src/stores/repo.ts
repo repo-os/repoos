@@ -164,6 +164,10 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
 
+  async function deleteTask(id: string): Promise<void> {
+    await api(`/api/tasks/${id}`, { method: "DELETE" });
+  }
+
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
@@ -204,6 +208,7 @@ export const useRepoStore = defineStore("repo", () => {
     fetchTask,
     setStatus,
     createTask,
+    deleteTask,
     onError,
     init,
   };

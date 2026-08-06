@@ -12,7 +12,8 @@
  * Because status lives in per-task files (never a shared queue file), the only
  * conflict surface is concurrent writes to the SAME task — which this handles.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { parseTask, serializeTask, recordChange, utcTimestamp } from "../core/task.js";
@@ -29,6 +30,9 @@ export interface TaskPatch {
 }
 
 export class WriteError extends Error {}
+
+/** Thrown when a delete target resolves outside the configured work dir. */
+export class PathGuardError extends WriteError {}
 
 /**
  * Apply a patch to a task file safely. `absPath` is the file to edit. Returns
@@ -120,4 +124,24 @@ export function patchTaskFile(
     defaultStatus: config.defaultStatus,
     defaultAssignee: config.defaultAssignee,
   });
+}
+
+/**
+ * Remove a task file. `absPath` must resolve inside the configured work dir —
+ * this mirrors the `safeRepoFile` guard and prevents deleting arbitrary repo
+ * files through the API. Throws PathGuardError when the target is outside the
+ * work dir, and WriteError when the file is already gone (callers treat the
+ * latter as an idempotent 404).
+ */
+export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
+  const workDir = resolve(join(config.root, config.workDir));
+  const abs = resolve(absPath);
+  if (!(abs.startsWith(workDir + sep) || abs === workDir)) {
+    throw new PathGuardError(`Refusing to delete outside work dir: ${abs}`);
+  }
+  if (!existsSync(abs)) {
+    throw new WriteError(`Task file not found: ${abs}`);
+  }
+  unlinkSync(abs);
+  return abs;
 }

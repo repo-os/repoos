@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { X } from "lucide-vue-next";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
@@ -69,6 +69,22 @@ async function setStatus(status: string): Promise<void> {
     await repo.setStatus(ui.active, status);
   } catch (err) {
     repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+const confirmDelete = ref(false);
+
+async function deleteTask(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.deleteTask(ui.active.id);
+    ui.close();
+  } catch (err) {
+    repo.onError(err);
+    confirmDelete.value = false;
   } finally {
     ui.saving = false;
   }
@@ -252,6 +268,32 @@ async function setStatus(status: string): Promise<void> {
           </div>
           <div class="md-h" style="margin-top: 18px">spec</div>
           <div class="md-body">{{ ui.active.body || "(no body)" }}</div>
+          <div class="delete-zone">
+            <template v-if="!confirmDelete">
+              <Button
+                variant="destructive"
+                size="sm"
+                :disabled="ui.saving"
+                @click="confirmDelete = true"
+              >
+                Delete task
+              </Button>
+            </template>
+            <template v-else>
+              <p class="delete-prompt">
+                Delete task #{{ ui.active.id }}? The file will be removed. Committed changes are
+                recoverable from git; uncommitted or never-committed work is lost.
+              </p>
+              <div class="delete-actions">
+                <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmDelete = false">
+                  Cancel
+                </Button>
+                <Button variant="destructive" size="sm" :disabled="ui.saving" @click="deleteTask">
+                  Delete
+                </Button>
+              </div>
+            </template>
+          </div>
         </div>
       </template>
     </DialogContent>
