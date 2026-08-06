@@ -21,6 +21,7 @@
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -32,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, SkillMeta, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
+import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -400,6 +402,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/agents/running" && method === "GET") {
         return json(res, 200, { tasks: runner.running() });
+      }
+      if (path === "/api/agents/detect" && method === "GET") {
+        // Best-effort: a broken PATH entry or a hung probe must never break
+        // the endpoint, so the whole detection is wrapped.
+        let agents: DetectedAgent[] = [];
+        try {
+          agents = await detectAgents();
+        } catch {
+          agents = [];
+        }
+        return json(res, 200, { agents });
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {

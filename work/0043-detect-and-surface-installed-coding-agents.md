@@ -14,7 +14,7 @@ updated_at: "2026-08-06T17:32:44Z"
 ## Activity
 
 - 2026-08-06T12:49:24Z · created · unknown
-- 2026-08-06T17:32:44Z · status active→review
+- 2026-08-06T17:32:44Z · status ready→review
 
 ## Problem
 
@@ -135,5 +135,4 @@ green `repoos check`.
 - 2026-08-06T13:14:40Z · status inbox→ready
 - 2026-08-06T13:15:09Z · status ready→active
 - 2026-08-06T13:27:29Z · status active→ready
-- 2026-08-06T17:16:32Z · status ready→active
-- 2026-08-06T17:32:44Z · status active→review
+- 2026-08-06T17:32:44Z · status ready→review

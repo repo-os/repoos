@@ -90,6 +90,19 @@ export interface AgentsMeta {
   defaults: Agent[];
 }
 
+/** One row from GET /api/agents/detect. */
+export interface DetectedAgent {
+  id: string;
+  name: string;
+  binary: string;
+  installed: boolean;
+  path: string | null;
+  version: string | null;
+  headless: boolean | null;
+  drivable: boolean;
+  installHint: string;
+}
+
 export interface DocMeta {
   path: string;
   title: string;
