@@ -2,14 +2,14 @@
 id: "0044"
 title: Fix agent spawn to force --dir into the worktree
 type: bug
-status: ready
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0044-agent-spawn-worktree-dir
 created_at: "2026-08-06T14:15:00Z"
-updated_at: "2026-08-06T14:15:00Z"
+updated_at: "2026-08-06T14:47:00Z"
 ---
 ## Activity
 
@@ -57,3 +57,7 @@ fine.
       opencode run's session `directory` is the worktree path, and the agent
       can read the task file without `external_directory` auto-rejects
 - [ ] Follow-up turns (resume) also force `--dir`
+
+## Activity
+
+- 2026-08-06T14:47:00Z · status ready→review
