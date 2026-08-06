@@ -25,7 +25,14 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
-import { getConfigSchema, patchTomlConfig, loadConfig } from "../core/config.js";
+import {
+  AGENT_CLIS,
+  AGENT_MODELS,
+  DEFAULT_AGENTS,
+  getConfigSchema,
+  patchTomlConfig,
+  loadConfig,
+} from "../core/config.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
@@ -349,14 +356,67 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
       // ---- config read / write ----
       if (path === "/api/config" && method === "GET") {
+        // Agents default at runtime: when nothing is stored, serve the built-ins.
+        const storedAgents = Array.isArray(repoos.config.agents) ? repoos.config.agents : [];
+        const agents = storedAgents.length ? storedAgents : DEFAULT_AGENTS;
         return json(res, 200, {
-          config: repoos.config,
+          config: { ...repoos.config, agents },
           schema: getConfigSchema(),
+          agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
         });
       }
       if (path === "/api/config" && method === "PATCH") {
         const body = (await readBody(req)) as Record<string, unknown>;
         const patch: Record<string, unknown> = {};
+
+        // Agents are validated outside the schema loop (they're a table array).
+        if (body.agents !== undefined) {
+          if (!Array.isArray(body.agents)) {
+            return json(res, 400, { error: "agents must be an array" });
+          }
+          const list: {
+            name: string;
+            cli: string;
+            model: string;
+            enabled: boolean;
+            instructions?: string;
+          }[] = [];
+          for (const agent of body.agents) {
+            const a = agent as Record<string, unknown>;
+            if (typeof a?.name !== "string" || !a.name.trim()) {
+              return json(res, 400, { error: "each agent needs a non-empty name" });
+            }
+            if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number])) {
+              return json(res, 400, { error: `cli must be one of: ${AGENT_CLIS.join(", ")}` });
+            }
+            if (!AGENT_MODELS.includes(a.model as (typeof AGENT_MODELS)[number])) {
+              return json(res, 400, { error: `model must be one of: ${AGENT_MODELS.join(", ")}` });
+            }
+            if (typeof a.enabled !== "boolean") {
+              return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });
+            }
+            if (a.instructions !== undefined && typeof a.instructions !== "string") {
+              return json(res, 400, { error: `agent "${a.name}" instructions must be a string` });
+            }
+            const entry: {
+              name: string;
+              cli: string;
+              model: string;
+              enabled: boolean;
+              instructions?: string;
+            } = {
+              name: a.name.trim(),
+              cli: a.cli as string,
+              model: a.model as string,
+              enabled: a.enabled,
+            };
+            if (typeof a.instructions === "string" && a.instructions.trim()) {
+              entry.instructions = a.instructions.trim();
+            }
+            list.push(entry);
+          }
+          patch.agents = list;
+        }
 
         // Validate every field against the schema
         const schema = getConfigSchema();

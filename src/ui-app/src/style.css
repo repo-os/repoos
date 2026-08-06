@@ -425,6 +425,30 @@
   .save-msg.ok{color:var(--green)}
   .save-msg.err{color:var(--red)}
 
+  /* ---------- agents page ---------- */
+  .agent-card{border-top:1px solid var(--border);padding:14px 0}
+  .agent-card.off{opacity:0.55}
+  .agent-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .agent-title{display:flex;align-items:center;gap:9px;min-width:0}
+  .agent-dot{width:8px;height:8px;border-radius:3px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex:none}
+  .agent-card.off .agent-dot{background:var(--border-bright);box-shadow:none}
+  .agent-name{font-size:13.5px;font-weight:600;color:var(--txt);font-family:'Plus Jakarta Sans',sans-serif}
+  .agent-badge{font-size:9.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);border:1px solid var(--border);border-radius:5px;padding:2px 6px}
+  .agent-remove{color:var(--txt-faint)}
+  .agent-remove:hover{color:var(--red)}
+  .agent-body{display:flex;align-items:flex-end;gap:16px;margin-top:12px}
+  .agent-field{display:flex;flex-direction:column;gap:5px}
+  .agent-field label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--txt-faint);font-weight:600;font-family:'JetBrains Mono',monospace}
+  .agent-field{width:200px}
+  .agent-field.agent-instr-field{flex:1;min-width:220px}
+  .agent-instr{width:100%;resize:vertical;min-height:56px;border-radius:9px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;line-height:1.5;padding:8px 11px;transition:.15s}
+  .agent-instr::placeholder{color:var(--txt-faint)}
+  .agent-instr:focus{outline:none;border-color:var(--border-bright)}
+  .agent-desc{font-size:12.5px;color:var(--txt-dim);margin:0 2px 6px}
+  .agent-add{display:flex;align-items:center;gap:10px;margin:8px 0 6px}
+  .agent-empty{font-size:12.5px;color:var(--txt-faint);padding:14px 2px 16px}
+  .agent-dirty{font-size:11.5px;color:var(--amber);font-family:'JetBrains Mono',monospace}
+
   /* ---------- clear design theme ---------- */
   :root[data-ui-theme="clear"]{
     --bg:#0d1014; --bg-2:#11151b; --panel:#161b23; --panel-solid:#1a2029;

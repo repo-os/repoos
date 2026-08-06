@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type {
+  Agent,
   RepoOSConfig,
   Status,
   Assignee,
@@ -13,6 +14,42 @@ import type {
   UiTheme,
 } from "./types.js";
 import { STATUSES } from "./types.js";
+
+/** Coding agents an Agent can run under. */
+export const AGENT_CLIS = ["opencode", "claude code"] as const;
+/** Models an Agent can pin (or "default" for the coding agent's default). */
+export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
+
+/** Built-in agents, seeded at runtime when the config has none. */
+export const DEFAULT_AGENTS: Agent[] = [
+  {
+    name: "engineer",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: true,
+    instructions:
+      "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status.",
+  },
+  {
+    name: "reviewer",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: true,
+    instructions:
+      "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`.",
+  },
+  {
+    name: "pm",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: true,
+    instructions:
+      "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy.",
+  },
+];
+
+/** Default agent names — these are seeded and cannot be removed. */
+export const DEFAULT_AGENT_NAMES = DEFAULT_AGENTS.map((a) => a.name);
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",
@@ -23,6 +60,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   cacheDir: ".repoos",
   theme: "system",
   uiTheme: "classic",
+  agents: [],
 };
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
@@ -42,16 +80,29 @@ export function findRepoRoot(start: string = process.cwd()): string {
   }
 }
 
-/** Extremely small flat-TOML reader: `key = value` and `[section]` headers. */
+/** Extremely small flat-TOML reader: `key = value`, `[section]` headers, and `[[array-of-tables]]`. */
 function parseFlatToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section = "";
+  let arrayTable: Record<string, unknown> | null = null;
+  let arrayTableKey = "";
   for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
     const line = rawLine.replace(/#.*$/, "").trim();
     if (!line) continue;
+    const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
+    if (arrSec) {
+      section = "";
+      arrayTableKey = arrSec[1];
+      const arr = (out[arrayTableKey] as Record<string, unknown>[]) ?? [];
+      arrayTable = {};
+      arr.push(arrayTable);
+      out[arrayTableKey] = arr;
+      continue;
+    }
     const sec = line.match(/^\[([^\]]+)\]$/);
     if (sec) {
       section = sec[1];
+      arrayTable = null;
       continue;
     }
     const kv = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/);
@@ -72,7 +123,11 @@ function parseFlatToml(text: string): Record<string, unknown> {
     } else {
       val = s.replace(/^["']|["']$/g, "");
     }
-    out[key] = val;
+    if (arrayTable && arrayTableKey) {
+      arrayTable[kv[1]] = val;
+    } else {
+      out[key] = val;
+    }
   }
   return out;
 }
@@ -98,6 +153,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
     if (typeof get("uiTheme") === "string")
       cfg.uiTheme = get("uiTheme") as UiTheme;
+    if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
   }
   return cfg;
 }
@@ -226,6 +282,27 @@ function serializeTomlVal(val: unknown): string {
   return String(val);
 }
 
+/** True when a value is an array of plain objects → serialized as [[tables]]. */
+function isTableArray(val: unknown): val is Record<string, unknown>[] {
+  return (
+    Array.isArray(val) &&
+    val.length > 0 &&
+    val.every((v) => typeof v === "object" && v !== null && !Array.isArray(v))
+  );
+}
+
+/** Serialize an array of plain objects as `[[key]]` table blocks. */
+function serializeTableArray(key: string, rows: Record<string, unknown>[]): string {
+  return rows
+    .map((row) => {
+      const body = Object.entries(row)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => `${k} = ${serializeTomlVal(v)}`);
+      return `[[${key}]]\n${body.join("\n")}`;
+    })
+    .join("\n");
+}
+
 /**
  * Patch a repoos.toml file with the given key-value pairs, preserving all
  * other lines (comments, formatting, unknown keys).
@@ -236,21 +313,48 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   }
 
   const text = readFileSync(tomlPath, "utf8");
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  const result = [...lines];
+  let result = text.replace(/\r\n/g, "\n").split("\n");
   let modified = false;
 
+  // Array-of-tables keys ([[agents]]): drop the existing blocks and append the
+  // freshly serialized ones at the end of the file.
   for (const [key, rawVal] of Object.entries(patch)) {
+    if (!isTableArray(rawVal)) continue;
+    const blocks = serializeTableArray(key, rawVal);
+    const kept: string[] = [];
+    let i = 0;
+    while (i < result.length) {
+      if (result[i].replace(/#.*$/, "").trim() === `[[${key}]]`) {
+        i++;
+        while (i < result.length) {
+          const s = result[i].replace(/#.*$/, "").trim();
+          if (s.startsWith("[")) break;
+          i++;
+        }
+        continue;
+      }
+      kept.push(result[i]);
+      i++;
+    }
+    while (kept.length && kept[kept.length - 1].trim() === "") kept.pop();
+    kept.push(blocks);
+    result = kept;
+    modified = true;
+  }
+
+  // Scalars and plain arrays: in-place line-preserving patch.
+  for (const [key, rawVal] of Object.entries(patch)) {
+    if (isTableArray(rawVal)) continue;
     const serialized = serializeTomlVal(rawVal);
     let found = false;
 
-    for (let i = 0; i < lines.length; i++) {
-      const stripped = lines[i].replace(/#.*$/, "").trim();
+    for (let i = 0; i < result.length; i++) {
+      const stripped = result[i].replace(/#.*$/, "").trim();
       if (!stripped || stripped.startsWith("[")) continue;
 
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
       if (kv && kv[1] === key) {
-        const indent = lines[i].match(/^\s*/)?.[0] || "";
+        const indent = result[i].match(/^\s*/)?.[0] || "";
         result[i] = `${indent}${key} = ${serialized}`;
         modified = true;
         found = true;
@@ -265,6 +369,6 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   }
 
   if (modified) {
-    writeFileSync(tomlPath, result.join("\n"), "utf8");
+    writeFileSync(tomlPath, result.join("\n") + "\n", "utf8");
   }
 }

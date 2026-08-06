@@ -1,11 +1,12 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
-import type { ConfigField } from "../types";
+import type { Agent, AgentsMeta, ConfigField } from "../types";
 
 export interface ConfigResponse {
   config: Record<string, unknown>;
   schema: ConfigField[];
+  agentsMeta?: AgentsMeta;
 }
 
 export const useConfigStore = defineStore("config", () => {
@@ -18,6 +19,8 @@ export const useConfigStore = defineStore("config", () => {
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
   const uiTheme = ref("classic");
+  const agents = ref<Agent[]>([]);
+  const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [] });
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
   const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
@@ -85,11 +88,32 @@ export const useConfigStore = defineStore("config", () => {
       data.value = res.config;
       schema.value = res.schema;
       fillForm(res);
+      agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
+      if (res.agentsMeta) agentsMeta.value = res.agentsMeta;
       applyTheme(String(res.config.theme ?? "system"));
       applyUiTheme(String(res.config.uiTheme ?? "classic"));
       loaded.value = true;
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  /** Persist the full agents list and refresh local state from the server. */
+  async function saveAgents(list: Agent[]): Promise<void> {
+    saving.value = true;
+    msg.value = "";
+    error.value = "";
+    try {
+      await api("/api/config", JSON_OPTS("PATCH", { agents: list }));
+      msg.value = "Agents saved — applied live.";
+      const res = await api<ConfigResponse>("/api/config");
+      agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
+      data.value = res.config;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      saving.value = false;
     }
   }
 
@@ -141,9 +165,12 @@ export const useConfigStore = defineStore("config", () => {
     guardedFields,
     load,
     save,
+    saveAgents,
     applyTheme,
     applyUiTheme,
     setUiTheme,
     uiTheme,
+    agents,
+    agentsMeta,
   };
 });

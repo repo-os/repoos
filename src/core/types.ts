@@ -102,6 +102,20 @@ export interface TaskGitInfo {
   lastCommitAt: string | null;
 }
 
+/** An AI coding agent configurable on the Agents page. */
+export interface Agent {
+  /** Agent name — the role key (engineer, reviewer, pm, or a custom name). */
+  name: string;
+  /** The coding agent CLI used to run this agent. */
+  cli: string;
+  /** Model name, or "default" to use the coding agent's default. */
+  model: string;
+  /** When false, the agent is configured but inactive. */
+  enabled: boolean;
+  /** Optional instructions describing the agent's role and how it should behave. */
+  instructions?: string;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
   /** Absolute path to the repo root. */
@@ -124,6 +138,8 @@ export interface RepoOSConfig {
   theme?: Theme;
   /** UI design language: classic (current) or clear. Cosmetic only. */
   uiTheme?: UiTheme;
+  /** User-defined agents (defaults are applied at runtime when this is empty). */
+  agents?: Agent[];
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

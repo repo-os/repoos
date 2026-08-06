@@ -66,6 +66,22 @@ export interface ConfigField {
   description: string;
 }
 
+/** An AI coding agent configured on the Agents page. */
+export interface Agent {
+  name: string;
+  cli: string;
+  model: string;
+  enabled: boolean;
+  instructions?: string;
+}
+
+/** Agent options served alongside /api/config. */
+export interface AgentsMeta {
+  clis: string[];
+  models: string[];
+  defaults: Agent[];
+}
+
 export interface DocMeta {
   path: string;
   title: string;
