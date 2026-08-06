@@ -2,14 +2,14 @@
 id: "0048"
 title: Make the search input's focused state prettier and less boxy
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/make-the-search-input-s-focused-state-pr
 created_at: "2026-08-06T17:20:48Z"
-updated_at: "2026-08-06T17:21:27Z"
+updated_at: "2026-08-06T17:51:49Z"
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ drawn around it. The active state should:
 - 2026-08-06T17:21:25Z · status inbox→ready
 - 2026-08-06T17:21:27Z · status ready→active, branch
 - 2026-08-06T17:27:19Z · status active→review
+- 2026-08-06T17:51:49Z · status review→done
