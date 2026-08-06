@@ -2,14 +2,14 @@
 id: "0044"
 title: Fix agent spawn to force --dir into the worktree
 type: bug
-status: review
+status: done
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0044-agent-spawn-worktree-dir
 created_at: "2026-08-06T14:15:00Z"
-updated_at: "2026-08-06T14:47:00Z"
+updated_at: "2026-08-06T15:04:24Z"
 ---
 ## Activity
 
@@ -61,3 +61,4 @@ fine.
 ## Activity
 
 - 2026-08-06T14:47:00Z · status ready→review
+- 2026-08-06T15:04:24Z · status review→done
