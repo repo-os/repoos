@@ -6,6 +6,6 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "system"
+theme = "light"
 strictBuild = false
 uiTheme = "classic"
