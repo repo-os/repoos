@@ -2,14 +2,14 @@
 id: "0043"
 title: Detect installed coding agents and surface them on the Agents page
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0043-detect-coding-agents
 created_at: "2026-08-06T12:49:24Z"
-updated_at: "2026-08-06T17:32:44Z"
+updated_at: "2026-08-06T18:05:10Z"
 ---
 ## Activity
 
@@ -136,3 +136,4 @@ green `repoos check`.
 - 2026-08-06T13:15:09Z · status ready→active
 - 2026-08-06T13:27:29Z · status active→ready
 - 2026-08-06T17:32:44Z · status ready→review
+- 2026-08-06T18:05:10Z · status review→done
