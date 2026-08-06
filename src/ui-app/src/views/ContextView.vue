@@ -21,7 +21,7 @@ const tab = ref<"docs" | "skills">("docs");
 </script>
 
 <template>
-  <div>
+  <div class="ctx-page">
     <div class="page-title">Repo Context</div>
     <div class="page-desc">AI-readable docs · ADRs · skills</div>
 
