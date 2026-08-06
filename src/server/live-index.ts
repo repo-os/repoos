@@ -35,6 +35,7 @@ export type RepoEvent =
       at: string;
     }
   | { type: "index.rebuilt"; taskCount: number; at: string }
+  | { type: "task.progress"; id: string; step: string; at: string }
   | { type: "hello"; taskCount: number; at: string };
 
 type Listener = (e: RepoEvent) => void;

@@ -54,6 +54,7 @@ export type RepoEvent =
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
+  | { type: "task.progress"; id: string; step: string; at: string }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
   | { type: "agent.output"; id: string; data: string; stream: "out" | "err" };

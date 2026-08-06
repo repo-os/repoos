@@ -3,7 +3,7 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
@@ -201,4 +201,101 @@ export function commitNewFile(
   }
   const hash = git(root, ["rev-parse", "--short", "HEAD"]);
   return hash ? { ok: true, hash } : { ok: true };
+}
+
+/**
+ * Whether `ancestor` is an ancestor of `descendant` (i.e. a fast-forward merge
+ * of `descendant` into a checkout on `ancestor` is possible). Uses
+ * `git merge-base --is-ancestor` exit codes; null when git is missing or the
+ * refs are invalid.
+ */
+export function isAncestor(
+  root: string,
+  ancestor: string,
+  descendant: string,
+): boolean | null {
+  const run = spawnSync("git", ["merge-base", "--is-ancestor", ancestor, descendant], {
+    cwd: root,
+    timeout: 4000,
+  });
+  if (run.status === 0) return true;
+  if (run.status === 1) return false;
+  return null;
+}
+
+export interface MergeBranchResult {
+  /** Whether the branch was merged into the current checkout. */
+  merged: boolean;
+  /** Whether the merge was a fast-forward (or the branch was already in). */
+  ff: boolean;
+  /** Files with merge conflicts when the merge aborted. */
+  conflicts: string[];
+  /** Human-readable failure reason (not merged and not a conflict). */
+  reason?: string;
+}
+
+/**
+ * Merge `branch` into the CURRENT checkout — the main worktree, never the
+ * task's worktree. Default merge semantics: fast-forward when main is an
+ * ancestor of the branch, otherwise a merge commit (`--no-edit` so we never
+ * block on an editor). Longer timeout than `git()`: real merges are slow.
+ *
+ * On a conflict the merge is aborted (`git merge --abort`) so nothing is left
+ * half-applied; the conflicted file list is returned and the branch stays
+ * untouched.
+ */
+export function mergeBranch(root: string, branch: string): MergeBranchResult {
+  const head = currentBranch(root);
+  const ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
+  const run = spawnSync("git", ["merge", "--no-edit", branch], {
+    cwd: root,
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  const stderr = `${run.stderr ?? ""}\n${run.stdout ?? ""}`;
+  if (run.status === 0) {
+    return { merged: true, ff, conflicts: [] };
+  }
+  const conflicts = stderr
+    .split("\n")
+    .filter((l) => l.includes("CONFLICT"))
+    .map((l) => {
+      const m = l.match(/in (.+)$/);
+      return m ? m[1].trim() : l.trim();
+    })
+    .filter(Boolean);
+  if (conflicts.length > 0) {
+    // Nothing may be left half-applied: back out of the merge entirely.
+    spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
+    return { merged: false, ff: false, conflicts, reason: "merge conflict" };
+  }
+  return {
+    merged: false,
+    ff: false,
+    conflicts: [],
+    reason: stderr.trim().split("\n").filter(Boolean).slice(0, 4).join(" ") || "merge failed",
+  };
+}
+
+/**
+ * Delete a local branch. The close-out flow only ever deletes a branch that
+ * was just merged into main, so `-d` (refuses unless fully merged) is correct.
+ * Fail-soft: false when the branch is gone, not merged, or git is missing —
+ * the caller treats it as best-effort cleanup.
+ */
+export function deleteBranch(root: string, branch: string): boolean {
+  return git(root, ["branch", "-d", branch]) !== null;
+}
+
+/**
+ * Remove the linked worktree for `branch`. Forced when dirty — content is
+ * preserved in the merged main, so nothing is lost. Tolerates an already-gone
+ * worktree and prunes stale metadata if the first attempt fails.
+ */
+export function removeWorktree(root: string, branch: string): boolean {
+  const path = worktreeList(root).get(branch);
+  if (!path) return true;
+  if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
+  git(root, ["worktree", "prune"]);
+  return git(root, ["worktree", "remove", "--force", path]) !== null;
 }

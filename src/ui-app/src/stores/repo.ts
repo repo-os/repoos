@@ -18,6 +18,17 @@ export interface AgentOutputLine {
   d: string;
 }
 
+/** Summary returned by the review→done close-out endpoint. */
+export interface DoneResult {
+  ok: boolean;
+  merged: boolean;
+  conflicts: string[];
+  ff: boolean;
+  check?: { ok: boolean; detail?: string };
+  error?: string;
+  task?: Task;
+}
+
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
 
@@ -58,6 +69,8 @@ export const useRepoStore = defineStore("repo", () => {
   const flashId = ref<string | null>(null);
   const runningIds = ref<string[]>([]);
   const outputs = ref<Record<string, AgentOutputLine[]>>({});
+  /** Live step of the review→done close-out, keyed by task id. */
+  const doneSteps = ref<Record<string, string>>({});
 
   let feedKey = 0;
   let es: EventSource | null = null;
@@ -144,6 +157,8 @@ export const useRepoStore = defineStore("repo", () => {
           [e.id]: [...outputs.value[e.id], { s: "sys", d: "— agent stopped —" }],
         };
       }
+    } else if (e.type === "task.progress") {
+      doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
     } else if (e.type === "index.rebuilt") {
       void refresh();
     }
@@ -158,7 +173,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "agent.running", "agent.exited", "agent.output"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "agent.running", "agent.exited", "agent.output"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -203,6 +218,15 @@ export const useRepoStore = defineStore("repo", () => {
       method: "POST",
     });
     if (!r.ok) throw new Error(r.reason ?? "could not pause work");
+  }
+
+  /** Summary returned by the review→done close-out. */
+  async function completeTask(t: Task): Promise<DoneResult> {
+    const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
+      method: "POST",
+    });
+    if (!r.ok) throw new Error(r.error ?? "could not complete task");
+    return r;
   }
 
   /** Replace the client's transcript for a task from the server buffer. */
@@ -298,6 +322,7 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     runningIds,
     outputs,
+    doneSteps,
     repoName,
     workDir,
     total,
@@ -317,6 +342,7 @@ export const useRepoStore = defineStore("repo", () => {
     isRunning,
     startWork,
     pauseWork,
+    completeTask,
     loadOutput,
     sendMessage,
     fetchRunning,

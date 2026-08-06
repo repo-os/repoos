@@ -1,0 +1,143 @@
+/**
+ * `POST /api/tasks/:id/done` orchestration — the review -> done close-out.
+ *
+ * Runs against the MAIN checkout (`config.root`), never the task's worktree:
+ *   1. merge the task's branch into main (FF when possible, merge commit
+ *      otherwise); on conflict the merge is aborted and the task stays review.
+ *   2. rebuild + `repoos check` so the merged main stays green.
+ *   3. set status `done`, delete the branch, remove the task's worktree.
+ * A failure at any step leaves the task in `review`; if the merge already
+ * happened, we report that state honestly.
+ */
+import { spawnSync } from "node:child_process";
+import type { RepoOSConfig, Task } from "../core/types.js";
+import { mergeBranch, deleteBranch, removeWorktree } from "../core/git.js";
+import { patchTaskFile } from "./write.js";
+
+export interface CheckSummary {
+  ok: boolean;
+  /** Human-readable failure detail (when not ok). */
+  detail?: string;
+}
+
+export interface CompleteResult {
+  ok: boolean;
+  /** Whether the branch was merged into main (even when later steps failed). */
+  merged: boolean;
+  /** Files that conflicted (merge aborted, task still in review). */
+  conflicts: string[];
+  /** Whether the merge was a fast-forward. */
+  ff: boolean;
+  /** Post-merge build/check gate (undefined when the merge itself failed). */
+  check?: CheckSummary;
+  /** The updated task, present when the task reached `done`. */
+  task?: Task;
+  /** Human-readable reason (not ok). */
+  reason?: string;
+}
+
+/** The progress steps reported to the UI while the flow runs. */
+export type DoneStep = "merge" | "build" | "check" | "done";
+
+function runStep(cwd: string, candidates: string[][], label: string): CheckSummary {
+  let missing = "";
+  for (const cmd of candidates) {
+    const run = spawnSync(cmd[0], cmd.slice(1), {
+      cwd,
+      encoding: "utf8",
+      timeout: 240_000,
+    });
+    if (run.status === 0) return { ok: true };
+    const err = run.error as NodeJS.ErrnoException | undefined;
+    if (err && (err.code === "ENOENT" || err.code === "EACCES")) {
+      missing = `${cmd[0]} is not available`;
+      continue;
+    }
+    const out = [run.stdout, run.stderr]
+      .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+      .join("\n")
+      .trim()
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .slice(0, 6)
+      .join(" · ");
+    return { ok: false, detail: out || `\`${label}\` failed (exit ${run.status})` };
+  }
+  return { ok: false, detail: missing || `\`${label}\` could not be run` };
+}
+
+const BUILD_STEPS: string[][] = [
+  ["bun", "run", "build"],
+  ["npm", "run", "build"],
+];
+
+const CHECK_STEPS: string[][] = [
+  ["repoos", "check"],
+  ["bun", "run", "repoos", "check"],
+  ["node", "dist/cli/index.js", "check"],
+];
+
+export function completeTask(
+  config: RepoOSConfig,
+  task: Task,
+  onProgress?: (step: DoneStep) => void,
+): CompleteResult {
+  const root = config.root;
+
+  onProgress?.("merge");
+  const merge = mergeBranch(root, task.branch);
+  if (!merge.merged) {
+    return {
+      ok: false,
+      merged: false,
+      conflicts: merge.conflicts,
+      ff: false,
+      reason: merge.conflicts.length
+        ? `merge conflict: ${merge.conflicts.join(", ")}`
+        : merge.reason ?? "merge failed",
+    };
+  }
+
+  onProgress?.("build");
+  const build = runStep(root, BUILD_STEPS, "bun run build");
+  if (!build.ok) {
+    return {
+      ok: false,
+      merged: true,
+      conflicts: [],
+      ff: merge.ff,
+      check: { ok: false, detail: `build failed: ${build.detail}` },
+      reason: "build failed after merge — task kept in review",
+    };
+  }
+
+  onProgress?.("check");
+  const check = runStep(root, CHECK_STEPS, "repoos check");
+  if (!check.ok) {
+    return {
+      ok: false,
+      merged: true,
+      conflicts: [],
+      ff: merge.ff,
+      check: { ok: false, detail: `repoos check failed: ${check.detail}` },
+      reason: "repoos check failed after merge — task kept in review",
+    };
+  }
+
+  onProgress?.("done");
+  const updated = patchTaskFile(config, task.absPath, { status: "done" });
+  // Best-effort cleanup; content is preserved in the merged main. The worktree
+  // must go first — git refuses to delete a branch checked out in a worktree.
+  removeWorktree(root, task.branch);
+  deleteBranch(root, task.branch);
+
+  return {
+    ok: true,
+    merged: true,
+    conflicts: [],
+    ff: merge.ff,
+    check: { ok: true },
+    task: updated,
+  };
+}

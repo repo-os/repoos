@@ -47,6 +47,7 @@ import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPat
 import { renderInstanceIcon } from "./icons.js";
 import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { completeTask, type DoneStep } from "./done.js";
 
 export interface ServeOptions {
   root?: string;
@@ -451,7 +452,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
       }
-      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message)$/);
+      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message|done)$/);
       if (actionMatch && method === "POST") {
         const id = actionMatch[1];
         const existing = index.getTask(id);
@@ -499,6 +500,41 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               pid: spawnRes.pid,
               reason: spawnRes.reason,
             },
+          });
+        }
+
+        if (actionMatch[2] === "done") {
+          if (existing.status !== "review") {
+            return json(res, 400, {
+              error: `Only review tasks can be completed (#${id} is ${existing.status})`,
+            });
+          }
+          if (!existing.branch) {
+            return json(res, 400, { error: `Task #${id} has no branch to merge` });
+          }
+          if (runner.isRunning(id)) {
+            return json(res, 409, {
+              error: `Task #${id} has an agent turn in progress`,
+            });
+          }
+          const result = completeTask(config, existing, (step: DoneStep) => {
+            emitEvent({
+              type: "task.progress",
+              id,
+              step,
+              at: new Date().toISOString(),
+            });
+          });
+          if (result.task) index.applyFileChange(result.task.absPath);
+          index.refreshBranches();
+          return json(res, 200, {
+            ok: result.ok,
+            merged: result.merged,
+            conflicts: result.conflicts,
+            ff: result.ff,
+            check: result.check,
+            error: result.reason,
+            task: result.task ? index.getTask(result.task.id) : undefined,
           });
         }
 

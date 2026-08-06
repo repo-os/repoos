@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -181,6 +181,44 @@ async function deleteTask(): Promise<void> {
     repo.onError(err);
     confirmDelete.value = false;
   } finally {
+    ui.saving = false;
+  }
+}
+
+// ---- review → done close-out ----
+
+const confirmDone = ref(false);
+/** True while the merge+build+check+cleanup request is in flight. */
+const doingDone = ref(false);
+/** Human-readable progress label, driven by server `task.progress` events. */
+const doneLabel = computed(() => {
+  const step = ui.active ? repo.doneSteps[ui.active.id] : undefined;
+  switch (step) {
+    case "merge":
+      return "Merging branch…";
+    case "build":
+      return "Building…";
+    case "check":
+      return "Running repoos check…";
+    case "done":
+      return "Closing out…";
+    default:
+      return "Merging branch…";
+  }
+});
+
+async function moveToDone(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  doingDone.value = true;
+  try {
+    await repo.completeTask(ui.active);
+    confirmDone.value = false;
+  } catch (err) {
+    repo.onError(err);
+    confirmDone.value = false;
+  } finally {
+    doingDone.value = false;
     ui.saving = false;
   }
 }
@@ -620,6 +658,40 @@ async function sendTurn(): Promise<void> {
             <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
               <span class="tc-run"></span> agent running
             </span>
+          </div>
+          <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
+            <template v-if="!confirmDone">
+              <Button
+                variant="default"
+                class="w-full"
+                :disabled="ui.saving"
+                @click="confirmDone = true"
+              >
+                <CheckCheck class="size-3.5" />
+                Move to done
+              </Button>
+            </template>
+            <template v-else>
+              <p class="delete-prompt">
+                Move task #{{ ui.active.id }} to done? This merges
+                <span class="mono">{{ effectiveBranch }}</span> into main, runs
+                <span class="mono">repoos check</span>, then deletes the branch and closes the
+                worktree.
+              </p>
+              <div class="delete-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="ui.saving"
+                  @click="confirmDone = false"
+                >
+                  Cancel
+                </Button>
+                <Button variant="default" size="sm" :disabled="ui.saving" @click="moveToDone">
+                  {{ doingDone ? doneLabel : "Move to done" }}
+                </Button>
+              </div>
+            </template>
           </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
