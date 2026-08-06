@@ -2,18 +2,19 @@
 id: "0026"
 title: Add ability to delete tasks from the UI
 type: feature
-status: inbox
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: "feat/0026-delete-tasks"
 created_at: "2026-08-04T09:36:55Z"
-updated_at: "2026-08-04T09:36:55Z"
+updated_at: "2026-08-06T07:12:50Z"
 ---
 ## Activity
 
 - 2026-08-04T09:36:55Z · created · unknown
+- 2026-08-06T07:12:50Z · status inbox→active
 
 ## Problem
 
