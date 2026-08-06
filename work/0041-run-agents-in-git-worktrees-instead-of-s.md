@@ -2,18 +2,20 @@
 id: "0041"
 title: Run agents in git worktrees instead of switching the working branch
 type: refactor
-status: inbox
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/0041-git-worktrees
 created_at: "2026-08-06T11:00:00Z"
-updated_at: "2026-08-06T11:00:00Z"
+updated_at: "2026-08-06T11:08:11Z"
 ---
 ## Activity
 
 - 2026-08-06T11:00:00Z · created · unknown
+- 2026-08-06T11:08:11Z · status inbox→ready
+- 2026-08-06T11:08:11Z · status ready→active · branch feat/0041-git-worktrees
 
 ## Problem
 
@@ -102,3 +104,8 @@ branch while the main worktree stays exactly where the user left it.
 - 0037 built the launch mechanics this task re-homes to worktrees. 0040
   (drag-to-move status) is independent UI. When worktrees land, the Start work
   caveat from 0037 (branch-switch disruption) goes away.
+
+## Activity
+
+- 2026-08-06T11:08:10Z · status inbox→ready
+- 2026-08-06T11:08:11Z · status ready→active
