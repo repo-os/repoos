@@ -2,14 +2,14 @@
 id: "0045"
 title: Render agent output opencode-style via structured JSON events
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T14:42:05Z"
-updated_at: "2026-08-06T14:42:05Z"
+updated_at: "2026-08-06T18:22:29Z"
 ---
 ## Activity
 
@@ -53,3 +53,7 @@ The agent tab reads like opencode's own UI:
 - The `SESSION_ID_PATTERNS` regexes become unnecessary for opencode but keep them for claude.
 - `--dir <workdir>` must remain in the opencode args — do not drop the fix from #0044.
 - Verify with a real agent turn (Start work), not just unit tests.
+
+## Activity
+
+- 2026-08-06T18:22:29Z · status inbox→ready
