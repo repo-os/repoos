@@ -2,14 +2,14 @@
 id: "0050"
 title: Show version number and build age in the UI's lower-left corner
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-version-number-and-build-age-in-the
 created_at: "2026-08-06T17:25:52Z"
-updated_at: "2026-08-06T17:37:07Z"
+updated_at: "2026-08-06T17:45:07Z"
 ---
 ## Problem
 
@@ -85,3 +85,4 @@ widget fits the existing theme (works in both light and dark).
 - 2026-08-06T17:26:29Z · status inbox→ready
 - 2026-08-06T17:26:30Z · status ready→active, branch
 - 2026-08-06T17:37:07Z · status active→review
+- 2026-08-06T17:45:07Z · status review→done
