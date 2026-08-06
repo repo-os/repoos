@@ -4,8 +4,10 @@
  * We shell out rather than depend on a git library (zero deps).
  */
 import { execFileSync } from "node:child_process";
-import { isAbsolute, relative } from "node:path";
+import { realpathSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
+import { worktreesDir } from "./config.js";
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -56,34 +58,80 @@ export function emptyGitInfo(): TaskGitInfo {
   return { branchExists: false, lastCommit: null, lastCommitAt: null };
 }
 
-export interface EnsureBranchResult {
+export interface EnsureWorktreeResult {
   ok: boolean;
+  /** Absolute path of the working directory the agent should use. */
+  path: string;
+  /** True when a brand-new worktree was created. */
   created: boolean;
+  /** Human-readable failure reason (when not ok). */
   reason?: string;
 }
 
 /**
- * Make sure the repo is on `branch`, creating it from the current HEAD when it
- * does not exist. Fail-soft: returns `{ ok: false, reason }` when git is
- * missing or the checkout fails, so agent launch can degrade gracefully instead
- * of crashing the server.
+ * Branch -> worktree path for every registered linked worktree, derived from
+ * `git worktree list --porcelain`. Empty map when git is missing.
  */
-export function ensureBranch(root: string, branch: string): EnsureBranchResult {
-  if (!isGitRepo(root)) {
-    return { ok: false, created: false, reason: "not a git repository" };
-  }
-  const cur = currentBranch(root);
-  if (cur === branch) return { ok: true, created: false };
-  if (!localBranches(root).has(branch)) {
-    if (git(root, ["checkout", "-b", branch]) === null) {
-      return { ok: false, created: false, reason: "could not create branch" };
+function worktreeList(root: string): Map<string, string> {
+  const out = git(root, ["worktree", "list", "--porcelain"]);
+  const map = new Map<string, string>();
+  if (!out) return map;
+  let cur: string | null = null;
+  for (const line of out.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      cur = line.slice("worktree ".length).trim();
+    } else if (cur && line.startsWith("branch refs/heads/")) {
+      map.set(line.slice("branch refs/heads/".length).trim(), cur);
+      cur = null;
     }
-    return { ok: true, created: true };
   }
-  if (git(root, ["checkout", branch]) === null) {
-    return { ok: false, created: false, reason: "could not check out branch" };
+  return map;
+}
+
+/**
+ * Make sure the agent for `branch` has a dedicated working directory WITHOUT
+ * touching the main worktree's checkout. Three outcomes:
+ *
+ *  - branch is what the main worktree already has checked out -> use root
+ *  - branch already has a linked worktree -> reuse it (idempotent)
+ *  - otherwise -> `git worktree add` a sibling directory for it
+ *
+ * Fail-soft like the branch-switching predecessor: returns `{ ok: false,
+ * reason }` when git is missing or the worktree can't be created, so agent
+ * launch degrades gracefully instead of crashing the server.
+ */
+export function ensureWorktree(root: string, branch: string): EnsureWorktreeResult {
+  if (!isGitRepo(root)) {
+    return { ok: false, path: "", created: false, reason: "not a git repository" };
   }
-  return { ok: true, created: false };
+  if (currentBranch(root) === branch) {
+    return { ok: true, path: root, created: false };
+  }
+  const existing = worktreeList(root).get(branch);
+  if (existing) return { ok: true, path: existing, created: false };
+
+  const target = join(worktreesDir(root), branch);
+  const branchExists = localBranches(root).has(branch);
+  const args = branchExists
+    ? ["worktree", "add", target, branch]
+    : ["worktree", "add", "-b", branch, target];
+  if (git(root, args) === null) {
+    return {
+      ok: false,
+      path: target,
+      created: false,
+      reason: "could not create worktree",
+    };
+  }
+  // git reports real paths (macOS /var -> /private/var); normalize the fresh
+  // path so a later reuse lookup returns the identical string.
+  let path = target;
+  try {
+    path = realpathSync(target);
+  } catch {
+    /* keep the composed path */
+  }
+  return { ok: true, path, created: true };
 }
 
 /** Whether git is installed at all (independent of being inside a repo). */

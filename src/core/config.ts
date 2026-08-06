@@ -4,7 +4,7 @@
  * to avoid a runtime dependency.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
   RepoOSConfig,
@@ -63,6 +63,17 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   uiTheme: "classic",
   agents: [],
 };
+
+/**
+ * Sibling directory that holds per-task agent worktrees, e.g.
+ * `/path/to/repoos` -> `/path/to/repoos-worktrees/`. Kept OUTSIDE the repo
+ * root so a linked worktree can never dirty the main checkout or confuse
+ * `repoos check` staleness. `<branch>` path segments are kept so a worktree
+ * for `feat/123-x` lives at `<dir>/feat/123-x`.
+ */
+export function worktreesDir(root: string): string {
+  return join(dirname(root), `${basename(root)}-worktrees`);
+}
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
 export function findRepoRoot(start: string = process.cwd()): string {

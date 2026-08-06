@@ -37,7 +37,7 @@ import {
   patchTomlConfig,
   loadConfig,
 } from "../core/config.js";
-import { ensureBranch } from "../core/git.js";
+import { ensureWorktree } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
@@ -417,20 +417,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           // The task's branch wins; otherwise derive one from the title (the
           // same rule the task drawer uses) and persist it with the transition.
+          // The agent works in a git worktree on that branch so the main
+          // checkout — and the user — is never yanked off the current branch.
           const branch = existing.branch || deriveBranch(existing.title);
-          const branchRes = ensureBranch(config.root, branch);
+          const wtRes = ensureWorktree(config.root, branch);
           const patch: TaskPatch = { status: "active" };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch);
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
           // Best-effort spawn — never block the HTTP response on the agent.
-          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent);
+          const cwd = wtRes.ok ? wtRes.path : config.root;
+          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent, { cwd });
           return json(res, 200, {
             ok: true,
             task: index.getTask(updated.id),
             branch,
-            git: branchRes.ok ? "ok" : branchRes.reason ?? "unknown",
+            git: wtRes.ok ? "ok" : wtRes.reason ?? "unknown",
+            worktree: wtRes.ok ? wtRes.path : undefined,
             spawn: {
               ok: spawnRes.ok,
               pid: spawnRes.pid,

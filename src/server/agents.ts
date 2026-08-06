@@ -30,11 +30,14 @@ export interface RunningAgentInfo {
   id: string;
   pid: number;
   startedAt: string;
+  /** Working directory the agent runs in (worktree path, or repo root). */
+  workdir?: string;
 }
 
 interface Entry {
   proc: ChildProcess;
   startedAt: string;
+  workdir?: string;
   killTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -64,18 +67,20 @@ function cliCommand(cli: string, mission: string): { cmd: string; args: string[]
 }
 
 /** The mission handed to the coding agent: instructions + task pointer. */
-function missionFor(task: Task, branch: string, agent: Agent): string {
+function missionFor(task: Task, branch: string, workdir: string, agent: Agent): string {
   return [
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
     "",
     `Task #${task.id}: ${task.title}`,
     `Task file: ${task.path}`,
-    `Branch: ${branch} (already checked out — work here).`,
+    `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
     "",
     "Follow the repo's AGENTS.md operating loop:",
     "1. Read the task file and implement what it describes.",
     "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test).",
     "3. Set the task status to `review` and leave the branch open — do NOT merge or delete the branch.",
+    "",
+    "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
   ].join("\n");
 }
 
@@ -96,7 +101,12 @@ export class AgentRunner {
   running(): RunningAgentInfo[] {
     const out: RunningAgentInfo[] = [];
     for (const [id, e] of this.entries) {
-      out.push({ id, pid: e.proc.pid ?? -1, startedAt: e.startedAt });
+      out.push({
+        id,
+        pid: e.proc.pid ?? -1,
+        startedAt: e.startedAt,
+        workdir: e.workdir,
+      });
     }
     return out;
   }
@@ -105,15 +115,20 @@ export class AgentRunner {
    * Spawn the coding agent on the task. Never blocks — the child runs
    * detached from the HTTP response. Returns a StartResult describing the
    * launch attempt; an async spawn failure is emitted as agent.exited.
+   *
+   * `opts.cwd` is the task's worktree directory when one was provisioned;
+   * defaults to the repo root so launch still works (best-effort) when
+   * worktree setup failed or the task's branch is the main checkout.
    */
-  start(task: Task, branch: string, agent: Agent): StartResult {
+  start(task: Task, branch: string, agent: Agent, opts: { cwd?: string } = {}): StartResult {
     if (this.entries.has(task.id)) {
       return { ok: false, reason: "task is already running" };
     }
-    const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, agent));
+    const cwd = opts.cwd ?? this.config.root;
+    const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent));
     let proc: ChildProcess;
     try {
-      proc = spawn(cmd, args, { cwd: this.config.root, stdio: "ignore" });
+      proc = spawn(cmd, args, { cwd, stdio: "ignore" });
     } catch (err) {
       this.emit({ type: "agent.exited", id: task.id, at: now() });
       const reason = err instanceof Error ? err.message : String(err);
@@ -123,6 +138,7 @@ export class AgentRunner {
     this.entries.set(task.id, {
       proc,
       startedAt: now(),
+      workdir: opts.cwd,
     });
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause.
