@@ -506,6 +506,24 @@
   .agent-empty{font-size:12.5px;color:var(--txt-faint);padding:14px 2px 16px}
   .agent-dirty{font-size:11.5px;color:var(--amber);font-family:'JetBrains Mono',monospace}
 
+  /* detected coding agents panel */
+  .detect-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--border);flex-wrap:wrap}
+  .detect-row-left{display:flex;align-items:center;gap:9px;min-width:230px;flex:0 0 auto}
+  .detect-row-right{display:flex;align-items:center;gap:10px;flex:1;min-width:0;flex-wrap:wrap;font-size:11.5px;color:var(--txt-dim);font-family:'JetBrains Mono',monospace}
+  .detect-badge{width:8px;height:8px;border-radius:50%;flex:none}
+  .detect-pill{font-size:9.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+  .detect-bin{color:var(--txt);font-weight:600}
+  .detect-path{color:var(--txt-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
+  .detect-ver{color:var(--txt-dim)}
+  .detect-driver-yes{color:var(--green);border-color:var(--green)}
+  .detect-driver-no{color:var(--txt-faint)}
+  .detect-hint{display:flex;align-items:center;gap:8px;color:var(--txt-faint);flex-wrap:wrap}
+  .detect-hint code{background:var(--panel-solid);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--txt);font-size:10.5px;white-space:nowrap}
+  .detect-copy{background:none;border:none;color:var(--cyan);cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;padding:2px 4px;border-radius:5px}
+  .detect-copy:hover{background:var(--cyan-dim)}
+  .detect-loading{color:var(--txt-faint);font-size:12px;padding:14px 2px 16px}
+  .detect-foot{display:flex;justify-content:flex-end;padding:10px 0 12px}
+
   /* ---------- clear design theme ---------- */
   :root[data-ui-theme="clear"]{
     --bg:#0d1014; --bg-2:#11151b; --panel:#161b23; --panel-solid:#1a2029;
