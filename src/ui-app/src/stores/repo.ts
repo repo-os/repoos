@@ -243,6 +243,27 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
 
+  /** Freeform create: routes the explanation through the PM agent server-side. */
+  async function createFreeformTask(
+    explanation: string,
+  ): Promise<{
+    ok: boolean;
+    fallback?: boolean;
+    fallbackReason?: "no-pm-agent" | "agent-failed";
+    reason?: string;
+    task: Task;
+  }> {
+    const r = await api<{
+      ok: boolean;
+      fallback?: boolean;
+      fallbackReason?: "no-pm-agent" | "agent-failed";
+      reason?: string;
+      task: Task;
+    }>("/api/tasks/freeform", JSON_OPTS("POST", { explanation }));
+    if (!r.ok) throw new Error(r.reason ?? "could not create task");
+    return r;
+  }
+
   async function deleteTask(id: string): Promise<void> {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
   }
@@ -291,6 +312,7 @@ export const useRepoStore = defineStore("repo", () => {
     setStatus,
     patchTask,
     createTask,
+    createFreeformTask,
     deleteTask,
     isRunning,
     startWork,

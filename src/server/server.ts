@@ -13,6 +13,7 @@
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
+ *   POST /api/tasks/freeform   -> create from a freeform explanation via the PM agent
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
  *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
@@ -44,7 +45,8 @@ import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
-import { AgentRunner, deriveBranch, resolveEngineer } from "./agents.js";
+import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
+import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 
 export interface ServeOptions {
   root?: string;
@@ -388,6 +390,56 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // own SSE stream sees it without waiting on fs latency.
         index.applyFileChange(created.absPath);
         return json(res, 201, index.getTask(created.id));
+      }
+      if (path === "/api/tasks/freeform" && method === "POST") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        const explanation =
+          typeof body?.explanation === "string" ? body.explanation.trim() : "";
+        if (!explanation) {
+          return json(res, 400, { error: "explanation is required" });
+        }
+
+        // Fallback helper: persist the raw explanation as a draft task so a
+        // missing/failed PM agent never loses the user's capture.
+        const saveDraft = (fallbackReason: "no-pm-agent" | "agent-failed", detail?: string) => {
+          const created = repoos.createTask({
+            title: explanationTitle(explanation),
+            body: explanation,
+            status: "draft",
+          });
+          index.applyFileChange(created.absPath);
+          return json(res, 201, {
+            ok: true,
+            fallback: true,
+            fallbackReason,
+            reason: detail,
+            task: index.getTask(created.id),
+          });
+        };
+
+        const pm = resolvePmAgent(config);
+        if (!pm) {
+          return saveDraft("no-pm-agent");
+        }
+
+        const result = await runPrompt(pm, pmPrompt(explanation), { cwd: config.root });
+        if (!result.ok || !result.output) {
+          return saveDraft(
+            "agent-failed",
+            result.error ?? "the PM agent returned no usable output",
+          );
+        }
+        const fields = parseGeneratedTask(result.output);
+        if (!fields.title || !fields.body) {
+          return saveDraft("agent-failed", "the PM agent returned unusable output");
+        }
+        const created = repoos.createTask(fields);
+        index.applyFileChange(created.absPath);
+        return json(res, 201, {
+          ok: true,
+          fallback: false,
+          task: index.getTask(created.id),
+        });
       }
       if (taskMatch && method === "PATCH") {
         const existing = index.getTask(taskMatch[1]);

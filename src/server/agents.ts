@@ -92,6 +92,12 @@ export function resolveEngineer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 }
 
+/** Resolve the enabled `pm` agent, or null when none is configured. */
+export function resolvePmAgent(config: RepoOSConfig): Agent | null {
+  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  return list.find((a) => a.enabled && a.name === "pm") ?? null;
+}
+
 /** Map an agent `cli` string to the binary + args that run it headless. */
 function cliCommand(cli: string, mission: string): { cmd: string; args: string[] } {
   if (cli === "claude code") return { cmd: "claude", args: ["-p", mission] };
@@ -140,6 +146,89 @@ function missionFor(task: Task, branch: string, workdir: string, agent: Agent): 
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
   ].join("\n");
+}
+
+/** One-shot run outcome: resolved stdout, or a human-readable failure. */
+export interface PromptResult {
+  ok: boolean;
+  output?: string;
+  error?: string;
+}
+
+/** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
+const PROMPT_TIMEOUT_MS = 180_000;
+
+/**
+ * Map an agent `cli` to a one-shot (print mode) invocation that writes its
+ * answer to stdout. opencode: `run`, claude: `-p`. Mirrors `cliCommand` (the
+ * streaming runner) exactly — the configured model is a RepoOS-side label, not
+ * a model id either CLI accepts, so it is deliberately not forwarded.
+ */
+function promptCommand(agent: Agent, prompt: string): { cmd: string; args: string[] } {
+  if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt] };
+  return { cmd: "opencode", args: ["run", prompt] };
+}
+
+/**
+ * Run a coding agent once, non-interactively, and capture its full stdout.
+ * Unlike the streaming runner this is synchronous — callers wait for the whole
+ * answer (e.g. freeform task creation). Never throws: failures and timeouts
+ * resolve as `{ ok: false, error }` so an HTTP handler can respond cleanly.
+ */
+export function runPrompt(
+  agent: Agent,
+  prompt: string,
+  opts: { cwd?: string; timeoutMs?: number } = {},
+): Promise<PromptResult> {
+  const cwd = opts.cwd ?? process.cwd();
+  const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
+  return new Promise((resolve) => {
+    const { cmd, args } = promptCommand(agent, prompt);
+    let proc: ChildProcess;
+    try {
+      proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      resolve({ ok: false, error: `could not launch ${cmd}: ${reason}` });
+      return;
+    }
+
+    const out: Buffer[] = [];
+    const errOut: Buffer[] = [];
+    proc.stdout?.on("data", (c: Buffer) => out.push(c));
+    proc.stderr?.on("data", (c: Buffer) => errOut.push(c));
+
+    const timer = setTimeout(() => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* already gone */
+      }
+      resolve({
+        ok: false,
+        error: `the ${agent.cli} agent timed out after ${Math.round(timeoutMs / 1000)}s`,
+      });
+    }, timeoutMs);
+
+    const done = (): void => {
+      clearTimeout(timer);
+      const output = Buffer.concat(out).toString("utf8").trim();
+      const stderr = Buffer.concat(errOut).toString("utf8").trim();
+      if (output) {
+        resolve({ ok: true, output });
+        return;
+      }
+      const reason = stderr
+        ? stderr.split("\n").slice(-3).join(" ").trim()
+        : "no output produced";
+      resolve({ ok: false, error: `${cmd} exited without output: ${reason}` });
+    };
+    proc.on("exit", () => done());
+    proc.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
+    });
+  });
 }
 
 export class AgentRunner {

@@ -81,6 +81,78 @@ beforeEach(() => {
   mockFetch();
 });
 
+describe("freeform task creation", () => {
+  it("posts the explanation and returns the created task", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const task = makeTask({ id: "0043", title: "Generated task" });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/api/tasks/freeform"))
+        return json({ ok: true, fallback: false, task });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    const res = await repo.createFreeformTask("make issues editable");
+    expect(res.task.id).toBe("0043");
+    expect(res.fallback).toBe(false);
+    const call = vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes("/freeform"));
+    expect(call).toBeTruthy();
+    const opts = call![1] as RequestInit;
+    expect(JSON.parse(opts.body as string)).toEqual({
+      explanation: "make issues editable",
+    });
+  });
+
+  it("surfaces a fallback draft when no PM agent is configured", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const draft = makeTask({ id: "0043", status: "draft" });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/api/tasks/freeform"))
+        return json({ ok: true, fallback: true, fallbackReason: "no-pm-agent", task: draft });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    const res = await repo.createFreeformTask("rough idea");
+    expect(res.fallback).toBe(true);
+    expect(res.fallbackReason).toBe("no-pm-agent");
+    expect(res.task.status).toBe("draft");
+  });
+
+  it("throws when the freeform create fails", async () => {
+    const json = async (data: unknown) => ({ ok: false, status: 500, json: async () => data });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/api/tasks/freeform"))
+        return json({ error: "explanation is required" });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.createFreeformTask("")).rejects.toThrow("explanation is required");
+  });
+});
+
 describe("status helpers", () => {
   it("maps every status to a color with a fallback", () => {
     const repo = useRepoStore();
