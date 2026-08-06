@@ -2,14 +2,14 @@
 id: "0046"
 title: Fix repoos serve to serve UI assets from the repo root
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T14:42:07Z"
-updated_at: "2026-08-06T14:42:07Z"
+updated_at: "2026-08-06T18:03:57Z"
 ---
 ## Activity
 
@@ -48,3 +48,7 @@ sees its own fresh UI.
 - Touch `src/server/server.ts` only (the `findUiDir` function and its call site — it receives the resolved root).
 - Root resolution must stay as-is (`findRepoRoot` from cwd); only the UI dir lookup changes.
 - Rebuild (`bun run build`) and verify with a live serve in a worktree, not just unit reasoning.
+
+## Activity
+
+- 2026-08-06T18:03:57Z · status inbox→ready
