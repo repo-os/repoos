@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X } from "lucide-vue-next";
 import type { Task } from "../types";
@@ -150,6 +150,19 @@ const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value)
 
 /** Spec body is a readable card that expands into a large textarea on click. */
 const specEditing = ref(false);
+const specTextarea = ref<HTMLTextAreaElement | null>(null);
+
+/** Grow the spec textarea to fit its content so editing never feels cramped. */
+function autoGrowSpec(): void {
+  const el = specTextarea.value;
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
+watch(specEditing, (editing) => {
+  if (editing) nextTick(autoGrowSpec);
+});
 
 let draftFromId = "";
 watch(
@@ -410,7 +423,14 @@ function cancelDraft(): void {
             <div class="md-card-body">{{ draft.body || "No spec yet — click to add." }}</div>
           </button>
           <template v-else>
-            <textarea class="md-edit" v-model="draft.body" rows="12" placeholder="Markdown body"></textarea>
+            <textarea
+              ref="specTextarea"
+              class="md-edit"
+              v-model="draft.body"
+              rows="12"
+              placeholder="Markdown body"
+              @input="autoGrowSpec"
+            ></textarea>
             <div class="spec-hint">Click Save to apply the spec.</div>
           </template>
           <div class="md-h" style="margin-top: 4px">meta</div>
