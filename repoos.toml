@@ -8,4 +8,4 @@ cacheDir = ".repoos"
 
 theme = "system"
 strictBuild = false
-uiTheme = "clear"
+uiTheme = "classic"
