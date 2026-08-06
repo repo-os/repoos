@@ -2,14 +2,14 @@
 id: "0033"
 title: "Add a 'gen z' design theme"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ai
 branch: feat/0033-gen-z-theme
 created_at: "2026-08-06T10:00:00Z"
-updated_at: "2026-08-06T12:15:00Z"
+updated_at: "2026-08-06T12:30:00Z"
 ---
 ## Activity
 
@@ -22,6 +22,8 @@ updated_at: "2026-08-06T12:15:00Z"
   confirmed loaded); the dark/light/system preference in Settings now applies
   live the moment it changes (no Save click) with a smooth cross-fade
   (theme-anim); re-verified, `repoos check` green
+- 2026-08-06T12:30:00Z · review→done · ai — approved by human; merged to main,
+  branch deleted
 
 ## Problem
 
