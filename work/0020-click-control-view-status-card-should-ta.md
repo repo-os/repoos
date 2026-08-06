@@ -2,20 +2,21 @@
 id: "0020"
 title: Click Control View status card should take you to filtered work list
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: "feat/0020-status-card-filter"
 created_at: "2026-06-03T17:59:39Z"
-updated_at: "2026-08-06T07:05:00Z"
+updated_at: "2026-08-06T07:10:00Z"
 ---
 ## Activity
 
 - 2026-06-03T17:59:39Z · created · unknown
 - 2026-08-06T06:58:00Z · status inbox→active · spec added + order fix folded in
 - 2026-08-06T07:05:00Z · status active→review · implemented; repoos check green
+- 2026-08-06T07:10:00Z · merged to main · ai
 
 ## Problem
 
