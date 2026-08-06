@@ -2,14 +2,14 @@
 id: "0047"
 title: Add a Move-to-done action for review tasks that merges the branch and closes the worktree
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-move-to-done-action-for-review-tas
 created_at: "2026-08-06T15:10:14Z"
-updated_at: "2026-08-06T17:09:07Z"
+updated_at: "2026-08-06T17:15:22Z"
 ---
 ## Activity
 
@@ -92,3 +92,4 @@ The reviewer never touches a terminal.
 
 - 2026-08-06T15:10:48Z · status inbox→ready
 - 2026-08-06T17:09:07Z · status active→review, branch
+- 2026-08-06T17:15:22Z · status review→done
