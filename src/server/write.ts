@@ -13,10 +13,12 @@
  * conflict surface is concurrent writes to the SAME task — which this handles.
  */
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { execFileSync } from "node:child_process";
+import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { parseTask, serializeTask, recordChange, utcTimestamp } from "../core/task.js";
+import { commitTaskFile } from "../core/git.js";
 
 export interface TaskPatch {
   status?: Status;
@@ -116,6 +118,11 @@ export function patchTaskFile(
   }
   writeFileSync(absPath, serializeTask(current));
 
+  // Keep the task file committed in main so a later close-out merge never
+  // aborts on an untracked or dirty copy. Fail-soft: the write itself already
+  // succeeded; a git failure only means a future merge must commit first.
+  commitTaskFile(config.root, absPath, `docs(${current.id}): update task`);
+
   // Re-parse so the returned object reflects exactly what's on disk.
   return parseTask({
     content: readFileSync(absPath, "utf8"),
@@ -143,5 +150,25 @@ export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
     throw new WriteError(`Task file not found: ${abs}`);
   }
   unlinkSync(abs);
+  // Tracked task files must not linger as staged deletions — commit the
+  // removal (fail-soft) so main stays mergeable. Untracked files need nothing.
+  const rel = relative(config.root, abs);
+  if (gitTracked(config.root, rel)) {
+    commitTaskFile(config.root, abs, `docs(${basename(abs).split("-")[0]}): delete task`);
+  }
   return abs;
+}
+
+/** Whether git tracks a (relative) path in the given checkout. */
+function gitTracked(root: string, rel: string): boolean {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
+      cwd: root,
+      stdio: "ignore",
+      timeout: 4000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
