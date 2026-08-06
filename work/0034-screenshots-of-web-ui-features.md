@@ -2,19 +2,20 @@
 id: "0034"
 title: "Web UI screenshots folder, kept fresh, for landing page + README"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ai
 branch: "feat/0034-screenshots"
 created_at: "2026-08-06T13:00:00Z"
-updated_at: "2026-08-06T10:25:00Z"
+updated_at: "2026-08-06T10:30:00Z"
 ---
 ## Activity
 
 - 2026-08-06T13:00:00Z · created · unknown
 - 2026-08-06T10:25:00Z · implemented: capture script, fixtures, check gate · ai
+- 2026-08-06T10:30:00Z · merged to main · ai
 
 ## Problem
 
