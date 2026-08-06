@@ -2,14 +2,14 @@
 id: "0042"
 title: Add a per-task agent chat tab with streaming output and session resume
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0042-agent-chat-tab
 created_at: "2026-08-06T11:05:00Z"
-updated_at: "2026-08-06T12:02:58Z"
+updated_at: "2026-08-06T13:11:15Z"
 ---
 ## Activity
 
@@ -137,3 +137,4 @@ green `repoos check`.
 - 2026-08-06T11:41:18Z · status inbox→ready
 - 2026-08-06T11:41:19Z · status ready→active
 - 2026-08-06T12:02:58Z · status active→review
+- 2026-08-06T13:11:15Z · status review→done
