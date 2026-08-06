@@ -7,6 +7,7 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { join, relative } from "node:path";
 import type { Agent, RepoOSConfig, Task } from "../core/types.js";
 import { DEFAULT_AGENTS } from "../core/config.js";
 
@@ -92,11 +93,19 @@ export function resolveEngineer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 }
 
-/** Map an agent `cli` string to the binary + args that run it headless. */
-function cliCommand(cli: string, mission: string): { cmd: string; args: string[] } {
+/**
+ * Map an agent `cli` string to the binary + args that run it headless.
+ *
+ * opencode re-resolves its project directory from `--git-common-dir`, which
+ * for a linked worktree points at the main repo's `.git` — so every worktree
+ * path would be treated as `external_directory` and auto-rejected. `--dir`
+ * forces the worktree path explicitly. claude code uses the spawn `cwd` and
+ * needs no flag.
+ */
+function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; args: string[] } {
   if (cli === "claude code") return { cmd: "claude", args: ["-p", mission] };
   // default: opencode's headless `run` mode
-  return { cmd: "opencode", args: ["run", mission] };
+  return { cmd: "opencode", args: ["run", "--dir", cwd, mission] };
 }
 
 /**
@@ -109,6 +118,7 @@ function resumeCommand(
   cli: string,
   text: string,
   sessionId?: string,
+  cwd?: string,
 ): { cmd: string; args: string[] } {
   if (cli === "claude code") {
     return {
@@ -118,23 +128,40 @@ function resumeCommand(
   }
   return {
     cmd: "opencode",
-    args: ["run", ...(sessionId ? ["--session", sessionId] : []), text],
+    args: [
+      "run",
+      ...(sessionId ? ["--session", sessionId] : []),
+      ...(cwd ? ["--dir", cwd] : []),
+      text,
+    ],
   };
 }
 
 /** The mission handed to the coding agent: instructions + task pointer. */
-function missionFor(task: Task, branch: string, workdir: string, agent: Agent): string {
+function missionFor(
+  task: Task,
+  branch: string,
+  workdir: string,
+  agent: Agent,
+  config: RepoOSConfig,
+): string {
+  // The same task file exists in the worktree (checked out on `branch`) and in
+  // the main checkout. The live board reads the MAIN copy; the branch carries
+  // the worktree copy. Status edits must reach BOTH so the user sees review
+  // immediately without serving a per-task port.
+  const worktreeTask = join(workdir, relative(config.root, task.path));
   return [
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
     "",
     `Task #${task.id}: ${task.title}`,
-    `Task file: ${task.path}`,
     `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
+    `Task file (this worktree — edit + commit on the branch): ${worktreeTask}`,
+    `Task file (main checkout — the live board reads this copy): ${task.path}`,
     "",
     "Follow the repo's AGENTS.md operating loop:",
     "1. Read the task file and implement what it describes.",
     "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test).",
-    "3. Set the task status to `review` and leave the branch open — do NOT merge or delete the branch.",
+    "3. Set the task status to `review` in BOTH copies of the task file: update the `status` field in the worktree copy above and commit that change on the branch, AND update the main-checkout copy (the second path above) the same way WITHOUT committing there — the board on the main server reads the main copy, so editing it is how the user sees your update. Leave the branch open — do NOT merge or delete the branch.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
@@ -187,7 +214,7 @@ export class AgentRunner {
     const session = this.sessions.get(task.id) ?? { lines: [], pending: "", bytes: 0 };
     session.workdir = cwd;
     this.sessions.set(task.id, session);
-    const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent));
+    const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent, this.config), cwd);
     return this.spawnTurn(task.id, cmd, args, cwd);
   }
 
@@ -204,7 +231,7 @@ export class AgentRunner {
     if (this.entries.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
-    const { cmd, args } = resumeCommand(agent.cli, text, session.sessionId);
+    const { cmd, args } = resumeCommand(agent.cli, text, session.sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
   }
 
