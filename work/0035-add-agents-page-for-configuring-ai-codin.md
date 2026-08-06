@@ -2,14 +2,14 @@
 id: "0035"
 title: Add Agents page for configuring AI coding agents
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0035-agents-page
 created_at: "2026-08-06T08:43:16Z"
-updated_at: "2026-08-06T09:00:00Z"
+updated_at: "2026-08-06T08:51:11Z"
 ---
 ## Activity
 
@@ -99,3 +99,7 @@ Settings) that lists the AI agents the repo knows about.
 
 - 0006 / 0013 established the settings + config-edit path this builds on; the
   Agents page is the next layer of the same story.
+
+## Activity
+
+- 2026-08-06T08:51:11Z · status ready→active
