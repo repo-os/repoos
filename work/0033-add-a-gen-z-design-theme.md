@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ai
 branch: feat/0033-gen-z-theme
 created_at: "2026-08-06T10:00:00Z"
-updated_at: "2026-08-06T11:30:00Z"
+updated_at: "2026-08-06T12:15:00Z"
 ---
 ## Activity
 
@@ -17,6 +17,11 @@ updated_at: "2026-08-06T11:30:00Z"
 - 2026-08-06T11:30:00Z · status active→review · ai — implemented; `repoos check`
   green (incl. theme-contrast gate on the new gen-z token blocks); browser-verified
   all three themes in dark + light with zero console errors
+- 2026-08-06T12:15:00Z · review→review · ai — review feedback: gen-z now uses an
+  unmistakably rounded font (Baloo 2 body + Bricolage Grotesque display, both
+  confirmed loaded); the dark/light/system preference in Settings now applies
+  live the moment it changes (no Save click) with a smooth cross-fade
+  (theme-anim); re-verified, `repoos check` green
 
 ## Problem
 

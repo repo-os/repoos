@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import type { ConfigField } from "../types";
@@ -23,7 +23,14 @@ export const useConfigStore = defineStore("config", () => {
   const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
   const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
 
-  function applyTheme(t: string): void {
+  function animateTheme(): void {
+    const el = document.documentElement;
+    el.classList.add("theme-anim");
+    clearTimeout(themeAnimTimer);
+    themeAnimTimer = setTimeout(() => el.classList.remove("theme-anim"), 300);
+  }
+
+  function applyTheme(t: string, animate = false): void {
     if (t === "system") {
       document.documentElement.dataset.theme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
@@ -31,17 +38,13 @@ export const useConfigStore = defineStore("config", () => {
     } else {
       document.documentElement.dataset.theme = t;
     }
+    if (animate) animateTheme();
   }
 
   function applyUiTheme(t: string, animate = false): void {
     uiTheme.value = t;
     document.documentElement.dataset.uiTheme = t;
-    if (animate) {
-      const el = document.documentElement;
-      el.classList.add("theme-anim");
-      clearTimeout(themeAnimTimer);
-      themeAnimTimer = setTimeout(() => el.classList.remove("theme-anim"), 300);
-    }
+    if (animate) animateTheme();
   }
 
   async function setUiTheme(t: string): Promise<void> {
@@ -54,6 +57,15 @@ export const useConfigStore = defineStore("config", () => {
       throw err;
     }
   }
+
+  // Apply the dark/light/system preference the moment it changes in the
+  // settings form, so it takes effect live without hitting "Save changes".
+  watch(
+    () => form.theme,
+    (t) => {
+      if (typeof t === "string") applyTheme(t, true);
+    }
+  );
 
   function fillForm(res: ConfigResponse): void {
     for (const f of res.schema) {

@@ -544,8 +544,8 @@
     --cyan:#3ee8ff; --cyan-dim:rgba(62,232,255,0.14);
     --violet:#b58cff; --violet-dim:rgba(181,140,255,0.14);
     --green:#4df2a7; --red:#ff6b8a; --amber:#ffb454;
-    --font-sans:'Space Grotesk','Sora',sans-serif;
-    --font-display:'Bricolage Grotesque','Space Grotesk',sans-serif;
+    --font-sans:'Baloo 2','Space Grotesk','Sora',sans-serif;
+    --font-display:'Bricolage Grotesque','Baloo 2',sans-serif;
     --body-gradient:radial-gradient(700px 460px at 8% -6%,rgba(255,93,240,0.14),transparent 60%),radial-gradient(760px 480px at 104% -4%,rgba(181,140,255,0.16),transparent 55%),radial-gradient(900px 600px at 50% 120%,rgba(62,232,255,0.08),transparent 60%);
     --topbar-bg:linear-gradient(180deg,rgba(29,20,51,0.95),rgba(22,15,38,0.8));
     --logo-shadow:0 6px 20px -6px rgba(255,93,240,0.5);
@@ -587,7 +587,7 @@
     --cyan:#0a7fbd; --cyan-dim:rgba(10,127,189,0.1);
     --violet:#7a48e8; --violet-dim:rgba(122,72,232,0.1);
     --green:#0f9d5f; --red:#d0344f; --amber:#b8630a;
-    --font-display:'Bricolage Grotesque','Space Grotesk',sans-serif;
+    --font-display:'Bricolage Grotesque','Baloo 2','Space Grotesk',sans-serif;
     --body-gradient:none;
     --topbar-bg:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(253,246,233,0.85));
     --logo-shadow:0 6px 18px -8px rgba(214,58,200,0.35);
@@ -673,7 +673,7 @@
   .theme-switch button.on{background:var(--nav-active-bg);color:var(--nav-active-color)}
 
   /* gentle cross-fade while switching themes (class toggled by the config store) */
-  :root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .side-foot,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
+  :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .nav-badge,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
 
   /* reduced motion */
   @layer base{
