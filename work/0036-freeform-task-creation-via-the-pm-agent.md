@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0036-freeform-task-creation
 created_at: "2026-08-06T08:47:55Z"
-updated_at: "2026-08-06T14:46:05Z"
+updated_at: "2026-08-06T21:36:00Z"
 ---
 ## Activity
 
@@ -17,6 +17,10 @@ updated_at: "2026-08-06T14:46:05Z"
 - 2026-08-06T09:05:00Z · spec fleshed out: freeform explanation → PM agent
   writes the task file; manual form kept, toggleable in settings · ai
 - 2026-08-06T09:05:00Z · status inbox→ready
+- 2026-08-06T21:36:00Z · implemented: freeform drawer default + tabs, PM-agent
+  invocation via POST /api/tasks/freeform, no-agent/agent-failure draft fallback,
+  defaultTaskMode settings toggle; repoos check green · ai
+- 2026-08-06T21:36:00Z · status ready→review
 
 ## Problem
 
@@ -102,12 +106,3 @@ The **New task** drawer gains a freeform flow as its default:
 
 - 0035 (Agents page) provides the PM agent this task consumes.
 - 0004 (editable tasks) gives the drawer edit view the generated task opens in.
-
-## Activity
-
-- 2026-08-06T13:31:59Z · status ready→active
-- 2026-08-06T14:08:29Z · status active→ready
-- 2026-08-06T14:08:30Z · status ready→active
-- 2026-08-06T14:10:30Z · status active→ready
-- 2026-08-06T14:13:38Z · status ready→active
-- 2026-08-06T14:46:05Z · status active→review

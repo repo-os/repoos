@@ -12,6 +12,7 @@ import type {
   Assignee,
   Theme,
   UiTheme,
+  TaskMode,
 } from "./types.js";
 import { STATUSES } from "./types.js";
 
@@ -61,6 +62,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   cacheDir: ".repoos",
   theme: "system",
   uiTheme: "classic",
+  defaultTaskMode: "freeform",
   agents: [],
 };
 
@@ -166,6 +168,8 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
     if (typeof get("uiTheme") === "string")
       cfg.uiTheme = get("uiTheme") as UiTheme;
+    const taskMode = get("defaultTaskMode");
+    if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
   }
   return cfg;
@@ -222,6 +226,19 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: DEFAULT_CONFIG.defaultStatus,
       options: STATUSES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })),
       description: "Status assigned to new tasks",
+    },
+    {
+      key: "defaultTaskMode",
+      label: "New-task mode",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.defaultTaskMode,
+      options: [
+        { value: "freeform", label: "Freeform (AI writes the task)" },
+        { value: "manual", label: "Manual form" },
+      ],
+      description: "Which flow the New task drawer opens with",
     },
     {
       key: "defaultAssignee",

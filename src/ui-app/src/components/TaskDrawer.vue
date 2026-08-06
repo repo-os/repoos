@@ -5,6 +5,7 @@ import { X, Play, Pause, Send } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import Dialog from "./ui/dialog/root.vue";
@@ -22,6 +23,7 @@ import SelectViewport from "./ui/select/viewport.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const config = useConfigStore();
 const router = useRouter();
 
 const allStatuses = computed(() => [
@@ -37,12 +39,79 @@ function setOpen(v: boolean): void {
 function onOpenAutoFocus(e: Event): void {
   if (ui.isNew) {
     e.preventDefault();
-    requestAnimationFrame(() => document.getElementById("nt-title")?.focus());
+    requestAnimationFrame(() => {
+      const id = newMode.value === "freeform" ? "nt-freeform" : "nt-title";
+      document.getElementById(id)?.focus();
+    });
   }
 }
 
 const taskTypes = ["feature", "bug", "chore", "spec", "refactor"];
 const priorities = ["p0", "p1", "p2", "p3"];
+
+// ---- freeform creation flow ----
+
+/** Which new-task flow the drawer is showing (default from settings). */
+const newMode = ref<"freeform" | "manual">("freeform");
+/** The raw explanation being turned into a task. */
+const freeformText = ref("");
+/** Visible error from a failed PM-agent call (explanation stays intact). */
+const freeformError = ref("");
+/** A fallback draft persisted when the agent failed, opened on request. */
+const draftSaved = ref<Task | null>(null);
+
+/** True when an enabled `pm` agent exists on the Agents page. */
+const pmAgentReady = computed(() => {
+  if (!config.loaded) return true;
+  return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
+});
+
+watch(
+  () => ui.isNew,
+  (isNew) => {
+    if (!isNew) return;
+    newMode.value = config.form.defaultTaskMode === "manual" ? "manual" : "freeform";
+    freeformText.value = "";
+    freeformError.value = "";
+    draftSaved.value = null;
+  },
+);
+
+async function createFreeform(): Promise<void> {
+  const text = freeformText.value.trim();
+  if (!text) return;
+  ui.saving = true;
+  freeformError.value = "";
+  draftSaved.value = null;
+  try {
+    const res = await repo.createFreeformTask(text);
+    // Agent error: keep the explanation in the textarea, show the error, and
+    // point at the draft that preserved the capture.
+    if (res.fallback && res.fallbackReason === "agent-failed") {
+      draftSaved.value = res.task;
+      freeformError.value = res.reason ?? "The PM agent failed";
+      return;
+    }
+    // Success, or the no-PM-agent fallback (raw explanation saved as draft):
+    // open the resulting task in the drawer's edit view so it can be tweaked.
+    ui.close();
+    freeformText.value = "";
+    await ui.openTask(res.task);
+    router.push("/work");
+  } catch (err) {
+    freeformError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+function openDraft(): void {
+  if (!draftSaved.value) return;
+  ui.close();
+  void ui.openTask(draftSaved.value);
+  router.push("/work");
+  draftSaved.value = null;
+}
 
 async function createTask(): Promise<void> {
   if (!ui.nt.title) return;
@@ -315,82 +384,139 @@ async function sendTurn(): Promise<void> {
             <X class="size-[15px]" />
           </DialogClose>
         </div>
+        <div class="drawer-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: newMode === 'freeform' }"
+            @click="newMode = 'freeform'"
+          >
+            Freeform
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: newMode === 'manual' }"
+            @click="newMode = 'manual'"
+          >
+            Manual form
+          </button>
+        </div>
         <div class="drawer-body">
-          <div class="field">
-            <label for="nt-title">Title</label>
-            <Input
-              id="nt-title"
-              v-model="ui.nt.title"
-              placeholder="Add company dashboard"
-              @keyup.enter="createTask"
-            />
-          </div>
-          <div class="field-row">
+          <template v-if="newMode === 'freeform'">
             <div class="field">
-              <label>Type</label>
-              <Select v-model="ui.nt.type">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem v-for="t in taskTypes" :key="t" :value="t">{{ t }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+              <label for="nt-freeform">Describe the task</label>
+              <textarea
+                id="nt-freeform"
+                v-model="freeformText"
+                class="ff-textarea"
+                rows="10"
+                placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
+              ></textarea>
             </div>
-            <div class="field">
-              <label>Priority</label>
-              <Select v-model="ui.nt.priority">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem v-for="p in priorities" :key="p" :value="p">{{ p }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+            <div v-if="!pmAgentReady" class="ff-notice">
+              No PM agent is configured.
+              <router-link :to="{ name: 'agents' }" @click="ui.close()">
+                Set one up on the Agents page
+              </router-link>
+              — until then your explanation is saved as a draft task.
             </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Area</label>
-              <Input v-model="ui.nt.area" placeholder="web" />
+            <div v-if="draftSaved" class="ff-error">
+              The PM agent failed:
+              <span class="mono">{{ freeformError }}</span>
+              — your explanation was saved as draft
+              <span class="mono">#{{ draftSaved.id }}</span> so it isn't lost.
+              <Button variant="outline" size="sm" @click="openDraft">Open draft</Button>
             </div>
-            <div class="field">
-              <label>Assign to</label>
-              <Select
-                :model-value="ui.nt.assignedTo === '' ? 'unassigned' : ui.nt.assignedTo"
-                @update:model-value="
-                  (v) => (ui.nt.assignedTo = v === 'unassigned' ? '' : (v ?? ''))
-                "
+            <div v-else-if="freeformError" class="ff-error">{{ freeformError }}</div>
+            <div class="btn-row" style="margin-top: 20px">
+              <Button variant="outline" @click="ui.close()">Cancel</Button>
+              <Button
+                variant="default"
+                @click="createFreeform"
+                :disabled="ui.saving || !freeformText.trim()"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem value="unassigned">unassigned</SelectItem>
-                    <SelectItem value="ai">AI agent</SelectItem>
-                    <SelectItem value="human">human</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+                {{ ui.saving ? "Asking the PM agent…" : "Create task" }}
+              </Button>
             </div>
-          </div>
-          <div class="btn-row" style="margin-top: 20px">
-            <Button variant="outline" @click="ui.close()">Cancel</Button>
-            <Button variant="default" @click="createTask" :disabled="ui.saving || !ui.nt.title">
-              Create
-            </Button>
-          </div>
+          </template>
+          <template v-else>
+            <div class="field">
+              <label for="nt-title">Title</label>
+              <Input
+                id="nt-title"
+                v-model="ui.nt.title"
+                placeholder="Add company dashboard"
+                @keyup.enter="createTask"
+              />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Type</label>
+                <Select v-model="ui.nt.type">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport
+                      class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                    >
+                      <SelectItem v-for="t in taskTypes" :key="t" :value="t">{{ t }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="field">
+                <label>Priority</label>
+                <Select v-model="ui.nt.priority">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport
+                      class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                    >
+                      <SelectItem v-for="p in priorities" :key="p" :value="p">{{ p }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Area</label>
+                <Input v-model="ui.nt.area" placeholder="web" />
+              </div>
+              <div class="field">
+                <label>Assign to</label>
+                <Select
+                  :model-value="ui.nt.assignedTo === '' ? 'unassigned' : ui.nt.assignedTo"
+                  @update:model-value="
+                    (v) => (ui.nt.assignedTo = v === 'unassigned' ? '' : (v ?? ''))
+                  "
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport
+                      class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                    >
+                      <SelectItem value="unassigned">unassigned</SelectItem>
+                      <SelectItem value="ai">AI agent</SelectItem>
+                      <SelectItem value="human">human</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div class="btn-row" style="margin-top: 20px">
+              <Button variant="outline" @click="ui.close()">Cancel</Button>
+              <Button variant="default" @click="createTask" :disabled="ui.saving || !ui.nt.title">
+                Create
+              </Button>
+            </div>
+          </template>
         </div>
       </template>
 

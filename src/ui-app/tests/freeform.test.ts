@@ -1,0 +1,87 @@
+import { describe, expect, it } from "vitest";
+import {
+  explanationTitle,
+  parseGeneratedTask,
+  pmPrompt,
+} from "../../server/freeform";
+
+describe("parseGeneratedTask", () => {
+  it("extracts title, fields, and body from the agent's generated file", () => {
+    const out = [
+      "---",
+      'id: "0001"',
+      "title: Make issues editable in the UI",
+      "type: feature",
+      "priority: p1",
+      "area: web",
+      "assigned_to: ai",
+      "---",
+      "",
+      "## Problem",
+      "",
+      "Tasks are read-only.",
+      "",
+      "## Acceptance criteria",
+      "",
+      "- [ ] Editable fields",
+    ].join("\n");
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.title).toBe("Make issues editable in the UI");
+    expect(parsed.type).toBe("feature");
+    expect(parsed.priority).toBe("p1");
+    expect(parsed.area).toBe("web");
+    expect(parsed.assignedTo).toBe("ai");
+    expect(parsed.body).toContain("## Acceptance criteria");
+    expect(parsed.body).toContain("- [ ] Editable fields");
+  });
+
+  it("keeps the raw output as the body when the agent returns no frontmatter", () => {
+    const out = "I keep losing my cursor in the editor.";
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.body).toBe(out);
+    expect(parsed.title).toBe("I keep losing my cursor in the editor.");
+  });
+
+  it("ignores invalid type/priority values", () => {
+    const out = [
+      "---",
+      "title: Weird task",
+      "type: not-a-type",
+      "priority: p9",
+      "---",
+      "",
+      "## Problem",
+    ].join("\n");
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.type).toBeUndefined();
+    expect(parsed.priority).toBeUndefined();
+    expect(parsed.title).toBe("Weird task");
+  });
+});
+
+describe("explanationTitle", () => {
+  it("uses the first line of the explanation", () => {
+    expect(explanationTitle("make issues editable in the UI\nand draggable")).toBe(
+      "make issues editable in the UI",
+    );
+  });
+
+  it("truncates a long single-line explanation with an ellipsis", () => {
+    const long =
+      "make issues editable in the UI and also allow reordering them by drag and drop across columns please and thank you";
+    const title = explanationTitle(long);
+    expect(title.length).toBeLessThanOrEqual(60);
+    expect(title.endsWith("…")).toBe(true);
+  });
+});
+
+describe("pmPrompt", () => {
+  it("carries the explanation and the task-file conventions", () => {
+    const prompt = pmPrompt("make issues editable");
+    expect(prompt).toContain("make issues editable");
+    expect(prompt).toContain("Acceptance criteria");
+    expect(prompt).toContain("assigned_to");
+    expect(prompt).toContain("do NOT include");
+    expect(prompt).toContain("starting with the opening '---'");
+  });
+});
