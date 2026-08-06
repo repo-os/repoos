@@ -9,7 +9,18 @@ import { createHash } from "node:crypto";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const srcDir = join(root, "src");
-const buildInfo = { hash: "", generatedAt: new Date().toISOString() };
+const buildInfo = {
+  hash: "",
+  version: "",
+  generatedAt: new Date().toISOString(),
+};
+
+// Record the package version so the served UI can display it. Best-effort.
+try {
+  buildInfo.version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version ?? "";
+} catch {
+  /* keep version empty when package.json is unreadable */
+}
 
 if (existsSync(srcDir)) {
   const hash = createHash("sha256");

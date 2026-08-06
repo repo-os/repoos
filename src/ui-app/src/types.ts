@@ -28,6 +28,10 @@ export interface Health {
   root: string;
   taskCount: number;
   workDir: string;
+  /** App version (package.json), or null when unavailable. */
+  version: string | null;
+  /** ISO timestamp of the last build, or null when unavailable. */
+  buildAt: string | null;
 }
 
 export interface Counts {
