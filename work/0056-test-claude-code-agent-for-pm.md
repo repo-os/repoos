@@ -2,14 +2,14 @@
 id: "0056"
 title: Test Claude Code agent for PM
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: pm
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T18:16:12Z"
-updated_at: "2026-08-06T18:16:12Z"
+updated_at: "2026-08-06T18:18:02Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ An AI agent picks up this task, confirms it can read the task file, and complete
 ## Activity
 
 - 2026-08-06T18:16:12Z · created · unknown
+- 2026-08-06T18:18:02Z · status inbox→ready
