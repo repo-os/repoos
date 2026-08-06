@@ -235,36 +235,126 @@ export interface MergeBranchResult {
 }
 
 /**
+ * Commit a single task file in the main checkout, tracking it first when it is
+ * untracked. Task files are the one path that is routinely edited on both sides
+ * of a close-out merge: an untracked file aborts `git merge` outright, and a
+ * dirty one aborts it with "local changes would be overwritten". Committing the
+ * main copy up front (fail-soft) removes both failure modes — the content is
+ * preserved in history either way. Returns false when git failed and the file
+ * is not clean; callers should treat that as a merge blocker.
+ */
+export function commitTaskFile(root: string, absPath: string, message: string): boolean {
+  const rel = relative(root, absPath);
+  if (rel.startsWith("..") || isAbsolute(rel)) return false;
+  const status = git(root, ["status", "--porcelain", "--", rel]);
+  if (status === null) return false;
+  if (status.trim() === "") return true;
+  if (git(root, ["add", "--", rel]) === null) return false;
+  return git(root, ["commit", "-m", message]) !== null;
+}
+
+/**
+ * The tab-indented paths git lists when a merge aborts because a dirty or
+ * untracked working-tree file would be overwritten, e.g.:
+ *
+ *   error: Your local changes to the following files would be overwritten by
+ *   merge:
+ *   	dist/.build-info.json
+ *   Please commit your changes or stash them before you merge. Aborting
+ */
+function blockingFiles(stderr: string): string[] {
+  return stderr
+    .split("\n")
+    .map((l) => l.replace(/\r$/, ""))
+    .filter((l) => l.startsWith("\t") && l.trim() !== "")
+    .map((l) => l.trim());
+}
+
+/**
  * Merge `branch` into the CURRENT checkout — the main worktree, never the
  * task's worktree. Default merge semantics: fast-forward when main is an
  * ancestor of the branch, otherwise a merge commit (`--no-edit` so we never
  * block on an editor). Longer timeout than `git()`: real merges are slow.
  *
+ * A dirty working tree aborts `git merge` outright (e.g. the build marker that
+ * `repoos check` regenerates on every run). Rather than fail, the exact files
+ * git refuses to overwrite are committed and the merge is retried once.
+ *
  * On a conflict the merge is aborted (`git merge --abort`) so nothing is left
  * half-applied; the conflicted file list is returned and the branch stays
- * untouched.
+ * untouched. The exception: when every conflicted path is listed in
+ * `opts.autoResolve`, the branch's version is taken (`--theirs`) and the merge
+ * is completed — used for the task file, which always changes on both sides of
+ * a close-out merge and whose branch version is authoritative for the task's
+ * final state.
  */
-export function mergeBranch(root: string, branch: string): MergeBranchResult {
+export function mergeBranch(
+  root: string,
+  branch: string,
+  opts: { autoResolve?: string[] } = {},
+): MergeBranchResult {
   const head = currentBranch(root);
-  const ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
-  const run = spawnSync("git", ["merge", "--no-edit", branch], {
+  let ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
+  let run = spawnSync("git", ["merge", "--no-edit", branch], {
     cwd: root,
     encoding: "utf8",
     timeout: 60_000,
   });
+  if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr ?? "")) {
+    const blocking = blockingFiles(run.stderr ?? "");
+    if (blocking.length > 0) {
+      for (const p of blocking) git(root, ["add", "--", p]);
+      if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
+        ff = false;
+        run = spawnSync("git", ["merge", "--no-edit", branch], {
+          cwd: root,
+          encoding: "utf8",
+          timeout: 60_000,
+        });
+      }
+    }
+  }
   const stderr = `${run.stderr ?? ""}\n${run.stdout ?? ""}`;
   if (run.status === 0) {
     return { merged: true, ff, conflicts: [] };
   }
-  const conflicts = stderr
-    .split("\n")
-    .filter((l) => l.includes("CONFLICT"))
-    .map((l) => {
-      const m = l.match(/in (.+)$/);
-      return m ? m[1].trim() : l.trim();
-    })
-    .filter(Boolean);
+  // Authoritative conflicted paths come from the merge-in-progress index, not
+  // from parsing git's prose (modify/delete and rename messages mangle easily).
+  const conflicts =
+    git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
   if (conflicts.length > 0) {
+    // A conflicted path is auto-resolvable when it matches an `autoResolve`
+    // entry exactly or sits under a directory entry (e.g. "dist/").
+    const autoResolvable = (p: string): boolean =>
+      (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+    if (conflicts.every(autoResolvable)) {
+      // Every conflicted path is regenerated output or task bookkeeping, so
+      // resolve toward the branch's version wholesale. `-X theirs` handles
+      // content, modify/delete and add/add conflicts; the tree is clean (dirty
+      // files were committed above), so aborting and re-merging is safe.
+      spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
+      const theirs = spawnSync("git", ["merge", "--no-edit", "-X", "theirs", branch], {
+        cwd: root,
+        encoding: "utf8",
+        timeout: 60_000,
+      });
+      if (theirs.status === 0) {
+        return { merged: true, ff: false, conflicts: [] };
+      }
+      // `-X theirs` still leaves rename/delete and rename/rename conflicts
+      // (git never auto-resolves those). They only occur among the hashed
+      // build assets inside the auto-resolvable directories, which the build
+      // right after this merge regenerates anyway — keep the current
+      // versions and complete the merge.
+      const rest =
+        git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
+      for (const p of rest) git(root, ["checkout", "--ours", "--", p]);
+      if (rest.length > 0) git(root, ["add", "-A", "--", ...rest]);
+      if (git(root, ["commit", "--no-edit"]) !== null) {
+        return { merged: true, ff: false, conflicts: [] };
+      }
+      spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
+    }
     // Nothing may be left half-applied: back out of the merge entirely.
     spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
     return { merged: false, ff: false, conflicts, reason: "merge conflict" };
