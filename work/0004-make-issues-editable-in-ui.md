@@ -2,14 +2,14 @@
 id: "0004"
 title: Make issues editable in UI
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: "feat/0004-edit-task-panel"
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-08-06T07:50:00Z"
+updated_at: "2026-08-06T07:58:00Z"
 ---
 ## Activity
 
@@ -17,6 +17,7 @@ updated_at: "2026-08-06T07:50:00Z"
 - 2026-06-19T06:32:34Z · status inbox→ready
 - 2026-08-06T07:46:22Z · spec fleshed out: full edit form in task drawer · ai
 - 2026-08-06T07:50:00Z · status ready→active
+- 2026-08-06T07:58:00Z · status active→review
 
 ## Problem
 

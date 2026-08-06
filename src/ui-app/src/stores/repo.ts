@@ -149,9 +149,13 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>(`/api/tasks/${id}`);
   }
 
+  async function patchTask(id: string, fields: Record<string, string>): Promise<Task> {
+    return api<Task>(`/api/tasks/${id}`, JSON_OPTS("PATCH", fields));
+  }
+
   async function setStatus(t: Task, status: string): Promise<void> {
     if (t.status === status) return;
-    await api(`/api/tasks/${t.id}`, JSON_OPTS("PATCH", { status }));
+    await patchTask(t.id, { status });
   }
 
   async function createTask(form: {
@@ -207,6 +211,7 @@ export const useRepoStore = defineStore("repo", () => {
     refresh,
     fetchTask,
     setStatus,
+    patchTask,
     createTask,
     deleteTask,
     onError,

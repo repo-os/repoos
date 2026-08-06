@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X } from "lucide-vue-next";
+import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import Button from "./ui/button.vue";
@@ -88,6 +89,87 @@ async function deleteTask(): Promise<void> {
   } finally {
     ui.saving = false;
   }
+}
+
+interface TaskDraft {
+  title: string;
+  type: string;
+  priority: string;
+  area: string;
+  assignedTo: string;
+  branch: string;
+  body: string;
+}
+
+const DRAFT_FIELDS = ["title", "type", "priority", "area", "assignedTo", "branch", "body"] as const;
+
+function emptyDraft(): TaskDraft {
+  return { title: "", type: "feature", priority: "p2", area: "", assignedTo: "", branch: "", body: "" };
+}
+
+/** Editable field values while the drawer is open. */
+const draft = reactive<TaskDraft>(emptyDraft());
+/** Snapshot of the fields at the last sync; the baseline Save diffs against. */
+const original = reactive<TaskDraft>(emptyDraft());
+
+function baseline(): void {
+  for (const k of DRAFT_FIELDS) original[k] = draft[k];
+}
+
+function initDraft(t: Task): void {
+  draft.title = t.title;
+  draft.type = t.type;
+  draft.priority = t.priority;
+  draft.area = t.area;
+  draft.assignedTo = t.assignedTo;
+  draft.branch = t.branch;
+  draft.body = t.body;
+  baseline();
+}
+
+function changedFields(): (keyof TaskDraft)[] {
+  return DRAFT_FIELDS.filter((k) => draft[k] !== original[k]);
+}
+
+const dirty = computed(() => changedFields().length > 0);
+
+let draftFromId = "";
+watch(
+  () => ui.active,
+  (t) => {
+    if (!t) {
+      draftFromId = "";
+      return;
+    }
+    if (t.id !== draftFromId) {
+      // Different task (or drawer just reopened): load a fresh draft.
+      initDraft(t);
+      draftFromId = t.id;
+      return;
+    }
+    // Same task got updated (SSE task.updated). Resync only when the user has
+    // no unsaved edits, so concurrent changes never clobber the draft.
+    if (!dirty.value) initDraft(t);
+  },
+);
+
+async function saveDraft(): Promise<void> {
+  if (!ui.active || !dirty.value) return;
+  const patch: Record<string, string> = {};
+  for (const k of changedFields()) patch[k] = draft[k];
+  ui.saving = true;
+  try {
+    await repo.patchTask(ui.active.id, patch);
+    baseline();
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+function cancelDraft(): void {
+  if (ui.active) initDraft(ui.active);
 }
 </script>
 
@@ -214,7 +296,22 @@ async function deleteTask(): Promise<void> {
           </DialogClose>
         </div>
         <div class="drawer-body">
-          <div class="md-h">move to</div>
+          <div class="save-bar">
+            <span v-if="dirty" class="save-hint">unsaved changes</span>
+            <div class="save-actions">
+              <Button variant="outline" size="sm" :disabled="ui.saving || !dirty" @click="cancelDraft">
+                Cancel
+              </Button>
+              <Button variant="default" size="sm" :disabled="ui.saving || !dirty" @click="saveDraft">
+                Save
+              </Button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="et-title">Title</label>
+            <Input id="et-title" v-model="draft.title" placeholder="Task title" />
+          </div>
+          <div class="md-h" style="margin-top: 14px">move to</div>
           <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
             <SelectTrigger :disabled="ui.saving">
               <SelectValue />
@@ -227,31 +324,67 @@ async function deleteTask(): Promise<void> {
               </SelectViewport>
             </SelectContent>
           </Select>
-          <div class="meta-grid" style="margin-top: 16px">
+          <div class="field-row" style="margin-top: 16px">
+            <div class="field">
+              <label>Type</label>
+              <Select v-model="draft.type">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport
+                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem v-for="t in taskTypes" :key="t" :value="t">{{ t }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="field">
+              <label>Priority</label>
+              <Select v-model="draft.priority">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport
+                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem v-for="p in priorities" :key="p" :value="p">{{ p }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="et-area">Area</label>
+              <Input id="et-area" v-model="draft.area" placeholder="web" />
+            </div>
+            <div class="field">
+              <label for="et-assignee">Assigned to</label>
+              <Input id="et-assignee" v-model="draft.assignedTo" list="assignee-options" placeholder="unassigned" />
+              <datalist id="assignee-options">
+                <option value="ai"></option>
+                <option value="human"></option>
+              </datalist>
+            </div>
+          </div>
+          <div class="field">
+            <label for="et-branch">Branch</label>
+            <Input id="et-branch" v-model="draft.branch" placeholder="feat/…" />
+          </div>
+          <div class="md-h" style="margin-top: 18px">spec</div>
+          <textarea class="md-edit" v-model="draft.body" rows="10" placeholder="Markdown body"></textarea>
+          <div class="md-h" style="margin-top: 4px">meta</div>
+          <div class="meta-grid">
             <div class="meta-cell">
-              <div class="k">type</div>
-              <div class="v">{{ ui.active.type }}</div>
+              <div class="k">id</div>
+              <div class="v mono" style="font-size: 11px">{{ ui.active.id }}</div>
             </div>
             <div class="meta-cell">
-              <div class="k">area</div>
-              <div class="v">{{ ui.active.area }}</div>
-            </div>
-            <div class="meta-cell">
-              <div class="k">assigned_to</div>
-              <div
-                class="v"
-                :style="{ color: ui.active.assignee === 'ai' ? 'var(--violet)' : 'var(--txt)' }"
-              >
-                {{
-                  ui.active.assignee === "ai" ? "◆ AI agent" : ui.active.assignedTo || "unassigned"
-                }}
-              </div>
-            </div>
-            <div class="meta-cell">
-              <div class="k">branch</div>
-              <div class="v mono" style="color: var(--cyan); font-size: 11px">
-                {{ ui.active.branch || "—" }}
-              </div>
+              <div class="k">created_by</div>
+              <div class="v">{{ ui.active.createdBy || "—" }}</div>
             </div>
             <div class="meta-cell">
               <div class="k">created</div>
@@ -265,9 +398,19 @@ async function deleteTask(): Promise<void> {
                 {{ repo.fmtDate(ui.active.updated_at) }}
               </div>
             </div>
+            <div class="meta-cell">
+              <div class="k">branch in git</div>
+              <div class="v mono" style="color: var(--cyan); font-size: 11px">
+                {{ ui.active.git?.branchExists ? "exists" : "no local branch" }}
+              </div>
+            </div>
+            <div class="meta-cell">
+              <div class="k">last commit</div>
+              <div class="v mono" style="font-size: 11px">
+                {{ ui.active.git?.lastCommit ?? "—" }}
+              </div>
+            </div>
           </div>
-          <div class="md-h" style="margin-top: 18px">spec</div>
-          <div class="md-body">{{ ui.active.body || "(no body)" }}</div>
           <div class="delete-zone">
             <template v-if="!confirmDelete">
               <Button
