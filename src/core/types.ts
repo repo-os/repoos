@@ -116,6 +116,16 @@ export interface Agent {
   instructions?: string;
 }
 
+/** A skill discovered from the skills dir (skills/<name>/SKILL.md). */
+export interface SkillMeta {
+  /** Repo-relative path to the skill file, e.g. "skills/code-review/SKILL.md". */
+  path: string;
+  /** Skill name from frontmatter (or the folder name). */
+  name: string;
+  /** One-line description from frontmatter. */
+  description: string;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
   /** Absolute path to the repo root. */
@@ -124,6 +134,8 @@ export interface RepoOSConfig {
   workDir: string;
   /** Directory holding context docs, relative to root. Default "docs". */
   docsDir: string;
+  /** Directory holding skills, relative to root. Default "skills". */
+  skillsDir: string;
   /** Glob-ish: file extensions treated as tasks. Default [".md"]. */
   taskExtensions: string[];
   /** Default status applied to new tasks. */

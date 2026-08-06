@@ -15,6 +15,7 @@ const config = useConfigStore();
 onMounted(async () => {
   await repo.init();
   await docs.loadDocs();
+  await docs.loadSkills();
   await config.load();
 });
 </script>
