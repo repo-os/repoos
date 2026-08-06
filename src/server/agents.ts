@@ -105,11 +105,26 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * opencode re-resolves its project directory from `--git-common-dir`, which
  * for a linked worktree points at the main repo's `.git` — so every worktree
  * path would be treated as `external_directory` and auto-rejected. `--dir`
- * forces the worktree path explicitly. claude code uses the spawn `cwd` and
- * needs no flag.
+ * forces the worktree path explicitly. claude code and qwen code use the spawn
+ * `cwd` and need no flag.
+ *
+ * Verified flags (0042/0043):
+ * - claude code: `claude -p <prompt>` (print mode)
+ * - qwen code: `qwen -p <prompt> --output-format stream-json` — stream-json
+ *   emits one JSON event per line, which streams live and carries a
+ *   `session_id` RepoOS can resume.
+ * - codex: `codex exec <prompt> --json --sandbox workspace-write` — `--json`
+ *   streams newline-delimited events; `--sandbox workspace-write` lets the
+ *   agent edit files inside the worktree (the default is read-only).
  */
 function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; args: string[] } {
   if (cli === "claude code") return { cmd: "claude", args: ["-p", mission] };
+  if (cli === "qwen code") {
+    return { cmd: "qwen", args: ["-p", mission, "--output-format", "stream-json"] };
+  }
+  if (cli === "codex") {
+    return { cmd: "codex", args: ["exec", mission, "--json", "--sandbox", "workspace-write"] };
+  }
   // default: opencode's headless `run` mode
   return { cmd: "opencode", args: ["run", "--dir", cwd, mission] };
 }
@@ -117,8 +132,10 @@ function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; a
 /**
  * Map a follow-up turn to a resume invocation that continues the SAME session.
  * claude: `-p --resume <id>` (falls back to `-c --continue` when the id is
- * unknown). opencode: `run --session <id>`. Both degrade to a fresh run with
- * the user's text if resume metadata is unavailable — the turn still happens.
+ * unknown). opencode: `run --session <id>`. qwen: `--resume <id>` / `--continue`
+ * with `-p` + stream-json. codex: `exec resume <id>` / `exec resume --last`.
+ * All degrade to a fresh run with the user's text if resume metadata is
+ * unavailable — the turn still happens.
  */
 function resumeCommand(
   cli: string,
@@ -130,6 +147,32 @@ function resumeCommand(
     return {
       cmd: "claude",
       args: ["-p", ...(sessionId ? ["--resume", sessionId] : ["-c", "--continue"]), text],
+    };
+  }
+  if (cli === "qwen code") {
+    return {
+      cmd: "qwen",
+      args: [
+        ...(sessionId ? ["--resume", sessionId] : ["--continue"]),
+        "-p",
+        text,
+        "--output-format",
+        "stream-json",
+      ],
+    };
+  }
+  if (cli === "codex") {
+    return {
+      cmd: "codex",
+      args: [
+        "exec",
+        "resume",
+        ...(sessionId ? [sessionId] : ["--last"]),
+        text,
+        "--json",
+        "--sandbox",
+        "workspace-write",
+      ],
     };
   }
   return {
@@ -187,12 +230,15 @@ const PROMPT_TIMEOUT_MS = 180_000;
 
 /**
  * Map an agent `cli` to a one-shot (print mode) invocation that writes its
- * answer to stdout. opencode: `run`, claude: `-p`. Mirrors `cliCommand` (the
- * streaming runner) exactly — the configured model is a RepoOS-side label, not
- * a model id either CLI accepts, so it is deliberately not forwarded.
+ * answer to stdout. opencode: `run`, claude: `-p`, qwen: `-p`, codex:
+ * `exec`. Mirrors `cliCommand` (the streaming runner) exactly — the configured
+ * model is a RepoOS-side label, not a model id either CLI accepts, so it is
+ * deliberately not forwarded.
  */
 function promptCommand(agent: Agent, prompt: string): { cmd: string; args: string[] } {
   if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt] };
+  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt] };
+  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt] };
   return { cmd: "opencode", args: ["run", prompt] };
 }
 

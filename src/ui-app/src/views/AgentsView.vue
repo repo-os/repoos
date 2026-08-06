@@ -41,8 +41,14 @@ const customAgents = computed(() =>
 
 const dirty = computed(() => JSON.stringify(localAgents.value) !== JSON.stringify(config.agents));
 
+const CLI_LABELS: Record<string, string> = {
+  "claude code": "Claude Code",
+  "qwen code": "qwen code",
+  codex: "codex",
+};
+
 const clis = computed(() =>
-  config.agentsMeta.clis.map((c) => ({ value: c, label: c === "claude code" ? "Claude Code" : c })),
+  config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
 const models = computed(() =>
   config.agentsMeta.models.map((m) => ({

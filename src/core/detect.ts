@@ -67,14 +67,14 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     id: "qwen-code",
     name: "qwen code",
     binary: "qwen",
-    drivable: false,
+    drivable: true,
     installHint: "npm i -g @qwen-code/qwen-code",
   },
   {
     id: "codex",
     name: "codex",
     binary: "codex",
-    drivable: false,
+    drivable: true,
     installHint: "npm i -g @openai/codex",
   },
   {
