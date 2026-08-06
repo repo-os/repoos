@@ -2,19 +2,21 @@
 id: "0026"
 title: Add ability to delete tasks from the UI
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: "feat/0026-delete-tasks"
 created_at: "2026-08-04T09:36:55Z"
-updated_at: "2026-08-06T07:12:50Z"
+updated_at: "2026-08-06T07:31:21Z"
 ---
 ## Activity
 
 - 2026-08-04T09:36:55Z · created · unknown
 - 2026-08-06T07:12:50Z · status inbox→active
+- 2026-08-06T07:31:21Z · status active→done
+- 2026-08-06T07:31:21Z · merged to main · ai
 
 ## Problem
 
@@ -81,3 +83,8 @@ deliberate and possible from the UI, with the same live-update plumbing.
 
 - Completes the delete story that today only works via direct file removal.
 - The UI side builds on 0021 (drawer/store) and 0022 (feed/board live updates).
+
+## Activity
+
+- 2026-08-06T07:16:16Z · status active→ready
+- 2026-08-06T07:16:17Z · status ready→active
