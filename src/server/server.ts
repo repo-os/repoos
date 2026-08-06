@@ -40,7 +40,7 @@ import {
   patchTomlConfig,
   loadConfig,
 } from "../core/config.js";
-import { ensureWorktree } from "../core/git.js";
+import { ensureWorktree, commitTaskFile } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
@@ -390,6 +390,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // The watcher will also fire, but emit immediately so the requester's
         // own SSE stream sees it without waiting on fs latency.
         index.applyFileChange(created.absPath);
+        // New task files are committed to main so they are never untracked
+        // when their branch is merged later. Fail-soft: creation already
+        // succeeded.
+        commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
         return json(res, 201, index.getTask(created.id));
       }
       if (path === "/api/tasks/freeform" && method === "POST") {
@@ -409,6 +413,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             status: "draft",
           });
           index.applyFileChange(created.absPath);
+          commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
           return json(res, 201, {
             ok: true,
             fallback: true,
@@ -436,6 +441,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         const created = repoos.createTask(fields);
         index.applyFileChange(created.absPath);
+        commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
         return json(res, 201, {
           ok: true,
           fallback: false,
@@ -527,7 +533,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
           if (result.task) index.applyFileChange(result.task.absPath);
           index.refreshBranches();
-          return json(res, 200, {
+          return json(res, result.ok ? 200 : 400, {
             ok: result.ok,
             merged: result.merged,
             conflicts: result.conflicts,
