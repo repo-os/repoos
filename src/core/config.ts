@@ -140,6 +140,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       options: [
         { value: "classic", label: "Classic" },
         { value: "clear", label: "Clear" },
+        { value: "gen z", label: "Gen Z" },
       ],
       description: "Visual design language — applies immediately, no restart",
     },

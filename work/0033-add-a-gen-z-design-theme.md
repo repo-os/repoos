@@ -2,18 +2,21 @@
 id: "0033"
 title: "Add a 'gen z' design theme"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ai
 branch: feat/0033-gen-z-theme
 created_at: "2026-08-06T10:00:00Z"
-updated_at: "2026-08-06T10:00:00Z"
+updated_at: "2026-08-06T11:30:00Z"
 ---
 ## Activity
 
 - 2026-08-06T10:00:00Z · created · ai
+- 2026-08-06T11:30:00Z · status active→review · ai — implemented; `repoos check`
+  green (incl. theme-contrast gate on the new gen-z token blocks); browser-verified
+  all three themes in dark + light with zero console errors
 
 ## Problem
 

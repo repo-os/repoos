@@ -2,9 +2,18 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 
 const COLLAPSE_KEY = "repoos.board.collapsed";
+
+const GENZ_EMPTY: Record<string, string> = {
+  draft: "no drafts yet — agent ideas land here",
+  inbox: "all caught up, nothing waiting",
+  active: "nobody's working — go first?",
+  review: "no reviews pending, nice",
+  done: "nothing shipped yet — send it",
+};
 
 function readSaved(): { ids: string[]; exists: boolean } {
   try {
@@ -36,7 +45,14 @@ const props = withDefaults(
 );
 
 const repo = useRepoStore();
+const config = useConfigStore();
 const collapsed = computed(() => collapsedIds.value.has(props.col.id));
+
+const displayEmpty = computed(() =>
+  config.uiTheme === "gen z"
+    ? GENZ_EMPTY[props.col.id] ?? "nothing here yet — add something"
+    : props.emptyText || "—"
+);
 
 watch(
   () => repo.loading,
@@ -128,7 +144,7 @@ const toggle = () => {
     </div>
     <div ref="bodyEl" class="col-body">
       <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" />
-      <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ emptyText }}</div>
+      <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
 </template>

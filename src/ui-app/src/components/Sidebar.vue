@@ -50,6 +50,14 @@ function setUiTheme(t: string): void {
       >
         Clear
       </button>
+      <button
+        :class="{ on: config.uiTheme === 'gen z' }"
+        type="button"
+        :aria-pressed="config.uiTheme === 'gen z'"
+        @click="setUiTheme('gen z')"
+      >
+        Gen Z
+      </button>
     </div>
   </div>
 </template>

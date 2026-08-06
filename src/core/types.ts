@@ -36,7 +36,7 @@ export type Assignee = "ai" | "human" | "unassigned";
 export type Theme = "dark" | "light" | "system";
 
 /** Visual design language of the web UI. */
-export type UiTheme = "classic" | "clear";
+export type UiTheme = "classic" | "clear" | "gen z";
 
 /**
  * The frontmatter we recognise. Unknown keys are preserved in `extra` so we
