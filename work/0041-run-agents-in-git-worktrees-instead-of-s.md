@@ -2,14 +2,14 @@
 id: "0041"
 title: Run agents in git worktrees instead of switching the working branch
 type: refactor
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0041-git-worktrees
 created_at: "2026-08-06T11:00:00Z"
-updated_at: "2026-08-06T11:08:11Z"
+updated_at: "2026-08-06T11:20:15Z"
 ---
 ## Activity
 
@@ -109,3 +109,4 @@ branch while the main worktree stays exactly where the user left it.
 
 - 2026-08-06T11:08:10Z · status inbox→ready
 - 2026-08-06T11:08:11Z · status ready→active
+- 2026-08-06T11:20:15Z · status active→review · implementation on feat/0041-git-worktrees (ae94171): ensureWorktree replaces ensureBranch (`git worktree list/add`, branch==checkout → work in root, reuse existing, realpath-normalized), AgentRunner spawns with cwd = worktree path (registry carries workdir), mission names the worktree + build-before-repoos note, 5 new git-worktree unit tests; repoos check green + fixture E2E (parallel starts, reuse, pause-kill, branch untouched)
