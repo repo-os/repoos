@@ -5,7 +5,7 @@
  * It is a thin TRANSPORT over the LiveIndex + safe writers. No business logic
  * lives here that isn't already in core. Endpoints:
  *
- *   GET  /api/health           -> { ok, root, taskCount }
+ *   GET  /api/health           -> { ok, root, taskCount, workDir, version, buildAt }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
  *   GET  /api/tasks/:id        -> Task | 404
  *   GET  /api/counts           -> { inbox, ready, ... }
@@ -158,6 +158,44 @@ function listSkills(config: RepoOSConfig): SkillMeta[] {
     });
   }
   return out;
+}
+
+/**
+ * Resolve the package root (the dir containing package.json) relative to the
+ * running module — works from both dist/ (compiled) and src/ (dev mode).
+ */
+function findPackageRoot(): string | null {
+  const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
+  const grandparent = dirname(dirname(here));
+  if (existsSync(join(grandparent, "package.json"))) return grandparent;
+  const great = dirname(grandparent);
+  if (existsSync(join(great, "package.json"))) return great;
+  return null;
+}
+
+/**
+ * Build metadata served to the UI: the package version and the timestamp of
+ * the last build (dist/.build-info.json, written by scripts/copy-assets.mjs).
+ * Both are best-effort — null when unavailable so the UI can fall back.
+ */
+function loadBuildInfo(): { version: string | null; buildAt: string | null } {
+  const root = findPackageRoot();
+  if (!root) return { version: null, buildAt: null };
+  let version: string | null = null;
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+    if (typeof pkg?.version === "string") version = pkg.version;
+  } catch {
+    /* package.json unreadable */
+  }
+  let buildAt: string | null = null;
+  try {
+    const info = JSON.parse(readFileSync(join(root, "dist", ".build-info.json"), "utf8"));
+    if (typeof info?.generatedAt === "string") buildAt = info.generatedAt;
+  } catch {
+    /* build marker missing or corrupt */
+  }
+  return { version, buildAt };
 }
 
 /**
@@ -331,11 +369,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // ---- reads ----
       if (path === "/api/health" && method === "GET") {
         const snap = index.snapshot();
+        const build = loadBuildInfo();
         return json(res, 200, {
           ok: true,
           root: config.root,
           taskCount: snap.taskCount,
           workDir: config.workDir,
+          version: build.version,
+          buildAt: build.buildAt,
         });
       }
       if (path === "/api/tasks" && method === "GET") {

@@ -781,8 +781,13 @@
   .theme-switch button:hover{color:var(--txt-dim)}
   .theme-switch button.on{background:var(--nav-active-bg);color:var(--nav-active-color)}
 
+  /* version + build-age widget (lower-left corner of the sidebar) */
+  .build-widget{margin-top:9px;display:flex;align-items:baseline;gap:7px;padding:7px 11px;border-radius:11px;background:var(--panel);border:1px solid var(--border);font-size:10.5px;font-family:'JetBrains Mono',monospace;color:var(--txt-faint);white-space:nowrap;overflow:hidden}
+  .build-ver{color:var(--cyan);font-weight:600}
+  .build-age{overflow:hidden;text-overflow:ellipsis}
+
   /* gentle cross-fade while switching themes (class toggled by the config store) */
-  :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .nav-badge,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
+  :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .build-widget,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .nav-badge,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
 
   /* reduced motion */
   @layer base{
