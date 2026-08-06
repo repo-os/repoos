@@ -166,9 +166,11 @@
 
   /* global search */
   .search-wrap{position:relative;flex:0 1 380px;min-width:150px}
-  .search-input{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9px;
-    background:var(--panel);border:1px solid var(--border)}
-  .search-input:focus-within{border-color:var(--cyan-dim);box-shadow:0 0 0 1px var(--cyan-dim)}
+  .search-input{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+    background:var(--panel);border:1px solid var(--border);
+    transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease}
+  .search-input:focus-within{background:var(--cyan-dim);border-color:var(--cyan);
+    box-shadow:0 0 0 3px var(--cyan-dim),0 0 18px -2px var(--cyan-dim)}
   .search-input .search-ico{color:var(--txt-faint);flex-shrink:0}
   .search-input input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--txt);
     font-size:12.5px;font-family:inherit}
