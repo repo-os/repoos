@@ -2,14 +2,14 @@
 id: "0047"
 title: Add a Move-to-done action for review tasks that merges the branch and closes the worktree
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T15:10:14Z"
-updated_at: "2026-08-06T15:10:14Z"
+updated_at: "2026-08-06T15:10:48Z"
 ---
 ## Activity
 
@@ -87,3 +87,7 @@ The reviewer never touches a terminal.
 - Rebuild (`bun run build`) after the merge so the staleness guard and the served
   UI reflect the merged source; note that the long-running `repoos serve` may need
   a manual restart to serve the merged build — the task does not restart it.
+
+## Activity
+
+- 2026-08-06T15:10:48Z · status inbox→ready
