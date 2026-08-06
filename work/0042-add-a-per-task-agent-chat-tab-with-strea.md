@@ -2,18 +2,20 @@
 id: "0042"
 title: Add a per-task agent chat tab with streaming output and session resume
 type: feature
-status: inbox
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/0042-agent-chat-tab
 created_at: "2026-08-06T11:05:00Z"
-updated_at: "2026-08-06T11:05:00Z"
+updated_at: "2026-08-06T11:41:19Z"
 ---
 ## Activity
 
 - 2026-08-06T11:05:00Z · created · unknown
+- 2026-08-06T11:41:19Z · status inbox→ready
+- 2026-08-06T11:41:19Z · status ready→active · branch feat/0042-agent-chat-tab
 
 ## Problem
 
@@ -129,3 +131,8 @@ green `repoos check`.
   that this task makes observable and steerable. 0041 moves the agent's working
   directory to a worktree but does not change the session model. 0040
   (drag-to-move status) is independent UI.
+
+## Activity
+
+- 2026-08-06T11:41:18Z · status inbox→ready
+- 2026-08-06T11:41:19Z · status ready→active
