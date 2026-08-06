@@ -5,7 +5,13 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { RepoOSConfig, Status, Assignee, Theme } from "./types.js";
+import type {
+  RepoOSConfig,
+  Status,
+  Assignee,
+  Theme,
+  UiTheme,
+} from "./types.js";
 import { STATUSES } from "./types.js";
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
@@ -16,6 +22,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   defaultAssignee: "unassigned",
   cacheDir: ".repoos",
   theme: "system",
+  uiTheme: "classic",
 };
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
@@ -89,6 +96,8 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("cacheDir") === "string") cfg.cacheDir = get("cacheDir") as string;
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
     if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
+    if (typeof get("uiTheme") === "string")
+      cfg.uiTheme = get("uiTheme") as UiTheme;
   }
   return cfg;
 }
@@ -120,6 +129,19 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "light", label: "Light" },
       ],
       description: "UI appearance — applies immediately, no restart",
+    },
+    {
+      key: "uiTheme",
+      label: "Design theme",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.uiTheme,
+      options: [
+        { value: "classic", label: "Classic" },
+        { value: "clear", label: "Clear" },
+      ],
+      description: "Visual design language — applies immediately, no restart",
     },
     {
       key: "defaultStatus",

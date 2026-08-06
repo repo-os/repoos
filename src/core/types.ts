@@ -35,6 +35,9 @@ export type Assignee = "ai" | "human" | "unassigned";
 /** Theme preference for the web UI. */
 export type Theme = "dark" | "light" | "system";
 
+/** Visual design language of the web UI. */
+export type UiTheme = "classic" | "clear";
+
 /**
  * The frontmatter we recognise. Unknown keys are preserved in `extra` so we
  * never destroy fields a user (or another tool) added.
@@ -119,6 +122,8 @@ export interface RepoOSConfig {
   strictBuild?: boolean;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;
+  /** UI design language: classic (current) or clear. Cosmetic only. */
+  uiTheme?: UiTheme;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

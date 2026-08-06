@@ -2,18 +2,19 @@
 id: "0032"
 title: "Add a 'clear' design theme and a classic/clear theme toggle"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0032-clear-theme-toggle
 created_at: "2026-08-05T17:10:00Z"
-updated_at: "2026-08-05T17:10:00Z"
+updated_at: "2026-08-05T18:20:00Z"
 ---
 ## Activity
 
 - 2026-08-05T17:10:00Z · created · human
+- 2026-08-05T18:20:00Z · status active→review · ai — implemented; `repoos check` green
 
 ## Problem
 
@@ -49,7 +50,7 @@ new functionality (the theme toggle itself) needs it.
 
 ## Acceptance criteria
 
-- [ ] A `ui_theme` config option (`"classic" | "clear"`, default `"classic"`)
+- [ ] A `uiTheme` config option (`"classic" | "clear"`, default `"classic"`)
       exists in `repoos.toml`, is served by `/api/config`, and appears in the
       schema-driven Settings page
 - [ ] Selecting the design theme applies `data-ui-theme="classic|clear"` on
@@ -75,7 +76,7 @@ new functionality (the theme toggle itself) needs it.
 - Files:
   - `src/core/types.ts` — add `UiTheme` type + `uiTheme?: UiTheme`
   - `src/core/config.ts` — `DEFAULT_CONFIG.uiTheme`, toml parse of
-    `ui_theme`, schema field (`type: "select"`, tier live)
+    `uiTheme`, schema field (`type: "select"`, tier live)
   - `src/ui-app/src/stores/config.ts` — `uiTheme` state, `applyUiTheme`,
     `setUiTheme` (PATCH `/api/config`), apply on load/save
   - `src/ui-app/src/components/Sidebar.vue` — Classic/Clear segmented toggle

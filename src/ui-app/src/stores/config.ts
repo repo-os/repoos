@@ -17,6 +17,8 @@ export const useConfigStore = defineStore("config", () => {
   const data = ref<Record<string, unknown> | null>(null);
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
+  const uiTheme = ref("classic");
+  let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
   const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
   const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
@@ -28,6 +30,28 @@ export const useConfigStore = defineStore("config", () => {
         : "light";
     } else {
       document.documentElement.dataset.theme = t;
+    }
+  }
+
+  function applyUiTheme(t: string, animate = false): void {
+    uiTheme.value = t;
+    document.documentElement.dataset.uiTheme = t;
+    if (animate) {
+      const el = document.documentElement;
+      el.classList.add("theme-anim");
+      clearTimeout(themeAnimTimer);
+      themeAnimTimer = setTimeout(() => el.classList.remove("theme-anim"), 300);
+    }
+  }
+
+  async function setUiTheme(t: string): Promise<void> {
+    const prev = uiTheme.value;
+    applyUiTheme(t, true);
+    try {
+      await api("/api/config", JSON_OPTS("PATCH", { uiTheme: t }));
+    } catch (err) {
+      applyUiTheme(prev);
+      throw err;
     }
   }
 
@@ -50,6 +74,7 @@ export const useConfigStore = defineStore("config", () => {
       schema.value = res.schema;
       fillForm(res);
       applyTheme(String(res.config.theme ?? "system"));
+      applyUiTheme(String(res.config.uiTheme ?? "classic"));
       loaded.value = true;
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
@@ -83,6 +108,7 @@ export const useConfigStore = defineStore("config", () => {
       data.value = res.config;
       fillForm(res);
       applyTheme(String(res.config.theme ?? "system"));
+      applyUiTheme(String(res.config.uiTheme ?? "classic"));
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
     } finally {
@@ -104,5 +130,8 @@ export const useConfigStore = defineStore("config", () => {
     load,
     save,
     applyTheme,
+    applyUiTheme,
+    setUiTheme,
+    uiTheme,
   };
 });
