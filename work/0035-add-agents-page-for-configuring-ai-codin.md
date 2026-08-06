@@ -2,14 +2,14 @@
 id: "0035"
 title: Add Agents page for configuring AI coding agents
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0035-agents-page
 created_at: "2026-08-06T08:43:16Z"
-updated_at: "2026-08-06T09:22:00Z"
+updated_at: "2026-08-06T09:23:06Z"
 ---
 ## Activity
 
@@ -19,6 +19,7 @@ updated_at: "2026-08-06T09:22:00Z"
 - 2026-08-06T09:00:00Z · status inbox→ready
 - 2026-08-06T08:51:11Z · status ready→active
 - 2026-08-06T09:22:00Z · status active→review · implementation on feat/0035-agents-page (2d36515)
+- 2026-08-06T09:23:06Z · status review→done · signed off; merged to main
 
 ## Problem
 
