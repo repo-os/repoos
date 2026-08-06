@@ -9,12 +9,15 @@ assigned_to: ai
 created_by: ""
 branch: feat/0032-clear-theme-toggle
 created_at: "2026-08-05T17:10:00Z"
-updated_at: "2026-08-05T18:20:00Z"
+updated_at: "2026-08-05T18:50:00Z"
 ---
 ## Activity
 
 - 2026-08-05T17:10:00Z · created · human
 - 2026-08-05T18:20:00Z · status active→review · ai — implemented; `repoos check` green
+- 2026-08-05T18:50:00Z · review→review · ai — review feedback: clear now uses its own
+  font (Plus Jakarta Sans via `--font-sans`) and a comfortable-density pass
+  (roomier paddings/gaps, taller line-heights); re-verified, `repoos check` green
 
 ## Problem
 
@@ -58,6 +61,9 @@ new functionality (the theme toggle itself) needs it.
 - [ ] The clear theme has intentional dark and light variants that follow the
       existing `theme` (dark/light/system) preference — no neon-on-navy, no
       pure-black, no inverted-light look
+- [ ] The clear theme uses its own font (e.g. Plus Jakarta Sans) via a
+      `--font-sans` token — visually distinct from classic's Sora, with
+      comfortable density (roomier paddings/gaps) and clearer body text
 - [ ] Clear theme surfaces/text/borders/status/actions are defined as tokens
       (CSS custom properties) so components restyle without per-component
       hardcoded colors
