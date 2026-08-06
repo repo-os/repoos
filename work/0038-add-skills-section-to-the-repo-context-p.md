@@ -2,18 +2,20 @@
 id: "0038"
 title: Add skills section to the Repo Context page
 type: feature
-status: inbox
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/0038-skills-section
 created_at: "2026-08-06T09:35:00Z"
-updated_at: "2026-08-06T09:35:00Z"
+updated_at: "2026-08-06T09:49:34Z"
 ---
 ## Activity
 
 - 2026-08-06T09:35:00Z · created · unknown
+- 2026-08-06T09:49:33Z · status inbox→ready
+- 2026-08-06T09:49:34Z · status ready→active
 
 ## Problem
 
