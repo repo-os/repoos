@@ -2,18 +2,19 @@
 id: "0015"
 title: Add draft status for proposed (pre-backlog) tasks
 type: feature
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: nick
 branch: feat/0012-draft-status
 created_at: 2026-06-02T18:16:51Z
-updated_at: 2026-06-02T18:16:51Z
+updated_at: 2026-08-06T06:53:36Z
 ---
 ## Activity
 
 - 2026-06-02T18:16:51Z · created · unknown
+- 2026-08-06T06:53:36Z · status review→done · plan changed: draft column renders on the board by default
 
 ## Problem
 

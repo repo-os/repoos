@@ -2,14 +2,14 @@
 id: "0022"
 title: "Add global search bar for tasks, context docs, and settings"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0022-global-search-bar
 created_at: "2026-08-04T09:06:01Z"
-updated_at: "2026-08-04T09:27:59Z"
+updated_at: "2026-08-06T06:53:36Z"
 ---
 ## Activity
 
@@ -17,6 +17,7 @@ updated_at: "2026-08-04T09:27:59Z"
 - 2026-08-04T09:19:47Z · status inbox→ready
 - 2026-08-04T09:19:47Z · status ready→active
 - 2026-08-04T09:27:59Z · status active→review · implemented; ros check green
+- 2026-08-06T06:53:36Z · status review→done
 
 ## Problem
 

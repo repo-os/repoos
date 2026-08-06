@@ -2,14 +2,14 @@
 id: "0012"
 title: Build-staleness guardrail in ros (stale dist/ detection)
 type: feature
-status: review
+status: done
 priority: p1
 area: cli
 assigned_to: ai
 created_by: nick
 branch: feat/0008-build-staleness-check
 created_at: "2026-06-02T08:30:00Z"
-updated_at: "2026-06-19T06:29:27Z"
+updated_at: "2026-08-06T06:53:36Z"
 ---
 ## Problem
 
@@ -122,3 +122,5 @@ stale-build hazard impossible to forget, not to remind harder. Specifics:
 - 2026-06-19T06:29:26Z · status review→done
 - 2026-06-19T06:29:27Z · status done→active
 - 2026-06-19T06:29:27Z · status active→review
+- 2026-08-05T16:14:24Z · status review→ready
+- 2026-08-06T06:53:36Z · status ready→done · checkBuild wired into cli/index.ts

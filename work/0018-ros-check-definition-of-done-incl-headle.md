@@ -2,18 +2,19 @@
 id: "0018"
 title: ros check — definition-of-done incl. headless UI smoke check
 type: feature
-status: review
+status: done
 priority: p1
 area: cli
 assigned_to: ai
 created_by: nick
 branch: feat/0014-ros-check
 created_at: "2026-06-03T07:48:52Z"
-updated_at: "2026-06-03T07:48:52Z"
+updated_at: "2026-08-06T06:53:36Z"
 ---
 ## Activity
 
 - 2026-06-03T07:48:52Z · created · unknown
+- 2026-08-06T06:53:36Z · status review→done · repoos check ships all gates incl. UI smoke
 
 ## Problem
 

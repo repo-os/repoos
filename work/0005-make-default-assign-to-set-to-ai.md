@@ -2,14 +2,14 @@
 id: "0005"
 title: "Make default \\\\"Assign To\\\\" set to AI"
 type: feature
-status: ready
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-06-03T07:36:04Z"
+updated_at: "2026-08-06T06:53:36Z"
 ---
 ## Problem
 
@@ -33,3 +33,4 @@ _Constraints, files to touch, things NOT to do._
 - 2026-06-03T07:36:02Z · status inbox→ready
 - 2026-06-03T07:36:03Z · status ready→active
 - 2026-06-03T07:36:04Z · status active→ready
+- 2026-08-06T06:53:36Z · status ready→done · implemented as defaultAssignee setting

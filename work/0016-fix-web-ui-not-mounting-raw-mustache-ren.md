@@ -2,20 +2,21 @@
 id: "0016"
 title: Fix web UI not mounting (raw mustache rendered)
 type: bug
-status: review
+status: done
 priority: p1
 area: ui
 assigned_to: ai
 created_by: nick
 branch: ""
 created_at: 2026-06-03T05:55:16Z
-updated_at: 2026-06-03T05:55:16Z
+updated_at: 2026-08-06T06:53:36Z
 ---
 ## Activity
 
 - 2026-06-03T05:55:16Z · created · unknown
 - 2026-06-03T14:10:00Z · status ready→active
 - 2026-06-03T14:12:00Z · status active→review
+- 2026-08-06T06:53:36Z · status review→done
 
 ## Problem
 

@@ -2,18 +2,19 @@
 id: "0017"
 title: Test new draft status
 type: feature
-status: inbox
+status: done
 priority: p2
 area: web
 assigned_to: ""
 created_by: ""
 branch: ""
 created_at: "2026-06-03T06:09:07Z"
-updated_at: "2026-06-03T06:09:07Z"
+updated_at: "2026-08-06T06:53:36Z"
 ---
 ## Activity
 
 - 2026-06-03T06:09:07Z · created · unknown
+- 2026-08-06T06:53:36Z · status inbox→done · superseded by 0015 impl + test suite
 
 
 ## Problem
