@@ -27,6 +27,13 @@ export type RepoEvent =
   | { type: "task.deleted"; id: string; path: string; at: string }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  | {
+      type: "agent.output";
+      id: string;
+      data: string;
+      stream: "out" | "err";
+      at: string;
+    }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "hello"; taskCount: number; at: string };
 

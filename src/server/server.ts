@@ -16,6 +16,8 @@
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
  *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
+ *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active)
+ *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/events           -> SSE stream of RepoEvent
@@ -355,6 +357,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/agents/running" && method === "GET") {
         return json(res, 200, { tasks: runner.running() });
       }
+      const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
+      if (outputMatch && method === "GET") {
+        const session = runner.output(outputMatch[1]);
+        return json(res, 200, { ok: true, lines: session?.lines ?? [] });
+      }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
         const t = index.getTask(taskMatch[1]);
@@ -392,7 +399,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
       }
-      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause)$/);
+      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message)$/);
       if (actionMatch && method === "POST") {
         const id = actionMatch[1];
         const existing = index.getTask(id);
@@ -440,6 +447,36 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               pid: spawnRes.pid,
               reason: spawnRes.reason,
             },
+          });
+        }
+
+        if (actionMatch[2] === "message") {
+          if (existing.status !== "active") {
+            return json(res, 400, {
+              error: `Only active tasks accept messages (#${id} is ${existing.status})`,
+            });
+          }
+          const agent = resolveEngineer(config);
+          if (!agent) {
+            return json(res, 400, {
+              error: "No enabled engineer agent is configured on the Agents page",
+            });
+          }
+          const body = (await readBody(req)) as { text?: unknown };
+          const text = typeof body?.text === "string" ? body.text.trim() : "";
+          if (!text) {
+            return json(res, 400, { error: "message text is required" });
+          }
+          const sendRes = runner.send(id, text, agent);
+          if (!sendRes.ok && sendRes.busy) {
+            return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
+          }
+          if (!sendRes.ok) {
+            return json(res, 400, { error: sendRes.reason ?? "could not send message" });
+          }
+          return json(res, 200, {
+            ok: true,
+            spawn: { ok: true, pid: sendRes.pid },
           });
         }
 

@@ -55,7 +55,8 @@ export type RepoEvent =
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
   | { type: "agent.running"; id: string }
-  | { type: "agent.exited"; id: string };
+  | { type: "agent.exited"; id: string }
+  | { type: "agent.output"; id: string; data: string; stream: "out" | "err" };
 
 export interface ConfigField {
   key: string;

@@ -12,6 +12,15 @@ export interface FeedItem {
   time: string;
 }
 
+/** One rendered line of a task's agent session transcript. */
+export interface AgentOutputLine {
+  s: "out" | "err" | "sys";
+  d: string;
+}
+
+/** Cap on retained transcript lines per task in the client. */
+const OUTPUT_MAX_LINES = 2000;
+
 export const STATUS_COLORS: Record<string, string> = {
   draft: "#3a4055",
   inbox: "#566081",
@@ -48,6 +57,7 @@ export const useRepoStore = defineStore("repo", () => {
   const eventCount = ref(0);
   const flashId = ref<string | null>(null);
   const runningIds = ref<string[]>([]);
+  const outputs = ref<Record<string, AgentOutputLine[]>>({});
 
   let feedKey = 0;
   let es: EventSource | null = null;
@@ -119,9 +129,21 @@ export const useRepoStore = defineStore("repo", () => {
         runningIds.value = [...runningIds.value, e.id];
       }
       pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
+    } else if (e.type === "agent.output") {
+      const prev = outputs.value[e.id] ?? [];
+      outputs.value = {
+        ...outputs.value,
+        [e.id]: [...prev, { s: e.stream, d: e.data }].slice(-OUTPUT_MAX_LINES),
+      };
     } else if (e.type === "agent.exited") {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
+      if (outputs.value[e.id]) {
+        outputs.value = {
+          ...outputs.value,
+          [e.id]: [...outputs.value[e.id], { s: "sys", d: "— agent stopped —" }],
+        };
+      }
     } else if (e.type === "index.rebuilt") {
       void refresh();
     }
@@ -136,7 +158,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "agent.running", "agent.exited"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "agent.running", "agent.exited", "agent.output"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -181,6 +203,24 @@ export const useRepoStore = defineStore("repo", () => {
       method: "POST",
     });
     if (!r.ok) throw new Error(r.reason ?? "could not pause work");
+  }
+
+  /** Replace the client's transcript for a task from the server buffer. */
+  async function loadOutput(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; lines: AgentOutputLine[] }>(`/api/tasks/${id}/output`);
+      if (r.ok) outputs.value = { ...outputs.value, [id]: r.lines };
+    } catch {
+      /* endpoint unavailable — transcript is best-effort */
+    }
+  }
+
+  async function sendMessage(id: string, text: string): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${id}/message`,
+      JSON_OPTS("POST", { text }),
+    );
+    if (!r.ok) throw new Error(r.reason ?? "could not send message");
   }
 
   /** Hydrate the running marker on reload so a running agent is never phantom. */
@@ -236,6 +276,7 @@ export const useRepoStore = defineStore("repo", () => {
     eventCount,
     flashId,
     runningIds,
+    outputs,
     repoName,
     workDir,
     total,
@@ -254,6 +295,8 @@ export const useRepoStore = defineStore("repo", () => {
     isRunning,
     startWork,
     pauseWork,
+    loadOutput,
+    sendMessage,
     fetchRunning,
     onError,
     init,

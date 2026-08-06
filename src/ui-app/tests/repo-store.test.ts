@@ -65,6 +65,10 @@ function mockFetch(): void {
       return json({ ok: true });
     if (url.includes("/pause"))
       return json({ ok: true });
+    if (url.includes("/output"))
+      return json({ ok: true, lines: [{ s: "out", d: "resumed transcript" }] });
+    if (url.includes("/message"))
+      return json({ ok: true });
     throw new Error("unexpected fetch: " + url);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -176,5 +180,75 @@ describe("agent running state", () => {
     const task = makeTask({ status: "ready" });
     await expect(repo.startWork(task)).resolves.toBeUndefined();
     await expect(repo.pauseWork(makeTask({ status: "active" }))).resolves.toBeUndefined();
+  });
+});
+
+describe("agent output transcript", () => {
+  it("appends agent.output lines with the stream kind", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "hello" });
+    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "err", data: "warn" });
+    expect(repo.outputs["0001"]).toEqual([
+      { s: "out", d: "hello" },
+      { s: "err", d: "warn" },
+    ]);
+  });
+
+  it("adds a sys marker on agent.exited", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "done" });
+    es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+    expect(repo.outputs["0001"].at(-1)?.s).toBe("sys");
+    expect(repo.outputs["0001"].at(-1)?.d).toContain("stopped");
+  });
+
+  it("caps the transcript at OUTPUT_MAX_LINES", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    for (let i = 0; i < 2010; i++) {
+      es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "x" });
+    }
+    expect(repo.outputs["0001"].length).toBe(2000);
+  });
+
+  it("loadOutput replaces the transcript from the endpoint", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.loadOutput("0001");
+    expect(repo.outputs["0001"]).toEqual([{ s: "out", d: "resumed transcript" }]);
+  });
+
+  it("sendMessage posts the follow-up text", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.sendMessage("0001", "keep going")).resolves.toBeUndefined();
+    const call = vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes("/message"));
+    expect(call).toBeTruthy();
+    const opts = call![1] as RequestInit;
+    expect(JSON.parse(opts.body as string)).toEqual({ text: "keep going" });
+  });
+
+  it("sendMessage throws when the turn is busy", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/message"))
+        return json({ ok: false, reason: "busy" });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.sendMessage("0001", "go")).rejects.toThrow("busy");
   });
 });

@@ -18,6 +18,8 @@ export const useUiStore = defineStore("ui", () => {
   const isNew = ref(false);
   const saving = ref(false);
   const drawerWidth = ref(680);
+  /** Active drawer tab: task details, or the agent session view. */
+  const activeTab = ref<"details" | "agent">("details");
 
   const nt = reactive<NewTaskForm>({ title: "", type: "feature", priority: "p2", area: "web", assignedTo: "" });
 
@@ -34,6 +36,7 @@ export const useUiStore = defineStore("ui", () => {
   function open(t: Task): void {
     isNew.value = false;
     active.value = t;
+    activeTab.value = "details";
   }
 
   /** Open a task drawer, refreshing the task from the API first (fallback to local). */
@@ -48,6 +51,7 @@ export const useUiStore = defineStore("ui", () => {
   function close(): void {
     active.value = null;
     isNew.value = false;
+    activeTab.value = "details";
   }
 
   function startResize(e: MouseEvent): void {
@@ -64,5 +68,5 @@ export const useUiStore = defineStore("ui", () => {
     document.addEventListener("mouseup", onUp);
   }
 
-  return { active, isNew, saving, drawerWidth, nt, openNewTask, open, openTask, close, startResize };
+  return { active, isNew, saving, drawerWidth, activeTab, nt, openNewTask, open, openTask, close, startResize };
 });

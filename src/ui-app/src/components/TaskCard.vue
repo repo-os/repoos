@@ -34,6 +34,12 @@ async function pauseWork(): Promise<void> {
     busy.value = false;
   }
 }
+
+/** Open the drawer on the Agent tab to watch the live session. */
+async function openAgent(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "agent";
+}
 </script>
 
 <template>
@@ -66,7 +72,12 @@ async function pauseWork(): Promise<void> {
         {{ task.branch.split("/").pop() }}
       </span>
       <span class="tc-git" v-if="task.git && task.git.branchExists" title="branch exists locally">●</span>
-      <span v-if="task.status === 'active' && repo.isRunning(task.id)" class="tc-run" title="agent running">running</span>
+      <span
+        v-if="task.status === 'active' && repo.isRunning(task.id)"
+        class="tc-run"
+        title="agent running — click to watch the session"
+        @click.stop="openAgent"
+      >running</span>
       <div class="tc-actions">
         <button
           v-if="task.status === 'ready'"

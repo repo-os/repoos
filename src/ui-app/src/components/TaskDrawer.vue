@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause } from "lucide-vue-next";
+import { X, Play, Pause, Send } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -80,6 +80,7 @@ async function startWork(): Promise<void> {
   ui.saving = true;
   try {
     await repo.startWork(ui.active);
+    ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -241,6 +242,59 @@ function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
   specEditing.value = false;
 }
+
+// ---- agent session tab ----
+
+/** The rendered transcript for the open task. */
+const outputLines = computed<{ s: string; d: string }[]>(() =>
+  ui.active ? repo.outputs[ui.active.id] ?? [] : [],
+);
+/** A follow-up message typed in the Agent tab. */
+const draftMsg = ref("");
+/** Stick-to-bottom: only when the user hasn't scrolled up the log. */
+const stick = ref(true);
+const logEl = ref<HTMLElement | null>(null);
+/** True when a turn is in flight (input disabled). */
+const agentBusy = computed(
+  () => !!ui.active && ui.active.status === "active" && repo.isRunning(ui.active.id),
+);
+
+watch(outputLines, () => {
+  if (stick.value) {
+    nextTick(() => {
+      const el = logEl.value;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  }
+});
+
+function onLogScroll(e: Event): void {
+  const el = e.target as HTMLElement;
+  stick.value = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+}
+
+/** Hydrate the transcript whenever the Agent tab opens or the task changes. */
+watch(
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    if (ui.active && ui.activeTab === "agent") void repo.loadOutput(ui.active.id);
+  },
+);
+
+async function sendTurn(): Promise<void> {
+  if (!ui.active) return;
+  const text = draftMsg.value.trim();
+  if (!text || agentBusy.value) return;
+  ui.saving = true;
+  try {
+    await repo.sendMessage(ui.active.id, text);
+    draftMsg.value = "";
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
 </script>
 
 <template>
@@ -365,7 +419,25 @@ function cancelDraft(): void {
             <X class="size-[15px]" />
           </DialogClose>
         </div>
-        <div class="drawer-body">
+        <div class="drawer-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'details' }"
+            @click="ui.activeTab = 'details'"
+          >
+            Details
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'agent' }"
+            @click="ui.activeTab = 'agent'"
+          >
+            Agent
+          </button>
+        </div>
+        <div v-if="ui.activeTab === 'details'" class="drawer-body">
           <template v-if="!locked">
             <div class="field">
               <label for="et-title">Title</label>
@@ -544,6 +616,53 @@ function cancelDraft(): void {
                 </Button>
               </div>
             </template>
+          </div>
+        </div>
+        <div v-else class="drawer-body">
+          <div class="agent-log" ref="logEl" @scroll="onLogScroll">
+            <template v-if="outputLines.length === 0">
+              <div class="agent-empty">
+                No agent session yet.
+                <br />
+                Start work to launch the coding agent; its output streams here.
+              </div>
+            </template>
+            <div
+              v-for="(line, i) in outputLines"
+              :key="i"
+              class="agent-line"
+              :class="line.s"
+            >
+              <span class="agent-pfx" :class="line.s">{{
+                line.s === "err" ? "✕" : line.s === "sys" ? "·" : "›"
+              }}</span>
+              <span class="agent-d">{{ line.d }}</span>
+            </div>
+          </div>
+          <div class="agent-input-row">
+            <textarea
+              v-model="draftMsg"
+              class="agent-input"
+              rows="2"
+              placeholder="Send a follow-up to the task's agent session…"
+              :disabled="agentBusy || ui.saving"
+              @keydown.enter.exact.prevent="sendTurn"
+            ></textarea>
+            <Button
+              variant="accent"
+              size="sm"
+              :disabled="agentBusy || ui.saving || !draftMsg.trim()"
+              @click="sendTurn"
+            >
+              <Send class="size-3.5" />
+              Send
+            </Button>
+          </div>
+          <div v-if="agentBusy" class="agent-hint">
+            <span class="tc-run"></span> agent is working — wait for this turn to finish
+          </div>
+          <div v-else-if="ui.active && ui.active.status !== 'active'" class="agent-hint">
+            Task is {{ ui.active.status }} — start work to run an agent turn.
           </div>
         </div>
         <div v-if="dirty" class="save-bar">
