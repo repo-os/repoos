@@ -577,7 +577,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               error: `Task #${id} has an agent turn in progress`,
             });
           }
-          const result = completeTask(config, existing, (step: DoneStep) => {
+          const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
               id,

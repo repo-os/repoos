@@ -190,6 +190,23 @@ async function deleteTask(): Promise<void> {
 const confirmDone = ref(false);
 /** True while the merge+build+check+cleanup request is in flight. */
 const doingDone = ref(false);
+/** Elapsed seconds shown next to the progress label while the flow runs. */
+const doneTicks = ref(0);
+let doneTimer: number | undefined;
+
+function startDoneTimer(): void {
+  doneTicks.value = 0;
+  window.clearInterval(doneTimer);
+  doneTimer = window.setInterval(() => {
+    doneTicks.value += 1;
+  }, 1000);
+}
+
+function stopDoneTimer(): void {
+  window.clearInterval(doneTimer);
+  doneTimer = undefined;
+}
+
 /** Human-readable progress label, driven by server `task.progress` events. */
 const doneLabel = computed(() => {
   const step = ui.active ? repo.doneSteps[ui.active.id] : undefined;
@@ -198,6 +215,8 @@ const doneLabel = computed(() => {
       return "Merging branch…";
     case "build":
       return "Building…";
+    case "screenshots":
+      return "Regenerating screenshots…";
     case "check":
       return "Running repoos check…";
     case "done":
@@ -207,10 +226,17 @@ const doneLabel = computed(() => {
   }
 });
 
+/** Progress label plus a live elapsed timer, e.g. "Building… 12s". */
+const doneProgress = computed(() => {
+  const base = doneLabel.value;
+  return doingDone.value && doneTicks.value > 0 ? `${base} ${doneTicks.value}s` : base;
+});
+
 async function moveToDone(): Promise<void> {
   if (!ui.active) return;
   ui.saving = true;
   doingDone.value = true;
+  startDoneTimer();
   try {
     await repo.completeTask(ui.active);
     confirmDone.value = false;
@@ -219,6 +245,7 @@ async function moveToDone(): Promise<void> {
     confirmDone.value = false;
   } finally {
     doingDone.value = false;
+    stopDoneTimer();
     ui.saving = false;
   }
 }
@@ -688,7 +715,7 @@ async function sendTurn(): Promise<void> {
                   Cancel
                 </Button>
                 <Button variant="default" size="sm" :disabled="ui.saving" @click="moveToDone">
-                  {{ doingDone ? doneLabel : "Move to done" }}
+                  {{ doingDone ? doneProgress : "Move to done" }}
                 </Button>
               </div>
             </template>
