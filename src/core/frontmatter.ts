@@ -28,10 +28,10 @@ function coerceScalar(raw: string): unknown {
   if (v === "true") return true;
   if (v === "false") return false;
   // quoted string
-  if (
-    (v.startsWith('"') && v.endsWith('"')) ||
-    (v.startsWith("'") && v.endsWith("'"))
-  ) {
+  if (v.startsWith('"') && v.endsWith('"')) {
+    return v.slice(1, -1).replace(/\\"/g, '"');
+  }
+  if (v.startsWith("'") && v.endsWith("'")) {
     return v.slice(1, -1);
   }
   // number (but keep zero-padded ids like 0012 as strings)
