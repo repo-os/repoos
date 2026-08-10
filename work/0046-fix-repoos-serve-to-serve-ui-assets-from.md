@@ -14,7 +14,7 @@ updated_at: "2026-08-07T00:16:54Z"
 ## Activity
 
 - 2026-08-06T14:42:07Z · created · unknown
-- 2026-08-07T00:16:54Z · status active→review
+- 2026-08-07T00:16:54Z · status ready→review
 
 
 ## Problem

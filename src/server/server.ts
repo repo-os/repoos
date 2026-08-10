@@ -201,15 +201,19 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
 }
 
 /**
- * Locate the bundled UI directory (Vite build output). Resolves relative to
- * the compiled server.js so the same path works from dist/ and src/.
+ * Locate the bundled UI directory (Vite build output). Prefers the resolved
+ * repo root's `dist/ui` so a `bun link` install run from a worktree serves
+ * that worktree's own build, not the linked package's stale dist. Falls back
+ * to the import.meta.url candidates (compiled dist/ui and dev-mode src/../..)
+ * when no root-relative build exists.
  */
-function findUiDir(): string | null {
+function findUiDir(root: string): string | null {
+  const candidates = [join(root, "dist", "ui")];
   const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
-  const candidates = [
+  candidates.push(
     join(here, "..", "ui"), // dist/ui (compiled, shipped)
     join(here, "..", "..", "dist", "ui"), // repo-root dist/ui (dev mode)
-  ];
+  );
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
 }
@@ -298,7 +302,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  const uiDir = findUiDir();
+  const uiDir = findUiDir(repoos.config.root);
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
