@@ -97,7 +97,7 @@ branch while the main worktree stays exactly where the user left it.
   on `repoos` (or accept the staleness warning).
 - **Parallel worktrees**: verify the branch-creation race — two starts on the
   same branch (different tasks should never share a branch, but guard anyway)
-  must not both create the branch/worktree.
+  must not both create the branch's worktree.
 
 ## Related
 

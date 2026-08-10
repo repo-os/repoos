@@ -1,6 +1,6 @@
 /**
- * The agent runner: launches the repo's default coding agent against a task on
- * its branch, tracks running processes, and supports graceful pause.
+ * The agent runner: launches the repo's default coding agent against a task in
+ * its worktree, tracks running processes, and supports graceful pause.
  *
  * Zero runtime deps — `node:child_process` only. Everything here is best-effort:
  * a missing CLI or a broken agent config must never crash the server or block
@@ -224,7 +224,7 @@ function missionFor(
     "Follow the repo's AGENTS.md operating loop:",
     "1. Read the task file and implement what it describes.",
     "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test).",
-    "3. Set the task status to `review` in BOTH copies of the task file: update the `status` field in the worktree copy above and commit that change on the branch, AND update the main-checkout copy (the second path above) the same way WITHOUT committing there — the board on the main server reads the main copy, so editing it is how the user sees your update. Leave the branch open — do NOT merge or delete the branch.",
+    "3. Set the task status to `review` in BOTH copies of the task file: update the `status` field in the worktree copy above and commit that change on the branch, AND update the main-checkout copy (the second path above) the same way WITHOUT committing there — the board on the main server reads the main copy, so editing it is how the user sees your update. Leave the worktree open — do NOT merge or delete the branch.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
