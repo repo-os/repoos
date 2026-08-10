@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useConfigStore } from "../stores/config";
-import type { Agent } from "../types";
+import { api } from "../api";
+import type { Agent, DetectedAgent } from "../types";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -40,8 +41,14 @@ const customAgents = computed(() =>
 
 const dirty = computed(() => JSON.stringify(localAgents.value) !== JSON.stringify(config.agents));
 
+const CLI_LABELS: Record<string, string> = {
+  "claude code": "Claude Code",
+  "qwen code": "qwen code",
+  codex: "codex",
+};
+
 const clis = computed(() =>
-  config.agentsMeta.clis.map((c) => ({ value: c, label: c === "claude code" ? "Claude Code" : c })),
+  config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
 const models = computed(() =>
   config.agentsMeta.models.map((m) => ({
@@ -93,6 +100,71 @@ async function save(): Promise<void> {
   await config.saveAgents(localAgents.value.map((a) => ({ ...a, name: a.name.trim() })));
   sync();
 }
+
+// ---- Detected coding agents ----
+
+const detected = ref<DetectedAgent[]>([]);
+const detectLoading = ref(false);
+const detectError = ref(false);
+const detectHintCopied = ref<string>("");
+
+type DetectStatus = "ok" | "desktop" | "missing";
+
+interface DetectRow {
+  agent: DetectedAgent;
+  status: DetectStatus;
+  statusLabel: string;
+  color: string;
+}
+
+const detectRows = computed<DetectRow[]>(() =>
+  detected.value.map((agent) => {
+    if (!agent.installed) {
+      return {
+        agent,
+        status: "missing",
+        statusLabel: "not installed",
+        color: "var(--red)",
+      };
+    }
+    if (agent.headless === false) {
+      return {
+        agent,
+        status: "desktop",
+        statusLabel: "desktop only",
+        color: "var(--amber)",
+      };
+    }
+    return { agent, status: "ok", statusLabel: "ready", color: "var(--green)" };
+  }),
+);
+
+async function checkAgents(): Promise<void> {
+  detectLoading.value = true;
+  detectError.value = false;
+  detectHintCopied.value = "";
+  try {
+    const data = await api<{ agents: DetectedAgent[] }>("/api/agents/detect");
+    detected.value = data.agents;
+  } catch {
+    detectError.value = true;
+    detected.value = [];
+  } finally {
+    detectLoading.value = false;
+  }
+}
+
+function copyHint(hint: string): void {
+  void navigator.clipboard?.writeText(hint).catch(() => undefined);
+  detectHintCopied.value = hint;
+  setTimeout(() => {
+    if (detectHintCopied.value === hint) detectHintCopied.value = "";
+  }, 1500);
+}
+
+onMounted(() => {
+  void checkAgents();
+});
 </script>
 
 <template>
@@ -238,6 +310,65 @@ async function save(): Promise<void> {
             </div>
           </div>
         </div>
+      </Card>
+
+      <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+          <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
+          Detected coding agents
+        </div>
+        <div class="agent-desc">
+          What's on this machine's PATH — installed &amp; headless-ready, desktop-only, or missing. Click a hint to copy it.
+        </div>
+
+        <div v-if="detectLoading && !detected.length" class="detect-loading">
+          Probing PATH…
+        </div>
+        <div v-else-if="!detected.length" class="agent-empty">
+          No known coding agents detected on PATH.
+        </div>
+
+        <template v-else>
+          <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
+            <div class="detect-row-left">
+              <span class="detect-badge" :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"></span>
+              <span class="agent-name">{{ r.agent.name }}</span>
+              <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
+              <span class="agent-badge" :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'">
+                {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
+              </span>
+            </div>
+            <div class="detect-row-right">
+              <template v-if="r.agent.installed">
+                <span class="detect-bin">{{ r.agent.binary }}</span>
+                <span v-if="r.agent.path" class="detect-path" :title="r.agent.path">{{ r.agent.path }}</span>
+                <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
+                <span v-if="!r.agent.headless" class="detect-hint">
+                  Desktop app shadows PATH — install headless CLI:
+                  <code>{{ r.agent.installHint }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+              </template>
+              <template v-else>
+                <span class="detect-bin">{{ r.agent.binary }}</span>
+                <span class="detect-hint">
+                  <code>{{ r.agent.installHint }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <div class="detect-foot">
+            <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
+              {{ detectLoading ? "Checking…" : "Check again" }}
+            </Button>
+          </div>
+        </template>
       </Card>
 
       <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">

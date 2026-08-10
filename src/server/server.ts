@@ -21,6 +21,7 @@
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -32,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, SkillMeta, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
+import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -199,15 +201,19 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
 }
 
 /**
- * Locate the bundled UI directory (Vite build output). Resolves relative to
- * the compiled server.js so the same path works from dist/ and src/.
+ * Locate the bundled UI directory (Vite build output). Prefers the resolved
+ * repo root's `dist/ui` so a `bun link` install run from a worktree serves
+ * that worktree's own build, not the linked package's stale dist. Falls back
+ * to the import.meta.url candidates (compiled dist/ui and dev-mode src/../..)
+ * when no root-relative build exists.
  */
-function findUiDir(): string | null {
+function findUiDir(root: string): string | null {
+  const candidates = [join(root, "dist", "ui")];
   const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
-  const candidates = [
+  candidates.push(
     join(here, "..", "ui"), // dist/ui (compiled, shipped)
     join(here, "..", "..", "dist", "ui"), // repo-root dist/ui (dev mode)
-  ];
+  );
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
 }
@@ -296,7 +302,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  const uiDir = findUiDir();
+  const uiDir = findUiDir(repoos.config.root);
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
@@ -400,6 +406,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/agents/running" && method === "GET") {
         return json(res, 200, { tasks: runner.running() });
+      }
+      if (path === "/api/agents/detect" && method === "GET") {
+        // Best-effort: a broken PATH entry or a hung probe must never break
+        // the endpoint, so the whole detection is wrapped.
+        let agents: DetectedAgent[] = [];
+        try {
+          agents = await detectAgents();
+        } catch {
+          agents = [];
+        }
+        return json(res, 200, { agents });
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
@@ -564,7 +581,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               error: `Task #${id} has an agent turn in progress`,
             });
           }
-          const result = completeTask(config, existing, (step: DoneStep) => {
+          const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
               id,
