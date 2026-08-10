@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { api } from "../api";
 import type { Agent, DetectedAgent } from "../types";
@@ -101,6 +102,24 @@ async function save(): Promise<void> {
   sync();
 }
 
+// ---- Unsaved-changes guard ----
+// Leaving the Agents page (or the app) with local edits pending must ask for
+// confirmation instead of silently discarding them. `dirty` is the single
+// source of truth; when it is false neither prompt fires.
+
+function leaveGuard(): boolean {
+  if (!dirty.value) return true;
+  return window.confirm("You have unsaved agent changes. Leave the Agents page without saving?");
+}
+
+onBeforeRouteLeave(() => leaveGuard());
+
+function handleBeforeUnload(e: BeforeUnloadEvent): void {
+  if (!dirty.value) return;
+  e.preventDefault();
+  e.returnValue = "";
+}
+
 // ---- Detected coding agents ----
 
 const detected = ref<DetectedAgent[]>([]);
@@ -163,7 +182,12 @@ function copyHint(hint: string): void {
 }
 
 onMounted(() => {
+  window.addEventListener("beforeunload", handleBeforeUnload);
   void checkAgents();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 </script>
 
@@ -371,13 +395,27 @@ onMounted(() => {
         </template>
       </Card>
 
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
-        <Button variant="default" @click="save" :disabled="config.saving || !config.loaded">
-          {{ config.saving ? "Saving…" : "Save agents" }}
-        </Button>
-        <span v-if="dirty" class="agent-dirty">unsaved changes</span>
+      <div class="save-bar agents-savebar" :class="{ dirty }">
+        <div v-if="dirty" class="save-callout">
+          <span class="save-dot"></span>
+          <div>
+            <div class="save-title">Unsaved changes</div>
+            <div class="save-sub">Save to apply your edits</div>
+          </div>
+        </div>
         <div v-if="config.msg" class="save-msg ok">{{ config.msg }}</div>
         <div v-if="config.error" class="save-msg err">{{ config.error }}</div>
+        <div class="save-actions">
+          <Button
+            variant="default"
+            class="agents-save-btn"
+            :class="{ dirty }"
+            @click="save"
+            :disabled="config.saving || !config.loaded"
+          >
+            {{ config.saving ? "Saving…" : "Save agents" }}
+          </Button>
+        </div>
       </div>
     </template>
   </div>

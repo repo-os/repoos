@@ -111,5 +111,5 @@ changes, and should recede when there is nothing to save.
 - 2026-08-10T23:07:22Z · created · unknown
 - 2026-08-10T23:08:12Z · title, branch, body
 - 2026-08-10T23:09:05Z · status inbox→ready
-- 2026-08-10T23:09:07Z · status ready→active
+- 2026-08-10T23:09:22Z · status ready→active
 - 2026-08-10T23:14:02Z · status active→review
