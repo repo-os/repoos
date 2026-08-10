@@ -17,6 +17,7 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreePathForBranch,
   emptyGitInfo,
 } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -36,6 +37,12 @@ export type RepoEvent =
     }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.progress"; id: string; step: string; at: string }
+  | {
+      type: "preview";
+      id: string;
+      preview: { port: number; url: string; startedAt: string } | null;
+      at: string;
+    }
   | { type: "hello"; taskCount: number; at: string };
 
 type Listener = (e: RepoEvent) => void;
@@ -115,6 +122,9 @@ export class LiveIndex {
         branchExists: task.branch
           ? this.branchCache.has(task.branch)
           : false,
+        worktreeExists: task.branch
+          ? worktreePathForBranch(this.config.root, task.branch) !== null
+          : false,
         lastCommit: subject,
         lastCommitAt: date,
       };
@@ -172,6 +182,9 @@ export class LiveIndex {
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
+          worktreeExists: t.branch
+            ? worktreePathForBranch(this.config.root, t.branch) !== null
+            : false,
         },
       });
     }

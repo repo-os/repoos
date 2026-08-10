@@ -55,7 +55,12 @@ export function lastCommitForFile(
 }
 
 export function emptyGitInfo(): TaskGitInfo {
-  return { branchExists: false, lastCommit: null, lastCommitAt: null };
+  return {
+    branchExists: false,
+    worktreeExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+  };
 }
 
 export interface EnsureWorktreeResult {
@@ -86,6 +91,17 @@ function worktreeList(root: string): Map<string, string> {
     }
   }
   return map;
+}
+
+/**
+ * Absolute path of the worktree that has `branch` checked out, or null when the
+ * branch has no linked worktree (or git is missing). The main checkout's own
+ * branch resolves to the repo root. Uses `git worktree list --porcelain` —
+ * never string concatenation — so branch names with `/` and exotic characters
+ * resolve correctly.
+ */
+export function worktreePathForBranch(root: string, branch: string): string | null {
+  return worktreeList(root).get(branch) ?? null;
 }
 
 /**
