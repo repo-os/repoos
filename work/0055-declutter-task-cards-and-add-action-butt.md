@@ -2,14 +2,14 @@
 id: "0055"
 title: Declutter task cards and add action buttons
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/declutter-task-cards-and-add-action-butt
 created_at: "2026-08-06T18:01:49Z"
-updated_at: "2026-08-10T22:57:53Z"
+updated_at: "2026-08-10T23:00:36Z"
 ---
 ## Problem
 
@@ -25,12 +25,12 @@ The task cards in the work queue are visually busy. The branch name shown at the
 
 ## Acceptance criteria
 
-- [ ] Branch name no longer renders on task cards
-- [ ] "ai" pill no longer renders on task cards
-- [ ] Action buttons on task cards are visibly larger than current size
-- [ ] Every task in the work queue (all columns) has an action button except tasks in `done`
-- [ ] `done` column tasks show no action button
-- [ ] `repoos check` passes
+- [x] Branch name no longer renders on task cards
+- [x] "ai" pill no longer renders on task cards
+- [x] Action buttons on task cards are visibly larger than current size
+- [x] Every task in the work queue (all columns) has an action button except tasks in `done`
+- [x] `done` column tasks show no action button
+- [x] `repoos check` passes
 
 ## Notes for AI
 
@@ -51,3 +51,4 @@ The task cards in the work queue are visually busy. The branch name shown at the
 - 2026-08-06T18:02:12Z · status ready→active, branch
 - 2026-08-10T22:57:52Z · status active→ready
 - 2026-08-10T22:57:53Z · status ready→active
+- 2026-08-10T23:00:36Z · status active→review · removed branch name and "ai" pill from task cards, enlarged action buttons, added a status-driven action button to every column except done; `repoos check` green, verified with a headless browser probe
