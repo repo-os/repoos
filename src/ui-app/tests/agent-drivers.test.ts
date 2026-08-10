@@ -9,7 +9,11 @@ import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
-import type { Agent, RepoOSConfig, Task } from "../../core/types";
+import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
+
+/** Plain-line text of an entry (legacy `{s,d}` or sys) — narrows the union. */
+const dOf = (entry: AgentOutputEntry): string | undefined =>
+  (entry as { d?: string }).d;
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
@@ -119,8 +123,8 @@ describe("qwen code driver", () => {
 
       await waitFor(() => runner.output("0001")?.lines.length === 3, "qwen first-turn output");
       const lines = runner.output("0001")!.lines;
-      expect(lines.map((l) => l.d)).toContain("fake output line");
-      expect(lines.map((l) => l.d)).toContain('{"session_id":"sess-123"}');
+      expect(lines.map(dOf)).toContain("fake output line");
+      expect(lines.map(dOf)).toContain('{"session_id":"sess-123"}');
       expect(runner.output("0001")!.sessionId).toBe("sess-123");
 
       const [run] = spawns(fx);
@@ -195,7 +199,7 @@ describe("codex driver", () => {
       expect(start.ok).toBe(true);
 
       await waitFor(() => runner.output("0001")?.lines.length === 3, "codex first-turn output");
-      expect(runner.output("0001")!.lines.map((l) => l.d)).toContain("fake output line");
+      expect(runner.output("0001")!.lines.map(dOf)).toContain("fake output line");
       expect(runner.output("0001")!.sessionId).toBe("sess-123");
 
       const [run] = spawns(fx);

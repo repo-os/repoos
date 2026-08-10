@@ -256,15 +256,54 @@ describe("agent running state", () => {
 });
 
 describe("agent output transcript", () => {
-  it("appends agent.output lines with the stream kind", async () => {
+  it("appends agent.output entries with the stream kind", async () => {
     const repo = useRepoStore();
     await repo.init();
     const es = FakeEventSource.instances[0];
-    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "hello" });
-    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "err", data: "warn" });
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "out",
+      entry: { s: "out", d: "hello" },
+    });
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "err",
+      entry: { s: "err", d: "warn" },
+    });
     expect(repo.outputs["0001"]).toEqual([
       { s: "out", d: "hello" },
       { s: "err", d: "warn" },
+    ]);
+  });
+
+  it("retains structured entries from the opencode JSON stream", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "out",
+      entry: { type: "text", text: "Let me look." },
+    });
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "out",
+      entry: { type: "tool", tool: "bash", input: "ls", output: "total 8", state: "completed" },
+    });
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "out",
+      entry: { type: "step", kind: "finish", reason: "stop" },
+    });
+    expect(repo.outputs["0001"]).toEqual([
+      { type: "text", text: "Let me look." },
+      { type: "tool", tool: "bash", input: "ls", output: "total 8", state: "completed" },
+      { type: "step", kind: "finish", reason: "stop" },
     ]);
   });
 
@@ -272,10 +311,16 @@ describe("agent output transcript", () => {
     const repo = useRepoStore();
     await repo.init();
     const es = FakeEventSource.instances[0];
-    es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "done" });
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "0001",
+      stream: "out",
+      entry: { s: "out", d: "done" },
+    });
     es.emit("agent.exited", { type: "agent.exited", id: "0001" });
-    expect(repo.outputs["0001"].at(-1)?.s).toBe("sys");
-    expect(repo.outputs["0001"].at(-1)?.d).toContain("stopped");
+    const last = repo.outputs["0001"].at(-1) as { s?: string; d: string };
+    expect(last.s).toBe("sys");
+    expect(last.d).toContain("stopped");
   });
 
   it("caps the transcript at OUTPUT_MAX_LINES", async () => {
@@ -283,7 +328,12 @@ describe("agent output transcript", () => {
     await repo.init();
     const es = FakeEventSource.instances[0];
     for (let i = 0; i < 2010; i++) {
-      es.emit("agent.output", { type: "agent.output", id: "0001", stream: "out", data: "x" });
+      es.emit("agent.output", {
+        type: "agent.output",
+        id: "0001",
+        stream: "out",
+        entry: { s: "out", d: "x" },
+      });
     }
     expect(repo.outputs["0001"].length).toBe(2000);
   });
