@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { api } from "../api";
-import type { Agent, DetectedAgent } from "../types";
+import type { Agent, DetectedAgent, ModelSourcesResponse } from "../types";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -51,12 +51,54 @@ const CLI_LABELS: Record<string, string> = {
 const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
-const models = computed(() =>
-  config.agentsMeta.models.map((m) => ({
-    value: m,
-    label: m === "default" ? "Default" : m === "big pickle" ? "Big Pickle" : "DeepSeek v4",
-  })),
-);
+
+// ---- Live model list (opencode) ----
+// Fetched on mount from /api/models; the dropdown shows the static fallback
+// (config.agentsMeta.models) plus whatever the live probe returned. A Refresh
+// button re-probes with --refresh. When the endpoint is unavailable the page
+// degrades to the static list exactly as before.
+
+const liveModels = ref<string[]>([]);
+const modelsLoading = ref(false);
+
+function labelForModel(m: string): string {
+  if (m === "default") return "Default";
+  if (m === "big pickle") return "Big Pickle";
+  if (m === "deepseek v4") return "DeepSeek v4";
+  return m;
+}
+
+const models = computed(() => {
+  const out: { value: string; label: string }[] = [];
+  const seen = new Set<string>();
+  const push = (m: string) => {
+    if (seen.has(m)) return;
+    seen.add(m);
+    out.push({ value: m, label: labelForModel(m) });
+  };
+  for (const m of config.agentsMeta.models) push(m);
+  for (const m of liveModels.value) push(m);
+  // Stored values that resolve nowhere stay selectable so existing configs
+  // never silently lose a pinned model.
+  for (const a of localAgents.value) {
+    if (a.model) push(a.model);
+  }
+  return out;
+});
+
+async function loadModels(refresh = false): Promise<void> {
+  modelsLoading.value = true;
+  try {
+    const res = await api<ModelSourcesResponse>(
+      `/api/models${refresh ? "?refresh=1" : ""}`,
+    );
+    liveModels.value = res.byCli.opencode?.models ?? [];
+  } catch {
+    liveModels.value = [];
+  } finally {
+    modelsLoading.value = false;
+  }
+}
 
 function addCustom(): void {
   const name = newName.value.trim();
@@ -184,6 +226,7 @@ function copyHint(hint: string): void {
 onMounted(() => {
   window.addEventListener("beforeunload", handleBeforeUnload);
   void checkAgents();
+  void loadModels();
 });
 
 onUnmounted(() => {
@@ -204,6 +247,16 @@ onUnmounted(() => {
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
+          <Button
+            variant="outline"
+            size="sm"
+            style="margin-left: auto"
+            :disabled="modelsLoading"
+            title="Re-probe opencode's live model list (opencode models --refresh)"
+            @click="loadModels(true)"
+          >
+            {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
+          </Button>
         </div>
         <div class="agent-desc">
           Built-in roles. Toggle them on or off and pick their coding agent and model.

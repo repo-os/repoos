@@ -34,6 +34,7 @@ import type { RepoOSConfig, SkillMeta, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
+import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -673,8 +674,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, {
           config: { ...repoos.config, agents },
           schema: getConfigSchema(),
+          // The static list is the fallback the Agents page shows while /api/models
+          // loads (and when no model source is available).
           agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
         });
+      }
+      if (path === "/api/models" && method === "GET") {
+        // Per-CLI live model lists, probed on demand (the Agents page fetches
+        // on mount and re-probes with ?refresh=1). Best-effort: a broken PATH,
+        // missing binary, or hung probe must never break the endpoint.
+        const refresh = url.searchParams.get("refresh") === "1";
+        let byCli: Record<string, ModelSourceResult> = {};
+        try {
+          byCli = await listModelSources({ refresh, cwd: config.root });
+        } catch {
+          byCli = {};
+        }
+        return json(res, 200, { byCli, at: new Date().toISOString() });
       }
       if (path === "/api/config" && method === "PATCH") {
         const body = (await readBody(req)) as Record<string, unknown>;
@@ -700,8 +716,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number])) {
               return json(res, 400, { error: `cli must be one of: ${AGENT_CLIS.join(", ")}` });
             }
-            if (!AGENT_MODELS.includes(a.model as (typeof AGENT_MODELS)[number])) {
-              return json(res, 400, { error: `model must be one of: ${AGENT_MODELS.join(", ")}` });
+            // The model stays a RepoOS-side label: any non-empty string is
+            // accepted so dynamically-selected models save. AGENT_MODELS remains
+            // the fallback suggested list, never an allowlist.
+            if (typeof a.model !== "string" || !a.model.trim()) {
+              return json(res, 400, { error: `agent "${a.name}" model must be a non-empty string` });
             }
             if (typeof a.enabled !== "boolean") {
               return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });

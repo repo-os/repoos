@@ -121,6 +121,19 @@ export interface DetectedAgent {
   installHint: string;
 }
 
+/** Live model result for one coding agent (GET /api/models). */
+export interface ModelSourceResult {
+  supported: boolean;
+  models: string[];
+  refreshable: boolean;
+}
+
+/** Response of GET /api/models, keyed by Agent.cli. */
+export interface ModelSourcesResponse {
+  byCli: Record<string, ModelSourceResult>;
+  at: string;
+}
+
 export interface DocMeta {
   path: string;
   title: string;
