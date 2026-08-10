@@ -35,10 +35,5 @@ An AI agent picks up this task, confirms it can read the task file, and complete
 
 - 2026-08-06T18:16:12Z · created · unknown
 - 2026-08-06T18:18:02Z · status inbox→ready
-- 2026-08-06T18:18:03Z · status ready→active, branch
-- 2026-08-10T22:44:43Z · status active→ready
-- 2026-08-10T22:44:44Z · status ready→active
-- 2026-08-10T22:54:55Z · status active→ready
-- 2026-08-10T22:54:56Z · status ready→active
-- 2026-08-10T22:55:43Z · verified · AI agent read and parsed this task file successfully (frontmatter + body), confirmed no product code changes were required per the notes, ran `bun install` + `bun run build` + `repoos check` (build, typecheck, tests, UI smoke test) — all green — and set status active→review
-- 2026-08-10T22:55:43Z · status active→review
+- 2026-08-10T22:55:43Z · verified · AI agent read and parsed this task file successfully (frontmatter + body), confirmed no product code changes were required per the notes, ran `bun install` + `bun run build` + `repoos check` (build, typecheck, tests, UI smoke test) — all green — and set status ready→review
+- 2026-08-10T22:55:43Z · status ready→review
