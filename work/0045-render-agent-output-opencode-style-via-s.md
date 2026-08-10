@@ -2,7 +2,7 @@
 id: "0045"
 title: Render agent output opencode-style via structured JSON events
 type: feature
-status: active
+status: review
 priority: p1
 area: agent
 assigned_to: ai

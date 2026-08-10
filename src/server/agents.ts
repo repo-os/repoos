@@ -8,7 +8,7 @@
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { join, relative } from "node:path";
-import type { Agent, RepoOSConfig, Task } from "../core/types.js";
+import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { DEFAULT_AGENTS } from "../core/config.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -18,7 +18,7 @@ export type AgentEvent =
   | {
       type: "agent.output";
       id: string;
-      data: string;
+      entry: AgentOutputEntry;
       stream: "out" | "err";
       at: string;
     };
@@ -44,12 +44,6 @@ export interface RunningAgentInfo {
   workdir?: string;
 }
 
-/** One rendered line of an agent session transcript. */
-export interface AgentOutputLine {
-  s: "out" | "err" | "sys";
-  d: string;
-}
-
 interface Entry {
   proc: ChildProcess;
   startedAt: string;
@@ -59,11 +53,13 @@ interface Entry {
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
 interface Session {
-  lines: AgentOutputLine[];
+  lines: AgentOutputEntry[];
   pending: string;
   bytes: number;
   workdir?: string;
   sessionId?: string;
+  /** Whether the session runs the opencode CLI (structured JSON events). */
+  engine: "opencode" | "plain";
 }
 
 const now = (): string => new Date().toISOString();
@@ -76,6 +72,161 @@ const SESSION_ID_PATTERNS: RegExp[] = [
   /"session_id"\s*:\s*"([^"]+)"/,
   /session[ \t]+id[:\s]*["']?([A-Za-z0-9][A-Za-z0-9_.-]{5,})/i,
 ];
+
+/** True when the agent's CLI is opencode (emits structured JSON events). */
+function isOpenCode(cli: string): boolean {
+  return cli !== "claude code" && cli !== "qwen code" && cli !== "codex";
+}
+
+/** The opencode `--format json` event fields we consume. */
+interface OpenCodeEvent {
+  type?: unknown;
+  sessionID?: unknown;
+  path?: unknown;
+  part?: {
+    text?: unknown;
+    tool?: unknown;
+    reason?: unknown;
+    path?: unknown;
+    state?: { status?: unknown; input?: unknown; output?: unknown; error?: unknown };
+  };
+  error?: { name?: unknown; data?: { message?: unknown } };
+}
+
+/**
+ * Render a tool input as display text: a bash call shows its command, an
+ * object input becomes pretty JSON, and strings pass through untouched.
+ */
+function toolInputText(input: unknown): string | undefined {
+  if (typeof input === "string") return input;
+  if (input === undefined || input === null) return undefined;
+  if (typeof input === "object") {
+    const obj = input as Record<string, unknown>;
+    if (typeof obj.command === "string" && obj.command) return obj.command;
+    try {
+      const s = JSON.stringify(obj, null, 2);
+      return s && s !== "{}" ? s : undefined;
+    } catch {
+      return String(input);
+    }
+  }
+  return String(input);
+}
+
+/**
+ * Render a tool output as display text: strings pass through untouched and
+ * object outputs become pretty JSON. Falls back to the error payload when the
+ * call failed.
+ */
+function toolOutputText(output: unknown): string | undefined {
+  if (typeof output === "string" && output) return output;
+  if (output === undefined || output === null) return undefined;
+  if (typeof output === "object") {
+    try {
+      const s = JSON.stringify(output, null, 2);
+      return s && s !== "{}" ? s : undefined;
+    } catch {
+      return String(output);
+    }
+  }
+  const s = String(output);
+  return s ? s : undefined;
+}
+
+/**
+ * Parse one line of opencode's `--format json` stream into a structured
+ * transcript entry. Returns null for malformed lines and for event types we
+ * don't surface (session-id, title, reasoning, …) — callers fall back to the
+ * plain-line handling in those cases.
+ */
+export function parseJsonEvent(
+  raw: string,
+): { entry: AgentOutputEntry; sessionID?: string } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const ev = parsed as OpenCodeEvent;
+  const type = typeof ev.type === "string" ? ev.type : "";
+  if (!type) return null;
+  const sessionID =
+    typeof ev.sessionID === "string" && ev.sessionID ? ev.sessionID : undefined;
+  const part = ev.part ?? {};
+
+  switch (type) {
+    case "text": {
+      const text = typeof part.text === "string" ? part.text : "";
+      if (!text.trim()) return null;
+      return { entry: { type: "text", text }, sessionID };
+    }
+    case "tool_use": {
+      const tool = typeof part.tool === "string" ? part.tool : "";
+      if (!tool) return null;
+      const state = part.state ?? {};
+      const status = typeof state.status === "string" ? state.status : undefined;
+      const input = toolInputText(state.input);
+      const output = toolOutputText(state.output ?? state.error);
+      return {
+        entry: {
+          type: "tool",
+          tool,
+          ...(input ? { input } : {}),
+          ...(output ? { output } : {}),
+          ...(status ? { state: status } : {}),
+        },
+        sessionID,
+      };
+    }
+    case "step_start":
+      return { entry: { type: "step", kind: "start" }, sessionID };
+    case "step_finish":
+      return {
+        entry: {
+          type: "step",
+          kind: "finish",
+          ...(typeof part.reason === "string" && part.reason
+            ? { reason: part.reason }
+            : {}),
+        },
+        sessionID,
+      };
+    case "error": {
+      const err = ev.error ?? {};
+      const data = err.data ?? {};
+      const msg =
+        typeof data.message === "string" && data.message
+          ? data.message
+          : typeof err.name === "string" && err.name
+            ? err.name
+            : "";
+      if (!msg) return null;
+      return { entry: { type: "sys", d: `error: ${msg}` }, sessionID };
+    }
+    case "file-update": {
+      // Older opencode emitted file-write events directly; surface the path.
+      const path =
+        typeof ev.path === "string" && ev.path
+          ? ev.path
+          : typeof part.path === "string"
+            ? part.path
+            : "";
+      if (!path) return null;
+      return { entry: { type: "sys", d: `✎ ${path}` }, sessionID };
+    }
+    default:
+      return null;
+  }
+}
+
+/** Byte estimate of one entry, for the transcript cap. */
+function entryBytes(e: AgentOutputEntry): number {
+  const legacy = e as { d?: string };
+  if (typeof legacy.d === "string") return legacy.d.length + 1;
+  return JSON.stringify(e).length + 1;
+}
 
 /** Branch derived from a task title, mirroring the UI's `feat/<slug>` rule. */
 export function deriveBranch(title: string): string {
@@ -125,15 +276,22 @@ function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; a
   if (cli === "codex") {
     return { cmd: "codex", args: ["exec", mission, "--json", "--sandbox", "workspace-write"] };
   }
-  // default: opencode's headless `run` mode
-  return { cmd: "opencode", args: ["run", "--dir", cwd, mission] };
+  // default: opencode's headless `run` mode. `--format json` streams one JSON
+  // event per line (step_start / text / tool_use / step_finish / error) that
+  // the runner parses into structured transcript entries. `--dir` (0044) keeps
+  // the worktree path explicit so linked-worktree paths are never auto-rejected.
+  return {
+    cmd: "opencode",
+    args: ["run", "--format", "json", "--dir", cwd, mission],
+  };
 }
 
 /**
  * Map a follow-up turn to a resume invocation that continues the SAME session.
  * claude: `-p --resume <id>` (falls back to `-c --continue` when the id is
- * unknown). opencode: `run --session <id>`. qwen: `--resume <id>` / `--continue`
- * with `-p` + stream-json. codex: `exec resume <id>` / `exec resume --last`.
+ * unknown). opencode: `run --format json --session <id>`. qwen: `--resume <id>`
+ * / `--continue` with `-p` + stream-json. codex: `exec resume <id>` / `exec
+ * resume --last`.
  * All degrade to a fresh run with the user's text if resume metadata is
  * unavailable — the turn still happens.
  */
@@ -179,6 +337,8 @@ function resumeCommand(
     cmd: "opencode",
     args: [
       "run",
+      "--format",
+      "json",
       ...(sessionId ? ["--session", sessionId] : []),
       ...(cwd ? ["--dir", cwd] : []),
       text,
@@ -346,8 +506,9 @@ export class AgentRunner {
       return { ok: false, reason: "task is already running" };
     }
     const cwd = opts.cwd ?? this.config.root;
-    const session = this.sessions.get(task.id) ?? { lines: [], pending: "", bytes: 0 };
+    const session = this.sessions.get(task.id) ?? { lines: [], pending: "", bytes: 0, engine: "plain" as const };
     session.workdir = cwd;
+    session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
     const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent, this.config), cwd);
     return this.spawnTurn(task.id, cmd, args, cwd);
@@ -396,8 +557,10 @@ export class AgentRunner {
       workdir: cwd,
     });
     // Either path means the run is over: natural exit, spawn error (e.g. the
-    // CLI isn't installed), or our own SIGKILL after a graceful pause.
-    proc.on("exit", () => this.cleanup(taskId));
+    // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
+    // (not `exit`) fires only after stdio has drained, so a trailing line with
+    // no final newline is still in `pending` when cleanup flushes it.
+    proc.on("close", () => this.cleanup(taskId));
     proc.on("error", () => this.cleanup(taskId));
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
@@ -413,15 +576,36 @@ export class AgentRunner {
     session.pending = parts.pop() ?? "";
     for (const raw of parts) {
       if (raw.length === 0) continue;
-      session.lines.push({ s: stream, d: raw });
-      session.bytes += raw.length + 1;
-      this.tryExtractSessionId(raw, session);
-      this.emit({ type: "agent.output", id: taskId, data: raw, stream, at: now() });
+      this.appendLine(taskId, stream, raw);
     }
+  }
+
+  /** Turn one buffered line into a transcript entry and stream it out. */
+  private appendLine(taskId: string, stream: "out" | "err", raw: string): void {
+    const session = this.sessions.get(taskId);
+    if (!session) return;
+    const parsed =
+      session.engine === "opencode" && stream === "out"
+        ? parseJsonEvent(raw)
+        : null;
+    let entry: AgentOutputEntry;
+    if (parsed) {
+      if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+      entry = parsed.entry;
+    } else {
+      // Plain line: claude / qwen / codex output, malformed JSON, or anything
+      // on stderr. Keep the legacy `{s,d}` shape and the regex session-id
+      // extraction.
+      entry = { s: stream, d: raw };
+      this.tryExtractSessionId(raw, session);
+    }
+    session.lines.push(entry);
+    session.bytes += entryBytes(entry);
+    this.emit({ type: "agent.output", id: taskId, entry, stream, at: now() });
     while (session.bytes > OUTPUT_CAP_BYTES) {
       const dropped = session.lines.shift();
       if (!dropped) break;
-      session.bytes -= dropped.d.length + 1;
+      session.bytes -= entryBytes(dropped);
     }
   }
 
@@ -466,10 +650,11 @@ export class AgentRunner {
     if (!entry) return;
     const session = this.sessions.get(taskId);
     if (session && session.pending.trim()) {
+      // Flush a trailing line with no final newline through the same parse
+      // path: a complete JSON event becomes a structured entry, and a partial
+      // one degrades to a plain line — either way nothing is lost or dropped.
       const line = session.pending.trimEnd();
-      session.lines.push({ s: "out", d: line });
-      session.bytes += line.length + 1;
-      this.emit({ type: "agent.output", id: taskId, data: line, stream: "out", at: now() });
+      this.appendLine(taskId, "out", line);
       session.pending = "";
     }
     if (entry.killTimer) clearTimeout(entry.killTimer);

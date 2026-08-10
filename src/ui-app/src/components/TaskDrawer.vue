@@ -352,10 +352,64 @@ function cancelDraft(): void {
 
 // ---- agent session tab ----
 
-/** The rendered transcript for the open task. */
-const outputLines = computed<{ s: string; d: string }[]>(() =>
-  ui.active ? repo.outputs[ui.active.id] ?? [] : [],
-);
+/** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
+const ANSI_RE =
+  /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
+const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
+
+interface DisplayEntry {
+  key: number;
+  kind: "line" | "text" | "tool" | "step" | "sys";
+  s?: "out" | "err" | "sys";
+  d?: string;
+  text?: string;
+  toolName?: string;
+  toolState?: string;
+  toolInput?: string;
+  toolOutput?: string;
+  stepKind?: "start" | "finish";
+  stepReason?: string;
+}
+
+/**
+ * The rendered transcript for the open task. Legacy `{s,d}` lines render
+ * as today (ANSI stripped); structured entries become text blocks, tool
+ * cards, step markers, and system lines. Consecutive text parts collapse
+ * into one block so a multi-part assistant message reads as a single reply.
+ */
+const displayEntries = computed<DisplayEntry[]>(() => {
+  const src = ui.active ? repo.outputs[ui.active.id] ?? [] : [];
+  const out: DisplayEntry[] = [];
+  for (const e of src) {
+    if ("type" in e) {
+      if (e.type === "text") {
+        const text = stripAnsi(e.text);
+        const last = out[out.length - 1];
+        if (last && last.kind === "text" && text) {
+          last.text = `${last.text}\n\n${text}`;
+          continue;
+        }
+        out.push({ key: out.length, kind: "text", text });
+      } else if (e.type === "tool") {
+        out.push({
+          key: out.length,
+          kind: "tool",
+          toolName: e.tool,
+          toolState: e.state,
+          toolInput: e.input ? stripAnsi(e.input) : undefined,
+          toolOutput: e.output ? stripAnsi(e.output) : undefined,
+        });
+      } else if (e.type === "step") {
+        out.push({ key: out.length, kind: "step", stepKind: e.kind, stepReason: e.reason });
+      } else {
+        out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
+      }
+    } else {
+      out.push({ key: out.length, kind: "line", s: e.s, d: stripAnsi(e.d) });
+    }
+  }
+  return out;
+});
 /** A follow-up message typed in the Agent tab. */
 const draftMsg = ref("");
 /** Stick-to-bottom: only when the user hasn't scrolled up the log. */
@@ -366,7 +420,7 @@ const agentBusy = computed(
   () => !!ui.active && ui.active.status === "active" && repo.isRunning(ui.active.id),
 );
 
-watch(outputLines, () => {
+watch(displayEntries, () => {
   if (stick.value) {
     nextTick(() => {
       const el = logEl.value;
@@ -818,23 +872,58 @@ async function sendTurn(): Promise<void> {
         </div>
         <div v-else class="drawer-body">
           <div class="agent-log" ref="logEl" @scroll="onLogScroll">
-            <template v-if="outputLines.length === 0">
+            <template v-if="displayEntries.length === 0">
               <div class="agent-empty">
                 No agent session yet.
                 <br />
                 Start work to launch the coding agent; its output streams here.
               </div>
             </template>
-            <div
-              v-for="(line, i) in outputLines"
-              :key="i"
-              class="agent-line"
-              :class="line.s"
-            >
-              <span class="agent-pfx" :class="line.s">{{
-                line.s === "err" ? "✕" : line.s === "sys" ? "·" : "›"
-              }}</span>
-              <span class="agent-d">{{ line.d }}</span>
+            <div v-for="entry in displayEntries" :key="entry.key" class="agent-entry">
+              <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
+              <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
+                <span class="agent-pfx" :class="entry.s">{{
+                  entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
+                }}</span>
+                <span class="agent-d">{{ entry.d }}</span>
+              </div>
+              <!-- system / notice line -->
+              <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                <span class="agent-pfx">·</span>
+                <span class="agent-d">{{ entry.d }}</span>
+              </div>
+              <!-- assistant text block -->
+              <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
+              <!-- step boundary marker -->
+              <div
+                v-else-if="entry.kind === 'step'"
+                class="agent-step"
+                :class="{ fin: entry.stepKind === 'finish' }"
+              >
+                <span class="agent-step-dot"></span>
+                <span>{{
+                  entry.stepKind === "start"
+                    ? "step"
+                    : entry.stepReason === "stop"
+                      ? "done"
+                      : "continue"
+                }}</span>
+                <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
+              </div>
+              <!-- collapsible tool card -->
+              <details v-else class="agent-tool" :class="entry.toolState">
+                <summary>
+                  <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
+                  <span class="agent-tool-name">{{ entry.toolName }}</span>
+                  <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
+                    entry.toolInput
+                  }}</span>
+                  <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
+                    entry.toolState
+                  }}</span>
+                </summary>
+                <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
+              </details>
             </div>
           </div>
           <div class="agent-input-row">

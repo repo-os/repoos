@@ -2,7 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore } from "./ui";
-import type { Counts, Health, RepoEvent, RepoIndex, Task } from "../types";
+import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, Task } from "../types";
 
 export interface FeedItem {
   key: number;
@@ -10,12 +10,6 @@ export interface FeedItem {
   color: string;
   kind: string;
   time: string;
-}
-
-/** One rendered line of a task's agent session transcript. */
-export interface AgentOutputLine {
-  s: "out" | "err" | "sys";
-  d: string;
 }
 
 /** Summary returned by the review→done close-out endpoint. */
@@ -68,7 +62,7 @@ export const useRepoStore = defineStore("repo", () => {
   const eventCount = ref(0);
   const flashId = ref<string | null>(null);
   const runningIds = ref<string[]>([]);
-  const outputs = ref<Record<string, AgentOutputLine[]>>({});
+  const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
 
@@ -146,7 +140,7 @@ export const useRepoStore = defineStore("repo", () => {
       const prev = outputs.value[e.id] ?? [];
       outputs.value = {
         ...outputs.value,
-        [e.id]: [...prev, { s: e.stream, d: e.data }].slice(-OUTPUT_MAX_LINES),
+        [e.id]: [...prev, e.entry].slice(-OUTPUT_MAX_LINES),
       };
     } else if (e.type === "agent.exited") {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
@@ -232,7 +226,7 @@ export const useRepoStore = defineStore("repo", () => {
   /** Replace the client's transcript for a task from the server buffer. */
   async function loadOutput(id: string): Promise<void> {
     try {
-      const r = await api<{ ok: boolean; lines: AgentOutputLine[] }>(`/api/tasks/${id}/output`);
+      const r = await api<{ ok: boolean; lines: AgentOutputEntry[] }>(`/api/tasks/${id}/output`);
       if (r.ok) outputs.value = { ...outputs.value, [id]: r.lines };
     } catch {
       /* endpoint unavailable — transcript is best-effort */

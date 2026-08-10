@@ -52,6 +52,24 @@ export interface RepoIndex {
   counts: Counts;
 }
 
+/**
+ * One entry of a task's agent transcript. Legacy entries carry `s`/`d` (plain
+ * lines from claude/qwen/codex and pre-JSON sessions); entries derived from
+ * opencode's `--format json` stream carry a `type` discriminator.
+ */
+export type AgentOutputEntry =
+  | { type: "text"; text: string }
+  | {
+      type: "tool";
+      tool: string;
+      input?: string;
+      output?: string;
+      state?: string;
+    }
+  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "sys"; d: string }
+  | { s: "out" | "err" | "sys"; d: string };
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
@@ -61,7 +79,7 @@ export type RepoEvent =
   | { type: "task.progress"; id: string; step: string; at: string }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
-  | { type: "agent.output"; id: string; data: string; stream: "out" | "err" };
+  | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" };
 
 export interface ConfigField {
   key: string;
