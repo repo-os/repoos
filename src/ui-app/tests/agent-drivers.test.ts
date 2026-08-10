@@ -34,7 +34,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex"]) {
+  for (const name of ["qwen", "codex", "claude"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -251,6 +251,45 @@ describe("codex driver", () => {
         "--sandbox",
         "workspace-write",
       ]);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("claude code driver", () => {
+  /**
+   * The permission flag is load-bearing: agents are spawned with stdin ignored,
+   * so an approval prompt can never reach a human. Without it claude denies
+   * every write and build command, does nothing, and leaves the task wedged in
+   * `active` — the exact failure this asserts against.
+   */
+  it("passes --dangerously-skip-permissions on both first turn and resume", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      const cwd = join(fx.bin, "wt", "claude");
+      mkdirSync(cwd, { recursive: true });
+      const start = runner.start(TASK, "feat/x", agent("claude code"), { cwd });
+      expect(start.ok).toBe(true);
+
+      await waitFor(() => runner.output("0001")?.lines.length === 3, "claude first-turn output");
+      const [run] = spawns(fx);
+      expect(run.args[0]).toBe("-p");
+      expect(run.args[1]).toContain("Task #0001");
+      expect(run.args).toContain("--dangerously-skip-permissions");
+
+      await waitFor(() => !runner.isRunning("0001"), "first turn exit");
+      runner.send("0001", "keep going", agent("claude code"));
+      await waitFor(() => spawns(fx).length === 2, "claude resume spawn");
+
+      const [, resume] = spawns(fx);
+      expect(resume.args).toContain("keep going");
+      expect(resume.args).toContain("--dangerously-skip-permissions");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

@@ -109,7 +109,14 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * `cwd` and need no flag.
  *
  * Verified flags (0042/0043):
- * - claude code: `claude -p <prompt>` (print mode)
+ * - claude code: `claude -p <prompt> --dangerously-skip-permissions` (print
+ *   mode). The permission flag is REQUIRED here, not optional: the agent is
+ *   spawned with stdin ignored, so no approval prompt can ever reach a human.
+ *   Without it every non-read-only command (`bun`, `repoos check`, writes) is
+ *   denied instantly, the agent stalls explaining it needs approval, and the
+ *   task is left stuck in `active` with no changes. Same intent as codex's
+ *   `--sandbox workspace-write` below; the blast radius is the task's own
+ *   git worktree.
  * - qwen code: `qwen -p <prompt> --output-format stream-json` — stream-json
  *   emits one JSON event per line, which streams live and carries a
  *   `session_id` RepoOS can resume.
@@ -118,7 +125,9 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  *   agent edit files inside the worktree (the default is read-only).
  */
 function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; args: string[] } {
-  if (cli === "claude code") return { cmd: "claude", args: ["-p", mission] };
+  if (cli === "claude code") {
+    return { cmd: "claude", args: ["-p", mission, "--dangerously-skip-permissions"] };
+  }
   if (cli === "qwen code") {
     return { cmd: "qwen", args: ["-p", mission, "--output-format", "stream-json"] };
   }
@@ -146,7 +155,12 @@ function resumeCommand(
   if (cli === "claude code") {
     return {
       cmd: "claude",
-      args: ["-p", ...(sessionId ? ["--resume", sessionId] : ["-c", "--continue"]), text],
+      args: [
+        "-p",
+        ...(sessionId ? ["--resume", sessionId] : ["-c", "--continue"]),
+        text,
+        "--dangerously-skip-permissions",
+      ],
     };
   }
   if (cli === "qwen code") {
