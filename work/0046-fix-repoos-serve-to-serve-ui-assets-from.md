@@ -2,18 +2,19 @@
 id: "0046"
 title: Fix repoos serve to serve UI assets from the repo root
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/fix-repoos-serve-to-serve-ui-assets-from
 created_at: "2026-08-06T14:42:07Z"
-updated_at: "2026-08-06T18:03:59Z"
+updated_at: "2026-08-07T00:16:54Z"
 ---
 ## Activity
 
 - 2026-08-06T14:42:07Z · created · unknown
+- 2026-08-07T00:16:54Z · status active→review
 
 
 ## Problem
