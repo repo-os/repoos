@@ -71,7 +71,8 @@ watch(
   (isNew) => {
     if (!isNew) return;
     newMode.value = config.form.defaultTaskMode === "manual" ? "manual" : "freeform";
-    freeformText.value = "";
+    // Deliberately keep freeformText: the draft survives closing and reopening
+    // the drawer within a session. It is cleared only after a successful create.
     freeformError.value = "";
     draftSaved.value = null;
   },

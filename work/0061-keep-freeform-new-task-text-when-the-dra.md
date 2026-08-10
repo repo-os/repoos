@@ -83,5 +83,5 @@ task drawer:
 
 - 2026-08-10T23:25:31Z · created · unknown
 - 2026-08-10T23:26:24Z · status inbox→ready
-- 2026-08-10T23:46:48Z · status ready→active, branch
+- 2026-08-10T23:47:06Z · status ready→active
 - 2026-08-10T23:52:50Z · status active→review
