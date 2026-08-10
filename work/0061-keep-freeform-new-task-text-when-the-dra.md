@@ -2,14 +2,14 @@
 id: "0061"
 title: Keep freeform new-task text when the drawer closes
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-10T23:25:31Z"
-updated_at: "2026-08-10T23:25:31Z"
+updated_at: "2026-08-10T23:26:24Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ task drawer:
 ## Activity
 
 - 2026-08-10T23:25:31Z · created · unknown
+- 2026-08-10T23:26:24Z · status inbox→ready
