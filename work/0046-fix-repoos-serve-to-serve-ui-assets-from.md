@@ -2,14 +2,14 @@
 id: "0046"
 title: Fix repoos serve to serve UI assets from the repo root
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/fix-repoos-serve-to-serve-ui-assets-from
 created_at: "2026-08-06T14:42:07Z"
-updated_at: "2026-08-07T00:16:54Z"
+updated_at: "2026-08-10T22:05:00Z"
 ---
 ## Activity
 
@@ -54,3 +54,4 @@ sees its own fresh UI.
 
 - 2026-08-06T18:03:57Z · status inbox→ready
 - 2026-08-06T18:03:59Z · status ready→active, branch
+- 2026-08-10T22:05:00Z · status review→done
