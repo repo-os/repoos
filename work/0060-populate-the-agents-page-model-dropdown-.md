@@ -2,14 +2,14 @@
 id: "0060"
 title: Populate the Agents page model dropdown from opencode's live model list
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0060-live-opencode-models
 created_at: "2026-08-10T23:19:09Z"
-updated_at: "2026-08-10T23:35:09Z"
+updated_at: "2026-08-10T23:50:37Z"
 ---
 ## Activity
 
@@ -110,3 +110,4 @@ saving a dynamic model works.
 
 - 2026-08-10T23:21:43Z · status ready→active
 - 2026-08-10T23:35:09Z · status active→review · implementation on feat/0060-live-opencode-models
+- 2026-08-10T23:50:37Z · status review→done
