@@ -34,7 +34,7 @@ button that drives an AI agent:
   - moves the task to `active` (same code path as `repoos mv`, so the Activity
     log is written);
   - launches the repo's default coding agent on the task: checks out / creates
-    the task's branch, and hands the agent the task file + its instructions as
+    the task's worktree, and hands the agent the task file + its instructions as
     the mission;
   - marks the task as *running* in the UI.
 - **Active tasks** show a **Pause work** button in the same spot. Clicking it:
@@ -51,7 +51,7 @@ button that drives an AI agent:
 - [ ] Clicking **Start work** transitions the task to `active` with an Activity
       log entry
 - [ ] Starting work launches the repo's default agent (the `engineer` agent from
-      the Agents page) against the task, on the task's branch, seeded with the
+      the Agents page) against the task, in the task's worktree, seeded with the
       task file and the agent's instructions
 - [ ] An `active` task shows a **Pause work** button instead
 - [ ] Clicking **Pause work** stops the running agent and returns the task to
@@ -69,7 +69,7 @@ button that drives an AI agent:
   agent.
 - **Spawning the agent**: use `node:child_process` (zero runtime deps is a hard
   constraint — no process libraries). cwd is the repo root; the agent must run
-  on the task's branch (create it if missing, mirroring the branch logic on the
+  in the task's worktree (create it if missing, mirroring the branch logic on the
   existing edit path). The mission = task file path + the agent's `instructions`
   from the Agents config.
 - **Agent identity**: reuse `#0035`'s agents — pick the `engineer` agent's

@@ -15,7 +15,7 @@ updated_at: "2026-08-10T22:22:04Z"
 
 When a task is `active`, the web UI shows the agent's logs and lets me chat with the agent in that task's worktree. But once the task moves into `review`, the logs appear to be gone and I can no longer chat with the agent in that worktree.
 
-This breaks the review workflow. Fixing issues spotted during review is supposed to happen by talking to the implementing agent on the same branch/worktree, having it fix them, and re-running `repoos check` to get a green run before sign-off. Without logs and chat in `review`, there is no way to see what the agent did or ask it to fix issues, so the review → fixes loop cannot happen.
+This breaks the review workflow. Fixing issues spotted during review is supposed to happen by talking to the implementing agent in the same worktree, having it fix them, and re-running `repoos check` to get a green run before sign-off. Without logs and chat in `review`, there is no way to see what the agent did or ask it to fix issues, so the review → fixes loop cannot happen.
 
 ## Desired UX
 
@@ -34,7 +34,7 @@ This breaks the review workflow. Fixing issues spotted during review is supposed
 ## Notes for AI
 
 - Likely root cause: the web UI only surfaces the agent session/logs/chat for tasks whose status is `active`, or the session/worktree is torn down when the status changes. Confirm how the session is keyed to task status and to the worktree before fixing.
-- Keep the same branch and worktree open during `review` — this matches the repo's review flow, where fixes are made on the same branch. Do not merge or close the branch.
+- Keep the same worktree open during `review` — this matches the repo's review flow, where fixes are made in the same worktree. Do not merge the branch or close the worktree.
 - Do not change the task status model or the review workflow itself; this task only makes logs and chat survive the `active` → `review` transition.
 - Assumption: `review` is the only state besides `active` where logs/chat must remain available; behavior for other states is out of scope unless it falls out of the same fix.
 - After the UI change, rebuild (`bun run build:ui` or `bun run build`) and verify against a running `repoos serve` before reporting done.

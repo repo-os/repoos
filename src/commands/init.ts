@@ -76,23 +76,24 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 1. Read this file and any relevant docs under \`docs/\`.
 2. Pick a task from \`work/\` whose \`status: ready\`.
 3. Set its \`status: active\` (edit the frontmatter; do not move the file).
-4. Create a branch named in the task's \`branch:\` field, or set one.
+4. Create a worktree on the branch named in the task's \`branch:\` field, or set one.
 5. Implement → test → if the repo has a git remote, open an MR/PR against main.
-6. Set \`status: review\` when ready for human sign-off. **Leave the branch open; do NOT merge it.**
+6. Set \`status: review\` when ready for human sign-off. **Leave the worktree open; do NOT merge its branch.**
 
 ## Review and sign-off
 
-A \`review\` task stays on its open branch until a human (or another AI) signs
+A \`review\` task stays in its open worktree until a human (or another AI) signs
 off; the implementer never merges to \`main\` at \`review\` time.
 
 - No git remote: on approval, the reviewer says **"move task <id> to done"**. The
   implementer then sets \`status: done\` (commit \`docs(<id>): set status done\`),
-  fast-forward merges the branch to \`main\`, and deletes the branch.
+  fast-forward merges the branch to \`main\`, removes the worktree, and deletes
+  the branch.
 - With a git remote: an MR/PR is opened against \`main\` at \`review\` time. On
   approval it is merged by the reviewer (or by the implementer only on "move task
   <id> to done"), then remote + local branches are deleted and \`status\` is set
   to \`done\`.
-- Requested changes are fixed on the same branch, tests re-run, and the task
+- Requested changes are fixed on the same worktree, tests re-run, and the task
   re-set to \`review\`.
 
 ## Rules
@@ -100,7 +101,7 @@ off; the implementer never merges to \`main\` at \`review\` time.
 - **Never** move task files between folders. Status lives in frontmatter.
 - **Never** deploy to production without human sign-off.
 - Keep frontmatter tidy; \`repoos\` will normalize key order on write.
-- One task = one focused branch.
+- One task = one focused worktree.
 
 ## Conventions
 

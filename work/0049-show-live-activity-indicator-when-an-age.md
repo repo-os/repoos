@@ -67,7 +67,7 @@ confusing during a 3-minute synchronous operation.
   user can view the changes; verify with a browser probe before reporting done.
 - Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke
   test) before moving the task to review.
-- One task = one focused branch.
+- One task = one focused worktree.
 
 ## Scope
 

@@ -8,35 +8,36 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 1. Read this file first and any relevant docs under `docs/`. Then run `repoos list` to see current tasks.
 2. Pick a task from `work/` whose `status: ready`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
-4. Create a branch named in the task's `branch:` field, or set one.
+4. Create a worktree on the branch named in the task's `branch:` field, or set one.
 5. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
-6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the branch open and do not merge it yourself** — see "Review and sign-off" below.
+6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
 
 ## Review and sign-off (review → done)
 
-A task in `review` is done with implementation; the branch stays open and the
+A task in `review` is done with implementation; the worktree stays open and the
 implementing agent stops. A human (or another AI) reviews it. The implementing
 agent NEVER merges to `main` at `review` time — that happens only when the task
 is moved to `done`.
 
 **No git remote (the common RepoOS case):**
 
-- Implementer: set `status: review`, leave the branch open, stop. Do not merge.
+- Implementer: set `status: review`, leave the worktree open, stop. Do not merge
+  its branch.
 - Reviewer: review the diff, run `repoos check`. If changes are needed, request
-  them; the implementer fixes them on the SAME branch, re-runs `repoos check`, and
+  them; the implementer fixes them on the SAME worktree, re-runs `repoos check`, and
   re-sets `review` (still not merged).
 - Approval: the reviewer says **"move task <id> to done"**. Only then the
   implementer:
   1. sets `status: done` + activity entry and commits `docs(<id>): set status done`;
   2. fast-forward merges the branch to `main`;
-  3. deletes the branch (`git branch -d <branch>`).
+  3. removes the worktree and deletes the branch (`git branch -d <branch>`).
   This is the only path to `done`, and only on explicit instruction.
 
 **With a git remote:**
 
 - Implementer: same as above, but at `review` time also open an MR/PR against
   `main`. Never merge or self-approve your own MR.
-- Reviewer: approve/reject via the MR; request changes on the same branch as
+- Reviewer: approve/reject via the MR; request changes on the same worktree as
   needed (the MR is updated in place, never force-pushed).
 - Approval: the MR is merged — by the reviewer, or by the implementer ONLY on an
   explicit "move task <id> to done". Then delete the remote + local branches and
@@ -77,7 +78,7 @@ cannot tell from the code alone:
 
 - **Never** move task files between folders. Status lives in frontmatter.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
-- One task = one focused branch.
+- One task = one focused worktree.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.
@@ -112,5 +113,5 @@ never created and all work landed on `main`. Lessons:
 - Before your FIRST commit, verify you are on the intended branch, not `main`
   (`git branch --show-current`). If you're on `main`, stop and create the branch
   first (stash, branch, re-apply if needed).
-- Once `repoos start` exists, branch/worktree creation is RepoOS's job, not yours —
+- Once `repoos start` exists, worktree creation is RepoOS's job, not yours —
   don't hand-roll git setup for a task.

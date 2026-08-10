@@ -63,6 +63,4 @@ Everywhere RepoOS describes the task workspace — how it is created, checked ou
 - 2026-08-10T22:06:14Z · status ready→active
 - 2026-08-10T22:57:55Z · status active→ready
 - 2026-08-10T22:57:56Z · status ready→active
-- 2026-08-10T23:37:36Z · status active→ready
-- 2026-08-10T23:37:45Z · status ready→active
 - 2026-08-10T23:43:39Z · status active→review
