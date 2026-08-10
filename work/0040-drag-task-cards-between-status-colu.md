@@ -2,14 +2,14 @@
 id: "0040"
 title: Drag task cards between status columns on the Work board
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T10:30:00Z"
-updated_at: "2026-08-06T10:30:00Z"
+updated_at: "2026-08-10T23:53:54Z"
 ---
 ## Activity
 
@@ -60,3 +60,7 @@ status updates immediately — same effect as the drawer dropdown, no navigation
 - Same-column drop does nothing (no PATCH fired).
 - Drag affordances render cleanly and reset on `dragend` (no stuck highlights).
 - `repoos check` passes green (incl. headless-browser UI smoke test).
+
+## Activity
+
+- 2026-08-10T23:53:54Z · status inbox→ready
