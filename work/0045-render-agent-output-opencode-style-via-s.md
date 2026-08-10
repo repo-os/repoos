@@ -2,14 +2,14 @@
 id: "0045"
 title: Render agent output opencode-style via structured JSON events
 type: feature
-status: ready
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/render-agent-output-opencode-style-via-s
 created_at: "2026-08-06T14:42:05Z"
-updated_at: "2026-08-10T22:06:02Z"
+updated_at: "2026-08-10T23:10:59Z"
 ---
 ## Activity
 
@@ -59,3 +59,4 @@ The agent tab reads like opencode's own UI:
 - 2026-08-06T18:22:29Z · status inbox→ready
 - 2026-08-06T18:34:20Z · status ready→active, branch
 - 2026-08-10T22:06:02Z · status active→ready
+- 2026-08-10T23:10:59Z · status ready→active
