@@ -2,14 +2,14 @@
 id: "0051"
 title: "Replace \\\"branch\\\" terminology with \\\"worktree\\\" in task files and docs"
 type: chore
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/replace-branch-terminology-with-worktree
 created_at: "2026-08-06T17:33:31Z"
-updated_at: "2026-08-10T23:37:36Z"
+updated_at: "2026-08-10T23:37:45Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Everywhere RepoOS describes the task workspace — how it is created, checked ou
 - 2026-08-10T22:57:55Z · status active→ready
 - 2026-08-10T22:57:56Z · status ready→active
 - 2026-08-10T23:37:36Z · status active→ready
+- 2026-08-10T23:37:45Z · status ready→active
