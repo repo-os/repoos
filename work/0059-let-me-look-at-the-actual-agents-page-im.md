@@ -2,14 +2,14 @@
 id: "0059"
 title: Make the Save agents button unmissable when there are unsaved changes
 type: feature
-status: review
+status: done
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/make-the-save-agents-button-unmissable-w
 created_at: "2026-08-10T23:07:22Z"
-updated_at: "2026-08-10T23:14:02Z"
+updated_at: "2026-08-10T23:16:47Z"
 ---
 ---
 title: Make the Save agents button unmissable when there are unsaved changes
@@ -113,3 +113,4 @@ changes, and should recede when there is nothing to save.
 - 2026-08-10T23:09:05Z · status inbox→ready
 - 2026-08-10T23:09:22Z · status ready→active
 - 2026-08-10T23:14:02Z · status active→review
+- 2026-08-10T23:16:47Z · status review→done
