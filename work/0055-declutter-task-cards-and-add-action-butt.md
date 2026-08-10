@@ -2,14 +2,14 @@
 id: "0055"
 title: Declutter task cards and add action buttons
 type: feature
-status: active
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/declutter-task-cards-and-add-action-butt
 created_at: "2026-08-06T18:01:49Z"
-updated_at: "2026-08-06T18:02:12Z"
+updated_at: "2026-08-10T22:57:52Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ The task cards in the work queue are visually busy. The branch name shown at the
 - 2026-08-06T18:01:49Z · created · unknown
 - 2026-08-06T18:02:10Z · status inbox→ready
 - 2026-08-06T18:02:12Z · status ready→active, branch
+- 2026-08-10T22:57:52Z · status active→ready
