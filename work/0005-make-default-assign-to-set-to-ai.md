@@ -1,6 +1,6 @@
 ---
 id: "0005"
-title: "Make default \\\\"Assign To\\\\" set to AI"
+title: "Make default \"Assign To\" set to AI"
 type: feature
 status: done
 priority: p2
