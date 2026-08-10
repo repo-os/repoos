@@ -2,14 +2,14 @@
 id: "0053"
 title: Keep agent logs and chat available in review state
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/keep-agent-logs-and-chat-available-in-re
 created_at: "2026-08-06T17:54:24Z"
-updated_at: "2026-08-06T17:55:22Z"
+updated_at: "2026-08-06T18:05:05Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ This breaks the review workflow. Fixing issues spotted during review is supposed
 - 2026-08-06T17:54:24Z · created · unknown
 - 2026-08-06T17:55:20Z · status inbox→ready
 - 2026-08-06T17:55:22Z · status ready→active, branch
+- 2026-08-06T18:05:05Z · status active→review
