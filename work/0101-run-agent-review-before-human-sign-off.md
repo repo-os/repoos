@@ -2,7 +2,7 @@
 id: "0101"
 title: Run agent review before human sign-off
 type: feature
-status: ready
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -58,3 +58,4 @@ If the review agent is disabled on the Agents page, moving a task to `review` do
 - 2026-08-11T18:15:10Z · status inbox→ready
 - 2026-08-11T18:15:16Z · status ready→inbox
 - 2026-08-11T18:35:08Z · status inbox→ready
+- 2026-08-12T02:20:00Z · status active→review
