@@ -2,14 +2,14 @@
 id: "0103"
 title: Fix ESM crash when generating task context packs
 type: bug
-status: review
+status: done
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/fix-esm-crash-when-generating-task-conte
 created_at: "2026-08-11T16:44:44Z"
-updated_at: "2026-08-11T16:52:25Z"
+updated_at: "2026-08-11T16:58:36Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Keep this a zero-runtime-dependency fix. Import node:child_process using ESM syn
 - 2026-08-11T16:48:55Z · body
 - 2026-08-11T16:49:50Z · status ready→active
 - 2026-08-11T16:52:25Z · status active→review
+- 2026-08-11T16:58:36Z · status review→done
