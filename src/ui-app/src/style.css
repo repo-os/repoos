@@ -529,20 +529,19 @@
   .tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan)}
    .ff-textarea{width:100%;min-height:230px;padding:12px 14px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);color:var(--txt);font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;line-height:1.6;resize:vertical;margin-bottom:6px}
    .ff-textarea:focus{outline:none;border-color:var(--border-bright)}
-   .ff-agent-bar{display:flex;align-items:center;gap:10px;margin:4px 0 8px;flex-wrap:wrap}
-   .ff-agent-readout{font-size:12px;color:var(--txt-dim);font-family:'JetBrains Mono',monospace}
-   .ff-agent-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+   .ff-agent-bar{display:flex;flex-direction:column;gap:8px;margin:4px 0 8px}
    .ff-notice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--amber);background:rgba(255,180,84,0.08);border:1px solid rgba(255,180,84,0.25);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
   .ff-notice a{color:var(--cyan);font-weight:600;text-decoration:none}
   .ff-notice a:hover{text-decoration:underline}
   .ff-error{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--red);background:rgba(255,107,125,0.08);border:1px solid rgba(255,107,125,0.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
    .agent-log-wrap{position:relative;flex:1;display:flex;flex-direction:column;margin-bottom:12px}
-   .agent-override-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-   .agent-override-readout{display:flex;align-items:center;gap:6px}
-   .agent-readout-text{font-size:12px;color:var(--txt-dim);font-family:'JetBrains Mono',monospace}
+   /* Per-task agent/model pickers. Deliberately reuse the Agents page's
+      `.agent-field` (uppercase micro-label above a full-width Select) so the
+      same choice looks the same everywhere it is offered. */
+   .agent-override-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+   .agent-pick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+   .agent-override-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
    .agent-custom-badge{font-size:10px;font-weight:600;color:var(--violet);background:rgba(157,123,255,0.12);border:1px solid rgba(157,123,255,0.3);border-radius:6px;padding:1px 6px;text-transform:uppercase;letter-spacing:0.5px}
-   .agent-override-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-   .override-trigger{height:28px;min-width:90px;font-size:11px;padding:0 8px}
   .agent-log{flex:1;overflow-y:auto;background:var(--md-body-bg);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;max-height:52vh}
   .agent-jump{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--txt);background:var(--panel-solid);border:1px solid var(--border-bright);box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;transition:.15s;z-index:5}
   .agent-jump:hover{color:var(--cyan);border-color:var(--cyan);background:var(--panel)}

@@ -687,16 +687,6 @@ const hasAgentOverride = computed(() => {
   return !!(t && (t.agentOverride || t.cliOverride || t.modelOverride));
 });
 
-/** Readout text for the agent tab: e.g. "engineer · opencode · big pickle" */
-const agentReadout = computed(() => {
-  const t = ui.active;
-  if (!t) return "";
-  const agentName = t.agentOverride || baseAgent.value?.name || "engineer";
-  const cli = t.cliOverride || baseAgent.value?.cli || "opencode";
-  const model = t.modelOverride || baseAgent.value?.model || "default";
-  return `${agentName} · ${cli} · ${model}`;
-});
-
 /** Draft overrides for the agent tab. These are the values the user is editing
  *  but haven't saved yet. They are initialized from the task's current overrides
  *  (or the base agent's defaults when none are set). */
@@ -834,14 +824,6 @@ const freeformIsCustom = computed(() => {
   );
 });
 
-/** Readout text for the freeform pane: "PM agent: pm · opencode · big pickle" */
-const freeformReadout = computed(() => {
-  const agentName = freeformOverride.agent || freeformPmBase.value?.name || "pm";
-  const cli = freeformOverride.cli || freeformPmBase.value?.cli || "opencode";
-  const model = freeformOverride.model || freeformPmBase.value?.model || "default";
-  return `${agentName} · ${cli} · ${model}`;
-});
-
 /** Reset freeform overrides to the PM agent defaults. */
 function resetFreeformOverrides(): void {
   initFreeformOverrides();
@@ -897,40 +879,50 @@ function resetFreeformOverrides(): void {
               ></textarea>
             </div>
             <div class="ff-agent-bar">
-              <span class="ff-agent-readout">PM agent: {{ freeformReadout }}</span>
-              <div class="ff-agent-controls">
-                <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
-                  <SelectTrigger class="override-trigger">
-                    <SelectValue placeholder="agent" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
-                  <SelectTrigger class="override-trigger">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Select v-model="freeformOverride.model" :disabled="freeformRunning">
-                  <SelectTrigger class="override-trigger">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
+              <div class="agent-pick-grid">
+                <div class="agent-field">
+                  <label>Role</label>
+                  <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
+                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                      <SelectValue placeholder="agent" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="agent-field">
+                  <label>Coding agent</label>
+                  <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
+                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                      <SelectValue placeholder="CLI" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="agent-field">
+                  <label>Model</label>
+                  <Select v-model="freeformOverride.model" :disabled="freeformRunning">
+                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                      <SelectValue placeholder="model" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div v-if="freeformIsCustom" class="agent-override-actions">
+                <span class="agent-custom-badge">custom</span>
                 <Button
-                  v-if="freeformIsCustom"
                   variant="ghost"
                   size="sm"
                   :disabled="freeformRunning"
@@ -1436,41 +1428,49 @@ function resetFreeformOverrides(): void {
         </div>
         <div v-else class="drawer-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
-            <div class="agent-override-readout">
-              <span class="agent-readout-text">{{ agentReadout }}</span>
-              <span v-if="isCustom" class="agent-custom-badge">custom</span>
+            <div class="agent-pick-grid">
+              <div class="agent-field">
+                <label>Role</label>
+                <Select v-model="overrideDraft.agent" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="agent" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Coding agent</label>
+                <Select v-model="overrideDraft.cli" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="CLI" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Model</label>
+                <Select v-model="overrideDraft.model" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="model" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div class="agent-override-controls">
-              <Select v-model="overrideDraft.agent" :disabled="ui.saving">
-                <SelectTrigger class="override-trigger">
-                  <SelectValue placeholder="agent" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-              <Select v-model="overrideDraft.cli" :disabled="ui.saving">
-                <SelectTrigger class="override-trigger">
-                  <SelectValue placeholder="CLI" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-              <Select v-model="overrideDraft.model" :disabled="ui.saving">
-                <SelectTrigger class="override-trigger">
-                  <SelectValue placeholder="model" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+            <div v-if="isCustom || overrideDirty" class="agent-override-actions">
+              <span v-if="isCustom" class="agent-custom-badge">custom</span>
               <template v-if="overrideDirty">
                 <Button variant="outline" size="sm" :disabled="ui.saving" @click="saveOverrides">Save</Button>
                 <Button variant="ghost" size="sm" :disabled="ui.saving" @click="initOverrideDraft(ui.active)">Cancel</Button>
