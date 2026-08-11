@@ -15,6 +15,8 @@ import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
 
 /** Default ceiling on the `opencode models` probe, ms. A hung CLI is SIGKILLed. */
 export const MODELS_TIMEOUT_MS = 5000;
+/** Codex app-server has a heavier cold start than a one-shot CLI command. */
+export const CODEX_MODELS_TIMEOUT_MS = 15_000;
 /** Hard cap on collected stdout so a runaway provider list can't balloon memory. */
 export const MODELS_MAX_BYTES = 64 * 1024;
 /** Longest accepted model id — keeps the dropdown readable. */
@@ -110,6 +112,69 @@ function spawnModels(
   });
 }
 
+/** Query Codex's account-aware picker catalog through its stdio app-server. */
+function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]> {
+  return new Promise((resolve) => {
+    let proc: ChildProcess;
+    try {
+      proc = spawn(bin, ["app-server", "--listen", "stdio://"], {
+        cwd: opts.cwd ?? process.cwd(),
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch {
+      resolve([]);
+      return;
+    }
+    let pending = "";
+    let settled = false;
+    const done = (models: string[]): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { proc.kill("SIGTERM"); } catch { /* already exited */ }
+      resolve(models);
+    };
+    const timer = setTimeout(() => {
+      try { proc.kill("SIGKILL"); } catch { /* already exited */ }
+      done([]);
+    }, CODEX_MODELS_TIMEOUT_MS);
+    proc.stdout?.on("data", (chunk: Buffer) => {
+      pending += chunk.toString("utf8");
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? "";
+      for (const line of lines) {
+        try {
+          const message = JSON.parse(line) as {
+            id?: number;
+            result?: { data?: Array<{ model?: unknown }> };
+          };
+          if (message.id !== 2 || !Array.isArray(message.result?.data)) continue;
+          done(message.result.data
+            .map((entry) => entry.model)
+            .filter((model): model is string => typeof model === "string" && model.length > 0));
+        } catch {
+          /* notifications and malformed lines are irrelevant */
+        }
+      }
+    });
+    proc.on("error", () => done([]));
+    proc.on("close", () => done([]));
+    proc.stdin?.write([
+      JSON.stringify({
+        id: 1,
+        method: "initialize",
+        params: { clientInfo: { name: "repoos", version: "0.3.0" }, capabilities: {} },
+      }),
+      JSON.stringify({
+        id: 2,
+        method: "model/list",
+        params: { limit: 100, includeHidden: false },
+      }),
+      "",
+    ].join("\n"));
+  });
+}
+
 /** The opencode adapter: spawns `opencode models` and parses `provider/model`. */
 const opencodeAdapter: ModelSourceAdapter = {
   id: "opencode",
@@ -128,6 +193,18 @@ const opencodeAdapter: ModelSourceAdapter = {
   },
 };
 
+const codexAdapter: ModelSourceAdapter = {
+  id: "codex",
+  cli: "codex",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("codex", process.env.PATH ?? "");
+    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    const models = await listCodexModels(bin, opts);
+    return { supported: true, models: ["default", ...new Set(models)], refreshable: true };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -143,9 +220,10 @@ function unsupported(id: string, cli: string): ModelSourceAdapter {
 /** Registry keyed by `Agent.cli`. Only opencode lists models; the rest are stubs. */
 export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   opencode: opencodeAdapter,
+  codex: codexAdapter,
 };
 for (const known of KNOWN_AGENTS) {
-  if (known.id === "opencode") continue;
+  if (known.id === "opencode" || known.id === "codex") continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);
 }
 

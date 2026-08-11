@@ -59,6 +59,7 @@ const clis = computed(() =>
 // degrades to the static list exactly as before.
 
 const liveModelsByCli = ref<Record<string, string[]>>({});
+const modelsLoaded = ref(false);
 const modelsLoading = ref(false);
 const modelsTesting = ref(false);
 const modelTestResults = ref<ModelTestResult[]>([]);
@@ -81,8 +82,9 @@ function modelsFor(cli: string, saved?: string): { value: string; label: string;
   };
   push("default");
   for (const m of liveModelsByCli.value[cli] ?? []) push(m);
-  // Preserve legacy suggestions until a CLI-specific source has loaded.
-  if (!liveModelsByCli.value[cli]?.length) for (const m of config.agentsMeta.models) push(m);
+  // The old global suggestions are only an endpoint-failure fallback. Once
+  // per-CLI metadata loads, never leak OpenCode labels into Codex/Claude/etc.
+  if (!modelsLoaded.value) for (const m of config.agentsMeta.models) push(m);
   if (saved) push(saved);
   return out;
 }
@@ -129,8 +131,10 @@ async function loadModels(refresh = false): Promise<void> {
     liveModelsByCli.value = Object.fromEntries(
       Object.entries(res.byCli).map(([cli, source]) => [cli, source.models]),
     );
+    modelsLoaded.value = true;
   } catch {
     liveModelsByCli.value = {};
+    modelsLoaded.value = false;
   } finally {
     modelsLoading.value = false;
   }

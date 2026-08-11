@@ -19,6 +19,18 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify(process.argv.sl
 process.stdout.write(process.env.REPOOS_FAKE_MODELS || "opencode/big-pickle\\nopencode/deepseek-v4-flash-free\\n");
 `;
 
+const FAKE_CODEX = `#!/usr/bin/env node
+let pending = "";
+process.stdin.on("data", (chunk) => {
+  pending += chunk;
+  if (!pending.includes('"model/list"')) return;
+  process.stdout.write(JSON.stringify({ id: 1, result: { userAgent: "fake" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ id: 2, result: { data: [
+    { model: "gpt-5.6-sol" }, { model: "gpt-5.6-terra" }
+  ], nextCursor: null } }) + "\\n");
+});
+`;
+
 const tmpRoots: string[] = [];
 afterEach(() => {
   for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
@@ -43,6 +55,7 @@ function makeFixture(): Fixture {
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
   writeFileSync(join(bin, "opencode"), FAKEBIN, { mode: 0o755 });
+  writeFileSync(join(bin, "codex"), FAKE_CODEX, { mode: 0o755 });
   return { bin, log: join(root, "spawns.log") };
 }
 
@@ -101,10 +114,27 @@ describe("MODEL_SOURCES registry", () => {
     );
   });
 
-  it("implements opencode and stubs the rest", () => {
+  it("implements opencode and codex and stubs the rest", () => {
     expect(MODEL_SOURCES.opencode.supported).toBe(true);
     expect(MODEL_SOURCES["claude code"].supported).toBe(false);
-    expect(MODEL_SOURCES.codex.supported).toBe(false);
+    expect(MODEL_SOURCES.codex.supported).toBe(true);
+  });
+});
+
+describe("codex adapter", () => {
+  it("reads the account-specific model picker catalog from app-server", async () => {
+    const fx = makeFixture();
+    const old = prependPath(fx.bin);
+    try {
+      const res = await listModelSources({ cwd: tmpDir() });
+      expect(res.codex).toEqual({
+        supported: true,
+        models: ["default", "gpt-5.6-sol", "gpt-5.6-terra"],
+        refreshable: true,
+      });
+    } finally {
+      process.env.PATH = old;
+    }
   });
 });
 

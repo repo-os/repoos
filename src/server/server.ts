@@ -836,7 +836,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           byCli = await listModelSources({ cwd: config.root });
           const body = (await readBody(req)) as { byCli?: unknown };
           if (body.byCli && typeof body.byCli === "object") {
-            for (const [cli, raw] of Object.entries(body.byCli as Record<string, unknown>)) {
+            const requestedByCli = body.byCli as Record<string, unknown>;
+            byCli = Object.fromEntries(
+              Object.entries(byCli).filter(([cli]) => Object.hasOwn(requestedByCli, cli)),
+            );
+            for (const [cli, raw] of Object.entries(requestedByCli)) {
               if (!byCli[cli] || !Array.isArray(raw)) continue;
               const requested = raw.filter(
                 (model): model is string => typeof model === "string" && model.length > 0 && model.length <= 120,
