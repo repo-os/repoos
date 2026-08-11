@@ -2,14 +2,14 @@
 id: "0091"
 title: "Add a live system resource panel (CPU, memory, per-agent processes) to the Control page"
 type: feature
-status: ready
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-a-live-system-resource-panel-cpu-mem
 created_at: "2026-08-11T13:49:16Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-12T01:26:46Z"
 ---
 ## Problem
 
@@ -63,40 +63,40 @@ Control"), sitting alongside the existing stat cards:
 
 ## Acceptance criteria
 
-- [ ] A `GET /api/system` endpoint returns: machine facts (`cpuCount`,
+- [x] A `GET /api/system` endpoint returns: machine facts (`cpuCount`,
       `totalMem`, `freeMem`, `loadavg`), RepoOS totals (`cpuPercent`,
       `memBytes`, `memPercent`), and a per-process array
       (`{ pid, taskId | null, cpuPercent, memBytes, elapsed, orphaned }`).
-- [ ] Stats cover the `serve` process **and** all spawned agent processes —
+- [x] Stats cover the `serve` process **and** all spawned agent processes —
       not just the server's own `process.memoryUsage()`, which would miss the
       agents entirely and report a misleadingly tiny number.
-- [ ] Orphan detection: a live agent process not present in the `AgentRunner`
+- [x] Orphan detection: a live agent process not present in the `AgentRunner`
       registry, or whose `ppid` is no longer the server's pid, is reported
       with `orphaned: true`. Verify against the real case: kill and restart
       `repoos serve` while an agent is running, then confirm the still-live
       agent is reported as orphaned rather than silently dropped.
-- [ ] RepoOS-owned process records are the primary attribution source when
+- [x] RepoOS-owned process records are the primary attribution source when
       available. A command-name match alone is labelled as an unverified
       candidate and never presented as definitely owned by RepoOS.
-- [ ] The panel renders on the Control page with headline CPU/memory (as
+- [x] The panel renders on the Control page with headline CPU/memory (as
       absolute + % of machine), a live sparkline over a rolling window, and
       the per-process table with orphans visually distinct.
-- [ ] Updates are pushed over the existing SSE stream as a new event type
+- [x] Updates are pushed over the existing SSE stream as a new event type
       (e.g. `system.stats`) on a sensible interval — **not** a client polling
       loop. The README states the SSE stream is the heartbeat and "no
       polling" is the design intent; follow that.
-- [ ] Sampling is cheap: **one** `ps` invocation per interval covering all
+- [x] Sampling is cheap: **one** `ps` invocation per interval covering all
       pids at once, never one call per process. The sampler must not become a
       measurable share of the CPU it is reporting on.
-- [ ] Sampling stops (or idles to a slow interval) when no SSE client is
+- [x] Sampling stops (or idles to a slow interval) when no SSE client is
       connected — a headless server should not burn cycles measuring itself
       for nobody.
-- [ ] Graceful degradation: on a platform where the `ps` invocation is
+- [x] Graceful degradation: on a platform where the `ps` invocation is
       unavailable or its flags differ (notably Windows), the endpoint returns
       the `node:os` machine facts with per-process data omitted, and the panel
       hides the unavailable sections rather than rendering `undefined`/`NaN`
       or erroring.
-- [ ] Zero new runtime dependencies. `repoos check` passes; zero console
+- [x] Zero new runtime dependencies. `repoos check` passes; zero console
       errors in the UI.
 
 ## Notes for AI
@@ -164,3 +164,4 @@ Control"), sitting alongside the existing stat cards:
 - 2026-08-11T13:49:16Z · created · unknown
 - 2026-08-11T14:06:54Z · status inbox→ready
 - 2026-08-11T15:37:46Z · updated · make orphan attribution safe against unrelated user processes
+- 2026-08-12T01:26:46Z · status ready→review · repoos check green, all 248 tests pass
