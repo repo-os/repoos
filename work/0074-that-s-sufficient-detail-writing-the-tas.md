@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/auto-scroll-agent-chat-to-latest-message
 created_at: "2026-08-11T05:06:07Z"
-updated_at: "2026-08-11T12:31:06Z"
+updated_at: "2026-08-11T13:02:01Z"
 ---
 ---
 ## Problem
