@@ -8,10 +8,8 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/render-context-markdown-like-task-conten
-cli_override: claude code
-model_override: sonnet
 created_at: "2026-08-11T16:05:31Z"
-updated_at: "2026-08-11T18:57:27Z"
+updated_at: "2026-08-11T18:57:05Z"
 ---
 ## Problem
 
@@ -45,6 +43,5 @@ This task covers the rendering and presentation of markdown files on the context
 - 2026-08-11T18:46:07Z · status inbox→ready
 - 2026-08-11T18:46:10Z · status ready→active
 - 2026-08-11T18:46:31Z · status active→ready
-- 2026-08-11T18:46:35Z · status ready→active, branch
-- 2026-08-11T18:57:27Z · cli_override, model_override
-- 2026-08-11T18:58:30Z · status active→review · Context page docs/skills now render through the tasks panel's renderMarkdown + .md-rendered styles; non-markdown files keep the plain-text view. repoos check green.
+- 2026-08-11T18:57:05Z · status ready→active
+- 2026-08-11T18:57:05Z · status active→review · Context page docs/skills now render through the tasks panel's renderMarkdown + .md-rendered styles; non-markdown files keep the plain-text view. repoos check green.
