@@ -51,6 +51,8 @@ export interface TaskFrontmatter {
   type?: TaskType | string;
   status?: Status | string;
   priority?: Priority | string;
+  /** True when the agent is waiting on the human and the task stays `active`. */
+  needs_input?: boolean;
   area?: string;
   assigned_to?: string;
   created_by?: string;
@@ -72,6 +74,8 @@ export interface Task {
   title: string;
   type: string;
   status: Status;
+  /** True when the agent is waiting on the human. Layered on `active`, never a status. */
+  needsInput: boolean;
   priority: Priority | string;
   area: string;
   assignee: Assignee;

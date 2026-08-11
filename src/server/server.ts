@@ -546,7 +546,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // checkout — and the user — is never yanked off the current branch.
           const branch = existing.branch || deriveBranch(existing.title);
           const wtRes = ensureWorktree(config.root, branch);
-          const patch: TaskPatch = { status: "active" };
+          const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch);
           index.applyFileChange(updated.absPath);
@@ -620,6 +620,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (!text) {
             return json(res, 400, { error: "message text is required" });
           }
+          // Replying means the human is no longer needed: clear the flag on the
+          // main copy before the session resumes so the board stops signalling.
+          if (existing.needsInput) {
+            const cleared = patchTaskFile(config, existing.absPath, { needsInput: false });
+            index.applyFileChange(cleared.absPath);
+          }
           const sendRes = runner.send(id, text, agent);
           if (!sendRes.ok && sendRes.busy) {
             return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
@@ -639,7 +645,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         const stopRes = runner.stop(id);
-        const updated = patchTaskFile(config, existing.absPath, { status: "ready" });
+        const updated = patchTaskFile(config, existing.absPath, {
+          status: "ready",
+          needsInput: false,
+        });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
           ok: true,

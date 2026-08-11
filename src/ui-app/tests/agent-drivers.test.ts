@@ -80,6 +80,7 @@ const TASK: Task = {
   createdBy: "",
   branch: "feat/x",
   tags: [],
+  needsInput: false,
   created_at: null,
   updated_at: null,
   path: "work/0001-test.md",
@@ -294,6 +295,41 @@ describe("claude code driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toContain("keep going");
       expect(resume.args).toContain("--dangerously-skip-permissions");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("fail-safe mission checklist (0067)", () => {
+  /**
+   * The launch mission must be a literal, verifiable checklist so an agent
+   * cannot silently drop the both-copies status sync (the #0063 failure) or
+   * leave the task `active` without signalling that it is waiting on the
+   * human. These assertions keep the two load-bearing instructions in the
+   * mission text so future rewrites can't silently remove them.
+   */
+  it("asserts the read-back verification and needs-input instructions", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "mission fixture turn exit");
+
+      const [run] = spawns(fx);
+      const mission = run.args[1];
+      expect(mission).toContain("Task #0001");
+      // both-copies status sync + read-back verification (anti-#0063)
+      expect(mission).toContain("main-checkout copy");
+      expect(mission).toContain("confirm it shows `status: review`");
+      // needs-input instruction: flag both copies, keep the task active, stop
+      expect(mission).toContain("needs_input: true");
+      expect(mission).toContain("WITHOUT committing");
+      expect(mission).toMatch(/Never silently leave the task `active` without the `needs_input` flag/);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

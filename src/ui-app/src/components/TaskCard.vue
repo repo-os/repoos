@@ -111,6 +111,7 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       running: repo.isRunning(task.id),
+      'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
     }"
@@ -121,6 +122,9 @@ async function openAgent(): Promise<void> {
   >
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>
+      <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">
+        needs input
+      </span>
       <span class="chip">{{ task.type }}</span>
       <span class="tc-prio" :class="task.priority">{{ task.priority }}</span>
     </div>

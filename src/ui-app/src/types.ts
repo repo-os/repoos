@@ -7,6 +7,8 @@ export interface Task {
   title: string;
   type: string;
   status: Status;
+  /** True when the agent is waiting on the human. Layered on `active`. */
+  needsInput: boolean;
   priority: string;
   area: string;
   assignee: "ai" | "human" | "unassigned";

@@ -326,6 +326,10 @@
   .tc-run{display:inline-flex;align-items:center;gap:5px;color:var(--violet);font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
   .tc-run::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 6px var(--violet);animation:tcpulse 1.1s ease-in-out infinite}
   @keyframes tcpulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .task-card.needs-input{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-tint);animation:needs-input-pulse 1.6s ease-in-out infinite}
+  @keyframes needs-input-pulse{0%,100%{box-shadow:0 0 0 1px var(--amber-tint)}50%{box-shadow:0 0 0 3px var(--amber-tint)}}
+  .tc-waiting{display:inline-flex;align-items:center;gap:5px;color:var(--amber);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:6px;border:1px solid var(--amber-tint);background:var(--amber-tint)}
+  .tc-waiting::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px var(--amber);animation:tcpulse 1.1s ease-in-out infinite}
   .tc-btn{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--txt-dim);transition:.15s;line-height:1}
   .tc-btn svg{width:13px;height:13px}
   .tc-btn:hover{color:var(--txt);border-color:var(--border-bright)}
@@ -463,6 +467,10 @@
   .agent-input:disabled{opacity:.6}
   .agent-hint{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .agent-hint .tc-run{font-size:9px}
+  .agent-waiting{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;padding:12px 14px;border-radius:11px;border:1px solid var(--amber-tint);background:rgba(255,180,84,0.08);animation:needs-input-pulse 1.6s ease-in-out infinite}
+  .agent-waiting-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:none;margin-top:3px;animation:tcpulse 1.1s ease-in-out infinite}
+  .agent-waiting-title{font-size:12px;font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+  .agent-waiting-sub{font-size:11.5px;color:var(--txt-dim);margin-top:2px;line-height:1.5}
   .branch-note{margin-left:8px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .new-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;
     background:var(--btn-new-bg);border:1px solid var(--border-bright);color:var(--btn-new-color);font-family:inherit}

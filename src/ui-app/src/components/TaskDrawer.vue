@@ -655,6 +655,7 @@ async function sendTurn(): Promise<void> {
               >
                 {{ ui.active.status }}
               </span>
+              <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
@@ -902,6 +903,13 @@ async function sendTurn(): Promise<void> {
           </div>
         </div>
         <div v-else class="drawer-body">
+          <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
+            <span class="agent-waiting-dot"></span>
+            <div>
+              <div class="agent-waiting-title">waiting for you</div>
+              <div class="agent-waiting-sub">The agent needs your input — reply below to continue.</div>
+            </div>
+          </div>
           <div class="agent-log" ref="logEl" @scroll="onLogScroll">
             <template v-if="displayEntries.length === 0">
               <div class="agent-empty">

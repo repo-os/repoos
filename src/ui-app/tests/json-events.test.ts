@@ -189,6 +189,7 @@ const TASK: Task = {
   createdBy: "",
   branch: "feat/json-events",
   tags: [],
+  needsInput: false,
   created_at: null,
   updated_at: null,
   path: "work/0045-json.md",

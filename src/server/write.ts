@@ -29,6 +29,8 @@ export interface TaskPatch {
   branch?: string;
   type?: string;
   body?: string;
+  /** Clear (false) or set (true) the waiting-on-human flag. */
+  needsInput?: boolean;
 }
 
 export class WriteError extends Error {}
@@ -75,6 +77,10 @@ export function patchTaskFile(
       changes.push(`status ${current.status}→${patch.status}`);
     }
     current.status = patch.status;
+  }
+  if (patch.needsInput !== undefined) {
+    if (patch.needsInput !== current.needsInput) changes.push("needs_input");
+    current.needsInput = patch.needsInput;
   }
   if (patch.title !== undefined) {
     if (patch.title !== current.title) changes.push("title");
