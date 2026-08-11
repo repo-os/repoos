@@ -411,6 +411,12 @@
   .status-btn:hover{border-color:var(--border-bright);color:var(--txt)}
   .status-btn.on{color:var(--status-on-color);border-color:var(--border-bright);background:var(--status-on-bg)}
   .md-h{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:9px;font-family:'JetBrains Mono',monospace}
+  .spec-head{display:flex;align-items:center;gap:6px;margin-bottom:9px}
+  .spec-head .md-h{margin-bottom:0}
+  .spec-toggle{display:inline-flex;align-items:center;gap:6px;padding:0;border:none;background:none;cursor:pointer;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan);font-weight:600;font-family:'JetBrains Mono',monospace;transition:.15s}
+  .spec-toggle:hover{color:var(--txt)}
+  .spec-chev{width:11px;height:11px;flex-shrink:0;transition:transform .15s}
+  .spec-chev.collapsed{transform:rotate(-90deg)}
 
   .field{margin-bottom:13px}
   .field label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;display:block;margin-bottom:6px}
@@ -447,6 +453,33 @@
   .md-card{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:text;margin-bottom:8px}
   .md-card-body{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--txt);padding:12px 14px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);white-space:pre-wrap;word-break:break-word;transition:border-color .15s}
   .md-card:hover .md-card-body{border-color:var(--border-bright)}
+  .md-rendered{font-size:13px;line-height:1.7;color:var(--txt);padding:12px 14px;border-radius:11px;border:1px solid var(--border);background:var(--md-body-bg);word-break:break-word;transition:border-color .15s}
+  .md-card:hover .md-rendered{border-color:var(--border-bright)}
+  .md-rendered h1,.md-rendered h2,.md-rendered h3,.md-rendered h4,.md-rendered h5,.md-rendered h6{font-family:'JetBrains Mono',monospace;color:var(--cyan);margin:14px 0 6px;line-height:1.4}
+  .md-rendered h1:first-child,.md-rendered h2:first-child,.md-rendered h3:first-child,.md-rendered h4:first-child,.md-rendered h5:first-child,.md-rendered h6:first-child{margin-top:0}
+  .md-rendered h1{font-size:16px}.md-rendered h2{font-size:14.5px}.md-rendered h3{font-size:13.5px}
+  .md-rendered h4,.md-rendered h5,.md-rendered h6{font-size:12.5px}
+  .md-rendered p{margin:0 0 10px}
+  .md-rendered p:last-child{margin-bottom:0}
+  .md-rendered ul,.md-rendered ol{margin:0 0 10px;padding-left:20px}
+  .md-rendered li{margin:2px 0}
+  .md-rendered ul:last-child,.md-rendered ol:last-child{margin-bottom:0}
+  .md-rendered a{color:var(--cyan);text-decoration:none}
+  .md-rendered a:hover{text-decoration:underline}
+  .md-rendered strong{font-weight:700}
+  .md-rendered em{font-style:italic}
+  .md-rendered del{color:var(--txt-faint)}
+  .md-rendered code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--panel-solid);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+  .md-rendered pre{background:var(--panel-solid);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin:0 0 10px;overflow-x:auto}
+  .md-rendered pre code{background:none;border:none;padding:0;font-size:12px;line-height:1.55}
+  .md-rendered pre:last-child{margin-bottom:0}
+  .md-rendered blockquote{margin:0 0 10px;padding:2px 0 2px 12px;border-left:3px solid var(--border-bright);color:var(--txt-dim)}
+  .md-rendered blockquote:last-child{margin-bottom:0}
+  .md-rendered hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+  .md-rendered .md-task{display:flex;gap:8px;align-items:flex-start}
+  .md-rendered .md-task-box{flex-shrink:0;color:var(--cyan)}
+  .md-rendered .md-task-checked .md-task-box{color:var(--txt-faint)}
+  .md-rendered .md-task-checked{color:var(--txt-faint)}
   .spec-hint{font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;margin-bottom:14px}
   .ro-value{font-size:13px;color:var(--txt);padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel-solid);min-height:20px;word-break:break-word}
   .ro-value.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}

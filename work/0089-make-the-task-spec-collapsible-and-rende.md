@@ -38,8 +38,4 @@ The spec field in the task sidebar can be expanded or collapsed. When the field 
 
 - 2026-08-11T13:34:35Z · created · unknown
 - 2026-08-11T13:34:57Z · status inbox→ready
-- 2026-08-11T13:46:09Z · status ready→active, branch
-- 2026-08-11T14:30:15Z · status active→ready
-- 2026-08-11T14:40:13Z · status ready→active
-- 2026-08-11T14:51:52Z · status active→ready
-- 2026-08-11T14:51:58Z · status ready→active
+- 2026-08-11T23:07:00Z · status ready→review

@@ -6,6 +6,7 @@ import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { renderMarkdown } from "../lib/markdown";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
@@ -385,6 +386,11 @@ const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value)
 /** Spec body is a readable card that expands into a large textarea on click. */
 const specEditing = ref(false);
 const specTextarea = ref<HTMLTextAreaElement | null>(null);
+/** Whether the spec card body is expanded. Collapsed shows just the header. */
+const specExpanded = ref(true);
+
+/** Rendered (safe) Markdown for the read-mode spec card. */
+const specHtml = computed(() => renderMarkdown(draft.body));
 
 /** Grow the spec textarea to fit its content so editing never feels cramped. */
 function autoGrowSpec(): void {
@@ -1061,21 +1067,55 @@ async function sendTurn(): Promise<void> {
               </datalist>
             </div>
           </div>
-          <div class="md-h" style="margin-top: 18px">spec</div>
-          <button v-if="!specEditing" class="md-card" type="button" @click="specEditing = true">
-            <div class="md-card-body">{{ draft.body || "No spec yet — click to add." }}</div>
-          </button>
-          <template v-else>
-            <textarea
-              ref="specTextarea"
-              class="md-edit"
-              v-model="draft.body"
-              rows="12"
-              placeholder="Markdown body"
-              @input="autoGrowSpec"
-            ></textarea>
-            <div class="spec-hint">Click Save to apply the spec.</div>
-          </template>
+          <div class="md-h spec-head" style="margin-top: 18px">
+            <button
+              type="button"
+              class="spec-toggle"
+              :aria-expanded="specExpanded"
+              @click="specExpanded = !specExpanded"
+            >
+              <svg
+                class="spec-chev"
+                :class="{ collapsed: !specExpanded }"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              spec
+            </button>
+          </div>
+          <div v-if="specExpanded">
+            <div
+              v-if="!specEditing"
+              class="md-card"
+              role="button"
+              tabindex="0"
+              @click="specEditing = true"
+              @keydown.enter="specEditing = true"
+              @keydown.space.prevent="specEditing = true"
+            >
+              <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
+              <div v-else class="md-card-body">No spec yet — click to add.</div>
+            </div>
+            <template v-else>
+              <textarea
+                ref="specTextarea"
+                class="md-edit"
+                v-model="draft.body"
+                rows="12"
+                placeholder="Markdown body"
+                @input="autoGrowSpec"
+              ></textarea>
+              <div class="spec-hint">Click Save to apply the spec.</div>
+            </template>
+          </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
           <div class="meta-grid">
             <div class="meta-cell">
