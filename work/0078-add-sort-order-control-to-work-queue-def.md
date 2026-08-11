@@ -2,14 +2,14 @@
 id: "0078"
 title: "Add sort order control to Work Queue, default to most recently updated"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-sort-order-control-to-work-queue-def
 created_at: "2026-08-11T05:43:23Z"
-updated_at: "2026-08-11T05:44:25Z"
+updated_at: "2026-08-11T08:15:55Z"
 ---
 ## Problem
 
@@ -95,3 +95,4 @@ order, and sorting for any future non-board list views.
 
 - 2026-08-11T05:43:23Z · created · unknown
 - 2026-08-11T05:44:25Z · status inbox→ready
+- 2026-08-11T08:15:55Z · status ready→active, branch
