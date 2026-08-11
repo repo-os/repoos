@@ -587,6 +587,14 @@ export class AgentRunner {
     if (this.entries.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
+    const entry: AgentOutputEntry = { type: "human", text };
+    session.lines.push(entry);
+    session.bytes += entryBytes(entry);
+    while (session.bytes > OUTPUT_CAP_BYTES) {
+      const dropped = session.lines.shift();
+      if (!dropped) break;
+      session.bytes -= entryBytes(dropped);
+    }
     const { cmd, args } = resumeCommand(agent, text, session.sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
   }

@@ -145,6 +145,8 @@ export interface Agent {
 export type AgentOutputEntry =
   /** A complete assistant text part (opencode `text` event). */
   | { type: "text"; text: string }
+  /** A message sent by the human from the Agent tab follow-up input. */
+  | { type: "human"; text: string }
   /** A finished tool call (opencode `tool_use` event). */
   | {
       type: "tool";

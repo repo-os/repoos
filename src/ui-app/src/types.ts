@@ -77,6 +77,7 @@ export interface RepoIndex {
  */
 export type AgentOutputEntry =
   | { type: "text"; text: string }
+  | { type: "human"; text: string }
   | {
       type: "tool";
       tool: string;

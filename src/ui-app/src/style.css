@@ -447,7 +447,11 @@
   .ff-notice a{color:var(--cyan);font-weight:600;text-decoration:none}
   .ff-notice a:hover{text-decoration:underline}
   .ff-error{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--red);background:rgba(255,107,125,0.08);border:1px solid rgba(255,107,125,0.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
-  .agent-log{flex:1;overflow-y:auto;background:var(--md-body-bg);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;margin-bottom:12px;max-height:52vh}
+  .agent-log-wrap{position:relative;flex:1;display:flex;flex-direction:column;margin-bottom:12px}
+  .agent-log{flex:1;overflow-y:auto;background:var(--md-body-bg);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;max-height:52vh}
+  .agent-jump{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--txt);background:var(--panel-solid);border:1px solid var(--border-bright);box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;transition:.15s;z-index:5}
+  .agent-jump:hover{color:var(--cyan);border-color:var(--cyan);background:var(--panel)}
+  .agent-jump svg{flex:none}
   .agent-line{white-space:pre-wrap;word-break:break-word;color:var(--txt-dim)}
   .agent-line.out{color:var(--txt)}
   .agent-line.err{color:var(--red)}
@@ -456,6 +460,8 @@
   .agent-pfx.err{color:var(--red)}
   .agent-entry{margin:6px 0}
   .agent-entry:first-child{margin-top:0}
+  .agent-human{display:flex;justify-content:flex-end}
+  .agent-human-bubble{white-space:pre-wrap;word-break:break-word;color:var(--txt);padding:10px 12px;background:var(--cyan-dim);border:1px solid var(--cyan-dim);border-radius:9px;border-bottom-right-radius:3px;font-size:12px;line-height:1.6;max-width:min(92%,560px)}
   .agent-text{white-space:pre-wrap;word-break:break-word;color:var(--txt);padding:10px 12px;background:var(--panel-solid);border:1px solid var(--border);border-radius:9px;font-size:12px;line-height:1.6}
   .agent-step{display:flex;align-items:center;gap:7px;color:var(--txt-faint);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;padding:2px 2px}
   .agent-step-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 6px var(--violet-tint);flex:none}
