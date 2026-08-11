@@ -2,7 +2,7 @@
 id: "0054"
 title: Preview a review task's worktree UI on its own port
 type: feature
-status: ready
+status: active
 priority: p1
 area: web
 assigned_to: ai
@@ -98,3 +98,4 @@ processes left behind.
 - 2026-08-06T17:57:47Z · created · nick
 - 2026-08-07T00:00:00Z · status ready→active · ai
 - 2026-08-11T00:28:41Z · status active→ready
+- 2026-08-11T00:28:41Z · status ready→active
