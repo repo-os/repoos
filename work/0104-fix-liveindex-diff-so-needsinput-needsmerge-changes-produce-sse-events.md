@@ -2,16 +2,16 @@
 id: "0104"
 title: Fix LiveIndex diff so needsInput/needsMerge changes produce SSE events
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-liveindex-diff-so-needsinput-needsme
 cli_override: codex
 model_override: gpt-5.6-sol
 created_at: "2026-08-11T14:00:00Z"
-updated_at: "2026-08-11T19:26:42Z"
+updated_at: "2026-08-11T19:26:45Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ same as it already does for `status` and `title` changes.
 ## Activity
 
 - 2026-08-11T19:26:42Z · cli_override, model_override
+- 2026-08-11T19:26:45Z · status ready→active, branch
