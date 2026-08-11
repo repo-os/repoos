@@ -2,14 +2,14 @@
 id: "0039"
 title: Assign skills to agents on the Agents page
 type: feature
-status: inbox
+status: draft
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T10:05:00Z"
-updated_at: "2026-08-11T17:33:50Z"
+updated_at: "2026-08-11T17:33:56Z"
 ---
 ## Problem
 
@@ -101,3 +101,4 @@ multi-select: the repo's discovered skills, each toggleable on/off per agent.
 - 2026-08-11T12:00:01Z · status inbox→draft
 - 2026-08-11T15:37:46Z · updated · remove completed dependency caveats and coordinate with context packs
 - 2026-08-11T17:33:50Z · status draft→inbox
+- 2026-08-11T17:33:56Z · status inbox→draft
