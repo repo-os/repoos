@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner } from "../../server/agents";
+import { AgentRunner, promptCommand } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -98,7 +98,7 @@ const TASK: Task = {
   },
 };
 
-const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });
+const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "default", enabled: true });
 
 function spawns(fx: Fixture): SpawnRecord[] {
   const text = readFileSync(fx.log, "utf8").trim();
@@ -108,6 +108,27 @@ function spawns(fx: Fixture): SpawnRecord[] {
 
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
+});
+
+describe("model-aware driver commands", () => {
+  it.each([
+    ["opencode", "opencode"],
+    ["claude code", "claude"],
+    ["qwen code", "qwen"],
+    ["codex", "codex"],
+  ])("forwards an explicit model for %s", (cli, binary) => {
+    const command = promptCommand({ ...agent(cli), model: "provider/model-x" }, "ping");
+    expect(command.cmd).toBe(binary);
+    expect(command.args).toEqual(expect.arrayContaining(["--model", "provider/model-x"]));
+  });
+
+  it.each(["opencode", "claude code", "qwen code", "codex"])(
+    "omits the model flag for %s default",
+    (cli) => {
+      const command = promptCommand({ ...agent(cli), model: "default" }, "ping");
+      expect(command.args).not.toContain("--model");
+    },
+  );
 });
 
 describe("qwen code driver", () => {

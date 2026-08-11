@@ -886,3 +886,25 @@
       *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
     }
   }
+.model-test-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.model-test {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.model-test-passed { color: var(--green); }
+.model-test-failed, .model-test-timed_out { color: var(--red); }
+.model-test-not_testable { color: var(--muted); }

@@ -295,15 +295,22 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  *   #0069, which sat at ~1% CPU with zero commits for ~2 hours before being
  *   killed. Same blast radius as the other engines: the task's own worktree.
  */
-function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; args: string[] } {
+function modelArgs(cli: string, model: string): string[] {
+  if (!model || model === "default") return [];
+  if (cli === "codex") return ["--model", model];
+  return ["--model", model];
+}
+
+function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
+  const { cli, model } = agent;
   if (cli === "claude code") {
-    return { cmd: "claude", args: ["-p", mission, "--dangerously-skip-permissions"] };
+    return { cmd: "claude", args: ["-p", mission, ...modelArgs(cli, model), "--dangerously-skip-permissions"] };
   }
   if (cli === "qwen code") {
-    return { cmd: "qwen", args: ["-p", mission, "--output-format", "stream-json"] };
+    return { cmd: "qwen", args: ["-p", mission, ...modelArgs(cli, model), "--output-format", "stream-json"] };
   }
   if (cli === "codex") {
-    return { cmd: "codex", args: ["exec", mission, "--json", "--sandbox", "workspace-write"] };
+    return { cmd: "codex", args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"] };
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
@@ -311,7 +318,7 @@ function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; a
   // the worktree path explicit so linked-worktree paths are never auto-rejected.
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, "--auto", mission],
+    args: ["run", "--format", "json", "--dir", cwd, ...modelArgs(cli, model), "--auto", mission],
   };
 }
 
@@ -325,11 +332,12 @@ function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; a
  * unavailable — the turn still happens.
  */
 function resumeCommand(
-  cli: string,
+  agent: Agent,
   text: string,
   sessionId?: string,
   cwd?: string,
 ): { cmd: string; args: string[] } {
+  const { cli, model } = agent;
   if (cli === "claude code") {
     return {
       cmd: "claude",
@@ -337,6 +345,7 @@ function resumeCommand(
         "-p",
         ...(sessionId ? ["--resume", sessionId] : ["-c", "--continue"]),
         text,
+        ...modelArgs(cli, model),
         "--dangerously-skip-permissions",
       ],
     };
@@ -348,6 +357,7 @@ function resumeCommand(
         ...(sessionId ? ["--resume", sessionId] : ["--continue"]),
         "-p",
         text,
+        ...modelArgs(cli, model),
         "--output-format",
         "stream-json",
       ],
@@ -361,6 +371,7 @@ function resumeCommand(
         "resume",
         ...(sessionId ? [sessionId] : ["--last"]),
         text,
+        ...modelArgs(cli, model),
         "--json",
         "--sandbox",
         "workspace-write",
@@ -375,6 +386,7 @@ function resumeCommand(
       "json",
       ...(sessionId ? ["--session", sessionId] : []),
       ...(cwd ? ["--dir", cwd] : []),
+      ...modelArgs(cli, model),
       "--auto",
       text,
     ],
@@ -439,15 +451,15 @@ const PROMPT_TIMEOUT_MS = 180_000;
 /**
  * Map an agent `cli` to a one-shot (print mode) invocation that writes its
  * answer to stdout. opencode: `run`, claude: `-p`, qwen: `-p`, codex:
- * `exec`. Mirrors `cliCommand` (the streaming runner) exactly — the configured
- * model is a RepoOS-side label, not a model id either CLI accepts, so it is
- * deliberately not forwarded.
+ * `exec`. Explicit configured models are forwarded with the driver's model
+ * flag; `default` intentionally omits the flag and lets the CLI resolve it.
  */
-function promptCommand(agent: Agent, prompt: string): { cmd: string; args: string[] } {
-  if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt] };
-  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt] };
-  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt] };
-  return { cmd: "opencode", args: ["run", prompt] };
+export function promptCommand(agent: Agent, prompt: string): { cmd: string; args: string[] } {
+  const extra = modelArgs(agent.cli, agent.model);
+  if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt, ...extra] };
+  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
+  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
 /**
@@ -558,7 +570,7 @@ export class AgentRunner {
     session.workdir = cwd;
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
-    const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent, this.config), cwd);
+    const { cmd, args } = cliCommand(agent, missionFor(task, branch, cwd, agent, this.config), cwd);
     return this.spawnTurn(task.id, cmd, args, cwd, task);
   }
 
@@ -575,7 +587,7 @@ export class AgentRunner {
     if (this.entries.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
-    const { cmd, args } = resumeCommand(agent.cli, text, session.sessionId, session.workdir ?? this.config.root);
+    const { cmd, args } = resumeCommand(agent, text, session.sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
   }
 

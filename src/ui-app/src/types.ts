@@ -154,6 +154,21 @@ export interface ModelSourcesResponse {
   at: string;
 }
 
+export type ModelTestStatus = "passed" | "failed" | "timed_out" | "not_testable";
+
+export interface ModelTestResult {
+  cli: string;
+  model: string;
+  status: ModelTestStatus;
+  durationMs: number;
+  error?: string;
+}
+
+export interface ModelTestResponse {
+  results: ModelTestResult[];
+  at: string;
+}
+
 export interface DocMeta {
   path: string;
   title: string;

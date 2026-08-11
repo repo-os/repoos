@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { useConfigStore } from "../stores/config";
-import { api } from "../api";
-import type { Agent, DetectedAgent, ModelSourcesResponse } from "../types";
+import { api, JSON_OPTS } from "../api";
+import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -58,8 +58,11 @@ const clis = computed(() =>
 // button re-probes with --refresh. When the endpoint is unavailable the page
 // degrades to the static list exactly as before.
 
-const liveModels = ref<string[]>([]);
+const liveModelsByCli = ref<Record<string, string[]>>({});
 const modelsLoading = ref(false);
+const modelsTesting = ref(false);
+const modelTestResults = ref<ModelTestResult[]>([]);
+const modelTestAt = ref("");
 
 function labelForModel(m: string): string {
   if (m === "default") return "Default";
@@ -68,23 +71,54 @@ function labelForModel(m: string): string {
   return m;
 }
 
-const models = computed(() => {
-  const out: { value: string; label: string }[] = [];
+function modelsFor(cli: string, saved?: string): { value: string; label: string; disabled: boolean }[] {
+  const out: { value: string; label: string; disabled: boolean }[] = [];
   const seen = new Set<string>();
   const push = (m: string) => {
     if (seen.has(m)) return;
     seen.add(m);
-    out.push({ value: m, label: labelForModel(m) });
+    out.push({ value: m, label: labelForModel(m), disabled: isFailedModel(cli, m) });
   };
-  for (const m of config.agentsMeta.models) push(m);
-  for (const m of liveModels.value) push(m);
-  // Stored values that resolve nowhere stay selectable so existing configs
-  // never silently lose a pinned model.
-  for (const a of localAgents.value) {
-    if (a.model) push(a.model);
-  }
+  push("default");
+  for (const m of liveModelsByCli.value[cli] ?? []) push(m);
+  // Preserve legacy suggestions until a CLI-specific source has loaded.
+  if (!liveModelsByCli.value[cli]?.length) for (const m of config.agentsMeta.models) push(m);
+  if (saved) push(saved);
   return out;
-});
+}
+
+function resultFor(cli: string, model: string): ModelTestResult | undefined {
+  return modelTestResults.value.find((r) => r.cli === cli && r.model === model);
+}
+
+function isFailedModel(cli: string, model: string): boolean {
+  const result = resultFor(cli, model);
+  return result?.status === "failed" || result?.status === "timed_out";
+}
+
+async function testModels(): Promise<void> {
+  if (modelsTesting.value) return;
+  modelsTesting.value = true;
+  try {
+    const requested: Record<string, string[]> = {};
+    for (const agent of localAgents.value) {
+      requested[agent.cli] = [...new Set([
+        ...(requested[agent.cli] ?? []),
+        ...modelsFor(agent.cli, agent.model).map((model) => model.value),
+      ])];
+    }
+    const response = await api<ModelTestResponse>(
+      "/api/models/test",
+      JSON_OPTS("POST", { byCli: requested }),
+    );
+    modelTestResults.value = response.results;
+    modelTestAt.value = response.at;
+  } catch (err) {
+    config.error = err instanceof Error ? err.message : "Model compatibility test failed.";
+  } finally {
+    modelsTesting.value = false;
+  }
+}
 
 async function loadModels(refresh = false): Promise<void> {
   modelsLoading.value = true;
@@ -92,9 +126,11 @@ async function loadModels(refresh = false): Promise<void> {
     const res = await api<ModelSourcesResponse>(
       `/api/models${refresh ? "?refresh=1" : ""}`,
     );
-    liveModels.value = res.byCli.opencode?.models ?? [];
+    liveModelsByCli.value = Object.fromEntries(
+      Object.entries(res.byCli).map(([cli, source]) => [cli, source.models]),
+    );
   } catch {
-    liveModels.value = [];
+    liveModelsByCli.value = {};
   } finally {
     modelsLoading.value = false;
   }
@@ -251,15 +287,32 @@ onUnmounted(() => {
             variant="outline"
             size="sm"
             style="margin-left: auto"
-            :disabled="modelsLoading"
+            :disabled="modelsLoading || modelsTesting"
             title="Re-probe opencode's live model list (opencode models --refresh)"
             @click="loadModels(true)"
           >
             {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="modelsLoading || modelsTesting"
+            title="Sends one tiny real provider request per testable model combination"
+            @click="testModels"
+          >
+            {{ modelsTesting ? "Testing models…" : modelTestResults.length ? "Test again" : "Test models" }}
+          </Button>
         </div>
         <div class="agent-desc">
           Built-in roles. Toggle them on or off and pick their coding agent and model.
+        </div>
+        <div v-if="modelsTesting" class="model-test-summary">Testing each supported combination with a tiny provider request…</div>
+        <div v-else-if="modelTestResults.length" class="model-test-summary">
+          <span>Last tested {{ new Date(modelTestAt).toLocaleTimeString() }}</span>
+          <span v-for="result in modelTestResults" :key="result.cli + ':' + result.model"
+            :class="'model-test model-test-' + result.status" :title="result.error">
+            {{ result.cli }} · {{ labelForModel(result.model) }}: {{ result.status.replace('_', ' ') }}
+          </span>
         </div>
         <div v-for="a in defaultAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
           <div class="agent-head">
@@ -292,10 +345,18 @@ onUnmounted(() => {
                 </SelectTrigger>
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="m in models" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                    <SelectItem v-for="m in modelsFor(a.cli, a.model)" :key="m.value" :value="m.value" :disabled="m.disabled">
+                      {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                    </SelectItem>
                   </SelectViewport>
                 </SelectContent>
               </Select>
+            </div>
+            <div v-if="resultFor(a.cli, a.model)" class="agent-field agent-test-result">
+              <label>Compatibility</label>
+              <span :class="'model-test model-test-' + resultFor(a.cli, a.model)!.status" :title="resultFor(a.cli, a.model)!.error">
+                {{ resultFor(a.cli, a.model)!.status.replace('_', ' ') }}
+              </span>
             </div>
             <div class="agent-field agent-instr-field">
               <label>Instructions</label>
@@ -370,10 +431,18 @@ onUnmounted(() => {
                 </SelectTrigger>
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="m in models" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                    <SelectItem v-for="m in modelsFor(a.cli, a.model)" :key="m.value" :value="m.value" :disabled="m.disabled">
+                      {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                    </SelectItem>
                   </SelectViewport>
                 </SelectContent>
               </Select>
+            </div>
+            <div v-if="resultFor(a.cli, a.model)" class="agent-field agent-test-result">
+              <label>Compatibility</label>
+              <span :class="'model-test model-test-' + resultFor(a.cli, a.model)!.status" :title="resultFor(a.cli, a.model)!.error">
+                {{ resultFor(a.cli, a.model)!.status.replace('_', ' ') }}
+              </span>
             </div>
             <div class="agent-field agent-instr-field">
               <label>Instructions</label>
