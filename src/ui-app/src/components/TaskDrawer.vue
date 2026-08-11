@@ -364,6 +364,10 @@ function changedFields(): (keyof TaskDraft)[] {
 
 const dirty = computed(() => changedFields().length > 0);
 
+const transitioned = computed(
+  () => !!(ui.active && repo.transitionState?.id === ui.active.id),
+);
+
 /** Title and branch are frozen once a task leaves the planning stages. */
 const locked = computed(() => {
   const s = ui.active?.status;
@@ -873,7 +877,7 @@ async function sendTurn(): Promise<void> {
             Agent
           </button>
         </div>
-        <div v-if="ui.activeTab === 'details'" class="drawer-body">
+        <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
             <div class="field">
               <label for="et-title">Title</label>
@@ -1199,7 +1203,7 @@ async function sendTurn(): Promise<void> {
             </template>
           </div>
         </div>
-        <div v-else class="drawer-body">
+        <div v-else class="drawer-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
             <span class="agent-waiting-dot"></span>
             <div>

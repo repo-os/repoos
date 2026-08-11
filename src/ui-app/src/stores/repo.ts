@@ -89,6 +89,12 @@ export const useRepoStore = defineStore("repo", () => {
   const feed = reactive<FeedItem[]>([]);
   const eventCount = ref(0);
   const flashId = ref<string | null>(null);
+  interface TransitionState {
+    id: string;
+    from: string;
+    to: string;
+  }
+  const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
@@ -103,6 +109,7 @@ export const useRepoStore = defineStore("repo", () => {
   let toastId = 0;
   let es: EventSource | null = null;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
+  let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
   const repoName = computed(() => (health.value ? health.value.root.split("/").pop() ?? "" : ""));
   const workDir = computed(() => (health.value ? health.value.workDir : "work"));
@@ -173,6 +180,14 @@ export const useRepoStore = defineStore("repo", () => {
     }, 1200);
   }
 
+  function startTransition(id: string, from: string, to: string): void {
+    transitionState.value = { id, from, to };
+    if (transitionTimer) clearTimeout(transitionTimer);
+    transitionTimer = setTimeout(() => {
+      transitionState.value = null;
+    }, 800);
+  }
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") return;
@@ -184,6 +199,9 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "task.updated") {
       const i = tasks.value.findIndex((t) => t.id === e.task.id);
       const before = i >= 0 ? tasks.value[i] : null;
+      const prevStatus = e.prev?.status;
+      const statusChanged =
+        prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
       const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null };
@@ -203,6 +221,9 @@ export const useRepoStore = defineStore("repo", () => {
         "task.updated",
       );
       flash(e.task.id);
+      if (statusChanged) {
+        startTransition(e.task.id, prevStatus!, e.task.status);
+      }
     } else if (e.type === "task.deleted") {
       tasks.value = tasks.value.filter((t) => t.id !== e.id);
       const ui = useUiStore();
@@ -475,6 +496,7 @@ export const useRepoStore = defineStore("repo", () => {
     feed,
     eventCount,
     flashId,
+    transitionState,
     runningIds,
     outputs,
     doneSteps,
