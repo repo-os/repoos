@@ -2,14 +2,14 @@
 id: "0077"
 title: Harden the review-status readback so it can't false-positive from inside a worktree
 type: bug
-status: active
+status: ready
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/harden-the-review-status-readback-so-it-
 created_at: "2026-08-11T05:20:16Z"
-updated_at: "2026-08-11T06:12:12Z"
+updated_at: "2026-08-11T06:36:48Z"
 ---
 ## Activity
 
@@ -125,3 +125,4 @@ read always appears to succeed.
 - 2026-08-11T05:29:28Z · status ready→active, branch
 - 2026-08-11T06:12:10Z · status active→ready
 - 2026-08-11T06:12:12Z · status ready→active
+- 2026-08-11T06:36:48Z · status active→ready
