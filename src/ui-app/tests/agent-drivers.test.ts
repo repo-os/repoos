@@ -326,6 +326,11 @@ describe("fail-safe mission checklist (0067)", () => {
       // both-copies status sync + read-back verification (anti-#0063)
       expect(mission).toContain("main-checkout copy");
       expect(mission).toContain("confirm it shows `status: review`");
+      // The readback must read the literal file path, never the CLI — from
+      // inside a worktree `repoos show`/`list`/`index` resolve to the
+      // worktree's own root and can false-positive on the live board (#0077).
+      expect(mission).toContain("literal file path");
+      expect(mission).toMatch(/NEVER `repoos show`\/`list`\/`index`/);
       // needs-input instruction: flag both copies, keep the task active, stop
       expect(mission).toContain("needs_input: true");
       expect(mission).toContain("WITHOUT committing");

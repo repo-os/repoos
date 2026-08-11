@@ -94,6 +94,18 @@ export function lastCommitForFile(
   return { subject: subject || null, date: date || null };
 }
 
+/**
+ * True when git tracks `relPath` in the checkout at `root` and its working
+ * copy matches HEAD — i.e. whatever the file currently shows is backed by a
+ * commit, not a stray mid-edit. Untracked or dirty files return false.
+ * Used to prove a worktree's committed task-file state before trusting it.
+ */
+export function fileCommittedClean(root: string, relPath: string): boolean {
+  const status = git(root, ["status", "--porcelain", "--", relPath]);
+  if (status === null || status !== "") return false;
+  return lastCommitForFile(root, relPath).subject !== null;
+}
+
 export function emptyGitInfo(): TaskGitInfo {
   return {
     branchExists: false,

@@ -3,8 +3,30 @@
  * file remains the single source of truth.
  */
 import { createRepoOS } from "../core/repoos.js";
+import { boardRoot } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
+
+/**
+ * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
+ * when the CLI runs from inside a task worktree. Board-state reads must never
+ * silently resolve to the worktree's own copy of the task files — that
+ * false-positive stranded #0068 in `active`. A note is printed (to stderr, so
+ * `--json` stdout stays clean) whenever resolution jumped to the main checkout,
+ * so the behavior is never silent.
+ */
+function boardRepoOS() {
+  const { root, fromWorktree } = boardRoot();
+  if (fromWorktree) {
+    console.error(
+      c.yellow("  ⚠ ") +
+        c.dim("running from inside a linked worktree — reading the MAIN checkout's board (") +
+        c.cyan(root) +
+        c.dim(")"),
+    );
+  }
+  return createRepoOS(root);
+}
 
 function assigneeLabel(t: Task): string {
   if (t.assignee === "ai") return c.magenta("◆ AI");
@@ -21,7 +43,7 @@ function pad(s: string, n: number): string {
 
 /** `repoos list [status]` — board overview or a single column. */
 export function cmdList(statusArg?: string): void {
-  const repoos = createRepoOS();
+  const repoos = boardRepoOS();
   const idx = repoos.reindex();
 
   if (idx.taskCount === 0) {
@@ -75,7 +97,7 @@ export function cmdShow(id?: string): void {
     process.exitCode = 1;
     return;
   }
-  const repoos = createRepoOS();
+  const repoos = boardRepoOS();
   const t = repoos.getTask(id);
   if (!t) {
     console.error(c.red(`  Task #${id} not found.`));
@@ -188,7 +210,7 @@ export function cmdNew(args: string[]): void {
 
 /** `repoos index [--json]` — rebuild cache; optionally print machine-readable JSON. */
 export function cmdIndex(args: string[]): void {
-  const repoos = createRepoOS();
+  const repoos = boardRepoOS();
   const idx = repoos.reindex();
   if (args.includes("--json")) {
     console.log(JSON.stringify(idx, null, 2));

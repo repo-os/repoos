@@ -39,6 +39,13 @@ export type RepoEvent =
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.progress"; id: string; step: string; at: string }
   | {
+      type: "task.corrected";
+      id: string;
+      path: string;
+      note: string;
+      at: string;
+    }
+  | {
       type: "preview";
       id: string;
       preview: { port: number; url: string; startedAt: string } | null;

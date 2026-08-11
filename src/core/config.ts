@@ -3,7 +3,7 @@
  * can override any field. We parse only the flat subset of TOML we need, again
  * to avoid a runtime dependency.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
@@ -92,6 +92,72 @@ export function findRepoRoot(start: string = process.cwd()): string {
     if (parent === dir) return resolve(start); // hit filesystem root; fall back
     dir = parent;
   }
+}
+
+/**
+ * True when `dir` is a LINKED WORKTREE root rather than a real repo root: a
+ * worktree's `.git` is a FILE reading `gitdir: …`, while a real root's `.git`
+ * is a directory. Cheap — one stat, no git subprocess.
+ *
+ * `findRepoRoot` does not make this distinction (it matches any `.git`), which
+ * is exactly why board reads run from inside a worktree used to silently
+ * resolve to the worktree's own copy of the task files instead of the live
+ * board's main checkout (the #0068 false-positive).
+ */
+export function isLinkedWorktreeRoot(dir: string): boolean {
+  const gitPath = join(dir, ".git");
+  if (!existsSync(gitPath)) return false;
+  try {
+    return statSync(gitPath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The MAIN checkout root for a linked worktree, or null when `dir` is not a
+ * linked worktree root. A worktree's `.git` file points at
+ * `<main>/.git/worktrees/<name>` (absolute, or relative to the worktree); the
+ * main root is the first ancestor of that pointer whose own `.git` is a
+ * directory. Fail-soft: any anomaly yields null and callers fall back to the
+ * resolved root.
+ */
+export function mainCheckoutRoot(dir: string): string | null {
+  if (!isLinkedWorktreeRoot(dir)) return null;
+  let text: string;
+  try {
+    text = readFileSync(join(dir, ".git"), "utf8");
+  } catch {
+    return null;
+  }
+  const m = text.match(/^gitdir:\s*(.+)$/m);
+  if (!m) return null;
+  let probe = resolve(dir, m[1].trim());
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (existsSync(join(probe, ".git")) && !isLinkedWorktreeRoot(probe)) {
+      return probe;
+    }
+    const parent = resolve(probe, "..");
+    if (parent === probe) return null; // hit filesystem root — not a worktree
+    probe = parent;
+  }
+}
+
+/**
+ * The root LIVE-BOARD reads (`repoos show`/`list`/`index`) should resolve to:
+ * the MAIN checkout even when the CLI runs inside a task worktree, so a
+ * readback can never false-positive on the worktree's own copy. `fromWorktree`
+ * signals that resolution jumped the main checkout — callers surface it so the
+ * behavior is never silent. Mutating commands keep `findRepoRoot` semantics
+ * (they must act on the directory they run in).
+ */
+export function boardRoot(start?: string): { root: string; fromWorktree: boolean } {
+  const resolved = findRepoRoot(start);
+  const main = mainCheckoutRoot(resolved);
+  return main
+    ? { root: main, fromWorktree: true }
+    : { root: resolved, fromWorktree: false };
 }
 
 /** Extremely small flat-TOML reader: `key = value`, `[section]` headers, and `[[array-of-tables]]`. */
