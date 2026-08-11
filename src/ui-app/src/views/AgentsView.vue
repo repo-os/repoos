@@ -61,10 +61,8 @@ const clis = computed(() =>
 const liveModelsByCli = ref<Record<string, string[]>>({});
 const modelsLoaded = ref(false);
 const modelsLoading = ref(false);
-const modelsTesting = ref(false);
-const modelTestResults = ref<ModelTestResult[]>([]);
-const modelTestAt = ref("");
-const modelTestNotice = ref("");
+const modelTests = ref<Record<string, ModelTestResult>>({});
+const testing = ref<Record<string, boolean>>({});
 
 function labelForModel(m: string): string {
   if (m === "default") return "Default";
@@ -79,7 +77,7 @@ function modelsFor(cli: string, saved?: string): { value: string; label: string;
   const push = (m: string) => {
     if (seen.has(m)) return;
     seen.add(m);
-    out.push({ value: m, label: labelForModel(m), disabled: isFailedModel(cli, m) });
+    out.push({ value: m, label: labelForModel(m), disabled: false });
   };
   push("default");
   for (const m of liveModelsByCli.value[cli] ?? []) push(m);
@@ -90,40 +88,41 @@ function modelsFor(cli: string, saved?: string): { value: string; label: string;
   return out;
 }
 
-function resultFor(cli: string, model: string): ModelTestResult | undefined {
-  return modelTestResults.value.find((r) => r.cli === cli && r.model === model);
+function testKey(a: Agent): string {
+  return `${a.name}\u0000${a.cli}\u0000${a.model}`;
 }
 
-function isFailedModel(cli: string, model: string): boolean {
-  const result = resultFor(cli, model);
-  return result?.status === "failed" || result?.status === "timed_out";
+function resultFor(a: Agent): ModelTestResult | undefined {
+  return modelTests.value[testKey(a)];
 }
 
-async function testModels(): Promise<void> {
-  if (modelsTesting.value) return;
-  modelsTesting.value = true;
-  modelTestNotice.value = "";
+async function testAgent(a: Agent): Promise<void> {
+  const key = testKey(a);
+  if (testing.value[key]) return;
+  testing.value = { ...testing.value, [key]: true };
+  const cli = a.cli;
+  const model = a.model;
   try {
-    const requested: Record<string, string[]> = {};
-    for (const agent of localAgents.value) {
-      requested[agent.cli] = [...new Set([
-        ...(requested[agent.cli] ?? []),
-        ...modelsFor(agent.cli, agent.model).map((model) => model.value),
-      ])];
-    }
     const response = await api<ModelTestResponse>(
       "/api/models/test",
-      JSON_OPTS("POST", { byCli: requested }),
+      JSON_OPTS("POST", { cli, model }),
     );
-    modelTestResults.value = response.results;
-    modelTestAt.value = response.at;
-    if (!response.results.length || response.results.every((result) => result.status === "not_testable")) {
-      modelTestNotice.value = "No configured coding agent has testable models. Select Codex or OpenCode, then test again.";
-    }
+    modelTests.value = { ...modelTests.value, [key]: response.result };
   } catch (err) {
-    config.error = err instanceof Error ? err.message : "Model compatibility test failed.";
+    modelTests.value = {
+      ...modelTests.value,
+      [key]: {
+        cli,
+        model,
+        status: "failed",
+        durationMs: 0,
+        error: err instanceof Error ? err.message : "Model compatibility test failed.",
+      },
+    };
   } finally {
-    modelsTesting.value = false;
+    const next = { ...testing.value };
+    delete next[key];
+    testing.value = next;
   }
 }
 
@@ -296,33 +295,15 @@ onUnmounted(() => {
             variant="outline"
             size="sm"
             style="margin-left: auto"
-            :disabled="modelsLoading || modelsTesting"
+            :disabled="modelsLoading"
             title="Re-probe opencode's live model list (opencode models --refresh)"
             @click="loadModels(true)"
           >
             {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="modelsLoading || modelsTesting"
-            title="Sends one tiny real provider request per testable model combination"
-            @click="testModels"
-          >
-            {{ modelsTesting ? "Testing models…" : modelTestResults.length ? "Test again" : "Test models" }}
-          </Button>
         </div>
         <div class="agent-desc">
           Built-in roles. Toggle them on or off and pick their coding agent and model.
-        </div>
-        <div v-if="modelsTesting" class="model-test-summary">Testing each supported combination with a tiny provider request…</div>
-        <div v-if="modelTestNotice" class="model-test-summary model-test-warning">{{ modelTestNotice }}</div>
-        <div v-else-if="modelTestResults.length" class="model-test-summary">
-          <span>Last tested {{ new Date(modelTestAt).toLocaleTimeString() }}</span>
-          <span v-for="result in modelTestResults" :key="result.cli + ':' + result.model"
-            :class="'model-test model-test-' + result.status" :title="result.error">
-            {{ result.cli }} · {{ labelForModel(result.model) }}: {{ result.status.replace('_', ' ') }}
-          </span>
         </div>
         <div v-for="a in defaultAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
           <div class="agent-head">
@@ -362,10 +343,14 @@ onUnmounted(() => {
                 </SelectContent>
               </Select>
             </div>
-            <div v-if="resultFor(a.cli, a.model)" class="agent-field agent-test-result">
+            <div class="agent-field agent-test-result">
               <label>Compatibility</label>
-              <span :class="'model-test model-test-' + resultFor(a.cli, a.model)!.status" :title="resultFor(a.cli, a.model)!.error">
-                {{ resultFor(a.cli, a.model)!.status.replace('_', ' ') }}
+              <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+              </Button>
+              <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                {{ resultFor(a)!.status.replace('_', ' ') }}
               </span>
             </div>
             <div class="agent-field agent-instr-field">
@@ -448,10 +433,14 @@ onUnmounted(() => {
                 </SelectContent>
               </Select>
             </div>
-            <div v-if="resultFor(a.cli, a.model)" class="agent-field agent-test-result">
+            <div class="agent-field agent-test-result">
               <label>Compatibility</label>
-              <span :class="'model-test model-test-' + resultFor(a.cli, a.model)!.status" :title="resultFor(a.cli, a.model)!.error">
-                {{ resultFor(a.cli, a.model)!.status.replace('_', ' ') }}
+              <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+              </Button>
+              <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                {{ resultFor(a)!.status.replace('_', ' ') }}
               </span>
             </div>
             <div class="agent-field agent-instr-field">

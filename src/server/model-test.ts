@@ -31,7 +31,11 @@ export function sanitizeDiagnostic(text: string): string {
     .slice(0, OUTPUT_LIMIT);
 }
 
-function testOne(cli: string, model: string, opts: ModelTestOptions): Promise<ModelTestResult> {
+export function testModelCombination(
+  cli: string,
+  model: string,
+  opts: ModelTestOptions,
+): Promise<ModelTestResult> {
   const started = Date.now();
   const finish = (status: ModelTestStatus, error?: string): ModelTestResult => ({
     cli,
@@ -103,7 +107,7 @@ export async function testModelCombinations(
   const workers = Array.from({ length: Math.min(Math.max(1, opts.concurrency ?? 2), queued.length) }, async () => {
     while (next < queued.length) {
       const item = queued[next++];
-      results.push(await testOne(item.cli, item.model, opts));
+      results.push(await testModelCombination(item.cli, item.model, opts));
     }
   });
   await Promise.all(workers);

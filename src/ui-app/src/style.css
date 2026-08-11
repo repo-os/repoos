@@ -909,3 +909,12 @@
 .model-test-failed, .model-test-timed_out { color: var(--red); }
 .model-test-not_testable { color: var(--muted); }
 .model-test-warning { color: var(--amber); }
+
+.model-test-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}

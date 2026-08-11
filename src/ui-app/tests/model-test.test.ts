@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sanitizeDiagnostic, testModelCombinations } from "../../server/model-test";
+import { sanitizeDiagnostic, testModelCombination, testModelCombinations } from "../../server/model-test";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -19,6 +19,25 @@ function fakeOpenCode(body: string): { root: string; path: string } {
 }
 
 describe("model compatibility runner", () => {
+  it("tests exactly one requested combination", async () => {
+    const fixture = fakeOpenCode("echo REPOOS_MODEL_OK");
+    const old = process.env.PATH;
+    process.env.PATH = fixture.path;
+    try {
+      const result = await testModelCombination("opencode", "provider/only-this", {
+        cwd: fixture.root,
+        timeoutMs: 5000,
+      });
+      expect(result).toMatchObject({
+        cli: "opencode",
+        model: "provider/only-this",
+        status: "passed",
+      });
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
   it("reports success and failure independently", async () => {
     const fixture = fakeOpenCode('case "$*" in *bad*) echo "denied" >&2; exit 2;; *) echo REPOOS_MODEL_OK;; esac');
     const old = process.env.PATH;

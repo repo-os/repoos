@@ -165,7 +165,7 @@ export interface ModelTestResult {
 }
 
 export interface ModelTestResponse {
-  results: ModelTestResult[];
+  result: ModelTestResult;
   at: string;
 }
 

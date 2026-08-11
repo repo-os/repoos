@@ -248,6 +248,44 @@ describe("GET /api/models", () => {
   });
 });
 
+describe("POST /api/models/test", () => {
+  it("accepts one selected pair and returns one result", async () => {
+    const root = tmpDir();
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/models/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cli: "claude code", model: "default" }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json() as { result: { cli: string; model: string; status: string } };
+      expect(body.result).toEqual({
+        cli: "claude code",
+        model: "default",
+        status: "not_testable",
+        durationMs: 0,
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects the removed bulk matrix request shape", async () => {
+    const server = await startServer({ root: tmpDir(), host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/models/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ byCli: { opencode: ["default", "provider/model"] } }),
+      });
+      expect(res.status).toBe(400);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 describe("PATCH /api/config agents validation", () => {
   it("accepts any non-empty model string (static or live)", async () => {
     const root = tmpDir();
