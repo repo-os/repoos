@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-08-11T14:42:54Z"
-updated_at: "2026-08-11T19:41:42Z"
+updated_at: "2026-08-11T19:43:27Z"
 ---
 ## Activity
 
@@ -119,3 +120,4 @@ appropriate RepoOS operation can exist.
 ## Activity
 
 - 2026-08-11T19:41:42Z · status inbox→ready
+- 2026-08-11T19:43:27Z · model_override
