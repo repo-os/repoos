@@ -2,16 +2,15 @@
 id: "0082"
 title: Route task chat to the right agent for every lifecycle state
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T09:03:41Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-11T17:38:13Z"
 ---
-
 ## Problem
 
 The Agent tab is useful once implementation starts, but task conversation does
@@ -81,3 +80,4 @@ need explanatory Q&A without accidentally mutating finished work.
 
 - 2026-08-11T09:03:41Z · created · unknown
 - 2026-08-11T15:37:46Z · updated · turn rough idea into a lifecycle role and permission design
+- 2026-08-11T17:38:13Z · status draft→inbox
