@@ -297,12 +297,13 @@ async function cfFetch(
 ): Promise<Record<string, unknown>> {
   let res: Response;
   try {
-    res = await fetch(CF_API + path, {
+    const init: RequestInit = {
       method,
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
-    });
+    };
+    if (body !== undefined) init.body = JSON.stringify(body);
+    res = await fetch(CF_API + path, init);
   } catch (e) {
     throw new Error("Cloudflare API unreachable: " + (e as Error).message);
   }
