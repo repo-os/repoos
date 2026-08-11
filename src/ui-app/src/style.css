@@ -438,10 +438,6 @@
   .done-failure-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-failure-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
   .done-failure-hint{color:var(--txt-dim);font-size:11px;line-height:1.5}
-  .sync-failure{margin-top:10px;padding:10px;border-radius:9px;background:var(--red-tint);border:1px solid var(--red-border-tint);font-size:12px}
-  .sync-failure-title{color:var(--red);font-weight:700;margin-bottom:4px}
-  .sync-failure ul{margin:6px 0 0 16px;color:var(--txt-dim);font-size:11px}
-  .sync-success{margin-top:10px;font-size:12px;color:var(--green);font-weight:600}
   .save-bar{display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--panel-solid);border-top:1px solid var(--border-bright);box-shadow:0 -10px 24px -12px rgba(0,0,0,0.5);z-index:5}
   .save-callout{display:flex;align-items:center;gap:10px;min-width:0}
   .save-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:none;animation:pulse 2s ease-in-out infinite}

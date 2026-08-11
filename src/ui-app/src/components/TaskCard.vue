@@ -135,7 +135,7 @@ async function openAgent(): Promise<void> {
       <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">
         needs input
       </span>
-      <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — open the task to sync">
+      <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — move to done to sync and merge">
         needs merge
       </span>
       <span class="chip">{{ task.type }}</span>

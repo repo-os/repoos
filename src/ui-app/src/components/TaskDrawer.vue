@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RefreshCw } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -218,10 +218,6 @@ interface DoneFailure {
 }
 /** Detailed failure state from the last move-to-done attempt. */
 const doneFailure = ref<DoneFailure | null>(null);
-/** True while a manual sync-with-main request is in flight. */
-const syncing = ref(false);
-/** Result of the last manual sync (success or conflict detail). */
-const syncResult = ref<{ ok: boolean; conflicts?: string[]; message?: string } | null>(null);
 
 function startDoneTimer(): void {
   doneTicks.value = 0;
@@ -308,22 +304,6 @@ function extractConflicts(message: string): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-}
-
-async function syncWithMain(): Promise<void> {
-  if (!ui.active) return;
-  syncing.value = true;
-  syncResult.value = null;
-  try {
-    await repo.syncWithMain(ui.active.id);
-    syncResult.value = { ok: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    syncResult.value = { ok: false, conflicts: extractConflicts(message), message };
-    repo.onError(err);
-  } finally {
-    syncing.value = false;
-  }
 }
 
 interface TaskDraft {
@@ -921,7 +901,8 @@ async function sendTurn(): Promise<void> {
             <template v-else>
               <p class="delete-prompt">
                 Move task #{{ ui.active.id }} to done? This merges
-                <span class="mono">{{ effectiveBranch }}</span> into main, runs
+                <span class="mono">{{ effectiveBranch }}</span> into main (syncing it with main
+                first if the merge can't proceed cleanly), runs
                 <span class="mono">repoos check</span>, then deletes the branch and closes the
                 worktree.
               </p>
@@ -956,28 +937,10 @@ async function sendTurn(): Promise<void> {
                 </ul>
               </div>
               <p class="done-failure-hint">
-                main has diverged from this branch — sync it, resolve the conflicts, then retry.
+                RepoOS couldn't sync this branch with main automatically — resolve the
+                conflicting files in the worktree, then retry.
               </p>
             </div>
-            <Button
-              variant="outline"
-              class="w-full"
-              style="margin-top: 12px"
-              :disabled="ui.saving || syncing || repo.isRunning(ui.active.id)"
-              @click="syncWithMain"
-            >
-              <RefreshCw class="size-3.5" :class="{ 'animate-spin': syncing }" />
-              {{ syncing ? "Syncing…" : "Sync with main" }}
-            </Button>
-            <div v-if="syncResult && !syncResult.ok" class="sync-failure">
-              <div class="sync-failure-title">Sync failed</div>
-              <p>{{ syncResult.message }}</p>
-              <ul v-if="syncResult.conflicts?.length">
-                <li v-for="f in syncResult.conflicts" :key="f" class="mono">{{ f }}</li>
-              </ul>
-              <p class="done-failure-hint">Resolve the conflicts in the worktree, then retry.</p>
-            </div>
-            <div v-else-if="syncResult?.ok" class="sync-success">Synced with main.</div>
           </div>
           <div
             v-if="ui.active.status === 'active' || ui.active.status === 'review'"

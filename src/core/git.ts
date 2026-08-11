@@ -572,6 +572,45 @@ export async function mergeBranch(
   };
 }
 
+export interface SyncBranchResult {
+  /** Whether the branch was synced (main merged into its worktree). */
+  ok: boolean;
+  /** Files that conflicted when the sync merge was aborted. */
+  conflicts: string[];
+  /** Human-readable failure reason (when not ok). */
+  reason?: string;
+}
+
+/**
+ * Sync `branch` with main: merge the main checkout's current branch into
+ * `branch`'s linked worktree. This is the repository's existing "sync with
+ * main" operation — the same `mergeBranch` semantics the review-transition
+ * auto-sync uses, so the automatic done-flow fallback and the manual route
+ * never diverge. On conflict the merge is aborted (nothing half-applied) and
+ * the conflict list is returned. Fail-soft: false when the branch has no
+ * linked worktree or git is missing.
+ */
+export async function syncBranchWithMain(
+  root: string,
+  branch: string,
+  opts: { autoResolve?: string[] } = {},
+): Promise<SyncBranchResult> {
+  const wtPath = worktreePathForBranch(root, branch);
+  if (!wtPath) {
+    return { ok: false, conflicts: [], reason: "no worktree for branch" };
+  }
+  const baseBranch = currentBranch(root) ?? "main";
+  const result = await mergeBranch(wtPath, baseBranch, opts);
+  if (result.merged) return { ok: true, conflicts: [] };
+  return {
+    ok: false,
+    conflicts: result.conflicts,
+    reason: result.conflicts.length
+      ? `merge conflict: ${result.conflicts.join(", ")}`
+      : result.reason ?? "sync failed",
+  };
+}
+
 /**
  * Delete a local branch. The close-out flow only ever deletes a branch that
  * was just merged into main, so `-d` (refuses unless fully merged) is correct.

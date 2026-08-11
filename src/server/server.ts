@@ -53,9 +53,8 @@ import {
   ensureWorktree,
   commitTaskFile,
   resetWorktree,
-  mergeBranch,
+  syncBranchWithMain,
   worktreePathForBranch,
-  currentBranch,
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -434,13 +433,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * copies is flagged `needs_merge`. On success the flag is cleared.
    */
   async function syncTaskBranch(task: Task): Promise<SyncResult> {
-    const wtPath = worktreePathForBranch(config.root, task.branch);
-    if (!wtPath) {
-      return { ok: false, conflicts: [], reason: "no worktree for branch" };
-    }
-    const baseBranch = currentBranch(config.root) ?? "main";
     const rel = relative(config.root, task.absPath);
-    const result = await mergeBranch(wtPath, baseBranch, { autoResolve: [rel] });
+    const result = await syncBranchWithMain(config.root, task.branch, { autoResolve: [rel] });
+    const wtPath = worktreePathForBranch(config.root, task.branch);
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
@@ -448,20 +443,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
-      const wtAbsPath = join(wtPath, task.path);
-      if (existsSync(wtAbsPath)) {
-        patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+      if (wtPath) {
+        const wtAbsPath = join(wtPath, task.path);
+        if (existsSync(wtAbsPath)) {
+          patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+        }
       }
     };
 
-    if (!result.merged) {
+    if (!result.ok) {
       await setNeedsMerge(true);
       return {
         ok: false,
         conflicts: result.conflicts,
-        reason: result.conflicts.length
-          ? `merge conflict: ${result.conflicts.join(", ")}`
-          : result.reason ?? "sync failed",
+        reason: result.reason ?? "sync failed",
       };
     }
 
