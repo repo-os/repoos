@@ -2,19 +2,23 @@
 id: "0085"
 title: Test one selected agent/model combination at a time
 type: feature
-status: active
+status: review
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/0085-test-selected-agent-model
 created_at: "2026-08-11T10:34:53Z"
-updated_at: "2026-08-11T10:36:00Z"
+updated_at: "2026-08-11T11:12:50Z"
 ---
 ## Activity
 
 - 2026-08-11T10:34:53Z · created · unknown
 - 2026-08-11T10:36:00Z · spec fleshed out and status inbox→active · ai
+- 2026-08-11T10:42:42Z · status active→review · implementation on
+  feat/0085-test-selected-agent-model (fcf5e0c); `repoos check` green · ai
+- 2026-08-11T11:12:50Z · review fix: reduced cloud probe timeout to 8s and
+  moved Instructions below the agent/model/test control row (9e4b12c) · ai
 
 
 ## Problem
