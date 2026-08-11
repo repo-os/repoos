@@ -2,14 +2,14 @@
 id: "0087"
 title: Release a task's agent process and worktree resources when it leaves active
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/release-a-task-s-agent-process-and-workt
 created_at: "2026-08-11T13:20:44Z"
-updated_at: "2026-08-11T14:57:09Z"
+updated_at: "2026-08-11T15:13:36Z"
 ---
 ## Activity
 
@@ -124,3 +124,4 @@ Two costs, both real:
 
 - 2026-08-11T13:30:50Z · status inbox→ready
 - 2026-08-11T14:57:09Z · status ready→active, branch
+- 2026-08-11T15:13:36Z · status active→review
