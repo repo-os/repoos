@@ -51,6 +51,27 @@ export const COLUMNS: Column[] = [
   { id: "done", label: "Done", color: "#4ef0a8" },
 ];
 
+/** "recent" sorts by updated_at desc; "current" is the backend's status/priority/id order. */
+export type SortOrder = "recent" | "current";
+
+export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
+  { value: "recent", label: "Most recently updated" },
+  { value: "current", label: "Current order" },
+];
+
+const SORT_ORDER_KEY = "repoos.board.sortOrder";
+
+function readSortOrder(): SortOrder {
+  try {
+    const raw = localStorage.getItem(SORT_ORDER_KEY);
+    if (raw === null) return "recent";
+    const v = JSON.parse(raw);
+    return v === "recent" || v === "current" ? v : "recent";
+  } catch {
+    return "recent";
+  }
+}
+
 export const useRepoStore = defineStore("repo", () => {
   const origin = window.location.origin;
   const loading = ref(true);
@@ -65,6 +86,7 @@ export const useRepoStore = defineStore("repo", () => {
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  const sortOrder = ref<SortOrder>(readSortOrder());
 
   let feedKey = 0;
   let es: EventSource | null = null;
@@ -78,7 +100,24 @@ export const useRepoStore = defineStore("repo", () => {
 
   const fmtDate = (s: string | null): string => (s ? new Date(s).toLocaleString() : "—");
 
-  const byStatus = (s: string): Task[] => tasks.value.filter((t) => t.status === s);
+  const byStatus = (s: string): Task[] => {
+    const filtered = tasks.value.filter((t) => t.status === s);
+    if (sortOrder.value !== "recent") return filtered;
+    return [...filtered].sort((a, b) => {
+      if (!a.updated_at) return b.updated_at ? 1 : 0;
+      if (!b.updated_at) return -1;
+      return b.updated_at.localeCompare(a.updated_at);
+    });
+  };
+
+  function setSortOrder(order: SortOrder): void {
+    sortOrder.value = order;
+    try {
+      localStorage.setItem(SORT_ORDER_KEY, JSON.stringify(order));
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
 
   function recount(): void {
     const c: Counts = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
@@ -362,6 +401,8 @@ export const useRepoStore = defineStore("repo", () => {
     runningIds,
     outputs,
     doneSteps,
+    sortOrder,
+    setSortOrder,
     repoName,
     workDir,
     total,
