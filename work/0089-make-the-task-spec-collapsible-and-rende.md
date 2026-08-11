@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-the-task-spec-collapsible-and-rende
 created_at: "2026-08-11T13:34:35Z"
-updated_at: "2026-08-11T14:51:58Z"
+updated_at: "2026-08-11T15:15:41Z"
 ---
 ## Problem
 
