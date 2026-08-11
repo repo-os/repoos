@@ -2,14 +2,14 @@
 id: "0089"
 title: Make the task spec collapsible and render its Markdown
 type: feature
-status: active
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/make-the-task-spec-collapsible-and-rende
 created_at: "2026-08-11T13:34:35Z"
-updated_at: "2026-08-11T14:40:13Z"
+updated_at: "2026-08-11T14:51:52Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ The spec field in the task sidebar can be expanded or collapsed. When the field 
 - 2026-08-11T13:46:09Z · status ready→active, branch
 - 2026-08-11T14:30:15Z · status active→ready
 - 2026-08-11T14:40:13Z · status ready→active
+- 2026-08-11T14:51:52Z · status active→ready
