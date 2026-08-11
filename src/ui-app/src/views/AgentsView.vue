@@ -69,12 +69,27 @@ const testing = ref<Record<string, boolean>>({});
 
 function labelForModel(m: string): string {
   if (m === "default") return "Default";
+  if (m === "opus") return "Opus";
+  if (m === "sonnet") return "Sonnet";
+  if (m === "haiku") return "Haiku";
   if (m === "big pickle") return "Big Pickle";
   if (m === "deepseek v4") return "DeepSeek v4";
   return m;
 }
 
+const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
+
 function modelsFor(cli: string, saved?: string): { value: string; label: string; disabled: boolean }[] {
+  if (cli === "claude code") {
+    const out: { value: string; label: string; disabled: boolean }[] = [];
+    const seen = new Set<string>();
+    for (const m of CLAUDE_CODE_MODELS) {
+      seen.add(m);
+      out.push({ value: m, label: labelForModel(m), disabled: false });
+    }
+    if (saved && !seen.has(saved)) out.push({ value: saved, label: labelForModel(saved), disabled: false });
+    return out;
+  }
   const out: { value: string; label: string; disabled: boolean }[] = [];
   const seen = new Set<string>();
   const push = (m: string) => {
@@ -84,8 +99,6 @@ function modelsFor(cli: string, saved?: string): { value: string; label: string;
   };
   push("default");
   for (const m of liveModelsByCli.value[cli] ?? []) push(m);
-  // The old global suggestions are only an endpoint-failure fallback. Once
-  // per-CLI metadata loads, never leak OpenCode labels into Codex/Claude/etc.
   if (!modelsLoaded.value) for (const m of config.agentsMeta.models) push(m);
   if (saved) push(saved);
   return out;
