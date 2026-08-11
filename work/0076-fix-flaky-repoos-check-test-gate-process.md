@@ -2,14 +2,14 @@
 id: "0076"
 title: "Fix flaky repoos check test gate: process-spawning tests time out under load"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0076-fix-flaky-check-test-gate
 created_at: "2026-08-11T05:13:52Z"
-updated_at: "2026-08-11T05:35:36Z"
+updated_at: "2026-08-11T05:55:44Z"
 ---
 ## Activity
 
@@ -118,3 +118,4 @@ agents mid-loop. The gate must be trustworthy.
 ## Activity
 
 - 2026-08-11T05:35:36Z · status ready→active
+- 2026-08-11T05:55:44Z · status active→review
