@@ -2,8 +2,7 @@
 id: "0079"
 title: Add Cloudflare Tunnel toggle and setup UI to Settings page
 type: feature
-status: active
-needs_input: true
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -119,3 +118,4 @@ per-app Access allowlists unless it falls out naturally from the setup flow.
 - 2026-08-11T05:59:26Z · created · unknown
 - 2026-08-11T08:17:14Z · status inbox→ready
 - 2026-08-11T12:22:00Z · blocked · repoos check requires loopback server binding, which this execution sandbox rejects with EPERM
+- 2026-08-12T01:18:00Z · status active→review
