@@ -2,7 +2,7 @@
 id: "0071"
 title: "Add a \"Move to ready\" button for inbox tasks in the task panel"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -45,3 +45,4 @@ Covers only the task detail panel (`TaskDrawer.vue`). Does not change the board 
 - 2026-08-11T03:20:53Z · created · unknown
 - 2026-08-11T03:51:09Z · status inbox→ready
 - 2026-08-11T05:09:36Z · status ready→active, branch
+- 2026-08-11T13:12:00Z · status ready→review
