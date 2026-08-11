@@ -2,14 +2,14 @@
 id: "0074"
 title: Auto-scroll agent chat to latest message and show the human's own messages
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/auto-scroll-agent-chat-to-latest-message
 created_at: "2026-08-11T05:06:07Z"
-updated_at: "2026-08-11T05:07:06Z"
+updated_at: "2026-08-11T05:09:53Z"
 ---
 ---
 title: Auto-scroll agent chat to latest message and show the human's own messages
@@ -55,3 +55,4 @@ The Agent tab in the task drawer (`src/ui-app/src/components/TaskDrawer.vue`) ha
 
 - 2026-08-11T05:06:07Z · created · unknown
 - 2026-08-11T05:07:06Z · title, branch, body
+- 2026-08-11T05:09:53Z · status inbox→ready
