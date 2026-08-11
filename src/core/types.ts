@@ -99,6 +99,8 @@ export interface Task {
 export interface TaskGitInfo {
   /** Does the branch named in frontmatter exist locally? */
   branchExists: boolean;
+  /** Does a linked worktree currently have the task's branch checked out? */
+  worktreeExists: boolean;
   /** Last commit subject touching this file, if discoverable. */
   lastCommit: string | null;
   /** ISO timestamp of last commit touching this file. */

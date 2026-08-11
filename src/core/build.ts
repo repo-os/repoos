@@ -31,7 +31,7 @@ export interface BuildCheckResult {
  * Resolve the package root relative to the running binary.
  * Same resolution pattern as findUiHtml in server.ts.
  */
-function findPackageRoot(): string | null {
+export function findPackageRoot(): string | null {
   const here = dirname(fileURLToPath(import.meta.url));
   // compiled: dist/core/build.js -> repo root is ../..
   // dev:      src/core/build.ts   -> repo root is ../..
@@ -76,6 +76,64 @@ function hashSrcDir(root: string): string | null {
   return hash.digest("hex");
 }
 
+/**
+ * Staleness check against an explicit repo root — used for a task's worktree
+ * before previewing it. A worktree is stale when its `src/` hash no longer
+ * matches its own `dist/.build-info.json` (or the marker is missing). A
+ * checkout with no `src/` is treated as published (nothing to check).
+ */
+export function checkBuildForRoot(root: string): BuildCheckResult {
+  if (!root) {
+    return { stale: false, message: null, code: "published" };
+  }
+  const distDir = join(root, "dist");
+  const srcDir = join(root, "src");
+  if (!existsSync(srcDir)) {
+    return { stale: false, message: null, code: "published" };
+  }
+  if (!existsSync(distDir)) {
+    return {
+      stale: true,
+      message: "No build found — run `bun run build` before using `repoos`.",
+      code: "no-build",
+    };
+  }
+  const marker = join(distDir, ".build-info.json");
+  if (!existsSync(marker)) {
+    return {
+      stale: true,
+      message:
+        "Cannot verify build freshness (no .build-info.json).\n  You may be running old compiled code. Run `bun run build` to be safe.",
+      code: "no-marker",
+    };
+  }
+  let recorded: { hash: string };
+  try {
+    recorded = JSON.parse(readFileSync(marker, "utf8"));
+  } catch {
+    return {
+      stale: true,
+      message: "Build marker is corrupt. Run `bun run build` to regenerate.",
+      code: "no-marker",
+    };
+  }
+  const currentHash = hashSrcDir(root);
+  if (!currentHash) {
+    return { stale: false, message: null, code: "published" };
+  }
+  if (recorded.hash !== currentHash) {
+    return {
+      stale: true,
+      message:
+        "Stale build: src/ has changed since the last `bun run build`.\n" +
+        "  You are running OLD compiled code, and `repoos serve` serves the OLD UI.\n" +
+        "  Run `bun run build` to update.",
+      code: "stale",
+    };
+  }
+  return { stale: false, message: null, code: "fresh" };
+}
+
 export function checkBuild(): BuildCheckResult {
   const root = findPackageRoot();
   if (!root) {
@@ -92,61 +150,7 @@ export function checkBuild(): BuildCheckResult {
     return { stale: false, message: null, code: "dev-mode" };
   }
 
-  // Published install: dist/ exists but no src/
-  if (!existsSync(srcDir)) {
-    return { stale: false, message: null, code: "published" };
-  }
-
-  // No dist/ at all
-  if (!existsSync(distDir)) {
-    return {
-      stale: true,
-      message:
-        "No build found — run `bun run build` before using `repoos`.",
-      code: "no-build",
-    };
-  }
-
-  // No marker (pre-feature build)
-  if (!existsSync(marker)) {
-    return {
-      stale: true,
-      message:
-        "Cannot verify build freshness (no .build-info.json).\n  You may be running old compiled code. Run `bun run build` to be safe.",
-      code: "no-marker",
-    };
-  }
-
-  // Read marker and compare
-  let recorded: { hash: string };
-  try {
-    recorded = JSON.parse(readFileSync(marker, "utf8"));
-  } catch {
-    return {
-      stale: true,
-      message:
-        "Build marker is corrupt. Run `bun run build` to regenerate.",
-      code: "no-marker",
-    };
-  }
-
-  const currentHash = hashSrcDir(root);
-  if (!currentHash) {
-    return { stale: false, message: null, code: "published" };
-  }
-
-  if (recorded.hash !== currentHash) {
-    return {
-      stale: true,
-      message:
-        "Stale build: src/ has changed since the last `bun run build`.\n" +
-        "  You are running OLD compiled code, and `repoos serve` serves the OLD UI.\n" +
-        "  Run `bun run build` to update.",
-      code: "stale",
-    };
-  }
-
-  return { stale: false, message: null, code: "fresh" };
+  return checkBuildForRoot(root);
 }
 
 /** Platform path separator pattern for import.meta.url detection. */
