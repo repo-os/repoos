@@ -2,14 +2,14 @@
 id: "0070"
 title: Keep paused tasks in Active status instead of reverting to Ready
 type: bug
-status: ready
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: "feat/keep-paused-tasks-in-active-status-inste"
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T03:51:07Z"
+updated_at: "2026-08-12T03:06:00Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ Relevant code:
 
 - 2026-08-11T03:17:31Z · created · unknown
 - 2026-08-11T03:51:07Z · status inbox→ready
+- 2026-08-12T03:06:00Z · status ready→review · implemented: /pause no longer demotes active tasks to ready; TaskCard/TaskDrawer show "Restart work" for a paused-but-active task, driven by repo.isRunning; /start relaunches an active-paused task in place. repoos check green.
