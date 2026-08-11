@@ -51,4 +51,7 @@ The Agent tab in the task drawer (`src/ui-app/src/components/TaskDrawer.vue`) ha
 - 2026-08-11T05:06:07Z · created · unknown
 - 2026-08-11T05:07:06Z · title, branch, body
 - 2026-08-11T05:09:53Z · status inbox→ready
+- 2026-08-11T11:52:10Z · status ready→active
+- 2026-08-11T12:13:05Z · status active→ready
+- 2026-08-11T12:13:12Z · status ready→active
 - 2026-08-11T12:31:06Z · needs_merge

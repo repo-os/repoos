@@ -194,12 +194,13 @@ export function parseJsonEvent(
       };
     }
     case "step_start":
-      return { entry: { type: "step", kind: "start" }, sessionID };
+      return { entry: { type: "step", kind: "start", at: now() }, sessionID };
     case "step_finish":
       return {
         entry: {
           type: "step",
           kind: "finish",
+          at: now(),
           ...(typeof part.reason === "string" && part.reason
             ? { reason: part.reason }
             : {}),

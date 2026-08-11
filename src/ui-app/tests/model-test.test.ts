@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sanitizeDiagnostic, testModelCombinations } from "../../server/model-test";
+import { MODEL_TEST_TIMEOUT_MS, sanitizeDiagnostic, testModelCombination, testModelCombinations } from "../../server/model-test";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -18,7 +18,54 @@ function fakeOpenCode(body: string): { root: string; path: string } {
   return { root, path: `${bin}:${process.env.PATH ?? ""}` };
 }
 
+function fakeCodex(body: string): { root: string; path: string } {
+  const root = mkdtempSync(join(tmpdir(), "repoos-model-test-"));
+  roots.push(root);
+  const bin = join(root, "bin");
+  mkdirSync(bin);
+  writeFileSync(join(bin, "codex"), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+  return { root, path: `${bin}:${process.env.PATH ?? ""}` };
+}
+
 describe("model compatibility runner", () => {
+  it("uses an 8-second cloud probe ceiling", () => {
+    expect(MODEL_TEST_TIMEOUT_MS).toBe(8000);
+  });
+
+  it("tests exactly one requested combination", async () => {
+    const fixture = fakeOpenCode("echo REPOOS_MODEL_OK");
+    const old = process.env.PATH;
+    process.env.PATH = fixture.path;
+    try {
+      const result = await testModelCombination("opencode", "provider/only-this", {
+        cwd: fixture.root,
+        timeoutMs: 5000,
+      });
+      expect(result).toMatchObject({
+        cli: "opencode",
+        model: "provider/only-this",
+        status: "passed",
+      });
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("bypasses Codex's trusted-directory preflight for the probe", async () => {
+    const fixture = fakeCodex('case "$*" in *--skip-git-repo-check*) echo REPOOS_MODEL_OK;; *) echo "missing trust flag" >&2; exit 2;; esac');
+    const old = process.env.PATH;
+    process.env.PATH = fixture.path;
+    try {
+      const result = await testModelCombination("codex", "gpt-5.6-luna", {
+        cwd: fixture.root,
+        timeoutMs: 5000,
+      });
+      expect(result.status).toBe("passed");
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
   it("reports success and failure independently", async () => {
     const fixture = fakeOpenCode('case "$*" in *bad*) echo "denied" >&2; exit 2;; *) echo REPOOS_MODEL_OK;; esac');
     const old = process.env.PATH;

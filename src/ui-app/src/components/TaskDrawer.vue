@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RefreshCw } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -209,6 +209,19 @@ const doingDone = ref(false);
 const doneTicks = ref(0);
 let doneTimer: number | undefined;
 
+interface DoneFailure {
+  step: string;
+  elapsedSeconds: number;
+  conflicts: string[];
+  message: string;
+}
+/** Detailed failure state from the last move-to-done attempt. */
+const doneFailure = ref<DoneFailure | null>(null);
+/** True while a manual sync-with-main request is in flight. */
+const syncing = ref(false);
+/** Result of the last manual sync (success or conflict detail). */
+const syncResult = ref<{ ok: boolean; conflicts?: string[]; message?: string } | null>(null);
+
 function startDoneTimer(): void {
   doneTicks.value = 0;
   window.clearInterval(doneTimer);
@@ -247,21 +260,68 @@ const doneProgress = computed(() => {
   return doingDone.value && doneTicks.value > 0 ? `${base} ${doneTicks.value}s` : base;
 });
 
+function startDoneConfirm(): void {
+  confirmDone.value = true;
+  doneFailure.value = null;
+}
+
+function cancelDoneConfirm(): void {
+  confirmDone.value = false;
+  doneFailure.value = null;
+}
+
 async function moveToDone(): Promise<void> {
   if (!ui.active) return;
   ui.saving = true;
   doingDone.value = true;
+  doneFailure.value = null;
   startDoneTimer();
   try {
     await repo.completeTask(ui.active);
     confirmDone.value = false;
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const step = ui.active ? repo.doneSteps[ui.active.id] ?? "merge" : "merge";
+    const conflicts = extractConflicts(message);
+    doneFailure.value = {
+      step,
+      elapsedSeconds: doneTicks.value,
+      conflicts,
+      message,
+    };
     repo.onError(err);
     confirmDone.value = false;
   } finally {
     doingDone.value = false;
     stopDoneTimer();
     ui.saving = false;
+  }
+}
+
+function extractConflicts(message: string): string[] {
+  const prefix = "merge conflict: ";
+  const idx = message.indexOf(prefix);
+  if (idx === -1) return [];
+  return message
+    .slice(idx + prefix.length)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+async function syncWithMain(): Promise<void> {
+  if (!ui.active) return;
+  syncing.value = true;
+  syncResult.value = null;
+  try {
+    await repo.syncWithMain(ui.active.id);
+    syncResult.value = { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    syncResult.value = { ok: false, conflicts: extractConflicts(message), message };
+    repo.onError(err);
+  } finally {
+    syncing.value = false;
   }
 }
 
@@ -454,6 +514,7 @@ interface DisplayEntry {
   toolOutput?: string;
   stepKind?: "start" | "finish";
   stepReason?: string;
+  stepAt?: string;
 }
 
 /**
@@ -487,7 +548,16 @@ const displayEntries = computed<DisplayEntry[]>(() => {
           toolOutput: e.output ? stripAnsi(e.output) : undefined,
         });
       } else if (e.type === "step") {
-        out.push({ key: out.length, kind: "step", stepKind: e.kind, stepReason: e.reason });
+        // Only finish markers are useful continuation information; drop the
+        // "step" start line so the chat is less noisy.
+        if (e.kind === "start") continue;
+        out.push({
+          key: out.length,
+          kind: "step",
+          stepKind: e.kind,
+          stepReason: e.reason,
+          stepAt: e.at,
+        });
       } else {
         out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
       }
@@ -836,7 +906,7 @@ async function sendTurn(): Promise<void> {
                 variant="default"
                 class="w-full"
                 :disabled="ui.saving"
-                @click="confirmDone = true"
+                @click="startDoneConfirm"
               >
                 <CheckCheck class="size-3.5" />
                 Move to done
@@ -854,7 +924,7 @@ async function sendTurn(): Promise<void> {
                   variant="outline"
                   size="sm"
                   :disabled="ui.saving"
-                  @click="confirmDone = false"
+                  @click="cancelDoneConfirm"
                 >
                   Cancel
                 </Button>
@@ -863,6 +933,45 @@ async function sendTurn(): Promise<void> {
                 </Button>
               </div>
             </template>
+            <div
+              v-if="doneFailure"
+              class="done-failure"
+            >
+              <div class="done-failure-title">
+                <X class="size-3.5" />
+                Close-out failed at “{{ doneFailure?.step }}”
+                <span class="done-failure-time">{{ doneFailure?.elapsedSeconds }}s</span>
+              </div>
+              <p class="done-failure-msg">{{ doneFailure?.message }}</p>
+              <div v-if="doneFailure?.conflicts.length" class="done-failure-files">
+                <div class="done-failure-sub">Conflicting files</div>
+                <ul>
+                  <li v-for="f in doneFailure?.conflicts" :key="f" class="mono">{{ f }}</li>
+                </ul>
+              </div>
+              <p class="done-failure-hint">
+                main has diverged from this branch — sync it, resolve the conflicts, then retry.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              class="w-full"
+              style="margin-top: 12px"
+              :disabled="ui.saving || syncing || repo.isRunning(ui.active.id)"
+              @click="syncWithMain"
+            >
+              <RefreshCw class="size-3.5" :class="{ 'animate-spin': syncing }" />
+              {{ syncing ? "Syncing…" : "Sync with main" }}
+            </Button>
+            <div v-if="syncResult && !syncResult.ok" class="sync-failure">
+              <div class="sync-failure-title">Sync failed</div>
+              <p>{{ syncResult.message }}</p>
+              <ul v-if="syncResult.conflicts?.length">
+                <li v-for="f in syncResult.conflicts" :key="f" class="mono">{{ f }}</li>
+              </ul>
+              <p class="done-failure-hint">Resolve the conflicts in the worktree, then retry.</p>
+            </div>
+            <div v-else-if="syncResult?.ok" class="sync-success">Synced with main.</div>
           </div>
           <div
             v-if="ui.active.status === 'active' || ui.active.status === 'review'"
@@ -1072,12 +1181,9 @@ async function sendTurn(): Promise<void> {
                   :class="{ fin: entry.stepKind === 'finish' }"
                 >
                   <span class="agent-step-dot"></span>
-                  <span>{{
-                    entry.stepKind === "start"
-                      ? "step"
-                      : entry.stepReason === "stop"
-                        ? "done"
-                        : "continue"
+                  <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
+                  <span v-if="entry.stepReason !== 'stop' && entry.stepAt" class="agent-step-time">{{
+                    repo.fmtDate(entry.stepAt)
                   }}</span>
                   <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
                 </div>

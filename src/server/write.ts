@@ -31,6 +31,8 @@ export interface TaskPatch {
   body?: string;
   /** Clear (false) or set (true) the waiting-on-human flag. */
   needsInput?: boolean;
+  /** Clear (false) or set (true) the branch-drifted flag. */
+  needsMerge?: boolean;
 }
 
 export interface PatchTaskOptions {
@@ -92,6 +94,10 @@ export function patchTaskFile(
   if (patch.needsInput !== undefined) {
     if (patch.needsInput !== current.needsInput) changes.push("needs_input");
     current.needsInput = patch.needsInput;
+  }
+  if (patch.needsMerge !== undefined) {
+    if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");
+    current.needsMerge = patch.needsMerge;
   }
   if (patch.title !== undefined) {
     if (patch.title !== current.title) changes.push("title");

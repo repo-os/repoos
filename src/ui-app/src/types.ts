@@ -16,6 +16,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`. */
   needsInput: boolean;
+  /** True when the task branch has drifted from main. Layered on `review`. */
+  needsMerge: boolean;
   priority: string;
   area: string;
   assignee: "ai" | "human" | "unassigned";
@@ -85,7 +87,7 @@ export type AgentOutputEntry =
       output?: string;
       state?: string;
     }
-  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   | { type: "sys"; d: string }
   | { s: "out" | "err" | "sys"; d: string };
 
@@ -166,7 +168,7 @@ export interface ModelTestResult {
 }
 
 export interface ModelTestResponse {
-  results: ModelTestResult[];
+  result: ModelTestResult;
   at: string;
 }
 

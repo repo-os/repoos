@@ -7,6 +7,7 @@ import TopBar from "./components/TopBar.vue";
 import Sidebar from "./components/Sidebar.vue";
 import MobileTabs from "./components/MobileTabs.vue";
 import TaskDrawer from "./components/TaskDrawer.vue";
+import ToastPanel from "./components/ToastPanel.vue";
 
 const repo = useRepoStore();
 const docs = useDocsStore();
@@ -35,5 +36,6 @@ onMounted(async () => {
 
     <MobileTabs />
     <TaskDrawer />
+    <ToastPanel />
   </div>
 </template>

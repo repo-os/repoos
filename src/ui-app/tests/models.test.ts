@@ -56,6 +56,7 @@ function makeFixture(): Fixture {
   mkdirSync(bin, { recursive: true });
   writeFileSync(join(bin, "opencode"), FAKEBIN, { mode: 0o755 });
   writeFileSync(join(bin, "codex"), FAKE_CODEX, { mode: 0o755 });
+  writeFileSync(join(bin, "claude"), "#!/bin/sh\necho REPOOS_MODEL_OK\n", { mode: 0o755 });
   return { bin, log: join(root, "spawns.log") };
 }
 
@@ -244,6 +245,47 @@ describe("GET /api/models", () => {
       }
     } finally {
       process.env.PATH = old;
+    }
+  });
+});
+
+describe("POST /api/models/test", () => {
+  it("probes a selected pair even when its CLI cannot discover models", async () => {
+    const root = tmpDir();
+    const fx = makeFixture();
+    const old = prependPath(fx.bin);
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/models/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cli: "claude code", model: "default" }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json() as { result: { cli: string; model: string; status: string } };
+      expect(body.result).toEqual({
+        cli: "claude code",
+        model: "default",
+        status: "passed",
+        durationMs: expect.any(Number),
+      });
+    } finally {
+      await server.close();
+      process.env.PATH = old;
+    }
+  });
+
+  it("rejects the removed bulk matrix request shape", async () => {
+    const server = await startServer({ root: tmpDir(), host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/models/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ byCli: { opencode: ["default", "provider/model"] } }),
+      });
+      expect(res.status).toBe(400);
+    } finally {
+      await server.close();
     }
   });
 });

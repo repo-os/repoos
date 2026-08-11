@@ -12,12 +12,19 @@ export interface FeedItem {
   time: string;
 }
 
+export interface ToastItem {
+  id: number;
+  message: string;
+  type: "error" | "success" | "info";
+}
+
 /** Summary returned by the review→done close-out endpoint. */
 export interface DoneResult {
   ok: boolean;
   merged: boolean;
   conflicts: string[];
   ff: boolean;
+  drifted?: boolean;
   check?: { ok: boolean; detail?: string };
   error?: string;
   task?: Task;
@@ -87,8 +94,11 @@ export const useRepoStore = defineStore("repo", () => {
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
   const sortOrder = ref<SortOrder>(readSortOrder());
+  /** Dismissible toasts stacked at the top-right. */
+  const toasts = ref<ToastItem[]>([]);
 
   let feedKey = 0;
+  let toastId = 0;
   let es: EventSource | null = null;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -128,6 +138,29 @@ export const useRepoStore = defineStore("repo", () => {
   function pushFeed(msg: string, color: string, kind: string): void {
     feed.unshift({ key: feedKey++, msg, color, kind, time: new Date().toTimeString().slice(0, 8) });
     if (feed.length > 30) feed.pop();
+  }
+
+  const TOAST_TIMEOUT = 6000;
+  /** Recent toast messages with timestamps, used to suppress duplicates. */
+  const recentToasts = new Map<string, number>();
+  const DEDUP_WINDOW_MS = 100;
+
+  function pushToast(message: string, type: ToastItem["type"] = "error"): ToastItem | null {
+    const key = `${type}:${message}`;
+    const now = Date.now();
+    const last = recentToasts.get(key);
+    if (last && now - last < DEDUP_WINDOW_MS) return null;
+    recentToasts.set(key, now);
+    const id = ++toastId;
+    const toast = { id, message, type };
+    toasts.value.unshift(toast);
+    if (toasts.value.length > 5) toasts.value.pop();
+    setTimeout(() => removeToast(id), TOAST_TIMEOUT);
+    return toast;
+  }
+
+  function removeToast(id: number): void {
+    toasts.value = toasts.value.filter((t) => t.id !== id);
   }
 
   function flash(id: string): void {
@@ -265,7 +298,13 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function setStatus(t: Task, status: string): Promise<void> {
     if (t.status === status) return;
-    await patchTask(t.id, { status });
+    try {
+      await patchTask(t.id, { status });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pushToast(message, "error");
+      throw err;
+    }
   }
 
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
@@ -276,14 +315,22 @@ export const useRepoStore = defineStore("repo", () => {
       `/api/tasks/${t.id}/start`,
       JSON_OPTS("POST", { mode }),
     );
-    if (!r.ok) throw new Error(r.reason ?? "could not start work");
+    if (!r.ok) {
+      const message = r.reason ?? "could not start work";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
   }
 
   async function pauseWork(t: Task): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/pause`, {
       method: "POST",
     });
-    if (!r.ok) throw new Error(r.reason ?? "could not pause work");
+    if (!r.ok) {
+      const message = r.reason ?? "could not pause work";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
   }
 
   /** Summary returned by the review→done close-out. */
@@ -291,7 +338,11 @@ export const useRepoStore = defineStore("repo", () => {
     const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
       method: "POST",
     });
-    if (!r.ok) throw new Error(r.error ?? "could not complete task");
+    if (!r.ok) {
+      const message = r.error ?? "could not complete task";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
     return r;
   }
 
@@ -310,7 +361,11 @@ export const useRepoStore = defineStore("repo", () => {
       `/api/tasks/${id}/message`,
       JSON_OPTS("POST", { text }),
     );
-    if (!r.ok) throw new Error(r.reason ?? "could not send message");
+    if (!r.ok) {
+      const message = r.reason ?? "could not send message";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
   }
 
   /** Hydrate the running marker on reload so a running agent is never phantom. */
@@ -362,7 +417,11 @@ export const useRepoStore = defineStore("repo", () => {
       reason?: string;
       task: Task;
     }>("/api/tasks/freeform", JSON_OPTS("POST", { explanation }));
-    if (!r.ok) throw new Error(r.reason ?? "could not create task");
+    if (!r.ok) {
+      const message = r.reason ?? "could not create task";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
     return r;
   }
 
@@ -370,9 +429,24 @@ export const useRepoStore = defineStore("repo", () => {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
+  async function syncWithMain(id: string): Promise<{ ok: boolean; conflicts: string[]; error?: string }> {
+    const r = await api<{ ok: boolean; conflicts: string[]; error?: string }>(
+      `/api/tasks/${id}/sync`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.error ?? "sync failed";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    pushToast("Synced with main", "success");
+    return r;
+  }
+
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
+    pushToast(message, "error");
   }
 
   async function init(): Promise<void> {
@@ -402,6 +476,9 @@ export const useRepoStore = defineStore("repo", () => {
     outputs,
     doneSteps,
     sortOrder,
+    toasts,
+    pushToast,
+    removeToast,
     setSortOrder,
     repoName,
     workDir,
@@ -428,6 +505,7 @@ export const useRepoStore = defineStore("repo", () => {
     fetchRunning,
     startPreview,
     stopPreview,
+    syncWithMain,
     onError,
     init,
   };

@@ -34,7 +34,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join, dirname, resolve, basename } from "node:path";
+import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
@@ -49,7 +49,14 @@ import {
   patchTomlConfig,
   loadConfig,
 } from "../core/config.js";
-import { ensureWorktree, commitTaskFile, resetWorktree } from "../core/git.js";
+import {
+  ensureWorktree,
+  commitTaskFile,
+  resetWorktree,
+  mergeBranch,
+  worktreePathForBranch,
+  currentBranch,
+} from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
@@ -59,7 +66,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
-import { testModelCombinations } from "./model-test.js";
+import { testModelCombination } from "./model-test.js";
 
 export interface ServeOptions {
   root?: string;
@@ -382,6 +389,53 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (next !== "active" && next !== "review") void previews.stop(_task.id);
   };
 
+  interface SyncResult {
+    ok: boolean;
+    conflicts: string[];
+    reason?: string;
+  }
+
+  /**
+   * Merge the main checkout's current branch into the task's branch inside its
+   * linked worktree. On conflict the merge is aborted and the task file in both
+   * copies is flagged `needs_merge`. On success the flag is cleared.
+   */
+  async function syncTaskBranch(task: Task): Promise<SyncResult> {
+    const wtPath = worktreePathForBranch(config.root, task.branch);
+    if (!wtPath) {
+      return { ok: false, conflicts: [], reason: "no worktree for branch" };
+    }
+    const baseBranch = currentBranch(config.root) ?? "main";
+    const rel = relative(config.root, task.absPath);
+    const result = await mergeBranch(wtPath, baseBranch, { autoResolve: [rel] });
+
+    const setNeedsMerge = async (value: boolean): Promise<void> => {
+      const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
+        onStatusChange: stopPreviewIfLeft,
+      });
+      index.applyFileChange(mainUpdated.absPath);
+      // Mirror the flag on the worktree copy so an agent resuming there sees it.
+      const wtAbsPath = join(wtPath, task.path);
+      if (existsSync(wtAbsPath)) {
+        patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+      }
+    };
+
+    if (!result.merged) {
+      await setNeedsMerge(true);
+      return {
+        ok: false,
+        conflicts: result.conflicts,
+        reason: result.conflicts.length
+          ? `merge conflict: ${result.conflicts.join(", ")}`
+          : result.reason ?? "sync failed",
+      };
+    }
+
+    await setNeedsMerge(false);
+    return { ok: true, conflicts: [] };
+  }
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -613,13 +667,26 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
         }
         const body = (await readBody(req)) as TaskPatch;
+        const prevStatus = existing.status;
         const updated = patchTaskFile(config, existing.absPath, body, {
           onStatusChange: stopPreviewIfLeft,
         });
         index.applyFileChange(updated.absPath);
+
+        // Auto-sync main into the task branch when a task lands in review,
+        // unless an agent turn is still cleaning up. Conflicts set needs_merge.
+        if (
+          prevStatus !== "review" &&
+          updated.status === "review" &&
+          updated.branch &&
+          !runner.isRunning(updated.id)
+        ) {
+          void syncTaskBranch(updated);
+        }
+
         return json(res, 200, index.getTask(updated.id));
       }
-      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message|done)$/);
+      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/);
       if (actionMatch && method === "POST") {
         const id = actionMatch[1];
         const existing = index.getTask(id);
@@ -722,9 +789,33 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             merged: result.merged,
             conflicts: result.conflicts,
             ff: result.ff,
+            drifted: result.drifted,
             check: result.check,
             error: result.reason,
             task: result.task ? index.getTask(result.task.id) : undefined,
+          });
+        }
+
+        if (actionMatch[2] === "sync") {
+          if (existing.status !== "review") {
+            return json(res, 400, {
+              error: `Only review tasks can be synced (#${id} is ${existing.status})`,
+            });
+          }
+          if (!existing.branch) {
+            return json(res, 400, { error: `Task #${id} has no branch to sync` });
+          }
+          if (runner.isRunning(id)) {
+            return json(res, 409, {
+              error: `Task #${id} has an agent turn in progress`,
+            });
+          }
+          const sync = await syncTaskBranch(existing);
+          index.refreshBranches();
+          return json(res, sync.ok ? 200 : 409, {
+            ok: sync.ok,
+            conflicts: sync.conflicts,
+            error: sync.reason,
           });
         }
 
@@ -831,27 +922,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, { byCli, at: new Date().toISOString() });
       }
       if (path === "/api/models/test" && method === "POST") {
-        let byCli: Record<string, ModelSourceResult> = {};
         try {
-          const body = (await readBody(req)) as { byCli?: unknown };
-          const requestedByCli = body.byCli && typeof body.byCli === "object"
-            ? body.byCli as Record<string, unknown>
-            : {};
-          byCli = await listModelSources({ cwd: config.root, clis: Object.keys(requestedByCli) });
-          if (Object.keys(requestedByCli).length) {
-            for (const [cli, raw] of Object.entries(requestedByCli)) {
-              if (!byCli[cli] || !Array.isArray(raw)) continue;
-              const requested = raw.filter(
-                (model): model is string => typeof model === "string" && model.length > 0 && model.length <= 120,
-              );
-              byCli[cli] = { ...byCli[cli], models: [...new Set([...byCli[cli].models, ...requested])] };
-            }
+          const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
+          if (typeof body.cli !== "string" || !AGENT_CLIS.includes(body.cli as typeof AGENT_CLIS[number])) {
+            return json(res, 400, { error: "cli must be a supported coding agent" });
           }
-          const results = await testModelCombinations(byCli, {
-            cwd: config.root,
-            concurrency: 2,
-          });
-          return json(res, 200, { results, at: new Date().toISOString() });
+          if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
+            return json(res, 400, { error: "model must be a non-empty string" });
+          }
+          // Model discovery and execution are separate capabilities. Claude
+          // and Qwen cannot list their catalogs, but they can still execute a
+          // user-selected/default model and must reach the real probe.
+          const result = await testModelCombination(body.cli, body.model, { cwd: config.root });
+          return json(res, 200, { result, at: new Date().toISOString() });
         } catch (err) {
           const reason = err instanceof Error ? err.message : String(err);
           return json(res, 500, { error: `Model compatibility test failed: ${reason}` });

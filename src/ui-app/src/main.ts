@@ -8,12 +8,6 @@ createApp(App).use(createPinia()).use(router).mount("#app");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    let reloading = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    });
     navigator.serviceWorker.register("/sw.js")
       .then((registration) => registration.update())
       .catch(() => {

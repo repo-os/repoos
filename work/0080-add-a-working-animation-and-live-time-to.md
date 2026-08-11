@@ -1,6 +1,6 @@
 ---
 id: "0080"
-title: Add a working animation and live time/tokens/cost counters to the Agent tab
+title: Add a working animation, live time/tokens/cost counters, and a stall alert to the Agent tab
 type: feature
 status: ready
 priority: p2
@@ -24,6 +24,14 @@ Separately, once an agent has started working on a task (status `active` or
 `review`), the drawer still opens on the Details tab, so the user has to click
 over to the Agent tab every single time to see the live action.
 
+Also folded in from 0073 (closed as a duplicate of this task — see its
+Activity log): there is nothing to warn the user if the agent silently stops
+producing output. A hung or crashed process that never emits `agent.exited`
+looks identical, from the UI, to one that's quietly thinking — confirmed live
+this session on `#0069` and `#0077`, both of which sat hung on an unanswered
+permission prompt for ~2 hours with zero commits before being killed by hand,
+with nothing in the UI distinguishing that from normal slow progress.
+
 ## Desired UX
 
 - While the agent is working/thinking, the Agent tab shows a clear animated
@@ -40,6 +48,12 @@ over to the Agent tab every single time to see the live action.
 - Opening a task whose status is `active` or `review` defaults to the Agent
   tab, because the agent has started working and that's where the action is.
   Tasks in other statuses still open on Details.
+- If the agent produces no new output for 20 seconds while it's still believed
+  to be running, the UI treats it as stalled/dead and alerts the human with a
+  clear, visible warning — the working animation stops and a "may have
+  stopped responding" style message appears. The alert clears automatically
+  once new output arrives (it was a slow step, not a hang) or once the
+  session is confirmed exited/stopped.
 
 ## Acceptance criteria
 
@@ -58,6 +72,12 @@ over to the Agent tab every single time to see the live action.
       Agent tab; opening tasks in other statuses still defaults to Details.
 - [ ] Counters and the animation also work while the task sits in `review`
       (logs/chat persist there per 0053).
+- [ ] If 20 seconds pass with no new `agent.output` event while the runner
+      still considers the task running, the UI surfaces a clear stalled/dead
+      alert (banner/indicator in the Agent tab) distinct from the normal
+      working state.
+- [ ] The stalled alert clears automatically once new output arrives, or
+      once the session is confirmed exited/stopped.
 - [ ] Zero console errors in the UI; `repoos check` passes.
 
 ## Notes for AI
@@ -65,12 +85,23 @@ over to the Agent tab every single time to see the live action.
 - Observability only: reuse the existing `agent.output` / `agent.running` /
   `agent.exited` SSE events and the `AgentRunner` registry. Do **not** change
   the spawn/resume/stop contract.
-- **Overlap with 0073** (inbox): that task covers a working animation and a
-  cumulative working-time display in the chat panel. If 0073 lands first,
-  reuse its animation and elapsed-time plumbing here and scope this task to the
-  token/cost counters plus the default-tab behavior. If it hasn't landed,
-  implement the animation + time-spent here as specified and let 0073 defer to
-  this work. Do not double-build the same thing.
+- **0073 folded in here** (closed as a duplicate — see its Activity log for
+  the pointer back to this task). Its unique piece was the 20s stall alert,
+  merged into Desired UX/Acceptance criteria above; everything else it asked
+  for (working animation, cumulative working-time) was already in scope here.
+  Implement all of it in this one task — do not split the animation/time work
+  from the stall alert across two branches.
+- Stall detection: reset a per-task last-activity timestamp on every
+  `agent.output` event; if it goes stale by 20s while the task is still
+  marked running, treat as stalled; clear on `agent.exited`. Server-side
+  (alongside the `AgentRunner` registry) is likely more robust than
+  client-side off the SSE stream, since it still works with no client tab
+  open — pick a reasonable default and note the choice if you diverge.
+- "Working" must track actual activity (arrival of `agent.output`), not just
+  "a process is running" — a hung process that stops emitting output but
+  hasn't exited is exactly the case the stall alert exists to catch (this is
+  not hypothetical: it happened twice in one session before the underlying
+  cause — a missing CLI permission flag — was fixed).
 - Token/cost is best-effort extraction from the agent's own output — e.g.
   claude code print-mode's cost summary on stderr, codex `--json` usage
   payloads, or a final usage line from opencode where one is emitted. Assumption

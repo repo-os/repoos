@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { COLUMNS, useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
@@ -18,6 +18,7 @@ const makeTask = (over: Partial<Task> = {}): Task => ({
   branch: "",
   tags: [],
   needsInput: false,
+  needsMerge: false,
   created_at: null,
   updated_at: null,
   path: "work/0001-test.md",
@@ -418,5 +419,64 @@ describe("agent output transcript", () => {
     const repo = useRepoStore();
     await repo.init();
     await expect(repo.sendMessage("0001", "go")).rejects.toThrow("busy");
+  });
+});
+
+describe("error toasts", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("pushes a dismissible error toast via onError", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    repo.onError(new Error("something broke"));
+    expect(repo.toasts).toHaveLength(1);
+    expect(repo.toasts[0].message).toBe("something broke");
+    expect(repo.toasts[0].type).toBe("error");
+
+    repo.removeToast(repo.toasts[0].id);
+    expect(repo.toasts).toHaveLength(0);
+  });
+
+  it("auto-dismisses toasts after ~6s", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    repo.onError(new Error("timeout test"));
+    expect(repo.toasts).toHaveLength(1);
+    vi.advanceTimersByTime(6000);
+    expect(repo.toasts).toHaveLength(0);
+  });
+
+  it("suppresses duplicate toasts within the dedup window", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    repo.onError(new Error("dup"));
+    repo.onError(new Error("dup"));
+    expect(repo.toasts).toHaveLength(1);
+  });
+
+  it("pushes a toast when a mutation returns !ok", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/start"))
+        return json({ ok: false, reason: "agent unavailable" });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.startWork(makeTask({ status: "ready" }))).rejects.toThrow("agent unavailable");
+    expect(repo.toasts.some((t) => t.message === "agent unavailable")).toBe(true);
   });
 });
