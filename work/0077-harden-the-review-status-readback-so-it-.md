@@ -2,18 +2,19 @@
 id: "0077"
 title: Harden the review-status readback so it can't false-positive from inside a worktree
 type: bug
-status: inbox
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/harden-the-review-status-readback-so-it-
 created_at: "2026-08-11T05:20:16Z"
-updated_at: "2026-08-11T05:20:16Z"
+updated_at: "2026-08-11T05:29:28Z"
 ---
 ## Activity
 
 - 2026-08-11T05:20:16Z · created · unknown
+- 2026-08-11T05:24:19Z · status inbox→ready
 
 
 ## Problem
@@ -118,3 +119,7 @@ read always appears to succeed.
 - 0068 · Add Cloudflare Tunnel + Zero Trust publishing — the concrete
   incident this task is written from; its worktree/branch already has the
   real, correct, committed work — nothing to redo there.
+
+## Activity
+
+- 2026-08-11T05:29:28Z · status ready→active, branch
