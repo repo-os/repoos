@@ -2,14 +2,14 @@
 id: "0039"
 title: Assign skills to agents on the Agents page
 type: feature
-status: inbox
+status: draft
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T10:05:00Z"
-updated_at: "2026-08-06T10:05:00Z"
+updated_at: "2026-08-11T12:00:01Z"
 ---
 ## Activity
 
@@ -96,3 +96,7 @@ multi-select: the repo's discovered skills, each toggleable on/off per agent.
 - `#0035` built the Agents page + agent config this extends; `#0038` built the
   skills read path this picks from; `#0037` provides the launch mechanics where
   injection happens.
+
+## Activity
+
+- 2026-08-11T12:00:01Z · status inbox→draft
