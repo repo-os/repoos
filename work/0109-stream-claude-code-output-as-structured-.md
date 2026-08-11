@@ -2,14 +2,14 @@
 id: "0109"
 title: Stream claude code output as structured events so its Agent tab is not blank
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T20:16:14Z"
-updated_at: "2026-08-11T20:16:14Z"
+updated_at: "2026-08-11T20:18:23Z"
 ---
 ## Activity
 
@@ -167,3 +167,7 @@ Notes that matter:
   landed there — hence this task.
 - 0045 · Structured opencode output — the parser pattern to follow.
 - 0090 · Persist agent transcripts — adjacent; don't overlap.
+
+## Activity
+
+- 2026-08-11T20:18:23Z · status inbox→ready
