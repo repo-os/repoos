@@ -442,20 +442,6 @@ export const useRepoStore = defineStore("repo", () => {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
-  async function syncWithMain(id: string): Promise<{ ok: boolean; conflicts: string[]; error?: string }> {
-    const r = await api<{ ok: boolean; conflicts: string[]; error?: string }>(
-      `/api/tasks/${id}/sync`,
-      { method: "POST" },
-    );
-    if (!r.ok) {
-      const message = r.error ?? "sync failed";
-      pushToast(message, "error");
-      throw new Error(message);
-    }
-    pushToast("Synced with main", "success");
-    return r;
-  }
-
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
@@ -519,7 +505,6 @@ export const useRepoStore = defineStore("repo", () => {
     fetchRunning,
     startPreview,
     stopPreview,
-    syncWithMain,
     onError,
     init,
   };

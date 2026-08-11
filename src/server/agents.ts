@@ -401,6 +401,8 @@ function missionFor(
   workdir: string,
   agent: Agent,
   config: RepoOSConfig,
+  contextPack?: string,
+  resumePreamble?: string,
 ): string {
   // The same task file exists in the worktree (checked out on `branch`) and in
   // the main checkout. The live board reads the MAIN copy; the branch carries
@@ -409,7 +411,19 @@ function missionFor(
   // verifies the board actually reflects the real status before the agent
   // stops (the anti-#0063 fix).
   const worktreeTask = join(workdir, relative(config.root, task.path));
-  return [
+  const parts: string[] = [];
+
+  if (contextPack) {
+    parts.push(contextPack);
+    parts.push("");
+  }
+
+  if (resumePreamble) {
+    parts.push(resumePreamble);
+    parts.push("");
+  }
+
+  parts.push(
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
     "",
     `Task #${task.id}: ${task.title}`,
@@ -428,7 +442,7 @@ function missionFor(
     "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
     "",
     "If you are blocked or need a decision from the human:",
-    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit it on the branch.`,
+    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
     `2. Set \`needs_input: true\` in the main-checkout copy (${task.path}) WITHOUT committing.`,
     "3. Leave the task status `active` and STOP.",
     "Never silently leave the task `active` without the `needs_input` flag when you are waiting on the human.",
@@ -448,7 +462,8 @@ function missionFor(
     "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
-  ].join("\n");
+  );
+  return parts.join("\n");
 }
 
 /** One-shot run outcome: resolved stdout, or a human-readable failure. */
@@ -603,7 +618,12 @@ export class AgentRunner {
    * defaults to the repo root so launch still works (best-effort) when
    * worktree setup failed or the task's branch is the main checkout.
    */
-  start(task: Task, branch: string, agent: Agent, opts: { cwd?: string } = {}): StartResult {
+  start(
+    task: Task,
+    branch: string,
+    agent: Agent,
+    opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
+  ): StartResult {
     if (this.entries.has(task.id)) {
       return { ok: false, reason: "task is already running" };
     }
@@ -612,7 +632,8 @@ export class AgentRunner {
     session.workdir = cwd;
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
-    const { cmd, args } = cliCommand(agent, missionFor(task, branch, cwd, agent, this.config), cwd);
+    const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
+    const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnTurn(task.id, cmd, args, cwd, task);
   }
 
@@ -621,7 +642,12 @@ export class AgentRunner {
    * conversation as a new turn. Rejected when the task has no session yet
    * (`ok: false`) or when a turn is already running (`ok: false, busy: true`).
    */
-  send(taskId: string, text: string, agent: Agent): StartResult {
+  send(
+    taskId: string,
+    text: string,
+    agent: Agent,
+    opts: { resumePreamble?: string } = {},
+  ): StartResult {
     const session = this.sessions.get(taskId);
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
@@ -637,7 +663,10 @@ export class AgentRunner {
       if (!dropped) break;
       session.bytes -= entryBytes(dropped);
     }
-    const { cmd, args } = resumeCommand(agent, text, session.sessionId, session.workdir ?? this.config.root);
+    const fullText = opts.resumePreamble
+      ? `${opts.resumePreamble}\n\n${text}`
+      : text;
+    const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
   }
 

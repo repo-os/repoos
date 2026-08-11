@@ -7,9 +7,9 @@ priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-agent-previews-server-owned-and-pro
 created_at: "2026-08-11T15:13:09Z"
-updated_at: "2026-08-11T15:22:46Z"
+updated_at: "2026-08-11T16:32:40Z"
 ---
 ## Activity
 
@@ -119,4 +119,5 @@ the main RepoOS process.
 ## Activity
 
 - 2026-08-11T15:22:46Z · status inbox→ready
-- 2026-08-12T00:00:00Z · status active→review
+- 2026-08-11T15:23:03Z · status ready→active, branch
+- 2026-08-11T16:32:40Z · status active→review · implementation committed and `repoos check` passed

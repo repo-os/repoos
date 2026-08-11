@@ -9,13 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T13:49:16Z"
-updated_at: "2026-08-11T14:06:54Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
-## Activity
-
-- 2026-08-11T13:49:16Z · created · unknown
-
-
 ## Problem
 
 RepoOS spawns long-lived agent processes but shows nothing about what they
@@ -80,6 +75,9 @@ Control"), sitting alongside the existing stat cards:
       with `orphaned: true`. Verify against the real case: kill and restart
       `repoos serve` while an agent is running, then confirm the still-live
       agent is reported as orphaned rather than silently dropped.
+- [ ] RepoOS-owned process records are the primary attribution source when
+      available. A command-name match alone is labelled as an unverified
+      candidate and never presented as definitely owned by RepoOS.
 - [ ] The panel renders on the Control page with headline CPU/memory (as
       absolute + % of machine), a live sparkline over a rolling window, and
       the per-process table with orphans visually distinct.
@@ -115,12 +113,11 @@ Control"), sitting alongside the existing stat cards:
   `GET /api/agents/running` already exposes `{ id, pid, startedAt }`. Reuse
   that as the authoritative "should be running" set, and diff it against
   what's actually alive to find orphans.
-- To discover orphans you need to look beyond the registry — the whole point
-  is finding processes the registry has forgotten. Matching live processes by
-  command pattern (`opencode run` / `claude -p` / `qwen` / `codex exec`) is
-  the pragmatic approach; be careful not to claim unrelated user processes
-  (e.g. an `opencode` the human is running by hand in a terminal) as RepoOS's
-  own. State the heuristic you chose and its false-positive risk in the PR.
+- To discover orphans you need to look beyond the in-memory registry. Prefer a
+  persisted RepoOS ownership record containing task id, pid, start time,
+  executable, and workdir. Command-pattern matches (`opencode run`, `claude
+  -p`, `qwen`, `codex exec`) may identify candidates, but must remain visibly
+  unverified so an unrelated human-run process is not misattributed.
 - `%cpu` from `ps` on macOS is an average over the process's lifetime, not an
   instantaneous sample — a long-lived process that was busy an hour ago can
   still report a high number. If you want a true instantaneous reading,
@@ -164,4 +161,6 @@ Control"), sitting alongside the existing stat cards:
 
 ## Activity
 
+- 2026-08-11T13:49:16Z · created · unknown
 - 2026-08-11T14:06:54Z · status inbox→ready
+- 2026-08-11T15:37:46Z · updated · make orphan attribution safe against unrelated user processes

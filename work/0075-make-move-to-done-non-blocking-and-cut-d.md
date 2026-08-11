@@ -9,14 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-move-to-done-non-blocking-and-cut-d
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T14:30:27Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
-## Activity
-
-- 2026-08-11T05:10:50Z · created · unknown
-- 2026-08-11T05:24:19Z · status inbox→ready
-
-
 ## Problem
 
 The review → done close-out (`completeTask` in `src/server/done.ts`, driven by
@@ -94,17 +88,11 @@ things follow from that:
   route around the `actionMatch[2] === "done"` branch), `src/commands/check.ts`
   (`cmdCheck` / `runUISmokeTest`), `scripts/capture-screenshots.mjs`,
   `src/ui-app/src/components/TaskDrawer.vue`, `src/ui-app/src/stores/repo.ts`.
-- **Sequence after #0069, not before.** #0069 ("Surface mutation errors
-  visibly and stop branch drift from blocking move-to-done") is being
-  implemented concurrently and touches the same done-flow surface: toast
-  errors on mutation failure, a fast conflict pre-flight before the expensive
-  build/check, inline done-failure detail in the drawer, and auto-sync of
-  `main` into a task's branch on transition to `review`. Do not start this
-  task until #0069 has merged to `main` — check `git log main -- src/server/done.ts
-  src/server/server.ts src/ui-app/src/components/TaskDrawer.vue` for #0069's
-  merge commit first, and rebase this work on top of it rather than working
-  from a stale `main`. Expect the pre-flight conflict check from #0069 to
-  become the natural first step before the async kickoff this task adds.
+- **Sequence after #0095.** #0069 is done and its conflict pre-flight/error UI
+  are now baseline behavior. #0095 is actively changing the same review→done
+  synchronization path to make sync automatic. Do not resume this task's stale
+  worktree until #0095 reaches done; then sync/rebase onto current `main` and
+  preserve #0095's retry semantics while making the operation asynchronous.
 - Don't change the conflict-resolution or auto-merge semantics in
   `mergeBranch`/`autoResolve` — that's #0069's territory, not this task's.
   This task is about the request/response lifecycle and pipeline redundancy,
@@ -121,13 +109,15 @@ things follow from that:
 ## Related
 
 - 0069 · Surface mutation errors visibly and stop branch drift from blocking
-  move-to-done — must merge first; this task builds on its pre-flight and
-  drawer changes.
+  move-to-done — done; this task builds on its pre-flight and drawer changes.
+- 0095 · Automatic sync-and-retry during review completion — must land first.
 - 0047 · Add a Move-to-done action for review tasks (original implementation)
 - 0053 · Keep agent logs and chat available in review state (SSE precedent)
 
 ## Activity
 
+- 2026-08-11T05:10:50Z · created · unknown
+- 2026-08-11T05:24:19Z · status inbox→ready
 - 2026-08-11T08:15:51Z · status ready→active, branch
 - 2026-08-11T06:45:00Z · blocked · Task explicitly requires #0069 to merge to main before this work starts. Checked: #0069 (`work/0069-surface-mutation-errors-visibly-and-stop.md`) is still `status: active` on branch `feat/0069-visible-errors-and-done-drift`, not merged into main (`git merge-base --is-ancestor` confirms not-an-ancestor; only "Merge branch 'main' into feat/0069-..." exists, i.e. main was merged into it, not the reverse). Waiting for #0069 to land before implementing.
 - 2026-08-11T12:12:44Z · needs_input
@@ -138,3 +128,4 @@ things follow from that:
 - 2026-08-11T14:11:48Z · status active→ready
 - 2026-08-11T14:12:09Z · status ready→active
 - 2026-08-11T14:30:27Z · status active→ready
+- 2026-08-11T15:37:46Z · updated · replace completed 0069 blocker with active 0095 dependency
