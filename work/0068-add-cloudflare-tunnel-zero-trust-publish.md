@@ -2,7 +2,7 @@
 id: "0068"
 title: Add Cloudflare Tunnel + Zero Trust publishing for local apps
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
