@@ -2,7 +2,7 @@
 id: "0104"
 title: Fix LiveIndex diff so needsInput/needsMerge changes produce SSE events
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
