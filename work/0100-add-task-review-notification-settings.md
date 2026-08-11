@@ -2,14 +2,14 @@
 id: "0100"
 title: Add task review notification settings
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-11T16:18:32Z"
+updated_at: "2026-08-11T16:19:20Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ This task covers local bell and browser push notifications for the `active`-to-`
 ## Activity
 
 - 2026-08-11T16:18:32Z · created · unknown
+- 2026-08-11T16:19:20Z · status inbox→ready
