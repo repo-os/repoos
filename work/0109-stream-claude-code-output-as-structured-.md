@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode/big-pickle
 created_at: "2026-08-11T20:16:14Z"
-updated_at: "2026-08-11T20:18:23Z"
+updated_at: "2026-08-11T20:19:02Z"
 ---
 ## Activity
 
@@ -171,3 +172,4 @@ Notes that matter:
 ## Activity
 
 - 2026-08-11T20:18:23Z · status inbox→ready
+- 2026-08-11T20:19:02Z · model_override
