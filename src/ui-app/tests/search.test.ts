@@ -31,6 +31,9 @@ function makeTask(over: Partial<Task>): Task {
       worktreePath: null,
       dirty: false,
     },
+    agentOverride: null,
+    cliOverride: null,
+    modelOverride: null,
     preview: null,
     ...over,
   };

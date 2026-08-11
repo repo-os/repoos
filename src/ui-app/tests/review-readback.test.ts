@@ -103,6 +103,9 @@ const task = (root: string): Task => ({
   absPath: join(root, "work", "0068-tunnel.md"),
   body: "",
   extra: {},
+  agentOverride: null,
+  cliOverride: null,
+  modelOverride: null,
   git: {
     branchExists: true,
     worktreeExists: true,

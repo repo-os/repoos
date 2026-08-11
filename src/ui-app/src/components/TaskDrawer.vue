@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -86,6 +86,7 @@ watch(
     // the drawer within a session. It is cleared only after a successful create.
     freeformError.value = "";
     draftSaved.value = null;
+    initFreeformOverrides();
   },
 );
 
@@ -101,7 +102,10 @@ async function createFreeform(): Promise<void> {
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = crypto.randomUUID();
   try {
-    const res = await repo.createFreeformTask(text, freeformRunId.value);
+    const overrides = freeformIsCustom.value
+      ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
+      : undefined;
+    const res = await repo.createFreeformTask(text, freeformRunId.value, overrides);
     // Agent error: keep the explanation in the textarea, show the error, and
     // point at the draft that preserved the capture.
     if (res.fallback && res.fallbackReason === "agent-failed") {
@@ -660,6 +664,188 @@ async function sendTurn(): Promise<void> {
     ui.saving = false;
   }
 }
+
+// ---- per-task agent override ----
+
+/** Enabled agents from the Agents page, used for the agent select. */
+const enabledAgents = computed(() => (config.agents ?? []).filter((a) => a.enabled));
+
+/** CLI options from agentsMeta. */
+const cliOptions = computed(() => config.agentsMeta.clis ?? []);
+/** Model options from agentsMeta. */
+const modelOptions = computed(() => config.agentsMeta.models ?? []);
+
+/** The base agent for the current task (engineer by default, or the configured role). */
+const baseAgent = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name === "engineer") ?? null;
+});
+
+/** Whether the current task has any override set. */
+const hasAgentOverride = computed(() => {
+  const t = ui.active;
+  return !!(t && (t.agentOverride || t.cliOverride || t.modelOverride));
+});
+
+/** Readout text for the agent tab: e.g. "engineer · opencode · big pickle" */
+const agentReadout = computed(() => {
+  const t = ui.active;
+  if (!t) return "";
+  const agentName = t.agentOverride || baseAgent.value?.name || "engineer";
+  const cli = t.cliOverride || baseAgent.value?.cli || "opencode";
+  const model = t.modelOverride || baseAgent.value?.model || "default";
+  return `${agentName} · ${cli} · ${model}`;
+});
+
+/** Draft overrides for the agent tab. These are the values the user is editing
+ *  but haven't saved yet. They are initialized from the task's current overrides
+ *  (or the base agent's defaults when none are set). */
+const overrideDraft = reactive({
+  agent: "",
+  cli: "",
+  model: "",
+});
+
+/** Snapshot of the last-saved override values, used to detect changes. */
+const overrideSaved = reactive({
+  agent: "",
+  cli: "",
+  model: "",
+});
+
+/** Initialize the override draft from the current task. */
+function initOverrideDraft(t: Task | null): void {
+  const base = baseAgent.value;
+  overrideDraft.agent = t?.agentOverride || base?.name || "";
+  overrideDraft.cli = t?.cliOverride || base?.cli || "";
+  overrideDraft.model = t?.modelOverride || base?.model || "";
+  overrideSaved.agent = overrideDraft.agent;
+  overrideSaved.cli = overrideDraft.cli;
+  overrideSaved.model = overrideDraft.model;
+}
+
+/** True when the override draft differs from the saved values. */
+const overrideDirty = computed(
+  () =>
+    overrideDraft.agent !== overrideSaved.agent ||
+    overrideDraft.cli !== overrideSaved.cli ||
+    overrideDraft.model !== overrideSaved.model,
+);
+
+/** True when the overrides differ from the base agent defaults. */
+const isCustom = computed(() => {
+  const base = baseAgent.value;
+  if (!base) return false;
+  return (
+    overrideDraft.agent !== base.name ||
+    overrideDraft.cli !== base.cli ||
+    overrideDraft.model !== base.model
+  );
+});
+
+watch(
+  () => ui.active,
+  (t) => { if (t) initOverrideDraft(t); },
+  { immediate: true },
+);
+
+/** Save the override draft to the task's frontmatter. */
+async function saveOverrides(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    const base = baseAgent.value;
+    // Send values that differ from the base agent; send null to clear overrides
+    // that match the base (so the server knows to remove them from frontmatter).
+    const agentVal = overrideDraft.agent !== (base?.name ?? "") ? overrideDraft.agent : null;
+    const cliVal = overrideDraft.cli !== (base?.cli ?? "") ? overrideDraft.cli : null;
+    const modelVal = overrideDraft.model !== (base?.model ?? "") ? overrideDraft.model : null;
+    await repo.patchTask(ui.active.id, {
+      agentOverride: agentVal,
+      cliOverride: cliVal,
+      modelOverride: modelVal,
+    });
+    // Re-init from the task's new state after patch (SSE task.updated will sync too).
+    overrideSaved.agent = overrideDraft.agent;
+    overrideSaved.cli = overrideDraft.cli;
+    overrideSaved.model = overrideDraft.model;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+/** Reset overrides to the base agent defaults. */
+async function resetOverrides(): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.patchTask(ui.active.id, {
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+    });
+    const base = baseAgent.value;
+    overrideDraft.agent = base?.name || "";
+    overrideDraft.cli = base?.cli || "";
+    overrideDraft.model = base?.model || "";
+    overrideSaved.agent = overrideDraft.agent;
+    overrideSaved.cli = overrideDraft.cli;
+    overrideSaved.model = overrideDraft.model;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+// ---- freeform agent override (one-shot) ----
+
+/** The PM agent's base config, for the freeform readout. */
+const freeformPmBase = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name === "pm") ?? null;
+});
+
+/** One-shot override state for the freeform pane. */
+const freeformOverride = reactive({
+  agent: "",
+  cli: "",
+  model: "",
+});
+
+/** Initialize freeform overrides from the PM agent defaults. */
+function initFreeformOverrides(): void {
+  const base = freeformPmBase.value;
+  freeformOverride.agent = base?.name || "";
+  freeformOverride.cli = base?.cli || "";
+  freeformOverride.model = base?.model || "";
+}
+
+/** Whether the freeform overrides differ from the PM agent defaults. */
+const freeformIsCustom = computed(() => {
+  const base = freeformPmBase.value;
+  if (!base) return false;
+  return (
+    freeformOverride.agent !== base.name ||
+    freeformOverride.cli !== base.cli ||
+    freeformOverride.model !== base.model
+  );
+});
+
+/** Readout text for the freeform pane: "PM agent: pm · opencode · big pickle" */
+const freeformReadout = computed(() => {
+  const agentName = freeformOverride.agent || freeformPmBase.value?.name || "pm";
+  const cli = freeformOverride.cli || freeformPmBase.value?.cli || "opencode";
+  const model = freeformOverride.model || freeformPmBase.value?.model || "default";
+  return `${agentName} · ${cli} · ${model}`;
+});
+
+/** Reset freeform overrides to the PM agent defaults. */
+function resetFreeformOverrides(): void {
+  initFreeformOverrides();
+}
 </script>
 
 <template>
@@ -709,6 +895,51 @@ async function sendTurn(): Promise<void> {
                 rows="10"
                 placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
               ></textarea>
+            </div>
+            <div class="ff-agent-bar">
+              <span class="ff-agent-readout">PM agent: {{ freeformReadout }}</span>
+              <div class="ff-agent-controls">
+                <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
+                  <SelectTrigger class="override-trigger">
+                    <SelectValue placeholder="agent" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
+                  <SelectTrigger class="override-trigger">
+                    <SelectValue placeholder="CLI" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Select v-model="freeformOverride.model" :disabled="freeformRunning">
+                  <SelectTrigger class="override-trigger">
+                    <SelectValue placeholder="model" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Button
+                  v-if="freeformIsCustom"
+                  variant="ghost"
+                  size="sm"
+                  :disabled="freeformRunning"
+                  @click="resetFreeformOverrides"
+                  title="Reset to PM defaults"
+                >
+                  <RotateCcw class="size-3" />
+                </Button>
+              </div>
             </div>
             <div v-if="!pmAgentReady" class="ff-notice">
               No PM agent is configured.
@@ -1204,6 +1435,51 @@ async function sendTurn(): Promise<void> {
           </div>
         </div>
         <div v-else class="drawer-body" :class="{ 'transition-success': transitioned }">
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-override-readout">
+              <span class="agent-readout-text">{{ agentReadout }}</span>
+              <span v-if="isCustom" class="agent-custom-badge">custom</span>
+            </div>
+            <div class="agent-override-controls">
+              <Select v-model="overrideDraft.agent" :disabled="ui.saving">
+                <SelectTrigger class="override-trigger">
+                  <SelectValue placeholder="agent" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <Select v-model="overrideDraft.cli" :disabled="ui.saving">
+                <SelectTrigger class="override-trigger">
+                  <SelectValue placeholder="CLI" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <Select v-model="overrideDraft.model" :disabled="ui.saving">
+                <SelectTrigger class="override-trigger">
+                  <SelectValue placeholder="model" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <template v-if="overrideDirty">
+                <Button variant="outline" size="sm" :disabled="ui.saving" @click="saveOverrides">Save</Button>
+                <Button variant="ghost" size="sm" :disabled="ui.saving" @click="initOverrideDraft(ui.active)">Cancel</Button>
+              </template>
+              <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
+                <RotateCcw class="size-3" />
+              </Button>
+            </div>
+          </div>
           <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
             <span class="agent-waiting-dot"></span>
             <div>

@@ -265,6 +265,44 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
 }
 
 /**
+ * Resolve the agent for a specific task, honoring per-task overrides.
+ *
+ * When the task has an `agentOverride`, the enabled agent with that name is
+ * used (falling back to the base agent when the override name matches). When
+ * only `cliOverride` or `modelOverride` are set (without a different agent
+ * name), the base agent's name and instructions are kept but cli/model are
+ * overridden.
+ *
+ * @param config  Global config (provides the agents list and defaults).
+ * @param task    The task being run (may carry overrides).
+ * @param role    The role to resolve when no agent override is set (default: "engineer").
+ * @returns A merged Agent, or null when no matching enabled agent exists.
+ */
+export function resolveAgentForTask(
+  config: RepoOSConfig,
+  task: Task,
+  role: string = "engineer",
+): Agent | null {
+  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
+  if (!hasOverride) {
+    return list.find((a) => a.enabled && a.name === role) ?? null;
+  }
+
+  // Resolve the base agent: use the override name if set, else the role.
+  const baseName = task.agentOverride || role;
+  const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+  if (!base) return null;
+
+  // Merge overrides onto the base agent.
+  return {
+    ...base,
+    ...(task.cliOverride ? { cli: task.cliOverride } : {}),
+    ...(task.modelOverride ? { model: task.modelOverride } : {}),
+  };
+}
+
+/**
  * Map an agent `cli` string to the binary + args that run it headless.
  *
  * opencode re-resolves its project directory from `--git-common-dir`, which

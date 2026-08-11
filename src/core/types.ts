@@ -53,6 +53,12 @@ export interface TaskFrontmatter {
   /** @deprecated use updated_at */
   updated?: string;
   tags?: string[];
+  /** Per-task agent name override (e.g. "engineer", "pm", or a custom agent). */
+  agent_override?: string;
+  /** Per-task CLI override (e.g. "opencode", "claude code"). */
+  cli_override?: string;
+  /** Per-task model override (e.g. "default", "big pickle"). */
+  model_override?: string;
   [key: string]: unknown;
 }
 
@@ -86,6 +92,12 @@ export interface Task {
   body: string;
   /** Frontmatter keys we did not explicitly model. Preserved on write. */
   extra: Record<string, unknown>;
+  /** Per-task agent name override, or null when using the default. */
+  agentOverride: string | null;
+  /** Per-task CLI override, or null when using the agent's default. */
+  cliOverride: string | null;
+  /** Per-task model override, or null when using the agent's default. */
+  modelOverride: string | null;
 
   /** Live git facts, populated by the git layer (best-effort). */
   git: TaskGitInfo;
