@@ -6,7 +6,7 @@
   config loading, live in-memory index.
 - `src/server` — HTTP + SSE server. Clients subscribe to repo events; the
   index pushes change frames over one long-lived connection.
-- `src/ui` — the single-file web UI (Vue 3 + Tailwind v4), served from
+- `src/ui-app` — the Vite + Vue 3 SFC web UI (Tailwind v4), served from
   `dist/ui/`.
 - `src/commands` — the CLI (`list`, `serve`, `check`, …) that powers the
   agent-facing loop.

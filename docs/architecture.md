@@ -21,7 +21,7 @@ of truth, and everything else is derived.
        |
        +-- src/server                    long-lived: API + SSE + watcher
                   |
-             src/ui                       the web UI, served by the server
+             src/ui-app                   the Vite + Vue 3 web UI, served by the server
 
 ## Layers
 
@@ -61,15 +61,14 @@ Adds liveness over the one-shot core. No new business logic.
   writing, so concurrent edits to the same file don't clobber.
 - `server.ts` — dependency-free HTTP server (Node/Bun http): the JSON API, the
   SSE stream at `/api/events`, static serving of the UI at `/`, and read-only
-  serving of markdown docs for the Context view. Vue is vendored and served
-  locally so the UI works fully offline.
+  serving of markdown docs for the Context view.
 
-### src/ui — the web UI
+### src/ui-app — the web UI
 
-A single self-contained `app.html` (Vue via the vendored runtime, no build step
-for the page itself). Reads from the API on load, subscribes to the SSE stream,
-renders the dashboard / work board / context viewer. Responsive: sidebar on
-desktop, bottom tabs on mobile. Built into `dist/ui/` by the asset-copy step.
+The Vite + Vue 3 SFC application reads from the API on load, subscribes to the
+SSE stream, and renders the dashboard / work board / context viewer.
+Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
+`dist/ui/`.
 
 ## Data flow
 
@@ -100,6 +99,7 @@ nothing about RepoOS itself.
 
 ## Build and layout notes
 
-`bun run build` runs tsc then copies `src/ui` (incl. vendored Vue) into `dist/`.
-The published package ships prebuilt `dist/`, so users never compile. NodeNext
-modules mean `.ts` source uses `.js` import specifiers — intentional, not a bug.
+`bun run build` runs tsc, copies server assets, and builds `src/ui-app/` with
+Vite into `dist/ui/`. The published package ships prebuilt `dist/`, so users
+never compile. NodeNext modules mean `.ts` source uses `.js` import specifiers
+— intentional, not a bug.

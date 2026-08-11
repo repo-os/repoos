@@ -81,7 +81,8 @@ How the code is organized, low to high:
 - **cli / commands** (`src/cli`, `src/commands`) — one-shot `repoos` commands.
 - **server** (`src/server`) — the long-lived process adding *liveness*: an
   in-memory index, a file watcher, the JSON API, and the SSE stream.
-- **ui** (`src/ui`) — the web control plane, served by the server, updating live.
+- **ui** (`src/ui-app`) — the Vite + Vue 3 SFC web control plane, served by the
+  server and updating live.
 
 (Full map: `docs/architecture.md`.)
 

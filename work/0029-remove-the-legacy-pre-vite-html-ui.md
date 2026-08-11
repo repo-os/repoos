@@ -2,7 +2,7 @@
 id: "0029"
 title: Remove the legacy pre-Vite HTML UI
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai

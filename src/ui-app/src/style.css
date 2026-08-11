@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Faithful port of src/ui/app.html design tokens + component styles.
- * Dark / neon / glass aesthetic. Tailwind utilities are layered on top.
+ * Design tokens and component styles for the dark / neon / glass aesthetic.
+ * Tailwind utilities are layered on top.
  */
 
   :root{
