@@ -72,6 +72,26 @@ const ACTIONS: Partial<Record<Task["status"], CardAction>> = {
   },
 };
 
+interface CardHint {
+  label: string;
+  title: string;
+  cls: string;
+}
+
+const hint = computed<CardHint | null>(() => {
+  const t = props.task;
+  if (t.status === "active") {
+    if (repo.isRunning(t.id)) {
+      return { label: "running", title: "agent running — click to watch the session", cls: "tc-run" };
+    }
+    if (t.needsInput) {
+      return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
+    }
+    return { label: "not running", title: "active but no agent process detected — check the task", cls: "tc-stalled" };
+  }
+  return null;
+});
+
 const action = computed<CardAction | null>(() => ACTIONS[props.task.status] ?? null);
 
 async function runAction(): Promise<void> {
@@ -150,7 +170,13 @@ async function openAgent(): Promise<void> {
       </span>
     </div>
     <div class="tc-foot">
-      <span v-if="task.git && task.git.branchExists" class="tc-git" title="branch exists locally">●</span>
+      <span
+        v-if="hint"
+        class="tc-hint"
+        :class="hint.cls"
+        :title="hint.title"
+        @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
+      >{{ hint.label }}</span>
       <span
         v-if="task.status === 'ready' && task.git?.dirty"
         class="tc-dirty"
@@ -160,12 +186,6 @@ async function openAgent(): Promise<void> {
             : 'branch has unmerged work — restarting asks to resume or start clean'
         "
       >dirty</span>
-      <span
-        v-if="(task.status === 'active' || task.status === 'review') && repo.isRunning(task.id)"
-        class="tc-run"
-        title="agent running — click to watch the session"
-        @click.stop="openAgent"
-      >running</span>
       <div v-if="action" class="tc-actions">
         <button
           class="tc-btn"

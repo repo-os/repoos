@@ -112,9 +112,4 @@ signal.
 
 - 2026-08-11T03:27:18Z · created · unknown
 - 2026-08-11T03:51:14Z · status inbox→ready
-- 2026-08-11T12:20:01Z · status ready→active, branch
-- 2026-08-11T13:46:01Z · status active→ready
-- 2026-08-11T15:37:46Z · updated · remove false stalled/dead inference and depend on 0070 semantics
-- 2026-08-11T17:47:33Z · status ready→active
-- 2026-08-11T18:20:57Z · status active→ready
-- 2026-08-11T18:21:00Z · status ready→active
+- 2026-08-12T00:00:00Z · status ready→review
