@@ -305,7 +305,7 @@
   @keyframes flash{0%{box-shadow:0 0 0 2px var(--cyan)}100%{box-shadow:0 0 0 2px transparent}}
   .task-card.transition-success{animation:waveColor .55s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
   .task-card.transition-success::after{content:"";position:absolute;inset:-2px;border-radius:15px;pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--cyan-dim) 30%,var(--violet-dim) 50%,var(--cyan-dim) 70%,transparent 100%);background-size:300% 100%;animation:waveColorBg .55s cubic-bezier(.4,0,.2,1);z-index:0}
-  @keyframes waveColor{0%{box-shadow:0 0 0 0 transparent;transform:scale(1)}30%{box-shadow:0 0 16px 2px var(--violet-dim);transform:scale(1.015)}100%{box-shadow:0 0 0 0 transparent;transform:scale(1)}}
+  @keyframes waveColor{0%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 16px 2px var(--violet-dim)}100%{box-shadow:0 0 0 0 transparent}}
   @keyframes waveColorBg{0%{background-position:100% 0;opacity:0}20%{opacity:1}80%{opacity:1}100%{background-position:-100% 0;opacity:0}}
   .board-ghost{animation:ghostFade .5s ease-out forwards;border:1px solid var(--cyan);border-radius:13px;padding:18px;text-align:center;color:var(--cyan);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
   @keyframes ghostFade{0%{opacity:0;transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 0 12px var(--cyan-dim)}25%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(4px);border-color:transparent;box-shadow:none}}
