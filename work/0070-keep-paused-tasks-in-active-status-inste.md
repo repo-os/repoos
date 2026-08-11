@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/keep-paused-tasks-in-active-status-inste
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T18:36:27Z"
+updated_at: "2026-08-11T18:52:30Z"
 ---
 ## Problem
 
