@@ -2,7 +2,7 @@
 id: "0096"
 title: Make agent previews server-owned and protect the main server port
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -119,3 +119,4 @@ the main RepoOS process.
 ## Activity
 
 - 2026-08-11T15:22:46Z · status inbox→ready
+- 2026-08-12T00:00:00Z · status active→review
