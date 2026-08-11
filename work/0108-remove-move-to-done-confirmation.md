@@ -8,8 +8,10 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: gpt-5.6-terra
 created_at: "2026-08-11T20:02:12Z"
-updated_at: "2026-08-11T20:02:19Z"
+updated_at: "2026-08-11T20:02:41Z"
 ---
 ## Problem
 
@@ -36,3 +38,4 @@ The task panel should show the existing prominent "Move to done" button. Clickin
 
 - 2026-08-11T20:02:12Z · created · unknown
 - 2026-08-11T20:02:19Z · status inbox→ready
+- 2026-08-11T20:02:41Z · cli_override, model_override
