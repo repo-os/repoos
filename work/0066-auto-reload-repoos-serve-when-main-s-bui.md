@@ -2,7 +2,7 @@
 id: "0066"
 title: Auto-reload repoos serve when main's build changes
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
