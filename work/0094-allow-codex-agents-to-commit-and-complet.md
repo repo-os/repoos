@@ -9,12 +9,13 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T14:42:54Z"
-updated_at: "2026-08-11T14:45:55Z"
+updated_at: "2026-08-11T14:47:51Z"
 ---
 ## Activity
 
 - 2026-08-11T14:42:54Z · created · unknown
 - 2026-08-11T14:45:55Z · updated · specify RepoOS-owned sandbox handoff
+- 2026-08-11T14:47:51Z · updated · make API-first privilege separation explicit
 
 
 ## Problem
@@ -51,10 +52,17 @@ The UI/transcript clearly distinguishes agent work from server-side handoff
 finalization and reports any actionable failure without falsely marking the
 task blocked for an agent permission it should never need.
 
+As a general architectural rule, agent workflows should request privileged
+RepoOS operations through narrow, validated RepoOS APIs. Expanding an agent's
+filesystem, Git, or process permissions is an exceptional fallback only when no
+appropriate RepoOS operation can exist.
+
 ## Acceptance criteria
 
 - [ ] Add one trusted, task-scoped handoff operation in the RepoOS server/API
       layer; reuse it for initial and resumed agent runs.
+- [ ] Document and preserve the API-first boundary: agents express intent and
+      RepoOS performs privileged repository mutations after validation.
 - [ ] The handoff validates the task id, active run/session, expected worktree,
       and expected branch before changing files or Git state.
 - [ ] RepoOS runs `repoos check` in the task worktree and refuses to move the
@@ -86,6 +94,9 @@ task blocked for an agent permission it should never need.
   second task-file writer.
 - Keep the privileged Git actions inside RepoOS's server/runner process and
   constrain them to the registered worktree and branch.
+- Prefer adding a narrow RepoOS API operation whenever a future agent workflow
+  needs privileges beyond its task workspace. Do not add agent-specific
+  permission exceptions merely to bypass an orchestration gap.
 - Do not expose a general command-execution API. Do not solve this by weakening
   the Codex sandbox globally.
 - Likely implementation areas are `src/server/agents.ts`, `src/server/server.ts`,
