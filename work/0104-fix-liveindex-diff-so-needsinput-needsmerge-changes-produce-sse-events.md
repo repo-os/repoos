@@ -2,7 +2,7 @@
 id: "0104"
 title: Fix LiveIndex diff so needsInput/needsMerge changes produce SSE events
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-liveindex-diff-so-needsinput-needsme
 cli_override: codex
 model_override: gpt-5.6-sol
 created_at: "2026-08-11T14:00:00Z"
-updated_at: "2026-08-11T19:26:45Z"
+updated_at: "2026-08-11T19:36:12Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ same as it already does for `status` and `title` changes.
 
 - 2026-08-11T19:26:42Z · cli_override, model_override
 - 2026-08-12T03:34:00Z · status active→review · 7 added fields, repoos check green
+- 2026-08-11T19:36:12Z · status review→done
