@@ -2,14 +2,14 @@
 id: "0097"
 title: Generate cached task context packs and bootstrap worktrees before launching agents
 type: feature
-status: ready
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/generate-cached-task-context-packs-and-b
 created_at: "2026-08-11T15:19:05Z"
-updated_at: "2026-08-11T15:20:17Z"
+updated_at: "2026-08-11T15:23:50Z"
 ---
 ## Problem
 
@@ -133,3 +133,4 @@ of spending several minutes on repeated orientation.
 
 - 2026-08-11T15:19:05Z · created · unknown
 - 2026-08-11T15:20:17Z · status inbox→ready
+- 2026-08-11T15:23:50Z · status ready→active, branch
