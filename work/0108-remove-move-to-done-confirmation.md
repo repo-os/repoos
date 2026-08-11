@@ -2,14 +2,14 @@
 id: "0108"
 title: Remove move-to-done confirmation
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T20:02:12Z"
-updated_at: "2026-08-11T20:02:12Z"
+updated_at: "2026-08-11T20:02:19Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ The task panel should show the existing prominent "Move to done" button. Clickin
 ## Activity
 
 - 2026-08-11T20:02:12Z · created · unknown
+- 2026-08-11T20:02:19Z · status inbox→ready
