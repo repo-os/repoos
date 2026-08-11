@@ -2,14 +2,14 @@
 id: "0102"
 title: Add new document creation to Context
 type: feature
-status: ready
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T16:28:09Z"
-updated_at: "2026-08-11T17:40:49Z"
+updated_at: "2026-08-11T17:40:54Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ The panel has two tabs:
 - 2026-08-11T17:37:51Z · status inbox→ready
 - 2026-08-11T17:40:46Z · status ready→inbox
 - 2026-08-11T17:40:49Z · status inbox→ready
+- 2026-08-11T17:40:54Z · status ready→inbox
