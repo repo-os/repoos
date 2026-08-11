@@ -2,7 +2,7 @@
 id: "0092"
 title: Refresh product documentation to match the current implementation
 type: chore
-status: ready
+status: review
 priority: p2
 area: docs
 assigned_to: ai
@@ -80,3 +80,4 @@ recurring.
 - 2026-08-11T14:22:03Z · created · unknown
 - 2026-08-11T15:37:46Z · updated · reflect completed legacy-UI removal and prepare the focused docs refresh
 - 2026-08-11T15:42:16Z · status inbox→ready
+- 2026-08-12T00:27:22Z · status ready→review
