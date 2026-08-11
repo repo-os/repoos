@@ -123,5 +123,4 @@ Two costs, both real:
 ## Activity
 
 - 2026-08-11T13:30:50Z · status inbox→ready
-- 2026-08-11T14:57:09Z · status ready→active, branch
-- 2026-08-11T15:13:36Z · status active→review
+- 2026-08-11T15:13:36Z · status ready→review

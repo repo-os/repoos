@@ -385,9 +385,42 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
-  const stopPreviewIfLeft = (_task: Task, _prev: Status, next: Status): void => {
-    if (next !== "active" && next !== "review") void previews.stop(_task.id);
+  const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
+    if (next !== "active" && next !== "review") void previews.stop(task.id);
   };
+
+  // A task that leaves `active` must also release its agent process (0087) —
+  // by ANY route: agent self-transition, API PATCH, pause, or a direct file
+  // edit. This reuses the exact graceful path `/pause` uses (`runner.stop`:
+  // SIGTERM, then SIGKILL after the grace period, clearing the registry on
+  // exit), so an agent turn can never keep running against a task that no
+  // longer claims it — the 3h54m leak observed on #0069. The SESSION
+  // (transcript + resumable session id) lives in `sessions`, not `entries`,
+  // and `stop()` only clears `entries` — so logs and chat stay available in
+  // review (0053) and a follow-up message still resumes the same conversation.
+  // Idempotent: a task whose agent already exited on its own is a silent no-op.
+  const stopAgentIfLeftActive = (task: Task, prev: Status, next: Status): void => {
+    if (prev === "active" && next !== "active") void runner.stop(task.id);
+  };
+
+  // Combined status-change hook for the patchTaskFile write paths.
+  const onStatusChange = (task: Task, prev: Status, next: Status): void => {
+    stopPreviewIfLeft(task, prev, next);
+    stopAgentIfLeftActive(task, prev, next);
+  };
+
+  // The file-watcher path (a direct task-file edit on disk) bypasses
+  // patchTaskFile, so it never fires `onStatusChange`. The index's own event
+  // stream sees EVERY status change from every route (HTTP PATCH, /done,
+  // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
+  // there. Both firing for a single transition is harmless: `previews.stop` and
+  // `runner.stop` are idempotent.
+  const unsubscribeCleanup = index.on((e) => {
+    if (e.type !== "task.updated") return;
+    const prev = e.prev.status;
+    if (prev === undefined || prev === e.task.status) return;
+    onStatusChange(e.task, prev, e.task.status);
+  });
 
   interface SyncResult {
     ok: boolean;
@@ -411,7 +444,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
-        onStatusChange: stopPreviewIfLeft,
+        onStatusChange: onStatusChange,
       });
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
@@ -669,7 +702,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const body = (await readBody(req)) as TaskPatch;
         const prevStatus = existing.status;
         const updated = patchTaskFile(config, existing.absPath, body, {
-          onStatusChange: stopPreviewIfLeft,
+          onStatusChange: onStatusChange,
         });
         index.applyFileChange(updated.absPath);
 
@@ -736,7 +769,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch, {
-            onStatusChange: stopPreviewIfLeft,
+            onStatusChange: onStatusChange,
           });
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
@@ -774,6 +807,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           // The merge removes the worktree, so the preview of it must die first.
           await previews.stop(id);
+          // ... and any agent process must be released too, so the worktree is
+          // never torn out from under a live process. The 409 above guards the
+          // case of a genuinely-active turn; this is belt-and-braces for a turn
+          // still in its stop grace window. A no-op when nothing is running.
+          void runner.stop(id);
           const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
@@ -865,7 +903,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           status: "ready",
           needsInput: false,
         }, {
-          onStatusChange: stopPreviewIfLeft,
+          onStatusChange: onStatusChange,
         });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
@@ -1181,6 +1219,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           unsubscribe();
+          unsubscribeCleanup();
           watcher.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
