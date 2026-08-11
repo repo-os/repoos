@@ -616,6 +616,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!explanation) {
           return json(res, 400, { error: "explanation is required" });
         }
+        // The client generates a per-run id so the PM agent's streamed output
+        // (agent.output SSE events) can be correlated back to this request.
+        const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
 
         // Fallback helper: persist the raw explanation as a draft task so a
         // missing/failed PM agent never loses the user's capture.
@@ -641,7 +644,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return saveDraft("no-pm-agent");
         }
 
-        const result = await runPrompt(pm, pmPrompt(explanation), { cwd: config.root });
+        const result = await runPrompt(pm, pmPrompt(explanation), {
+          cwd: config.root,
+          onLine: runId
+            ? (line) => {
+                emitEvent({
+                  type: "agent.output",
+                  id: runId,
+                  entry: { s: "out", d: line },
+                  stream: "out",
+                  at: new Date().toISOString(),
+                });
+              }
+            : undefined,
+        });
         if (!result.ok || !result.output) {
           return saveDraft(
             "agent-failed",

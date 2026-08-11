@@ -468,11 +468,17 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * Unlike the streaming runner this is synchronous — callers wait for the whole
  * answer (e.g. freeform task creation). Never throws: failures and timeouts
  * resolve as `{ ok: false, error }` so an HTTP handler can respond cleanly.
+ *
+ * `onLine` streams each complete stdout line as it arrives (line-buffered, the
+ * same shape the runner uses) so a caller can forward live progress over SSE
+ * without waiting for the run to finish. It is called for real output only —
+ * never for a synthetic failure — and a trailing partial line is flushed on
+ * exit.
  */
 export function runPrompt(
   agent: Agent,
   prompt: string,
-  opts: { cwd?: string; timeoutMs?: number } = {},
+  opts: { cwd?: string; timeoutMs?: number; onLine?: (line: string) => void } = {},
 ): Promise<PromptResult> {
   const cwd = opts.cwd ?? process.cwd();
   const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
@@ -489,7 +495,19 @@ export function runPrompt(
 
     const out: Buffer[] = [];
     const errOut: Buffer[] = [];
-    proc.stdout?.on("data", (c: Buffer) => out.push(c));
+    let pending = "";
+    const forwardChunk = (c: Buffer): void => {
+      out.push(c);
+      if (!opts.onLine) return;
+      pending += c.toString("utf8").replace(/\r/g, "\n");
+      const parts = pending.split("\n");
+      pending = parts.pop() ?? "";
+      for (const part of parts) {
+        if (part.length === 0) continue;
+        opts.onLine(part);
+      }
+    };
+    proc.stdout?.on("data", forwardChunk);
     proc.stderr?.on("data", (c: Buffer) => errOut.push(c));
 
     const timer = setTimeout(() => {
@@ -506,6 +524,9 @@ export function runPrompt(
 
     const done = (): void => {
       clearTimeout(timer);
+      // Flush a trailing line with no final newline so nothing is held back.
+      if (opts.onLine && pending.trim()) opts.onLine(pending.trimEnd());
+      pending = "";
       const output = Buffer.concat(out).toString("utf8").trim();
       const stderr = Buffer.concat(errOut).toString("utf8").trim();
       if (output) {
@@ -517,7 +538,9 @@ export function runPrompt(
         : "no output produced";
       resolve({ ok: false, error: `${cmd} exited without output: ${reason}` });
     };
-    proc.on("exit", () => done());
+    // `close` (not `exit`) fires only after stdio has drained, so a trailing
+    // line with no final newline is still readable when we flush it.
+    proc.on("close", () => done());
     proc.on("error", (err) => {
       clearTimeout(timer);
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });

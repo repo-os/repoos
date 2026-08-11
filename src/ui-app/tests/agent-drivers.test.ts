@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, promptCommand } from "../../server/agents";
+import { AgentRunner, promptCommand, runPrompt } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -321,6 +321,113 @@ describe("claude code driver", () => {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();
+    }
+  });
+});
+
+describe("runPrompt live streaming (0049)", () => {
+  /**
+   * `runPrompt` drives the freeform PM agent. Its `onLine` hook is what lets
+   * the drawer stream the PM agent's output live over SSE instead of showing
+   * a static "saving" — these assertions keep that contract intact.
+   */
+  it("calls onLine per stdout line as it arrives, before the run resolves", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-runprompt-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    const streamingBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+const lines = ["line one", "line two", "line three"];
+let i = 0;
+const tick = () => {
+  if (i < lines.length) {
+    process.stdout.write(lines[i++] + "\\n");
+    setTimeout(tick, 40);
+  }
+};
+tick();
+`;
+    writeFileSync(join(bin, "opencode"), streamingBin, { mode: 0o755 });
+    const log = join(root, "spawns.log");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = log;
+    try {
+      const seen: string[] = [];
+      let resolved = false;
+      const result = await runPrompt(agent("opencode"), "ping", {
+        cwd: bin,
+        onLine: (line) => {
+          seen.push(line);
+          // The line arrives BEFORE the promise resolves — that is what makes
+          // the freeform drawer's live stream live rather than a replay.
+          expect(resolved).toBe(false);
+        },
+      });
+      resolved = true;
+      expect(result.ok).toBe(true);
+      expect(result.output).toBe("line one\nline two\nline three");
+      expect(seen).toEqual(["line one", "line two", "line three"]);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("flushes a trailing partial line with no final newline", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-runprompt-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    const trailingBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("partial-no-newline");
+`;
+    writeFileSync(join(bin, "opencode"), trailingBin, { mode: 0o755 });
+    const log = join(root, "spawns.log");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = log;
+    try {
+      const seen: string[] = [];
+      const result = await runPrompt(agent("opencode"), "ping", {
+        cwd: bin,
+        onLine: (line) => seen.push(line),
+      });
+      expect(result.ok).toBe(true);
+      expect(result.output).toBe("partial-no-newline");
+      expect(seen).toEqual(["partial-no-newline"]);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not stream anything when no onLine hook is given", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-runprompt-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    const plainBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("plain answer\\n");
+`;
+    writeFileSync(join(bin, "opencode"), plainBin, { mode: 0o755 });
+    const log = join(root, "spawns.log");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = log;
+    try {
+      const result = await runPrompt(agent("opencode"), "ping", { cwd: bin });
+      expect(result.ok).toBe(true);
+      expect(result.output).toBe("plain answer");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });
