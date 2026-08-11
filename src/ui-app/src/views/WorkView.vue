@@ -75,6 +75,7 @@ const filterCol = computed<Column | null>(() => {
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
           :empty-text="filterCol!.id === 'draft' ? DRAFT_EMPTY : '—'"
           force-expand
+          :drag-enabled="false"
         />
       </template>
       <template v-else>

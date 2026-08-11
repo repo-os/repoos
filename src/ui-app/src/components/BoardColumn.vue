@@ -40,8 +40,8 @@ function applyDefaults(repo: ReturnType<typeof useRepoStore>) {
 }
 
 const props = withDefaults(
-  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean }>(),
-  { emptyText: "—", barColor: "", forceExpand: false }
+  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean }>(),
+  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true }
 );
 
 const repo = useRepoStore();
@@ -94,6 +94,51 @@ watch(collapsed, () => nextTick(checkScroll));
 
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
+const dragOver = ref(false);
+let dragDepth = 0;
+
+function onDragEnter(e: DragEvent): void {
+  if (!props.dragEnabled) return;
+  dragDepth++;
+  dragOver.value = true;
+  e.preventDefault();
+}
+
+function onDragOver(e: DragEvent): void {
+  if (!props.dragEnabled) return;
+  e.preventDefault();
+}
+
+function onDragLeave(): void {
+  if (!props.dragEnabled) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) dragOver.value = false;
+}
+
+async function onDrop(e: DragEvent): Promise<void> {
+  if (!props.dragEnabled) return;
+  e.preventDefault();
+  clearDragOver();
+  const id = e.dataTransfer?.getData("text/plain");
+  if (!id) return;
+  const task = repo.tasks.find((t) => t.id === id);
+  if (!task || task.status === props.col.id) return;
+  try {
+    await repo.setStatus(task, props.col.id);
+    if (collapsedIds.value.has(props.col.id)) toggle();
+  } catch (err) {
+    repo.onError(err);
+  }
+}
+
+function clearDragOver(): void {
+  dragDepth = 0;
+  dragOver.value = false;
+}
+
+window.addEventListener("repoos:board-dragend", clearDragOver);
+onUnmounted(() => window.removeEventListener("repoos:board-dragend", clearDragOver));
+
 const barTextColor = computed(() => {
   const hex = collapsedColor.value.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
@@ -116,7 +161,14 @@ const toggle = () => {
 </script>
 
 <template>
-  <div class="board-col" :class="{ collapsed, scrollable }">
+  <div
+    class="board-col"
+    :class="{ collapsed, scrollable, 'drag-over': dragOver }"
+    @dragenter="onDragEnter"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+  >
     <div
       class="col-head"
       role="button"
@@ -143,7 +195,7 @@ const toggle = () => {
       </svg>
     </div>
     <div ref="bodyEl" class="col-body">
-      <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" />
+      <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" :drag-enabled="dragEnabled" />
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
