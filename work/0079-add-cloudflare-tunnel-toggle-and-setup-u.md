@@ -2,14 +2,14 @@
 id: "0079"
 title: Add Cloudflare Tunnel toggle and setup UI to Settings page
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-cloudflare-tunnel-toggle-and-setup-u
 created_at: "2026-08-11T05:59:26Z"
-updated_at: "2026-08-11T17:15:04Z"
+updated_at: "2026-08-12T01:18:00Z"
 ---
 ## Problem
 
