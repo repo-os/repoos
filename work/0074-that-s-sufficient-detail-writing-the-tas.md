@@ -2,7 +2,7 @@
 id: "0074"
 title: Auto-scroll agent chat to latest message and show the human's own messages
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
