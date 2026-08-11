@@ -60,4 +60,4 @@ same as it already does for `status` and `title` changes.
 ## Activity
 
 - 2026-08-11T19:26:42Z · cli_override, model_override
-- 2026-08-11T19:26:45Z · status ready→active, branch
+- 2026-08-12T03:34:00Z · status active→review · 7 added fields, repoos check green

@@ -289,6 +289,13 @@ function diff(a: Task, b: Task): Partial<Task> {
     "assignedTo",
     "branch",
     "type",
+    "needsInput",
+    "needsMerge",
+    "agentOverride",
+    "cliOverride",
+    "modelOverride",
+    "created_at",
+    "updated_at",
   ];
   const out: Partial<Task> = {};
   for (const f of fields) {
