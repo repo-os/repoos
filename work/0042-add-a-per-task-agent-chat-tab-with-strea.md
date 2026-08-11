@@ -79,7 +79,7 @@ green `repoos check`.
   the SAME conversation.
 - **Resume spawn**: a follow-up turn re-invokes the CLI in resume mode
   (opencode `run --session <id>` / `--continue`; claude `-c --continue` /
-  `--resume <session-id>`) with the same cwd/branch/worktree as the original
+  `--resume <session-id>`) with the same cwd and worktree as the original
   launch. Verify the exact flags both CLIs accept during implementation and
   document them; degrade to "start a fresh session" with a clear note if resume
   is unavailable for a CLI.
@@ -105,7 +105,7 @@ green `repoos check`.
   repoos-managed location (e.g. `config.root/.repoos/transcripts/<taskId>.log`),
   so sessions survive server restarts and are reviewable after `done`.
 - **Review affordances**: show the transcript on a done task; link the task's
-  branch/worktree for diff review next to the transcript.
+  worktree for diff review next to the transcript.
 - **Acceptance (P3)**: transcript persists across a server restart; a done
   task's Agent tab still shows its final session; `repoos check` passes.
 

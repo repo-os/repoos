@@ -10,7 +10,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
-import type { RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
+import type { AgentOutputEntry, RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -31,7 +31,7 @@ export type RepoEvent =
   | {
       type: "agent.output";
       id: string;
-      data: string;
+      entry: AgentOutputEntry;
       stream: "out" | "err";
       at: string;
     }

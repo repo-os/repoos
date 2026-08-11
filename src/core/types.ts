@@ -121,6 +121,36 @@ export interface Agent {
   instructions?: string;
 }
 
+/**
+ * One entry of an agent session transcript.
+ *
+ * Legacy entries carry `s`/`d` — plain lines from claude (`-p`), qwen/codex
+ * stream-json, and sessions recorded before structured output. Entries derived
+ * from opencode's `--format json` event stream carry a `type` discriminator
+ * (`text`/`tool`/`step`/`sys`) so the UI can render them as cards instead of
+ * a flat wall of text.
+ */
+export type AgentOutputEntry =
+  /** A complete assistant text part (opencode `text` event). */
+  | { type: "text"; text: string }
+  /** A finished tool call (opencode `tool_use` event). */
+  | {
+      type: "tool";
+      tool: string;
+      /** Rendered input (bash -> its command, objects -> pretty JSON). */
+      input?: string;
+      /** Rendered output, or the error message when the call failed. */
+      output?: string;
+      /** Tool state: "completed" | "error" (absent when unknown). */
+      state?: string;
+    }
+  /** A step boundary (opencode `step_start` / `step_finish`). */
+  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
+  | { type: "sys"; d: string }
+  /** A legacy plain line, kept for claude / qwen / codex and old sessions. */
+  | { s: "out" | "err" | "sys"; d: string };
+
 /** A skill discovered from the skills dir (skills/<name>/SKILL.md). */
 export interface SkillMeta {
   /** Repo-relative path to the skill file, e.g. "skills/code-review/SKILL.md". */

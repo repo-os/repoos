@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { useConfigStore } from "../stores/config";
-import type { Agent } from "../types";
+import { api } from "../api";
+import type { Agent, DetectedAgent, ModelSourcesResponse } from "../types";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -40,15 +42,63 @@ const customAgents = computed(() =>
 
 const dirty = computed(() => JSON.stringify(localAgents.value) !== JSON.stringify(config.agents));
 
+const CLI_LABELS: Record<string, string> = {
+  "claude code": "Claude Code",
+  "qwen code": "qwen code",
+  codex: "codex",
+};
+
 const clis = computed(() =>
-  config.agentsMeta.clis.map((c) => ({ value: c, label: c === "claude code" ? "Claude Code" : c })),
+  config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
-const models = computed(() =>
-  config.agentsMeta.models.map((m) => ({
-    value: m,
-    label: m === "default" ? "Default" : m === "big pickle" ? "Big Pickle" : "DeepSeek v4",
-  })),
-);
+
+// ---- Live model list (opencode) ----
+// Fetched on mount from /api/models; the dropdown shows the static fallback
+// (config.agentsMeta.models) plus whatever the live probe returned. A Refresh
+// button re-probes with --refresh. When the endpoint is unavailable the page
+// degrades to the static list exactly as before.
+
+const liveModels = ref<string[]>([]);
+const modelsLoading = ref(false);
+
+function labelForModel(m: string): string {
+  if (m === "default") return "Default";
+  if (m === "big pickle") return "Big Pickle";
+  if (m === "deepseek v4") return "DeepSeek v4";
+  return m;
+}
+
+const models = computed(() => {
+  const out: { value: string; label: string }[] = [];
+  const seen = new Set<string>();
+  const push = (m: string) => {
+    if (seen.has(m)) return;
+    seen.add(m);
+    out.push({ value: m, label: labelForModel(m) });
+  };
+  for (const m of config.agentsMeta.models) push(m);
+  for (const m of liveModels.value) push(m);
+  // Stored values that resolve nowhere stay selectable so existing configs
+  // never silently lose a pinned model.
+  for (const a of localAgents.value) {
+    if (a.model) push(a.model);
+  }
+  return out;
+});
+
+async function loadModels(refresh = false): Promise<void> {
+  modelsLoading.value = true;
+  try {
+    const res = await api<ModelSourcesResponse>(
+      `/api/models${refresh ? "?refresh=1" : ""}`,
+    );
+    liveModels.value = res.byCli.opencode?.models ?? [];
+  } catch {
+    liveModels.value = [];
+  } finally {
+    modelsLoading.value = false;
+  }
+}
 
 function addCustom(): void {
   const name = newName.value.trim();
@@ -93,6 +143,95 @@ async function save(): Promise<void> {
   await config.saveAgents(localAgents.value.map((a) => ({ ...a, name: a.name.trim() })));
   sync();
 }
+
+// ---- Unsaved-changes guard ----
+// Leaving the Agents page (or the app) with local edits pending must ask for
+// confirmation instead of silently discarding them. `dirty` is the single
+// source of truth; when it is false neither prompt fires.
+
+function leaveGuard(): boolean {
+  if (!dirty.value) return true;
+  return window.confirm("You have unsaved agent changes. Leave the Agents page without saving?");
+}
+
+onBeforeRouteLeave(() => leaveGuard());
+
+function handleBeforeUnload(e: BeforeUnloadEvent): void {
+  if (!dirty.value) return;
+  e.preventDefault();
+  e.returnValue = "";
+}
+
+// ---- Detected coding agents ----
+
+const detected = ref<DetectedAgent[]>([]);
+const detectLoading = ref(false);
+const detectError = ref(false);
+const detectHintCopied = ref<string>("");
+
+type DetectStatus = "ok" | "desktop" | "missing";
+
+interface DetectRow {
+  agent: DetectedAgent;
+  status: DetectStatus;
+  statusLabel: string;
+  color: string;
+}
+
+const detectRows = computed<DetectRow[]>(() =>
+  detected.value.map((agent) => {
+    if (!agent.installed) {
+      return {
+        agent,
+        status: "missing",
+        statusLabel: "not installed",
+        color: "var(--red)",
+      };
+    }
+    if (agent.headless === false) {
+      return {
+        agent,
+        status: "desktop",
+        statusLabel: "desktop only",
+        color: "var(--amber)",
+      };
+    }
+    return { agent, status: "ok", statusLabel: "ready", color: "var(--green)" };
+  }),
+);
+
+async function checkAgents(): Promise<void> {
+  detectLoading.value = true;
+  detectError.value = false;
+  detectHintCopied.value = "";
+  try {
+    const data = await api<{ agents: DetectedAgent[] }>("/api/agents/detect");
+    detected.value = data.agents;
+  } catch {
+    detectError.value = true;
+    detected.value = [];
+  } finally {
+    detectLoading.value = false;
+  }
+}
+
+function copyHint(hint: string): void {
+  void navigator.clipboard?.writeText(hint).catch(() => undefined);
+  detectHintCopied.value = hint;
+  setTimeout(() => {
+    if (detectHintCopied.value === hint) detectHintCopied.value = "";
+  }, 1500);
+}
+
+onMounted(() => {
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  void checkAgents();
+  void loadModels();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+});
 </script>
 
 <template>
@@ -108,6 +247,16 @@ async function save(): Promise<void> {
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
+          <Button
+            variant="outline"
+            size="sm"
+            style="margin-left: auto"
+            :disabled="modelsLoading"
+            title="Re-probe opencode's live model list (opencode models --refresh)"
+            @click="loadModels(true)"
+          >
+            {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
+          </Button>
         </div>
         <div class="agent-desc">
           Built-in roles. Toggle them on or off and pick their coding agent and model.
@@ -240,13 +389,86 @@ async function save(): Promise<void> {
         </div>
       </Card>
 
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
-        <Button variant="default" @click="save" :disabled="config.saving || !config.loaded">
-          {{ config.saving ? "Saving…" : "Save agents" }}
-        </Button>
-        <span v-if="dirty" class="agent-dirty">unsaved changes</span>
+      <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+          <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
+          Detected coding agents
+        </div>
+        <div class="agent-desc">
+          What's on this machine's PATH — installed &amp; headless-ready, desktop-only, or missing. Click a hint to copy it.
+        </div>
+
+        <div v-if="detectLoading && !detected.length" class="detect-loading">
+          Probing PATH…
+        </div>
+        <div v-else-if="!detected.length" class="agent-empty">
+          No known coding agents detected on PATH.
+        </div>
+
+        <template v-else>
+          <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
+            <div class="detect-row-left">
+              <span class="detect-badge" :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"></span>
+              <span class="agent-name">{{ r.agent.name }}</span>
+              <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
+              <span class="agent-badge" :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'">
+                {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
+              </span>
+            </div>
+            <div class="detect-row-right">
+              <template v-if="r.agent.installed">
+                <span class="detect-bin">{{ r.agent.binary }}</span>
+                <span v-if="r.agent.path" class="detect-path" :title="r.agent.path">{{ r.agent.path }}</span>
+                <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
+                <span v-if="!r.agent.headless" class="detect-hint">
+                  Desktop app shadows PATH — install headless CLI:
+                  <code>{{ r.agent.installHint }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+              </template>
+              <template v-else>
+                <span class="detect-bin">{{ r.agent.binary }}</span>
+                <span class="detect-hint">
+                  <code>{{ r.agent.installHint }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <div class="detect-foot">
+            <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
+              {{ detectLoading ? "Checking…" : "Check again" }}
+            </Button>
+          </div>
+        </template>
+      </Card>
+
+      <div class="save-bar agents-savebar" :class="{ dirty }">
+        <div v-if="dirty" class="save-callout">
+          <span class="save-dot"></span>
+          <div>
+            <div class="save-title">Unsaved changes</div>
+            <div class="save-sub">Save to apply your edits</div>
+          </div>
+        </div>
         <div v-if="config.msg" class="save-msg ok">{{ config.msg }}</div>
         <div v-if="config.error" class="save-msg err">{{ config.error }}</div>
+        <div class="save-actions">
+          <Button
+            variant="default"
+            class="agents-save-btn"
+            :class="{ dirty }"
+            @click="save"
+            :disabled="config.saving || !config.loaded"
+          >
+            {{ config.saving ? "Saving…" : "Save agents" }}
+          </Button>
+        </div>
       </div>
     </template>
   </div>

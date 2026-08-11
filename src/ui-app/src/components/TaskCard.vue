@@ -1,33 +1,96 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
+  dragEnabled: true,
+});
 
 const ui = useUiStore();
 const repo = useRepoStore();
 
 const busy = ref(false);
+const dragging = ref(false);
 
-async function startWork(): Promise<void> {
-  if (busy.value) return;
-  busy.value = true;
-  try {
-    await repo.startWork(props.task);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    busy.value = false;
-  }
+function onDragStart(e: DragEvent): void {
+  if (!props.dragEnabled) return;
+  const dt = e.dataTransfer;
+  if (!dt) return;
+  dt.effectAllowed = "move";
+  dt.setData("text/plain", props.task.id);
+  dragging.value = true;
 }
 
-async function pauseWork(): Promise<void> {
-  if (busy.value) return;
+function onDragEnd(): void {
+  dragging.value = false;
+  window.dispatchEvent(new CustomEvent("repoos:board-dragend"));
+}
+
+interface CardAction {
+  label: string;
+  title: string;
+  icon: string;
+  variant: "start" | "pause" | "done" | "move";
+}
+
+const ACTIONS: Partial<Record<Task["status"], CardAction>> = {
+  draft: {
+    label: "Move to inbox",
+    title: "Move this proposal into the work queue",
+    icon: "M5 12h14m-6-6 6 6-6 6",
+    variant: "move",
+  },
+  inbox: {
+    label: "Move to ready",
+    title: "Queue this task as ready to start",
+    icon: "M5 12h14m-6-6 6 6-6 6",
+    variant: "move",
+  },
+  ready: {
+    label: "Start work",
+    title: "Launch the engineer agent on this task",
+    icon: "M8 5v14l11-7z",
+    variant: "start",
+  },
+  active: {
+    label: "Pause work",
+    title: "Stop the agent and return the task to ready",
+    icon: "M10 4H6v16h4zM18 4h-4v16h4z",
+    variant: "pause",
+  },
+  review: {
+    label: "Move to done",
+    title: "Merge the branch, run repoos check, and mark the task done",
+    icon: "M4 12l5 5L20 6",
+    variant: "done",
+  },
+};
+
+const action = computed<CardAction | null>(() => ACTIONS[props.task.status] ?? null);
+
+async function runAction(): Promise<void> {
+  if (busy.value || !action.value) return;
   busy.value = true;
   try {
-    await repo.pauseWork(props.task);
+    switch (props.task.status) {
+      case "draft":
+        await repo.setStatus(props.task, "inbox");
+        break;
+      case "inbox":
+        await repo.setStatus(props.task, "ready");
+        break;
+      case "ready":
+        await repo.startWork(props.task);
+        break;
+      case "active":
+        await repo.pauseWork(props.task);
+        break;
+      case "review":
+        await repo.completeTask(props.task);
+        break;
+    }
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -48,9 +111,13 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       running: repo.isRunning(task.id),
-      'has-action': task.status === 'ready' || task.status === 'active',
+      dragging,
+      'has-action': !!action,
     }"
+    :draggable="dragEnabled"
     @click="ui.openTask(task)"
+    @dragstart="onDragStart"
+    @dragend="onDragEnd"
   >
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>
@@ -60,48 +127,36 @@ async function openAgent(): Promise<void> {
     <div class="tc-title">{{ task.title }}</div>
     <div class="tc-tags">
       <span class="chip">{{ task.area }}</span>
-      <span class="chip" :class="{ ai: task.assignee === 'ai' }">
-        {{ task.assignee === "ai" ? "◆ AI" : task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
+      <span v-if="task.assignee !== 'ai'" class="chip">
+        {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
       </span>
     </div>
     <div class="tc-foot">
-      <span class="tc-branch" v-if="task.branch">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="2" />
-        </svg>
-        {{ task.branch.split("/").pop() }}
-      </span>
-      <span class="tc-git" v-if="task.git && task.git.branchExists" title="branch exists locally">●</span>
+      <span v-if="task.git && task.git.branchExists" class="tc-git" title="branch exists locally">●</span>
       <span
-        v-if="task.status === 'active' && repo.isRunning(task.id)"
+        v-if="(task.status === 'active' || task.status === 'review') && repo.isRunning(task.id)"
         class="tc-run"
         title="agent running — click to watch the session"
         @click.stop="openAgent"
       >running</span>
-      <div class="tc-actions">
+      <div v-if="action" class="tc-actions">
         <button
-          v-if="task.status === 'ready'"
-          class="tc-btn start"
+          class="tc-btn"
+          :class="action.variant"
           :disabled="busy"
-          title="Launch the engineer agent on this task"
-          @click.stop="startWork"
+          :title="action.title"
+          @click.stop="runAction"
         >
           <svg viewBox="0 0 24 24" fill="none">
-            <path d="M8 5v14l11-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path
+              :d="action.icon"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
-          Start work
-        </button>
-        <button
-          v-else-if="task.status === 'active'"
-          class="tc-btn pause"
-          :disabled="busy"
-          title="Stop the agent and return the task to ready"
-          @click.stop="pauseWork"
-        >
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M10 4H6v16h4zM18 4h-4v16h4z" stroke="currentColor" stroke-width="2" />
-          </svg>
-          Pause work
+          {{ busy ? "Working…" : action.label }}
         </button>
       </div>
     </div>

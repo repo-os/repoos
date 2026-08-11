@@ -96,7 +96,15 @@ processes left behind.
 ## Activity
 
 - 2026-08-06T17:57:47Z · created · nick
-- 2026-08-07T00:00:00Z · status ready→active · ai
-- 2026-08-11T00:28:41Z · status active→ready
-- 2026-08-11T00:28:41Z · status ready→active
+- 2026-08-06T18:03:05Z · status ready→active
+- 2026-08-10T22:24:09Z · status active→ready
+- 2026-08-10T22:24:10Z · status ready→active
+- 2026-08-10T22:57:49Z · status active→ready
+- 2026-08-10T22:57:50Z · status ready→active
+- 2026-08-10T23:37:36Z · status active→ready
+- 2026-08-10T23:37:45Z · status ready→active
+- 2026-08-11T00:23:14Z · status active→ready
+- 2026-08-11T00:23:16Z · status ready→active
+- 2026-08-11T01:11:29Z · status active→ready
+- 2026-08-11T01:11:33Z · status ready→active
 - 2026-08-11T01:20:07Z · status active→review · ai

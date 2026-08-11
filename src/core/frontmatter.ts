@@ -20,7 +20,7 @@ export interface ParsedDocument {
   hadFrontmatter: boolean;
 }
 
-const FM_DELIM = "---";
+export const FM_DELIM = "---";
 
 function coerceScalar(raw: string): unknown {
   const v = raw.trim();
@@ -28,10 +28,10 @@ function coerceScalar(raw: string): unknown {
   if (v === "true") return true;
   if (v === "false") return false;
   // quoted string
-  if (
-    (v.startsWith('"') && v.endsWith('"')) ||
-    (v.startsWith("'") && v.endsWith("'"))
-  ) {
+  if (v.startsWith('"') && v.endsWith('"')) {
+    return v.slice(1, -1).replace(/\\"/g, '"');
+  }
+  if (v.startsWith("'") && v.endsWith("'")) {
     return v.slice(1, -1);
   }
   // number (but keep zero-padded ids like 0012 as strings)
@@ -46,35 +46,43 @@ function parseInlineList(raw: string): unknown[] {
   return inner.split(",").map((s) => coerceScalar(s));
 }
 
-/** Parse a document string into {data, body}. Never throws on malformed YAML. */
-export function parseDocument(content: string): ParsedDocument {
-  const normalized = content.replace(/\r\n/g, "\n");
-  if (!normalized.startsWith(FM_DELIM)) {
-    return { data: {}, body: normalized, hadFrontmatter: false };
-  }
-  const end = normalized.indexOf(`\n${FM_DELIM}`, FM_DELIM.length);
-  if (end === -1) {
-    return { data: {}, body: normalized, hadFrontmatter: false };
-  }
-  const fmRaw = normalized.slice(FM_DELIM.length + 1, end);
-  // body starts after the closing delim line
-  const afterDelim = normalized.indexOf("\n", end + 1);
-  const body = afterDelim === -1 ? "" : normalized.slice(afterDelim + 1);
+interface FrontmatterScan {
+  data: Record<string, unknown>;
+  /** Index (within the scanned array) of the first non-frontmatter line. */
+  next: number;
+  /** True if at least one `key: value` line was parsed. */
+  sawKey: boolean;
+}
 
+/**
+ * Parse frontmatter key/value lines. In "closed" mode (between two `---`
+ * delimiters) lines that don't look like frontmatter are skipped, matching the
+ * historical behavior. In "unclosed" mode (frontmatter terminated by EOF) the
+ * first non-frontmatter line ends the block and starts the body.
+ */
+function scanFrontmatterLines(
+  lines: string[],
+  mode: "closed" | "unclosed",
+): FrontmatterScan {
   const data: Record<string, unknown> = {};
-  const lines = fmRaw.split("\n");
   let i = 0;
+  let sawKey = false;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.trim() === "" || line.trim().startsWith("#")) {
+    // YAML comments start with `#`; markdown headings (`## Section`) must not
+    // be treated as comments, or they would be dropped from the body.
+    const t = line.trim();
+    if (t === "" || /^#(?!#)/.test(t)) {
       i++;
       continue;
     }
     const m = line.match(/^([A-Za-z0-9_-]+):(.*)$/);
     if (!m) {
+      if (mode === "unclosed") break;
       i++;
       continue;
     }
+    sawKey = true;
     const key = m[1];
     const rest = m[2].trim();
 
@@ -103,8 +111,62 @@ export function parseDocument(content: string): ParsedDocument {
     }
     i++;
   }
+  return { data, next: i, sawKey };
+}
 
-  return { data, body, hadFrontmatter: true };
+/**
+ * Detect and parse a stray frontmatter block at the top of the body — the
+ * shape a task file gets when its unclosed-frontmatter body was written
+ * verbatim into the new file. Returns null unless the body starts with a `---`
+ * line followed by at least one frontmatter key. When it returns a scan,
+ * `next` is the index within `bodyLines` where the real body starts.
+ */
+function scanEmbeddedFrontmatter(bodyLines: string[]): FrontmatterScan | null {
+  const first = bodyLines.findIndex((l) => l.trim() !== "");
+  if (first === -1 || bodyLines[first].trim() !== FM_DELIM) return null;
+  const scan = scanFrontmatterLines(bodyLines.slice(first + 1), "unclosed");
+  if (!scan.sawKey) return null;
+  return { data: scan.data, next: first + 1 + scan.next, sawKey: true };
+}
+
+/** Parse a document string into {data, body}. Never throws on malformed YAML. */
+export function parseDocument(content: string): ParsedDocument {
+  const normalized = content.replace(/\r\n/g, "\n");
+  if (!normalized.startsWith(FM_DELIM)) {
+    return { data: {}, body: normalized, hadFrontmatter: false };
+  }
+  const lines = normalized.split("\n");
+
+  // A properly-closed frontmatter block ends at the first line that is exactly
+  // the delimiter. We also absorb a stray unclosed frontmatter block that the
+  // body starts with (a past createTask corrupted shape), merging its fields
+  // over the closed block's so a re-serialize comes out clean.
+  const closeIndex = lines.findIndex((l, i) => i > 0 && l === FM_DELIM);
+  if (closeIndex !== -1) {
+    const closed = scanFrontmatterLines(lines.slice(1, closeIndex), "closed");
+    const bodyLines = lines.slice(closeIndex + 1);
+    const embedded = scanEmbeddedFrontmatter(bodyLines);
+    if (embedded) {
+      return {
+        data: { ...closed.data, ...embedded.data },
+        body: bodyLines.slice(embedded.next).join("\n"),
+        hadFrontmatter: true,
+      };
+    }
+    return { data: closed.data, body: bodyLines.join("\n"), hadFrontmatter: true };
+  }
+
+  // No closing delimiter: treat the frontmatter as terminated by EOF (YAML
+  // documents may end without a trailing separator). Parse the leading
+  // frontmatter-shaped lines; the first non-frontmatter line starts the body.
+  const unclosed = scanFrontmatterLines(lines.slice(1), "unclosed");
+  if (!unclosed.sawKey) {
+    // Nothing frontmatter-shaped after the opening delimiter — the `---` is a
+    // stray horizontal rule, not a frontmatter block.
+    return { data: {}, body: normalized, hadFrontmatter: false };
+  }
+  const body = lines.slice(1 + unclosed.next).join("\n");
+  return { data: unclosed.data, body, hadFrontmatter: true };
 }
 
 function serializeScalar(v: unknown): string {

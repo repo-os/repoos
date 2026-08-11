@@ -47,7 +47,7 @@ The reviewer never touches a terminal.
   - 409 if a runner turn is in progress for the task.
   - Merges `branch` into the main checkout (`cwd` = repo root). FF when main is
     an ancestor; otherwise a merge commit. On conflict: `git merge --abort`,
-    task stays `review`, worktree/branch untouched, response lists the conflicted
+    task stays `review`, worktree and branch untouched, response lists the conflicted
     files.
   - After a successful merge, runs `bun run build` and `repoos check` in the repo
     root; if either fails, the task stays `review` and the failure is reported

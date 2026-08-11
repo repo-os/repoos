@@ -17,7 +17,7 @@ this is how that review is performed.
 
 1. **Read the task file** under `work/`. Confirm the spec, acceptance
    criteria, and scope are internally consistent.
-2. **Review the diff on the task's branch** (`work/<id>-*.md` frontmatter holds
+2. **Review the diff in the task's worktree** (`work/<id>-*.md` frontmatter holds
    `branch`). Inspect only what this task was supposed to change — scope creep
    is a rejection reason.
 3. **Run the definition of done**: `repoos check`. This must pass — build
@@ -27,15 +27,15 @@ this is how that review is performed.
    `repoos serve` in a headless browser (mounts, no unrendered `{{ mustache }}`,
    zero console errors).
 5. **Decide**:
-   - Changes needed → request them. The implementer fixes on the SAME branch
+   - Changes needed → request them. The implementer fixes on the SAME worktree
      and re-runs `repoos check`; it is never force-pushed.
    - Approve → say **"move task <id> to done"**. The implementer then sets
-     `status: done` + activity entry, fast-forward merges to `main`, and
-     deletes the branch (`git branch -d <branch>`).
+     `status: done` + activity entry, fast-forward merges to `main`, removes the
+     worktree, and deletes the branch (`git branch -d <branch>`).
 
 ## Notes
 
 - `repoos check` is the single bar for "did this break anything?" — never
   sign off without it.
 - The implementing agent never merges or self-approves its own MR.
-- Only `done` goes to `main`; `review` means the branch stays open.
+- Only `done` goes to `main`; `review` means the worktree stays open.

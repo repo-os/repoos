@@ -2,14 +2,14 @@
 id: "0052"
 title: Fix frontmatter quote escaping so quoted task titles render cleanly
 type: bug
-status: active
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/fix-frontmatter-quote-escaping-so-quoted
 created_at: "2026-08-06T17:38:14Z"
-updated_at: "2026-08-06T17:56:18Z"
+updated_at: "2026-08-10T22:05:41Z"
 ---
 ## Problem
 
@@ -53,3 +53,5 @@ A task title containing quotes (e.g. `Replace "branch" terminology with "worktre
 - 2026-08-06T17:38:14Z · created · unknown
 - 2026-08-06T17:38:41Z · status inbox→ready
 - 2026-08-06T17:56:18Z · status ready→active, branch
+- 2026-08-06T18:05:49Z · status active→review
+- 2026-08-10T22:05:41Z · status review→done

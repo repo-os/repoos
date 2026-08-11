@@ -3,7 +3,7 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
@@ -20,6 +20,46 @@ function git(root: string, args: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+export interface GitRun {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * Non-blocking `spawn` that resolves with the exit status and captured output.
+ * Never throws; a timeout kills the child. Unlike `spawnSync` this does not
+ * freeze the server's event loop, so SSE progress events can flush in real
+ * time while a long command (merge, build, check) is in flight.
+ */
+export function runGit(
+  root: string,
+  args: string[],
+  timeout: number,
+): Promise<GitRun> {
+  return new Promise((resolve) => {
+    const child = spawn("git", args, { cwd: root });
+    let stdout = "";
+    let stderr = "";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+    const finish = (status: number | null): void => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve({ status, stdout, stderr });
+    };
+    child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
+    child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
+    child.on("error", (err: Error) => {
+      stderr += `${err.message}\n`;
+      finish(null);
+    });
+    child.on("close", (code: number | null) => finish(code));
+    timer = setTimeout(() => child.kill("SIGKILL"), timeout);
+  });
 }
 
 export function isGitRepo(root: string): boolean {
@@ -306,33 +346,25 @@ function blockingFiles(stderr: string): string[] {
  * a close-out merge and whose branch version is authoritative for the task's
  * final state.
  */
-export function mergeBranch(
+export async function mergeBranch(
   root: string,
   branch: string,
   opts: { autoResolve?: string[] } = {},
-): MergeBranchResult {
+): Promise<MergeBranchResult> {
   const head = currentBranch(root);
   let ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
-  let run = spawnSync("git", ["merge", "--no-edit", branch], {
-    cwd: root,
-    encoding: "utf8",
-    timeout: 60_000,
-  });
-  if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr ?? "")) {
-    const blocking = blockingFiles(run.stderr ?? "");
+  let run = await runGit(root, ["merge", "--no-edit", branch], 60_000);
+  if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr)) {
+    const blocking = blockingFiles(run.stderr);
     if (blocking.length > 0) {
       for (const p of blocking) git(root, ["add", "--", p]);
       if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
         ff = false;
-        run = spawnSync("git", ["merge", "--no-edit", branch], {
-          cwd: root,
-          encoding: "utf8",
-          timeout: 60_000,
-        });
+        run = await runGit(root, ["merge", "--no-edit", branch], 60_000);
       }
     }
   }
-  const stderr = `${run.stderr ?? ""}\n${run.stdout ?? ""}`;
+  const stderr = `${run.stderr}\n${run.stdout}`;
   if (run.status === 0) {
     return { merged: true, ff, conflicts: [] };
   }
@@ -350,12 +382,8 @@ export function mergeBranch(
       // resolve toward the branch's version wholesale. `-X theirs` handles
       // content, modify/delete and add/add conflicts; the tree is clean (dirty
       // files were committed above), so aborting and re-merging is safe.
-      spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
-      const theirs = spawnSync("git", ["merge", "--no-edit", "-X", "theirs", branch], {
-        cwd: root,
-        encoding: "utf8",
-        timeout: 60_000,
-      });
+      await runGit(root, ["merge", "--abort"], 4000);
+      const theirs = await runGit(root, ["merge", "--no-edit", "-X", "theirs", branch], 60_000);
       if (theirs.status === 0) {
         return { merged: true, ff: false, conflicts: [] };
       }
@@ -371,10 +399,10 @@ export function mergeBranch(
       if (git(root, ["commit", "--no-edit"]) !== null) {
         return { merged: true, ff: false, conflicts: [] };
       }
-      spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
+      await runGit(root, ["merge", "--abort"], 4000);
     }
     // Nothing may be left half-applied: back out of the merge entirely.
-    spawnSync("git", ["merge", "--abort"], { cwd: root, timeout: 4000 });
+    await runGit(root, ["merge", "--abort"], 4000);
     return { merged: false, ff: false, conflicts, reason: "merge conflict" };
   }
   return {

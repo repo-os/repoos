@@ -62,7 +62,7 @@ to linger outside version control.
 - Put the git logic in a small shared helper (e.g. `src/core/git.ts`, exported
   through the `createRepoOS()` facade) rather than inline in the command — the
   intent is that `ros start`/`ros done` reuse it when they own the git lifecycle
-  later (per AGENTS.md: "branch/worktree creation is RepoOS's job").
+  later (per AGENTS.md: "worktree creation is RepoOS's job").
 - The core of this task is the guardrails. Use `git commit --only -m <msg> --
   <file>` (a.k.a. `-o`): it commits exactly the working-tree content of the
   specified paths and IGNORES anything else that happens to be staged — so a
@@ -94,5 +94,5 @@ to linger outside version control.
   (3a246c0: work/0019, work/0020, docs/adr/0004).
 - Same principle as 0012 (build-staleness guardrail): RepoOS taking ownership of
   the safety rails around the repo itself.
-- AGENTS.md: RepoOS is already slated to own branch/worktree creation once
+- AGENTS.md: RepoOS is already slated to own worktree creation once
   `ros start` exists — this is the first step of that git lifecycle.

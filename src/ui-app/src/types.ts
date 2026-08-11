@@ -66,6 +66,24 @@ export interface RepoIndex {
   counts: Counts;
 }
 
+/**
+ * One entry of a task's agent transcript. Legacy entries carry `s`/`d` (plain
+ * lines from claude/qwen/codex and pre-JSON sessions); entries derived from
+ * opencode's `--format json` stream carry a `type` discriminator.
+ */
+export type AgentOutputEntry =
+  | { type: "text"; text: string }
+  | {
+      type: "tool";
+      tool: string;
+      input?: string;
+      output?: string;
+      state?: string;
+    }
+  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "sys"; d: string }
+  | { s: "out" | "err" | "sys"; d: string };
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
@@ -76,7 +94,7 @@ export type RepoEvent =
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
-  | { type: "agent.output"; id: string; data: string; stream: "out" | "err" };
+  | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" };
 
 export interface ConfigField {
   key: string;
@@ -103,6 +121,32 @@ export interface AgentsMeta {
   clis: string[];
   models: string[];
   defaults: Agent[];
+}
+
+/** One row from GET /api/agents/detect. */
+export interface DetectedAgent {
+  id: string;
+  name: string;
+  binary: string;
+  installed: boolean;
+  path: string | null;
+  version: string | null;
+  headless: boolean | null;
+  drivable: boolean;
+  installHint: string;
+}
+
+/** Live model result for one coding agent (GET /api/models). */
+export interface ModelSourceResult {
+  supported: boolean;
+  models: string[];
+  refreshable: boolean;
+}
+
+/** Response of GET /api/models, keyed by Agent.cli. */
+export interface ModelSourcesResponse {
+  byCli: Record<string, ModelSourceResult>;
+  at: string;
 }
 
 export interface DocMeta {

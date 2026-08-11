@@ -17,12 +17,13 @@
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
  *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
- *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active)
+ *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
  *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -34,6 +35,8 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
+import { detectAgents, type DetectedAgent } from "../core/detect.js";
+import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -202,15 +205,19 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
 }
 
 /**
- * Locate the bundled UI directory (Vite build output). Resolves relative to
- * the compiled server.js so the same path works from dist/ and src/.
+ * Locate the bundled UI directory (Vite build output). Prefers the resolved
+ * repo root's `dist/ui` so a `bun link` install run from a worktree serves
+ * that worktree's own build, not the linked package's stale dist. Falls back
+ * to the import.meta.url candidates (compiled dist/ui and dev-mode src/../..)
+ * when no root-relative build exists.
  */
-function findUiDir(): string | null {
+function findUiDir(root: string): string | null {
+  const candidates = [join(root, "dist", "ui")];
   const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
-  const candidates = [
+  candidates.push(
     join(here, "..", "ui"), // dist/ui (compiled, shipped)
     join(here, "..", "..", "dist", "ui"), // repo-root dist/ui (dev mode)
-  ];
+  );
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
 }
@@ -299,7 +306,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  const uiDir = findUiDir();
+  const uiDir = findUiDir(repoos.config.root);
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
@@ -414,6 +421,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/agents/running" && method === "GET") {
         return json(res, 200, { tasks: runner.running() });
+      }
+      if (path === "/api/agents/detect" && method === "GET") {
+        // Best-effort: a broken PATH entry or a hung probe must never break
+        // the endpoint, so the whole detection is wrapped.
+        let agents: DetectedAgent[] = [];
+        try {
+          agents = await detectAgents();
+        } catch {
+          agents = [];
+        }
+        return json(res, 200, { agents });
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
@@ -607,7 +625,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           // The merge removes the worktree, so the preview of it must die first.
           await previews.stop(id);
-          const result = completeTask(config, existing, (step: DoneStep) => {
+          const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
               id,
@@ -629,9 +647,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
 
         if (actionMatch[2] === "message") {
-          if (existing.status !== "active") {
+          if (existing.status !== "active" && existing.status !== "review") {
             return json(res, 400, {
-              error: `Only active tasks accept messages (#${id} is ${existing.status})`,
+              error: `Only active or review tasks accept messages (#${id} is ${existing.status})`,
             });
           }
           const agent = resolveEngineer(config);
@@ -703,8 +721,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, {
           config: { ...repoos.config, agents },
           schema: getConfigSchema(),
+          // The static list is the fallback the Agents page shows while /api/models
+          // loads (and when no model source is available).
           agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
         });
+      }
+      if (path === "/api/models" && method === "GET") {
+        // Per-CLI live model lists, probed on demand (the Agents page fetches
+        // on mount and re-probes with ?refresh=1). Best-effort: a broken PATH,
+        // missing binary, or hung probe must never break the endpoint.
+        const refresh = url.searchParams.get("refresh") === "1";
+        let byCli: Record<string, ModelSourceResult> = {};
+        try {
+          byCli = await listModelSources({ refresh, cwd: config.root });
+        } catch {
+          byCli = {};
+        }
+        return json(res, 200, { byCli, at: new Date().toISOString() });
       }
       if (path === "/api/config" && method === "PATCH") {
         const body = (await readBody(req)) as Record<string, unknown>;
@@ -730,8 +763,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number])) {
               return json(res, 400, { error: `cli must be one of: ${AGENT_CLIS.join(", ")}` });
             }
-            if (!AGENT_MODELS.includes(a.model as (typeof AGENT_MODELS)[number])) {
-              return json(res, 400, { error: `model must be one of: ${AGENT_MODELS.join(", ")}` });
+            // The model stays a RepoOS-side label: any non-empty string is
+            // accepted so dynamically-selected models save. AGENT_MODELS remains
+            // the fallback suggested list, never an allowlist.
+            if (typeof a.model !== "string" || !a.model.trim()) {
+              return json(res, 400, { error: `agent "${a.name}" model must be a non-empty string` });
             }
             if (typeof a.enabled !== "boolean") {
               return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });

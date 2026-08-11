@@ -17,7 +17,7 @@ import type {
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
-export const AGENT_CLIS = ["opencode", "claude code"] as const;
+export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "codex"] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
@@ -37,7 +37,7 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`.",
+      "Reviews task diffs in the task's worktree; requests changes by updating the task status; approves only on a green `repoos check`.",
   },
   {
     name: "pm",

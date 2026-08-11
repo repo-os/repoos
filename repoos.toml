@@ -6,6 +6,29 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
-uiTheme = "classic"
+uiTheme = "clear"
+[[agents]]
+name = "engineer"
+cli = "claude code"
+model = "default"
+enabled = true
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status."
+[[agents]]
+name = "reviewer"
+cli = "claude code"
+model = "default"
+enabled = true
+instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
+[[agents]]
+name = "pm"
+cli = "claude code"
+model = "default"
+enabled = true
+instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
+
+
+
+
+
