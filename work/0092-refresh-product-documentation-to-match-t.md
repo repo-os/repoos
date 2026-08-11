@@ -2,7 +2,7 @@
 id: "0092"
 title: Refresh product documentation to match the current implementation
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 assigned_to: ai
