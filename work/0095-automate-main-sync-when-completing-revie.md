@@ -2,14 +2,14 @@
 id: "0095"
 title: Automate main sync when completing review
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T14:46:35Z"
-updated_at: "2026-08-11T14:46:35Z"
+updated_at: "2026-08-11T14:46:46Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Treat "sync with main" as the repository's existing synchronization operation; r
 ## Activity
 
 - 2026-08-11T14:46:35Z · created · unknown
+- 2026-08-11T14:46:46Z · status inbox→ready
