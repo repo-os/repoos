@@ -2,7 +2,7 @@
 id: "0088"
 title: Animate task state transitions
 type: feature
-status: ready
+status: review
 priority: p2
 area: ui
 assigned_to: ai
