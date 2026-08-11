@@ -260,6 +260,10 @@ describe("opencode driver (structured JSON events)", () => {
       expect(run.args[0]).toBe("run");
       expect(run.args).toEqual(expect.arrayContaining(["--format", "json"]));
       expect(run.args).toEqual(expect.arrayContaining(["--dir", cwd]));
+      // --auto is load-bearing: stdin is ignored, so an unanswered permission
+      // prompt hangs the process forever (confirmed live on #0069 — ~2 hours
+      // at ~1% CPU with zero commits before being killed).
+      expect(run.args).toContain("--auto");
       expect(run.args[run.args.length - 1]).toContain("Task #0045");
 
       const resumed = runner.send("0045", "continue the work", agent("opencode"));
@@ -272,6 +276,7 @@ describe("opencode driver (structured JSON events)", () => {
       expect(resume.args).toEqual(
         expect.arrayContaining(["--session", "ses-123", "--dir", cwd]),
       );
+      expect(resume.args).toContain("--auto");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
