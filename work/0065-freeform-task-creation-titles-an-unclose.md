@@ -2,14 +2,14 @@
 id: "0065"
 title: Freeform task creation titles an unclosed-frontmatter task as the literal --- delimiter
 type: bug
-status: review
+status: done
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0065-fix-unclosed-frontmatter-freeform-title
 created_at: "2026-08-11T00:06:00Z"
-updated_at: "2026-08-11T00:18:36Z"
+updated_at: "2026-08-11T00:22:39Z"
 ---
 ## Activity
 
@@ -115,3 +115,4 @@ file normalized to a single well-formed frontmatter block.
 
 - 2026-08-11T00:07:55Z · status ready→active
 - 2026-08-11T00:18:36Z · status active→review
+- 2026-08-11T00:22:39Z · status review→done
