@@ -1,7 +1,24 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
-import type { Agent, AgentsMeta, ConfigField } from "../types";
+import type { Agent, AgentsMeta, ConfigField, ModelSourcesResponse } from "../types";
+
+/** claude code takes model aliases, not the provider/model ids other CLIs use. */
+const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
+
+const MODEL_LABELS: Record<string, string> = {
+  default: "Default",
+  opus: "Opus",
+  sonnet: "Sonnet",
+  haiku: "Haiku",
+  "big pickle": "Big Pickle",
+  "deepseek v4": "DeepSeek v4",
+};
+
+/** Display label for a model id; unknown ids render as-is. */
+export function labelForModel(m: string): string {
+  return MODEL_LABELS[m] ?? m;
+}
 
 export interface ConfigResponse {
   config: Record<string, unknown>;
@@ -21,6 +38,53 @@ export const useConfigStore = defineStore("config", () => {
   const uiTheme = ref("classic");
   const agents = ref<Agent[]>([]);
   const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [] });
+  // Live model lists per CLI, probed from /api/models. Shared here rather than
+  // held per-view so the Agents page and the per-task pickers offer exactly
+  // the same options from one cache and one fetch.
+  const liveModelsByCli = ref<Record<string, string[]>>({});
+  const modelsLoaded = ref(false);
+  const modelsLoading = ref(false);
+
+  async function loadModels(refresh = false): Promise<void> {
+    modelsLoading.value = true;
+    try {
+      const res = await api<ModelSourcesResponse>(`/api/models${refresh ? "?refresh=1" : ""}`);
+      liveModelsByCli.value = Object.fromEntries(
+        Object.entries(res.byCli).map(([cli, source]) => [cli, source.models]),
+      );
+      modelsLoaded.value = true;
+    } catch {
+      liveModelsByCli.value = {};
+      modelsLoaded.value = false;
+    } finally {
+      modelsLoading.value = false;
+    }
+  }
+
+  /**
+   * The models offered for a CLI: its live-probed list, falling back to the
+   * static `agentsMeta.models` until the probe lands, plus `saved` so a value
+   * already on a task or agent is never silently dropped from its own dropdown.
+   */
+  function modelsFor(cli: string, saved?: string): { value: string; label: string; disabled: boolean }[] {
+    const out: { value: string; label: string; disabled: boolean }[] = [];
+    const seen = new Set<string>();
+    const push = (m: string): void => {
+      if (seen.has(m)) return;
+      seen.add(m);
+      out.push({ value: m, label: labelForModel(m), disabled: false });
+    };
+    if (cli === "claude code") {
+      for (const m of CLAUDE_CODE_MODELS) push(m);
+      if (saved) push(saved);
+      return out;
+    }
+    push("default");
+    for (const m of liveModelsByCli.value[cli] ?? []) push(m);
+    if (!modelsLoaded.value) for (const m of agentsMeta.value.models) push(m);
+    if (saved) push(saved);
+    return out;
+  }
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
   const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
@@ -198,5 +262,10 @@ export const useConfigStore = defineStore("config", () => {
     uiTheme,
     agents,
     agentsMeta,
+    liveModelsByCli,
+    modelsLoaded,
+    modelsLoading,
+    loadModels,
+    modelsFor,
   };
 });

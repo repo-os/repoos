@@ -672,8 +672,18 @@ const enabledAgents = computed(() => (config.agents ?? []).filter((a) => a.enabl
 
 /** CLI options from agentsMeta. */
 const cliOptions = computed(() => config.agentsMeta.clis ?? []);
-/** Model options from agentsMeta. */
-const modelOptions = computed(() => config.agentsMeta.models ?? []);
+/**
+ * Models offered for the CLI currently selected in each picker — not a flat
+ * list. Uses the same `config.modelsFor` the Agents page uses, so a given CLI
+ * offers identical options in both places (e.g. claude code offers its model
+ * aliases, never another CLI's provider/model ids).
+ */
+const modelOptions = computed(() =>
+  config.modelsFor(overrideDraft.cli, overrideDraft.model || undefined),
+);
+const freeformModelOptions = computed(() =>
+  config.modelsFor(freeformOverride.cli, freeformOverride.model || undefined),
+);
 
 /** The base agent for the current task (engineer by default, or the configured role). */
 const baseAgent = computed(() => {
@@ -914,7 +924,7 @@ function resetFreeformOverrides(): void {
                     </SelectTrigger>
                     <SelectContent position="popper">
                       <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                        <SelectItem v-for="m in freeformModelOptions" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
                       </SelectViewport>
                     </SelectContent>
                   </Select>
@@ -1463,7 +1473,7 @@ function resetFreeformOverrides(): void {
                   </SelectTrigger>
                   <SelectContent position="popper">
                     <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in modelOptions" :key="m" :value="m">{{ m }}</SelectItem>
+                      <SelectItem v-for="m in modelOptions" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
                     </SelectViewport>
                   </SelectContent>
                 </Select>
