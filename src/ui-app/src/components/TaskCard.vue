@@ -89,10 +89,11 @@ interface CardHint {
 
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
-  if (t.status === "active") {
+  if (t.status === "active" || t.status === "review") {
     if (repo.isRunning(t.id)) {
       return { label: "running", title: "agent running — click to watch the session", cls: "tc-run" };
     }
+    if (t.status === "review") return null;
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
