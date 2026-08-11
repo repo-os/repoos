@@ -552,11 +552,13 @@
   .agent-badge{font-size:9.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);border:1px solid var(--border);border-radius:5px;padding:2px 6px}
   .agent-remove{color:var(--txt-faint)}
   .agent-remove:hover{color:var(--red)}
-  .agent-body{display:flex;align-items:flex-end;gap:16px;margin-top:12px}
+  .agent-body{display:grid;grid-template-columns:200px 200px minmax(180px,1fr);align-items:end;gap:12px 16px;margin-top:12px}
   .agent-field{display:flex;flex-direction:column;gap:5px}
   .agent-field label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--txt-faint);font-weight:600;font-family:'JetBrains Mono',monospace}
   .agent-field{width:200px}
-  .agent-field.agent-instr-field{flex:1;min-width:220px}
+  .agent-field.agent-instr-field{grid-column:1/-1;width:100%;min-width:220px}
+  .agent-test-result{width:auto}
+  .agent-test-actions{display:flex;align-items:center;gap:8px;min-height:34px}
   .agent-instr{width:100%;resize:vertical;min-height:56px;border-radius:9px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;line-height:1.5;padding:8px 11px;transition:.15s}
   .agent-instr::placeholder{color:var(--txt-faint)}
   .agent-instr:focus{outline:none;border-color:var(--border-bright)}
@@ -565,18 +567,9 @@
   .agent-empty{font-size:12.5px;color:var(--txt-faint);padding:14px 2px 16px}
   .agent-dirty{font-size:11.5px;color:var(--amber);font-family:'JetBrains Mono',monospace}
 
-  /* sticky save bar — pinned to the bottom of the scroll area so the save
-     button is always on screen while editing the (long) agents page */
-  .agents-savebar{position:sticky;bottom:0;z-index:30;margin-top:6px}
-  .agents-savebar .save-msg{padding:0}
-  .agents-savebar.dirty{
-    background:var(--panel-gradient);
-    border-top-color:var(--cyan);
-    box-shadow:0 0 0 1px var(--cyan),0 -14px 30px -12px rgba(57,224,255,0.35),0 -10px 24px -12px rgba(0,0,0,0.5);
-  }
-  .agents-save-btn.dirty{box-shadow:0 0 0 1px var(--cyan),0 0 22px -4px var(--cyan)}
   @media(max-width:760px){
-    .agents-savebar{bottom:calc(66px + var(--safe-bot))}
+    .agent-body{grid-template-columns:1fr}
+    .agent-field,.agent-field.agent-instr-field{grid-column:auto;width:100%;min-width:0}
   }
 
   /* detected coding agents panel */
@@ -909,3 +902,12 @@
 .model-test-failed, .model-test-timed_out { color: var(--red); }
 .model-test-not_testable { color: var(--muted); }
 .model-test-warning { color: var(--amber); }
+
+.model-test-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}

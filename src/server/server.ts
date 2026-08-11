@@ -59,7 +59,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
-import { testModelCombinations } from "./model-test.js";
+import { testModelCombination } from "./model-test.js";
 
 export interface ServeOptions {
   root?: string;
@@ -831,27 +831,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, { byCli, at: new Date().toISOString() });
       }
       if (path === "/api/models/test" && method === "POST") {
-        let byCli: Record<string, ModelSourceResult> = {};
         try {
-          const body = (await readBody(req)) as { byCli?: unknown };
-          const requestedByCli = body.byCli && typeof body.byCli === "object"
-            ? body.byCli as Record<string, unknown>
-            : {};
-          byCli = await listModelSources({ cwd: config.root, clis: Object.keys(requestedByCli) });
-          if (Object.keys(requestedByCli).length) {
-            for (const [cli, raw] of Object.entries(requestedByCli)) {
-              if (!byCli[cli] || !Array.isArray(raw)) continue;
-              const requested = raw.filter(
-                (model): model is string => typeof model === "string" && model.length > 0 && model.length <= 120,
-              );
-              byCli[cli] = { ...byCli[cli], models: [...new Set([...byCli[cli].models, ...requested])] };
-            }
+          const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
+          if (typeof body.cli !== "string" || !AGENT_CLIS.includes(body.cli as typeof AGENT_CLIS[number])) {
+            return json(res, 400, { error: "cli must be a supported coding agent" });
           }
-          const results = await testModelCombinations(byCli, {
-            cwd: config.root,
-            concurrency: 2,
-          });
-          return json(res, 200, { results, at: new Date().toISOString() });
+          if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
+            return json(res, 400, { error: "model must be a non-empty string" });
+          }
+          // Model discovery and execution are separate capabilities. Claude
+          // and Qwen cannot list their catalogs, but they can still execute a
+          // user-selected/default model and must reach the real probe.
+          const result = await testModelCombination(body.cli, body.model, { cwd: config.root });
+          return json(res, 200, { result, at: new Date().toISOString() });
         } catch (err) {
           const reason = err instanceof Error ? err.message : String(err);
           return json(res, 500, { error: `Model compatibility test failed: ${reason}` });

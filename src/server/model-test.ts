@@ -4,7 +4,7 @@ import type { ModelSourceResult } from "../core/models.js";
 import { promptCommand } from "./agents.js";
 
 export const MODEL_TEST_SENTINEL = "REPOOS_MODEL_OK";
-export const MODEL_TEST_TIMEOUT_MS = 20_000;
+export const MODEL_TEST_TIMEOUT_MS = 8_000;
 const OUTPUT_LIMIT = 4 * 1024;
 
 export type ModelTestStatus = "passed" | "failed" | "timed_out" | "not_testable";
@@ -31,7 +31,11 @@ export function sanitizeDiagnostic(text: string): string {
     .slice(0, OUTPUT_LIMIT);
 }
 
-function testOne(cli: string, model: string, opts: ModelTestOptions): Promise<ModelTestResult> {
+export function testModelCombination(
+  cli: string,
+  model: string,
+  opts: ModelTestOptions,
+): Promise<ModelTestResult> {
   const started = Date.now();
   const finish = (status: ModelTestStatus, error?: string): ModelTestResult => ({
     cli,
@@ -45,6 +49,10 @@ function testOne(cli: string, model: string, opts: ModelTestOptions): Promise<Mo
     agent,
     `Reply with exactly ${MODEL_TEST_SENTINEL}. Do not use tools or modify files.`,
   );
+  // Compatibility probes may run from a configured repo root that Codex has
+  // not marked trusted yet. The prompt cannot modify files, so bypass only the
+  // repository trust preflight for this disposable probe.
+  if (cli === "codex") args.splice(1, 0, "--skip-git-repo-check");
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {
@@ -103,7 +111,7 @@ export async function testModelCombinations(
   const workers = Array.from({ length: Math.min(Math.max(1, opts.concurrency ?? 2), queued.length) }, async () => {
     while (next < queued.length) {
       const item = queued[next++];
-      results.push(await testOne(item.cli, item.model, opts));
+      results.push(await testModelCombination(item.cli, item.model, opts));
     }
   });
   await Promise.all(workers);
