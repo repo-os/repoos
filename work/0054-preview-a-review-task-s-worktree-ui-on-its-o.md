@@ -2,14 +2,14 @@
 id: "0054"
 title: Preview a review task's worktree UI on its own port
 type: feature
-status: active
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/preview-task-worktree-ui
 created_at: "2026-08-06T17:57:47Z"
-updated_at: "2026-08-11T01:14:58Z"
+updated_at: "2026-08-11T01:17:47Z"
 ---
 ## Problem
 
@@ -99,5 +99,4 @@ processes left behind.
 - 2026-08-07T00:00:00Z · status ready→active · ai
 - 2026-08-11T00:28:41Z · status active→ready
 - 2026-08-11T00:28:41Z · status ready→active
-- 2026-08-11T01:14:57Z · status active→ready
-- 2026-08-11T01:14:58Z · status ready→active
+- 2026-08-11T01:17:47Z · status active→ready
