@@ -2,7 +2,7 @@
 id: "0080"
 title: Add agent run telemetry, default Agent tab, and an evidence-based stall warning
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
