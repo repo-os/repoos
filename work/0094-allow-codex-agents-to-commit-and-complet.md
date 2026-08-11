@@ -2,7 +2,7 @@
 id: "0094"
 title: Let RepoOS finalize sandboxed agent worktree handoffs
 type: bug
-status: active
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/let-repoos-finalize-sandboxed-agent-work
 cli_override: codex
 model_override: gpt-5.6-sol
 created_at: "2026-08-11T14:42:54Z"
-updated_at: "2026-08-11T19:58:20Z"
+updated_at: "2026-08-11T19:58:45Z"
 ---
 ## Activity
 
@@ -124,3 +124,4 @@ appropriate RepoOS operation can exist.
 - 2026-08-11T19:43:27Z · model_override
 - 2026-08-11T19:43:34Z · status ready→active, branch
 - 2026-08-11T19:58:20Z · cli_override, model_override
+- 2026-08-11T19:58:45Z · status active→ready
