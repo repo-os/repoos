@@ -2,7 +2,7 @@
 id: "0072"
 title: "Replace the \"branch exists\" dot with a real status hint on task cards"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
