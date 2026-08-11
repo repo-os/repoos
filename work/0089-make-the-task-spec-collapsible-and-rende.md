@@ -2,7 +2,7 @@
 id: "0089"
 title: Make the task spec collapsible and render its Markdown
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
