@@ -2,18 +2,19 @@
 id: "0075"
 title: Make move-to-done non-blocking and cut duplicate build/browser launches
 type: feature
-status: inbox
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-move-to-done-non-blocking-and-cut-d
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T05:10:50Z"
+updated_at: "2026-08-11T08:15:51Z"
 ---
 ## Activity
 
 - 2026-08-11T05:10:50Z · created · unknown
+- 2026-08-11T05:24:19Z · status inbox→ready
 
 
 ## Problem
@@ -124,3 +125,7 @@ things follow from that:
   drawer changes.
 - 0047 · Add a Move-to-done action for review tasks (original implementation)
 - 0053 · Keep agent logs and chat available in review state (SSE precedent)
+
+## Activity
+
+- 2026-08-11T08:15:51Z · status ready→active, branch
