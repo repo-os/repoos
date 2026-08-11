@@ -1092,14 +1092,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // SPA fallback: unknown GET paths (e.g. /work on refresh) render the app.
       if (method === "GET" && uiDir) {
         const index = join(uiDir, "index.html");
-        const legacy = join(uiDir, "app.html"); // pre-Vite build
-        const entry = existsSync(index) ? index : legacy;
-        if (existsSync(entry)) {
+        if (existsSync(index)) {
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Access-Control-Allow-Origin": "*",
           });
-          res.end(readFileSync(entry));
+          res.end(readFileSync(index));
           return;
         }
         return json(res, 500, { error: "UI asset not found — run `bun run build`" });

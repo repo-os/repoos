@@ -90,7 +90,7 @@ cannot tell from the code alone:
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
-  `src/commands` (CLI), `src/ui` (the single-file web UI).
+  `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
   and keep a `repoos serve` running (e.g. `repoos serve --port 7171`) so the user
   can view the latest changes; verify with a browser probe before reporting done.

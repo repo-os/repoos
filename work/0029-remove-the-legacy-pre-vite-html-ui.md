@@ -71,7 +71,4 @@ and docs/code stop referencing it.
 ## Activity
 
 - 2026-08-11T00:17:35Z · status inbox→ready
-- 2026-08-11T13:54:04Z · status ready→active
-- 2026-08-11T14:32:08Z · status active→ready
-- 2026-08-11T14:32:11Z · status ready→active
 - 2026-08-11T14:40:11Z · status active→review · implementation committed; repoos check green
