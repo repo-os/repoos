@@ -2,7 +2,7 @@
 id: "0108"
 title: Remove move-to-done confirmation
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
