@@ -2,15 +2,15 @@
 id: "0109"
 title: Stream claude code output as structured events so its Agent tab is not blank
 type: bug
-status: ready
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/stream-claude-code-output-as-structured-
 model_override: opencode/big-pickle
 created_at: "2026-08-11T20:16:14Z"
-updated_at: "2026-08-11T20:19:02Z"
+updated_at: "2026-08-11T20:19:12Z"
 ---
 ## Activity
 
@@ -173,3 +173,4 @@ Notes that matter:
 
 - 2026-08-11T20:18:23Z · status inbox→ready
 - 2026-08-11T20:19:02Z · model_override
+- 2026-08-11T20:19:12Z · status ready→active, branch
