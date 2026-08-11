@@ -68,94 +68,101 @@ const hasData = computed(() => systemStats.value !== null);
 </script>
 
 <template>
-  <Card v-if="hasData" class="resource-panel">
+  <Card class="resource-panel">
     <div class="panel-title">System Resources</div>
 
-    <div class="headlines">
-      <div class="metric">
-        <div class="metric-label">CPU</div>
-        <div class="metric-val">
-          <span class="metric-big">{{ fmtPct(systemStats!.totals.cpuPercent) }}%</span>
-          <span class="metric-sub">of {{ systemStats!.machine.cpuCount }} cores</span>
+    <template v-if="hasData">
+      <div class="headlines">
+        <div class="metric">
+          <div class="metric-label">CPU (RepoOS)</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ fmtPct(systemStats!.totals.cpuPercent) }}%</span>
+            <span class="metric-sub">of {{ systemStats!.machine.cpuCount }} cores</span>
+          </div>
+          <svg class="sparkline" :viewBox="`0 0 120 32`" preserveAspectRatio="none">
+            <path
+              v-if="cpuHistory.length > 1"
+              :d="svgPath(cpuHistory, 120, 32, Math.max(...cpuHistory, 10))"
+              fill="none"
+              stroke="var(--cyan)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </div>
-        <svg class="sparkline" :viewBox="`0 0 120 32`" preserveAspectRatio="none">
-          <path
-            v-if="cpuHistory.length > 1"
-            :d="svgPath(cpuHistory, 120, 32, Math.max(...cpuHistory, 10))"
-            fill="none"
-            stroke="var(--cyan)"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+
+        <div class="metric">
+          <div class="metric-label">Memory (RepoOS)</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ fmtBytes(systemStats!.totals.memBytes) }}</span>
+            <span class="metric-sub">/ {{ fmtBytes(systemStats!.machine.totalMem) }} · {{ fmtPct(systemStats!.totals.memPercent) }}%</span>
+          </div>
+          <svg class="sparkline" :viewBox="`0 0 120 32`" preserveAspectRatio="none">
+            <path
+              v-if="memHistory.length > 1"
+              :d="svgPath(memHistory, 120, 32, Math.max(...memHistory, 1))"
+              fill="none"
+              stroke="var(--violet)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <div v-if="memUsed !== null" class="metric">
+          <div class="metric-label">Machine</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ fmtBytes(memUsed) }}</span>
+            <span class="metric-sub">used of {{ fmtBytes(systemStats!.machine.totalMem) }}</span>
+          </div>
+          <div class="metric-extra">
+            <span>Free: {{ fmtBytes(systemStats!.machine.freeMem) }}</span>
+            <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
+          </div>
+        </div>
       </div>
 
-      <div class="metric">
-        <div class="metric-label">Memory (RepoOS)</div>
-        <div class="metric-val">
-          <span class="metric-big">{{ fmtBytes(systemStats!.totals.memBytes) }}</span>
-          <span class="metric-sub">/ {{ fmtBytes(systemStats!.machine.totalMem) }} · {{ fmtPct(systemStats!.totals.memPercent) }}%</span>
+      <div v-if="systemStats!.processes.length" class="process-table-wrap">
+        <div class="process-table-header">
+          <span class="col-pid">PID</span>
+          <span class="col-task">Task</span>
+          <span class="col-cpu">CPU</span>
+          <span class="col-mem">Memory</span>
+          <span class="col-time">Runtime</span>
         </div>
-        <svg class="sparkline" :viewBox="`0 0 120 32`" preserveAspectRatio="none">
-          <path
-            v-if="memHistory.length > 1"
-            :d="svgPath(memHistory, 120, 32, Math.max(...memHistory, 1))"
-            fill="none"
-            stroke="var(--violet)"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <div
+          v-for="p in systemStats!.processes"
+          :key="p.pid"
+          class="process-row"
+          :class="{ orphaned: p.orphaned }"
+        >
+          <span class="col-pid">
+            <span class="pid-chip" :class="{ orphan: p.orphaned }">{{ p.pid }}</span>
+          </span>
+          <span class="col-task">
+            <template v-if="p.taskId">
+              <router-link v-if="p.taskId" :to="`/work?id=${p.taskId}`" class="task-link">
+                #{{ p.taskId }}
+              </router-link>
+            </template>
+            <template v-else>
+              <span class="task-unknown">{{ p.pid === systemStats!.serverPid ? 'serve' : 'unknown' }}</span>
+            </template>
+            <span v-if="p.orphaned" class="orphan-tag">orphan</span>
+            <span v-if="p.unverified" class="unverified-tag">unverified</span>
+          </span>
+          <span class="col-cpu">{{ fmtPct(p.cpuPercent) }}%</span>
+          <span class="col-mem">{{ fmtBytes(p.memBytes) }}</span>
+          <span class="col-time">{{ fmtElapsed(p.elapsed) }}</span>
+        </div>
       </div>
+    </template>
 
-      <div class="metric">
-        <div class="metric-label">Machine</div>
-        <div class="metric-val">
-          <span class="metric-big">{{ fmtBytes(memUsed!) }}</span>
-          <span class="metric-sub">used of {{ fmtBytes(systemStats!.machine.totalMem) }}</span>
-        </div>
-        <div class="metric-extra">
-          <span>Free: {{ fmtBytes(systemStats!.machine.freeMem) }}</span>
-          <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="systemStats!.processes.length" class="process-table-wrap">
-      <div class="process-table-header">
-        <span class="col-pid">PID</span>
-        <span class="col-task">Task</span>
-        <span class="col-cpu">CPU</span>
-        <span class="col-mem">Memory</span>
-        <span class="col-time">Runtime</span>
-      </div>
-      <div
-        v-for="p in systemStats!.processes"
-        :key="p.pid"
-        class="process-row"
-        :class="{ orphaned: p.orphaned }"
-      >
-        <span class="col-pid">
-          <span class="pid-chip" :class="{ orphan: p.orphaned }">{{ p.pid }}</span>
-        </span>
-        <span class="col-task">
-          <template v-if="p.taskId">
-            <router-link v-if="p.taskId" :to="`/work?id=${p.taskId}`" class="task-link">
-              #{{ p.taskId }}
-            </router-link>
-          </template>
-          <template v-else>
-            <span class="task-unknown">{{ p.pid === systemStats!.serverPid ? 'serve' : 'unknown' }}</span>
-          </template>
-          <span v-if="p.orphaned" class="orphan-tag">orphan</span>
-          <span v-if="p.unverified" class="unverified-tag">unverified</span>
-        </span>
-        <span class="col-cpu">{{ fmtPct(p.cpuPercent) }}%</span>
-        <span class="col-mem">{{ fmtBytes(p.memBytes) }}</span>
-        <span class="col-time">{{ fmtElapsed(p.elapsed) }}</span>
-      </div>
+    <div v-else class="waiting">
+      <span class="waiting-dot"></span>
+      Waiting for resource data — connect to the live server
     </div>
   </Card>
 </template>
@@ -335,5 +342,28 @@ const hasData = computed(() => systemStats.value !== null);
   .headlines {
     grid-template-columns: 1fr;
   }
+}
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--txt-faint);
+  padding: 12px 0 4px;
+}
+
+.waiting-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 </style>
