@@ -2,14 +2,14 @@
 id: "0091"
 title: "Add a live system resource panel (CPU, memory, per-agent processes) to the Control page"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T13:49:16Z"
-updated_at: "2026-08-11T13:49:16Z"
+updated_at: "2026-08-11T14:06:54Z"
 ---
 ## Activity
 
@@ -161,3 +161,7 @@ Control"), sitting alongside the existing stat cards:
   has landed, and keep the visual language consistent.
 - 0020 · Control-view status cards — the existing Control page layout this
   panel joins.
+
+## Activity
+
+- 2026-08-11T14:06:54Z · status inbox→ready
