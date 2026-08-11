@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0083-test-agent-model-combinations
 created_at: "2026-08-11T09:10:32Z"
-updated_at: "2026-08-11T09:54:39Z"
+updated_at: "2026-08-11T10:10:10Z"
 ---
 
 ## Problem
@@ -173,3 +173,5 @@ continuous background health checks.
 - 2026-08-11T09:39:00Z · status ready→active · ai
 - 2026-08-11T09:54:39Z · status active→review · implementation on
   feat/0083-test-agent-model-combinations (0c0bf1e); `repoos check` green · ai
+- 2026-08-11T10:10:10Z · review fix: replaced cross-CLI fallback labels with
+  Codex's live account model catalog and made testing target configured CLIs (f0be1c0) · ai
