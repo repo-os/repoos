@@ -2,7 +2,7 @@
 id: "0096"
 title: Make agent previews server-owned and protect the main server port
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
