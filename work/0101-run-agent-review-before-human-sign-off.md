@@ -2,14 +2,14 @@
 id: "0101"
 title: Run agent review before human sign-off
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/run-agent-review-before-human-sign-off
 created_at: "2026-08-11T16:24:27Z"
-updated_at: "2026-08-11T18:35:08Z"
+updated_at: "2026-08-11T18:44:25Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ If the review agent is disabled on the Agents page, moving a task to `review` do
 - 2026-08-11T18:15:10Z · status inbox→ready
 - 2026-08-11T18:15:16Z · status ready→inbox
 - 2026-08-11T18:35:08Z · status inbox→ready
+- 2026-08-11T18:44:25Z · status ready→active, branch
