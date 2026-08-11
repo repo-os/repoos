@@ -67,6 +67,8 @@ import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
+import { bootstrap } from "../core/bootstrap.js";
+import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 
 export interface ServeOptions {
   root?: string;
@@ -789,9 +791,49 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
-          // Best-effort spawn — never block the HTTP response on the agent.
           const cwd = wtRes.ok ? wtRes.path : config.root;
-          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent, { cwd });
+
+          // Bootstrap: RepoOS-owned preflight before the agent sees the
+          // worktree. Validates the root/worktree/branch, checks the
+          // orchestration build, and installs missing dependencies. Failures
+          // stop the launch with a clear error — the task stays `active` and
+          // the worktree is left unchanged so the problem is recoverable.
+          const taskForLaunch = index.getTask(updated.id) ?? updated;
+          const bootResult = await bootstrap(config, taskForLaunch, branch, cwd);
+          if (!bootResult.ok) {
+            return json(res, 500, {
+              ok: false,
+              error: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}`,
+              bootstrap: {
+                ok: false,
+                durationMs: bootResult.durationMs,
+                steps: bootResult.steps.map((s) => ({
+                  name: s.name,
+                  ok: s.ok,
+                  durationMs: s.durationMs,
+                  detail: s.detail,
+                })),
+              },
+            });
+          }
+
+          // Generate a cached task context pack so the agent starts with
+          // knowledge of the repo, relevant files, tests, and worktree state.
+          const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
+
+          // Resume preamble: when resuming a dirty worktree, explicitly
+          // describe existing partial changes so the agent doesn't rediscover
+          // them from scratch.
+          const preamble =
+            clean || !existing.branch
+              ? undefined
+              : resumePreamble(config, taskForLaunch, branch, cwd);
+
+          const spawnRes = runner.start(taskForLaunch, branch, agent, {
+            cwd,
+            contextPack: pack.content,
+            resumePreamble: preamble,
+          });
           return json(res, 200, {
             ok: true,
             task: index.getTask(updated.id),
@@ -803,6 +845,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               ok: spawnRes.ok,
               pid: spawnRes.pid,
               reason: spawnRes.reason,
+            },
+            bootstrap: {
+              ok: bootResult.ok,
+              durationMs: bootResult.durationMs,
+              steps: bootResult.steps.map((s) => ({
+                name: s.name,
+                ok: s.ok,
+                durationMs: s.durationMs,
+              })),
+            },
+            context: {
+              cacheHit: pack.cacheHit,
+              generationMs: pack.generationMs,
+              size: pack.size,
             },
           });
         }
@@ -896,7 +952,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             const cleared = patchTaskFile(config, existing.absPath, { needsInput: false });
             index.applyFileChange(cleared.absPath);
           }
-          const sendRes = runner.send(id, text, agent);
+          // Build a resume preamble so the agent sees existing partial changes
+          // without rediscovering them from scratch.
+          let preamble: string | undefined;
+          if (existing.branch) {
+            const wtPath = worktreePathForBranch(config.root, existing.branch);
+            if (wtPath) {
+              preamble = resumePreamble(config, existing, existing.branch, wtPath) || undefined;
+            }
+          }
+          const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
           if (!sendRes.ok && sendRes.busy) {
             return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
           }
