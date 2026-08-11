@@ -4,12 +4,29 @@ import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
+  dragEnabled: true,
+});
 
 const ui = useUiStore();
 const repo = useRepoStore();
 
 const busy = ref(false);
+const dragging = ref(false);
+
+function onDragStart(e: DragEvent): void {
+  if (!props.dragEnabled) return;
+  const dt = e.dataTransfer;
+  if (!dt) return;
+  dt.effectAllowed = "move";
+  dt.setData("text/plain", props.task.id);
+  dragging.value = true;
+}
+
+function onDragEnd(): void {
+  dragging.value = false;
+  window.dispatchEvent(new CustomEvent("repoos:board-dragend"));
+}
 
 interface CardAction {
   label: string;
@@ -94,9 +111,13 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       running: repo.isRunning(task.id),
+      dragging,
       'has-action': !!action,
     }"
+    :draggable="dragEnabled"
     @click="ui.openTask(task)"
+    @dragstart="onDragStart"
+    @dragend="onDragEnd"
   >
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>
