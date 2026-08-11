@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0029-remove-legacy-html-ui
 created_at: "2026-08-05T06:55:26Z"
-updated_at: "2026-08-11T14:40:11Z"
+updated_at: "2026-08-11T14:44:47Z"
 ---
 ## Activity
 
