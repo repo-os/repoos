@@ -120,6 +120,7 @@ async function openAgent(): Promise<void> {
     class="task-card"
     :class="{
       flash: repo.flashId === task.id,
+      'transition-success': repo.transitionState?.id === task.id,
       running: repo.isRunning(task.id),
       'needs-input': task.needsInput,
       dragging,

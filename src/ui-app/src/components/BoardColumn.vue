@@ -94,6 +94,14 @@ watch(collapsed, () => nextTick(checkScroll));
 
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
+/** Task that just left this column (for ghost animation). */
+const leavingTaskName = computed(() => {
+  const ts = repo.transitionState;
+  if (!ts || ts.from !== props.col.id) return null;
+  const t = repo.tasks.find((item) => item.id === ts.id);
+  return t?.title ?? null;
+});
+
 const dragOver = ref(false);
 let dragDepth = 0;
 
@@ -195,6 +203,9 @@ const toggle = () => {
       </svg>
     </div>
     <div ref="bodyEl" class="col-body">
+      <div v-if="leavingTaskName" class="board-ghost" :key="'ghost-' + repo.transitionState?.id">
+        Moved to {{ repo.transitionState?.to }}
+      </div>
       <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" :drag-enabled="dragEnabled" />
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
