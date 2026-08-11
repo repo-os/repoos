@@ -2,14 +2,14 @@
 id: "0080"
 title: Add a working animation and live time/tokens/cost counters to the Agent tab
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T06:25:10Z"
-updated_at: "2026-08-11T06:25:10Z"
+updated_at: "2026-08-11T08:17:03Z"
 ---
 ## Problem
 
@@ -117,3 +117,4 @@ over to the Agent tab every single time to see the live action.
 ## Activity
 
 - 2026-08-11T06:25:10Z · created · unknown
+- 2026-08-11T08:17:03Z · status inbox→ready
