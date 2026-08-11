@@ -2,12 +2,12 @@
 id: "0108"
 title: Remove move-to-done confirmation
 type: feature
-status: ready
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/remove-move-to-done-confirmation
 cli_override: codex
 model_override: gpt-5.6-terra
 created_at: "2026-08-11T20:02:12Z"
@@ -39,3 +39,4 @@ The task panel should show the existing prominent "Move to done" button. Clickin
 - 2026-08-11T20:02:12Z · created · unknown
 - 2026-08-11T20:02:19Z · status inbox→ready
 - 2026-08-11T20:02:41Z · cli_override, model_override
+- 2026-08-12T04:07:00Z · status active→review · removed confirmation step, repoos check green
