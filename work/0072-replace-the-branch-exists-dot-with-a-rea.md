@@ -2,14 +2,14 @@
 id: "0072"
 title: "Replace the \"branch exists\" dot with a real status hint on task cards"
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/replace-the-branch-exists-dot-with-a-rea
 created_at: "2026-08-11T03:27:18Z"
-updated_at: "2026-08-11T03:51:14Z"
+updated_at: "2026-08-11T12:20:01Z"
 ---
 ## Problem
 
@@ -112,3 +112,4 @@ signal.
 
 - 2026-08-11T03:27:18Z · created · unknown
 - 2026-08-11T03:51:14Z · status inbox→ready
+- 2026-08-11T12:20:01Z · status ready→active, branch
