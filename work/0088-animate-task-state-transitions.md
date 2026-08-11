@@ -2,14 +2,14 @@
 id: "0088"
 title: Animate task state transitions
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/animate-task-state-transitions
 created_at: "2026-08-11T13:32:49Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-11T17:25:46Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ This task covers animation feedback when a task advances to its next state from 
 - 2026-08-11T13:32:49Z · created · unknown
 - 2026-08-11T13:33:09Z · status inbox→ready
 - 2026-08-11T15:37:46Z · updated · define success timing, failure behavior, and reduced-motion fallback
+- 2026-08-11T17:25:46Z · status ready→active, branch
