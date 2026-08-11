@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-cloudflare-tunnel-zero-trust-publish
 created_at: "2026-08-11T01:44:17Z"
-updated_at: "2026-08-11T03:31:21Z"
+updated_at: "2026-08-11T13:06:00Z"
 ---
 ## Problem
 
@@ -208,4 +208,5 @@ support, per-app custom Access session durations or MFA policy tuning.
 
 - 2026-08-11T01:44:17Z · created · unknown
 - 2026-08-11T01:44:42Z · status inbox→ready
-- 2026-08-11T03:31:21Z · status ready→active, branch
+- 2026-08-11T13:06:00Z · status ready→active
+- 2026-08-11T13:06:00Z · status active→review
