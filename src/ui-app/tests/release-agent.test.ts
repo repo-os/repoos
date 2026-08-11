@@ -1,0 +1,262 @@
+/**
+ * 0087 — a task that leaves `active` releases its agent process and registry
+ * entry. Regression for the observed #0069 leak: an agent turn kept running
+ * for hours against a task that had long finished, consuming CPU and competing
+ * with the agents that were actually working. The cleanup must fire for every
+ * route that can change status — API PATCH and a direct task-file edit on disk
+ * (the watcher path) — and must reuse the graceful `runner.stop` path (SIGTERM,
+ * SIGKILL after grace), never a bare kill.
+ *
+ * Drives the real HTTP server against a fixture git repo and a fake `opencode`
+ * binary that stays alive (a live agent), then asserts the process dies and
+ * the registry clears when the task is transitioned out of `active`.
+ */
+import { afterEach, describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, basename, dirname } from "node:path";
+import { startServer, type ServerHandle } from "../../server/server";
+import type { RunningAgentInfo } from "../../server/agents";
+
+interface Fixture {
+  root: string;
+  bin: string;
+  log: string;
+  clean: () => void;
+}
+
+function git(root: string, args: string[]): void {
+  execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+
+function makeFixture(): Fixture {
+  const root = mkdtempSync(join(tmpdir(), "repoos-release-"));
+  const bin = join(root, "bin");
+  mkdirSync(bin, { recursive: true });
+  // A live agent: node keeps the process alive until it is signalled. It
+  // records its pid/args so the test can prove the process actually died.
+  writeFileSync(
+    join(bin, "opencode"),
+    `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ pid: process.pid, args: process.argv.slice(2) }) + "\\n");
+setInterval(() => {}, 1000);
+`,
+    { mode: 0o755 },
+  );
+  // The watcher only starts watching work/ when it exists at boot — create it
+  // up front so the direct-file-edit path is exercised.
+  mkdirSync(join(root, "work"), { recursive: true });
+  git(root, ["init", "-q"]);
+  git(root, ["config", "user.email", "t@example.com"]);
+  git(root, ["config", "user.name", "Test"]);
+  git(root, ["commit", "--allow-empty", "-m", "init"]);
+  // The start route provisions the task's worktree in a sibling directory
+  // (git worktree add) — remove it too so the fixture is fully cleaned up.
+  const wtDir = join(dirname(root), `${basename(root)}-worktrees`);
+  return {
+    root,
+    bin,
+    log: join(root, "spawns.log"),
+    clean: () => {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(wtDir, { recursive: true, force: true });
+    },
+  };
+}
+
+async function api(
+  server: ServerHandle,
+  method: string,
+  path: string,
+  body?: Record<string, unknown>,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const res = await fetch(`${server.url}${path}`, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  return {
+    status: res.status,
+    body: text ? (JSON.parse(text) as Record<string, unknown>) : {},
+  };
+}
+
+async function running(server: ServerHandle): Promise<RunningAgentInfo[]> {
+  const res = await fetch(`${server.url}/api/agents/running`);
+  const body = (await res.json()) as { tasks: RunningAgentInfo[] };
+  return body.tasks;
+}
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+async function waitForAsync(
+  fn: () => Promise<boolean>,
+  label: string,
+): Promise<void> {
+  const start = Date.now();
+  while (!(await fn())) {
+    if (Date.now() - start > 10_000) throw new Error(`timed out waiting for ${label}`);
+    await new Promise((r) => setTimeout(r, 25));
+  }
+}
+
+/** Best-effort kill of any spawned fake agents, so a failed test leaks nothing. */
+function killSpawns(fx: Fixture): void {
+  let text: string;
+  try {
+    text = readFileSync(fx.log, "utf8");
+  } catch {
+    return;
+  }
+  for (const line of text.trim().split("\n")) {
+    if (!line) continue;
+    try {
+      const rec = JSON.parse(line) as { pid?: number };
+      if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
+afterEach(() => {
+  delete process.env.REPOOS_FAKEBIN_LOG;
+});
+
+describe("release agent when a task leaves active (#0087)", () => {
+  it("stops the live agent and clears the registry on API PATCH active -> review", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const created = await api(server, "POST", "/api/tasks", {
+        title: "Release the agent",
+        status: "ready",
+      });
+      expect(created.status).toBe(201);
+      const id = created.body.id as string;
+
+      const started = await api(server, "POST", `/api/tasks/${id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(
+        async () => (await running(server)).some((r) => r.id === id),
+        "agent appears in the running registry",
+      );
+      const info = (await running(server)).find((r) => r.id === id)!;
+      expect(info.pid).toBeGreaterThan(0);
+      expect(alive(info.pid)).toBe(true);
+
+      const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
+        status: "review",
+      });
+      expect(patched.status).toBe(200);
+      expect(patched.body.status).toBe("review");
+
+      await waitForAsync(
+        async () => !(await running(server)).some((r) => r.id === id),
+        "agent leaves the running registry",
+      );
+      expect(alive(info.pid)).toBe(false);
+    } finally {
+      killSpawns(fx);
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      await server.close();
+      fx.clean();
+    }
+  });
+
+  it("stops the live agent when a direct task-file edit to review is picked up by the watcher", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const created = await api(server, "POST", "/api/tasks", {
+        title: "Release by file edit",
+        status: "ready",
+      });
+      expect(created.status).toBe(201);
+      const id = created.body.id as string;
+      const absPath = created.body.absPath as string;
+
+      const started = await api(server, "POST", `/api/tasks/${id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(
+        async () => (await running(server)).some((r) => r.id === id),
+        "agent appears in the running registry",
+      );
+      const info = (await running(server)).find((r) => r.id === id)!;
+      expect(alive(info.pid)).toBe(true);
+
+      // The agent's own self-transition edits the MAIN copy on disk directly
+      // (never via the API) — the watcher is the only thing that sees it.
+      writeFileSync(
+        absPath,
+        readFileSync(absPath, "utf8").replace(/^status: active$/m, "status: review"),
+      );
+
+      await waitForAsync(
+        async () => !(await running(server)).some((r) => r.id === id),
+        "agent leaves the running registry after a direct file edit",
+      );
+      expect(alive(info.pid)).toBe(false);
+      // The board reflects the file as the agent left it.
+      expect(readFileSync(absPath, "utf8")).toMatch(/^status: review$/m);
+    } finally {
+      killSpawns(fx);
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      await server.close();
+      fx.clean();
+    }
+  });
+
+  it("is a clean no-op when no agent is running (already exited on its own)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const created = await api(server, "POST", "/api/tasks", {
+        title: "No-op release",
+        status: "active",
+      });
+      expect(created.status).toBe(201);
+      const id = created.body.id as string;
+
+      const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
+        status: "review",
+      });
+      expect(patched.status).toBe(200);
+      expect(patched.body.status).toBe("review");
+      expect(await running(server)).toEqual([]);
+    } finally {
+      killSpawns(fx);
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      await server.close();
+      fx.clean();
+    }
+  });
+});
