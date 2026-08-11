@@ -2,7 +2,7 @@
 id: "0078"
 title: "Add sort order control to Work Queue, default to most recently updated"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -36,17 +36,17 @@ priority-based order when that's more useful.
 
 ## Acceptance criteria
 
-- [ ] A sort-order dropdown appears in the Work Queue header, offering "Most
+- [x] A sort-order dropdown appears in the Work Queue header, offering "Most
       recently updated" and "Current order"
-- [ ] Default sort (no saved preference) is "Most recently updated"
+- [x] Default sort (no saved preference) is "Most recently updated"
       (`updated_at` descending)
-- [ ] "Current order" reproduces today's behavior: status rank, then priority
+- [x] "Current order" reproduces today's behavior: status rank, then priority
       rank, then task id
-- [ ] Tasks with no `updated_at` sort to the bottom under "Most recently
+- [x] Tasks with no `updated_at` sort to the bottom under "Most recently
       updated" rather than erroring or floating to the top
-- [ ] Switching the dropdown re-orders all board columns immediately
-- [ ] The selected sort order persists across page reloads (localStorage)
-- [ ] `repoos check` passes; no new runtime dependencies
+- [x] Switching the dropdown re-orders all board columns immediately
+- [x] The selected sort order persists across page reloads (localStorage)
+- [x] `repoos check` passes; no new runtime dependencies
 
 ## Notes for AI
 
@@ -96,3 +96,4 @@ order, and sorting for any future non-board list views.
 - 2026-08-11T05:43:23Z · created · unknown
 - 2026-08-11T05:44:25Z · status inbox→ready
 - 2026-08-11T08:15:55Z · status ready→active, branch
+- 2026-08-11T16:22:00Z · status active→review · implemented sort-order dropdown, repoos check green
