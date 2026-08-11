@@ -2,7 +2,7 @@
 id: "0063"
 title: Let the user restart a dirty task in its existing worktree or a clean one
 type: feature
-status: inbox
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -14,6 +14,7 @@ updated_at: "2026-08-10T23:57:48Z"
 ## Activity
 
 - 2026-08-10T23:57:48Z · created · unknown
+- 2026-08-11T01:15:48Z · set to review · ai
 
 
 ## Problem

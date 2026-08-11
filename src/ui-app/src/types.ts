@@ -20,7 +20,13 @@ export interface Task {
   absPath: string;
   body: string;
   extra: Record<string, unknown>;
-  git: { branchExists: boolean; lastCommit: string | null; lastCommitAt: string | null };
+  git: {
+    branchExists: boolean;
+    lastCommit: string | null;
+    lastCommitAt: string | null;
+    worktreePath: string | null;
+    dirty: boolean;
+  };
 }
 
 export interface Health {

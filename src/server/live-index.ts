@@ -17,6 +17,7 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreeStatus,
   emptyGitInfo,
 } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -111,12 +112,17 @@ export class LiveIndex {
     });
     if (this.useGit) {
       const { subject, date } = lastCommitForFile(this.config.root, task.path);
+      const wt = task.branch
+        ? worktreeStatus(this.config.root, task.branch)
+        : { path: null, dirty: false };
       task.git = {
         branchExists: task.branch
           ? this.branchCache.has(task.branch)
           : false,
         lastCommit: subject,
         lastCommitAt: date,
+        worktreePath: wt.path,
+        dirty: wt.dirty,
       };
     }
 
@@ -167,11 +173,16 @@ export class LiveIndex {
       ? localBranches(this.config.root)
       : new Set();
     for (const [id, t] of this.byId) {
+      const wt = t.branch
+        ? worktreeStatus(this.config.root, t.branch)
+        : { path: null, dirty: false };
       this.byId.set(id, {
         ...t,
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
+          worktreePath: wt.path,
+          dirty: wt.dirty,
         },
       });
     }

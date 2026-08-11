@@ -86,7 +86,13 @@ const TASK: Task = {
   absPath: "/tmp/work/0001-test.md",
   body: "",
   extra: {},
-  git: { branchExists: false, lastCommit: null, lastCommitAt: null },
+  git: {
+    branchExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+    worktreePath: null,
+    dirty: false,
+  },
 };
 
 const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });
