@@ -2,14 +2,14 @@
 id: "0103"
 title: Fix ESM crash when generating task context packs
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-esm-crash-when-generating-task-conte
 created_at: "2026-08-11T16:44:44Z"
-updated_at: "2026-08-11T16:44:44Z"
+updated_at: "2026-08-11T16:48:11Z"
 ---
 ## Activity
 
@@ -31,3 +31,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-08-11T16:48:11Z · status ready→active, branch
