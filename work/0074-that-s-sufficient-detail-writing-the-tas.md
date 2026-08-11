@@ -2,7 +2,7 @@
 id: "0074"
 title: Auto-scroll agent chat to latest message and show the human's own messages
 type: bug
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: agent
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/auto-scroll-agent-chat-to-latest-message
 created_at: "2026-08-11T05:06:07Z"
-updated_at: "2026-08-11T13:02:01Z"
+updated_at: "2026-08-11T13:14:55Z"
 ---
 ---
 ## Problem
@@ -55,3 +55,4 @@ The Agent tab in the task drawer (`src/ui-app/src/components/TaskDrawer.vue`) ha
 - 2026-08-11T12:13:05Z · status active→ready
 - 2026-08-11T12:13:12Z · status ready→active
 - 2026-08-11T12:31:06Z · needs_merge
+- 2026-08-11T13:14:55Z · status review→done
