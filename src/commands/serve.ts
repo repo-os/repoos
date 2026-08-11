@@ -18,7 +18,13 @@ export async function cmdServe(args: string[]): Promise<void> {
 
   let handle;
   try {
-    handle = await startServer({ port, host });
+    // REPOOS_RELOAD=1 marks a replacement spawned by the auto-reload manager:
+    // it retries EADDRINUSE until the old process hands the port over.
+    handle = await startServer({
+      port,
+      host,
+      reloadReplacement: process.env.REPOOS_RELOAD === "1",
+    });
   } catch (e) {
     const msg = (e as Error).message;
     if (msg.includes("EADDRINUSE")) {

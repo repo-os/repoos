@@ -6,6 +6,10 @@
  * lives here that isn't already in core. Endpoints:
  *
  *   GET  /api/health           -> { ok, root, taskCount, workDir, version, buildAt }
+ *                                (?reload=<secret> replies with reloadHandshake for a
+ *                                 reload replacement's readiness probe)
+ *   POST /api/server/restart   -> trigger the auto-reload path (see server/reload.ts);
+ *                                returns { state: "reloading" | "deferred" | "not-stale" }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
  *   GET  /api/tasks/:id        -> Task | 404  (includes `preview` when running)
  *   GET  /api/counts           -> { inbox, ready, ... }
@@ -54,11 +58,17 @@ import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt }
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
+import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 
 export interface ServeOptions {
   root?: string;
   port?: number;
   host?: string;
+  /**
+   * True when this process is a reload replacement (REPOOS_RELOAD=1): retry
+   * EADDRINUSE until the old process releases the port, instead of failing.
+   */
+  reloadReplacement?: boolean;
 }
 
 export interface ServerHandle {
@@ -178,6 +188,26 @@ function findPackageRoot(): string | null {
   if (existsSync(join(great, "package.json"))) return great;
   return null;
 }
+
+/**
+ * Absolute path of the compiled CLI entrypoint, so the reload manager can spawn
+ * a replacement `repoos serve` process. Same resolution as preview.ts.
+ */
+function cliEntryPath(): string | null {
+  const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
+  const candidates = [
+    join(here, "..", "cli", "index.js"), // compiled: dist/cli/index.js
+    join(here, "..", "..", "dist", "cli", "index.js"), // dev: repo-root dist
+  ];
+  for (const p of candidates) if (existsSync(p)) return p;
+  return null;
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** How long a reload replacement retries EADDRINUSE before giving up. */
+const RELOAD_BIND_TIMEOUT_MS = 40_000;
+const RELOAD_BIND_RETRY_MS = 300;
 
 /**
  * Build metadata served to the UI: the package version and the timestamp of
@@ -308,12 +338,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   const uiDir = findUiDir(repoos.config.root);
 
+  // The build hash of the code this process is running. Auto-reload (0066)
+  // triggers a replacement whenever the on-disk hash diverges. Skipped in dev
+  // mode (no compiled build to reload into), in preview children, and when an
+  // ephemeral port is requested (nothing stable to hand off).
+  const loadedHash = readBuildHash(config.root);
+  const reloadEnabled =
+    !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
+  let reload: ReloadManager | null = null;
+
   const watcher = new WorkWatcher(config, index);
   watcher.start();
 
   // active SSE clients
   const clients = new Set<ServerResponse>();
   const emitEvent = (e: RepoEvent) => {
+    // A drained runner unblocks a deferred reload immediately (0066).
+    reload?.onEvent(e);
     const frame = `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`;
     for (const res of clients) {
       try {
@@ -391,6 +432,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/health" && method === "GET") {
         const snap = index.snapshot();
         const build = loadBuildInfo();
+        // Readiness handshake for a reload replacement (0066): when this
+        // process carries a reload secret AND the probe matches it, the answer
+        // proves a live replacement is listening and healthy. The parent's own
+        // health handler answers without the handshake (different secret), so
+        // it can never confirm itself.
+        const secret = process.env.REPOOS_RELOAD_SECRET;
+        const handshake =
+          typeof secret === "string" &&
+          secret !== "" &&
+          url.searchParams.get("reload") === secret;
         return json(res, 200, {
           ok: true,
           root: config.root,
@@ -398,7 +449,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           workDir: config.workDir,
           version: build.version,
           buildAt: build.buildAt,
+          ...(handshake ? { reloadHandshake: true } : {}),
         });
+      }
+      if (path === "/api/server/restart" && method === "POST") {
+        // Best-effort manual reload (same path as the build watch): reloads
+        // now when stale and idle, defers while agents run, or reports
+        // not-stale when this process already serves the current build.
+        const state = reload?.requestReload("manual restart") ?? {
+          state: "not-stale",
+          reason: "auto-reload unavailable",
+        } as const;
+        return json(res, 200, state);
       }
       if (path === "/api/tasks" && method === "GET") {
         const status = url.searchParams.get("status") as Status | null;
@@ -943,21 +1005,78 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const port = opts.port ?? 7171;
   const host = opts.host ?? "127.0.0.1";
 
+  /** One bind attempt: resolves once listening, rejects on the listen error. */
+  const bindOnce = (withReusePort: boolean): Promise<void> =>
+    new Promise<void>((resolve, reject) => {
+      const onErr = (e: Error) => reject(e);
+      server.once("error", onErr);
+      server.listen({ port, host, reusePort: withReusePort }, () => {
+        server.removeListener("error", onErr);
+        resolve();
+      });
+    });
+
+  /** Release the HTTP listener (drain window / shutdown). Idempotent. */
+  const closeHttp = (): Promise<void> =>
+    new Promise((resolve) => {
+      if (!server.listening) {
+        resolve();
+        return;
+      }
+      // End in-flight/keep-alive connections (SSE included) so the port frees
+      // promptly instead of waiting on them.
+      try {
+        server.closeAllConnections?.();
+      } catch {
+        /* ignore */
+      }
+      server.close(() => resolve());
+    });
+
   return new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(port, host, () => {
+    void (async () => {
+      if (opts.reloadReplacement) {
+        // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
+        // process can share the port with the old one (zero-downtime on
+        // platforms that support it). Where that is unsupported (ENOTSUP on
+        // macOS) or the old process bound without it (EADDRINUSE), fall back
+        // to a plain bind retried until the old process releases the port.
+        const deadline = Date.now() + RELOAD_BIND_TIMEOUT_MS;
+        let bound = false;
+        try {
+          await bindOnce(true);
+          bound = true;
+        } catch (e) {
+          const code = (e as NodeJS.ErrnoException).code;
+          if (code !== "ENOTSUP" && code !== "EOPNOTSUPP" && code !== "EADDRINUSE") throw e;
+        }
+        while (!bound && Date.now() < deadline) {
+          try {
+            await bindOnce(false);
+            bound = true;
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
+            await sleep(RELOAD_BIND_RETRY_MS);
+          }
+        }
+        if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
+      } else {
+        await bindOnce(false);
+      }
+
       const actualPort = (server.address() as { port: number }).port;
       const url = `http://${host}:${actualPort}`;
-      resolve({
+      const handle: ServerHandle = {
         url,
         port: actualPort,
         index,
         close: async () => {
           unsubscribe();
           watcher.stop();
+          reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
-          // in-process close) tear them all down so no orphan `repoos serve`
-          // process is left behind.
+          // in-process close / reload handover) tear them all down so no
+          // orphan `repoos serve` process is left behind.
           await previews.stopAll();
           for (const c of clients) {
             try {
@@ -967,9 +1086,38 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           }
           clients.clear();
-          await new Promise<void>((res) => server.close(() => res()));
+          await closeHttp();
         },
+      };
+
+      // Auto-reload (0066): watch dist/.build-info.json and hand over to a
+      // replacement process on a hash change. Deferred while an agent runs.
+      reload = new ReloadManager({
+        root: config.root,
+        host,
+        port: actualPort,
+        loadedHash,
+        enabled: reloadEnabled,
+        isReplacement: process.env.REPOOS_RELOAD === "1",
+        isBusy: () => runner.running().length,
+        cliEntry: cliEntryPath,
+        stopListening: closeHttp,
+        listen: () => bindOnce(false),
+        onReloadConfirmed: async () => {
+          await handle.close();
+          process.exit(0);
+        },
+        onReloadFailed: (reason) => {
+          console.log(`  ${reason} — old process keeps serving`);
+        },
+        log: (msg) => console.log(msg),
       });
-    });
+      reload.start();
+      // Stale-boot self-heal: a newer build that landed while we were starting
+      // is picked up immediately (skipped by REPOOS_RELOAD=1 replacements).
+      void reload.bootSelfHeal();
+
+      resolve(handle);
+    })().catch((e) => reject(e as Error));
   });
 }

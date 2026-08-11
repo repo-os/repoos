@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0066-serve-auto-reload
 created_at: "2026-08-11T00:17:13Z"
-updated_at: "2026-08-11T06:12:04Z"
+updated_at: "2026-08-11T06:22:22Z"
 ---
 ## Activity
 
@@ -122,7 +122,4 @@ intervention:
 - 2026-08-11T03:15:33Z · status ready→active
 - 2026-08-11T05:03:24Z · status active→ready
 - 2026-08-11T05:03:26Z · status ready→active
-- 2026-08-11T05:37:42Z · status active→ready
-- 2026-08-11T05:37:43Z · status ready→active
-- 2026-08-11T06:12:03Z · status active→ready
-- 2026-08-11T06:12:04Z · status ready→active
+- 2026-08-11T06:22:22Z · status active→review
