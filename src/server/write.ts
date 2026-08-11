@@ -31,6 +31,15 @@ export interface TaskPatch {
   body?: string;
 }
 
+export interface PatchTaskOptions {
+  /**
+   * Called when a patch actually changes a task's status, with the task being
+   * written and the previous/new statuses. Lets the server reap preview
+   * servers when a task leaves active/review (see preview.ts).
+   */
+  onStatusChange?: (task: Task, prev: Status, next: Status) => void;
+}
+
 export class WriteError extends Error {}
 
 /** Thrown when a delete target resolves outside the configured work dir. */
@@ -44,6 +53,7 @@ export function patchTaskFile(
   config: RepoOSConfig,
   absPath: string,
   patch: TaskPatch,
+  opts: PatchTaskOptions = {},
 ): Task {
   if (!existsSync(absPath)) {
     throw new WriteError(`Task file not found: ${absPath}`);
@@ -73,6 +83,7 @@ export function patchTaskFile(
   if (patch.status !== undefined) {
     if (patch.status !== current.status) {
       changes.push(`status ${current.status}→${patch.status}`);
+      opts.onStatusChange?.(current, current.status, patch.status);
     }
     current.status = patch.status;
   }

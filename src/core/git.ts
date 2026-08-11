@@ -75,9 +75,11 @@ export interface EnsureWorktreeResult {
 
 /**
  * Branch -> worktree path for every registered linked worktree, derived from
- * `git worktree list --porcelain`. Empty map when git is missing.
+ * `git worktree list --porcelain`. Empty map when git is missing. Callers that
+ * resolve several branches at once (indexer, live index) should call this ONCE
+ * and reuse the map — every call shells out to git.
  */
-function worktreeList(root: string): Map<string, string> {
+export function worktreePaths(root: string): Map<string, string> {
   const out = git(root, ["worktree", "list", "--porcelain"]);
   const map = new Map<string, string>();
   if (!out) return map;
@@ -101,7 +103,7 @@ function worktreeList(root: string): Map<string, string> {
  * resolve correctly.
  */
 export function worktreePathForBranch(root: string, branch: string): string | null {
-  return worktreeList(root).get(branch) ?? null;
+  return worktreePaths(root).get(branch) ?? null;
 }
 
 /**
@@ -123,7 +125,7 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
   if (currentBranch(root) === branch) {
     return { ok: true, path: root, created: false };
   }
-  const existing = worktreeList(root).get(branch);
+  const existing = worktreePaths(root).get(branch);
   if (existing) return { ok: true, path: existing, created: false };
 
   const target = join(worktreesDir(root), branch);
@@ -399,7 +401,7 @@ export function deleteBranch(root: string, branch: string): boolean {
  * worktree and prunes stale metadata if the first attempt fails.
  */
 export function removeWorktree(root: string, branch: string): boolean {
-  const path = worktreeList(root).get(branch);
+  const path = worktreePaths(root).get(branch);
   if (!path) return true;
   if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
   git(root, ["worktree", "prune"]);

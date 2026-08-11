@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -350,6 +350,49 @@ function cancelDraft(): void {
   specEditing.value = false;
 }
 
+// ---- read-only worktree preview ----
+
+/** True while a preview start/stop request is in flight. */
+const previewBusy = ref(false);
+
+/**
+ * A preview is available only for active/review tasks with a branch that has a
+ * git worktree checked out — the thing the preview server actually serves.
+ */
+const previewable = computed(() => {
+  const t = ui.active;
+  if (!t) return false;
+  return (
+    (t.status === "active" || t.status === "review") &&
+    !!t.branch &&
+    !!t.git?.worktreeExists
+  );
+});
+
+async function startPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.startPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
+}
+
+async function stopPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.stopPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
+}
+
 // ---- agent session tab ----
 
 /** The rendered transcript for the open task. */
@@ -692,6 +735,48 @@ async function sendTurn(): Promise<void> {
                 </Button>
               </div>
             </template>
+          </div>
+          <div
+            v-if="ui.active.status === 'active' || ui.active.status === 'review'"
+            class="field"
+            style="margin-top: 16px"
+          >
+            <label>Preview</label>
+            <template v-if="ui.active.preview">
+              <div class="preview-live">
+                <span class="preview-dot"></span>
+                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                  <ExternalLink class="size-3.5" />
+                  {{ ui.active.preview.url }}
+                </a>
+              </div>
+              <Button
+                variant="outline"
+                class="w-full"
+                :disabled="ui.saving || previewBusy"
+                @click="stopPreview"
+              >
+                <Square class="size-3.5" />
+                Stop preview
+              </Button>
+            </template>
+            <Button
+              v-else
+              variant="outline"
+              class="w-full"
+              :disabled="ui.saving || previewBusy || !previewable"
+              @click="startPreview"
+            >
+              <Eye class="size-3.5" />
+              {{ previewBusy ? "Starting…" : "Preview" }}
+            </Button>
+            <p v-if="!ui.active.branch" class="preview-hint">
+              No branch yet — start work to create the worktree this previews.
+            </p>
+            <p v-else-if="!ui.active.git?.worktreeExists" class="preview-hint">
+              No git worktree is checked out for
+              <span class="mono">{{ ui.active.branch }}</span>.
+            </p>
           </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
