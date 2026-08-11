@@ -28,6 +28,7 @@ enabled = true
 
 [tunnel]
 provider = "cloudflare"
+enabled = true
 name = "repoos-local"
 domain = "repoos.org"
 tunnel_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -45,6 +46,7 @@ access = []
 
 const cfg: TunnelConfig = {
   provider: "cloudflare",
+  enabled: true,
   name: "repoos-local",
   domain: "repoos.org",
   tunnelId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -61,6 +63,7 @@ describe("parseTunnelSection", () => {
   it("reads provider, name, domain, tunnel id and apps from a full repoos.toml", () => {
     const out = parseTunnelSection(FULL_DOC);
     expect(out.provider).toBe("cloudflare");
+    expect(out.enabled).toBe(true);
     expect(out.name).toBe("repoos-local");
     expect(out.domain).toBe("repoos.org");
     expect(out.tunnelId).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
@@ -75,6 +78,7 @@ describe("parseTunnelSection", () => {
   it("returns a default config when no [tunnel] section exists", () => {
     const out = parseTunnelSection('workDir = "work"\n');
     expect(out.name).toBe("repoos-local");
+    expect(out.enabled).toBe(false);
     expect(out.tunnelId).toBe("");
     expect(out.apps).toEqual({});
   });
@@ -83,12 +87,13 @@ describe("parseTunnelSection", () => {
 describe("serializeTunnelSection", () => {
   it("writes every field and quotes strings/arrays", () => {
     const text = serializeTunnelSection(cfg);
-    expect(text).toContain('[tunnel]');
+    expect(text).toContain("[tunnel]");
     expect(text).toContain('provider = "cloudflare"');
+    expect(text).toContain("enabled = true");
     expect(text).toContain('name = "repoos-local"');
     expect(text).toContain('domain = "repoos.org"');
     expect(text).toContain('tunnel_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"');
-    expect(text).toContain('[tunnel.apps.dashboard]');
+    expect(text).toContain("[tunnel.apps.dashboard]");
     expect(text).toContain('hostname = "dashboard.repoos.org"');
     expect(text).toContain('access = ["alice@example.com", "bob@example.com"]');
   });
@@ -106,7 +111,7 @@ describe("upsertTunnelSection", () => {
     expect(updated).toContain('workDir = "work"');
     expect(updated).toContain('name = "engineer"');
     expect(updated).toContain('defaultStatus = "inbox"');
-    expect(updated).toContain("[tunnel]\nprovider = \"cloudflare\"");
+    expect(updated).toContain('[tunnel]\nprovider = "cloudflare"');
     expect(updated).not.toContain("[tunnel.apps.dashboard]");
     expect(updated).not.toContain("[tunnel.apps.admin]");
   });
@@ -132,7 +137,9 @@ describe("hostname inference + validation", () => {
 
   it("warns for hostnames deeper than one label under the base domain", () => {
     expect(hostnameWarning("dashboard.repoos.org", "repoos.org")).toBeNull();
-    expect(hostnameWarning("dashboard.app.repoos.org", "repoos.org")).toContain("deeper than one label");
+    expect(hostnameWarning("dashboard.app.repoos.org", "repoos.org")).toContain(
+      "deeper than one label",
+    );
   });
 
   it("validates app names and emails", () => {
@@ -161,9 +168,14 @@ describe("allowlist mutation", () => {
 
 describe("derived cloudflared config", () => {
   it("renders one ingress rule per app plus a trailing 404 catch-all", () => {
-    const yaml = renderCloudflaredConfig(cfg, "/home/nick/.cloudflared/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.json");
+    const yaml = renderCloudflaredConfig(
+      cfg,
+      "/home/nick/.cloudflared/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.json",
+    );
     expect(yaml).toContain("tunnel: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    expect(yaml).toContain("credentials-file: /home/nick/.cloudflared/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.json");
+    expect(yaml).toContain(
+      "credentials-file: /home/nick/.cloudflared/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.json",
+    );
     expect(yaml).toContain("ingress:");
     expect(yaml).toContain("  - hostname: dashboard.repoos.org");
     expect(yaml).toContain("    service: http://localhost:3000");

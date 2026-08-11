@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
+import { useUiStore } from "../stores/ui";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -14,8 +15,22 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 
 const config = useConfigStore();
+const ui = useUiStore();
 const route = useRoute();
 const router = useRouter();
+const generalFields = computed(() =>
+  config.visibleFields.filter((field) => field.key !== "tunnelEnabled"),
+);
+
+async function toggleTunnel(enabled: boolean): Promise<void> {
+  try {
+    await config.setTunnelEnabled(enabled);
+    if (enabled) ui.openTunnel();
+    else ui.closeTunnel();
+  } catch {
+    // The config store restores the previous value and surfaces the error.
+  }
+}
 
 function focusSetting(key: string): void {
   const el = document.getElementById(`setting-${key}`);
@@ -60,12 +75,7 @@ watch(
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
             <span class="live-dot"></span>General
           </div>
-          <div
-            v-for="f in config.visibleFields"
-            :key="f.key"
-            :id="`setting-${f.key}`"
-            class="setting-row"
-          >
+          <div v-for="f in generalFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
             <div class="setting-info">
               <div class="setting-label">{{ f.label }}</div>
               <div class="setting-desc">{{ f.description }}</div>
@@ -96,6 +106,39 @@ watch(
               />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Publishing
+          </div>
+          <div id="setting-tunnelEnabled" class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Cloudflare Tunnel</div>
+              <div class="setting-desc">
+                Publish local apps securely through Cloudflare Tunnel + Access. Off by default.
+              </div>
+            </div>
+            <div class="setting-input tunnel-setting-actions">
+              <Button
+                v-if="config.form.tunnelEnabled"
+                variant="outline"
+                size="sm"
+                :disabled="config.saving"
+                @click="ui.openTunnel()"
+              >
+                Open setup
+              </Button>
+              <Switch
+                :checked="!!config.form.tunnelEnabled"
+                :disabled="config.saving"
+                aria-label="Enable Cloudflare Tunnel publishing"
+                @update:checked="toggleTunnel"
+              />
+            </div>
           </div>
         </div>
       </Card>

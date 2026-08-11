@@ -7,26 +7,13 @@
  */
 
 /** Canonical lifecycle states. Order matters: it defines board column order. */
-export const STATUSES = [
-  "draft",
-  "inbox",
-  "ready",
-  "active",
-  "review",
-  "done",
-] as const;
+export const STATUSES = ["draft", "inbox", "ready", "active", "review", "done"] as const;
 export type Status = (typeof STATUSES)[number];
 
 export const PRIORITIES = ["p0", "p1", "p2", "p3"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
-export const TASK_TYPES = [
-  "feature",
-  "bug",
-  "chore",
-  "spec",
-  "refactor",
-] as const;
+export const TASK_TYPES = ["feature", "bug", "chore", "spec", "refactor"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
 /** Who a task is assigned to. `ai` is a first-class assignee. */
@@ -197,6 +184,8 @@ export interface RepoOSConfig {
   cacheDir: string;
   /** When true, stale builds cause repoos to exit with an error instead of warning. */
   strictBuild?: boolean;
+  /** Whether Cloudflare Tunnel controls are surfaced in the web UI. */
+  tunnelEnabled?: boolean;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;
   /** UI design language: classic (current) or clear. Cosmetic only. */

@@ -2,12 +2,13 @@
 id: "0079"
 title: Add Cloudflare Tunnel toggle and setup UI to Settings page
 type: feature
-status: ready
+status: active
+needs_input: true
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-cloudflare-tunnel-toggle-and-setup-u
 created_at: "2026-08-11T05:59:26Z"
 updated_at: "2026-08-11T08:17:14Z"
 ---
@@ -117,3 +118,4 @@ per-app Access allowlists unless it falls out naturally from the setup flow.
 
 - 2026-08-11T05:59:26Z · created · unknown
 - 2026-08-11T08:17:14Z · status inbox→ready
+- 2026-08-11T12:22:00Z · blocked · repoos check requires loopback server binding, which this execution sandbox rejects with EPERM

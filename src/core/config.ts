@@ -5,15 +5,7 @@
  */
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import type {
-  Agent,
-  RepoOSConfig,
-  Status,
-  Assignee,
-  Theme,
-  UiTheme,
-  TaskMode,
-} from "./types.js";
+import type { Agent, RepoOSConfig, Status, Assignee, Theme, UiTheme } from "./types.js";
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
@@ -63,6 +55,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   theme: "system",
   uiTheme: "classic",
   defaultTaskMode: "freeform",
+  tunnelEnabled: false,
   agents: [],
 };
 
@@ -82,10 +75,7 @@ export function findRepoRoot(start: string = process.cwd()): string {
   let dir = resolve(start);
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    if (
-      existsSync(join(dir, ".git")) ||
-      existsSync(join(dir, "repoos.toml"))
-    ) {
+    if (existsSync(join(dir, ".git")) || existsSync(join(dir, "repoos.toml"))) {
       return dir;
     }
     const parent = resolve(dir, "..");
@@ -155,9 +145,7 @@ export function mainCheckoutRoot(dir: string): string | null {
 export function boardRoot(start?: string): { root: string; fromWorktree: boolean } {
   const resolved = findRepoRoot(start);
   const main = mainCheckoutRoot(resolved);
-  return main
-    ? { root: main, fromWorktree: true }
-    : { root: resolved, fromWorktree: false };
+  return main ? { root: main, fromWorktree: true } : { root: resolved, fromWorktree: false };
 }
 
 /** Extremely small flat-TOML reader: `key = value`, `[section]` headers, and `[[array-of-tables]]`. */
@@ -231,9 +219,10 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       cfg.defaultAssignee = get("defaultAssignee") as Assignee;
     if (typeof get("cacheDir") === "string") cfg.cacheDir = get("cacheDir") as string;
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
+    const tunnelEnabled = parsed["tunnel.enabled"];
+    if (typeof tunnelEnabled === "boolean") cfg.tunnelEnabled = tunnelEnabled;
     if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
-    if (typeof get("uiTheme") === "string")
-      cfg.uiTheme = get("uiTheme") as UiTheme;
+    if (typeof get("uiTheme") === "string") cfg.uiTheme = get("uiTheme") as UiTheme;
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
@@ -282,6 +271,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "gen z", label: "Gen Z" },
       ],
       description: "Visual design language — applies immediately, no restart",
+    },
+    {
+      key: "tunnelEnabled",
+      label: "Cloudflare Tunnel",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.tunnelEnabled,
+      description: "Publish local apps securely through Cloudflare Tunnel + Access",
     },
     {
       key: "defaultStatus",

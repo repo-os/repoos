@@ -26,6 +26,8 @@ export interface TunnelApp {
 /** The persisted `[tunnel]` state. Non-secret — never holds tokens or tunnel secrets. */
 export interface TunnelConfig {
   provider: "cloudflare";
+  /** UI opt-in only; disabling never deletes configuration or stops cloudflared. */
+  enabled: boolean;
   /** Machine-local tunnel name (one tunnel per machine). */
   name: string;
   /** Base domain used to infer hostnames, e.g. `repoos.org`. */
@@ -43,6 +45,7 @@ export const ACCESS_POLICY_NAME = "repoos allowlist";
 export function emptyTunnelConfig(): TunnelConfig {
   return {
     provider: "cloudflare",
+    enabled: false,
     name: DEFAULT_TUNNEL_NAME,
     domain: "",
     tunnelId: "",
@@ -61,7 +64,12 @@ function parseTomlValue(s: string): unknown {
     return s
       .slice(1, -1)
       .split(",")
-      .map((x) => x.trim().replace(/^["']|["']$/g, "").replace(/\\"/g, '"'))
+      .map((x) =>
+        x
+          .trim()
+          .replace(/^["']|["']$/g, "")
+          .replace(/\\"/g, '"'),
+      )
       .filter(Boolean);
   }
   if (/^-?\d+$/.test(s)) return Number(s);
@@ -117,6 +125,7 @@ export function parseTunnelSection(text: string): TunnelConfig {
     };
   }
   const cfg = emptyTunnelConfig();
+  if (typeof t.enabled === "boolean") cfg.enabled = t.enabled;
   if (typeof t.name === "string" && t.name) cfg.name = t.name;
   if (typeof t.domain === "string") cfg.domain = t.domain;
   if (typeof t.tunnel_id === "string") cfg.tunnelId = t.tunnel_id;
@@ -133,6 +142,7 @@ export function serializeTunnelSection(cfg: TunnelConfig): string {
   const lines: string[] = [];
   lines.push("[tunnel]");
   lines.push(`provider = ${tomlQuote("cloudflare")}`);
+  lines.push(`enabled = ${cfg.enabled ? "true" : "false"}`);
   lines.push(`name = ${tomlQuote(cfg.name)}`);
   if (cfg.domain) lines.push(`domain = ${tomlQuote(cfg.domain)}`);
   if (cfg.tunnelId) lines.push(`tunnel_id = ${tomlQuote(cfg.tunnelId)}`);
@@ -183,7 +193,12 @@ export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
     if (kept.length && kept[kept.length - 1].trim() !== "") kept.push("");
     kept.push(serializeTunnelSection(cfg));
   }
-  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+  return (
+    kept
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trimEnd() + "\n"
+  );
 }
 
 /** Read the `[tunnel]` state out of this repo's repoos.toml. */
@@ -270,9 +285,7 @@ export function renderCloudflaredConfig(cfg: TunnelConfig, credentialsFile: stri
   lines.push(`credentials-file: ${credentialsFile}`);
   lines.push("");
   lines.push("ingress:");
-  const apps = Object.values(cfg.apps).sort((a, b) =>
-    a.hostname.localeCompare(b.hostname),
-  );
+  const apps = Object.values(cfg.apps).sort((a, b) => a.hostname.localeCompare(b.hostname));
   for (const app of apps) {
     lines.push(`  - hostname: ${app.hostname}`);
     lines.push(`    service: ${app.service}`);

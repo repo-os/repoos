@@ -59,7 +59,13 @@ import {
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
-import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
+import {
+  patchTaskFile,
+  deleteTaskFile,
+  WriteError,
+  PathGuardError,
+  type TaskPatch,
+} from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
 import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
@@ -67,6 +73,7 @@ import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
+import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 
 export interface ServeOptions {
   root?: string;
@@ -136,7 +143,10 @@ function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
       const st = statSync(full);
       if (st.isDirectory()) walk(full);
       else if (extname(e) === ".md") {
-        const rel = full.slice(config.root.length + 1).split("\\").join("/");
+        const rel = full
+          .slice(config.root.length + 1)
+          .split("\\")
+          .join("/");
         add(full, rel);
       }
     }
@@ -278,11 +288,7 @@ const UI_MIME: Record<string, string> = {
 };
 
 /** Serve a static file from the UI build directory. Returns false on miss. */
-function serveStaticUi(
-  res: ServerResponse,
-  uiDir: string,
-  urlPath: string,
-): boolean {
+function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   const abs = resolve(uiDir, rel || "index.html");
@@ -410,9 +416,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const result = await mergeBranch(wtPath, baseBranch, { autoResolve: [rel] });
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
-      const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
-        onStatusChange: stopPreviewIfLeft,
-      });
+      const mainUpdated = patchTaskFile(
+        config,
+        task.absPath,
+        { needsMerge: value },
+        {
+          onStatusChange: stopPreviewIfLeft,
+        },
+      );
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
       const wtAbsPath = join(wtPath, task.path);
@@ -428,7 +439,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         conflicts: result.conflicts,
         reason: result.conflicts.length
           ? `merge conflict: ${result.conflicts.join(", ")}`
-          : result.reason ?? "sync failed",
+          : (result.reason ?? "sync failed"),
       };
     }
 
@@ -494,9 +505,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // it can never confirm itself.
         const secret = process.env.REPOOS_RELOAD_SECRET;
         const handshake =
-          typeof secret === "string" &&
-          secret !== "" &&
-          url.searchParams.get("reload") === secret;
+          typeof secret === "string" && secret !== "" && url.searchParams.get("reload") === secret;
         return json(res, 200, {
           ok: true,
           root: config.root,
@@ -511,10 +520,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Best-effort manual reload (same path as the build watch): reloads
         // now when stale and idle, defers while agents run, or reports
         // not-stale when this process already serves the current build.
-        const state = reload?.requestReload("manual restart") ?? {
-          state: "not-stale",
-          reason: "auto-reload unavailable",
-        } as const;
+        const state =
+          reload?.requestReload("manual restart") ??
+          ({
+            state: "not-stale",
+            reason: "auto-reload unavailable",
+          } as const);
         return json(res, 200, state);
       }
       if (path === "/api/tasks" && method === "GET") {
@@ -611,8 +622,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/tasks/freeform" && method === "POST") {
         const body = (await readBody(req)) as Record<string, unknown>;
-        const explanation =
-          typeof body?.explanation === "string" ? body.explanation.trim() : "";
+        const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
         if (!explanation) {
           return json(res, 400, { error: "explanation is required" });
         }
@@ -742,13 +752,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           index.refreshBranches();
           // Best-effort spawn — never block the HTTP response on the agent.
           const cwd = wtRes.ok ? wtRes.path : config.root;
-          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent, { cwd });
+          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent, {
+            cwd,
+          });
           return json(res, 200, {
             ok: true,
             task: index.getTask(updated.id),
             branch,
             clean,
-            git: wtRes.ok ? "ok" : wtRes.reason ?? "unknown",
+            git: wtRes.ok ? "ok" : (wtRes.reason ?? "unknown"),
             worktree: wtRes.ok ? wtRes.path : undefined,
             spawn: {
               ok: spawnRes.ok,
@@ -861,12 +873,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         const stopRes = runner.stop(id);
-        const updated = patchTaskFile(config, existing.absPath, {
-          status: "ready",
-          needsInput: false,
-        }, {
-          onStatusChange: stopPreviewIfLeft,
-        });
+        const updated = patchTaskFile(
+          config,
+          existing.absPath,
+          {
+            status: "ready",
+            needsInput: false,
+          },
+          {
+            onStatusChange: stopPreviewIfLeft,
+          },
+        );
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
           ok: true,
@@ -924,7 +941,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/models/test" && method === "POST") {
         try {
           const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
-          if (typeof body.cli !== "string" || !AGENT_CLIS.includes(body.cli as typeof AGENT_CLIS[number])) {
+          if (
+            typeof body.cli !== "string" ||
+            !AGENT_CLIS.includes(body.cli as (typeof AGENT_CLIS)[number])
+          ) {
             return json(res, 400, { error: "cli must be a supported coding agent" });
           }
           if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
@@ -968,7 +988,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             // accepted so dynamically-selected models save. AGENT_MODELS remains
             // the fallback suggested list, never an allowlist.
             if (typeof a.model !== "string" || !a.model.trim()) {
-              return json(res, 400, { error: `agent "${a.name}" model must be a non-empty string` });
+              return json(res, 400, {
+                error: `agent "${a.name}" model must be a non-empty string`,
+              });
             }
             if (typeof a.enabled !== "boolean") {
               return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });
@@ -1026,18 +1048,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
             for (const item of val) {
               if (typeof item !== "string" || !item.trim()) {
-                return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
+                return json(res, 400, {
+                  error: `${field.label} entries must be non-empty strings`,
+                });
               }
             }
             patch[field.key] = (val as string[]).map((s) => s.trim());
           }
         }
 
-        if (Object.keys(patch).length === 0) {
+        const tunnelEnabled =
+          typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
+        delete patch.tunnelEnabled;
+
+        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined) {
           return json(res, 400, { error: "No valid fields to update" });
         }
 
-        patchTomlConfig(join(config.root, "repoos.toml"), patch);
+        if (Object.keys(patch).length > 0) {
+          patchTomlConfig(join(config.root, "repoos.toml"), patch);
+        }
+        if (tunnelEnabled !== undefined) {
+          const tunnel = readTunnelConfig(config.root);
+          tunnel.enabled = tunnelEnabled;
+          writeTunnelConfig(config.root, tunnel);
+        }
 
         // Update in-memory config so live endpoints see fresh values
         Object.assign(repoos.config, loadConfig(config.root));
@@ -1170,7 +1205,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             await sleep(RELOAD_BIND_RETRY_MS);
           }
         }
-        if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
+        if (!bound)
+          throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
       } else {
         await bindOnce(false);
       }

@@ -35,7 +35,8 @@ export const useConfigStore = defineStore("config", () => {
 
   function applyTheme(t: string, animate = false): void {
     if (t === "system") {
-      document.documentElement.dataset.theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      document.documentElement.dataset.theme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
         ? "dark"
         : "light";
     } else {
@@ -61,13 +62,35 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
+  /** Persist the tunnel UI opt-in immediately; setup itself remains CLI-driven. */
+  async function setTunnelEnabled(enabled: boolean): Promise<void> {
+    const previous = !!form.tunnelEnabled;
+    form.tunnelEnabled = enabled;
+    saving.value = true;
+    msg.value = "";
+    error.value = "";
+    try {
+      await api("/api/config", JSON_OPTS("PATCH", { tunnelEnabled: enabled }));
+      if (data.value) data.value.tunnelEnabled = enabled;
+      msg.value = enabled
+        ? "Cloudflare Tunnel enabled — finish setup in the side panel."
+        : "Cloudflare Tunnel hidden — existing tunnel configuration was left unchanged.";
+    } catch (err) {
+      form.tunnelEnabled = previous;
+      error.value = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      saving.value = false;
+    }
+  }
+
   // Apply the dark/light/system preference the moment it changes in the
   // settings form, so it takes effect live without hitting "Save changes".
   watch(
     () => form.theme,
     (t) => {
       if (typeof t === "string") applyTheme(t, true);
-    }
+    },
   );
 
   function fillForm(res: ConfigResponse): void {
@@ -139,7 +162,9 @@ export const useConfigStore = defineStore("config", () => {
         const f = schema.value.find((x) => x.key === k);
         return f && f.restartRequired;
       });
-      msg.value = needsRestart ? "Saved — restart server to apply some changes." : "Saved — applied live.";
+      msg.value = needsRestart
+        ? "Saved — restart server to apply some changes."
+        : "Saved — applied live.";
       const res = await api<ConfigResponse>("/api/config");
       data.value = res.config;
       fillForm(res);
@@ -169,6 +194,7 @@ export const useConfigStore = defineStore("config", () => {
     applyTheme,
     applyUiTheme,
     setUiTheme,
+    setTunnelEnabled,
     uiTheme,
     agents,
     agentsMeta,

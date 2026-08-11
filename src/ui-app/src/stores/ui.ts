@@ -18,10 +18,18 @@ export const useUiStore = defineStore("ui", () => {
   const isNew = ref(false);
   const saving = ref(false);
   const drawerWidth = ref(680);
+  /** Cloudflare setup drawer is independent of the task drawer. */
+  const tunnelOpen = ref(false);
   /** Active drawer tab: task details, or the agent session view. */
   const activeTab = ref<"details" | "agent">("details");
 
-  const nt = reactive<NewTaskForm>({ title: "", type: "feature", priority: "p2", area: "web", assignedTo: "" });
+  const nt = reactive<NewTaskForm>({
+    title: "",
+    type: "feature",
+    priority: "p2",
+    area: "web",
+    assignedTo: "",
+  });
 
   function openNewTask(): void {
     isNew.value = true;
@@ -54,11 +62,22 @@ export const useUiStore = defineStore("ui", () => {
     activeTab.value = "details";
   }
 
+  function openTunnel(): void {
+    tunnelOpen.value = true;
+  }
+
+  function closeTunnel(): void {
+    tunnelOpen.value = false;
+  }
+
   function startResize(e: MouseEvent): void {
     const startX = e.clientX;
     const startW = drawerWidth.value;
     const onMove = (ev: MouseEvent): void => {
-      drawerWidth.value = Math.max(360, Math.min(window.innerWidth - 40, startW + startX - ev.clientX));
+      drawerWidth.value = Math.max(
+        360,
+        Math.min(window.innerWidth - 40, startW + startX - ev.clientX),
+      );
     };
     const onUp = (): void => {
       document.removeEventListener("mousemove", onMove);
@@ -68,5 +87,20 @@ export const useUiStore = defineStore("ui", () => {
     document.addEventListener("mouseup", onUp);
   }
 
-  return { active, isNew, saving, drawerWidth, activeTab, nt, openNewTask, open, openTask, close, startResize };
+  return {
+    active,
+    isNew,
+    saving,
+    drawerWidth,
+    tunnelOpen,
+    activeTab,
+    nt,
+    openNewTask,
+    open,
+    openTask,
+    close,
+    openTunnel,
+    closeTunnel,
+    startResize,
+  };
 });
