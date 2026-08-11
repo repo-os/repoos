@@ -303,9 +303,13 @@
   .task-card:hover{transform:translateY(-2px);border-color:var(--border-bright)}
   .task-card.flash{animation:flash 1.2s ease}
   @keyframes flash{0%{box-shadow:0 0 0 2px var(--cyan)}100%{box-shadow:0 0 0 2px transparent}}
-  .task-card.transition-success{animation:waveColor .55s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
-  .task-card.transition-success::after{content:"";position:absolute;inset:-2px;border-radius:15px;pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--cyan-dim) 30%,var(--violet-dim) 50%,var(--cyan-dim) 70%,transparent 100%);background-size:300% 100%;animation:waveColorBg .55s cubic-bezier(.4,0,.2,1);z-index:0}
-  @keyframes waveColor{0%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 16px 2px var(--violet-dim)}100%{box-shadow:0 0 0 0 transparent}}
+  /* Status-change confirmation: a shimmer sweep only. Deliberately strictly
+     contained — no outward glow, no overflow change, and the overlay matches
+     the card's own box and radius exactly, so the card never appears to grow
+     or change shape while it animates. */
+  .task-card.transition-success{position:relative}
+  .task-card.transition-success::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 38%,var(--cyan-dim) 50%,transparent 62%);background-size:250% 100%;animation:cardShimmer .7s ease-out;z-index:0}
+  @keyframes cardShimmer{0%{background-position:115% 0;opacity:0}15%{opacity:1}85%{opacity:1}100%{background-position:-15% 0;opacity:0}}
   @keyframes waveColorBg{0%{background-position:100% 0;opacity:0}20%{opacity:1}80%{opacity:1}100%{background-position:-100% 0;opacity:0}}
   .board-ghost{animation:ghostFade .5s ease-out forwards;border:1px solid var(--cyan);border-radius:13px;padding:18px;text-align:center;color:var(--cyan);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
   @keyframes ghostFade{0%{opacity:0;transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 0 12px var(--cyan-dim)}25%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(4px);border-color:transparent;box-shadow:none}}
@@ -313,7 +317,9 @@
   .drawer-body.transition-success::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--cyan-dim) 30%,var(--violet-dim) 50%,var(--cyan-dim) 70%,transparent 100%);background-size:300% 100%;animation:waveColorBg .55s cubic-bezier(.4,0,.2,1);z-index:0;border-radius:0}
   @keyframes drawerWave{0%{box-shadow:inset 0 0 0 0 transparent}30%{box-shadow:inset 0 0 28px 0 var(--violet-dim)}100%{box-shadow:inset 0 0 0 0 transparent}}
   @media (prefers-reduced-motion: reduce){
-    .task-card.transition-success{animation:none;box-shadow:0 0 0 2px var(--cyan);transition:box-shadow .01ms;overflow:visible}
+    /* Inset ring, not an outward one — stays inside the card's own box so the
+       reduced-motion cue doesn't visually resize the card either. */
+    .task-card.transition-success{animation:none;box-shadow:inset 0 0 0 2px var(--cyan);transition:box-shadow .01ms}
     .task-card.transition-success::after{display:none}
     .board-ghost{animation:none;opacity:1;border-color:var(--cyan);box-shadow:0 0 0 2px var(--cyan);transform:none}
     .drawer-body.transition-success{animation:none;box-shadow:inset 0 0 0 2px var(--cyan);transition:box-shadow .01ms}
