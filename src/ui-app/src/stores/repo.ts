@@ -157,6 +157,11 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } else if (e.type === "task.progress") {
       doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+    } else if (e.type === "task.corrected") {
+      // The server patched the main copy to match the worktree's committed
+      // state because the agent's fail-safe checklist silently failed — worth
+      // surfacing, not papering over.
+      pushFeed(`<b>board self-healed</b> #${e.id} — ${e.note}`, "#ffb454", "task.corrected");
     } else if (e.type === "preview") {
       // A preview started or stopped for a task: reflect it on the stored task
       // and, when the drawer is open on that task, on the drawer's copy.
@@ -188,7 +193,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "preview", "agent.running", "agent.exited", "agent.output"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {

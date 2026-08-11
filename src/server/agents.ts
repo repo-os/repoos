@@ -7,9 +7,13 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { join, relative } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { DEFAULT_AGENTS } from "../core/config.js";
+import { fileCommittedClean } from "../core/git.js";
+import { parseTask } from "../core/task.js";
+import { patchTaskFile, type TaskPatch } from "./write.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
@@ -20,6 +24,13 @@ export type AgentEvent =
       id: string;
       entry: AgentOutputEntry;
       stream: "out" | "err";
+      at: string;
+    }
+  | {
+      type: "task.corrected";
+      id: string;
+      path: string;
+      note: string;
       at: string;
     };
 
@@ -49,6 +60,8 @@ interface Entry {
   startedAt: string;
   workdir?: string;
   killTimer?: ReturnType<typeof setTimeout>;
+  /** The task being worked on (start turns only — resume turns have none). */
+  task?: Task;
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -390,7 +403,7 @@ function missionFor(
     "3. Commit all your work on this branch (git add + git commit).",
     `4. Set \`status: review\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
     `5. Set \`status: review\` in the main-checkout copy (${task.path}) — edit it WITHOUT committing.`,
-    `6. Read the main-checkout copy back (${task.path}) and confirm it shows \`status: review\`. If it does not, repeat step 5 until it does.`,
+    `6. Read the main-checkout copy back at the literal file path ${task.path} — use your Read tool or \`cat\` on that exact path, NEVER \`repoos show\`/\`list\`/\`index\`: from inside a worktree those CLI commands resolve to the worktree's own root and can false-positive on the live board. confirm it shows \`status: review\`. If it does not, repeat step 5 until it does.`,
     "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
     "",
     "If you are blocked or need a decision from the human:",
@@ -538,7 +551,7 @@ export class AgentRunner {
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
     const { cmd, args } = cliCommand(agent.cli, missionFor(task, branch, cwd, agent, this.config), cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd);
+    return this.spawnTurn(task.id, cmd, args, cwd, task);
   }
 
   /**
@@ -567,7 +580,7 @@ export class AgentRunner {
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
-  private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string): StartResult {
+  private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string, task?: Task): StartResult {
     let proc: ChildProcess;
     try {
       proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
@@ -582,6 +595,7 @@ export class AgentRunner {
       proc,
       startedAt: now(),
       workdir: cwd,
+      task,
     });
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
@@ -608,7 +622,7 @@ export class AgentRunner {
   }
 
   /** Turn one buffered line into a transcript entry and stream it out. */
-  private appendLine(taskId: string, stream: "out" | "err", raw: string): void {
+  private appendLine(taskId: string, stream: "out" | "err" | "sys", raw: string): void {
     const session = this.sessions.get(taskId);
     if (!session) return;
     const parsed =
@@ -628,7 +642,15 @@ export class AgentRunner {
     }
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
-    this.emit({ type: "agent.output", id: taskId, entry, stream, at: now() });
+    // `sys` entries (self-heal notices) flow on the "out" stream, matching how
+    // parsed `error`/`file-update` events already surface as sys lines.
+    this.emit({
+      type: "agent.output",
+      id: taskId,
+      entry,
+      stream: stream === "sys" ? "out" : stream,
+      at: now(),
+    });
     while (session.bytes > OUTPUT_CAP_BYTES) {
       const dropped = session.lines.shift();
       if (!dropped) break;
@@ -687,5 +709,80 @@ export class AgentRunner {
     if (entry.killTimer) clearTimeout(entry.killTimer);
     this.entries.delete(taskId);
     this.emit({ type: "agent.exited", id: taskId, at: now() });
+    // Defense-in-depth (0077): a turn that ended with the worktree copy at
+    // `review`/`needs_input` while the main copy is still `active` means the
+    // fail-safe checklist's main-copy sync silently failed (the #0068 shape).
+    // Patch the main copy to match so the live board cannot drift silently.
+    this.healBoardDivergence(taskId, entry, session);
+  }
+
+  /**
+   * True when two absolute paths denote the same directory (realpath-normalized
+   * when possible, so macOS /var vs /private/var aliases compare equal).
+   */
+  private samePath(a: string, b: string): boolean {
+    try {
+      return realpathSync(a) === realpathSync(b);
+    } catch {
+      return resolve(a) === resolve(b);
+    }
+  }
+
+  /**
+   * Self-heal the #0068 divergence. Narrowly scoped: ONLY the shape where the
+   * main checkout's copy of the task is still `active` but the agent's
+   * worktree copy shows `review` or `needs_input` backed by a real commit.
+   * Any other state (task moved by a human, uncommitted worktree edit, no
+   * separate worktree) is left untouched — this is not a general bidirectional
+   * sync. The correction is surfaced (server log + a task.corrected event +
+   * a transcript sys line) because it means the checklist itself failed.
+   */
+  private healBoardDivergence(taskId: string, entry: Entry, session?: Session): void {
+    const task = entry.task;
+    if (!task || !entry.workdir) return;
+    const worktreeCopy = join(entry.workdir, task.path);
+    if (this.samePath(task.absPath, worktreeCopy)) return; // same file — no divergence possible
+    if (!existsSync(task.absPath) || !existsSync(worktreeCopy)) return;
+
+    const parse = (absPath: string): Task | null => {
+      try {
+        return parseTask({
+          content: readFileSync(absPath, "utf8"),
+          absPath,
+          root: this.config.root,
+          defaultStatus: this.config.defaultStatus,
+          defaultAssignee: this.config.defaultAssignee,
+        });
+      } catch {
+        return null;
+      }
+    };
+
+    const main = parse(task.absPath);
+    const wt = parse(worktreeCopy);
+    if (!main || !wt) return;
+    // Only the active-but-worktree-shows-review/needs_input divergence.
+    if (main.status !== "active") return;
+    const wantsReview = wt.status === "review";
+    const wantsInput = wt.needsInput;
+    if (!wantsReview && !wantsInput) return;
+    // The worktree state must be backed by a commit, not a stray mid-edit.
+    if (!fileCommittedClean(entry.workdir, task.path)) return;
+
+    const patch: TaskPatch = {};
+    if (wantsReview) patch.status = "review";
+    if (wantsInput) patch.needsInput = true;
+    try {
+      patchTaskFile(this.config, task.absPath, patch);
+    } catch (err) {
+      console.error(`[repoos] self-heal failed for #${taskId}: ${(err as Error).message}`);
+      return;
+    }
+    const note =
+      `agent turn ended with the main copy still ${main.status} while the worktree copy was ` +
+      `committed to ${wantsReview ? "review" : "needs_input"} — main copy patched to match`;
+    if (session) this.appendLine(taskId, "sys", `⚠ board self-healed: ${note}`);
+    this.emit({ type: "task.corrected", id: taskId, path: task.path, note, at: now() });
+    console.error(`[repoos] self-healed task #${taskId} — ${note}`);
   }
 }
