@@ -14,6 +14,7 @@
  * graph, test proximity) rather than an extra LLM call.
  */
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import type { RepoOSConfig, Task } from "./types.js";
@@ -127,7 +128,6 @@ function repoMapPath(config: RepoOSConfig): string {
  * exist, so the cache still functions but invalidates on every run.
  */
 function headHash(root: string): string {
-  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
   try {
     const run = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", timeout: 4000 });
     return run.status === 0 ? run.stdout.trim() : "unknown";
@@ -385,7 +385,6 @@ function worktreeState(
   _branch: string,
   cwd: string,
 ): { dirty: boolean; untracked: string[]; diffSummary: string } {
-  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
   let dirty = false;
   let untracked: string[] = [];
   let diffSummary = "";

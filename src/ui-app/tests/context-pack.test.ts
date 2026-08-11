@@ -6,6 +6,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import {
   buildRepoMap,
   generateContextPack,
@@ -227,6 +229,23 @@ describe("context pack", () => {
     expect(pack.content).toContain("Test task");
     expect(pack.size).toBeGreaterThan(0);
     expect(pack.generationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("generates a context pack in the supported Node ESM runtime", () => {
+    const moduleUrl = pathToFileURL(join(process.cwd(), "dist", "core", "context-pack.js")).href;
+    const script = [
+      `import { generateContextPack } from ${JSON.stringify(moduleUrl)};`,
+      `const config = ${JSON.stringify(config)};`,
+      `const task = ${JSON.stringify(task)};`,
+      `const pack = generateContextPack(config, task, task.branch, ${JSON.stringify(root)}, null);`,
+      `if (pack.taskId !== task.id) process.exit(2);`,
+    ].join("\n");
+    const result = spawnSync("node", ["--input-type=module", "-e", script], {
+      encoding: "utf8",
+      timeout: 10_000,
+    });
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
   });
 
   it("includes AGENTS constraints", () => {
