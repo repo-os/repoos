@@ -2,14 +2,14 @@
 id: "0066"
 title: Auto-reload repoos serve when main's build changes
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/0066-serve-auto-reload
 created_at: "2026-08-11T00:17:13Z"
-updated_at: "2026-08-11T06:12:03Z"
+updated_at: "2026-08-11T06:12:04Z"
 ---
 ## Activity
 
@@ -125,3 +125,4 @@ intervention:
 - 2026-08-11T05:37:42Z · status active→ready
 - 2026-08-11T05:37:43Z · status ready→active
 - 2026-08-11T06:12:03Z · status active→ready
+- 2026-08-11T06:12:04Z · status ready→active
