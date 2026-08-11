@@ -2,7 +2,7 @@
 id: "0070"
 title: Keep paused tasks in Active status instead of reverting to Ready
 type: bug
-status: active
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/keep-paused-tasks-in-active-status-inste
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T18:57:27Z"
+updated_at: "2026-08-11T18:59:04Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ Relevant code:
 - 2026-08-11T18:36:22Z · status active→ready
 - 2026-08-11T18:36:27Z · status ready→active
 - 2026-08-11T18:57:27Z · cli_override, model_override
+- 2026-08-11T18:59:04Z · status active→ready
