@@ -223,9 +223,13 @@ export class ReloadManager {
     return { state: "reloading", reason };
   }
 
-  /** The SSE event funnel calls this so a drained runner unblocks a deferred reload. */
+  /**
+   * The SSE event funnel calls this so a drained runner unblocks a deferred
+   * reload. `review` events count: an agent review is a spawned turn too, and
+   * one finishing can be what makes the server idle.
+   */
   onEvent(e: { type: string }): void {
-    if (e.type === "agent.exited") this.tryFirePending();
+    if (e.type === "agent.exited" || e.type === "review") this.tryFirePending();
   }
 
   private onPoll(): void {

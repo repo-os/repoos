@@ -20,7 +20,7 @@ name = "reviewer"
 cli = "claude code"
 model = "default"
 enabled = true
-instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
+instructions = "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status."
 [[agents]]
 name = "pm"
 cli = "claude code"

@@ -29,7 +29,7 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Reviews task diffs in the task's worktree; requests changes by updating the task status; approves only on a green `repoos check`.",
+      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status.",
   },
   {
     name: "pm",

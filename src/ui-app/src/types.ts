@@ -97,6 +97,32 @@ export type AgentOutputEntry =
   | { type: "sys"; d: string }
   | { s: "out" | "err" | "sys"; d: string };
 
+/**
+ * The review agent's report on a task in `review` (GET /api/tasks/:id/review).
+ * Advisory: it informs the human's sign-off, it never performs it.
+ */
+export interface ReviewReport {
+  id: string;
+  at: string;
+  agent: string;
+  cli: string;
+  model: string;
+  branch: string;
+  /** "ok" when the agent reported; "failed" when the run itself failed. */
+  state: "ok" | "failed";
+  markdown: string;
+}
+
+/** Client-side view of a task's agent review. */
+export interface ReviewState {
+  /** True while the review agent is inspecting the worktree. */
+  running: boolean;
+  /** Whether the review agent is enabled on the Agents page. */
+  enabled: boolean;
+  /** The stored report, or null when none has been written yet. */
+  report: ReviewReport | null;
+}
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
@@ -106,6 +132,13 @@ export type RepoEvent =
   | { type: "task.progress"; id: string; step: string; at: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
+  | {
+      type: "review";
+      id: string;
+      state: "running" | "ready" | "failed" | "cancelled";
+      at: string;
+      error?: string;
+    }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }

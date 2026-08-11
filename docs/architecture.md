@@ -76,6 +76,11 @@ Adds liveness over the one-shot core. No new business logic.
   into structured task frontmatter + body.
 - `done.ts` — review-to-done close-out: merges the task branch into main,
   removes the worktree, and cleans up.
+- `review.ts` — the review agent: when a task lands in `review` (by any route),
+  it runs the enabled `reviewer` agent read-only over the task's worktree and
+  writes a short report to `<cacheDir>/reviews/<id>.md` for the human signing
+  off. Advisory: it never edits the repo and never moves a task to `done` —
+  a task that comes back `done` is put straight back into `review`.
 - `preview.ts` — starts/stops read-only worktree preview servers for review
   tasks on dedicated ports.
 - `reload.ts` — auto-reload: watches the dist hash and swaps in a zero-downtime
@@ -101,6 +106,10 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   transcript -> structured JSON events parsed and emitted as SSE `agent.output`
   events -> the UI renders the agent chat tab in real time. Follow-ups via
   POST /api/tasks/:id/message resume the same session.
+- Review: a task reaching `review` -> live-index event -> the review agent runs
+  read-only in that task's worktree -> its report is stored under `.repoos/` and
+  served by GET /api/tasks/:id/review -> the drawer shows it beside "Move to
+  done", which stays the human's call.
 
 This convergence — API edits, raw file edits, and agent output all producing
 the same event stream — is the architectural payoff: agents participate by

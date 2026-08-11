@@ -23,6 +23,8 @@
  *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
+ *   GET  /api/tasks/:id/review -> { ok, running, enabled, review } the agent's
+ *                                 review report for a task in `review`
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
  *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
@@ -64,6 +66,7 @@ import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, resolveAgen
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
+import { ReviewManager } from "./review.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
@@ -377,9 +380,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // The review agent (0101): when a task lands in `review`, it inspects the
+  // implementation and writes a short report for whoever signs the task off.
+  // Advisory only — it never moves a task to `done`.
+  const reviews = new ReviewManager(config, emitEvent);
+
+  // Tasks that landed in `review` while their engineer turn was still winding
+  // down. Reviewing a worktree an agent is still committing to would report on
+  // a half-written state, so the review waits for `agent.exited`.
+  const pendingReview = new Set<string>();
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
-  const runner = new AgentRunner(config, emitEvent);
+  const runner = new AgentRunner(config, (e) => {
+    emitEvent(e);
+    if (e.type !== "agent.exited" || !pendingReview.delete(e.id)) return;
+    const task = index.getTask(e.id);
+    if (task?.status === "review") void reviews.run(task);
+  });
 
   // Read-only preview servers for review/active tasks. Orphans from a crashed
   // previous main server are reaped at boot; this instance starts with none.
@@ -425,10 +443,44 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (prev === "active" && next !== "active") void runner.stop(task.id);
   };
 
-  // Combined status-change hook for the patchTaskFile write paths.
+  // Combined status-change hook, fired for every status change by any route.
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
+  };
+
+  /**
+   * Hook for the SERVER's own writes (API PATCH, start, sync) — everything
+   * `onStatusChange` does, plus: a human moving a task out of `review` drops
+   * its pending agent review. Deliberately NOT wired to the index event
+   * stream: a task file edited into `done` on disk is exactly the agent
+   * overreach the review guard exists to catch, and cancelling on it would
+   * disarm the guard.
+   */
+  const onServerStatusChange = (task: Task, prev: Status, next: Status): void => {
+    onStatusChange(task, prev, next);
+    if (prev === "review" && next !== "review") {
+      pendingReview.delete(task.id);
+      reviews.cancel(task.id);
+    }
+  };
+
+  /**
+   * Kick off the agent review for a task that just landed in `review`. A no-op
+   * when the review agent is disabled on the Agents page (`reviews.run` skips
+   * silently), and deferred while the task's own agent turn is still running.
+   */
+  const startReview = (task: Task): void => {
+    if (!reviews.enabled()) return;
+    // This task is only back in `review` because the guard put it there after
+    // an agent overstepped — reviewing it again would just repeat that.
+    if (reviews.claimRevert(task.id)) return;
+    if (runner.isRunning(task.id)) {
+      pendingReview.add(task.id);
+      return;
+    }
+    pendingReview.delete(task.id);
+    void reviews.run(task);
   };
 
   // The file-watcher path (a direct task-file edit on disk) bypasses
@@ -442,6 +494,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
     onStatusChange(e.task, prev, e.task.status);
+    // Every route into `review` — a board drag, the drawer, an agent editing
+    // its own task file — surfaces here, so this is the one place the agent
+    // review needs to hang off.
+    if (e.task.status === "review") startReview(e.task);
   });
 
   interface SyncResult {
@@ -462,7 +518,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
-        onStatusChange: onStatusChange,
+        onStatusChange: onServerStatusChange,
       });
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
@@ -614,6 +670,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const session = runner.output(outputMatch[1]);
         return json(res, 200, { ok: true, lines: session?.lines ?? [] });
       }
+      const reviewMatch = path.match(/^\/api\/tasks\/([^/]+)\/review$/);
+      if (reviewMatch && method === "GET") {
+        const reviewId = reviewMatch[1];
+        return json(res, 200, {
+          ok: true,
+          /** Whether an agent review is being written right now. */
+          running: reviews.isRunning(reviewId),
+          /** Whether the review agent is enabled on the Agents page at all. */
+          enabled: reviews.enabled(),
+          review: reviews.read(reviewId),
+        });
+      }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
         const t = index.getTask(taskMatch[1]);
@@ -762,7 +830,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const body = (await readBody(req)) as TaskPatch;
         const prevStatus = existing.status;
         const updated = patchTaskFile(config, existing.absPath, body, {
-          onStatusChange: onStatusChange,
+          onStatusChange: onServerStatusChange,
         });
         index.applyFileChange(updated.absPath);
 
@@ -829,7 +897,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch, {
-            onStatusChange: onStatusChange,
+            onStatusChange: onServerStatusChange,
           });
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
@@ -921,6 +989,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           // The merge removes the worktree, so the preview of it must die first.
           await previews.stop(id);
+          // Same for an agent review still reading that worktree: the human is
+          // signing off now, so the report has served its purpose either way.
+          pendingReview.delete(id);
+          reviews.cancel(id);
           // ... and any agent process must be released too, so the worktree is
           // never torn out from under a live process. The 409 above guards the
           // case of a genuinely-active turn; this is belt-and-braces for a turn
@@ -1026,7 +1098,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           status: "ready",
           needsInput: false,
         }, {
-          onStatusChange: onStatusChange,
+          onStatusChange: onServerStatusChange,
         });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
@@ -1380,7 +1452,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
-          // orphan `repoos serve` process is left behind.
+          // orphan `repoos serve` process is left behind. Same for review
+          // agents — a one-shot child must not outlive the server that
+          // launched it and wait 15 minutes to write a report nobody reads.
+          reviews.cancelAll();
           await previews.stopAll();
           for (const c of clients) {
             try {
@@ -1403,7 +1478,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         loadedHash,
         enabled: reloadEnabled,
         isReplacement: process.env.REPOOS_RELOAD === "1",
-        isBusy: () => runner.running().length,
+        // An in-flight agent review is a spawned turn like any other: reloading
+        // under it would kill the report the human is waiting on.
+        isBusy: () => runner.running().length + reviews.runningCount(),
         cliEntry: cliEntryPath,
         stopListening: closeHttp,
         listen: () => bindOnce(false),

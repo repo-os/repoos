@@ -52,6 +52,14 @@ export type RepoEvent =
       preview: { port: number; url: string; startedAt: string } | null;
       at: string;
     }
+  /** Lifecycle of the automatic agent review of a task in `review` (0101). */
+  | {
+      type: "review";
+      id: string;
+      state: "running" | "ready" | "failed" | "cancelled";
+      at: string;
+      error?: string;
+    }
   | { type: "hello"; taskCount: number; at: string }
   | { type: "system.stats"; stats: SystemStats };
 

@@ -2,7 +2,7 @@
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw } from "lucide-vue-next";
-import type { Task } from "../types";
+import type { ReviewState, Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
@@ -506,6 +506,31 @@ async function stopPreview(): Promise<void> {
     previewBusy.value = false;
   }
 }
+
+// ---- agent review (0101) ----
+
+/**
+ * The review agent's report on the open task. It is advisory: it exists to
+ * inform the human's sign-off, never to perform it — the "Move to done" button
+ * above stays the only way a task reaches `done`.
+ */
+const review = computed<ReviewState | null>(() =>
+  ui.active ? repo.reviews[ui.active.id] ?? null : null,
+);
+
+/** Rendered (safe) Markdown of the report body. */
+const reviewHtml = computed(() =>
+  review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
+);
+
+/** Hydrate the report whenever the drawer shows a task in review. */
+watch(
+  () => [ui.active?.id, ui.active?.status],
+  () => {
+    if (ui.active?.status === "review") void repo.loadReview(ui.active.id);
+  },
+  { immediate: true },
+);
 
 // ---- agent session tab ----
 
@@ -1236,6 +1261,31 @@ function resetFreeformOverrides(): void {
                 conflicting files in the worktree, then retry.
               </p>
             </div>
+          </div>
+          <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
+            <label>Agent review</label>
+            <div v-if="review?.running" class="review-running">
+              <ActivityIndicator /> the review agent is inspecting this task…
+            </div>
+            <template v-else-if="review?.report">
+              <div class="review-meta">
+                <span>{{ repo.fmtDate(review.report.at) }}</span>
+                <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
+              </div>
+              <div v-if="review.report.state === 'failed'" class="review-failed">
+                {{ review.report.markdown }}
+              </div>
+              <div v-else class="md-card review-card">
+                <div class="md-rendered" v-html="reviewHtml"></div>
+              </div>
+              <p class="review-hint">
+                Findings only — you decide whether this task is done.
+              </p>
+            </template>
+            <p v-else-if="review && !review.enabled" class="review-hint">
+              The review agent is disabled on the Agents page, so no automatic review runs.
+            </p>
+            <p v-else class="review-hint">No agent review for this task.</p>
           </div>
           <div
             v-if="ui.active.status === 'active' || ui.active.status === 'review'"
