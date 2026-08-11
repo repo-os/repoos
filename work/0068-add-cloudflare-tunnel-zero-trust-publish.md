@@ -2,14 +2,14 @@
 id: "0068"
 title: Add Cloudflare Tunnel + Zero Trust publishing for local apps
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T01:44:17Z"
-updated_at: "2026-08-11T01:44:17Z"
+updated_at: "2026-08-11T01:44:42Z"
 ---
 ## Problem
 
@@ -207,3 +207,4 @@ support, per-app custom Access session durations or MFA policy tuning.
 ## Activity
 
 - 2026-08-11T01:44:17Z · created · unknown
+- 2026-08-11T01:44:42Z · status inbox→ready
