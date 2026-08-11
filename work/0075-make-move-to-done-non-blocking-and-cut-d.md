@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-move-to-done-non-blocking-and-cut-d
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T08:15:51Z"
+updated_at: "2026-08-11T12:12:44Z"
 ---
 ## Activity
 
@@ -129,3 +129,5 @@ things follow from that:
 ## Activity
 
 - 2026-08-11T08:15:51Z · status ready→active, branch
+- 2026-08-11T06:45:00Z · blocked · Task explicitly requires #0069 to merge to main before this work starts. Checked: #0069 (`work/0069-surface-mutation-errors-visibly-and-stop.md`) is still `status: active` on branch `feat/0069-visible-errors-and-done-drift`, not merged into main (`git merge-base --is-ancestor` confirms not-an-ancestor; only "Merge branch 'main' into feat/0069-..." exists, i.e. main was merged into it, not the reverse). Waiting for #0069 to land before implementing.
+- 2026-08-11T12:12:44Z · needs_input
