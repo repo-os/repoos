@@ -2,7 +2,7 @@
 id: "0095"
 title: Automate main sync when completing review
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
