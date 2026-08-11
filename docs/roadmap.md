@@ -13,39 +13,61 @@ The foundation is built and self-hosted: RepoOS now manages its own development
 via `work/*.md` (see `docs/adr/0003-self-hosting.md`).
 
 - **Stage 1 — core: parser, index, CLI.** Done. Repo-native tasks, the derived
-  index, and the `repoos` commands (`init`, `list`, `show`, `mv`, `new`, `index`).
+  index, and the `repoos` commands (`init`, `list`, `show`, `mv`, `new`, `index`,
+  `check`, `tunnel`).
 - **Stage 2 — local server.** Done. In-memory live index, file watcher, JSON
   API, and an SSE event stream. Human edits, CLI edits, and agent file edits all
   converge into one live stream.
-- **Stage 3 — web UI.** Done. Served from the local server, responsive, updating
-  live over SSE. The control plane in a browser.
+- **Stage 3 — web UI.** Done. Vite + Vue 3 SFC served from the local server,
+  responsive, live-updating over SSE. Five pages: Dashboard, Work, Context,
+  Agents, and Settings. The control plane in a browser.
+- **Stage 5 — agent orchestration.** Done. RepoOS spawns coding agents
+  (opencode, Claude Code, Qwen, Codex) in isolated git worktrees per task,
+  streams their output over SSE, supports follow-up messages and session resume,
+  and moves completed work into review. The Agents page configures CLI, model,
+  and custom instructions per role. Freeform task creation drafts structured
+  specs through the PM agent. Human sign-off is always the gate.
+
+  This stage is actively being hardened: agent-visible worktree previews,
+  context packs to bootstrap agents faster, and sandboxed agent handoff are in
+  flight (see `work/` for current status).
+
+- **Auth — optional bearer token.** Done. Defense-in-depth so the server isn't
+  naked when exposed beyond localhost. Optional; localhost stays zero-friction.
+
+- **Test suite.** Significant coverage in place: frontmatter round-trip tests,
+  live-index diffing, agent drivers, and a full UI smoke test. The `repoos check`
+  gate runs the test suite as part of the definition of done. Coverage continues
+  to expand with each feature.
 
 ## Where we're going
 
 Near-term, tracked as tasks in `work/`:
 
-- **Editable tasks + AI-drafted creation.** Make the UI fully editable (body and
-  metadata, not just status), then add a free-form entry flow where a human
-  describes a task and an AI drafts the structured markdown for human review.
-  Assets land in the repo as real files; AI drafting is optional and degrades to
-  manual entry without a key.
-- **Hardening — the test suite.** Vitest/`bun test` coverage on the highest-risk
-  units: the frontmatter round-trip, the live-index diffing, and the safe-write
-  merge. Deferred deliberately until the system was fully wired; now due.
-- **Auth — optional bearer token.** Defense-in-depth so the server isn't naked
-  when exposed beyond localhost. Optional; localhost stays zero-friction.
 - **Stage 4 — deployments / environments.** A read-only panel surfacing deploy
   and infra status (Railway, Cloudflare Pages). Show state, never trigger
   deploys. Optional integrations that hide gracefully without credentials.
 
+- **Hardening — continuing.** The system is fully wired and self-hosted. Current
+  hardening targets include: making agent previews server-owned (not per-task),
+  generating cached context packs to reduce agent startup time, and improving
+  sandbox handoff for Codex and similar sandboxed agents.
+
+- **Post-orchestration capabilities.** Scheduling and recurring tasks (#0093),
+  per-task agent/model overrides, skill-to-agent binding, and evidence-based
+  agent telemetry (CPU, memory, stall detection).
+
 Further out, lower resolution on purpose:
 
-- **Stage 5 — agent orchestration.** Spawn agents in dedicated git worktrees per
-  task so parallel agents don't collide, stream their output into the live event
-  system, write results back as normal commits. This is the payoff the whole
-  architecture points at — and the stage with the most unresolved design, so it
-  stays in `inbox` until the approach is settled (notably: how a distributed team
-  treats the git remote as truth rather than a single host's working copy).
+- A lightweight CI-like checker that runs `repoos check` on every commit and
+  posts results to a task — keeping the definition-of-done gate without
+  requiring a separate CI system.
+- Agent-to-agent handoff: a reviewer agent reviews an engineer agent's output
+  before the human sees it, catching obvious issues and saving human review
+  cycles.
+- Collective context views: a surface that shows task relationships, dependency
+  chains, and work-in-flight across the repo — a system-level view of the full
+  task graph.
 
 ## What's deliberately *not* on the roadmap
 

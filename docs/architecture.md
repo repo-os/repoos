@@ -19,9 +19,11 @@ of truth, and everything else is derived.
             |
        +-- src/cli + src/commands        one-shot commands (repoos ...)
        |
-       +-- src/server                    long-lived: API + SSE + watcher
-                  |
-             src/ui-app                   the Vite + Vue 3 web UI, served by the server
+       +-- src/server                    long-lived: API + SSE + watcher + agent runner
+            |         \
+            |     src/server/agents.ts    spawn agents in git worktrees, stream output
+            |
+       src/ui-app                        the Vite + Vue 3 web UI, served by the server
 
 ## Layers
 
@@ -29,20 +31,25 @@ of truth, and everything else is derived.
 
 Pure logic, no transport. Everything else calls into this.
 
-- `types.ts` — the shared data model (Task, Status, RepoIndex, config). The
-  contract every layer agrees on.
+- `types.ts` — the shared data model (Task, Status, Agent, AgentOutputEntry,
+  RepoIndex, config). The contract every layer agrees on.
 - `frontmatter.ts` — dependency-free YAML frontmatter parse/serialize.
   Preserves unknown keys on round-trip (a core promise). The highest-risk
   surface.
 - `config.ts` — resolves the repo root and merges `repoos.toml` over defaults.
-- `git.ts` — best-effort git facts (branch existence, last commit). Degrades
-  silently if git is absent.
+- `git.ts` — best-effort git facts (branch existence, last commit, worktree
+  creation/removal, merge). Degrades silently if git is absent.
 - `task.ts` — turns a file's content+path into a normalized Task, and back.
 - `indexer.ts` — walks `work/`, builds the sorted RepoIndex, manages the
   derived `.repoos/index.json` cache.
 - `repoos.ts` — the createRepoOS() facade: getTasks, getTask, counts,
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
+- `detect.ts` — probes PATH for installed coding agents (opencode, Claude Code,
+  Qwen, Codex) and reports version + availability.
+- `models.ts` — per-CLI model list adapters (e.g. sources `opencode models`
+  live for the Agents page dropdown).
+- `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`).
 
 ### src/cli + src/commands — one-shot commands
 
@@ -62,6 +69,17 @@ Adds liveness over the one-shot core. No new business logic.
 - `server.ts` — dependency-free HTTP server (Node/Bun http): the JSON API, the
   SSE stream at `/api/events`, static serving of the UI at `/`, and read-only
   serving of markdown docs for the Context view.
+- `agents.ts` — the AgentRunner: spawns coding agents in task worktrees, streams
+  output as structured events over SSE, manages session transcripts for resume,
+  and self-heals board state when the agent exits.
+- `freeform.ts` — parses freeform task description output from the PM agent
+  into structured task frontmatter + body.
+- `done.ts` — review-to-done close-out: merges the task branch into main,
+  removes the worktree, and cleans up.
+- `preview.ts` — starts/stops read-only worktree preview servers for review
+  tasks on dedicated ports.
+- `reload.ts` — auto-reload: watches the dist hash and swaps in a zero-downtime
+  replacement process.
 
 ### src/ui-app — the web UI
 
@@ -78,10 +96,15 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   change, writes. Or an agent/human edits the file directly. Either way ->
 - Watch: the file change -> watcher -> live-index re-parses that one file ->
   emits an event -> SSE pushes it -> every connected UI updates. No polling.
+- Agent: UI/API -> POST /api/tasks/:id/start -> AgentRunner spawns the coding
+  agent in the task's git worktree -> stdout/stderr line-buffered into a session
+  transcript -> structured JSON events parsed and emitted as SSE `agent.output`
+  events -> the UI renders the agent chat tab in real time. Follow-ups via
+  POST /api/tasks/:id/message resume the same session.
 
-This convergence — API edits and raw file edits producing the same event — is
-the architectural payoff: agents participate by editing files, needing to know
-nothing about RepoOS itself.
+This convergence — API edits, raw file edits, and agent output all producing
+the same event stream — is the architectural payoff: agents participate by
+editing files, needing to know nothing about RepoOS itself.
 
 ## The three runtime states (don't conflate them)
 
