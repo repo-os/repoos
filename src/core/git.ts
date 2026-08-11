@@ -212,7 +212,7 @@ export interface WorktreeStatus {
  * a safe `{ path: null, dirty: false }`.
  */
 export function worktreeStatus(root: string, branch: string): WorktreeStatus {
-  const path = worktreeList(root).get(branch) ?? null;
+  const path = worktreePaths(root).get(branch) ?? null;
   if (!path) return { path: null, dirty: false };
   // git reports the main checkout as a worktree too; only a LINKED worktree
   // counts, otherwise the whole repo's dirt would mark tasks dirty.
@@ -247,7 +247,7 @@ export function worktreeStatus(root: string, branch: string): WorktreeStatus {
  * the branch is the main checkout, or a removal step failed.
  */
 export function resetWorktree(root: string, branch: string): boolean {
-  const path = worktreeList(root).get(branch);
+  const path = worktreePaths(root).get(branch);
   if (path) {
     let realRoot = root;
     let realPath = path;
