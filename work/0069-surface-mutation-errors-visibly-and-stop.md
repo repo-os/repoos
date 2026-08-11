@@ -157,5 +157,5 @@ Two linked failures, both hit live on the self-hosted board (documented in
 - 2026-08-11T08:45:33Z · status active→ready
 - 2026-08-11T08:45:39Z · status ready→active
 - 2026-08-11T11:36:49Z · status active→ready
-- 2026-08-11T11:36:54Z · status ready→active
+- 2026-08-11T20:06:00Z · status ready→active
 - 2026-08-11T20:08:00Z · status active→review

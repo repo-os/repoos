@@ -53,6 +53,8 @@ export interface TaskFrontmatter {
   priority?: Priority | string;
   /** True when the agent is waiting on the human and the task stays `active`. */
   needs_input?: boolean;
+  /** True when the task branch has drifted from main and needs a manual merge. */
+  needs_merge?: boolean;
   area?: string;
   assigned_to?: string;
   created_by?: string;
@@ -76,6 +78,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`, never a status. */
   needsInput: boolean;
+  /** True when the task branch has drifted from main. Layered on `review`, never a status. */
+  needsMerge: boolean;
   priority: Priority | string;
   area: string;
   assignee: Assignee;

@@ -82,6 +82,7 @@ const TASK: Task = {
   branch: "feat/x",
   tags: [],
   needsInput: false,
+  needsMerge: false,
   created_at: null,
   updated_at: null,
   path: "work/0001-test.md",
