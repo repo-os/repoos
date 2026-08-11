@@ -2,14 +2,14 @@
 id: "0094"
 title: Let RepoOS finalize sandboxed agent worktree handoffs
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T14:42:54Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-11T19:41:42Z"
 ---
 ## Activity
 
@@ -115,3 +115,7 @@ appropriate RepoOS operation can exist.
 - 0067 — canonical task state across the main checkout and worktree
 - 0096 — managed task-specific previews and runner lifecycle changes (active)
 - 0097 — cached context packs and agent bootstrap changes (active)
+
+## Activity
+
+- 2026-08-11T19:41:42Z · status inbox→ready
