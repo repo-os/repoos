@@ -80,3 +80,103 @@ describe("frontmatter quote escaping", () => {
     expect(out.data.title).toBe('single "quote" inside');
   });
 });
+
+describe("unclosed frontmatter (0065)", () => {
+  const unclosed = `---
+title: Fix the unclosed frontmatter bug
+type: bug
+priority: p1
+## Problem
+
+The parser eats the title.
+`;
+
+  it("treats a document with no closing --- as frontmatter terminated by EOF", () => {
+    const out = parseDocument(unclosed);
+    expect(out.hadFrontmatter).toBe(true);
+    expect(out.data.title).toBe("Fix the unclosed frontmatter bug");
+    expect(out.data.type).toBe("bug");
+    expect(out.data.priority).toBe("p1");
+    expect(out.body).toBe("## Problem\n\nThe parser eats the title.\n");
+  });
+
+  it("does not eat markdown headings as frontmatter comments", () => {
+    const out = parseDocument("---\ntitle: X\n## Problem\nbody\n");
+    expect(out.body).toBe("## Problem\nbody\n");
+  });
+
+  it("still skips real (# ) frontmatter comments", () => {
+    const out = parseDocument("---\n# a comment\ntitle: X\n## Problem\nbody\n");
+    expect(out.data.title).toBe("X");
+    expect(out.body).toBe("## Problem\nbody\n");
+  });
+
+  it("keeps a stray horizontal rule (--- then prose) as no-frontmatter", () => {
+    const src = "---\nThis is a story about the fence.\n";
+    const out = parseDocument(src);
+    expect(out.hadFrontmatter).toBe(false);
+    expect(out.data).toEqual({});
+    expect(out.body).toBe(src);
+  });
+
+  it("merges a stray embedded frontmatter block in the body over the closed block", () => {
+    const out = parseDocument(corrupted());
+    expect(out.hadFrontmatter).toBe(true);
+    expect(out.data.id).toBe("0064");
+    expect(out.data.title).toBe(
+      "Add per-task agent and model overrides to the task Agent tab and freeform creation",
+    );
+    expect(out.data.area).toBe("web");
+    expect(out.body).toBe("## Problem\n\nThe Agents page.\n");
+  });
+
+  it("round-trips an affected file to a single clean frontmatter block", () => {
+    const out = parseDocument(corrupted());
+    const reserialized = serializeDocument(out.data, out.body, [
+      "id",
+      "title",
+      "type",
+      "status",
+      "priority",
+      "area",
+      "assigned_to",
+    ]);
+    expect(reserialized).toBe(
+      `---
+id: "0064"
+title: Add per-task agent and model overrides to the task Agent tab and freeform creation
+type: feature
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+---
+## Problem
+
+The Agents page.
+`,
+    );
+    expect(reserialized.split("---")).toHaveLength(3); // one opening + one closing
+  });
+});
+
+function corrupted(): string {
+  return `---
+id: "0064"
+title: ---
+type: feature
+status: inbox
+priority: p2
+area: general
+---
+---
+title: Add per-task agent and model overrides to the task Agent tab and freeform creation
+type: feature
+priority: p2
+area: web
+assigned_to: ai
+## Problem
+
+The Agents page.
+`;
+}

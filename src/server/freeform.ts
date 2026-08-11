@@ -6,7 +6,7 @@
  * a draft task so the user's capture is never lost.
  */
 import type { Agent } from "../core/types.js";
-import { parseDocument } from "../core/frontmatter.js";
+import { FM_DELIM, parseDocument } from "../core/frontmatter.js";
 
 /** Fields extracted from the agent's generated file, fed to createTask. */
 export interface GeneratedTaskInput {
@@ -23,14 +23,20 @@ const PRIORITIES = ["p0", "p1", "p2", "p3"] as const;
 
 /**
  * A short, human title for a raw explanation, for the no-agent fallback.
- * First line of the explanation wins; otherwise the first 60 chars.
+ * First non-empty, non-delimiter line of the explanation wins; otherwise the
+ * first 60 chars. Delimiter lines (a line that is exactly `---`) are skipped so
+ * a stray frontmatter delimiter can never become a title.
  */
 export function explanationTitle(explanation: string): string {
-  const line = explanation.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  const line =
+    explanation
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => Boolean(l) && l !== FM_DELIM) ?? "";
   if (line.length > 0) {
     return line.length <= 60 ? line : `${line.slice(0, 57).trimEnd()}…`;
   }
-  const flat = explanation.replace(/\s+/g, " ").trim();
+  const flat = explanation.replace(/\s+/g, " ").replace(/\s*---\s*/g, " ").trim();
   return flat.length <= 60 ? flat || "Untitled task" : `${flat.slice(0, 57).trimEnd()}…`;
 }
 
@@ -53,9 +59,12 @@ export function parseGeneratedTask(output: string): GeneratedTaskInput {
         ? String(data.title)
         : "";
 
-  if (hadFrontmatter && rawTitle) {
+  if (hadFrontmatter) {
+    // A frontmatter block was present (open, closed, or embedded-in-body).
+    // Use its parsed fields; the title falls back to the body's first line so
+    // a delimiter can never leak into the title.
     return {
-      title: rawTitle,
+      title: rawTitle || explanationTitle(body),
       type: firstMatch(data.type, TASK_TYPES),
       priority: firstMatch(data.priority, PRIORITIES),
       area: typeof data.area === "string" && data.area.trim() ? data.area.trim() : undefined,
