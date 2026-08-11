@@ -7,6 +7,7 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
@@ -33,6 +34,17 @@ export type AgentEvent =
       note: string;
       at: string;
     };
+
+export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
+
+/** A capability minted by the runner for one completed agent turn. */
+export interface AgentHandoffRequest {
+  taskId: string;
+  runId: string;
+  branch: string;
+  workdir: string;
+  sessionId?: string;
+}
 
 export interface StartResult {
   ok: boolean;
@@ -62,6 +74,9 @@ interface Entry {
   killTimer?: ReturnType<typeof setTimeout>;
   /** The task being worked on (start turns only — resume turns have none). */
   task?: Task;
+  branch: string;
+  runId: string;
+  handoffRequested: boolean;
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -73,6 +88,8 @@ interface Session {
   sessionId?: string;
   /** Whether the session runs the opencode CLI (structured JSON events). */
   engine: "opencode" | "plain";
+  task?: Task;
+  branch?: string;
 }
 
 const now = (): string => new Date().toISOString();
@@ -454,12 +471,8 @@ function missionFor(
   contextPack?: string,
   resumePreamble?: string,
 ): string {
-  // The same task file exists in the worktree (checked out on `branch`) and in
-  // the main checkout. The live board reads the MAIN copy; the branch carries
-  // the worktree copy. Status edits must reach BOTH so the user sees review
-  // immediately without serving a per-task port — and the read-back step below
-  // verifies the board actually reflects the real status before the agent
-  // stops (the anti-#0063 fix).
+  // Source edits stay inside the sandbox. RepoOS owns the privileged Git and
+  // canonical-board mutations after the structured signal below (ADR-0005).
   const worktreeTask = join(workdir, relative(config.root, task.path));
   const parts: string[] = [];
 
@@ -478,24 +491,19 @@ function missionFor(
     "",
     `Task #${task.id}: ${task.title}`,
     `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
-    `Task file (this worktree — edit + commit on the branch): ${worktreeTask}`,
-    `Task file (main checkout — the live board reads this copy): ${task.path}`,
+    `Task file (read this worktree copy for the specification): ${worktreeTask}`,
     "",
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
     "",
     "1. Read the task file and implement what it describes.",
-    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before you commit, set review, or stop.",
-    "3. Commit all your work on this branch (git add + git commit).",
-    `4. Set \`status: review\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
-    `5. Set \`status: review\` in the main-checkout copy (${task.path}) — edit it WITHOUT committing.`,
-    `6. Read the main-checkout copy back at the literal file path ${task.path} — use your Read tool or \`cat\` on that exact path, NEVER \`repoos show\`/\`list\`/\`index\`: from inside a worktree those CLI commands resolve to the worktree's own root and can false-positive on the live board. confirm it shows \`status: review\`. If it does not, repeat step 5 until it does.`,
-    "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
+    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before requesting handoff.",
+    "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
+    `4. When the implementation is ready, finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
+    "5. Stop. RepoOS will independently run `repoos check`, commit the implementation, set the worktree task to review, and update the canonical board copy.",
     "",
     "If you are blocked or need a decision from the human:",
-    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
-    `2. Set \`needs_input: true\` in the main-checkout copy (${task.path}) WITHOUT committing.`,
-    "3. Leave the task status `active` and STOP.",
-    "Never silently leave the task `active` without the `needs_input` flag when you are waiting on the human.",
+    "1. Explain the blocker clearly and do NOT emit the handoff-ready signal.",
+    "2. Leave the task active and STOP so the same worktree/session can be resumed.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
@@ -675,8 +683,11 @@ export function runPrompt(
 export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
+  private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
+  private readonly handoffsInFlight = new Set<string>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
   /**
    * The main RepoOS server's own API URL, injected into every agent process so
    * the mission's managed-preview request resolves the ACTUAL control plane,
@@ -684,9 +695,14 @@ export class AgentRunner {
    */
   apiUrl?: string;
 
-  constructor(config: RepoOSConfig, emit: (e: AgentEvent) => void) {
+  constructor(
+    config: RepoOSConfig,
+    emit: (e: AgentEvent) => void,
+    onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>,
+  ) {
     this.config = config;
     this.emit = emit;
+    this.onHandoff = onHandoff;
   }
 
   isRunning(taskId: string): boolean {
@@ -721,17 +737,19 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id)) {
-      return { ok: false, reason: "task is already running" };
+    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id)) {
+      return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
     const session = this.sessions.get(task.id) ?? { lines: [], pending: "", bytes: 0, engine: "plain" as const };
     session.workdir = cwd;
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
+    session.task = task;
+    session.branch = branch;
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd, task);
+    return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
   }
 
   /**
@@ -749,8 +767,8 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId)) {
-      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
+    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
+      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     const entry: AgentOutputEntry = { type: "human", text };
     session.lines.push(entry);
@@ -764,7 +782,14 @@ export class AgentRunner {
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
     const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
-    return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
+    return this.spawnTurn(
+      taskId,
+      cmd,
+      args,
+      session.workdir ?? this.config.root,
+      session.task,
+      session.branch,
+    );
   }
 
   /** The retained transcript for a task, or null when no session exists. */
@@ -772,11 +797,36 @@ export class AgentRunner {
     return this.sessions.get(taskId) ?? null;
   }
 
+  /** Append trusted server orchestration progress to the retained transcript. */
+  system(taskId: string, text: string): void {
+    this.appendLine(taskId, "sys", text);
+  }
+
+  /** Validate that a handoff capability was minted by a successful active turn. */
+  validateHandoff(request: AgentHandoffRequest): boolean {
+    const issued = this.authorizedHandoffs.get(request.runId);
+    return Boolean(
+      issued &&
+      issued.taskId === request.taskId &&
+      issued.branch === request.branch &&
+      this.samePath(issued.workdir, request.workdir) &&
+      issued.sessionId === request.sessionId,
+    );
+  }
+
   /**
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
-  private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string, task?: Task): StartResult {
+  private spawnTurn(
+    taskId: string,
+    cmd: string,
+    args: string[],
+    cwd: string,
+    task?: Task,
+    branch?: string,
+  ): StartResult {
+    const runId = randomUUID();
     let proc: ChildProcess;
     try {
       // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
@@ -791,6 +841,7 @@ export class AgentRunner {
           ...process.env,
           REPOOS_AGENT: "1",
           REPOOS_TASK_ID: taskId,
+          REPOOS_RUN_ID: runId,
           ...(this.apiUrl ? { REPOOS_API_URL: this.apiUrl } : {}),
         },
       });
@@ -806,13 +857,16 @@ export class AgentRunner {
       startedAt: now(),
       workdir: cwd,
       task,
+      branch: branch ?? task?.branch ?? "",
+      runId,
+      handoffRequested: false,
     });
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
     // (not `exit`) fires only after stdio has drained, so a trailing line with
     // no final newline is still in `pending` when cleanup flushes it.
-    proc.on("close", () => this.cleanup(taskId));
-    proc.on("error", () => this.cleanup(taskId));
+    proc.on("close", (code) => this.cleanup(taskId, code === 0));
+    proc.on("error", () => this.cleanup(taskId, false));
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
     return { ok: true, pid: proc.pid };
@@ -849,6 +903,15 @@ export class AgentRunner {
       // extraction.
       entry = { s: stream, d: raw };
       this.tryExtractSessionId(raw, session);
+    }
+    const parsedEntry = parsed?.entry;
+    const signalText = parsedEntry && "type" in parsedEntry && parsedEntry.type === "text"
+      ? parsedEntry.text.trim()
+      : raw.trim();
+    if (stream === "out" && signalText === HANDOFF_READY_SIGNAL) {
+      const running = this.entries.get(taskId);
+      if (running) running.handoffRequested = true;
+      entry = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
@@ -904,7 +967,7 @@ export class AgentRunner {
   }
 
   /** Drop the registry entry for a task (idempotent) and announce it. */
-  private cleanup(taskId: string): void {
+  private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
     const session = this.sessions.get(taskId);
@@ -919,6 +982,24 @@ export class AgentRunner {
     if (entry.killTimer) clearTimeout(entry.killTimer);
     this.entries.delete(taskId);
     this.emit({ type: "agent.exited", id: taskId, at: now() });
+    if (entry.handoffRequested && exitedCleanly && entry.task && entry.branch && entry.workdir) {
+      const request: AgentHandoffRequest = {
+        taskId,
+        runId: entry.runId,
+        branch: entry.branch,
+        workdir: entry.workdir,
+        ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+      };
+      this.authorizedHandoffs.set(request.runId, request);
+      this.handoffsInFlight.add(taskId);
+      void Promise.resolve(this.onHandoff?.(request))
+        .catch((err) => {
+          this.appendLine(taskId, "sys", `✗ server-side handoff failed: ${(err as Error).message}`);
+        })
+        .finally(() => this.handoffsInFlight.delete(taskId));
+    } else if (entry.handoffRequested && !exitedCleanly) {
+      this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
+    }
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the
     // fail-safe checklist's main-copy sync silently failed (the #0068 shape).

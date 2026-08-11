@@ -66,6 +66,7 @@ import { renderInstanceIcon } from "./icons.js";
 import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, resolveAgentForTask, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
+import { handoffTask } from "./handoff.js";
 import { PreviewManager } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
@@ -393,12 +394,48 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
-  const runner = new AgentRunner(config, (e) => {
-    emitEvent(e);
-    if (e.type !== "agent.exited" || !pendingReview.delete(e.id)) return;
-    const task = index.getTask(e.id);
-    if (task?.status === "review") void reviews.run(task);
-  });
+  const runner = new AgentRunner(
+    config,
+    (e) => {
+      emitEvent(e);
+      if (e.type !== "agent.exited" || !pendingReview.delete(e.id)) return;
+      const task = index.getTask(e.id);
+      if (task?.status === "review") void reviews.run(task);
+    },
+    async (request) => {
+      if (!runner.validateHandoff(request)) {
+        runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
+        return;
+      }
+      const task = index.getTask(request.taskId);
+      if (!task) {
+        runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
+        return;
+      }
+      runner.system(request.taskId, "Server finalization started — validating the runner handoff");
+      const result = await handoffTask(
+        config,
+        task,
+        request,
+        (step) => {
+          emitEvent({ type: "task.progress", id: task.id, step: `handoff:${step}`, at: new Date().toISOString() });
+          if (step !== "validate" && step !== "done") {
+            runner.system(task.id, `Server finalization: ${step}`);
+          }
+        },
+        onServerStatusChange,
+      );
+      if (result.ok) {
+        index.applyFileChange(task.absPath);
+        runner.system(task.id, "✓ Server finalization complete — task moved to review");
+      } else {
+        runner.system(
+          task.id,
+          `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
+        );
+      }
+    },
+  );
 
   // Read-only preview servers for review/active tasks. Orphans from a crashed
   // previous main server are reaped at boot; this instance starts with none.
