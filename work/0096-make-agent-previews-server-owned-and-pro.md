@@ -2,14 +2,14 @@
 id: "0096"
 title: Make agent previews server-owned and protect the main server port
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/make-agent-previews-server-owned-and-pro
 created_at: "2026-08-11T15:13:09Z"
-updated_at: "2026-08-11T16:32:40Z"
+updated_at: "2026-08-11T16:42:38Z"
 ---
 ## Activity
 
@@ -121,3 +121,4 @@ the main RepoOS process.
 - 2026-08-11T15:22:46Z · status inbox→ready
 - 2026-08-11T15:23:03Z · status ready→active, branch
 - 2026-08-11T16:32:40Z · status active→review · implementation committed and `repoos check` passed
+- 2026-08-11T16:42:38Z · status review→done
