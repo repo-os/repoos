@@ -8,8 +8,10 @@ area: ui
 assigned_to: AI
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: gpt-5.6-luna
 created_at: "2026-08-11T19:35:08Z"
-updated_at: "2026-08-11T19:35:38Z"
+updated_at: "2026-08-11T20:11:29Z"
 ---
 ## Problem
 
@@ -44,3 +46,4 @@ Build on task 0068 tunnel CLI behavior and replace the static instructional trea
 ## Activity
 
 - 2026-08-11T19:35:38Z · body
+- 2026-08-11T20:11:29Z · cli_override, model_override
