@@ -143,7 +143,6 @@ export interface AgentSessionStats {
   /** True once output has gone stale for the stall window while still running. */
   stalled: boolean;
 }
-}
 
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
