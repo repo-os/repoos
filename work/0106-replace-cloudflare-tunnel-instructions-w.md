@@ -2,16 +2,16 @@
 id: "0106"
 title: Replace Cloudflare tunnel instructions with a validated publishing setup assistant
 type: feature
-status: ready
+status: active
 priority: p1
 area: ui
 assigned_to: AI
 created_by: ""
-branch: ""
+branch: feat/replace-cloudflare-tunnel-instructions-w
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-08-11T19:35:08Z"
-updated_at: "2026-08-11T20:11:29Z"
+updated_at: "2026-08-11T20:11:31Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Build on task 0068 tunnel CLI behavior and replace the static instructional trea
 
 - 2026-08-11T19:35:38Z · body
 - 2026-08-11T20:11:29Z · cli_override, model_override
+- 2026-08-11T20:11:31Z · status ready→active, branch

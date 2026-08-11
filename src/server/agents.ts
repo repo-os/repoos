@@ -9,7 +9,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
+import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { DEFAULT_AGENTS } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { parseTask } from "../core/task.js";
@@ -26,6 +26,7 @@ export type AgentEvent =
       stream: "out" | "err";
       at: string;
     }
+  | { type: "agent.stats"; id: string; stats: AgentSessionStats; at: string }
   | {
       type: "task.corrected";
       id: string;
@@ -73,12 +74,104 @@ interface Session {
   sessionId?: string;
   /** Whether the session runs the opencode CLI (structured JSON events). */
   engine: "opencode" | "plain";
+  /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
+  accumulatedMs: number;
+  /** ISO timestamp the current turn started, or undefined when no turn is running. */
+  turnStartedAt?: string;
+  /** ISO timestamp of the most recent output line, or undefined until first output. */
+  lastOutputAt?: string;
+  /** Best-effort cumulative token count reported by the CLI, or undefined if never reported. */
+  tokens?: number;
+  /** Best-effort cumulative cost (USD) reported by the CLI, or undefined if never reported. */
+  costUsd?: number;
+  /**
+   * Edge-detection only, not part of the public stats shape: whether the last
+   * `agent.stats` snapshot we pushed already reported `stalled: true`, so the
+   * periodic check emits exactly once per stall (not every tick) and output
+   * arriving after a stall clears it exactly once too.
+   */
+  stalledEmitted: boolean;
 }
 
 const now = (): string => new Date().toISOString();
 
 /** Hard cap on a session transcript (drop oldest lines beyond this). */
 const OUTPUT_CAP_BYTES = 256 * 1024;
+
+/**
+ * Default silence window before a still-running turn is flagged as possibly
+ * stalled (0080). Conservative on purpose: silence alone is never proof of a
+ * hang (the agent could just be thinking through a slow step), so this only
+ * fires a neutral "may be stalled" warning, never a definitive "it's dead."
+ * `AgentRunner`'s constructor accepts an override for tests.
+ */
+export const DEFAULT_STALL_TIMEOUT_MS = 90_000;
+
+/**
+ * Best-effort usage/cost extraction from one raw output line. Tries a JSON
+ * parse first (codex `--json` usage events, opencode payloads carrying usage)
+ * and falls back to plain-text patterns (the kind of human-readable summary
+ * claude/qwen print). Returns only the fields it actually found — this must
+ * never fabricate a number for a CLI that reports nothing.
+ */
+export function extractUsage(raw: string): { tokens?: number; costUsd?: number } {
+  const out: { tokens?: number; costUsd?: number } = {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as Record<string, unknown>;
+      const tokens = tokensFromObject(obj);
+      if (tokens !== undefined) out.tokens = tokens;
+      const cost = costFromObject(obj);
+      if (cost !== undefined) out.costUsd = cost;
+    }
+  } catch {
+    /* not JSON — fall through to text patterns below */
+  }
+  if (out.tokens === undefined) {
+    const m = raw.match(/\btotal[_ ]tokens\b["'\s:=]+([\d,]+)/i) ?? raw.match(/\b([\d,]+)\s+tokens\b/i);
+    if (m) {
+      const n = Number(m[1].replace(/,/g, ""));
+      if (Number.isFinite(n)) out.tokens = n;
+    }
+  }
+  if (out.costUsd === undefined) {
+    const m =
+      raw.match(/total cost[:\s]+\$?([\d.]+)/i) ?? raw.match(/\bcost_usd\b["'\s:=]+\$?([\d.]+)/i);
+    if (m) {
+      const n = Number(m[1]);
+      if (Number.isFinite(n)) out.costUsd = n;
+    }
+  }
+  return out;
+}
+
+/** Token count from a `usage`-shaped JSON object, or undefined if absent. */
+function tokensFromObject(obj: Record<string, unknown>): number | undefined {
+  const usage = obj.usage;
+  if (usage && typeof usage === "object") {
+    const u = usage as Record<string, unknown>;
+    if (typeof u.total_tokens === "number") return u.total_tokens;
+    const input = typeof u.input_tokens === "number" ? u.input_tokens : 0;
+    const output = typeof u.output_tokens === "number" ? u.output_tokens : 0;
+    if (input || output) return input + output;
+  }
+  if (typeof obj.total_tokens === "number") return obj.total_tokens;
+  return undefined;
+}
+
+/** Cost (USD) from a `usage`-shaped JSON object, or undefined if absent. */
+function costFromObject(obj: Record<string, unknown>): number | undefined {
+  if (typeof obj.total_cost_usd === "number") return obj.total_cost_usd;
+  if (typeof obj.cost_usd === "number") return obj.cost_usd;
+  const usage = obj.usage;
+  if (usage && typeof usage === "object") {
+    const u = usage as Record<string, unknown>;
+    if (typeof u.cost_usd === "number") return u.cost_usd;
+    if (typeof u.total_cost_usd === "number") return u.total_cost_usd;
+  }
+  return undefined;
+}
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
 const SESSION_ID_PATTERNS: RegExp[] = [
@@ -683,14 +776,40 @@ export class AgentRunner {
    * never a hardcoded port.
    */
   apiUrl?: string;
+  private readonly stallTimeoutMs: number;
+  private readonly stallTimer: ReturnType<typeof setInterval>;
 
-  constructor(config: RepoOSConfig, emit: (e: AgentEvent) => void) {
+  /**
+   * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
+   * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
+   * overrides the poll cadence, which otherwise scales with the timeout.
+   */
+  constructor(
+    config: RepoOSConfig,
+    emit: (e: AgentEvent) => void,
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
+  ) {
     this.config = config;
     this.emit = emit;
+    this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
+    const checkMs =
+      opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
+    this.stallTimer = setInterval(() => this.checkStalls(), checkMs);
+    this.stallTimer.unref();
+  }
+
+  /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
+  dispose(): void {
+    clearInterval(this.stallTimer);
   }
 
   isRunning(taskId: string): boolean {
     return this.entries.has(taskId);
+  }
+
+  /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
+  stats(taskId: string): AgentSessionStats {
+    return this.snapshotStats(taskId);
   }
 
   running(): RunningAgentInfo[] {
@@ -725,7 +844,16 @@ export class AgentRunner {
       return { ok: false, reason: "task is already running" };
     }
     const cwd = opts.cwd ?? this.config.root;
-    const session = this.sessions.get(task.id) ?? { lines: [], pending: "", bytes: 0, engine: "plain" as const };
+    const session =
+      this.sessions.get(task.id) ??
+      {
+        lines: [],
+        pending: "",
+        bytes: 0,
+        engine: "plain" as const,
+        accumulatedMs: 0,
+        stalledEmitted: false,
+      };
     session.workdir = cwd;
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
@@ -807,6 +935,17 @@ export class AgentRunner {
       workdir: cwd,
       task,
     });
+    // Turn-start bookkeeping for the live stats readout (0080): the silence
+    // clock resets here too, not just on output, so a follow-up turn on a
+    // session that's been idle in `review` for hours doesn't immediately read
+    // as "stalled" before the freshly-spawned process has had a chance to
+    // produce a single line.
+    const session = this.sessions.get(taskId);
+    if (session) {
+      session.turnStartedAt = now();
+      session.lastOutputAt = now();
+      session.stalledEmitted = false;
+    }
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
     // (not `exit`) fires only after stdio has drained, so a trailing line with
@@ -815,6 +954,7 @@ export class AgentRunner {
     proc.on("error", () => this.cleanup(taskId));
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
+    this.emitStats(taskId);
     return { ok: true, pid: proc.pid };
   }
 
@@ -865,6 +1005,80 @@ export class AgentRunner {
       const dropped = session.lines.shift();
       if (!dropped) break;
       session.bytes -= entryBytes(dropped);
+    }
+    // Live stats (0080): any output is evidence the process isn't hung, so it
+    // resets the silence clock and clears a stall warning immediately — the
+    // periodic check only ever needs to raise the flag, never lower it.
+    const usageChanged = this.applyUsage(session, raw);
+    session.lastOutputAt = now();
+    const stallCleared = session.stalledEmitted;
+    session.stalledEmitted = false;
+    if (usageChanged || stallCleared) this.emitStats(taskId);
+  }
+
+  /**
+   * Fold any usage/cost found in a raw output line into the session, clamped
+   * to never move backward — some CLIs report a running total, some reset per
+   * turn, and this readout must count up, never flicker down. Returns true
+   * when a stored value actually changed (so callers only emit stats when
+   * there's something new to show).
+   */
+  private applyUsage(session: Session, raw: string): boolean {
+    const found = extractUsage(raw);
+    let changed = false;
+    if (found.tokens !== undefined) {
+      const next = Math.max(session.tokens ?? 0, found.tokens);
+      if (next !== session.tokens) {
+        session.tokens = next;
+        changed = true;
+      }
+    }
+    if (found.costUsd !== undefined) {
+      const next = Math.max(session.costUsd ?? 0, found.costUsd);
+      if (next !== session.costUsd) {
+        session.costUsd = next;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /** Emit the current live-stats snapshot for a task. */
+  private emitStats(taskId: string): void {
+    this.emit({ type: "agent.stats", id: taskId, stats: this.snapshotStats(taskId), at: now() });
+  }
+
+  /** Compute a fresh stats snapshot — always safe to call, even with no session. */
+  private snapshotStats(taskId: string): AgentSessionStats {
+    const session = this.sessions.get(taskId);
+    const running = this.entries.has(taskId);
+    const lastOutputAt = session?.lastOutputAt ?? null;
+    const stalled =
+      running && !!lastOutputAt && Date.now() - Date.parse(lastOutputAt) >= this.stallTimeoutMs;
+    return {
+      accumulatedMs: session?.accumulatedMs ?? 0,
+      turnStartedAt: running ? (session?.turnStartedAt ?? null) : null,
+      lastOutputAt,
+      tokens: session?.tokens ?? null,
+      costUsd: session?.costUsd ?? null,
+      stalled,
+    };
+  }
+
+  /**
+   * Periodic sweep (every `stallCheckIntervalMs`) over currently-running turns:
+   * raises the stall flag the moment silence crosses the threshold. Recovery
+   * (new output, or the turn exiting) is handled inline where it happens, so
+   * this only ever needs to turn the warning ON, never off.
+   */
+  private checkStalls(): void {
+    for (const taskId of this.entries.keys()) {
+      const session = this.sessions.get(taskId);
+      if (!session || session.stalledEmitted) continue;
+      if (this.snapshotStats(taskId).stalled) {
+        session.stalledEmitted = true;
+        this.emitStats(taskId);
+      }
     }
   }
 
@@ -917,8 +1131,19 @@ export class AgentRunner {
       session.pending = "";
     }
     if (entry.killTimer) clearTimeout(entry.killTimer);
+    // Fold the finished turn's wall time into the running total (0080) — the
+    // time-spent counter accumulates across turns rather than resetting each
+    // time a follow-up message starts a fresh process.
+    if (session?.turnStartedAt) {
+      session.accumulatedMs += Date.now() - Date.parse(session.turnStartedAt);
+      session.turnStartedAt = undefined;
+    }
+    if (session) session.stalledEmitted = false;
     this.entries.delete(taskId);
     this.emit({ type: "agent.exited", id: taskId, at: now() });
+    // A confirmed exit always clears any stall warning — silence is only
+    // ambiguous while the process is still alive.
+    if (session) this.emitStats(taskId);
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the
     // fail-safe checklist's main-copy sync silently failed (the #0068 shape).

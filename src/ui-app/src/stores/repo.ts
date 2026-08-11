@@ -4,6 +4,7 @@ import { api, JSON_OPTS } from "../api";
 import { useUiStore } from "./ui";
 import type {
   AgentOutputEntry,
+  AgentSessionStats,
   Counts,
   Health,
   RepoEvent,
@@ -107,6 +108,8 @@ export const useRepoStore = defineStore("repo", () => {
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
+  /** Live run telemetry per task (time/tokens/cost/stalled), keyed by task id. */
+  const agentStats = ref<Record<string, AgentSessionStats>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
@@ -253,6 +256,8 @@ export const useRepoStore = defineStore("repo", () => {
         ...outputs.value,
         [e.id]: [...prev, e.entry].slice(-OUTPUT_MAX_LINES),
       };
+    } else if (e.type === "agent.stats") {
+      agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
@@ -326,7 +331,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "system.stats"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -407,11 +412,19 @@ export const useRepoStore = defineStore("repo", () => {
     return r;
   }
 
-  /** Replace the client's transcript for a task from the server buffer. */
+  /**
+   * Replace the client's transcript for a task from the server buffer, and
+   * hydrate its live stats — the server is the source of truth for elapsed
+   * time / stall state, so (re)opening the Agent tab always reflects the
+   * CURRENT state even if the tab missed every SSE event while it was closed.
+   */
   async function loadOutput(id: string): Promise<void> {
     try {
-      const r = await api<{ ok: boolean; lines: AgentOutputEntry[] }>(`/api/tasks/${id}/output`);
+      const r = await api<{ ok: boolean; lines: AgentOutputEntry[]; stats?: AgentSessionStats }>(
+        `/api/tasks/${id}/output`,
+      );
       if (r.ok) outputs.value = { ...outputs.value, [id]: r.lines };
+      if (r.stats) agentStats.value = { ...agentStats.value, [id]: r.stats };
     } catch {
       /* endpoint unavailable — transcript is best-effort */
     }
@@ -566,6 +579,7 @@ export const useRepoStore = defineStore("repo", () => {
     transitionState,
     runningIds,
     outputs,
+    agentStats,
     doneSteps,
     reviews,
     sortOrder,

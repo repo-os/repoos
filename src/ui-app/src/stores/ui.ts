@@ -41,10 +41,15 @@ export const useUiStore = defineStore("ui", () => {
     nt.assignedTo = "";
   }
 
+  /** Tasks the agent has already started on default straight to the live action. */
+  function defaultTabFor(t: Task): "details" | "agent" {
+    return t.status === "active" || t.status === "review" ? "agent" : "details";
+  }
+
   function open(t: Task): void {
     isNew.value = false;
     active.value = t;
-    activeTab.value = "details";
+    activeTab.value = defaultTabFor(t);
   }
 
   /** Open a task drawer, refreshing the task from the API first (fallback to local). */

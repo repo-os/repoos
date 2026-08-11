@@ -168,6 +168,27 @@ export type AgentOutputEntry =
   /** A legacy plain line, kept for claude / qwen / codex and old sessions. */
   | { s: "out" | "err" | "sys"; d: string };
 
+/**
+ * Live run telemetry for one task's agent session (0080). Best-effort and
+ * in-memory only — never persisted across a server restart. Numbers only ever
+ * move forward: `null` means "the CLI hasn't reported this," never a
+ * fabricated zero.
+ */
+export interface AgentSessionStats {
+  /** Cumulative ms across completed turns — excludes any turn in flight. */
+  accumulatedMs: number;
+  /** ISO timestamp the current turn started, or null when no turn is running. */
+  turnStartedAt: string | null;
+  /** ISO timestamp of the most recent agent.output line, or null until first output. */
+  lastOutputAt: string | null;
+  /** Best-effort cumulative token count reported by the CLI, or null if never reported. */
+  tokens: number | null;
+  /** Best-effort cumulative cost (USD) reported by the CLI, or null if never reported. */
+  costUsd: number | null;
+  /** True once output has gone stale for the stall window while still running. */
+  stalled: boolean;
+}
+
 /** A skill discovered from the skills dir (skills/<name>/SKILL.md). */
 export interface SkillMeta {
   /** Repo-relative path to the skill file, e.g. "skills/code-review/SKILL.md". */

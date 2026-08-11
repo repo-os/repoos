@@ -23,7 +23,7 @@
  *                                also relaunches a paused active task (stays active)
  *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
- *   GET  /api/tasks/:id/output -> the retained session transcript for a task
+ *   GET  /api/tasks/:id/output -> { lines, stats } the retained transcript + live run stats (0080)
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review } the agent's
  *                                 review report for a task in `review`
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
@@ -669,7 +669,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
         const session = runner.output(outputMatch[1]);
-        return json(res, 200, { ok: true, lines: session?.lines ?? [] });
+        return json(res, 200, {
+          ok: true,
+          lines: session?.lines ?? [],
+          stats: runner.stats(outputMatch[1]),
+        });
       }
       const reviewMatch = path.match(/^\/api\/tasks\/([^/]+)\/review$/);
       if (reviewMatch && method === "GET") {
@@ -1438,6 +1442,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        runner.dispose();
         throw err;
       }
 
@@ -1452,6 +1457,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
           watcher.stop();

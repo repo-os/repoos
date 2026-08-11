@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { COLUMNS, useRepoStore } from "../src/stores/repo";
+import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
@@ -79,7 +80,18 @@ function mockFetch(): void {
     if (url.includes("/pause"))
       return json({ ok: true });
     if (url.includes("/output"))
-      return json({ ok: true, lines: [{ s: "out", d: "resumed transcript" }] });
+      return json({
+        ok: true,
+        lines: [{ s: "out", d: "resumed transcript" }],
+        stats: {
+          accumulatedMs: 4200,
+          turnStartedAt: null,
+          lastOutputAt: "2026-08-11T00:00:00Z",
+          tokens: 150,
+          costUsd: 0.02,
+          stalled: false,
+        },
+      });
     if (url.includes("/preview"))
       return json({ ok: true, port: 7234, url: "http://127.0.0.1:7234" });
     if (url.includes("/message"))
@@ -422,6 +434,20 @@ describe("agent output transcript", () => {
     expect(repo.outputs["0001"]).toEqual([{ s: "out", d: "resumed transcript" }]);
   });
 
+  it("loadOutput hydrates live stats from the endpoint, not just the transcript", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.loadOutput("0001");
+    expect(repo.agentStats["0001"]).toEqual({
+      accumulatedMs: 4200,
+      turnStartedAt: null,
+      lastOutputAt: "2026-08-11T00:00:00Z",
+      tokens: 150,
+      costUsd: 0.02,
+      stalled: false,
+    });
+  });
+
   it("sendMessage posts the follow-up text", async () => {
     const repo = useRepoStore();
     await repo.init();
@@ -449,6 +475,37 @@ describe("agent output transcript", () => {
     const repo = useRepoStore();
     await repo.init();
     await expect(repo.sendMessage("0001", "go")).rejects.toThrow("busy");
+  });
+});
+
+describe("agent stats (0080)", () => {
+  const STATS = {
+    accumulatedMs: 1000,
+    turnStartedAt: "2026-08-11T00:00:10Z",
+    lastOutputAt: "2026-08-11T00:00:12Z",
+    tokens: 88,
+    costUsd: 0.01,
+    stalled: false,
+  };
+
+  it("applies agent.stats events keyed by task id", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.stats", { type: "agent.stats", id: "0001", stats: STATS });
+    expect(repo.agentStats["0001"]).toEqual(STATS);
+  });
+
+  it("surfaces a stall warning distinctly from a normal running state", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.stats", { type: "agent.stats", id: "0001", stats: { ...STATS, stalled: true } });
+    expect(repo.agentStats["0001"].stalled).toBe(true);
+
+    // New output is evidence of life, not death — clearing must be possible.
+    es.emit("agent.stats", { type: "agent.stats", id: "0001", stats: { ...STATS, stalled: false } });
+    expect(repo.agentStats["0001"].stalled).toBe(false);
   });
 });
 
@@ -508,5 +565,42 @@ describe("error toasts", () => {
     await repo.init();
     await expect(repo.startWork(makeTask({ status: "ready" }))).rejects.toThrow("agent unavailable");
     expect(repo.toasts.some((t) => t.message === "agent unavailable")).toBe(true);
+  });
+});
+
+describe("default drawer tab (0080)", () => {
+  it.each(["active", "review"] as const)(
+    "opens on the Agent tab for a %s task — that's where the live action is",
+    (status) => {
+      const ui = useUiStore();
+      ui.open(makeTask({ status }));
+      expect(ui.activeTab).toBe("agent");
+    },
+  );
+
+  it.each(["draft", "inbox", "ready", "done"] as const)(
+    "opens on the Details tab for a %s task",
+    (status) => {
+      const ui = useUiStore();
+      ui.open(makeTask({ status }));
+      expect(ui.activeTab).toBe("details");
+    },
+  );
+
+  it("openTask applies the same status-based default (fetch-refresh path)", async () => {
+    const ui = useUiStore();
+    // The shared fetch mock has no handler for a bare GET /api/tasks/:id, so
+    // openTask falls back to its already-known task — the default-tab logic
+    // must still apply on that fallback path, not only on the happy path.
+    await ui.openTask(makeTask({ status: "active" }));
+    expect(ui.activeTab).toBe("agent");
+  });
+
+  it("close() resets to details as a safe baseline for the next open", () => {
+    const ui = useUiStore();
+    ui.open(makeTask({ status: "active" }));
+    expect(ui.activeTab).toBe("agent");
+    ui.close();
+    expect(ui.activeTab).toBe("details");
   });
 });
