@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/render-context-markdown-like-task-conten
 created_at: "2026-08-11T16:05:31Z"
-updated_at: "2026-08-11T18:46:35Z"
+updated_at: "2026-08-11T18:52:30Z"
 ---
 ## Problem
 
