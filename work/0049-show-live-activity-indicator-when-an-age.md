@@ -2,14 +2,14 @@
 id: "0049"
 title: Show live activity indicator when an agent is working
 type: feature
-status: ready
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T17:24:13Z"
-updated_at: "2026-08-11T03:51:04Z"
+updated_at: "2026-08-11T15:16:20Z"
 ---
 ## Problem
 
@@ -86,3 +86,4 @@ confusing during a 3-minute synchronous operation.
 
 - 2026-08-06T17:24:13Z · created · unknown
 - 2026-08-11T03:51:04Z · status inbox→ready
+- 2026-08-11T15:16:20Z · status ready→review
