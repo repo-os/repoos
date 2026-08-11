@@ -11,7 +11,7 @@ branch: feat/run-agent-review-before-human-sign-off
 cli_override: claude code
 model_override: opus
 created_at: "2026-08-11T16:24:27Z"
-updated_at: "2026-08-11T18:56:18Z"
+updated_at: "2026-08-11T18:57:27Z"
 ---
 ## Problem
 
