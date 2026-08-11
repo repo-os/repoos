@@ -7,11 +7,9 @@ priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: feat/keep-paused-tasks-in-active-status-inste
-cli_override: claude code
-model_override: sonnet
+branch: "feat/keep-paused-tasks-in-active-status-inste"
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T18:59:05Z"
+updated_at: "2026-08-12T03:06:00Z"
 ---
 ## Problem
 
@@ -83,9 +81,4 @@ Relevant code:
 
 - 2026-08-11T03:17:31Z · created · unknown
 - 2026-08-11T03:51:07Z · status inbox→ready
-- 2026-08-11T18:34:40Z · status ready→active, branch
-- 2026-08-11T18:36:22Z · status active→ready
-- 2026-08-11T18:36:27Z · status ready→active
-- 2026-08-11T18:57:27Z · cli_override, model_override
-- 2026-08-11T18:59:04Z · status active→ready
-- 2026-08-11T18:59:05Z · status ready→active
+- 2026-08-12T03:06:00Z · status ready→review · implemented: /pause no longer demotes active tasks to ready; TaskCard/TaskDrawer show "Restart work" for a paused-but-active task, driven by repo.isRunning; /start relaunches an active-paused task in place. repoos check green.

@@ -58,18 +58,26 @@ const ACTIONS: Partial<Record<Task["status"], CardAction>> = {
     icon: "M8 5v14l11-7z",
     variant: "start",
   },
-  active: {
-    label: "Pause work",
-    title: "Stop the agent and return the task to ready",
-    icon: "M10 4H6v16h4zM18 4h-4v16h4z",
-    variant: "pause",
-  },
   review: {
     label: "Move to done",
     title: "Merge the branch, run repoos check, and mark the task done",
     icon: "M4 12l5 5L20 6",
     variant: "done",
   },
+};
+
+/** `active` bifurcates on repo.isRunning rather than status — see `action` below. */
+const ACTIVE_PAUSE: CardAction = {
+  label: "Pause work",
+  title: "Stop the agent; the task stays active so you can resume it",
+  icon: "M10 4H6v16h4zM18 4h-4v16h4z",
+  variant: "pause",
+};
+const ACTIVE_RESTART: CardAction = {
+  label: "Restart work",
+  title: "Relaunch the agent on this task from where it left off",
+  icon: "M8 5v14l11-7z",
+  variant: "start",
 };
 
 interface CardHint {
@@ -87,18 +95,29 @@ const hint = computed<CardHint | null>(() => {
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
-    return { label: "not running", title: "active but no agent process detected — check the task", cls: "tc-stalled" };
+    return { label: "paused", title: "agent stopped — click Restart work to resume", cls: "tc-stalled" };
   }
   return null;
 });
 
-const action = computed<CardAction | null>(() => ACTIONS[props.task.status] ?? null);
+/** `task.status` alone can't tell paused from running once pausing no longer
+ *  demotes to `ready` — the running-agent set (repo.isRunning) is the signal. */
+const action = computed<CardAction | null>(() => {
+  const t = props.task;
+  if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+  return ACTIONS[t.status] ?? null;
+});
+
+/** True when the action would relaunch the agent (fresh start or resume from pause). */
+const isLaunchAction = computed(
+  () => props.task.status === "ready" || (props.task.status === "active" && !repo.isRunning(props.task.id)),
+);
 
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
   // A dirty worktree means restarting would either resume prior work or
   // discard it — surface that choice instead of starting silently.
-  if (props.task.status === "ready" && props.task.git?.dirty) {
+  if (isLaunchAction.value && props.task.git?.dirty) {
     restartTask.value = props.task;
     return;
   }
@@ -115,7 +134,8 @@ async function runAction(): Promise<void> {
         await repo.startWork(props.task);
         break;
       case "active":
-        await repo.pauseWork(props.task);
+        if (repo.isRunning(props.task.id)) await repo.pauseWork(props.task);
+        else await repo.startWork(props.task);
         break;
       case "review":
         await repo.completeTask(props.task);
@@ -178,7 +198,7 @@ async function openAgent(): Promise<void> {
         @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
       >{{ hint.label }}</span>
       <span
-        v-if="task.status === 'ready' && task.git?.dirty"
+        v-if="isLaunchAction && task.git?.dirty"
         class="tc-dirty"
         :title="
           task.git.worktreePath
