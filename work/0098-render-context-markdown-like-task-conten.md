@@ -2,14 +2,14 @@
 id: "0098"
 title: Render context markdown like task content
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/render-context-markdown-like-task-conten
 created_at: "2026-08-11T16:05:31Z"
-updated_at: "2026-08-11T18:46:31Z"
+updated_at: "2026-08-11T18:46:35Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ This task covers the rendering and presentation of markdown files on the context
 - 2026-08-11T18:46:07Z · status inbox→ready
 - 2026-08-11T18:46:10Z · status ready→active
 - 2026-08-11T18:46:31Z · status active→ready
+- 2026-08-11T18:46:35Z · status ready→active, branch
