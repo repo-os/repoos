@@ -2,7 +2,7 @@
 id: "0089"
 title: Make the task spec collapsible and render its Markdown
 type: feature
-status: ready
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -38,3 +38,4 @@ The spec field in the task sidebar can be expanded or collapsed. When the field 
 
 - 2026-08-11T13:34:35Z · created · unknown
 - 2026-08-11T13:34:57Z · status inbox→ready
+- 2026-08-11T23:07:00Z · status ready→review
