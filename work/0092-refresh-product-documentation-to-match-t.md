@@ -2,14 +2,14 @@
 id: "0092"
 title: Refresh product documentation to match the current implementation
 type: chore
-status: ready
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/refresh-product-documentation-to-match-t
 created_at: "2026-08-11T14:22:03Z"
-updated_at: "2026-08-11T15:42:16Z"
+updated_at: "2026-08-11T15:53:27Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ recurring.
 - 2026-08-11T14:22:03Z · created · unknown
 - 2026-08-11T15:37:46Z · updated · reflect completed legacy-UI removal and prepare the focused docs refresh
 - 2026-08-11T15:42:16Z · status inbox→ready
+- 2026-08-11T15:53:27Z · status ready→active, branch
