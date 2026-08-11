@@ -21,6 +21,7 @@ const KEY_ORDER = [
   "title",
   "type",
   "status",
+  "needs_input",
   "priority",
   "area",
   "assigned_to",
@@ -148,6 +149,7 @@ export function parseTask(args: ParseTaskArgs): Task {
     title,
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
+    needsInput: data.needs_input === true,
     priority: String(data.priority ?? "p2"),
     area: String(data.area ?? "general"),
     assignee,
@@ -179,6 +181,9 @@ export function serializeTask(task: Task): string {
     branch: task.branch,
   };
   if (task.tags.length) data.tags = task.tags;
+  // Only ever write `needs_input` when it is true — false is the default and is
+  // never persisted, so clearing the flag removes the key from the file.
+  if (task.needsInput) data.needs_input = true;
   if (task.created_at) data.created_at = normalizeTimestamp(task.created_at);
   if (task.updated_at) data.updated_at = normalizeTimestamp(task.updated_at);
   // re-attach preserved unknown keys

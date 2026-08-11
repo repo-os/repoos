@@ -189,13 +189,21 @@ const TASK: Task = {
   createdBy: "",
   branch: "feat/json-events",
   tags: [],
+  needsInput: false,
   created_at: null,
   updated_at: null,
   path: "work/0045-json.md",
   absPath: "/tmp/work/0045-json.md",
   body: "",
   extra: {},
-  git: { branchExists: false, lastCommit: null, lastCommitAt: null },
+  git: {
+    branchExists: false,
+    worktreeExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+    worktreePath: null,
+    dirty: false,
+  },
 };
 
 const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });

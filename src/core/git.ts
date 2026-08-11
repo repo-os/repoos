@@ -95,7 +95,14 @@ export function lastCommitForFile(
 }
 
 export function emptyGitInfo(): TaskGitInfo {
-  return { branchExists: false, lastCommit: null, lastCommitAt: null };
+  return {
+    branchExists: false,
+    worktreeExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+    worktreePath: null,
+    dirty: false,
+  };
 }
 
 export interface EnsureWorktreeResult {
@@ -110,9 +117,11 @@ export interface EnsureWorktreeResult {
 
 /**
  * Branch -> worktree path for every registered linked worktree, derived from
- * `git worktree list --porcelain`. Empty map when git is missing.
+ * `git worktree list --porcelain`. Empty map when git is missing. Callers that
+ * resolve several branches at once (indexer, live index) should call this ONCE
+ * and reuse the map — every call shells out to git.
  */
-function worktreeList(root: string): Map<string, string> {
+export function worktreePaths(root: string): Map<string, string> {
   const out = git(root, ["worktree", "list", "--porcelain"]);
   const map = new Map<string, string>();
   if (!out) return map;
@@ -126,6 +135,17 @@ function worktreeList(root: string): Map<string, string> {
     }
   }
   return map;
+}
+
+/**
+ * Absolute path of the worktree that has `branch` checked out, or null when the
+ * branch has no linked worktree (or git is missing). The main checkout's own
+ * branch resolves to the repo root. Uses `git worktree list --porcelain` —
+ * never string concatenation — so branch names with `/` and exotic characters
+ * resolve correctly.
+ */
+export function worktreePathForBranch(root: string, branch: string): string | null {
+  return worktreePaths(root).get(branch) ?? null;
 }
 
 /**
@@ -147,7 +167,7 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
   if (currentBranch(root) === branch) {
     return { ok: true, path: root, created: false };
   }
-  const existing = worktreeList(root).get(branch);
+  const existing = worktreePaths(root).get(branch);
   if (existing) return { ok: true, path: existing, created: false };
 
   const target = join(worktreesDir(root), branch);
@@ -172,6 +192,83 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
     /* keep the composed path */
   }
   return { ok: true, path, created: true };
+}
+
+export interface WorktreeStatus {
+  /** Absolute path of the linked worktree for `branch`, or null. */
+  path: string | null;
+  /**
+   * Whether a clean restart would discard prior work: the linked worktree has
+   * uncommitted changes, or the branch has commits not in the main checkout's
+   * branch. False when no linked worktree exists — the main checkout itself
+   * is never a task worktree.
+   */
+  dirty: boolean;
+}
+
+/**
+ * Best-effort facts about a task's worktree, derived from `git worktree list`
+ * plus a status check inside the worktree. Fail-soft: any git failure yields
+ * a safe `{ path: null, dirty: false }`.
+ */
+export function worktreeStatus(root: string, branch: string): WorktreeStatus {
+  const path = worktreePaths(root).get(branch) ?? null;
+  if (!path) return { path: null, dirty: false };
+  // git reports the main checkout as a worktree too; only a LINKED worktree
+  // counts, otherwise the whole repo's dirt would mark tasks dirty.
+  let realRoot = root;
+  let realPath = path;
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    /* keep the composed path */
+  }
+  try {
+    realPath = realpathSync(path);
+  } catch {
+    /* keep the reported path */
+  }
+  if (realPath === realRoot) return { path: null, dirty: false };
+
+  const status = git(path, ["status", "--porcelain"]);
+  const uncommitted = status !== null && status !== "";
+  const base = currentBranch(root);
+  const count = base && base !== branch
+    ? git(root, ["rev-list", "--count", `${base}..${branch}`])
+    : null;
+  const ahead = count !== null && Number(count) > 0;
+  return { path, dirty: uncommitted || ahead };
+}
+
+/**
+ * Discard a task's worktree AND its branch so the next `ensureWorktree`
+ * re-creates both from the main checkout's HEAD — a clean restart. The main
+ * checkout itself is never touched. Fail-soft: false when git is missing,
+ * the branch is the main checkout, or a removal step failed.
+ */
+export function resetWorktree(root: string, branch: string): boolean {
+  const path = worktreePaths(root).get(branch);
+  if (path) {
+    let realRoot = root;
+    let realPath = path;
+    try {
+      realRoot = realpathSync(root);
+    } catch {
+      /* keep the composed path */
+    }
+    try {
+      realPath = realpathSync(path);
+    } catch {
+      /* keep the reported path */
+    }
+    if (realPath === realRoot) return false;
+    if (!removeWorktree(root, branch)) return false;
+  }
+  if (localBranches(root).has(branch)) {
+    // Force: the branch may carry commits a clean restart is meant to discard.
+    if (git(root, ["branch", "-D", branch]) === null) return false;
+  }
+  return true;
 }
 
 /** Whether git is installed at all (independent of being inside a repo). */
@@ -411,7 +508,7 @@ export function deleteBranch(root: string, branch: string): boolean {
  * worktree and prunes stale metadata if the first attempt fails.
  */
 export function removeWorktree(root: string, branch: string): boolean {
-  const path = worktreeList(root).get(branch);
+  const path = worktreePaths(root).get(branch);
   if (!path) return true;
   if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
   git(root, ["worktree", "prune"]);

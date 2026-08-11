@@ -2,18 +2,19 @@
 id: "0063"
 title: Let the user restart a dirty task in its existing worktree or a clean one
 type: feature
-status: active
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/0063-restart-dirty-task-choice
 created_at: "2026-08-10T23:57:48Z"
-updated_at: "2026-08-11T00:07:48Z"
+updated_at: "2026-08-11T03:39:59Z"
 ---
 ## Activity
 
 - 2026-08-10T23:57:48Z · created · unknown
+- 2026-08-11T01:15:48Z · set to review · ai
 
 ## Problem
 
@@ -121,3 +122,5 @@ call without a `mode` also keeps today's behavior (continue).
 ## Activity
 
 - 2026-08-11T00:07:48Z · status ready→active
+- 2026-08-11T01:18:42Z · status active→review
+- 2026-08-11T03:39:59Z · status review→done

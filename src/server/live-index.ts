@@ -17,6 +17,8 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreeStatus,
+  worktreePaths,
   emptyGitInfo,
 } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -36,6 +38,12 @@ export type RepoEvent =
     }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.progress"; id: string; step: string; at: string }
+  | {
+      type: "preview";
+      id: string;
+      preview: { port: number; url: string; startedAt: string } | null;
+      at: string;
+    }
   | { type: "hello"; taskCount: number; at: string };
 
 type Listener = (e: RepoEvent) => void;
@@ -111,12 +119,20 @@ export class LiveIndex {
     });
     if (this.useGit) {
       const { subject, date } = lastCommitForFile(this.config.root, task.path);
+      const wt = task.branch
+        ? worktreeStatus(this.config.root, task.branch)
+        : { path: null, dirty: false };
       task.git = {
         branchExists: task.branch
           ? this.branchCache.has(task.branch)
           : false,
+        worktreeExists: task.branch
+          ? worktreePaths(this.config.root).has(task.branch)
+          : false,
         lastCommit: subject,
         lastCommitAt: date,
+        worktreePath: wt.path,
+        dirty: wt.dirty,
       };
     }
 
@@ -166,12 +182,19 @@ export class LiveIndex {
     this.branchCache = this.useGit
       ? localBranches(this.config.root)
       : new Set();
+    const worktrees = this.useGit ? worktreePaths(this.config.root) : new Map<string, string>();
     for (const [id, t] of this.byId) {
+      const wt = t.branch
+        ? worktreeStatus(this.config.root, t.branch)
+        : { path: null, dirty: false };
       this.byId.set(id, {
         ...t,
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
+          worktreeExists: t.branch ? worktrees.has(t.branch) : false,
+          worktreePath: wt.path,
+          dirty: wt.dirty,
         },
       });
     }

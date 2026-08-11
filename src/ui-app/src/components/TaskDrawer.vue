@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
+import RestartTaskDialog from "./RestartTaskDialog.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -25,6 +26,9 @@ const repo = useRepoStore();
 const ui = useUiStore();
 const config = useConfigStore();
 const router = useRouter();
+
+/** Task whose dirty-worktree restart choice is awaiting an answer. */
+const restartTask = ref<Task | null>(null);
 
 const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
@@ -147,9 +151,19 @@ async function setStatus(status: string): Promise<void> {
 
 async function startWork(): Promise<void> {
   if (!ui.active) return;
+  // A dirty worktree means restarting would either resume prior work or
+  // discard it — surface that choice instead of starting silently.
+  if (ui.active.git?.dirty) {
+    restartTask.value = ui.active;
+    return;
+  }
+  await startWorkIn(ui.active);
+}
+
+async function startWorkIn(t: Task): Promise<void> {
   ui.saving = true;
   try {
-    await repo.startWork(ui.active);
+    await repo.startWork(t);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -376,6 +390,49 @@ async function saveDraft(): Promise<void> {
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
   specEditing.value = false;
+}
+
+// ---- read-only worktree preview ----
+
+/** True while a preview start/stop request is in flight. */
+const previewBusy = ref(false);
+
+/**
+ * A preview is available only for active/review tasks with a branch that has a
+ * git worktree checked out — the thing the preview server actually serves.
+ */
+const previewable = computed(() => {
+  const t = ui.active;
+  if (!t) return false;
+  return (
+    (t.status === "active" || t.status === "review") &&
+    !!t.branch &&
+    !!t.git?.worktreeExists
+  );
+});
+
+async function startPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.startPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
+}
+
+async function stopPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.stopPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
 }
 
 // ---- agent session tab ----
@@ -655,6 +712,7 @@ async function sendTurn(): Promise<void> {
               >
                 {{ ui.active.status }}
               </span>
+              <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
@@ -777,6 +835,48 @@ async function sendTurn(): Promise<void> {
                 </Button>
               </div>
             </template>
+          </div>
+          <div
+            v-if="ui.active.status === 'active' || ui.active.status === 'review'"
+            class="field"
+            style="margin-top: 16px"
+          >
+            <label>Preview</label>
+            <template v-if="ui.active.preview">
+              <div class="preview-live">
+                <span class="preview-dot"></span>
+                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                  <ExternalLink class="size-3.5" />
+                  {{ ui.active.preview.url }}
+                </a>
+              </div>
+              <Button
+                variant="outline"
+                class="w-full"
+                :disabled="ui.saving || previewBusy"
+                @click="stopPreview"
+              >
+                <Square class="size-3.5" />
+                Stop preview
+              </Button>
+            </template>
+            <Button
+              v-else
+              variant="outline"
+              class="w-full"
+              :disabled="ui.saving || previewBusy || !previewable"
+              @click="startPreview"
+            >
+              <Eye class="size-3.5" />
+              {{ previewBusy ? "Starting…" : "Preview" }}
+            </Button>
+            <p v-if="!ui.active.branch" class="preview-hint">
+              No branch yet — start work to create the worktree this previews.
+            </p>
+            <p v-else-if="!ui.active.git?.worktreeExists" class="preview-hint">
+              No git worktree is checked out for
+              <span class="mono">{{ ui.active.branch }}</span>.
+            </p>
           </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
@@ -902,6 +1002,13 @@ async function sendTurn(): Promise<void> {
           </div>
         </div>
         <div v-else class="drawer-body">
+          <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
+            <span class="agent-waiting-dot"></span>
+            <div>
+              <div class="agent-waiting-title">waiting for you</div>
+              <div class="agent-waiting-sub">The agent needs your input — reply below to continue.</div>
+            </div>
+          </div>
           <div class="agent-log" ref="logEl" @scroll="onLogScroll">
             <template v-if="displayEntries.length === 0">
               <div class="agent-empty">
@@ -1008,4 +1115,10 @@ async function sendTurn(): Promise<void> {
       </template>
     </DialogContent>
   </Dialog>
+
+  <RestartTaskDialog
+    :task="restartTask"
+    @close="restartTask = null"
+    @started="ui.activeTab = 'agent'"
+  />
 </template>

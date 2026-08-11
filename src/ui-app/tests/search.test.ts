@@ -15,13 +15,22 @@ function makeTask(over: Partial<Task>): Task {
     createdBy: "",
     branch: "",
     tags: [],
+    needsInput: false,
     created_at: null,
     updated_at: null,
     path: "work/0001-task.md",
     absPath: "/repo/work/0001-task.md",
     body: "Body text",
     extra: {},
-    git: { branchExists: false, lastCommit: null, lastCommitAt: null },
+    git: {
+      branchExists: false,
+      worktreeExists: false,
+      lastCommit: null,
+      lastCommitAt: null,
+      worktreePath: null,
+      dirty: false,
+    },
+    preview: null,
     ...over,
   };
 }

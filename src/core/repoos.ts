@@ -182,6 +182,7 @@ export function createRepoOS(root?: string): RepoOS {
         title: input.title,
         type: input.type ?? "feature",
         status: input.status ?? config.defaultStatus,
+        needsInput: false,
         priority: input.priority ?? "p2",
         area: input.area ?? "general",
         assignee:

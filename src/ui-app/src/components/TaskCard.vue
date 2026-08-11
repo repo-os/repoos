@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
+import RestartTaskDialog from "./RestartTaskDialog.vue";
 
 const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
   dragEnabled: true,
@@ -27,6 +28,9 @@ function onDragEnd(): void {
   dragging.value = false;
   window.dispatchEvent(new CustomEvent("repoos:board-dragend"));
 }
+
+/** Task whose dirty-worktree restart choice is awaiting an answer. */
+const restartTask = ref<Task | null>(null);
 
 interface CardAction {
   label: string;
@@ -72,6 +76,12 @@ const action = computed<CardAction | null>(() => ACTIONS[props.task.status] ?? n
 
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
+  // A dirty worktree means restarting would either resume prior work or
+  // discard it — surface that choice instead of starting silently.
+  if (props.task.status === "ready" && props.task.git?.dirty) {
+    restartTask.value = props.task;
+    return;
+  }
   busy.value = true;
   try {
     switch (props.task.status) {
@@ -111,6 +121,7 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       running: repo.isRunning(task.id),
+      'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
     }"
@@ -121,6 +132,9 @@ async function openAgent(): Promise<void> {
   >
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>
+      <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">
+        needs input
+      </span>
       <span class="chip">{{ task.type }}</span>
       <span class="tc-prio" :class="task.priority">{{ task.priority }}</span>
     </div>
@@ -133,6 +147,15 @@ async function openAgent(): Promise<void> {
     </div>
     <div class="tc-foot">
       <span v-if="task.git && task.git.branchExists" class="tc-git" title="branch exists locally">●</span>
+      <span
+        v-if="task.status === 'ready' && task.git?.dirty"
+        class="tc-dirty"
+        :title="
+          task.git.worktreePath
+            ? 'worktree has uncommitted changes — restarting asks to resume or start clean'
+            : 'branch has unmerged work — restarting asks to resume or start clean'
+        "
+      >dirty</span>
       <span
         v-if="(task.status === 'active' || task.status === 'review') && repo.isRunning(task.id)"
         class="tc-run"
@@ -161,4 +184,6 @@ async function openAgent(): Promise<void> {
       </div>
     </div>
   </div>
+
+  <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
 </template>

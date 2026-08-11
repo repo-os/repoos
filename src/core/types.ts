@@ -51,6 +51,8 @@ export interface TaskFrontmatter {
   type?: TaskType | string;
   status?: Status | string;
   priority?: Priority | string;
+  /** True when the agent is waiting on the human and the task stays `active`. */
+  needs_input?: boolean;
   area?: string;
   assigned_to?: string;
   created_by?: string;
@@ -72,6 +74,8 @@ export interface Task {
   title: string;
   type: string;
   status: Status;
+  /** True when the agent is waiting on the human. Layered on `active`, never a status. */
+  needsInput: boolean;
   priority: Priority | string;
   area: string;
   assignee: Assignee;
@@ -99,10 +103,20 @@ export interface Task {
 export interface TaskGitInfo {
   /** Does the branch named in frontmatter exist locally? */
   branchExists: boolean;
+  /** Does a linked worktree currently have the task's branch checked out? */
+  worktreeExists: boolean;
   /** Last commit subject touching this file, if discoverable. */
   lastCommit: string | null;
   /** ISO timestamp of last commit touching this file. */
   lastCommitAt: string | null;
+  /** Absolute path of the task's linked worktree, or null when none exists. */
+  worktreePath: string | null;
+  /**
+   * Whether a clean restart would discard prior work: the linked worktree has
+   * uncommitted changes, or the branch has commits not in the base branch.
+   * Always false when no linked worktree exists.
+   */
+  dirty: boolean;
 }
 
 /** An AI coding agent configurable on the Agents page. */

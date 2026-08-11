@@ -371,7 +371,9 @@ function missionFor(
   // The same task file exists in the worktree (checked out on `branch`) and in
   // the main checkout. The live board reads the MAIN copy; the branch carries
   // the worktree copy. Status edits must reach BOTH so the user sees review
-  // immediately without serving a per-task port.
+  // immediately without serving a per-task port — and the read-back step below
+  // verifies the board actually reflects the real status before the agent
+  // stops (the anti-#0063 fix).
   const worktreeTask = join(workdir, relative(config.root, task.path));
   return [
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
@@ -381,10 +383,21 @@ function missionFor(
     `Task file (this worktree — edit + commit on the branch): ${worktreeTask}`,
     `Task file (main checkout — the live board reads this copy): ${task.path}`,
     "",
-    "Follow the repo's AGENTS.md operating loop:",
+    "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
+    "",
     "1. Read the task file and implement what it describes.",
-    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test).",
-    "3. Set the task status to `review` in BOTH copies of the task file: update the `status` field in the worktree copy above and commit that change on the branch, AND update the main-checkout copy (the second path above) the same way WITHOUT committing there — the board on the main server reads the main copy, so editing it is how the user sees your update. Leave the worktree open — do NOT merge or delete the branch.",
+    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before you commit, set review, or stop.",
+    "3. Commit all your work on this branch (git add + git commit).",
+    `4. Set \`status: review\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
+    `5. Set \`status: review\` in the main-checkout copy (${task.path}) — edit it WITHOUT committing.`,
+    `6. Read the main-checkout copy back (${task.path}) and confirm it shows \`status: review\`. If it does not, repeat step 5 until it does.`,
+    "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
+    "",
+    "If you are blocked or need a decision from the human:",
+    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit it on the branch.`,
+    `2. Set \`needs_input: true\` in the main-checkout copy (${task.path}) WITHOUT committing.`,
+    "3. Leave the task status `active` and STOP.",
+    "Never silently leave the task `active` without the `needs_input` flag when you are waiting on the human.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
