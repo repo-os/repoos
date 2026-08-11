@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useDocsStore } from "../stores/docs";
+import { renderMarkdown } from "../lib/markdown";
 import Card from "../components/ui/card.vue";
 
 const docs = useDocsStore();
@@ -18,6 +19,12 @@ const {
 } = storeToRefs(docs);
 
 const tab = ref<"docs" | "skills">("docs");
+
+/** Markdown files get the same rendered presentation as the tasks panel. */
+const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(path);
+
+const docHtml = computed(() => renderMarkdown(docContent.value));
+const skillHtml = computed(() => renderMarkdown(skillContent.value));
 </script>
 
 <template>
@@ -85,7 +92,8 @@ const tab = ref<"docs" | "skills">("docs");
           <div v-if="docContent">
             <div class="doc-title">{{ docTitle }}</div>
             <div class="doc-path">{{ selDoc }}</div>
-            {{ docContent }}
+            <div v-if="isMarkdown(selDoc)" class="md-rendered" v-html="docHtml"></div>
+            <template v-else>{{ docContent }}</template>
           </div>
           <div v-else style="color: var(--txt-faint)">Select a document.</div>
         </template>
@@ -95,7 +103,8 @@ const tab = ref<"docs" | "skills">("docs");
             <div class="doc-title">{{ skillName }}</div>
             <div class="doc-path">{{ selSkill }}</div>
             <div v-if="skillDesc" class="skill-desc-line">{{ skillDesc }}</div>
-            {{ skillContent }}
+            <div v-if="isMarkdown(selSkill)" class="md-rendered" v-html="skillHtml"></div>
+            <template v-else>{{ skillContent }}</template>
           </div>
           <div v-else style="color: var(--txt-faint)">Select a skill.</div>
         </template>
