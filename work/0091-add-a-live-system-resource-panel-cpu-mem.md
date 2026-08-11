@@ -2,14 +2,14 @@
 id: "0091"
 title: "Add a live system resource panel (CPU, memory, per-agent processes) to the Control page"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-live-system-resource-panel-cpu-mem
 created_at: "2026-08-11T13:49:16Z"
-updated_at: "2026-08-12T01:26:46Z"
+updated_at: "2026-08-11T17:36:53Z"
 ---
 ## Problem
 
@@ -165,3 +165,4 @@ Control"), sitting alongside the existing stat cards:
 - 2026-08-11T14:06:54Z · status inbox→ready
 - 2026-08-11T15:37:46Z · updated · make orphan attribution safe against unrelated user processes
 - 2026-08-12T01:26:46Z · status ready→review · repoos check green, all 248 tests pass
+- 2026-08-11T17:36:53Z · status review→done
