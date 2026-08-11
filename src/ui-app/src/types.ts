@@ -97,6 +97,26 @@ export type AgentOutputEntry =
   | { type: "sys"; d: string }
   | { s: "out" | "err" | "sys"; d: string };
 
+/**
+ * Live run telemetry for one task's agent session (0080). Best-effort and
+ * in-memory only. `null` means "the CLI hasn't reported this" — never a
+ * fabricated zero.
+ */
+export interface AgentSessionStats {
+  /** Cumulative ms across completed turns — excludes any turn in flight. */
+  accumulatedMs: number;
+  /** ISO timestamp the current turn started, or null when no turn is running. */
+  turnStartedAt: string | null;
+  /** ISO timestamp of the most recent agent.output line, or null until first output. */
+  lastOutputAt: string | null;
+  /** Best-effort cumulative token count reported by the CLI, or null if never reported. */
+  tokens: number | null;
+  /** Best-effort cumulative cost (USD) reported by the CLI, or null if never reported. */
+  costUsd: number | null;
+  /** True once output has gone stale for the stall window while still running. */
+  stalled: boolean;
+}
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
@@ -109,6 +129,7 @@ export type RepoEvent =
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
+  | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats };
 
 export interface ConfigField {

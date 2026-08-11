@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw } from "lucide-vue-next";
 import type { Task } from "../types";
@@ -612,6 +612,71 @@ const agentBusy = computed(
     (ui.active.status === "active" || ui.active.status === "review") &&
     repo.isRunning(ui.active.id),
 );
+
+// ---- live run stats: time / tokens / cost / stall (0080) ----
+
+/** Live telemetry for the open task's session, or undefined until one exists. */
+const sessionStats = computed(() => (ui.active ? repo.agentStats[ui.active.id] : undefined));
+/** Shown once a session has actually produced a transcript. */
+const showStats = computed(() => displayEntries.value.length > 0);
+
+/** Ticks once a second, driving the live elapsed-time readout below. */
+const nowTick = ref(Date.now());
+let statsTimer: number | undefined;
+function startStatsTimer(): void {
+  if (statsTimer !== undefined) return;
+  nowTick.value = Date.now();
+  statsTimer = window.setInterval(() => {
+    nowTick.value = Date.now();
+  }, 1000);
+}
+function stopStatsTimer(): void {
+  window.clearInterval(statsTimer);
+  statsTimer = undefined;
+}
+// Only ticks while a turn is actually in flight — once it ends, `turnStartedAt`
+// goes null and the timer stops instead of counting up an idle task forever.
+watch(
+  () => sessionStats.value?.turnStartedAt,
+  (turnStartedAt) => {
+    if (turnStartedAt) startStatsTimer();
+    else stopStatsTimer();
+  },
+  { immediate: true },
+);
+onUnmounted(stopStatsTimer);
+
+/** Elapsed ms: completed-turns total, plus the in-flight turn ticked live. */
+const elapsedMs = computed(() => {
+  const s = sessionStats.value;
+  if (!s) return 0;
+  const inFlight = s.turnStartedAt ? Math.max(0, nowTick.value - Date.parse(s.turnStartedAt)) : 0;
+  return s.accumulatedMs + inFlight;
+});
+
+/** "1:03" / "12:03" / "1:02:03" — never NaN, since `elapsedMs` is always a number. */
+function fmtElapsed(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+}
+
+/** "842" / "12.3k" — "—" when the CLI hasn't reported a token count. */
+function fmtTokens(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. */
+function fmtCost(usd: number | null | undefined): string {
+  if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
+  return `$${usd < 1 ? usd.toFixed(3) : usd.toFixed(2)}`;
+}
 
 watch(displayEntries, () => {
   if (stick.value) {
@@ -1488,6 +1553,31 @@ function resetFreeformOverrides(): void {
               <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
                 <RotateCcw class="size-3" />
               </Button>
+            </div>
+          </div>
+          <div v-if="showStats" class="agent-stats">
+            <ActivityIndicator v-if="agentBusy" size="sm" />
+            <span class="agent-stat">
+              <span class="agent-stat-label">time</span>
+              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">tokens</span>
+              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">cost</span>
+              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
+            </span>
+          </div>
+          <div v-if="sessionStats?.stalled" class="agent-stalled">
+            <span class="agent-stalled-dot"></span>
+            <div>
+              <div class="agent-stalled-title">quiet — may be stalled</div>
+              <div class="agent-stalled-sub">
+                No new output for a while. This isn't proof it's stuck — a slow step looks the
+                same from here — but if it stays quiet, check in.
+              </div>
             </div>
           </div>
           <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">

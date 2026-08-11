@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, promptCommand, runPrompt } from "../../server/agents";
+import { AgentRunner, extractUsage, promptCommand, runPrompt } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -522,6 +522,169 @@ describe("server-owned previews in the mission and spawn env (#0096)", () => {
       expect(resume.agent).toBe("1");
       expect(resume.task).toBe("0001");
       expect(resume.api).toBe("http://127.0.0.1:7777");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("extractUsage (0080)", () => {
+  it("reads token/cost fields from a JSON usage payload", () => {
+    expect(
+      extractUsage(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.0021 })),
+    ).toEqual({ tokens: 15, costUsd: 0.0021 });
+  });
+
+  it("reads a JSON total_tokens field directly", () => {
+    expect(extractUsage(JSON.stringify({ total_tokens: 42 }))).toEqual({ tokens: 42 });
+  });
+
+  it("falls back to plain-text cost/token summaries", () => {
+    expect(extractUsage("Total cost: $0.1234")).toEqual({ costUsd: 0.1234 });
+    expect(extractUsage("used 1,234 tokens this turn")).toEqual({ tokens: 1234 });
+  });
+
+  it("returns an empty object when nothing usage-shaped is present", () => {
+    expect(extractUsage("just a normal line of output")).toEqual({});
+    expect(extractUsage(JSON.stringify({ type: "text", text: "hello" }))).toEqual({});
+  });
+});
+
+describe("live run stats (0080)", () => {
+  it("accumulates elapsed time across turns instead of resetting it", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    // A tiny delay before exit guarantees a non-zero, measurable turn duration.
+    const slowBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("line one\\n");
+setTimeout(() => process.exit(0), 30);
+`;
+    writeFileSync(join(fx.bin, "claude"), slowBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "first turn exit");
+
+      const afterFirst = runner.stats("0001");
+      expect(afterFirst.accumulatedMs).toBeGreaterThan(0);
+      expect(afterFirst.turnStartedAt).toBeNull();
+
+      runner.send("0001", "continue", agent("claude code"));
+      await waitFor(() => !runner.isRunning("0001"), "second turn exit");
+
+      const afterSecond = runner.stats("0001");
+      expect(afterSecond.accumulatedMs).toBeGreaterThanOrEqual(afterFirst.accumulatedMs);
+      expect(afterSecond.turnStartedAt).toBeNull();
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("extracts and monotonically accumulates tokens/cost from live output", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const usageBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 } }) + "\\n");
+process.stdout.write(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.004 }) + "\\n");
+`;
+    writeFileSync(join(fx.bin, "codex"), usageBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "usage turn exit");
+
+      const stats = runner.stats("0001");
+      expect(stats.tokens).toBe(15);
+      expect(stats.costUsd).toBe(0.004);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("has no session stats for a task that never started", () => {
+    const runner = new AgentRunner(config("/tmp"), () => {});
+    const stats = runner.stats("9999");
+    expect(stats).toEqual({
+      accumulatedMs: 0,
+      turnStartedAt: null,
+      lastOutputAt: null,
+      tokens: null,
+      costUsd: null,
+      stalled: false,
+    });
+  });
+});
+
+describe("stall detection (0080)", () => {
+  /**
+   * Confirmed live on #0069/#0077: a process that stops emitting output but
+   * hasn't exited must be flagged as POSSIBLY stalled (never "dead") — and the
+   * flag must clear the instant new output arrives, since that's proof it was
+   * only ever a slow step. A tiny `stallTimeoutMs` override keeps this test
+   * fast instead of waiting on the real 90s default.
+   */
+  it("flags a silent-but-alive turn as stalled, then clears it when output resumes", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const quietBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("first line\\n");
+setTimeout(() => {
+  process.stdout.write("second line\\n");
+  process.exit(0);
+}, 300);
+`;
+    writeFileSync(join(fx.bin, "claude"), quietBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      expect(runner.isRunning("0001")).toBe(true); // stalled is never "dead"
+
+      await waitFor(() => runner.stats("0001").stalled === false, "stall flag cleared by output", 2000);
+      await waitFor(() => !runner.isRunning("0001"), "turn exit");
+      expect(runner.stats("0001").stalled).toBe(false);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("clears the stall flag once the turn is confirmed exited", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const hangBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("only line\\n");
+setTimeout(() => process.exit(0), 200);
+`;
+    writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      await waitFor(() => !runner.isRunning("0001"), "process exits while still flagged");
+      expect(runner.stats("0001").stalled).toBe(false);
+      expect(runner.stats("0001").turnStartedAt).toBeNull();
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
