@@ -2,14 +2,14 @@
 id: "0083"
 title: Test and validate coding-agent/model combinations from the Agents page
 type: feature
-status: active
+status: review
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/0083-test-agent-model-combinations
 created_at: "2026-08-11T09:10:32Z"
-updated_at: "2026-08-11T09:39:00Z"
+updated_at: "2026-08-11T09:54:39Z"
 ---
 
 ## Problem
@@ -171,3 +171,5 @@ continuous background health checks.
   compatibility matrix, failure UX, safety boundaries, and test coverage · ai
 - 2026-08-11T09:33:31Z · status draft→ready · ai
 - 2026-08-11T09:39:00Z · status ready→active · ai
+- 2026-08-11T09:54:39Z · status active→review · implementation on
+  feat/0083-test-agent-model-combinations (0c0bf1e); `repoos check` green · ai
