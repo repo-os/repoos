@@ -2,14 +2,14 @@
 id: "0088"
 title: Animate task state transitions
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T13:32:49Z"
-updated_at: "2026-08-11T13:32:49Z"
+updated_at: "2026-08-11T13:33:09Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ This task covers animation feedback when a task advances to its next state from 
 ## Activity
 
 - 2026-08-11T13:32:49Z · created · unknown
+- 2026-08-11T13:33:09Z · status inbox→ready
