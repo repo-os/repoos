@@ -2,7 +2,7 @@
 id: "0091"
 title: "Add a live system resource panel (CPU, memory, per-agent processes) to the Control page"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
