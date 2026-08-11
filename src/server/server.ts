@@ -7,7 +7,7 @@
  *
  *   GET  /api/health           -> { ok, root, taskCount, workDir, version, buildAt }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
- *   GET  /api/tasks/:id        -> Task | 404
+ *   GET  /api/tasks/:id        -> Task | 404  (includes `preview` when running)
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
@@ -20,6 +20,8 @@
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
+ *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
+ *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
@@ -30,7 +32,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RepoOSConfig, SkillMeta, Status } from "../core/types.js";
+import type { RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
@@ -51,6 +53,7 @@ import { renderInstanceIcon } from "./icons.js";
 import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
+import { PreviewManager } from "./preview.js";
 
 export interface ServeOptions {
   root?: string;
@@ -326,6 +329,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // reflect live running state without any polling.
   const runner = new AgentRunner(config, emitEvent);
 
+  // Read-only preview servers for review/active tasks. Orphans from a crashed
+  // previous main server are reaped at boot; this instance starts with none.
+  const previews = new PreviewManager(config, emitEvent);
+  previews.cleanupOrphans();
+
+  // Any status change that leaves active/review must stop the task's preview
+  // (done/ready/paused). Previews never outlive the state they preview.
+  const stopPreviewIfLeft = (_task: Task, _prev: Status, next: Status): void => {
+    if (next !== "active" && next !== "review") void previews.stop(_task.id);
+  };
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -428,8 +442,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (taskMatch && method === "GET") {
         const t = index.getTask(taskMatch[1]);
         return t
-          ? json(res, 200, t)
+          ? json(res, 200, { ...t, preview: previews.get(t.id) ?? null })
           : json(res, 404, { error: `Task #${taskMatch[1]} not found` });
+      }
+
+      // ---- previews (read-only worktree servers, one per task) ----
+      const previewStopMatch = path.match(/^\/api\/tasks\/([^/]+)\/preview\/stop$/);
+      if (previewStopMatch && (method === "POST" || method === "DELETE")) {
+        await previews.stop(previewStopMatch[1]);
+        return json(res, 200, { ok: true });
+      }
+      const previewMatch = path.match(/^\/api\/tasks\/([^/]+)\/preview$/);
+      if (previewMatch && (method === "POST" || method === "DELETE")) {
+        if (method === "DELETE") {
+          await previews.stop(previewMatch[1]);
+          return json(res, 200, { ok: true });
+        }
+        const t = index.getTask(previewMatch[1]);
+        if (!t) {
+          return json(res, 404, { error: `Task #${previewMatch[1]} not found` });
+        }
+        const result = await previews.start(t);
+        if (!result.ok) {
+          return json(res, 400, { error: result.error ?? "could not start preview" });
+        }
+        return json(res, 200, { ok: true, port: result.port, url: result.url });
       }
 
       // ---- writes ----
@@ -513,7 +550,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
         }
         const body = (await readBody(req)) as TaskPatch;
-        const updated = patchTaskFile(config, existing.absPath, body);
+        const updated = patchTaskFile(config, existing.absPath, body, {
+          onStatusChange: stopPreviewIfLeft,
+        });
         index.applyFileChange(updated.absPath);
         return json(res, 200, index.getTask(updated.id));
       }
@@ -566,7 +605,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const wtRes = ensureWorktree(config.root, branch);
           const patch: TaskPatch = { status: "active" };
           if (!existing.branch) patch.branch = branch;
-          const updated = patchTaskFile(config, existing.absPath, patch);
+          const updated = patchTaskFile(config, existing.absPath, patch, {
+            onStatusChange: stopPreviewIfLeft,
+          });
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
           // Best-effort spawn — never block the HTTP response on the agent.
@@ -601,6 +642,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               error: `Task #${id} has an agent turn in progress`,
             });
           }
+          // The merge removes the worktree, so the preview of it must die first.
+          await previews.stop(id);
           const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
@@ -658,7 +701,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         const stopRes = runner.stop(id);
-        const updated = patchTaskFile(config, existing.absPath, { status: "ready" });
+        const updated = patchTaskFile(config, existing.absPath, { status: "ready" }, {
+          onStatusChange: stopPreviewIfLeft,
+        });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
           ok: true,
@@ -672,6 +717,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!existing) {
           return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
         }
+        // A deleted task's preview must not outlive it.
+        await previews.stop(taskMatch[1]);
         try {
           deleteTaskFile(config, existing.absPath);
         } catch (err) {
@@ -896,20 +943,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         url,
         port: actualPort,
         index,
-        close: () =>
-          new Promise<void>((res) => {
-            unsubscribe();
-            watcher.stop();
-            for (const c of clients) {
-              try {
-                c.end();
-              } catch {
-                /* ignore */
-              }
+        close: async () => {
+          unsubscribe();
+          watcher.stop();
+          // No preview survives the main server: on SIGTERM/SIGINT (or an
+          // in-process close) tear them all down so no orphan `repoos serve`
+          // process is left behind.
+          await previews.stopAll();
+          for (const c of clients) {
+            try {
+              c.end();
+            } catch {
+              /* ignore */
             }
-            clients.clear();
-            server.close(() => res());
-          }),
+          }
+          clients.clear();
+          await new Promise<void>((res) => server.close(() => res()));
+        },
       });
     });
   });

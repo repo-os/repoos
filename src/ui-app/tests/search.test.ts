@@ -23,11 +23,13 @@ function makeTask(over: Partial<Task>): Task {
     extra: {},
     git: {
       branchExists: false,
+      worktreeExists: false,
       lastCommit: null,
       lastCommitAt: null,
       worktreePath: null,
       dirty: false,
     },
+    preview: null,
     ...over,
   };
 }

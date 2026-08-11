@@ -109,10 +109,14 @@ export const useRepoStore = defineStore("repo", () => {
       flash(e.task.id);
     } else if (e.type === "task.updated") {
       const i = tasks.value.findIndex((t) => t.id === e.task.id);
-      if (i >= 0) tasks.value[i] = e.task;
-      else tasks.value.push(e.task);
+      const before = i >= 0 ? tasks.value[i] : null;
+      // The server's index has no preview state, so carry the drawer's live
+      // preview across updates (it only changes via `preview` events).
+      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null };
+      if (i >= 0) tasks.value[i] = merged;
+      else tasks.value.push(merged);
       const ui = useUiStore();
-      if (ui.active && ui.active.id === e.task.id) ui.open(e.task);
+      if (ui.active && ui.active.id === e.task.id) ui.open(merged);
       recount();
       const changed = Object.keys(e.prev ?? {});
       const statusBit =
@@ -153,6 +157,23 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } else if (e.type === "task.progress") {
       doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+    } else if (e.type === "preview") {
+      // A preview started or stopped for a task: reflect it on the stored task
+      // and, when the drawer is open on that task, on the drawer's copy.
+      const i = tasks.value.findIndex((t) => t.id === e.id);
+      if (i >= 0) {
+        const updated = { ...tasks.value[i], preview: e.preview };
+        tasks.value[i] = updated;
+        const ui = useUiStore();
+        if (ui.active && ui.active.id === e.id) ui.open(updated);
+      }
+      pushFeed(
+        e.preview
+          ? `<b>preview</b> #${e.id} at <span class="mono">${e.preview.url}</span>`
+          : `<b>preview stopped</b> for #${e.id}`,
+        e.preview ? "#39e0ff" : "#ffb454",
+        "preview",
+      );
     } else if (e.type === "index.rebuilt") {
       void refresh();
     }
@@ -167,7 +188,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "agent.running", "agent.exited", "agent.output"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "preview", "agent.running", "agent.exited", "agent.output"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -181,7 +202,12 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function refresh(): Promise<void> {
     const idx = await api<RepoIndex>("/api/index");
-    tasks.value = idx.tasks;
+    // /api/index has no preview state; keep any live previews across rebuilds.
+    const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
+    tasks.value = idx.tasks.map((t) => ({
+      ...t,
+      preview: t.preview ?? previews.get(t.id) ?? null,
+    }));
     Object.assign(counts, idx.counts);
   }
 
@@ -251,6 +277,18 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* endpoint unavailable — running state is best-effort */
     }
+  }
+
+  /** Start a read-only preview of the task's worktree on its own port. */
+  async function startPreview(t: Task): Promise<{ port: number; url: string }> {
+    return api<{ port: number; url: string }>(`/api/tasks/${t.id}/preview`, {
+      method: "POST",
+    });
+  }
+
+  /** Stop the task's preview. Idempotent — safe to call when none is running. */
+  async function stopPreview(t: Task): Promise<void> {
+    await api(`/api/tasks/${t.id}/preview/stop`, { method: "POST" });
   }
 
   async function createTask(form: {
@@ -342,6 +380,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadOutput,
     sendMessage,
     fetchRunning,
+    startPreview,
+    stopPreview,
     onError,
     init,
   };

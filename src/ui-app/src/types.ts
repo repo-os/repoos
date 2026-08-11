@@ -2,6 +2,13 @@
 
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
 
+/** A live read-only preview of a task's worktree (see POST /api/tasks/:id/preview). */
+export interface PreviewInfo {
+  port: number;
+  url: string;
+  startedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -22,11 +29,14 @@ export interface Task {
   extra: Record<string, unknown>;
   git: {
     branchExists: boolean;
+    worktreeExists: boolean;
     lastCommit: string | null;
     lastCommitAt: string | null;
     worktreePath: string | null;
     dirty: boolean;
   };
+  /** Running preview of this task's worktree, or null when stopped. */
+  preview: PreviewInfo | null;
 }
 
 export interface Health {
@@ -83,6 +93,7 @@ export type RepoEvent =
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
   | { type: "task.progress"; id: string; step: string; at: string }
+  | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" };

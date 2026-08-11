@@ -2,14 +2,14 @@
 id: "0067"
 title: Signal when a task is waiting on the human and make the agent mission a fail-safe checklist
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0067-waiting-on-human-signal
 created_at: "2026-08-11T01:23:19Z"
-updated_at: "2026-08-11T01:27:41Z"
+updated_at: "2026-08-11T01:47:13Z"
 ---
 ## Activity
 
@@ -119,4 +119,4 @@ Two real failure modes, both observed this cycle:
 
 ## Activity
 
-- 2026-08-11T01:27:41Z · status ready→active
+- 2026-08-11T01:47:13Z · status active→review

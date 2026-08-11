@@ -88,6 +88,7 @@ const TASK: Task = {
   extra: {},
   git: {
     branchExists: false,
+    worktreeExists: false,
     lastCommit: null,
     lastCommitAt: null,
     worktreePath: null,
