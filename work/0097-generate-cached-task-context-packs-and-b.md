@@ -2,7 +2,7 @@
 id: "0097"
 title: Generate cached task context packs and bootstrap worktrees before launching agents
 type: feature
-status: active
+status: review
 priority: p1
 area: agent
 assigned_to: ai
