@@ -95,6 +95,9 @@ const TASK: Task = {
   absPath: "/tmp/work/0001-test.md",
   body: "",
   extra: {},
+  agentOverride: null,
+  cliOverride: null,
+  modelOverride: null,
   git: {
     branchExists: false,
     worktreeExists: false,

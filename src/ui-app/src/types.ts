@@ -31,6 +31,12 @@ export interface Task {
   absPath: string;
   body: string;
   extra: Record<string, unknown>;
+  /** Per-task agent name override, or null when using the default. */
+  agentOverride: string | null;
+  /** Per-task CLI override, or null when using the agent's default. */
+  cliOverride: string | null;
+  /** Per-task model override, or null when using the agent's default. */
+  modelOverride: string | null;
   git: {
     branchExists: boolean;
     worktreeExists: boolean;

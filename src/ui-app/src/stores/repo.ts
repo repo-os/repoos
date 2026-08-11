@@ -317,7 +317,7 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>(`/api/tasks/${id}`);
   }
 
-  async function patchTask(id: string, fields: Record<string, string>): Promise<Task> {
+  async function patchTask(id: string, fields: Record<string, unknown>): Promise<Task> {
     return api<Task>(`/api/tasks/${id}`, JSON_OPTS("PATCH", fields));
   }
 
@@ -441,6 +441,7 @@ export const useRepoStore = defineStore("repo", () => {
   async function createFreeformTask(
     explanation: string,
     runId?: string,
+    overrides?: { agent?: string; cli?: string; model?: string },
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -448,13 +449,18 @@ export const useRepoStore = defineStore("repo", () => {
     reason?: string;
     task: Task;
   }> {
+    const body: Record<string, unknown> = { explanation };
+    if (runId) body.runId = runId;
+    if (overrides?.agent) body.agentOverride = overrides.agent;
+    if (overrides?.cli) body.cliOverride = overrides.cli;
+    if (overrides?.model) body.modelOverride = overrides.model;
     const r = await api<{
       ok: boolean;
       fallback?: boolean;
       fallbackReason?: "no-pm-agent" | "agent-failed";
       reason?: string;
       task: Task;
-    }>("/api/tasks/freeform", JSON_OPTS("POST", runId ? { explanation, runId } : { explanation }));
+    }>("/api/tasks/freeform", JSON_OPTS("POST", body));
     if (!r.ok) {
       const message = r.reason ?? "could not create task";
       pushToast(message, "error");

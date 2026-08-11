@@ -72,6 +72,9 @@ function makeTask(
     absPath: `/fake/root/work/${id}-test.md`,
     body: `## Test task body\n\nImplement something in src/server/agents.ts`,
     extra: {},
+    agentOverride: null,
+    cliOverride: null,
+    modelOverride: null,
     git: {
       branchExists: true,
       worktreeExists: false,

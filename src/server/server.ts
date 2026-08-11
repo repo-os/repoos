@@ -36,7 +36,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
+import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
@@ -60,7 +60,7 @@ import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
-import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
+import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, resolveAgentForTask, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
@@ -698,7 +698,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         };
 
-        const pm = resolvePmAgent(config);
+        // Build a one-shot agent override for this freeform request.
+        const freeformAgentName = typeof body?.agentOverride === "string" && body.agentOverride
+          ? body.agentOverride : undefined;
+        const freeformCli = typeof body?.cliOverride === "string" && body.cliOverride
+          ? body.cliOverride : undefined;
+        const freeformModel = typeof body?.modelOverride === "string" && body.modelOverride
+          ? body.modelOverride : undefined;
+        const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
+
+        // Resolve the PM agent, applying any one-shot override.
+        let pm: Agent | null;
+        if (hasFreeformOverride) {
+          const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+          const baseName = freeformAgentName || "pm";
+          const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+          pm = base ? { ...base, ...(freeformCli ? { cli: freeformCli } : {}), ...(freeformModel ? { model: freeformModel } : {}) } : null;
+        } else {
+          pm = resolvePmAgent(config);
+        }
         if (!pm) {
           return saveDraft("no-pm-agent");
         }
@@ -778,7 +796,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (runner.isRunning(id)) {
             return json(res, 400, { error: `Task #${id} is already running` });
           }
-          const agent = resolveEngineer(config);
+          const agent = resolveAgentForTask(config, existing);
           if (!agent) {
             return json(res, 400, {
               error: "No enabled engineer agent is configured on the Agents page",
@@ -959,7 +977,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               error: `Only active or review tasks accept messages (#${id} is ${existing.status})`,
             });
           }
-          const agent = resolveEngineer(config);
+          const agent = resolveAgentForTask(config, existing);
           if (!agent) {
             return json(res, 400, {
               error: "No enabled engineer agent is configured on the Agents page",

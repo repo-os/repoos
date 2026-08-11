@@ -201,6 +201,9 @@ const TASK: Task = {
   absPath: "/tmp/work/0045-json.md",
   body: "",
   extra: {},
+  agentOverride: null,
+  cliOverride: null,
+  modelOverride: null,
   git: {
     branchExists: false,
     worktreeExists: false,

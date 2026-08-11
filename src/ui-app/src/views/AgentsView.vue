@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useConfigStore } from "../stores/config";
+import { labelForModel, useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
 import Button from "../components/ui/button.vue";
@@ -61,48 +61,12 @@ const clis = computed(() =>
 // button re-probes with --refresh. When the endpoint is unavailable the page
 // degrades to the static list exactly as before.
 
-const liveModelsByCli = ref<Record<string, string[]>>({});
-const modelsLoaded = ref(false);
-const modelsLoading = ref(false);
 const modelTests = ref<Record<string, ModelTestResult>>({});
 const testing = ref<Record<string, boolean>>({});
-
-function labelForModel(m: string): string {
-  if (m === "default") return "Default";
-  if (m === "opus") return "Opus";
-  if (m === "sonnet") return "Sonnet";
-  if (m === "haiku") return "Haiku";
-  if (m === "big pickle") return "Big Pickle";
-  if (m === "deepseek v4") return "DeepSeek v4";
-  return m;
-}
-
-const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
-
-function modelsFor(cli: string, saved?: string): { value: string; label: string; disabled: boolean }[] {
-  if (cli === "claude code") {
-    const out: { value: string; label: string; disabled: boolean }[] = [];
-    const seen = new Set<string>();
-    for (const m of CLAUDE_CODE_MODELS) {
-      seen.add(m);
-      out.push({ value: m, label: labelForModel(m), disabled: false });
-    }
-    if (saved && !seen.has(saved)) out.push({ value: saved, label: labelForModel(saved), disabled: false });
-    return out;
-  }
-  const out: { value: string; label: string; disabled: boolean }[] = [];
-  const seen = new Set<string>();
-  const push = (m: string) => {
-    if (seen.has(m)) return;
-    seen.add(m);
-    out.push({ value: m, label: labelForModel(m), disabled: false });
-  };
-  push("default");
-  for (const m of liveModelsByCli.value[cli] ?? []) push(m);
-  if (!modelsLoaded.value) for (const m of config.agentsMeta.models) push(m);
-  if (saved) push(saved);
-  return out;
-}
+// Model list + label logic live in the config store so this page and the
+// per-task pickers in TaskDrawer offer identical options (0064).
+const modelsFor = config.modelsFor;
+const modelsLoading = computed(() => config.modelsLoading);
 
 function testKey(a: Agent): string {
   return `${a.name}\u0000${a.cli}\u0000${a.model}`;
@@ -142,23 +106,7 @@ async function testAgent(a: Agent): Promise<void> {
   }
 }
 
-async function loadModels(refresh = false): Promise<void> {
-  modelsLoading.value = true;
-  try {
-    const res = await api<ModelSourcesResponse>(
-      `/api/models${refresh ? "?refresh=1" : ""}`,
-    );
-    liveModelsByCli.value = Object.fromEntries(
-      Object.entries(res.byCli).map(([cli, source]) => [cli, source.models]),
-    );
-    modelsLoaded.value = true;
-  } catch {
-    liveModelsByCli.value = {};
-    modelsLoaded.value = false;
-  } finally {
-    modelsLoading.value = false;
-  }
-}
+const loadModels = (refresh = false): Promise<void> => config.loadModels(refresh);
 
 function addCustom(): void {
   const name = newName.value.trim();

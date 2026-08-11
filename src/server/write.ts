@@ -33,6 +33,12 @@ export interface TaskPatch {
   needsInput?: boolean;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
+  /** Per-task agent name override, or null to clear. */
+  agentOverride?: string | null;
+  /** Per-task CLI override, or null to clear. */
+  cliOverride?: string | null;
+  /** Per-task model override, or null to clear. */
+  modelOverride?: string | null;
 }
 
 export interface PatchTaskOptions {
@@ -132,6 +138,18 @@ export function patchTaskFile(
   if (patch.body !== undefined) {
     if (patch.body !== current.body) changes.push("body");
     current.body = patch.body;
+  }
+  if (patch.agentOverride !== undefined) {
+    if (patch.agentOverride !== current.agentOverride) changes.push("agent_override");
+    current.agentOverride = patch.agentOverride;
+  }
+  if (patch.cliOverride !== undefined) {
+    if (patch.cliOverride !== current.cliOverride) changes.push("cli_override");
+    current.cliOverride = patch.cliOverride;
+  }
+  if (patch.modelOverride !== undefined) {
+    if (patch.modelOverride !== current.modelOverride) changes.push("model_override");
+    current.modelOverride = patch.modelOverride;
   }
 
   if (changes.length) {

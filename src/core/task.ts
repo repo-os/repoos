@@ -29,6 +29,9 @@ const KEY_ORDER = [
   "created_by",
   "branch",
   "tags",
+  "agent_override",
+  "cli_override",
+  "model_override",
   "created_at",
   "updated_at",
 ];
@@ -132,6 +135,11 @@ export function parseTask(args: ParseTaskArgs): Task {
     if (!known.has(k)) extra[k] = v;
   }
 
+  // Per-task agent override fields
+  const agentOverride = typeof data.agent_override === "string" && data.agent_override ? data.agent_override : null;
+  const cliOverride = typeof data.cli_override === "string" && data.cli_override ? data.cli_override : null;
+  const modelOverride = typeof data.model_override === "string" && data.model_override ? data.model_override : null;
+
   // read created_at with fallback to deprecated created
   const created_at = data.created_at
     ? String(data.created_at)
@@ -165,6 +173,9 @@ export function parseTask(args: ParseTaskArgs): Task {
     absPath,
     body,
     extra,
+    agentOverride,
+    cliOverride,
+    modelOverride,
     git: args.git ?? emptyGitInfo(),
   };
 }
@@ -187,6 +198,9 @@ export function serializeTask(task: Task): string {
   // default and is never persisted, so clearing the flag removes the key.
   if (task.needsInput) data.needs_input = true;
   if (task.needsMerge) data.needs_merge = true;
+  if (task.agentOverride) data.agent_override = task.agentOverride;
+  if (task.cliOverride) data.cli_override = task.cliOverride;
+  if (task.modelOverride) data.model_override = task.modelOverride;
   if (task.created_at) data.created_at = normalizeTimestamp(task.created_at);
   if (task.updated_at) data.updated_at = normalizeTimestamp(task.updated_at);
   // re-attach preserved unknown keys

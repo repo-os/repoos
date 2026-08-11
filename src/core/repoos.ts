@@ -201,6 +201,9 @@ export function createRepoOS(root?: string): RepoOS {
           `- ${ts} · created · ${input.createdBy || "unknown"}`,
         ),
         extra: {},
+        agentOverride: null,
+        cliOverride: null,
+        modelOverride: null,
         git: emptyGitInfo(),
       };
 
