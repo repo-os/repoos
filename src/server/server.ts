@@ -1198,37 +1198,57 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   return new Promise((resolve, reject) => {
     void (async () => {
-      if (opts.reloadReplacement) {
-        // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
-        // process can share the port with the old one (zero-downtime on
-        // platforms that support it). Where that is unsupported (ENOTSUP on
-        // macOS) or the old process bound without it (EADDRINUSE), fall back
-        // to a plain bind retried until the old process releases the port.
-        const deadline = Date.now() + RELOAD_BIND_TIMEOUT_MS;
-        let bound = false;
-        try {
-          await bindOnce(true);
-          bound = true;
-        } catch (e) {
-          const code = (e as NodeJS.ErrnoException).code;
-          if (code !== "ENOTSUP" && code !== "EOPNOTSUPP" && code !== "EADDRINUSE") throw e;
-        }
-        while (!bound && Date.now() < deadline) {
+      try {
+        if (opts.reloadReplacement) {
+          // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
+          // process can share the port with the old one (zero-downtime on
+          // platforms that support it). Where that is unsupported (ENOTSUP on
+          // macOS) or the old process bound without it (EADDRINUSE), fall back
+          // to a plain bind retried until the old process releases the port.
+          const deadline = Date.now() + RELOAD_BIND_TIMEOUT_MS;
+          let bound = false;
           try {
-            await bindOnce(false);
+            await bindOnce(true);
             bound = true;
           } catch (e) {
-            if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
-            await sleep(RELOAD_BIND_RETRY_MS);
+            const code = (e as NodeJS.ErrnoException).code;
+            if (code !== "ENOTSUP" && code !== "EOPNOTSUPP" && code !== "EADDRINUSE") throw e;
           }
+          while (!bound && Date.now() < deadline) {
+            try {
+              await bindOnce(false);
+              bound = true;
+            } catch (e) {
+              if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
+              await sleep(RELOAD_BIND_RETRY_MS);
+            }
+          }
+          if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
+        } else {
+          await bindOnce(false);
         }
-        if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
-      } else {
-        await bindOnce(false);
+      } catch (err) {
+        // A bind-only failure must terminate the process cleanly: the file
+        // watcher and SSE subscriber are live handles that would otherwise keep
+        // a listenerless `repoos serve` process alive (the #0096 incident).
+        try {
+          watcher.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          unsubscribe();
+        } catch {
+          /* ignore */
+        }
+        throw err;
       }
 
       const actualPort = (server.address() as { port: number }).port;
       const url = `http://${host}:${actualPort}`;
+      // The agent runner injects the real control-plane URL into every spawned
+      // agent so preview requests target THIS server, never a hardcoded port.
+      runner.apiUrl = url;
       const handle: ServerHandle = {
         url,
         port: actualPort,

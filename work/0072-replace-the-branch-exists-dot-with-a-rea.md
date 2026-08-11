@@ -86,10 +86,11 @@ signal.
 - `task.git.branchExists` is still read elsewhere (`TaskDrawer.vue:953`,
   `src/server/live-index.ts`, `src/core/indexer.ts`, `src/core/git.ts`) —
   do not remove the field or its plumbing, only its card-level rendering.
-- After the change, rebuild (`bun run build:ui`), keep `repoos serve`
-  running, and verify with a browser probe: confirm the dot is gone, and
-  that a running task, a `needsInput` task, and a plain `active`/stalled
-  task each show the expected hint text.
+- After the change, rebuild (`bun run build:ui`), then request this task's
+  managed preview (`curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"`
+  — never run `repoos serve` yourself) and verify with a browser probe: confirm
+  the dot is gone, and that a running task, a `needsInput` task, and a plain
+  `active`/stalled task each show the expected hint text.
 
 ## Scope
 

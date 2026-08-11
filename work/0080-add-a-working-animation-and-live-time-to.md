@@ -123,8 +123,10 @@ with nothing in the UI distinguishing that from normal slow progress.
 - Extend tests alongside existing patterns in
   `src/ui-app/tests/repo-store.test.ts` and `src/ui-app/tests/agent-drivers.test.ts`.
 - After any UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
-  and keep a `repoos serve` running (e.g. `repoos serve --port 7171`) so the
-  user can view the changes; verify with a browser probe before reporting done.
+  and verify with a browser probe before reporting done. Previews are
+  server-owned: request this task's managed preview via
+  `curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"` and probe
+  the returned `url` — never run `repoos serve` yourself or pick a port.
   Run `repoos check` before moving to review. One task = one focused worktree.
 
 ## Scope

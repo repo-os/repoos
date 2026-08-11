@@ -18,7 +18,7 @@ const dOf = (entry: AgentOutputEntry): string | undefined =>
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + "\\n");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
 process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
@@ -27,6 +27,12 @@ process.stdout.write("done\\n");
 interface SpawnRecord {
   args: string[];
   cwd: string;
+  /** REPOOS_AGENT marker — "1" when the runner stamped this managed agent. */
+  agent?: string;
+  /** REPOOS_TASK_ID marker injected by the runner. */
+  task?: string;
+  /** REPOOS_API_URL — the actual control-plane URL injected by the runner. */
+  api?: string;
 }
 
 interface Fixture {
@@ -464,6 +470,55 @@ describe("fail-safe mission checklist (0067)", () => {
       expect(mission).toContain("needs_input: true");
       expect(mission).toContain("WITHOUT committing");
       expect(mission).toMatch(/Never silently leave the task `active` without the `needs_input` flag/);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("server-owned previews in the mission and spawn env (#0096)", () => {
+  /**
+   * The launch mission must explicitly prohibit direct `repoos serve` / manual
+   * port selection and provide ONE structured, task-scoped preview request.
+   * The spawn must carry the agent markers so the CLI's defense in depth can
+   * reject an accidental direct serve, plus the ACTUAL control-plane URL.
+   */
+  it("prohibits direct serve in the mission, injects the real API URL and markers", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.apiUrl = "http://127.0.0.1:7777";
+      const cwd = join(fx.bin, "wt", "preview");
+      mkdirSync(cwd, { recursive: true });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd });
+      await waitFor(() => !runner.isRunning("0001"), "mission fixture turn exit");
+
+      const [run] = spawns(fx);
+      const mission = run.args[1];
+      // Prohibits direct serve and manual port selection.
+      expect(mission).toContain("never run `repoos serve` yourself");
+      expect(mission).toMatch(/do NOT launch `repoos serve` directly/i);
+      // One structured, task-scoped preview request using the injected URL.
+      expect(mission).toContain('"${REPOOS_API_URL}/api/tasks/${REPOOS_TASK_ID}/preview"');
+      // The unsafe pattern is gone from the mission.
+      expect(mission).not.toContain("--port 7171");
+
+      // Managed-agent markers on the spawn.
+      expect(run.agent).toBe("1");
+      expect(run.task).toBe("0001");
+      expect(run.api).toBe("http://127.0.0.1:7777");
+
+      // A follow-up turn stamps the same markers.
+      runner.send("0001", "continue", agent("claude code"));
+      await waitFor(() => spawns(fx).length === 2, "resume spawn with markers");
+      const [, resume] = spawns(fx);
+      expect(resume.agent).toBe("1");
+      expect(resume.task).toBe("0001");
+      expect(resume.api).toBe("http://127.0.0.1:7777");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

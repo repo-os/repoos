@@ -180,8 +180,18 @@ export class PreviewManager {
    * Start a preview for a task: rebuild the worktree if stale, allocate an
    * ephemeral port, spawn a `repoos serve` rooted at the worktree, and wait
    * for it to come up. Returns `{ ok, port, url }` or a human-readable error.
+   *
+   * Every check happens BEFORE anything starts: the task id must resolve, the
+   * task must be in an allowed state (active/review), it must carry a
+   * registered branch, and that branch must have a real linked worktree. The
+   * worktree path is resolved from the task's own branch — never an
+   * agent-supplied path (ADR-0005). Repeated requests are idempotent and
+   * return the existing healthy preview.
    */
   async start(task: Task): Promise<PreviewResult> {
+    if (!task.id) {
+      return { ok: false, error: "A task id is required to start a preview" };
+    }
     if (!PREVIEW_STATES.includes(task.status)) {
       return {
         ok: false,

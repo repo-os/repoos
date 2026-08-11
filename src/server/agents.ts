@@ -435,6 +435,18 @@ function missionFor(
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
+    "## UI previews are server-owned — never run `repoos serve` yourself",
+    "",
+    "RepoOS owns previews and the control-plane port (7171). Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: that competes with the main server and other tasks, and direct serve attempts from agent processes are rejected. Preview ports and lifecycle are managed for you.",
+    "",
+    "To verify a UI change, request THIS task's managed preview (idempotent — repeat requests return the same URL):",
+    "",
+    `    curl -s -X POST "\${REPOOS_API_URL}/api/tasks/\${REPOOS_TASK_ID}/preview"`,
+    "",
+    "Parse the JSON response — {\"ok\": true, \"port\": <port>, \"url\": \"http://127.0.0.1:<port>\"} — and use the returned `url` to view or probe the worktree UI. The preview is reaped automatically when the task leaves active/review.",
+    "",
+    "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
+    "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
   ].join("\n");
 }
@@ -553,6 +565,12 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  /**
+   * The main RepoOS server's own API URL, injected into every agent process so
+   * the mission's managed-preview request resolves the ACTUAL control plane,
+   * never a hardcoded port.
+   */
+  apiUrl?: string;
 
   constructor(config: RepoOSConfig, emit: (e: AgentEvent) => void) {
     this.config = config;
@@ -635,7 +653,21 @@ export class AgentRunner {
   private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string, task?: Task): StartResult {
     let proc: ChildProcess;
     try {
-      proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+      // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
+      // in depth can reject an accidental direct `repoos serve` attempt, and
+      // REPOOS_API_URL/REPOOS_TASK_ID give the agent the one task-scoped way to
+      // request a managed preview (ADR-0005: agents express intent, RepoOS owns
+      // privileged process/network lifecycle).
+      proc = spawn(cmd, args, {
+        cwd,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          REPOOS_AGENT: "1",
+          REPOOS_TASK_ID: taskId,
+          ...(this.apiUrl ? { REPOOS_API_URL: this.apiUrl } : {}),
+        },
+      });
     } catch (err) {
       this.emit({ type: "agent.exited", id: taskId, at: now() });
       const reason = err instanceof Error ? err.message : String(err);

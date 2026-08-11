@@ -106,6 +106,18 @@ off; the implementer never merges to \`main\` at \`review\` time.
 ## Conventions
 
 Document stack-specific conventions here (framework, lint, test commands).
+
+## UI previews are server-owned
+
+Never run \`repoos serve\` yourself and never pick a port — RepoOS owns the
+control-plane port and every preview port, and direct serve attempts from agent
+processes are rejected. To verify a UI change, request this task's managed
+preview (idempotent — repeat requests return the same URL):
+
+    curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"
+
+Parse the returned \`url\` and probe that; the preview is reaped when the task
+leaves active/review.
 `;
 
 function repoosToml(layout: "root" | "repoos"): string {
