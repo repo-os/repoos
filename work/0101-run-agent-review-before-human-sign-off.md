@@ -2,7 +2,7 @@
 id: "0101"
 title: Run agent review before human sign-off
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
