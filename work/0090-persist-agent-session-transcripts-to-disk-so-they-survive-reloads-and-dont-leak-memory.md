@@ -2,16 +2,15 @@
 id: "0090"
 title: Persist agent session transcripts to disk so they survive reloads and don't leak memory
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T12:30:00Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-11T19:01:23Z"
 ---
-
 ## Problem
 
 Agent chat transcripts live purely in a `Map<string, Session>` in `AgentRunner`
@@ -98,3 +97,4 @@ should get the same treatment.
 
 - 2026-08-11T12:30:00Z · created · unknown
 - 2026-08-11T15:37:46Z · updated · separate transcript persistence from live-process handoff safety
+- 2026-08-11T19:01:23Z · status inbox→ready
