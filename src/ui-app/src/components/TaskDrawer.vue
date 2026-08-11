@@ -9,6 +9,7 @@ import { useConfigStore } from "../stores/config";
 import { renderMarkdown } from "../lib/markdown";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
+import ActivityIndicator from "./ActivityIndicator.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
@@ -71,6 +72,11 @@ const pmAgentReady = computed(() => {
   return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
 });
 
+/** True while the freeform PM-agent call is in flight. */
+const freeformRunning = ref(false);
+/** The client-generated id that tags this run's streamed `agent.output` events. */
+const freeformRunId = ref<string | null>(null);
+
 watch(
   () => ui.isNew,
   (isNew) => {
@@ -87,10 +93,15 @@ async function createFreeform(): Promise<void> {
   const text = freeformText.value.trim();
   if (!text) return;
   ui.saving = true;
+  freeformRunning.value = true;
   freeformError.value = "";
   draftSaved.value = null;
+  // A fresh run id each attempt; the previous run's buffer is dropped so the
+  // stream never shows stale output and memory stays bounded to one run.
+  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  freeformRunId.value = crypto.randomUUID();
   try {
-    const res = await repo.createFreeformTask(text);
+    const res = await repo.createFreeformTask(text, freeformRunId.value);
     // Agent error: keep the explanation in the textarea, show the error, and
     // point at the draft that preserved the capture.
     if (res.fallback && res.fallbackReason === "agent-failed") {
@@ -107,6 +118,8 @@ async function createFreeform(): Promise<void> {
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
+    freeformRunning.value = false;
+    freeformRunId.value = null;
     ui.saving = false;
   }
 }
@@ -161,14 +174,19 @@ async function startWork(): Promise<void> {
   await startWorkIn(ui.active);
 }
 
+/** True while the Start-work request (engineer agent launch) is in flight. */
+const startingWork = ref(false);
+
 async function startWorkIn(t: Task): Promise<void> {
   ui.saving = true;
+  startingWork.value = true;
   try {
     await repo.startWork(t);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
+    startingWork.value = false;
     ui.saving = false;
   }
 }
@@ -508,6 +526,27 @@ const ANSI_RE =
   /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
 const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
 
+// ---- freeform PM-agent live stream ----
+
+/** Plain display lines for the in-flight freeform run, fed by agent.output SSE. */
+const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
+  const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
+  return raw.map((e) => {
+    if ("type" in e) {
+      return { s: "out", d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")) };
+    }
+    return { s: e.s === "err" ? "err" : "out", d: stripAnsi(e.d) };
+  });
+});
+
+const ffLogEl = ref<HTMLElement | null>(null);
+watch(freeformLines, () => {
+  nextTick(() => {
+    const el = ffLogEl.value;
+    if (el) el.scrollTop = el.scrollHeight;
+  });
+});
+
 interface DisplayEntry {
   key: number;
   kind: "line" | "text" | "human" | "tool" | "step" | "sys";
@@ -709,8 +748,25 @@ async function sendTurn(): Promise<void> {
                 @click="createFreeform"
                 :disabled="ui.saving || !freeformText.trim()"
               >
-                {{ ui.saving ? "Asking the PM agent…" : "Create task" }}
+                <ActivityIndicator v-if="freeformRunning" />
+                {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
               </Button>
+            </div>
+            <div v-if="freeformLines.length" class="ff-stream">
+              <div class="ff-stream-head">
+                <ActivityIndicator />
+                PM agent
+              </div>
+              <div class="ff-stream-log" ref="ffLogEl">
+                <div
+                  v-for="(line, i) in freeformLines"
+                  :key="i"
+                  class="ff-stream-line"
+                  :class="line.s === 'err' ? 'err' : ''"
+                >
+                  {{ line.d }}
+                </div>
+              </div>
             </div>
           </template>
           <template v-else>
@@ -889,8 +945,9 @@ async function sendTurn(): Promise<void> {
               :disabled="ui.saving"
               @click="startWork"
             >
-              <Play class="size-3.5" />
-              Start work
+              <Play v-if="!startingWork" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ startingWork ? "Starting work…" : "Start work" }}
             </Button>
             <Button
               v-else
@@ -903,7 +960,7 @@ async function sendTurn(): Promise<void> {
               Pause work
             </Button>
             <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
-              <span class="tc-run"></span> agent running
+              <ActivityIndicator /> agent running
             </span>
           </div>
           <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
@@ -935,6 +992,7 @@ async function sendTurn(): Promise<void> {
                   Cancel
                 </Button>
                 <Button variant="default" size="sm" :disabled="ui.saving" @click="moveToDone">
+                  <ActivityIndicator v-if="doingDone" />
                   {{ doingDone ? doneProgress : "Move to done" }}
                 </Button>
               </div>
@@ -1274,7 +1332,7 @@ async function sendTurn(): Promise<void> {
             </Button>
           </div>
           <div v-if="agentBusy" class="agent-hint">
-            <span class="tc-run"></span> agent is working — wait for this turn to finish
+            <ActivityIndicator /> agent is working — wait for this turn to finish
           </div>
           <div
             v-else-if="

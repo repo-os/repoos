@@ -87,8 +87,5 @@ confusing during a 3-minute synchronous operation.
 
 - 2026-08-06T17:24:13Z · created · unknown
 - 2026-08-11T03:51:04Z · status inbox→ready
-- 2026-08-11T13:50:44Z · status ready→active, branch
-- 2026-08-11T14:30:13Z · status active→ready
-- 2026-08-11T14:49:44Z · status ready→active
-- 2026-08-11T15:16:20Z · status active→review
+- 2026-08-11T15:16:20Z · status ready→review
 - 2026-08-11T15:19:20Z · needs_merge

@@ -346,6 +346,19 @@
   .tc-btn.done:hover{filter:brightness(1.15)}
   .drawer-run{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--violet)}
 
+  /* activity indicator — theme-aware pulsing dots (0049) */
+  .ai{display:inline-flex;align-items:center;gap:4px;flex:none;vertical-align:middle}
+  .ai-dot{width:5px;height:5px;border-radius:50%;background:var(--violet);box-shadow:var(--dot-glow);animation:ai-bounce 1.2s ease-in-out infinite}
+  .ai-md .ai-dot{width:7px;height:7px}
+  @keyframes ai-bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-3px);opacity:1}}
+
+  /* freeform PM-agent live stream (0049) */
+  .ff-stream{margin-top:14px;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--panel)}
+  .ff-stream-head{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);font-weight:600;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);background:var(--panel)}
+  .ff-stream-log{max-height:170px;overflow-y:auto;padding:8px 12px;background:var(--md-body-bg);font-size:11px;line-height:1.65;color:var(--txt-dim)}
+  .ff-stream-line{white-space:pre-wrap;word-break:break-word}
+  .ff-stream-line.err{color:var(--red)}
+
   /* restart dirty-task choice */
   .restart-overlay{position:fixed;inset:0;z-index:200;background:rgba(4,6,12,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px}
   .restart-card{width:min(460px,100%);background:var(--panel-solid);border:1px solid var(--border-bright);border-radius:16px;padding:22px;box-shadow:var(--drawer-shadow);animation:restartIn .18s ease-out}

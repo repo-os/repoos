@@ -356,6 +356,14 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Drop a retained transcript buffer (e.g. a finished freeform run). */
+  function clearOutput(id: string): void {
+    if (!outputs.value[id]) return;
+    const next = { ...outputs.value };
+    delete next[id];
+    outputs.value = next;
+  }
+
   async function sendMessage(id: string, text: string): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${id}/message`,
@@ -400,9 +408,14 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
 
-  /** Freeform create: routes the explanation through the PM agent server-side. */
+  /**
+   * Freeform create: routes the explanation through the PM agent server-side.
+   * `runId` (optional) tags the streamed `agent.output` events the server
+   * emits for this run, so the caller can show the PM agent's output live.
+   */
   async function createFreeformTask(
     explanation: string,
+    runId?: string,
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -416,7 +429,7 @@ export const useRepoStore = defineStore("repo", () => {
       fallbackReason?: "no-pm-agent" | "agent-failed";
       reason?: string;
       task: Task;
-    }>("/api/tasks/freeform", JSON_OPTS("POST", { explanation }));
+    }>("/api/tasks/freeform", JSON_OPTS("POST", runId ? { explanation, runId } : { explanation }));
     if (!r.ok) {
       const message = r.reason ?? "could not create task";
       pushToast(message, "error");
@@ -501,6 +514,7 @@ export const useRepoStore = defineStore("repo", () => {
     pauseWork,
     completeTask,
     loadOutput,
+    clearOutput,
     sendMessage,
     fetchRunning,
     startPreview,
