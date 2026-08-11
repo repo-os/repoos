@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
+import { waitFor } from "./helpers";
 
 /** Plain-line text of an entry (legacy `{s,d}` or sys) — narrows the union. */
 const dOf = (entry: AgentOutputEntry): string | undefined =>
@@ -98,14 +99,6 @@ const TASK: Task = {
 };
 
 const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });
-
-async function waitFor(fn: () => boolean, label: string, timeoutMs = 3000): Promise<void> {
-  const start = Date.now();
-  while (!fn()) {
-    if (Date.now() - start > timeoutMs) throw new Error(`timed out waiting for ${label}`);
-    await new Promise((r) => setTimeout(r, 20));
-  }
-}
 
 function spawns(fx: Fixture): SpawnRecord[] {
   const text = readFileSync(fx.log, "utf8").trim();

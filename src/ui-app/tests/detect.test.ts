@@ -89,7 +89,13 @@ describe("detectAgents", () => {
   it("reports installed, version-carrying headless binaries", async () => {
     const root = tmpDir();
     makeBin(join(root, "bin"), "opencode", "#!/bin/sh\necho 'opencode v0.3.0'\n");
-    const rows = await detectAgents({ pathEnv: join(root, "bin"), agents: FIXTURE_AGENTS });
+    const rows = await detectAgents({
+      pathEnv: join(root, "bin"),
+      agents: FIXTURE_AGENTS,
+      // Generous probe timeout: a real spawn on a busy machine must not be
+      // killed by the production 1.5s default mid-boot (the 0076 flake).
+      versionTimeoutMs: 10_000,
+    });
 
     const opencode = rows.find((a) => a.id === "opencode");
     expect(opencode?.installed).toBe(true);

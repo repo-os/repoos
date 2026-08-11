@@ -89,5 +89,13 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["tests/**/*.test.ts"],
+    // Process-spawning tests boot real child processes (fixture CLI stubs,
+    // git) and wait on them with waitFor() polls of up to 10s. Vitest's
+    // default 5s per-test timeout flaked the `repoos check` gate under load
+    // (right after a build, or with other worktrees building in parallel) —
+    // give the suite real headroom while still failing fast on genuine
+    // breakage (waitFor throws well before these caps).
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
   },
 });
