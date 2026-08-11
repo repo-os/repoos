@@ -95,5 +95,4 @@ order, and sorting for any future non-board list views.
 
 - 2026-08-11T05:43:23Z · created · unknown
 - 2026-08-11T05:44:25Z · status inbox→ready
-- 2026-08-11T08:15:55Z · status ready→active, branch
-- 2026-08-11T16:22:00Z · status active→review · implemented sort-order dropdown, repoos check green
+- 2026-08-11T16:22:00Z · status ready→review · implemented sort-order dropdown, repoos check green
