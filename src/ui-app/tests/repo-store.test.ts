@@ -24,7 +24,8 @@ const makeTask = (over: Partial<Task> = {}): Task => ({
   absPath: "/tmp/repo/work/0001-test.md",
   body: "",
   extra: {},
-  git: { branchExists: false, lastCommit: null, lastCommitAt: null },
+  git: { branchExists: false, worktreeExists: false, lastCommit: null, lastCommitAt: null },
+  preview: null,
   ...over,
 });
 
@@ -68,6 +69,8 @@ function mockFetch(): void {
       return json({ ok: true });
     if (url.includes("/output"))
       return json({ ok: true, lines: [{ s: "out", d: "resumed transcript" }] });
+    if (url.includes("/preview"))
+      return json({ ok: true, port: 7234, url: "http://127.0.0.1:7234" });
     if (url.includes("/message"))
       return json({ ok: true });
     throw new Error("unexpected fetch: " + url);
@@ -253,6 +256,41 @@ describe("agent running state", () => {
     const task = makeTask({ status: "ready" });
     await expect(repo.startWork(task)).resolves.toBeUndefined();
     await expect(repo.pauseWork(makeTask({ status: "active" }))).resolves.toBeUndefined();
+  });
+});
+
+describe("preview state", () => {
+  it("updates a task's preview on start and clears it on stop", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", { type: "task.created", task: makeTask() });
+    es.emit("preview", {
+      type: "preview",
+      id: "0001",
+      preview: { port: 7234, url: "http://127.0.0.1:7234", startedAt: "2026-08-11T00:00:00Z" },
+      at: "2026-08-11T00:00:00Z",
+    });
+    expect(repo.tasks[0].preview?.url).toBe("http://127.0.0.1:7234");
+    expect(repo.feed[0].kind).toBe("preview");
+    expect(repo.feed[0].msg).toContain("127.0.0.1:7234");
+
+    es.emit("preview", { type: "preview", id: "0001", preview: null, at: "2026-08-11T00:00:00Z" });
+    expect(repo.tasks[0].preview).toBeNull();
+    expect(repo.feed[0].msg).toContain("preview stopped");
+  });
+
+  it("startPreview and stopPreview hit the preview endpoints", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ status: "review", branch: "feat/x" });
+    await expect(
+      repo.startPreview(task),
+    ).resolves.toEqual({ ok: true, port: 7234, url: "http://127.0.0.1:7234" });
+    await expect(repo.stopPreview(task)).resolves.toBeUndefined();
+    const start = vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes("/preview"));
+    expect(start).toBeTruthy();
+    expect((start![1] as RequestInit).method).toBe("POST");
   });
 });
 

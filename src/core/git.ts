@@ -95,7 +95,12 @@ export function lastCommitForFile(
 }
 
 export function emptyGitInfo(): TaskGitInfo {
-  return { branchExists: false, lastCommit: null, lastCommitAt: null };
+  return {
+    branchExists: false,
+    worktreeExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+  };
 }
 
 export interface EnsureWorktreeResult {
@@ -110,9 +115,11 @@ export interface EnsureWorktreeResult {
 
 /**
  * Branch -> worktree path for every registered linked worktree, derived from
- * `git worktree list --porcelain`. Empty map when git is missing.
+ * `git worktree list --porcelain`. Empty map when git is missing. Callers that
+ * resolve several branches at once (indexer, live index) should call this ONCE
+ * and reuse the map — every call shells out to git.
  */
-function worktreeList(root: string): Map<string, string> {
+export function worktreePaths(root: string): Map<string, string> {
   const out = git(root, ["worktree", "list", "--porcelain"]);
   const map = new Map<string, string>();
   if (!out) return map;
@@ -126,6 +133,17 @@ function worktreeList(root: string): Map<string, string> {
     }
   }
   return map;
+}
+
+/**
+ * Absolute path of the worktree that has `branch` checked out, or null when the
+ * branch has no linked worktree (or git is missing). The main checkout's own
+ * branch resolves to the repo root. Uses `git worktree list --porcelain` —
+ * never string concatenation — so branch names with `/` and exotic characters
+ * resolve correctly.
+ */
+export function worktreePathForBranch(root: string, branch: string): string | null {
+  return worktreePaths(root).get(branch) ?? null;
 }
 
 /**
@@ -147,7 +165,7 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
   if (currentBranch(root) === branch) {
     return { ok: true, path: root, created: false };
   }
-  const existing = worktreeList(root).get(branch);
+  const existing = worktreePaths(root).get(branch);
   if (existing) return { ok: true, path: existing, created: false };
 
   const target = join(worktreesDir(root), branch);
@@ -411,7 +429,7 @@ export function deleteBranch(root: string, branch: string): boolean {
  * worktree and prunes stale metadata if the first attempt fails.
  */
 export function removeWorktree(root: string, branch: string): boolean {
-  const path = worktreeList(root).get(branch);
+  const path = worktreePaths(root).get(branch);
   if (!path) return true;
   if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
   git(root, ["worktree", "prune"]);

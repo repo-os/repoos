@@ -29,6 +29,7 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreePaths,
   emptyGitInfo,
 } from "./git.js";
 
@@ -63,6 +64,7 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
 
   const useGit = isGitRepo(config.root);
   const branches = useGit ? localBranches(config.root) : new Set<string>();
+  const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
 
   const tasks: Task[] = files.map((absPath) => {
     const content = readFileSync(absPath, "utf8");
@@ -78,6 +80,7 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
       const { subject, date } = lastCommitForFile(config.root, base.path);
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
+        worktreeExists: base.branch ? worktrees.has(base.branch) : false,
         lastCommit: subject,
         lastCommitAt: date,
       };
