@@ -29,6 +29,7 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreeStatus,
   worktreePaths,
   emptyGitInfo,
 } from "./git.js";
@@ -78,11 +79,16 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
     });
     if (useGit) {
       const { subject, date } = lastCommitForFile(config.root, base.path);
+      const wt = base.branch
+        ? worktreeStatus(config.root, base.branch)
+        : { path: null, dirty: false };
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
         worktreeExists: base.branch ? worktrees.has(base.branch) : false,
         lastCommit: subject,
         lastCommitAt: date,
+        worktreePath: wt.path,
+        dirty: wt.dirty,
       };
     }
     return base;

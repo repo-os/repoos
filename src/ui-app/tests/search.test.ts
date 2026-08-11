@@ -22,7 +22,14 @@ function makeTask(over: Partial<Task>): Task {
     absPath: "/repo/work/0001-task.md",
     body: "Body text",
     extra: {},
-    git: { branchExists: false, worktreeExists: false, lastCommit: null, lastCommitAt: null },
+    git: {
+      branchExists: false,
+      worktreeExists: false,
+      lastCommit: null,
+      lastCommitAt: null,
+      worktreePath: null,
+      dirty: false,
+    },
     preview: null,
     ...over,
   };

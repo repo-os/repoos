@@ -45,7 +45,7 @@ import {
   patchTomlConfig,
   loadConfig,
 } from "../core/config.js";
-import { ensureWorktree, commitTaskFile } from "../core/git.js";
+import { ensureWorktree, commitTaskFile, resetWorktree } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
@@ -583,7 +583,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // same rule the task drawer uses) and persist it with the transition.
           // The agent works in a git worktree on that branch so the main
           // checkout — and the user — is never yanked off the current branch.
+          // An optional `mode: "clean"` restarts a dirty task from scratch:
+          // the existing worktree and branch are discarded so the agent begins
+          // from a fresh checkout. The default ("resume") keeps the existing
+          // worktree and its uncommitted changes.
+          const body = (await readBody(req)) as { mode?: unknown };
+          const clean = body?.mode === "clean";
           const branch = existing.branch || deriveBranch(existing.title);
+          if (clean) {
+            if (!existing.branch) {
+              return json(res, 400, {
+                error: `Task #${id} has no worktree yet — start normally instead`,
+              });
+            }
+            if (!resetWorktree(config.root, branch)) {
+              return json(res, 400, {
+                error: `Could not reset the worktree for ${branch} — is it the main checkout?`,
+              });
+            }
+          }
           const wtRes = ensureWorktree(config.root, branch);
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
@@ -599,6 +617,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             ok: true,
             task: index.getTask(updated.id),
             branch,
+            clean,
             git: wtRes.ok ? "ok" : wtRes.reason ?? "unknown",
             worktree: wtRes.ok ? wtRes.path : undefined,
             spawn: {

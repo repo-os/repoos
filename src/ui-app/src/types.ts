@@ -34,6 +34,8 @@ export interface Task {
     worktreeExists: boolean;
     lastCommit: string | null;
     lastCommitAt: string | null;
+    worktreePath: string | null;
+    dirty: boolean;
   };
   /** Running preview of this task's worktree, or null when stopped. */
   preview: PreviewInfo | null;

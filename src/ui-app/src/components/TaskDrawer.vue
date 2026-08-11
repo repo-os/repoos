@@ -8,6 +8,7 @@ import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
+import RestartTaskDialog from "./RestartTaskDialog.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -25,6 +26,9 @@ const repo = useRepoStore();
 const ui = useUiStore();
 const config = useConfigStore();
 const router = useRouter();
+
+/** Task whose dirty-worktree restart choice is awaiting an answer. */
+const restartTask = ref<Task | null>(null);
 
 const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
@@ -147,9 +151,19 @@ async function setStatus(status: string): Promise<void> {
 
 async function startWork(): Promise<void> {
   if (!ui.active) return;
+  // A dirty worktree means restarting would either resume prior work or
+  // discard it — surface that choice instead of starting silently.
+  if (ui.active.git?.dirty) {
+    restartTask.value = ui.active;
+    return;
+  }
+  await startWorkIn(ui.active);
+}
+
+async function startWorkIn(t: Task): Promise<void> {
   ui.saving = true;
   try {
-    await repo.startWork(ui.active);
+    await repo.startWork(t);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -1101,4 +1115,10 @@ async function sendTurn(): Promise<void> {
       </template>
     </DialogContent>
   </Dialog>
+
+  <RestartTaskDialog
+    :task="restartTask"
+    @close="restartTask = null"
+    @started="ui.activeTab = 'agent'"
+  />
 </template>

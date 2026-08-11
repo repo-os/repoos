@@ -226,10 +226,12 @@ export const useRepoStore = defineStore("repo", () => {
 
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
 
-  async function startWork(t: Task): Promise<void> {
-    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/start`, {
-      method: "POST",
-    });
+  /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
+  async function startWork(t: Task, mode: "resume" | "clean" = "resume"): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${t.id}/start`,
+      JSON_OPTS("POST", { mode }),
+    );
     if (!r.ok) throw new Error(r.reason ?? "could not start work");
   }
 

@@ -24,7 +24,14 @@ const makeTask = (over: Partial<Task> = {}): Task => ({
   absPath: "/tmp/repo/work/0001-test.md",
   body: "",
   extra: {},
-  git: { branchExists: false, worktreeExists: false, lastCommit: null, lastCommitAt: null },
+  git: {
+    branchExists: false,
+    worktreeExists: false,
+    lastCommit: null,
+    lastCommitAt: null,
+    worktreePath: null,
+    dirty: false,
+  },
   preview: null,
   ...over,
 });

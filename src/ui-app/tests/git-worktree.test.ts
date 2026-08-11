@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureWorktree } from "../../core/git.js";
+import { ensureWorktree, worktreeStatus, resetWorktree } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
 function git(root: string, args: string[]): string {
@@ -100,6 +100,115 @@ describe("ensureWorktree", () => {
       expect(res.reason).toMatch(/not a git repository/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("worktreeStatus", () => {
+  it("reports no worktree when the branch has none", () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(worktreeStatus(root, "feat/ghost")).toEqual({ path: null, dirty: false });
+    } finally {
+      clean();
+    }
+  });
+
+  it("reports the path and a clean state for a fresh linked worktree", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      expect(wt.ok).toBe(true);
+
+      const status = worktreeStatus(root, "feat/one");
+
+      expect(status.path).toBe(wt.path);
+      expect(status.dirty).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("marks the worktree dirty when it has uncommitted changes", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "work-in-progress.txt"), "draft\n");
+
+      const status = worktreeStatus(root, "feat/one");
+
+      expect(status.path).toBe(wt.path);
+      expect(status.dirty).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("marks the worktree dirty when the branch has commits ahead of base", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "committed.txt"), "done\n");
+      git(wt.path, ["add", "-A"]);
+      git(wt.path, ["commit", "-m", "work"]);
+
+      const status = worktreeStatus(root, "feat/one");
+
+      expect(status.dirty).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("never treats the main checkout as a task worktree", () => {
+    const { root, clean } = makeRepo();
+    try {
+      git(root, ["checkout", "-b", "feat/current"]);
+
+      expect(worktreeStatus(root, "feat/current")).toEqual({ path: null, dirty: false });
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("resetWorktree", () => {
+  it("removes the worktree and branch so the next ensure creates a clean one", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "work-in-progress.txt"), "draft\n");
+      expect(worktreeStatus(root, "feat/one").dirty).toBe(true);
+
+      expect(resetWorktree(root, "feat/one")).toBe(true);
+
+      expect(worktreeStatus(root, "feat/one")).toEqual({ path: null, dirty: false });
+      const fresh = ensureWorktree(root, "feat/one");
+      expect(fresh.ok).toBe(true);
+      expect(fresh.created).toBe(true);
+      expect(worktreeStatus(root, "feat/one").dirty).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("is a no-op success when the branch has no worktree or branch", () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(resetWorktree(root, "feat/ghost")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses to reset the main checkout", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = git(root, ["branch", "--show-current"]);
+
+      expect(resetWorktree(root, branch)).toBe(false);
+    } finally {
+      clean();
     }
   });
 });

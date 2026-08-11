@@ -109,6 +109,14 @@ export interface TaskGitInfo {
   lastCommit: string | null;
   /** ISO timestamp of last commit touching this file. */
   lastCommitAt: string | null;
+  /** Absolute path of the task's linked worktree, or null when none exists. */
+  worktreePath: string | null;
+  /**
+   * Whether a clean restart would discard prior work: the linked worktree has
+   * uncommitted changes, or the branch has commits not in the base branch.
+   * Always false when no linked worktree exists.
+   */
+  dirty: boolean;
 }
 
 /** An AI coding agent configurable on the Agents page. */

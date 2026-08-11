@@ -17,6 +17,7 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  worktreeStatus,
   worktreePaths,
   emptyGitInfo,
 } from "../core/git.js";
@@ -118,6 +119,9 @@ export class LiveIndex {
     });
     if (this.useGit) {
       const { subject, date } = lastCommitForFile(this.config.root, task.path);
+      const wt = task.branch
+        ? worktreeStatus(this.config.root, task.branch)
+        : { path: null, dirty: false };
       task.git = {
         branchExists: task.branch
           ? this.branchCache.has(task.branch)
@@ -127,6 +131,8 @@ export class LiveIndex {
           : false,
         lastCommit: subject,
         lastCommitAt: date,
+        worktreePath: wt.path,
+        dirty: wt.dirty,
       };
     }
 
@@ -178,12 +184,17 @@ export class LiveIndex {
       : new Set();
     const worktrees = this.useGit ? worktreePaths(this.config.root) : new Map<string, string>();
     for (const [id, t] of this.byId) {
+      const wt = t.branch
+        ? worktreeStatus(this.config.root, t.branch)
+        : { path: null, dirty: false };
       this.byId.set(id, {
         ...t,
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
           worktreeExists: t.branch ? worktrees.has(t.branch) : false,
+          worktreePath: wt.path,
+          dirty: wt.dirty,
         },
       });
     }
