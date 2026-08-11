@@ -2,14 +2,14 @@
 id: "0085"
 title: Test one selected agent/model combination at a time
 type: feature
-status: review
+status: done
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/0085-test-selected-agent-model
 created_at: "2026-08-11T10:34:53Z"
-updated_at: "2026-08-11T11:37:16Z"
+updated_at: "2026-08-11T11:58:54Z"
 ---
 ## Activity
 
@@ -80,3 +80,7 @@ models** as the discovery action.
   `src/ui-app/src/views/AgentsView.vue`, UI API types, and focused tests.
 - Do not run a real provider test during automated verification; use fake binaries.
 - Preserve CLI-specific live model discovery from #0083.
+
+## Activity
+
+- 2026-08-11T11:58:54Z · status review→done
