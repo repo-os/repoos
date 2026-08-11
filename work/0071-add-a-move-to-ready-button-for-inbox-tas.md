@@ -2,14 +2,14 @@
 id: "0071"
 title: "Add a \"Move to ready\" button for inbox tasks in the task panel"
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-a-move-to-ready-button-for-inbox-tas
 created_at: "2026-08-11T03:20:53Z"
-updated_at: "2026-08-11T03:51:09Z"
+updated_at: "2026-08-11T05:09:36Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Covers only the task detail panel (`TaskDrawer.vue`). Does not change the board 
 
 - 2026-08-11T03:20:53Z · created · unknown
 - 2026-08-11T03:51:09Z · status inbox→ready
+- 2026-08-11T05:09:36Z · status ready→active, branch
