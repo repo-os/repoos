@@ -2,14 +2,14 @@
 id: "0070"
 title: Keep paused tasks in Active status instead of reverting to Ready
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T03:17:31Z"
+updated_at: "2026-08-11T03:51:07Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ Relevant code:
 ## Activity
 
 - 2026-08-11T03:17:31Z · created · unknown
+- 2026-08-11T03:51:07Z · status inbox→ready
