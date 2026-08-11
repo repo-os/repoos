@@ -19,8 +19,9 @@
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   POST /api/tasks/freeform   -> create from a freeform explanation via the PM agent
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
- *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active)
- *   POST /api/tasks/:id/pause  -> stop the running agent (active -> ready)
+ *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active);
+ *                                also relaunches a paused active task (stays active)
+ *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> the retained session transcript for a task
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
@@ -770,9 +771,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
 
         if (actionMatch[2] === "start") {
-          if (existing.status !== "ready") {
+          // A `ready` task launches fresh; an `active` task with no running
+          // agent (i.e. paused via /pause) relaunches in place — status stays
+          // `active` either way, so a paused task never bounces through `ready`.
+          if (existing.status !== "ready" && existing.status !== "active") {
             return json(res, 400, {
-              error: `Only ready tasks can be started (#${id} is ${existing.status})`,
+              error: `Only ready or paused tasks can be started (#${id} is ${existing.status})`,
             });
           }
           if (runner.isRunning(id)) {
@@ -1004,11 +1008,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         const stopRes = runner.stop(id);
+        // Status stays `active` — pausing only stops the agent process, it no
+        // longer demotes the task back to `ready` (see #0070). `needsInput`
+        // still clears: a stopped agent isn't waiting on a reply.
         const updated = patchTaskFile(config, existing.absPath, {
-          status: "ready",
           needsInput: false,
-        }, {
-          onStatusChange: onStatusChange,
         });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {

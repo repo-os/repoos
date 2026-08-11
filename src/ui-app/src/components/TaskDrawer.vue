@@ -923,7 +923,7 @@ async function sendTurn(): Promise<void> {
           </div>
           <div v-if="ui.active.status === 'ready' || ui.active.status === 'active'" class="field" style="margin-top: 16px">
             <Button
-              v-if="ui.active.status === 'ready'"
+              v-if="ui.active.status === 'ready' || !repo.isRunning(ui.active.id)"
               variant="accent"
               class="w-full"
               :disabled="ui.saving"
@@ -931,7 +931,7 @@ async function sendTurn(): Promise<void> {
             >
               <Play v-if="!startingWork" class="size-3.5" />
               <ActivityIndicator v-else />
-              {{ startingWork ? "Starting work…" : "Start work" }}
+              {{ startingWork ? "Starting work…" : ui.active.status === "active" ? "Restart work" : "Start work" }}
             </Button>
             <Button
               v-else
