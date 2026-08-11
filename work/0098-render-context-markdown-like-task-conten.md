@@ -2,7 +2,7 @@
 id: "0098"
 title: Render context markdown like task content
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -47,3 +47,4 @@ This task covers the rendering and presentation of markdown files on the context
 - 2026-08-11T18:46:31Z · status active→ready
 - 2026-08-11T18:46:35Z · status ready→active, branch
 - 2026-08-11T18:57:27Z · cli_override, model_override
+- 2026-08-11T18:58:30Z · status active→review · Context page docs/skills now render through the tasks panel's renderMarkdown + .md-rendered styles; non-markdown files keep the plain-text view. repoos check green.
