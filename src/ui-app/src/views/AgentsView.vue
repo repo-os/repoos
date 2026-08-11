@@ -345,13 +345,15 @@ onUnmounted(() => {
             </div>
             <div class="agent-field agent-test-result">
               <label>Compatibility</label>
-              <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
-                <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-              </Button>
-              <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
-                {{ resultFor(a)!.status.replace('_', ' ') }}
-              </span>
+              <div class="agent-test-actions">
+                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                </Button>
+                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                  {{ resultFor(a)!.status.replace('_', ' ') }}
+                </span>
+              </div>
             </div>
             <div class="agent-field agent-instr-field">
               <label>Instructions</label>
@@ -435,13 +437,15 @@ onUnmounted(() => {
             </div>
             <div class="agent-field agent-test-result">
               <label>Compatibility</label>
-              <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
-                <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-              </Button>
-              <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
-                {{ resultFor(a)!.status.replace('_', ' ') }}
-              </span>
+              <div class="agent-test-actions">
+                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                </Button>
+                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                  {{ resultFor(a)!.status.replace('_', ' ') }}
+                </span>
+              </div>
             </div>
             <div class="agent-field agent-instr-field">
               <label>Instructions</label>

@@ -4,7 +4,7 @@ import type { ModelSourceResult } from "../core/models.js";
 import { promptCommand } from "./agents.js";
 
 export const MODEL_TEST_SENTINEL = "REPOOS_MODEL_OK";
-export const MODEL_TEST_TIMEOUT_MS = 20_000;
+export const MODEL_TEST_TIMEOUT_MS = 8_000;
 const OUTPUT_LIMIT = 4 * 1024;
 
 export type ModelTestStatus = "passed" | "failed" | "timed_out" | "not_testable";

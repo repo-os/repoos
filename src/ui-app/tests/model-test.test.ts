@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sanitizeDiagnostic, testModelCombination, testModelCombinations } from "../../server/model-test";
+import { MODEL_TEST_TIMEOUT_MS, sanitizeDiagnostic, testModelCombination, testModelCombinations } from "../../server/model-test";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -19,6 +19,10 @@ function fakeOpenCode(body: string): { root: string; path: string } {
 }
 
 describe("model compatibility runner", () => {
+  it("uses an 8-second cloud probe ceiling", () => {
+    expect(MODEL_TEST_TIMEOUT_MS).toBe(8000);
+  });
+
   it("tests exactly one requested combination", async () => {
     const fixture = fakeOpenCode("echo REPOOS_MODEL_OK");
     const old = process.env.PATH;
