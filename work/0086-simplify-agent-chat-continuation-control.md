@@ -2,14 +2,14 @@
 id: "0086"
 title: Simplify agent chat continuation controls
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/simplify-agent-chat-continuation-control
 created_at: "2026-08-11T11:55:10Z"
-updated_at: "2026-08-11T11:59:05Z"
+updated_at: "2026-08-11T20:15:00Z"
 ---
 ## Problem
 
@@ -21,9 +21,9 @@ Keep the “Continue” line in task agent chats and display a timestamp with it
 
 ## Acceptance criteria
 
-- [ ] The “Continue” line remains visible in task agent chats.
-- [ ] Each “Continue” line displays a timestamp.
-- [ ] The “Step” line is no longer displayed in task agent chats.
+- [x] The “Continue” line remains visible in task agent chats.
+- [x] Each “Continue” line displays a timestamp.
+- [x] The “Step” line is no longer displayed in task agent chats.
 
 ## Notes for AI
 
@@ -37,3 +37,5 @@ Keep the “Continue” line in task agent chats and display a timestamp with it
 - 2026-08-11T11:55:10Z · created · unknown
 - 2026-08-11T11:59:03Z · status inbox→ready
 - 2026-08-11T11:59:05Z · status ready→active, branch
+- 2026-08-11T20:15:00Z · status active→review · implementation on
+  feat/simplify-agent-chat-continuation-control (18d405c); `repoos check` green · ai
