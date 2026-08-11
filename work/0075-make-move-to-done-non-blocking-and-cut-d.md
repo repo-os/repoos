@@ -8,8 +8,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/make-move-to-done-non-blocking-and-cut-d
+cli_override: codex
+model_override: gpt-5.6-sol
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T19:29:03Z"
+updated_at: "2026-08-11T20:07:59Z"
 ---
 ## Problem
 
@@ -130,3 +132,4 @@ things follow from that:
 - 2026-08-11T14:30:27Z · status active→ready
 - 2026-08-11T15:37:46Z · updated · replace completed 0069 blocker with active 0095 dependency
 - 2026-08-11T19:29:03Z · status ready→active
+- 2026-08-11T20:07:59Z · cli_override, model_override
