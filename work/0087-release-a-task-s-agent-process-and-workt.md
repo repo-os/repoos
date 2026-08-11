@@ -2,14 +2,14 @@
 id: "0087"
 title: Release a task's agent process and worktree resources when it leaves active
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T13:20:44Z"
-updated_at: "2026-08-11T13:20:44Z"
+updated_at: "2026-08-11T13:30:50Z"
 ---
 ## Activity
 
@@ -119,3 +119,7 @@ Two costs, both real:
   `AgentRunner.cleanup()`, which is why cleanup must go through `stop()`.
 - 0047 · Move-to-done — where `removeWorktree`/`deleteBranch` happen, and why
   ordering matters.
+
+## Activity
+
+- 2026-08-11T13:30:50Z · status inbox→ready
