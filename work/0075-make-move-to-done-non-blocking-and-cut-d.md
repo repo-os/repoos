@@ -2,14 +2,14 @@
 id: "0075"
 title: Make move-to-done non-blocking and cut duplicate build/browser launches
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/make-move-to-done-non-blocking-and-cut-d
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T14:11:48Z"
+updated_at: "2026-08-11T14:12:09Z"
 ---
 ## Activity
 
@@ -136,3 +136,4 @@ things follow from that:
 - 2026-08-11T12:17:31Z · needs_input
 - 2026-08-11T12:18:32Z · needs_input
 - 2026-08-11T14:11:48Z · status active→ready
+- 2026-08-11T14:12:09Z · status ready→active
