@@ -2,14 +2,14 @@
 id: "0029"
 title: Remove the legacy pre-Vite HTML UI
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0029-remove-legacy-html-ui
 created_at: "2026-08-05T06:55:26Z"
-updated_at: "2026-08-05T06:56:00Z"
+updated_at: "2026-08-11T00:17:35Z"
 ---
 ## Activity
 
@@ -67,3 +67,7 @@ and docs/code stop referencing it.
   `docs/concepts.md`, and the stale header comment in `src/ui-app/src/style.css`.
 - Related: 0021 (re-architect) built the compare tool for the transition; its
   purpose is served.
+
+## Activity
+
+- 2026-08-11T00:17:35Z · status inbox→ready
