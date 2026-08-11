@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -777,6 +777,17 @@ async function sendTurn(): Promise<void> {
               </SelectViewport>
             </SelectContent>
           </Select>
+          <div v-if="ui.active.status === 'inbox'" class="field" style="margin-top: 16px">
+            <Button
+              variant="outline"
+              class="w-full"
+              :disabled="ui.saving"
+              @click="setStatus('ready')"
+            >
+              <ArrowRight class="size-3.5" />
+              Move to ready
+            </Button>
+          </div>
           <div v-if="ui.active.status === 'ready' || ui.active.status === 'active'" class="field" style="margin-top: 16px">
             <Button
               v-if="ui.active.status === 'ready'"
