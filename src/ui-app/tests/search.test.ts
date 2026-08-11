@@ -16,6 +16,7 @@ function makeTask(over: Partial<Task>): Task {
     branch: "",
     tags: [],
     needsInput: false,
+    needsMerge: false,
     created_at: null,
     updated_at: null,
     path: "work/0001-task.md",

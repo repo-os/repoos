@@ -2,7 +2,7 @@
 id: "0069"
 title: Surface mutation errors visibly and stop branch drift from blocking move-to-done
 type: feature
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
@@ -157,3 +157,4 @@ Two linked failures, both hit live on the self-hosted board (documented in
 - 2026-08-11T08:45:33Z · status active→ready
 - 2026-08-11T08:45:39Z · status ready→active
 - 2026-08-11T11:36:49Z · status active→ready
+- 2026-08-11T20:06:00Z · status ready→active

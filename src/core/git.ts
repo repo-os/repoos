@@ -383,6 +383,74 @@ export interface MergeBranchResult {
   reason?: string;
 }
 
+export interface PreflightMergeResult {
+  /** True when the merge would complete without source conflicts. */
+  ok: boolean;
+  /** True when main is not an ancestor of the branch (a merge commit would be required). */
+  drifted: boolean;
+  /** Conflicted source file paths when `ok` is false. */
+  conflicts: string[];
+  /** Human-readable failure reason. */
+  reason?: string;
+}
+
+/**
+ * Cheap, non-destructive pre-flight for merging `branch` into the CURRENT
+ * checkout. Uses `git merge --no-commit` and always aborts, so the working
+ * tree is left untouched (blocking files may be committed first, as the real
+ * `mergeBranch` does, to keep the pre-flight honest).
+ *
+ * Returns `ok: true` for a clean merge (fast-forward or merge commit), and
+ * `ok: false` with the conflict file list when source files would conflict.
+ * `drifted` is true whenever main is not an ancestor of the branch.
+ */
+export async function preflightMerge(
+  root: string,
+  branch: string,
+  opts: { autoResolve?: string[] } = {},
+): Promise<PreflightMergeResult> {
+  const head = currentBranch(root);
+  const drifted = head !== null && branch !== head && isAncestor(root, head, branch) !== true;
+
+  let run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
+  if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr)) {
+    const blocking = blockingFiles(run.stderr);
+    if (blocking.length > 0) {
+      for (const p of blocking) git(root, ["add", "--", p]);
+      if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
+        run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
+      }
+    }
+  }
+
+  if (run.status === 0) {
+    await runGit(root, ["merge", "--abort"], 4000);
+    return { ok: true, drifted, conflicts: [] };
+  }
+
+  const conflicts =
+    git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
+
+  // Respect autoResolve semantics so generated files never surface as
+  // "conflicts" to the user.
+  const autoResolvable = (p: string): boolean =>
+    (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+  const unresolved = conflicts.filter((p) => !autoResolvable(p));
+
+  await runGit(root, ["merge", "--abort"], 4000);
+
+  if (unresolved.length > 0) {
+    return {
+      ok: false,
+      drifted,
+      conflicts: unresolved,
+      reason: `merge conflict: ${unresolved.join(", ")}`,
+    };
+  }
+
+  return { ok: true, drifted, conflicts: [] };
+}
+
 /**
  * Commit a single task file in the main checkout, tracking it first when it is
  * untracked. Task files are the one path that is routinely edited on both sides

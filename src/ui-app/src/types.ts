@@ -16,6 +16,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`. */
   needsInput: boolean;
+  /** True when the task branch has drifted from main. Layered on `review`. */
+  needsMerge: boolean;
   priority: string;
   area: string;
   assignee: "ai" | "human" | "unassigned";
