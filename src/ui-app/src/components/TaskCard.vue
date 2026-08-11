@@ -4,6 +4,7 @@ import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import ActivityIndicator from "./ActivityIndicator.vue";
 
 const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
   dragEnabled: true,
@@ -196,7 +197,10 @@ async function openAgent(): Promise<void> {
         :class="hint.cls"
         :title="hint.title"
         @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
-      >{{ hint.label }}</span>
+      >
+        <ActivityIndicator v-if="hint.cls === 'tc-run'" />
+        {{ hint.label }}
+      </span>
       <span
         v-if="isLaunchAction && task.git?.dirty"
         class="tc-dirty"
