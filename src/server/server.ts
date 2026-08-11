@@ -839,14 +839,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
             return json(res, 400, { error: "model must be a non-empty string" });
           }
-          const sources = await listModelSources({ cwd: config.root, clis: [body.cli] });
-          const source = sources[body.cli];
-          if (!source?.supported) {
-            return json(res, 200, {
-              result: { cli: body.cli, model: body.model, status: "not_testable", durationMs: 0 },
-              at: new Date().toISOString(),
-            });
-          }
+          // Model discovery and execution are separate capabilities. Claude
+          // and Qwen cannot list their catalogs, but they can still execute a
+          // user-selected/default model and must reach the real probe.
           const result = await testModelCombination(body.cli, body.model, { cwd: config.root });
           return json(res, 200, { result, at: new Date().toISOString() });
         } catch (err) {

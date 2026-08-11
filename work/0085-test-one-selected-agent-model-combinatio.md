@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0085-test-selected-agent-model
 created_at: "2026-08-11T10:34:53Z"
-updated_at: "2026-08-11T11:23:00Z"
+updated_at: "2026-08-11T11:37:16Z"
 ---
 ## Activity
 
@@ -21,6 +21,10 @@ updated_at: "2026-08-11T11:23:00Z"
   moved Instructions below the agent/model/test control row (9e4b12c) · ai
 - 2026-08-11T11:23:00Z · review fix: agent edits now auto-save after a debounce;
   removed the manual save bar and unsaved-changes prompt; `repoos check` green · ai
+- 2026-08-11T11:33:54Z · review fix: Codex compatibility probes now bypass the
+  trusted-directory preflight; real gpt-5.6-luna probe passed in 6.017s · ai
+- 2026-08-11T11:37:16Z · review fix: decoupled compatibility testing from model
+  discovery so Claude/Qwen probes run; real Claude default passed in 4.262s · ai
 
 
 ## Problem

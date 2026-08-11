@@ -49,6 +49,10 @@ export function testModelCombination(
     agent,
     `Reply with exactly ${MODEL_TEST_SENTINEL}. Do not use tools or modify files.`,
   );
+  // Compatibility probes may run from a configured repo root that Codex has
+  // not marked trusted yet. The prompt cannot modify files, so bypass only the
+  // repository trust preflight for this disposable probe.
+  if (cli === "codex") args.splice(1, 0, "--skip-git-repo-check");
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {

@@ -56,6 +56,7 @@ function makeFixture(): Fixture {
   mkdirSync(bin, { recursive: true });
   writeFileSync(join(bin, "opencode"), FAKEBIN, { mode: 0o755 });
   writeFileSync(join(bin, "codex"), FAKE_CODEX, { mode: 0o755 });
+  writeFileSync(join(bin, "claude"), "#!/bin/sh\necho REPOOS_MODEL_OK\n", { mode: 0o755 });
   return { bin, log: join(root, "spawns.log") };
 }
 
@@ -249,8 +250,10 @@ describe("GET /api/models", () => {
 });
 
 describe("POST /api/models/test", () => {
-  it("accepts one selected pair and returns one result", async () => {
+  it("probes a selected pair even when its CLI cannot discover models", async () => {
     const root = tmpDir();
+    const fx = makeFixture();
+    const old = prependPath(fx.bin);
     const server = await startServer({ root, host: "127.0.0.1", port: 0 });
     try {
       const res = await fetch(`${server.url}/api/models/test`, {
@@ -263,11 +266,12 @@ describe("POST /api/models/test", () => {
       expect(body.result).toEqual({
         cli: "claude code",
         model: "default",
-        status: "not_testable",
-        durationMs: 0,
+        status: "passed",
+        durationMs: expect.any(Number),
       });
     } finally {
       await server.close();
+      process.env.PATH = old;
     }
   });
 
