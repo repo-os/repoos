@@ -2,14 +2,14 @@
 id: "0079"
 title: Add Cloudflare Tunnel toggle and setup UI to Settings page
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-cloudflare-tunnel-toggle-and-setup-u
 created_at: "2026-08-11T05:59:26Z"
-updated_at: "2026-08-11T13:01:51Z"
+updated_at: "2026-08-11T13:01:52Z"
 ---
 ## Problem
 
@@ -119,3 +119,4 @@ per-app Access allowlists unless it falls out naturally from the setup flow.
 - 2026-08-11T08:17:14Z · status inbox→ready
 - 2026-08-11T12:15:07Z · status ready→active, branch
 - 2026-08-11T13:01:51Z · status active→ready
+- 2026-08-11T13:01:52Z · status ready→active
