@@ -11,7 +11,7 @@ branch: feat/replace-cloudflare-tunnel-instructions-w
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-08-11T19:35:08Z"
-updated_at: "2026-08-11T20:11:31Z"
+updated_at: "2026-08-11T20:20:32Z"
 ---
 ## Problem
 
