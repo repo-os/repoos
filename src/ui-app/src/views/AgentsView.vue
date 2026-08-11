@@ -64,6 +64,7 @@ const modelsLoading = ref(false);
 const modelsTesting = ref(false);
 const modelTestResults = ref<ModelTestResult[]>([]);
 const modelTestAt = ref("");
+const modelTestNotice = ref("");
 
 function labelForModel(m: string): string {
   if (m === "default") return "Default";
@@ -101,6 +102,7 @@ function isFailedModel(cli: string, model: string): boolean {
 async function testModels(): Promise<void> {
   if (modelsTesting.value) return;
   modelsTesting.value = true;
+  modelTestNotice.value = "";
   try {
     const requested: Record<string, string[]> = {};
     for (const agent of localAgents.value) {
@@ -115,6 +117,9 @@ async function testModels(): Promise<void> {
     );
     modelTestResults.value = response.results;
     modelTestAt.value = response.at;
+    if (!response.results.length || response.results.every((result) => result.status === "not_testable")) {
+      modelTestNotice.value = "No configured coding agent has testable models. Select Codex or OpenCode, then test again.";
+    }
   } catch (err) {
     config.error = err instanceof Error ? err.message : "Model compatibility test failed.";
   } finally {
@@ -311,6 +316,7 @@ onUnmounted(() => {
           Built-in roles. Toggle them on or off and pick their coding agent and model.
         </div>
         <div v-if="modelsTesting" class="model-test-summary">Testing each supported combination with a tiny provider request…</div>
+        <div v-if="modelTestNotice" class="model-test-summary model-test-warning">{{ modelTestNotice }}</div>
         <div v-else-if="modelTestResults.length" class="model-test-summary">
           <span>Last tested {{ new Date(modelTestAt).toLocaleTimeString() }}</span>
           <span v-for="result in modelTestResults" :key="result.cli + ':' + result.model"

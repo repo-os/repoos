@@ -8,8 +8,16 @@ createApp(App).use(createPinia()).use(router).mount("#app");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      /* offline shell unavailable — app still works online */
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
     });
+    navigator.serviceWorker.register("/sw.js")
+      .then((registration) => registration.update())
+      .catch(() => {
+        /* offline shell unavailable — app still works online */
+      });
   });
 }

@@ -833,13 +833,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/models/test" && method === "POST") {
         let byCli: Record<string, ModelSourceResult> = {};
         try {
-          byCli = await listModelSources({ cwd: config.root });
           const body = (await readBody(req)) as { byCli?: unknown };
-          if (body.byCli && typeof body.byCli === "object") {
-            const requestedByCli = body.byCli as Record<string, unknown>;
-            byCli = Object.fromEntries(
-              Object.entries(byCli).filter(([cli]) => Object.hasOwn(requestedByCli, cli)),
-            );
+          const requestedByCli = body.byCli && typeof body.byCli === "object"
+            ? body.byCli as Record<string, unknown>
+            : {};
+          byCli = await listModelSources({ cwd: config.root, clis: Object.keys(requestedByCli) });
+          if (Object.keys(requestedByCli).length) {
             for (const [cli, raw] of Object.entries(requestedByCli)) {
               if (!byCli[cli] || !Array.isArray(raw)) continue;
               const requested = raw.filter(

@@ -36,6 +36,8 @@ export interface ListModelsOptions {
   refresh?: boolean;
   /** Working directory the probe runs in (repo root). */
   cwd?: string;
+  /** Optional Agent.cli allowlist; avoids probing unrelated installed CLIs. */
+  clis?: string[];
 }
 
 /** A per-CLI model source. `list` never throws — failures resolve empty. */
@@ -236,8 +238,11 @@ export async function listModelSources(
   opts: ListModelsOptions = {},
 ): Promise<Record<string, ModelSourceResult>> {
   const out: Record<string, ModelSourceResult> = {};
+  const selected = opts.clis?.length
+    ? Object.values(MODEL_SOURCES).filter((source) => opts.clis!.includes(source.cli))
+    : Object.values(MODEL_SOURCES);
   await Promise.all(
-    Object.values(MODEL_SOURCES).map(async (src) => {
+    selected.map(async (src) => {
       try {
         out[src.cli] = await src.list(opts);
       } catch {

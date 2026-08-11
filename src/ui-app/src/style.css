@@ -908,3 +908,4 @@
 .model-test-passed { color: var(--green); }
 .model-test-failed, .model-test-timed_out { color: var(--red); }
 .model-test-not_testable { color: var(--muted); }
+.model-test-warning { color: var(--amber); }
