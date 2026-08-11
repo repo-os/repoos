@@ -2,7 +2,7 @@
 id: "0070"
 title: Keep paused tasks in Active status instead of reverting to Ready
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
