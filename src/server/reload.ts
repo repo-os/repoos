@@ -76,6 +76,13 @@ export interface ReloadManagerOptions {
   graceMs?: number;
   /** Total time to wait for the replacement's readiness handshake, in ms. */
   handshakeTimeoutMs?: number;
+  /**
+   * How long the replacement must stay healthy (handshake answered) before the
+   * old process logs "replacement is up" and releases its listener. Guards the
+   * #0096 incident shape: a replacement that answered once, was confirmed, then
+   * died right after the old process exited, leaving the port listenerless.
+   */
+  confirmMs?: number;
   log?: (msg: string) => void;
 }
 
@@ -102,6 +109,8 @@ const DEFAULT_POLL_MS = 5000;
 const DEFAULT_RETRY_MS = 2000;
 const DEFAULT_GRACE_MS = 2000;
 const DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000;
+/** Sustained-health window before a replacement handoff is confirmed. */
+const DEFAULT_CONFIRM_MS = 750;
 const RELOAD_POLL_MS = 150;
 const REBIND_TIMEOUT_MS = 5000;
 const WATCH_DEBOUNCE_MS = 60;
@@ -306,7 +315,11 @@ export class ReloadManager {
     );
     const confirmed = await this.waitForReplacement(secret);
 
-    if (confirmed) {
+    // #0096: a confirmed handshake is only trustworthy when the replacement
+    // process is still alive at the moment of handover. If it died during the
+    // sustained-health window or right at confirmation, we must NOT log
+    // "replacement is up" or exit — we re-bind and keep serving instead.
+    if (confirmed && !this.childExited) {
       this.stopped = true;
       const detach = (stream: unknown): void => {
         (stream as { unref?: () => void } | null)?.unref?.();
@@ -338,15 +351,25 @@ export class ReloadManager {
    * release our own listener — the drain window — and keep polling. Any answer
    * from the parent itself has no handshake, so a spurious self-poll never
    * confirms a replacement.
+   *
+   * A single handshake answer is NOT enough (#0096): the replacement must stay
+   * healthy for the confirm window so a briefly-up-then-dying replacement is
+   * treated as a failed reload — the parent re-binds and keeps serving rather
+   * than handing over to a process that will leave the port listenerless.
    */
   private async waitForReplacement(secret: string): Promise<boolean> {
     const deadline = Date.now() + (this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS);
     const graceUntil = Date.now() + (this.options.graceMs ?? DEFAULT_GRACE_MS);
+    const confirmMs = this.options.confirmMs ?? DEFAULT_CONFIRM_MS;
     const url = `http://${this.options.host}:${this.options.port}/api/health?reload=${secret}`;
+    let firstConfirmedAt = 0;
     while (Date.now() < deadline) {
       if (this.childExited) return false;
       const body = await probeJson(url);
-      if (body && body.reloadHandshake === true) return true;
+      if (body && body.reloadHandshake === true) {
+        if (firstConfirmedAt === 0) firstConfirmedAt = Date.now();
+        if (Date.now() - firstConfirmedAt >= confirmMs) return true;
+      }
       if (!this.drained && (body === null || Date.now() >= graceUntil)) {
         this.drained = true;
         await this.options.stopListening();

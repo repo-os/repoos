@@ -11,6 +11,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import type { AgentOutputEntry, RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
+import type { SystemStats } from "./system.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -51,7 +52,8 @@ export type RepoEvent =
       preview: { port: number; url: string; startedAt: string } | null;
       at: string;
     }
-  | { type: "hello"; taskCount: number; at: string };
+  | { type: "hello"; taskCount: number; at: string }
+  | { type: "system.stats"; stats: SystemStats };
 
 type Listener = (e: RepoEvent) => void;
 

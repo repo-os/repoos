@@ -53,19 +53,12 @@ import {
   ensureWorktree,
   commitTaskFile,
   resetWorktree,
-  mergeBranch,
+  syncBranchWithMain,
   worktreePathForBranch,
-  currentBranch,
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
-import {
-  patchTaskFile,
-  deleteTaskFile,
-  WriteError,
-  PathGuardError,
-  type TaskPatch,
-} from "./write.js";
+import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
 import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, runPrompt } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
@@ -73,6 +66,9 @@ import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
+import { bootstrap } from "../core/bootstrap.js";
+import { generateContextPack, resumePreamble } from "../core/context-pack.js";
+import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 
 export interface ServeOptions {
@@ -143,10 +139,7 @@ function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
       const st = statSync(full);
       if (st.isDirectory()) walk(full);
       else if (extname(e) === ".md") {
-        const rel = full
-          .slice(config.root.length + 1)
-          .split("\\")
-          .join("/");
+        const rel = full.slice(config.root.length + 1).split("\\").join("/");
         add(full, rel);
       }
     }
@@ -288,7 +281,11 @@ const UI_MIME: Record<string, string> = {
 };
 
 /** Serve a static file from the UI build directory. Returns false on miss. */
-function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
+function serveStaticUi(
+  res: ServerResponse,
+  uiDir: string,
+  urlPath: string,
+): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   const abs = resolve(uiDir, rel || "index.html");
@@ -389,11 +386,63 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const previews = new PreviewManager(config, emitEvent);
   previews.cleanupOrphans();
 
+  // System resource polling over SSE. Samples CPU/memory/process stats every
+  // 5s while at least one SSE client is connected; idles when no one is
+  // listening (a headless server should not burn cycles measuring itself for
+  // nobody). Graceful: skips sampling entirely when `ps` is unavailable.
+  const SYSTEM_SAMPLE_INTERVAL_MS = 5000;
+  const systemSampleTimer = setInterval(() => {
+    if (clients.size === 0 || !psAvailable()) return;
+    try {
+      const stats = sampleSystem({
+        serverPid: process.pid,
+        cacheDir: join(config.root, config.cacheDir),
+        runningAgents: runner.running(),
+      });
+      emitEvent({ type: "system.stats", stats });
+    } catch {
+      /* sampling is best-effort — never crash the poll loop */
+    }
+  }, SYSTEM_SAMPLE_INTERVAL_MS);
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
-  const stopPreviewIfLeft = (_task: Task, _prev: Status, next: Status): void => {
-    if (next !== "active" && next !== "review") void previews.stop(_task.id);
+  const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
+    if (next !== "active" && next !== "review") void previews.stop(task.id);
   };
+
+  // A task that leaves `active` must also release its agent process (0087) —
+  // by ANY route: agent self-transition, API PATCH, pause, or a direct file
+  // edit. This reuses the exact graceful path `/pause` uses (`runner.stop`:
+  // SIGTERM, then SIGKILL after the grace period, clearing the registry on
+  // exit), so an agent turn can never keep running against a task that no
+  // longer claims it — the 3h54m leak observed on #0069. The SESSION
+  // (transcript + resumable session id) lives in `sessions`, not `entries`,
+  // and `stop()` only clears `entries` — so logs and chat stay available in
+  // review (0053) and a follow-up message still resumes the same conversation.
+  // Idempotent: a task whose agent already exited on its own is a silent no-op.
+  const stopAgentIfLeftActive = (task: Task, prev: Status, next: Status): void => {
+    if (prev === "active" && next !== "active") void runner.stop(task.id);
+  };
+
+  // Combined status-change hook for the patchTaskFile write paths.
+  const onStatusChange = (task: Task, prev: Status, next: Status): void => {
+    stopPreviewIfLeft(task, prev, next);
+    stopAgentIfLeftActive(task, prev, next);
+  };
+
+  // The file-watcher path (a direct task-file edit on disk) bypasses
+  // patchTaskFile, so it never fires `onStatusChange`. The index's own event
+  // stream sees EVERY status change from every route (HTTP PATCH, /done,
+  // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
+  // there. Both firing for a single transition is harmless: `previews.stop` and
+  // `runner.stop` are idempotent.
+  const unsubscribeCleanup = index.on((e) => {
+    if (e.type !== "task.updated") return;
+    const prev = e.prev.status;
+    if (prev === undefined || prev === e.task.status) return;
+    onStatusChange(e.task, prev, e.task.status);
+  });
 
   interface SyncResult {
     ok: boolean;
@@ -407,39 +456,30 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * copies is flagged `needs_merge`. On success the flag is cleared.
    */
   async function syncTaskBranch(task: Task): Promise<SyncResult> {
-    const wtPath = worktreePathForBranch(config.root, task.branch);
-    if (!wtPath) {
-      return { ok: false, conflicts: [], reason: "no worktree for branch" };
-    }
-    const baseBranch = currentBranch(config.root) ?? "main";
     const rel = relative(config.root, task.absPath);
-    const result = await mergeBranch(wtPath, baseBranch, { autoResolve: [rel] });
+    const result = await syncBranchWithMain(config.root, task.branch, { autoResolve: [rel] });
+    const wtPath = worktreePathForBranch(config.root, task.branch);
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
-      const mainUpdated = patchTaskFile(
-        config,
-        task.absPath,
-        { needsMerge: value },
-        {
-          onStatusChange: stopPreviewIfLeft,
-        },
-      );
+      const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
+        onStatusChange: onStatusChange,
+      });
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
-      const wtAbsPath = join(wtPath, task.path);
-      if (existsSync(wtAbsPath)) {
-        patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+      if (wtPath) {
+        const wtAbsPath = join(wtPath, task.path);
+        if (existsSync(wtAbsPath)) {
+          patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+        }
       }
     };
 
-    if (!result.merged) {
+    if (!result.ok) {
       await setNeedsMerge(true);
       return {
         ok: false,
         conflicts: result.conflicts,
-        reason: result.conflicts.length
-          ? `merge conflict: ${result.conflicts.join(", ")}`
-          : (result.reason ?? "sync failed"),
+        reason: result.reason ?? "sync failed",
       };
     }
 
@@ -505,7 +545,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // it can never confirm itself.
         const secret = process.env.REPOOS_RELOAD_SECRET;
         const handshake =
-          typeof secret === "string" && secret !== "" && url.searchParams.get("reload") === secret;
+          typeof secret === "string" &&
+          secret !== "" &&
+          url.searchParams.get("reload") === secret;
         return json(res, 200, {
           ok: true,
           root: config.root,
@@ -520,12 +562,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Best-effort manual reload (same path as the build watch): reloads
         // now when stale and idle, defers while agents run, or reports
         // not-stale when this process already serves the current build.
-        const state =
-          reload?.requestReload("manual restart") ??
-          ({
-            state: "not-stale",
-            reason: "auto-reload unavailable",
-          } as const);
+        const state = reload?.requestReload("manual restart") ?? {
+          state: "not-stale",
+          reason: "auto-reload unavailable",
+        } as const;
         return json(res, 200, state);
       }
       if (path === "/api/tasks" && method === "GET") {
@@ -560,6 +600,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           agents = [];
         }
         return json(res, 200, { agents });
+      }
+      if (path === "/api/system" && method === "GET") {
+        const stats = sampleSystem({
+          serverPid: process.pid,
+          cacheDir: join(config.root, config.cacheDir),
+          runningAgents: runner.running(),
+        });
+        return json(res, 200, stats);
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
@@ -622,10 +670,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/tasks/freeform" && method === "POST") {
         const body = (await readBody(req)) as Record<string, unknown>;
-        const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
+        const explanation =
+          typeof body?.explanation === "string" ? body.explanation.trim() : "";
         if (!explanation) {
           return json(res, 400, { error: "explanation is required" });
         }
+        // The client generates a per-run id so the PM agent's streamed output
+        // (agent.output SSE events) can be correlated back to this request.
+        const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
 
         // Fallback helper: persist the raw explanation as a draft task so a
         // missing/failed PM agent never loses the user's capture.
@@ -651,7 +703,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return saveDraft("no-pm-agent");
         }
 
-        const result = await runPrompt(pm, pmPrompt(explanation), { cwd: config.root });
+        const result = await runPrompt(pm, pmPrompt(explanation), {
+          cwd: config.root,
+          onLine: runId
+            ? (line) => {
+                emitEvent({
+                  type: "agent.output",
+                  id: runId,
+                  entry: { s: "out", d: line },
+                  stream: "out",
+                  at: new Date().toISOString(),
+                });
+              }
+            : undefined,
+        });
         if (!result.ok || !result.output) {
           return saveDraft(
             "agent-failed",
@@ -679,7 +744,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const body = (await readBody(req)) as TaskPatch;
         const prevStatus = existing.status;
         const updated = patchTaskFile(config, existing.absPath, body, {
-          onStatusChange: stopPreviewIfLeft,
+          onStatusChange: onStatusChange,
         });
         index.applyFileChange(updated.absPath);
 
@@ -746,26 +811,78 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch, {
-            onStatusChange: stopPreviewIfLeft,
+            onStatusChange: onStatusChange,
           });
           index.applyFileChange(updated.absPath);
           index.refreshBranches();
-          // Best-effort spawn — never block the HTTP response on the agent.
           const cwd = wtRes.ok ? wtRes.path : config.root;
-          const spawnRes = runner.start(index.getTask(updated.id) ?? updated, branch, agent, {
+
+          // Bootstrap: RepoOS-owned preflight before the agent sees the
+          // worktree. Validates the root/worktree/branch, checks the
+          // orchestration build, and installs missing dependencies. Failures
+          // stop the launch with a clear error — the task stays `active` and
+          // the worktree is left unchanged so the problem is recoverable.
+          const taskForLaunch = index.getTask(updated.id) ?? updated;
+          const bootResult = await bootstrap(config, taskForLaunch, branch, cwd);
+          if (!bootResult.ok) {
+            return json(res, 500, {
+              ok: false,
+              error: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}`,
+              bootstrap: {
+                ok: false,
+                durationMs: bootResult.durationMs,
+                steps: bootResult.steps.map((s) => ({
+                  name: s.name,
+                  ok: s.ok,
+                  durationMs: s.durationMs,
+                  detail: s.detail,
+                })),
+              },
+            });
+          }
+
+          // Generate a cached task context pack so the agent starts with
+          // knowledge of the repo, relevant files, tests, and worktree state.
+          const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
+
+          // Resume preamble: when resuming a dirty worktree, explicitly
+          // describe existing partial changes so the agent doesn't rediscover
+          // them from scratch.
+          const preamble =
+            clean || !existing.branch
+              ? undefined
+              : resumePreamble(config, taskForLaunch, branch, cwd);
+
+          const spawnRes = runner.start(taskForLaunch, branch, agent, {
             cwd,
+            contextPack: pack.content,
+            resumePreamble: preamble,
           });
           return json(res, 200, {
             ok: true,
             task: index.getTask(updated.id),
             branch,
             clean,
-            git: wtRes.ok ? "ok" : (wtRes.reason ?? "unknown"),
+            git: wtRes.ok ? "ok" : wtRes.reason ?? "unknown",
             worktree: wtRes.ok ? wtRes.path : undefined,
             spawn: {
               ok: spawnRes.ok,
               pid: spawnRes.pid,
               reason: spawnRes.reason,
+            },
+            bootstrap: {
+              ok: bootResult.ok,
+              durationMs: bootResult.durationMs,
+              steps: bootResult.steps.map((s) => ({
+                name: s.name,
+                ok: s.ok,
+                durationMs: s.durationMs,
+              })),
+            },
+            context: {
+              cacheHit: pack.cacheHit,
+              generationMs: pack.generationMs,
+              size: pack.size,
             },
           });
         }
@@ -786,6 +903,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           // The merge removes the worktree, so the preview of it must die first.
           await previews.stop(id);
+          // ... and any agent process must be released too, so the worktree is
+          // never torn out from under a live process. The 409 above guards the
+          // case of a genuinely-active turn; this is belt-and-braces for a turn
+          // still in its stop grace window. A no-op when nothing is running.
+          void runner.stop(id);
           const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
@@ -854,7 +976,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             const cleared = patchTaskFile(config, existing.absPath, { needsInput: false });
             index.applyFileChange(cleared.absPath);
           }
-          const sendRes = runner.send(id, text, agent);
+          // Build a resume preamble so the agent sees existing partial changes
+          // without rediscovering them from scratch.
+          let preamble: string | undefined;
+          if (existing.branch) {
+            const wtPath = worktreePathForBranch(config.root, existing.branch);
+            if (wtPath) {
+              preamble = resumePreamble(config, existing, existing.branch, wtPath) || undefined;
+            }
+          }
+          const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
           if (!sendRes.ok && sendRes.busy) {
             return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
           }
@@ -873,17 +1004,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         const stopRes = runner.stop(id);
-        const updated = patchTaskFile(
-          config,
-          existing.absPath,
-          {
-            status: "ready",
-            needsInput: false,
-          },
-          {
-            onStatusChange: stopPreviewIfLeft,
-          },
-        );
+        const updated = patchTaskFile(config, existing.absPath, {
+          status: "ready",
+          needsInput: false,
+        }, {
+          onStatusChange: onStatusChange,
+        });
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
           ok: true,
@@ -941,10 +1067,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/models/test" && method === "POST") {
         try {
           const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
-          if (
-            typeof body.cli !== "string" ||
-            !AGENT_CLIS.includes(body.cli as (typeof AGENT_CLIS)[number])
-          ) {
+          if (typeof body.cli !== "string" || !AGENT_CLIS.includes(body.cli as typeof AGENT_CLIS[number])) {
             return json(res, 400, { error: "cli must be a supported coding agent" });
           }
           if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
@@ -988,9 +1111,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             // accepted so dynamically-selected models save. AGENT_MODELS remains
             // the fallback suggested list, never an allowlist.
             if (typeof a.model !== "string" || !a.model.trim()) {
-              return json(res, 400, {
-                error: `agent "${a.name}" model must be a non-empty string`,
-              });
+              return json(res, 400, { error: `agent "${a.name}" model must be a non-empty string` });
             }
             if (typeof a.enabled !== "boolean") {
               return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });
@@ -1048,9 +1169,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
             for (const item of val) {
               if (typeof item !== "string" || !item.trim()) {
-                return json(res, 400, {
-                  error: `${field.label} entries must be non-empty strings`,
-                });
+                return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
               }
             }
             patch[field.key] = (val as string[]).map((s) => s.trim());
@@ -1127,14 +1246,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // SPA fallback: unknown GET paths (e.g. /work on refresh) render the app.
       if (method === "GET" && uiDir) {
         const index = join(uiDir, "index.html");
-        const legacy = join(uiDir, "app.html"); // pre-Vite build
-        const entry = existsSync(index) ? index : legacy;
-        if (existsSync(entry)) {
+        if (existsSync(index)) {
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Access-Control-Allow-Origin": "*",
           });
-          res.end(readFileSync(entry));
+          res.end(readFileSync(index));
           return;
         }
         return json(res, 500, { error: "UI asset not found — run `bun run build`" });
@@ -1181,44 +1298,66 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   return new Promise((resolve, reject) => {
     void (async () => {
-      if (opts.reloadReplacement) {
-        // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
-        // process can share the port with the old one (zero-downtime on
-        // platforms that support it). Where that is unsupported (ENOTSUP on
-        // macOS) or the old process bound without it (EADDRINUSE), fall back
-        // to a plain bind retried until the old process releases the port.
-        const deadline = Date.now() + RELOAD_BIND_TIMEOUT_MS;
-        let bound = false;
-        try {
-          await bindOnce(true);
-          bound = true;
-        } catch (e) {
-          const code = (e as NodeJS.ErrnoException).code;
-          if (code !== "ENOTSUP" && code !== "EOPNOTSUPP" && code !== "EADDRINUSE") throw e;
-        }
-        while (!bound && Date.now() < deadline) {
+      try {
+        if (opts.reloadReplacement) {
+          // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
+          // process can share the port with the old one (zero-downtime on
+          // platforms that support it). Where that is unsupported (ENOTSUP on
+          // macOS) or the old process bound without it (EADDRINUSE), fall back
+          // to a plain bind retried until the old process releases the port.
+          const deadline = Date.now() + RELOAD_BIND_TIMEOUT_MS;
+          let bound = false;
           try {
-            await bindOnce(false);
+            await bindOnce(true);
             bound = true;
           } catch (e) {
-            if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
-            await sleep(RELOAD_BIND_RETRY_MS);
+            const code = (e as NodeJS.ErrnoException).code;
+            if (code !== "ENOTSUP" && code !== "EOPNOTSUPP" && code !== "EADDRINUSE") throw e;
           }
+          while (!bound && Date.now() < deadline) {
+            try {
+              await bindOnce(false);
+              bound = true;
+            } catch (e) {
+              if ((e as NodeJS.ErrnoException).code !== "EADDRINUSE") throw e;
+              await sleep(RELOAD_BIND_RETRY_MS);
+            }
+          }
+          if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
+        } else {
+          await bindOnce(false);
         }
-        if (!bound)
-          throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
-      } else {
-        await bindOnce(false);
+      } catch (err) {
+        // A bind-only failure must terminate the process cleanly: the file
+        // watcher and SSE subscriber are live handles that would otherwise keep
+        // a listenerless `repoos serve` process alive (the #0096 incident).
+        try {
+          watcher.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          unsubscribe();
+        } catch {
+          /* ignore */
+        }
+        clearInterval(systemSampleTimer);
+        throw err;
       }
 
       const actualPort = (server.address() as { port: number }).port;
       const url = `http://${host}:${actualPort}`;
+      // The agent runner injects the real control-plane URL into every spawned
+      // agent so preview requests target THIS server, never a hardcoded port.
+      runner.apiUrl = url;
       const handle: ServerHandle = {
         url,
         port: actualPort,
         index,
         close: async () => {
+          clearInterval(systemSampleTimer);
           unsubscribe();
+          unsubscribeCleanup();
           watcher.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an

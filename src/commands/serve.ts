@@ -6,7 +6,43 @@ import { startServer } from "../server/server.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
 
+/**
+ * True when this process is a managed agent (REPOOS_AGENT=1) attempting to
+ * launch `repoos serve` directly, as opposed to a preview child or a reload
+ * replacement spawned by the main server. The AgentRunner sets REPOOS_AGENT=1
+ * on every agent spawn; the preview/reload markers are exempt so RepoOS-owned
+ * processes keep working. Exported for the defense-in-depth tests (#0096).
+ */
+export function directServeBlockedByAgent(env: NodeJS.ProcessEnv = process.env): boolean {
+  return (
+    env.REPOOS_AGENT === "1" &&
+    env.REPOOS_PREVIEW_CHILD !== "1" &&
+    env.REPOOS_RELOAD !== "1"
+  );
+}
+
 export async function cmdServe(args: string[]): Promise<void> {
+  // Defense in depth (#0096): a managed agent process must never start its own
+  // `repoos serve`. An agent that ignores the mission and runs `repoos serve`
+  // directly is rejected here BEFORE binding, so it can never grab the main
+  // server port.
+  if (directServeBlockedByAgent()) {
+    const api = process.env.REPOOS_API_URL ?? "http://127.0.0.1:7171";
+    const task = process.env.REPOOS_TASK_ID ?? "<task id>";
+    console.error(
+      c.red("  ✗ Managed agent processes may not launch `repoos serve`."),
+    );
+    console.error(
+      c.dim("    RepoOS owns previews and the control-plane port. Request a managed preview instead:"),
+    );
+    console.error(c.dim(`      curl -s -X POST "${api}/api/tasks/${task}/preview"`));
+    console.error(
+      c.dim("    Use the returned `url` to view the worktree UI; the preview is reaped automatically."),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   let port = 7171;
   let host = "127.0.0.1";
   let quiet = false;

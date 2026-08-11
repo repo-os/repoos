@@ -145,6 +145,33 @@ describe("freeform task creation", () => {
     expect(res.task.status).toBe("draft");
   });
 
+  it("passes the runId through so streamed agent.output can be correlated", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const task = makeTask({ id: "0044", title: "Generated task" });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running"))
+        return json({ tasks: [] });
+      if (url.includes("/api/tasks/freeform"))
+        return json({ ok: true, fallback: false, task });
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("rough idea", "run-abc");
+    const call = vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes("/freeform"));
+    expect(call).toBeTruthy();
+    const opts = call![1] as RequestInit;
+    expect(JSON.parse(opts.body as string)).toEqual({
+      explanation: "rough idea",
+      runId: "run-abc",
+    });
+  });
+
   it("throws when the freeform create fails", async () => {
     const json = async (data: unknown) => ({ ok: false, status: 500, json: async () => data });
     const fetchMock = vi.fn(async (url: string) => {

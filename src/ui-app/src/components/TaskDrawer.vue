@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, RefreshCw } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown } from "lucide-vue-next";
 import type { Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { renderMarkdown } from "../lib/markdown";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
+import ActivityIndicator from "./ActivityIndicator.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
@@ -70,6 +72,11 @@ const pmAgentReady = computed(() => {
   return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
 });
 
+/** True while the freeform PM-agent call is in flight. */
+const freeformRunning = ref(false);
+/** The client-generated id that tags this run's streamed `agent.output` events. */
+const freeformRunId = ref<string | null>(null);
+
 watch(
   () => ui.isNew,
   (isNew) => {
@@ -86,10 +93,15 @@ async function createFreeform(): Promise<void> {
   const text = freeformText.value.trim();
   if (!text) return;
   ui.saving = true;
+  freeformRunning.value = true;
   freeformError.value = "";
   draftSaved.value = null;
+  // A fresh run id each attempt; the previous run's buffer is dropped so the
+  // stream never shows stale output and memory stays bounded to one run.
+  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  freeformRunId.value = crypto.randomUUID();
   try {
-    const res = await repo.createFreeformTask(text);
+    const res = await repo.createFreeformTask(text, freeformRunId.value);
     // Agent error: keep the explanation in the textarea, show the error, and
     // point at the draft that preserved the capture.
     if (res.fallback && res.fallbackReason === "agent-failed") {
@@ -106,6 +118,8 @@ async function createFreeform(): Promise<void> {
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
+    freeformRunning.value = false;
+    freeformRunId.value = null;
     ui.saving = false;
   }
 }
@@ -160,14 +174,19 @@ async function startWork(): Promise<void> {
   await startWorkIn(ui.active);
 }
 
+/** True while the Start-work request (engineer agent launch) is in flight. */
+const startingWork = ref(false);
+
 async function startWorkIn(t: Task): Promise<void> {
   ui.saving = true;
+  startingWork.value = true;
   try {
     await repo.startWork(t);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
+    startingWork.value = false;
     ui.saving = false;
   }
 }
@@ -217,10 +236,6 @@ interface DoneFailure {
 }
 /** Detailed failure state from the last move-to-done attempt. */
 const doneFailure = ref<DoneFailure | null>(null);
-/** True while a manual sync-with-main request is in flight. */
-const syncing = ref(false);
-/** Result of the last manual sync (success or conflict detail). */
-const syncResult = ref<{ ok: boolean; conflicts?: string[]; message?: string } | null>(null);
 
 function startDoneTimer(): void {
   doneTicks.value = 0;
@@ -309,22 +324,6 @@ function extractConflicts(message: string): string[] {
     .filter(Boolean);
 }
 
-async function syncWithMain(): Promise<void> {
-  if (!ui.active) return;
-  syncing.value = true;
-  syncResult.value = null;
-  try {
-    await repo.syncWithMain(ui.active.id);
-    syncResult.value = { ok: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    syncResult.value = { ok: false, conflicts: extractConflicts(message), message };
-    repo.onError(err);
-  } finally {
-    syncing.value = false;
-  }
-}
-
 interface TaskDraft {
   title: string;
   type: string;
@@ -365,6 +364,10 @@ function changedFields(): (keyof TaskDraft)[] {
 
 const dirty = computed(() => changedFields().length > 0);
 
+const transitioned = computed(
+  () => !!(ui.active && repo.transitionState?.id === ui.active.id),
+);
+
 /** Title and branch are frozen once a task leaves the planning stages. */
 const locked = computed(() => {
   const s = ui.active?.status;
@@ -385,6 +388,11 @@ const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value)
 /** Spec body is a readable card that expands into a large textarea on click. */
 const specEditing = ref(false);
 const specTextarea = ref<HTMLTextAreaElement | null>(null);
+/** Whether the spec card body is expanded. Collapsed shows just the header. */
+const specExpanded = ref(true);
+
+/** Rendered (safe) Markdown for the read-mode spec card. */
+const specHtml = computed(() => renderMarkdown(draft.body));
 
 /** Grow the spec textarea to fit its content so editing never feels cramped. */
 function autoGrowSpec(): void {
@@ -502,9 +510,30 @@ const ANSI_RE =
   /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
 const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
 
+// ---- freeform PM-agent live stream ----
+
+/** Plain display lines for the in-flight freeform run, fed by agent.output SSE. */
+const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
+  const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
+  return raw.map((e) => {
+    if ("type" in e) {
+      return { s: "out", d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")) };
+    }
+    return { s: e.s === "err" ? "err" : "out", d: stripAnsi(e.d) };
+  });
+});
+
+const ffLogEl = ref<HTMLElement | null>(null);
+watch(freeformLines, () => {
+  nextTick(() => {
+    const el = ffLogEl.value;
+    if (el) el.scrollTop = el.scrollHeight;
+  });
+});
+
 interface DisplayEntry {
   key: number;
-  kind: "line" | "text" | "tool" | "step" | "sys";
+  kind: "line" | "text" | "human" | "tool" | "step" | "sys";
   s?: "out" | "err" | "sys";
   d?: string;
   text?: string;
@@ -514,6 +543,7 @@ interface DisplayEntry {
   toolOutput?: string;
   stepKind?: "start" | "finish";
   stepReason?: string;
+  stepAt?: string;
 }
 
 /**
@@ -535,6 +565,8 @@ const displayEntries = computed<DisplayEntry[]>(() => {
           continue;
         }
         out.push({ key: out.length, kind: "text", text });
+      } else if (e.type === "human") {
+        out.push({ key: out.length, kind: "human", text: e.text });
       } else if (e.type === "tool") {
         out.push({
           key: out.length,
@@ -545,7 +577,16 @@ const displayEntries = computed<DisplayEntry[]>(() => {
           toolOutput: e.output ? stripAnsi(e.output) : undefined,
         });
       } else if (e.type === "step") {
-        out.push({ key: out.length, kind: "step", stepKind: e.kind, stepReason: e.reason });
+        // Only finish markers are useful continuation information; drop the
+        // "step" start line so the chat is less noisy.
+        if (e.kind === "start") continue;
+        out.push({
+          key: out.length,
+          kind: "step",
+          stepKind: e.kind,
+          stepReason: e.reason,
+          stepAt: e.at,
+        });
       } else {
         out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
       }
@@ -582,11 +623,20 @@ function onLogScroll(e: Event): void {
   stick.value = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
 }
 
+function scrollToBottom(smooth = false): void {
+  const el = logEl.value;
+  if (!el) return;
+  stick.value = true;
+  el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+}
+
 /** Hydrate the transcript whenever the Agent tab opens or the task changes. */
 watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
-    if (ui.active && ui.activeTab === "agent") void repo.loadOutput(ui.active.id);
+    if (!ui.active || ui.activeTab !== "agent") return;
+    stick.value = true;
+    void repo.loadOutput(ui.active.id).then(() => nextTick(() => scrollToBottom()));
   },
 );
 
@@ -594,10 +644,16 @@ async function sendTurn(): Promise<void> {
   if (!ui.active) return;
   const text = draftMsg.value.trim();
   if (!text || agentBusy.value) return;
+  // Optimistically render the human message so it appears instantly, in the
+  // correct chronological position, without waiting for the server round-trip.
+  const prev = repo.outputs[ui.active.id] ?? [];
+  repo.outputs[ui.active.id] = [...prev, { type: "human", text }];
+  draftMsg.value = "";
+  stick.value = true;
+  nextTick(() => scrollToBottom());
   ui.saving = true;
   try {
     await repo.sendMessage(ui.active.id, text);
-    draftMsg.value = "";
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -676,8 +732,25 @@ async function sendTurn(): Promise<void> {
                 @click="createFreeform"
                 :disabled="ui.saving || !freeformText.trim()"
               >
-                {{ ui.saving ? "Asking the PM agent…" : "Create task" }}
+                <ActivityIndicator v-if="freeformRunning" />
+                {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
               </Button>
+            </div>
+            <div v-if="freeformLines.length" class="ff-stream">
+              <div class="ff-stream-head">
+                <ActivityIndicator />
+                PM agent
+              </div>
+              <div class="ff-stream-log" ref="ffLogEl">
+                <div
+                  v-for="(line, i) in freeformLines"
+                  :key="i"
+                  class="ff-stream-line"
+                  :class="line.s === 'err' ? 'err' : ''"
+                >
+                  {{ line.d }}
+                </div>
+              </div>
             </div>
           </template>
           <template v-else>
@@ -804,7 +877,7 @@ async function sendTurn(): Promise<void> {
             Agent
           </button>
         </div>
-        <div v-if="ui.activeTab === 'details'" class="drawer-body">
+        <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
             <div class="field">
               <label for="et-title">Title</label>
@@ -856,8 +929,9 @@ async function sendTurn(): Promise<void> {
               :disabled="ui.saving"
               @click="startWork"
             >
-              <Play class="size-3.5" />
-              Start work
+              <Play v-if="!startingWork" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ startingWork ? "Starting work…" : "Start work" }}
             </Button>
             <Button
               v-else
@@ -870,7 +944,7 @@ async function sendTurn(): Promise<void> {
               Pause work
             </Button>
             <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
-              <span class="tc-run"></span> agent running
+              <ActivityIndicator /> agent running
             </span>
           </div>
           <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
@@ -888,7 +962,8 @@ async function sendTurn(): Promise<void> {
             <template v-else>
               <p class="delete-prompt">
                 Move task #{{ ui.active.id }} to done? This merges
-                <span class="mono">{{ effectiveBranch }}</span> into main, runs
+                <span class="mono">{{ effectiveBranch }}</span> into main (syncing it with main
+                first if the merge can't proceed cleanly), runs
                 <span class="mono">repoos check</span>, then deletes the branch and closes the
                 worktree.
               </p>
@@ -902,6 +977,7 @@ async function sendTurn(): Promise<void> {
                   Cancel
                 </Button>
                 <Button variant="default" size="sm" :disabled="ui.saving" @click="moveToDone">
+                  <ActivityIndicator v-if="doingDone" />
                   {{ doingDone ? doneProgress : "Move to done" }}
                 </Button>
               </div>
@@ -923,28 +999,10 @@ async function sendTurn(): Promise<void> {
                 </ul>
               </div>
               <p class="done-failure-hint">
-                main has diverged from this branch — sync it, resolve the conflicts, then retry.
+                RepoOS couldn't sync this branch with main automatically — resolve the
+                conflicting files in the worktree, then retry.
               </p>
             </div>
-            <Button
-              variant="outline"
-              class="w-full"
-              style="margin-top: 12px"
-              :disabled="ui.saving || syncing || repo.isRunning(ui.active.id)"
-              @click="syncWithMain"
-            >
-              <RefreshCw class="size-3.5" :class="{ 'animate-spin': syncing }" />
-              {{ syncing ? "Syncing…" : "Sync with main" }}
-            </Button>
-            <div v-if="syncResult && !syncResult.ok" class="sync-failure">
-              <div class="sync-failure-title">Sync failed</div>
-              <p>{{ syncResult.message }}</p>
-              <ul v-if="syncResult.conflicts?.length">
-                <li v-for="f in syncResult.conflicts" :key="f" class="mono">{{ f }}</li>
-              </ul>
-              <p class="done-failure-hint">Resolve the conflicts in the worktree, then retry.</p>
-            </div>
-            <div v-else-if="syncResult?.ok" class="sync-success">Synced with main.</div>
           </div>
           <div
             v-if="ui.active.status === 'active' || ui.active.status === 'review'"
@@ -1034,21 +1092,55 @@ async function sendTurn(): Promise<void> {
               </datalist>
             </div>
           </div>
-          <div class="md-h" style="margin-top: 18px">spec</div>
-          <button v-if="!specEditing" class="md-card" type="button" @click="specEditing = true">
-            <div class="md-card-body">{{ draft.body || "No spec yet — click to add." }}</div>
-          </button>
-          <template v-else>
-            <textarea
-              ref="specTextarea"
-              class="md-edit"
-              v-model="draft.body"
-              rows="12"
-              placeholder="Markdown body"
-              @input="autoGrowSpec"
-            ></textarea>
-            <div class="spec-hint">Click Save to apply the spec.</div>
-          </template>
+          <div class="md-h spec-head" style="margin-top: 18px">
+            <button
+              type="button"
+              class="spec-toggle"
+              :aria-expanded="specExpanded"
+              @click="specExpanded = !specExpanded"
+            >
+              <svg
+                class="spec-chev"
+                :class="{ collapsed: !specExpanded }"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              spec
+            </button>
+          </div>
+          <div v-if="specExpanded">
+            <div
+              v-if="!specEditing"
+              class="md-card"
+              role="button"
+              tabindex="0"
+              @click="specEditing = true"
+              @keydown.enter="specEditing = true"
+              @keydown.space.prevent="specEditing = true"
+            >
+              <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
+              <div v-else class="md-card-body">No spec yet — click to add.</div>
+            </div>
+            <template v-else>
+              <textarea
+                ref="specTextarea"
+                class="md-edit"
+                v-model="draft.body"
+                rows="12"
+                placeholder="Markdown body"
+                @input="autoGrowSpec"
+              ></textarea>
+              <div class="spec-hint">Click Save to apply the spec.</div>
+            </template>
+          </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
           <div class="meta-grid">
             <div class="meta-cell">
@@ -1111,7 +1203,7 @@ async function sendTurn(): Promise<void> {
             </template>
           </div>
         </div>
-        <div v-else class="drawer-body">
+        <div v-else class="drawer-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
             <span class="agent-waiting-dot"></span>
             <div>
@@ -1119,60 +1211,73 @@ async function sendTurn(): Promise<void> {
               <div class="agent-waiting-sub">The agent needs your input — reply below to continue.</div>
             </div>
           </div>
-          <div class="agent-log" ref="logEl" @scroll="onLogScroll">
-            <template v-if="displayEntries.length === 0">
-              <div class="agent-empty">
-                No agent session yet.
-                <br />
-                Start work to launch the coding agent; its output streams here.
-              </div>
-            </template>
-            <div v-for="entry in displayEntries" :key="entry.key" class="agent-entry">
-              <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
-              <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
-                <span class="agent-pfx" :class="entry.s">{{
-                  entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
-                }}</span>
-                <span class="agent-d">{{ entry.d }}</span>
-              </div>
-              <!-- system / notice line -->
-              <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
-                <span class="agent-pfx">·</span>
-                <span class="agent-d">{{ entry.d }}</span>
-              </div>
-              <!-- assistant text block -->
-              <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
-              <!-- step boundary marker -->
-              <div
-                v-else-if="entry.kind === 'step'"
-                class="agent-step"
-                :class="{ fin: entry.stepKind === 'finish' }"
-              >
-                <span class="agent-step-dot"></span>
-                <span>{{
-                  entry.stepKind === "start"
-                    ? "step"
-                    : entry.stepReason === "stop"
-                      ? "done"
-                      : "continue"
-                }}</span>
-                <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
-              </div>
-              <!-- collapsible tool card -->
-              <details v-else class="agent-tool" :class="entry.toolState">
-                <summary>
-                  <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
-                  <span class="agent-tool-name">{{ entry.toolName }}</span>
-                  <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
-                    entry.toolInput
+          <div class="agent-log-wrap">
+            <div class="agent-log" ref="logEl" @scroll="onLogScroll">
+              <template v-if="displayEntries.length === 0">
+                <div class="agent-empty">
+                  No agent session yet.
+                  <br />
+                  Start work to launch the coding agent; its output streams here.
+                </div>
+              </template>
+              <div v-for="entry in displayEntries" :key="entry.key" class="agent-entry">
+                <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
+                <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
+                  <span class="agent-pfx" :class="entry.s">{{
+                    entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
                   }}</span>
-                  <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
-                    entry.toolState
+                  <span class="agent-d">{{ entry.d }}</span>
+                </div>
+                <!-- system / notice line -->
+                <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                  <span class="agent-pfx">·</span>
+                  <span class="agent-d">{{ entry.d }}</span>
+                </div>
+                <!-- human / user message -->
+                <div v-else-if="entry.kind === 'human'" class="agent-human">
+                  <div class="agent-human-bubble">{{ entry.text }}</div>
+                </div>
+                <!-- assistant text block -->
+                <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
+                <!-- step boundary marker -->
+                <div
+                  v-else-if="entry.kind === 'step'"
+                  class="agent-step"
+                  :class="{ fin: entry.stepKind === 'finish' }"
+                >
+                  <span class="agent-step-dot"></span>
+                  <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
+                  <span v-if="entry.stepReason !== 'stop' && entry.stepAt" class="agent-step-time">{{
+                    repo.fmtDate(entry.stepAt)
                   }}</span>
-                </summary>
-                <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
-              </details>
+                  <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
+                </div>
+                <!-- collapsible tool card -->
+                <details v-else class="agent-tool" :class="entry.toolState">
+                  <summary>
+                    <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
+                    <span class="agent-tool-name">{{ entry.toolName }}</span>
+                    <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
+                      entry.toolInput
+                    }}</span>
+                    <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
+                      entry.toolState
+                    }}</span>
+                  </summary>
+                  <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
+                </details>
+              </div>
             </div>
+            <button
+              v-if="!stick"
+              type="button"
+              class="agent-jump"
+              @click="scrollToBottom(true)"
+              aria-label="Jump to latest message"
+            >
+              <ArrowDown class="size-3.5" />
+              Latest
+            </button>
           </div>
           <div class="agent-input-row">
             <textarea
@@ -1194,7 +1299,7 @@ async function sendTurn(): Promise<void> {
             </Button>
           </div>
           <div v-if="agentBusy" class="agent-hint">
-            <span class="tc-run"></span> agent is working — wait for this turn to finish
+            <ActivityIndicator /> agent is working — wait for this turn to finish
           </div>
           <div
             v-else-if="

@@ -520,8 +520,8 @@ async function runUISmokeTest(): Promise<void> {
       const title = await page.title();
       if (title !== "RepoOS") throw new Error(`Unexpected title: "${title}"`);
 
-      // Verify we are testing the BUILT Vite app, not the legacy app.html —
-      // the built SPA references hashed assets in /assets/.
+      // Verify we are testing the built Vite SPA, which references hashed
+      // assets in /assets/.
       const hashedAsset = await page.evaluate(() => {
         const scripts = Array.from(document.querySelectorAll("script[src]"));
         return scripts.some((s) => (s.getAttribute("src") ?? "").startsWith("/assets/"));

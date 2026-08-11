@@ -136,6 +136,8 @@ export interface Agent {
 export type AgentOutputEntry =
   /** A complete assistant text part (opencode `text` event). */
   | { type: "text"; text: string }
+  /** A message sent by the human from the Agent tab follow-up input. */
+  | { type: "human"; text: string }
   /** A finished tool call (opencode `tool_use` event). */
   | {
       type: "tool";
@@ -148,7 +150,7 @@ export type AgentOutputEntry =
       state?: string;
     }
   /** A step boundary (opencode `step_start` / `step_finish`). */
-  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
   | { type: "sys"; d: string }
   /** A legacy plain line, kept for claude / qwen / codex and old sessions. */

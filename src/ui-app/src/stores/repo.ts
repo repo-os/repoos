@@ -2,7 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore } from "./ui";
-import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, Task } from "../types";
+import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, SystemStats, Task } from "../types";
 
 export interface FeedItem {
   key: number;
@@ -89,10 +89,18 @@ export const useRepoStore = defineStore("repo", () => {
   const feed = reactive<FeedItem[]>([]);
   const eventCount = ref(0);
   const flashId = ref<string | null>(null);
+  interface TransitionState {
+    id: string;
+    from: string;
+    to: string;
+  }
+  const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  /** Live system resource stats from the SSE stream. */
+  const systemStats = ref<SystemStats | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
@@ -101,6 +109,7 @@ export const useRepoStore = defineStore("repo", () => {
   let toastId = 0;
   let es: EventSource | null = null;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
+  let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
   const repoName = computed(() => (health.value ? health.value.root.split("/").pop() ?? "" : ""));
   const workDir = computed(() => (health.value ? health.value.workDir : "work"));
@@ -171,6 +180,14 @@ export const useRepoStore = defineStore("repo", () => {
     }, 1200);
   }
 
+  function startTransition(id: string, from: string, to: string): void {
+    transitionState.value = { id, from, to };
+    if (transitionTimer) clearTimeout(transitionTimer);
+    transitionTimer = setTimeout(() => {
+      transitionState.value = null;
+    }, 800);
+  }
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") return;
@@ -182,6 +199,9 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "task.updated") {
       const i = tasks.value.findIndex((t) => t.id === e.task.id);
       const before = i >= 0 ? tasks.value[i] : null;
+      const prevStatus = e.prev?.status;
+      const statusChanged =
+        prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
       const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null };
@@ -201,6 +221,9 @@ export const useRepoStore = defineStore("repo", () => {
         "task.updated",
       );
       flash(e.task.id);
+      if (statusChanged) {
+        startTransition(e.task.id, prevStatus!, e.task.status);
+      }
     } else if (e.type === "task.deleted") {
       tasks.value = tasks.value.filter((t) => t.id !== e.id);
       const ui = useUiStore();
@@ -253,6 +276,8 @@ export const useRepoStore = defineStore("repo", () => {
       );
     } else if (e.type === "index.rebuilt") {
       void refresh();
+    } else if (e.type === "system.stats") {
+      systemStats.value = e.stats;
     }
   }
 
@@ -265,7 +290,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output", "system.stats"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -356,6 +381,14 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Drop a retained transcript buffer (e.g. a finished freeform run). */
+  function clearOutput(id: string): void {
+    if (!outputs.value[id]) return;
+    const next = { ...outputs.value };
+    delete next[id];
+    outputs.value = next;
+  }
+
   async function sendMessage(id: string, text: string): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${id}/message`,
@@ -400,9 +433,14 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
 
-  /** Freeform create: routes the explanation through the PM agent server-side. */
+  /**
+   * Freeform create: routes the explanation through the PM agent server-side.
+   * `runId` (optional) tags the streamed `agent.output` events the server
+   * emits for this run, so the caller can show the PM agent's output live.
+   */
   async function createFreeformTask(
     explanation: string,
+    runId?: string,
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -416,7 +454,7 @@ export const useRepoStore = defineStore("repo", () => {
       fallbackReason?: "no-pm-agent" | "agent-failed";
       reason?: string;
       task: Task;
-    }>("/api/tasks/freeform", JSON_OPTS("POST", { explanation }));
+    }>("/api/tasks/freeform", JSON_OPTS("POST", runId ? { explanation, runId } : { explanation }));
     if (!r.ok) {
       const message = r.reason ?? "could not create task";
       pushToast(message, "error");
@@ -427,20 +465,6 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function deleteTask(id: string): Promise<void> {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
-  }
-
-  async function syncWithMain(id: string): Promise<{ ok: boolean; conflicts: string[]; error?: string }> {
-    const r = await api<{ ok: boolean; conflicts: string[]; error?: string }>(
-      `/api/tasks/${id}/sync`,
-      { method: "POST" },
-    );
-    if (!r.ok) {
-      const message = r.error ?? "sync failed";
-      pushToast(message, "error");
-      throw new Error(message);
-    }
-    pushToast("Synced with main", "success");
-    return r;
   }
 
   function onError(err: unknown): void {
@@ -472,11 +496,13 @@ export const useRepoStore = defineStore("repo", () => {
     feed,
     eventCount,
     flashId,
+    transitionState,
     runningIds,
     outputs,
     doneSteps,
     sortOrder,
     toasts,
+    systemStats,
     pushToast,
     removeToast,
     setSortOrder,
@@ -501,11 +527,11 @@ export const useRepoStore = defineStore("repo", () => {
     pauseWork,
     completeTask,
     loadOutput,
+    clearOutput,
     sendMessage,
     fetchRunning,
     startPreview,
     stopPreview,
-    syncWithMain,
     onError,
     init,
   };

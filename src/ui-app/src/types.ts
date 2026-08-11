@@ -79,6 +79,7 @@ export interface RepoIndex {
  */
 export type AgentOutputEntry =
   | { type: "text"; text: string }
+  | { type: "human"; text: string }
   | {
       type: "tool";
       tool: string;
@@ -86,7 +87,7 @@ export type AgentOutputEntry =
       output?: string;
       state?: string;
     }
-  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   | { type: "sys"; d: string }
   | { s: "out" | "err" | "sys"; d: string };
 
@@ -101,7 +102,8 @@ export type RepoEvent =
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | { type: "agent.running"; id: string }
   | { type: "agent.exited"; id: string }
-  | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" };
+  | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
+  | { type: "system.stats"; stats: SystemStats };
 
 export interface ConfigField {
   key: string;
@@ -180,4 +182,34 @@ export interface SkillMeta {
   path: string;
   name: string;
   description: string;
+}
+
+export interface MachineInfo {
+  cpuCount: number;
+  totalMem: number;
+  freeMem: number;
+  loadavg: number[];
+  platform: string;
+}
+
+export interface ProcessInfo {
+  pid: number;
+  taskId: string | null;
+  cpuPercent: number;
+  memBytes: number;
+  elapsed: string;
+  orphaned: boolean;
+  unverified: boolean;
+}
+
+export interface SystemStats {
+  machine: MachineInfo;
+  totals: {
+    cpuPercent: number;
+    memBytes: number;
+    memPercent: number;
+  };
+  processes: ProcessInfo[];
+  serverPid: number;
+  at: string;
 }

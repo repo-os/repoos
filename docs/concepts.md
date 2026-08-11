@@ -81,17 +81,43 @@ How the code is organized, low to high:
 - **cli / commands** (`src/cli`, `src/commands`) — one-shot `repoos` commands.
 - **server** (`src/server`) — the long-lived process adding *liveness*: an
   in-memory index, a file watcher, the JSON API, and the SSE stream.
-- **ui** (`src/ui`) — the web control plane, served by the server, updating live.
+- **ui** (`src/ui-app`) — the Vite + Vue 3 SFC web control plane, served by the
+  server and updating live.
 
 (Full map: `docs/architecture.md`.)
 
 ## SSE stream
 
 Server-Sent Events — the one-way live channel at `/api/events` the server
-pushes change events down (`task.created`, `task.updated`, `task.deleted`). The
-UI subscribes to it and updates without polling. The key property: an edit made
-through the API and an edit made by changing a file directly produce the *same*
-event — so an agent editing a file is indistinguishable from a UI action.
+pushes change events down (`task.created`, `task.updated`, `task.deleted`,
+`agent.running`, `agent.exited`, `agent.output`). The UI subscribes to it and
+updates without polling. The key property: an edit made through the API and an
+edit made by changing a file directly produce the *same* event — so an agent
+editing a file is indistinguishable from a UI action.
+
+## Agent
+
+A coding agent (opencode, Claude Code, Qwen, or Codex) that RepoOS spawns in a
+task's git worktree to implement the task. Agents are first-class: you configure
+them on the Agents page (CLI, model, instructions), launch them from a task
+card, stream their output live, send follow-up messages, and resume sessions.
+The engineer agent is the primary worker; PM and reviewer agents handle drafting
+and review respectively.
+
+## Worktree
+
+A git worktree — a linked working tree checked out at a different path from the
+main checkout. RepoOS creates a dedicated worktree per active task so parallel
+agents never collide. When the task moves to review or done, the worktree is
+cleaned up. Worktrees are not the same as branches (terminology was unified in
+task #0051).
+
+## Session
+
+An agent session — a line-buffered transcript of an agent's stdout/stderr,
+retained across turns so the user can read output and send follow-ups even after
+the agent exits. Sessions persist to disk so they survive server restarts, and
+are capped to prevent unbounded memory growth.
 
 ## Derived index cache
 

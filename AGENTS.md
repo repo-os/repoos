@@ -90,10 +90,15 @@ cannot tell from the code alone:
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
-  `src/commands` (CLI), `src/ui` (the single-file web UI).
+  `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
-  and keep a `repoos serve` running (e.g. `repoos serve --port 7171`) so the user
-  can view the latest changes; verify with a browser probe before reporting done.
+  and verify with a browser probe before reporting done.
+- **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
+  the control-plane port and every preview port. To verify a UI change, request
+  this task's managed preview (idempotent, returns the same URL on repeat calls):
+  `curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"`, parse the
+  returned `url`, and probe that. Direct `repoos serve` attempts from agent
+  processes are rejected; the preview is reaped when the task leaves active/review.
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse

@@ -194,12 +194,13 @@ export function parseJsonEvent(
       };
     }
     case "step_start":
-      return { entry: { type: "step", kind: "start" }, sessionID };
+      return { entry: { type: "step", kind: "start", at: now() }, sessionID };
     case "step_finish":
       return {
         entry: {
           type: "step",
           kind: "finish",
+          at: now(),
           ...(typeof part.reason === "string" && part.reason
             ? { reason: part.reason }
             : {}),
@@ -400,6 +401,8 @@ function missionFor(
   workdir: string,
   agent: Agent,
   config: RepoOSConfig,
+  contextPack?: string,
+  resumePreamble?: string,
 ): string {
   // The same task file exists in the worktree (checked out on `branch`) and in
   // the main checkout. The live board reads the MAIN copy; the branch carries
@@ -408,7 +411,19 @@ function missionFor(
   // verifies the board actually reflects the real status before the agent
   // stops (the anti-#0063 fix).
   const worktreeTask = join(workdir, relative(config.root, task.path));
-  return [
+  const parts: string[] = [];
+
+  if (contextPack) {
+    parts.push(contextPack);
+    parts.push("");
+  }
+
+  if (resumePreamble) {
+    parts.push(resumePreamble);
+    parts.push("");
+  }
+
+  parts.push(
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
     "",
     `Task #${task.id}: ${task.title}`,
@@ -427,15 +442,28 @@ function missionFor(
     "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
     "",
     "If you are blocked or need a decision from the human:",
-    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit it on the branch.`,
+    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
     `2. Set \`needs_input: true\` in the main-checkout copy (${task.path}) WITHOUT committing.`,
     "3. Leave the task status `active` and STOP.",
     "Never silently leave the task `active` without the `needs_input` flag when you are waiting on the human.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
+    "## UI previews are server-owned — never run `repoos serve` yourself",
+    "",
+    "RepoOS owns previews and the control-plane port (7171). Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: that competes with the main server and other tasks, and direct serve attempts from agent processes are rejected. Preview ports and lifecycle are managed for you.",
+    "",
+    "To verify a UI change, request THIS task's managed preview (idempotent — repeat requests return the same URL):",
+    "",
+    `    curl -s -X POST "\${REPOOS_API_URL}/api/tasks/\${REPOOS_TASK_ID}/preview"`,
+    "",
+    "Parse the JSON response — {\"ok\": true, \"port\": <port>, \"url\": \"http://127.0.0.1:<port>\"} — and use the returned `url` to view or probe the worktree UI. The preview is reaped automatically when the task leaves active/review.",
+    "",
+    "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
+    "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
-  ].join("\n");
+  );
+  return parts.join("\n");
 }
 
 /** One-shot run outcome: resolved stdout, or a human-readable failure. */
@@ -467,11 +495,17 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * Unlike the streaming runner this is synchronous — callers wait for the whole
  * answer (e.g. freeform task creation). Never throws: failures and timeouts
  * resolve as `{ ok: false, error }` so an HTTP handler can respond cleanly.
+ *
+ * `onLine` streams each complete stdout line as it arrives (line-buffered, the
+ * same shape the runner uses) so a caller can forward live progress over SSE
+ * without waiting for the run to finish. It is called for real output only —
+ * never for a synthetic failure — and a trailing partial line is flushed on
+ * exit.
  */
 export function runPrompt(
   agent: Agent,
   prompt: string,
-  opts: { cwd?: string; timeoutMs?: number } = {},
+  opts: { cwd?: string; timeoutMs?: number; onLine?: (line: string) => void } = {},
 ): Promise<PromptResult> {
   const cwd = opts.cwd ?? process.cwd();
   const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
@@ -488,7 +522,19 @@ export function runPrompt(
 
     const out: Buffer[] = [];
     const errOut: Buffer[] = [];
-    proc.stdout?.on("data", (c: Buffer) => out.push(c));
+    let pending = "";
+    const forwardChunk = (c: Buffer): void => {
+      out.push(c);
+      if (!opts.onLine) return;
+      pending += c.toString("utf8").replace(/\r/g, "\n");
+      const parts = pending.split("\n");
+      pending = parts.pop() ?? "";
+      for (const part of parts) {
+        if (part.length === 0) continue;
+        opts.onLine(part);
+      }
+    };
+    proc.stdout?.on("data", forwardChunk);
     proc.stderr?.on("data", (c: Buffer) => errOut.push(c));
 
     const timer = setTimeout(() => {
@@ -505,6 +551,9 @@ export function runPrompt(
 
     const done = (): void => {
       clearTimeout(timer);
+      // Flush a trailing line with no final newline so nothing is held back.
+      if (opts.onLine && pending.trim()) opts.onLine(pending.trimEnd());
+      pending = "";
       const output = Buffer.concat(out).toString("utf8").trim();
       const stderr = Buffer.concat(errOut).toString("utf8").trim();
       if (output) {
@@ -516,7 +565,9 @@ export function runPrompt(
         : "no output produced";
       resolve({ ok: false, error: `${cmd} exited without output: ${reason}` });
     };
-    proc.on("exit", () => done());
+    // `close` (not `exit`) fires only after stdio has drained, so a trailing
+    // line with no final newline is still readable when we flush it.
+    proc.on("close", () => done());
     proc.on("error", (err) => {
       clearTimeout(timer);
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
@@ -529,6 +580,12 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  /**
+   * The main RepoOS server's own API URL, injected into every agent process so
+   * the mission's managed-preview request resolves the ACTUAL control plane,
+   * never a hardcoded port.
+   */
+  apiUrl?: string;
 
   constructor(config: RepoOSConfig, emit: (e: AgentEvent) => void) {
     this.config = config;
@@ -561,7 +618,12 @@ export class AgentRunner {
    * defaults to the repo root so launch still works (best-effort) when
    * worktree setup failed or the task's branch is the main checkout.
    */
-  start(task: Task, branch: string, agent: Agent, opts: { cwd?: string } = {}): StartResult {
+  start(
+    task: Task,
+    branch: string,
+    agent: Agent,
+    opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
+  ): StartResult {
     if (this.entries.has(task.id)) {
       return { ok: false, reason: "task is already running" };
     }
@@ -570,7 +632,8 @@ export class AgentRunner {
     session.workdir = cwd;
     session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
     this.sessions.set(task.id, session);
-    const { cmd, args } = cliCommand(agent, missionFor(task, branch, cwd, agent, this.config), cwd);
+    const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
+    const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnTurn(task.id, cmd, args, cwd, task);
   }
 
@@ -579,7 +642,12 @@ export class AgentRunner {
    * conversation as a new turn. Rejected when the task has no session yet
    * (`ok: false`) or when a turn is already running (`ok: false, busy: true`).
    */
-  send(taskId: string, text: string, agent: Agent): StartResult {
+  send(
+    taskId: string,
+    text: string,
+    agent: Agent,
+    opts: { resumePreamble?: string } = {},
+  ): StartResult {
     const session = this.sessions.get(taskId);
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
@@ -587,7 +655,18 @@ export class AgentRunner {
     if (this.entries.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
-    const { cmd, args } = resumeCommand(agent, text, session.sessionId, session.workdir ?? this.config.root);
+    const entry: AgentOutputEntry = { type: "human", text };
+    session.lines.push(entry);
+    session.bytes += entryBytes(entry);
+    while (session.bytes > OUTPUT_CAP_BYTES) {
+      const dropped = session.lines.shift();
+      if (!dropped) break;
+      session.bytes -= entryBytes(dropped);
+    }
+    const fullText = opts.resumePreamble
+      ? `${opts.resumePreamble}\n\n${text}`
+      : text;
+    const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
   }
 
@@ -603,7 +682,21 @@ export class AgentRunner {
   private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string, task?: Task): StartResult {
     let proc: ChildProcess;
     try {
-      proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+      // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
+      // in depth can reject an accidental direct `repoos serve` attempt, and
+      // REPOOS_API_URL/REPOOS_TASK_ID give the agent the one task-scoped way to
+      // request a managed preview (ADR-0005: agents express intent, RepoOS owns
+      // privileged process/network lifecycle).
+      proc = spawn(cmd, args, {
+        cwd,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          REPOOS_AGENT: "1",
+          REPOOS_TASK_ID: taskId,
+          ...(this.apiUrl ? { REPOOS_API_URL: this.apiUrl } : {}),
+        },
+      });
     } catch (err) {
       this.emit({ type: "agent.exited", id: taskId, at: now() });
       const reason = err instanceof Error ? err.message : String(err);

@@ -7,9 +7,9 @@ priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/replace-the-branch-exists-dot-with-a-rea
 created_at: "2026-08-11T03:27:18Z"
-updated_at: "2026-08-11T03:51:14Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
 ## Problem
 
@@ -40,12 +40,10 @@ signal.
     one-off).
   - `needsInput` true → a clear "needs you" style hint (the task is waiting
     on a human decision).
-  - `active`, but no agent process running and `needsInput` is false → a
-    hint that flags this as an ambiguous/stalled state (e.g. "stopped —
-    check the agent") instead of silently looking identical to an active,
-    healthy run. This is the "stuck" case called out by the user: today
-    there is no way to tell a crashed/stopped agent from one making
-    progress.
+  - `active`, but no agent process running and `needsInput` is false → an
+    honest neutral hint such as "not running" or, after 0070 lands, "paused".
+    Do not call it stalled/dead: RepoOS cannot currently distinguish an
+    intentional pause from a crashed process using this boolean alone.
   - Nothing useful to report (e.g. `draft`, `inbox`, `ready`, `done`) → the
     slot stays empty; don't invent a hint where there isn't one.
 - The hint is a small text label, styled distinctly from the action button
@@ -57,7 +55,8 @@ signal.
       `TaskCard.vue`; no card renders a bare dot for branch existence.
 - [ ] The card footer's left side is a single status/hint slot that shows
       (priority order when more than one could apply): running > needs
-      input > stalled (`active`, not running, not needing input) > nothing.
+      input > not running/paused (`active`, not running, not needing input) >
+      nothing.
 - [ ] Each hint is a short text label with a clear meaning on hover/inspection
       (e.g. via `title`), not an unlabeled glyph.
 - [ ] `draft`, `inbox`, `ready`, and `done` tasks show no hint by default
@@ -77,19 +76,19 @@ signal.
   (`tc-waiting`, line 125, from #0067) — the new footer hint is
   complementary, not a replacement for that badge. Don't remove the existing
   badge.
-- There is no existing signal for "agent crashed" or a time-based staleness
-  check — don't build one. The "stalled" case in this task is a simple,
-  already-available boolean condition (`active` status, not running, not
-  `needsInput`), not a new detector. Timer-based/heuristic "stuck" detection
-  is explicitly out of scope (already deferred by #0067 for the same
-  reason).
+- There is no existing signal that distinguishes "agent crashed" from
+  "intentionally paused". Task 0070 deliberately keeps paused tasks active,
+  so this task must use neutral language and should land after, or coordinate
+  directly with, 0070's Restart-work behavior. Timer-based/heuristic stall
+  detection belongs to 0080.
 - `task.git.branchExists` is still read elsewhere (`TaskDrawer.vue:953`,
   `src/server/live-index.ts`, `src/core/indexer.ts`, `src/core/git.ts`) —
   do not remove the field or its plumbing, only its card-level rendering.
-- After the change, rebuild (`bun run build:ui`), keep `repoos serve`
-  running, and verify with a browser probe: confirm the dot is gone, and
-  that a running task, a `needsInput` task, and a plain `active`/stalled
-  task each show the expected hint text.
+- After the change, rebuild (`bun run build:ui`), then request this task's
+  managed preview (`curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"`
+  — never run `repoos serve` yourself) and verify with a browser probe: confirm
+  the dot is gone, and that a running task, a `needsInput` task, and a plain
+  `active`/stalled task each show the expected hint text.
 
 ## Scope
 
@@ -107,8 +106,12 @@ signal.
 - 0067 · `needsInput` flag and the top-of-card "needs input" badge
 - 0069 · proposed `needs_merge` flag/chip for review tasks (a future input
   to this same hint slot)
+- 0070 · active-but-paused behavior; defines the neutral not-running case
 
 ## Activity
 
 - 2026-08-11T03:27:18Z · created · unknown
 - 2026-08-11T03:51:14Z · status inbox→ready
+- 2026-08-11T12:20:01Z · status ready→active, branch
+- 2026-08-11T13:46:01Z · status active→ready
+- 2026-08-11T15:37:46Z · updated · remove false stalled/dead inference and depend on 0070 semantics

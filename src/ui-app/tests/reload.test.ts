@@ -58,12 +58,46 @@ fs.appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({
 process.exit(1);
 `;
 
+/**
+ * Flash variant (#0096): answers /api/health with the handshake for a brief
+ * moment, then dies — the incident shape where a replacement seemed ready, was
+ * confirmed, and left the port listenerless after the old process exited. The
+ * sustained-health window must treat this as a FAILED reload, not a handover.
+ */
+const FAKEBIN_FLASH = `#!/usr/bin/env node
+const http = require("node:http");
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({
+  pid: process.pid,
+  args,
+  flash: true,
+}) + "\\n");
+const port = Number(args[args.indexOf("--port") + 1]);
+const host = args[args.indexOf("--host") + 1] || "127.0.0.1";
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  if (url.pathname === "/api/health") {
+    const secret = process.env.REPOOS_RELOAD_SECRET || "";
+    const handshake = secret && url.searchParams.get("reload") === secret;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, ...(handshake ? { reloadHandshake: true } : {}) }));
+    return;
+  }
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ ok: false }));
+});
+server.listen(port, host);
+setTimeout(() => process.exit(1), 150);
+`;
+
 interface SpawnRecord {
   pid?: number;
   args?: string[];
   reload?: string;
   secret?: string;
   dead?: boolean;
+  flash?: boolean;
 }
 
 interface Fixture {
@@ -71,6 +105,7 @@ interface Fixture {
   bin: string;
   readyCli: string;
   deadCli: string;
+  flashCli: string;
   log: string;
   port: number;
   clean: () => void;
@@ -96,12 +131,14 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-aaa" }));
   writeFileSync(join(bin, "repoos"), FAKEBIN, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-dead"), FAKEBIN_DEAD, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
   const port = await reservePort();
   return {
     repo,
     bin,
     readyCli: join(bin, "repoos"),
     deadCli: join(bin, "repoos-dead"),
+    flashCli: join(bin, "repoos-flash"),
     log: join(root, "spawns.log"),
     port,
     clean: () => rmSync(root, { recursive: true, force: true }),
@@ -191,6 +228,7 @@ function makeManager(
     pollMs: 50,
     retryMs: 50,
     graceMs: 100,
+    confirmMs: 100,
     handshakeTimeoutMs: 4000,
     ...opts,
   });
@@ -331,6 +369,46 @@ describe("ReloadManager", () => {
       expect(calls.reListen).toBeGreaterThan(0); // listener re-bound: old process keeps serving
       const [spawn] = spawns(fx);
       expect(spawn.dead).toBe(true);
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("#0096: a replacement that flashes healthy then dies is NOT confirmed (no listenerless handover)", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    // confirmMs (500) is longer than the flash lifetime (150ms): a single
+    // handshake answer must never be enough to hand over.
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.flashCli,
+      confirmMs: 500,
+      graceMs: 50,
+      handshakeTimeoutMs: 4000,
+    });
+    try {
+      manager.start();
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      manager.requestReload("test");
+
+      await waitFor(() => calls.failed > 0, "flash replacement treated as failed");
+      expect(calls.confirmed).toBe(0); // never logged "replacement is up" / handed over
+      expect(calls.reListen).toBeGreaterThan(0); // old process re-bound and kept serving
+      const [spawn] = spawns(fx);
+      expect(spawn.flash).toBe(true);
+      // The flash process must not survive the failed handoff — the parent
+      // kills it (or it already died), never leaving a listenerless serve.
+      await waitFor(
+        () => {
+          try {
+            process.kill(spawn.pid!, 0);
+            return false;
+          } catch {
+            return true;
+          }
+        },
+        "flash replacement process is gone",
+      );
     } finally {
       manager.stop();
       fx.clean();
