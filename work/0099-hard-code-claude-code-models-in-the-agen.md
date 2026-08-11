@@ -2,14 +2,14 @@
 id: "0099"
 title: Hard-code Claude Code models in the agents dropdown
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/hard-code-claude-code-models-in-the-agen
 created_at: "2026-08-11T16:13:01Z"
-updated_at: "2026-08-11T16:13:38Z"
+updated_at: "2026-08-11T16:42:45Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ When Claude Code is selected on the agents page, its model dropdown shows exactl
 
 - 2026-08-11T16:13:01Z · created · unknown
 - 2026-08-11T16:13:38Z · status inbox→ready
+- 2026-08-11T16:42:45Z · status ready→active, branch
