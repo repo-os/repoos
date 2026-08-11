@@ -2,12 +2,12 @@
 id: "0094"
 title: Let RepoOS finalize sandboxed agent worktree handoffs
 type: bug
-status: ready
+status: review
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/let-repoos-finalize-sandboxed-agent-work
 model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-08-11T14:42:54Z"
 updated_at: "2026-08-11T19:43:27Z"
@@ -121,3 +121,4 @@ appropriate RepoOS operation can exist.
 
 - 2026-08-11T19:41:42Z · status inbox→ready
 - 2026-08-11T19:43:27Z · model_override
+- 2026-08-12T04:08:00Z · status active→review · handoff API + tests, repoos check green
