@@ -2,14 +2,14 @@
 id: "0029"
 title: Remove the legacy pre-Vite HTML UI
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/0029-remove-legacy-html-ui
 created_at: "2026-08-05T06:55:26Z"
-updated_at: "2026-08-11T00:17:35Z"
+updated_at: "2026-08-11T13:54:04Z"
 ---
 ## Activity
 
@@ -71,3 +71,4 @@ and docs/code stop referencing it.
 ## Activity
 
 - 2026-08-11T00:17:35Z · status inbox→ready
+- 2026-08-11T13:54:04Z · status ready→active
