@@ -75,18 +75,21 @@ describe("parseJsonEvent", () => {
   });
 
   it("parses step boundaries", () => {
-    expect(parseJsonEvent('{"type":"step_start","sessionID":"ses_abc","part":{"type":"step-start"}}')).toEqual({
-      entry: { type: "step", kind: "start" },
+    const start = parseJsonEvent('{"type":"step_start","sessionID":"ses_abc","part":{"type":"step-start"}}');
+    expect(start).toEqual({
+      entry: expect.objectContaining({ type: "step", kind: "start" }),
       sessionID: "ses_abc",
     });
-    expect(
-      parseJsonEvent(
-        '{"type":"step_finish","sessionID":"ses_abc","part":{"type":"step-finish","reason":"tool-calls"}}',
-      ),
-    ).toEqual({
-      entry: { type: "step", kind: "finish", reason: "tool-calls" },
+    expect((start?.entry as { at?: string }).at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+    const finish = parseJsonEvent(
+      '{"type":"step_finish","sessionID":"ses_abc","part":{"type":"step-finish","reason":"tool-calls"}}',
+    );
+    expect(finish).toEqual({
+      entry: expect.objectContaining({ type: "step", kind: "finish", reason: "tool-calls" }),
       sessionID: "ses_abc",
     });
+    expect((finish?.entry as { at?: string }).at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("turns a session error into a sys line", () => {
@@ -236,7 +239,7 @@ describe("opencode driver (structured JSON events)", () => {
 
       const lines = runner.output("0045")!.lines;
       expect(lines).toEqual([
-        { type: "step", kind: "start" },
+        expect.objectContaining({ type: "step", kind: "start" }),
         { type: "text", text: "I will inspect the repo." },
         {
           type: "tool",
@@ -245,9 +248,14 @@ describe("opencode driver (structured JSON events)", () => {
           output: "AGENTS.md",
           state: "completed",
         },
-        { type: "step", kind: "finish", reason: "stop" },
+        expect.objectContaining({ type: "step", kind: "finish", reason: "stop" }),
         { s: "out", d: "not json at all" },
       ]);
+      for (const line of lines) {
+        if (typeof line === "object" && "type" in line && line.type === "step") {
+          expect(line.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+        }
+      }
       expect(runner.output("0045")!.sessionId).toBe("ses-123");
 
       const [run] = spawns(fx);

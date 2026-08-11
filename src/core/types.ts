@@ -161,7 +161,7 @@ export type AgentOutputEntry =
       state?: string;
     }
   /** A step boundary (opencode `step_start` / `step_finish`). */
-  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
   | { type: "sys"; d: string }
   /** A legacy plain line, kept for claude / qwen / codex and old sessions. */
