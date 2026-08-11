@@ -2,14 +2,14 @@
 id: "0069"
 title: Surface mutation errors visibly and stop branch drift from blocking move-to-done
 type: feature
-status: active
+status: ready
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/0069-visible-errors-and-done-drift
 created_at: "2026-08-11T01:46:02Z"
-updated_at: "2026-08-11T03:50:58Z"
+updated_at: "2026-08-11T06:12:07Z"
 ---
 ## Activity
 
@@ -148,3 +148,4 @@ Two linked failures, both hit live on the self-hosted board (documented in
 ## Activity
 
 - 2026-08-11T03:50:58Z · status ready→active
+- 2026-08-11T06:12:07Z · status active→ready
