@@ -274,6 +274,13 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * - codex: `codex exec <prompt> --json --sandbox workspace-write` — `--json`
  *   streams newline-delimited events; `--sandbox workspace-write` lets the
  *   agent edit files inside the worktree (the default is read-only).
+ * - opencode: `opencode run --format json --dir <cwd> --auto <prompt>` —
+ *   `--auto` ("auto-approve permissions that are not explicitly denied") is
+ *   REQUIRED for the same reason claude's flag is: stdin is ignored, so a
+ *   permission prompt can never be answered. Without it, opencode blocks on
+ *   its first gated tool call and hangs indefinitely — confirmed live on
+ *   #0069, which sat at ~1% CPU with zero commits for ~2 hours before being
+ *   killed. Same blast radius as the other engines: the task's own worktree.
  */
 function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; args: string[] } {
   if (cli === "claude code") {
@@ -291,7 +298,7 @@ function cliCommand(cli: string, mission: string, cwd: string): { cmd: string; a
   // the worktree path explicit so linked-worktree paths are never auto-rejected.
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, mission],
+    args: ["run", "--format", "json", "--dir", cwd, "--auto", mission],
   };
 }
 
@@ -355,6 +362,7 @@ function resumeCommand(
       "json",
       ...(sessionId ? ["--session", sessionId] : []),
       ...(cwd ? ["--dir", cwd] : []),
+      "--auto",
       text,
     ],
   };
