@@ -19,6 +19,14 @@ implementing agent stops. A human (or another AI) reviews it. The implementing
 agent NEVER merges to `main` at `review` time — that happens only when the task
 is moved to `done`.
 
+When the `reviewer` agent is enabled on the Agents page, RepoOS runs it
+automatically the moment a task lands in `review`: it reads the branch's diff
+in the task's worktree and writes a short report (bugs, edge cases,
+suggestions) shown in the task drawer next to "Move to done". The report is
+advisory — it informs the human's sign-off and never replaces it. The review
+agent changes nothing, and if it ever moves a task to `done`, RepoOS puts it
+straight back into `review`.
+
 **No git remote (the common RepoOS case):**
 
 - Implementer: set `status: review`, leave the worktree open, stop. Do not merge

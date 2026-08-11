@@ -95,6 +95,10 @@ off; the implementer never merges to \`main\` at \`review\` time.
   to \`done\`.
 - Requested changes are fixed on the same worktree, tests re-run, and the task
   re-set to \`review\`.
+- If the \`reviewer\` agent is enabled on the Agents page, RepoOS reviews the
+  task automatically when it lands in \`review\` and shows a short report (bugs,
+  edge cases, suggestions) in the task drawer. It is advisory: the human still
+  reviews and is the only one who moves a task to \`done\`.
 
 ## Rules
 

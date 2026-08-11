@@ -483,6 +483,11 @@
   .done-failure-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-failure-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
   .done-failure-hint{color:var(--txt-dim);font-size:11px;line-height:1.5}
+  .review-running{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
+  .review-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:10px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
+  .review-card{cursor:default;margin-bottom:4px}
+  .review-failed{padding:12px;border-radius:10px;background:var(--red-tint);border:1px solid var(--red-border-tint);font-size:12px;color:var(--txt);word-break:break-word}
+  .review-hint{font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;margin-top:8px;line-height:1.5}
   .save-bar{display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--panel-solid);border-top:1px solid var(--border-bright);box-shadow:0 -10px 24px -12px rgba(0,0,0,0.5);z-index:5}
   .save-callout{display:flex;align-items:center;gap:10px;min-width:0}
   .save-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:none;animation:pulse 2s ease-in-out infinite}

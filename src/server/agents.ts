@@ -265,6 +265,18 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
 }
 
 /**
+ * Resolve the enabled `reviewer` agent, or null when it is disabled/absent.
+ *
+ * This is the single source of truth for whether a task landing in `review`
+ * gets an automatic agent review (0101): the Agents page writes the toggle
+ * into `repoos.toml`, and null here means "no agent review runs".
+ */
+export function resolveReviewer(config: RepoOSConfig): Agent | null {
+  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
+}
+
+/**
  * Resolve the agent for a specific task, honoring per-task overrides.
  *
  * When the task has an `agentOverride`, the enabled agent with that name is
@@ -529,6 +541,37 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
 }
 
 /**
+ * Map an agent `cli` to a one-shot REVIEW invocation: the agent inspects a
+ * worktree it must not modify and prints its report to stdout.
+ *
+ * Same print-mode shape as `promptCommand`, with one difference that matters:
+ * a reviewer has to READ the worktree (git diff, file reads, maybe the test
+ * suite), and stdin is ignored — so any engine that gates those calls behind a
+ * permission prompt would hang until the timeout instead of reporting. Only
+ * flags already verified for this repo's drivers are used:
+ * - claude code: `--dangerously-skip-permissions` (same reason as the runner's
+ *   start turns — nobody can answer a prompt).
+ * - opencode: `--dir <cwd>` so a linked-worktree path is not auto-rejected,
+ *   plus `--auto` so gated tool calls resolve instead of blocking.
+ * - codex: `exec` alone — its default sandbox is already read-only, which is
+ *   exactly the blast radius a reviewer should have.
+ * - qwen code: plain `-p`, matching `promptCommand`.
+ */
+export function reviewCommand(
+  agent: Agent,
+  prompt: string,
+  cwd: string,
+): { cmd: string; args: string[] } {
+  const extra = modelArgs(agent.cli, agent.model);
+  if (agent.cli === "claude code") {
+    return { cmd: "claude", args: ["-p", prompt, ...extra, "--dangerously-skip-permissions"] };
+  }
+  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
+  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
+}
+
+/**
  * Run a coding agent once, non-interactively, and capture its full stdout.
  * Unlike the streaming runner this is synchronous — callers wait for the whole
  * answer (e.g. freeform task creation). Never throws: failures and timeouts
@@ -539,16 +582,31 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * without waiting for the run to finish. It is called for real output only —
  * never for a synthetic failure — and a trailing partial line is flushed on
  * exit.
+ *
+ * `command` overrides the invocation (default: `promptCommand`) so a caller
+ * that needs different flags — the review agent's read-the-worktree mode —
+ * reuses this spawn/timeout/capture handling instead of duplicating it.
+ * `onSpawn` hands the live child to the caller so it can be killed early.
+ *
+ * The child inherits the server's env verbatim: unlike the streaming runner,
+ * NO `REPOOS_API_URL` / `REPOOS_TASK_ID` is injected, so a one-shot agent has
+ * no pointer at the control plane's task endpoints.
  */
 export function runPrompt(
   agent: Agent,
   prompt: string,
-  opts: { cwd?: string; timeoutMs?: number; onLine?: (line: string) => void } = {},
+  opts: {
+    cwd?: string;
+    timeoutMs?: number;
+    onLine?: (line: string) => void;
+    command?: { cmd: string; args: string[] };
+    onSpawn?: (proc: ChildProcess) => void;
+  } = {},
 ): Promise<PromptResult> {
   const cwd = opts.cwd ?? process.cwd();
   const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
   return new Promise((resolve) => {
-    const { cmd, args } = promptCommand(agent, prompt);
+    const { cmd, args } = opts.command ?? promptCommand(agent, prompt);
     let proc: ChildProcess;
     try {
       proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
@@ -557,6 +615,7 @@ export function runPrompt(
       resolve({ ok: false, error: `could not launch ${cmd}: ${reason}` });
       return;
     }
+    opts.onSpawn?.(proc);
 
     const out: Buffer[] = [];
     const errOut: Buffer[] = [];

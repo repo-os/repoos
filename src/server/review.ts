@@ -1,0 +1,391 @@
+/**
+ * The review agent (0101): an automatic, read-only assessment of a task's
+ * implementation, produced the moment the task lands in `review` and read by
+ * the human who signs it off.
+ *
+ * It SUPPORTS sign-off, it never replaces it. The report is advisory: the
+ * agent inspects the branch's diff in the task's own worktree, writes a short
+ * markdown report to `<cacheDir>/reviews/<id>.md`, and stops. It never edits
+ * the repo, never merges, and never moves the task to `done` — that transition
+ * stays exactly where it was, behind the human's "Move to done".
+ *
+ * Three layers keep it that way:
+ *   1. the mission spells out the read-only boundary;
+ *   2. the child is spawned through `runPrompt`, which injects no
+ *      `REPOOS_API_URL`/`REPOOS_TASK_ID`, so the agent has no pointer at the
+ *      control plane's `/done` endpoint;
+ *   3. `enforceStillInReview` reverts the task file if it comes back `done`
+ *      anyway, and says so loudly (the same shape as the 0077 self-heal).
+ *
+ * Zero runtime deps — node:fs / node:path only.
+ */
+import type { ChildProcess } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import type { Agent, RepoOSConfig, Task } from "../core/types.js";
+import { parseDocument, serializeDocument } from "../core/frontmatter.js";
+import { currentBranch, worktreePathForBranch } from "../core/git.js";
+import { parseTask } from "../core/task.js";
+import type { RepoEvent } from "./live-index.js";
+import { resolveReviewer, reviewCommand, runPrompt } from "./agents.js";
+import { patchTaskFile } from "./write.js";
+
+/** A stored agent review, as served to the UI. */
+export interface ReviewReport {
+  /** Task id this report belongs to. */
+  id: string;
+  /** ISO timestamp the report was written. */
+  at: string;
+  /** Agent role name that produced it (normally "reviewer"). */
+  agent: string;
+  /** Coding-agent CLI and model behind that role. */
+  cli: string;
+  model: string;
+  /** Branch that was reviewed. */
+  branch: string;
+  /** "ok" when the agent reported; "failed" when the run itself failed. */
+  state: "ok" | "failed";
+  /** The report markdown (or the failure detail when state is "failed"). */
+  markdown: string;
+}
+
+export interface ReviewRunResult {
+  ok: boolean;
+  /** True when no review was attempted at all (agent disabled, no worktree). */
+  skipped?: boolean;
+  reason?: string;
+  report?: ReviewReport;
+}
+
+/**
+ * Ceiling on one review run. Generous compared to the 3-minute one-shot
+ * default: a reviewer reads a whole diff and may run the test suite, and a
+ * timeout means the human gets no report at all.
+ */
+const REVIEW_TIMEOUT_MS = 900_000;
+
+/** Cap on the task spec quoted into the mission (keeps the prompt bounded). */
+const SPEC_CHARS = 6000;
+
+/** Cap on the stored report (a runaway agent must not fill the cache dir). */
+const REPORT_CHARS = 20_000;
+
+const now = (): string => new Date().toISOString();
+
+/** Frontmatter key order for the stored report file. */
+const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
+
+/**
+ * The mission handed to the review agent. Deliberately narrow: what to look
+ * at, what to write, and a hard boundary on what it may not touch.
+ */
+export function reviewMission(
+  task: Task,
+  agent: Agent,
+  workdir: string,
+  baseBranch: string,
+): string {
+  const spec = task.body.trim().slice(0, SPEC_CHARS);
+  const role = agent.instructions?.trim();
+  const parts: string[] = [];
+  if (role) parts.push(role, "");
+  parts.push(
+    "You are the REVIEW agent for RepoOS. A human is about to sign this task off and",
+    "wants your read on it first. Your job is to inspect the finished implementation",
+    "and write ONE short report they can read while reviewing. You do not approve",
+    "anything and you do not finish the task — the human does.",
+    "",
+    `Task #${task.id}: ${task.title}`,
+    `Worktree (read-only for you): ${workdir}`,
+    `Branch under review: ${task.branch || "(none)"} · base branch: ${baseBranch}`,
+    "",
+    "## The task spec",
+    "",
+    spec || "(the task file has no body)",
+    "",
+    "## How to inspect it",
+    "",
+    `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
+    "  worktree show exactly what changed. Start there.",
+    "- Read the files the diff touches — judge the CODE, not just the diff hunks.",
+    "- Check the implementation actually does what the spec asks, including every",
+    "  acceptance criterion, and that its behaviour holds up beyond the happy path.",
+    "- Look for real bugs: wrong logic, unhandled errors, races, resource leaks,",
+    "  broken contracts with existing callers, missing or misleading tests.",
+    "- Call out the edge cases that matter for this change (empty/missing input,",
+    "  concurrency, failure of a dependency, first run, repeated run).",
+    "- You may run read-only commands (git, reading files, the test suite).",
+    "",
+    "## Hard boundaries",
+    "",
+    "- Do NOT edit, create, or delete ANY file, including the task file.",
+    "- Do NOT commit, push, merge, sync, or delete branches.",
+    "- Do NOT change the task's status, and NEVER move it to `done` — the task stays",
+    "  in `review` for the human. Approving, merging, and completing are not yours.",
+    "- Do NOT start servers or long-running processes.",
+    "",
+    "## What to output",
+    "",
+    "Output ONLY the report, as markdown, with no preamble and no closing chatter.",
+    "Keep it under 400 words — a reviewer reads this next to the diff. Use exactly",
+    "these sections, and write `None found` under any that is genuinely empty:",
+    "",
+    "## Verdict",
+    "One or two sentences: what the change does and whether anything blocks sign-off.",
+    "",
+    "## Bugs",
+    "Concrete defects, each with the file and what goes wrong.",
+    "",
+    "## Edge cases",
+    "Cases worth checking that the change may not handle.",
+    "",
+    "## Suggestions",
+    "Improvements worth making. Say so plainly when there are none.",
+  );
+  return parts.join("\n");
+}
+
+/** In-flight bookkeeping for one review run. */
+interface Run {
+  proc?: ChildProcess;
+  cancelled: boolean;
+}
+
+/** How long a guard revert stays claimable by the review trigger, in ms. */
+const REVERT_CLAIM_MS = 30_000;
+
+export class ReviewManager {
+  private readonly config: RepoOSConfig;
+  private readonly emit: (e: RepoEvent) => void;
+  private readonly runs = new Map<string, Run>();
+  /** Tasks the status guard just put back in `review`, by timestamp. */
+  private readonly reverted = new Map<string, number>();
+
+  constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
+    this.config = config;
+    this.emit = emit;
+  }
+
+  /** Whether an enabled review agent exists — the Agents page toggle. */
+  enabled(): boolean {
+    return resolveReviewer(this.config) !== null;
+  }
+
+  isRunning(taskId: string): boolean {
+    return this.runs.has(taskId);
+  }
+
+  /** How many reviews are in flight (the server's idle check). */
+  runningCount(): number {
+    return this.runs.size;
+  }
+
+  /**
+   * Claim the "this task is only back in `review` because the guard put it
+   * there" marker, if it is fresh. The revert lands on disk as an ordinary
+   * status change, so without this the trigger would start another review,
+   * whose agent would move it to done again, forever.
+   */
+  claimRevert(taskId: string): boolean {
+    const at = this.reverted.get(taskId);
+    if (at === undefined) return false;
+    this.reverted.delete(taskId);
+    return Date.now() - at <= REVERT_CLAIM_MS;
+  }
+
+  /** Where a task's report lives. Derived cache — safe to delete. */
+  path(taskId: string): string {
+    return join(this.config.root, this.config.cacheDir, "reviews", `${taskId}.md`);
+  }
+
+  /** The stored report for a task, or null when none was ever written. */
+  read(taskId: string): ReviewReport | null {
+    const file = this.path(taskId);
+    if (!existsSync(file)) return null;
+    let raw: string;
+    try {
+      raw = readFileSync(file, "utf8");
+    } catch {
+      return null;
+    }
+    const doc = parseDocument(raw);
+    const str = (key: string): string => {
+      const v = doc.data[key];
+      return v === null || v === undefined ? "" : String(v);
+    };
+    return {
+      id: str("task") || taskId,
+      at: str("at"),
+      agent: str("agent"),
+      cli: str("cli"),
+      model: str("model"),
+      branch: str("branch"),
+      state: str("state") === "failed" ? "failed" : "ok",
+      markdown: doc.body.trim(),
+    };
+  }
+
+  /**
+   * Run the review agent against a task sitting in `review`.
+   *
+   * Skips silently (no event, no file) when the review agent is disabled or
+   * the task has no worktree to inspect — "disabled means nothing happens" is
+   * the contract, not "something happens quietly and fails".
+   */
+  async run(task: Task): Promise<ReviewRunResult> {
+    if (this.runs.has(task.id)) {
+      return { ok: false, reason: "a review is already running for this task" };
+    }
+    const agent = resolveReviewer(this.config);
+    if (!agent) {
+      return { ok: false, skipped: true, reason: "the review agent is disabled" };
+    }
+    const workdir = task.branch
+      ? worktreePathForBranch(this.config.root, task.branch)
+      : null;
+    if (!workdir) {
+      return { ok: false, skipped: true, reason: "the task has no worktree to review" };
+    }
+    const baseBranch = currentBranch(this.config.root) ?? "main";
+
+    const run: Run = { cancelled: false };
+    this.runs.set(task.id, run);
+    this.emit({ type: "review", id: task.id, state: "running", at: now() });
+
+    const mission = reviewMission(task, agent, workdir, baseBranch);
+    let result;
+    try {
+      result = await runPrompt(agent, mission, {
+        cwd: workdir,
+        timeoutMs: REVIEW_TIMEOUT_MS,
+        command: reviewCommand(agent, mission, workdir),
+        onSpawn: (proc) => {
+          run.proc = proc;
+          // A cancel that landed between spawn and this callback still kills.
+          if (run.cancelled) proc.kill("SIGTERM");
+        },
+      });
+    } finally {
+      this.runs.delete(task.id);
+    }
+
+    // Cancelled means the task left review (close-out, restart, a human move):
+    // the report would describe a state nobody is signing off on any more, and
+    // the status guard below must not fight the human who moved it.
+    if (run.cancelled) {
+      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+      return { ok: false, skipped: true, reason: "review cancelled" };
+    }
+
+    const state: ReviewReport["state"] = result.ok && result.output ? "ok" : "failed";
+    const body =
+      state === "ok"
+        ? (result.output ?? "").trim()
+        : `The review agent produced no report: ${result.error ?? "unknown error"}`;
+    const report: ReviewReport = {
+      id: task.id,
+      at: now(),
+      agent: agent.name,
+      cli: agent.cli,
+      model: agent.model,
+      branch: task.branch,
+      state,
+      markdown: body.slice(0, REPORT_CHARS),
+    };
+    this.write(report);
+    this.emit({
+      type: "review",
+      id: task.id,
+      state: state === "ok" ? "ready" : "failed",
+      at: report.at,
+      ...(state === "failed" ? { error: result.error } : {}),
+    });
+    this.enforceStillInReview(task);
+    return state === "ok"
+      ? { ok: true, report }
+      : { ok: false, reason: result.error ?? "the review agent failed", report };
+  }
+
+  /**
+   * Abandon a task's review: kill the child if one is running and mark the run
+   * cancelled so it writes nothing. Called when the task leaves `review` by a
+   * human route (the close-out, a status change from the API), where both the
+   * report and the status guard have stopped being relevant — and where the
+   * worktree is about to be removed out from under the child.
+   */
+  cancel(taskId: string): void {
+    const run = this.runs.get(taskId);
+    if (!run) return;
+    run.cancelled = true;
+    try {
+      run.proc?.kill("SIGTERM");
+    } catch {
+      /* already gone */
+    }
+  }
+
+  /** Cancel every in-flight review (server shutdown). */
+  cancelAll(): void {
+    for (const id of [...this.runs.keys()]) this.cancel(id);
+  }
+
+  /** Persist a report, creating `<cacheDir>/reviews/` on first use. */
+  private write(report: ReviewReport): void {
+    const file = this.path(report.id);
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      const data: Record<string, unknown> = {
+        task: report.id,
+        at: report.at,
+        agent: report.agent,
+        cli: report.cli,
+        model: report.model,
+        branch: report.branch,
+        state: report.state,
+      };
+      writeFileSync(file, serializeDocument(data, `\n${report.markdown}\n`, REPORT_KEYS));
+    } catch (err) {
+      console.error(
+        `[repoos] could not write the review for #${report.id}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Defense in depth for the one thing the review agent must never do. If the
+   * task file says `done` when the review ends, the reviewer moved it there:
+   * every human route out of `review` cancels the run first, so a live run can
+   * only be looking at a task a human has not touched. Put it back and say so.
+   */
+  private enforceStillInReview(task: Task): void {
+    if (!existsSync(task.absPath)) return;
+    let current: Task;
+    try {
+      current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+    } catch {
+      return;
+    }
+    if (current.status !== "done") return;
+    this.reverted.set(task.id, Date.now());
+    try {
+      patchTaskFile(this.config, task.absPath, { status: "review" });
+    } catch (err) {
+      this.reverted.delete(task.id);
+      console.error(
+        `[repoos] could not revert #${task.id} to review: ${(err as Error).message}`,
+      );
+      return;
+    }
+    const note =
+      "the review agent moved this task to done — only a human signs a task off, " +
+      "so it was put back in review";
+    this.emit({ type: "task.corrected", id: task.id, path: task.path, note, at: now() });
+    console.error(`[repoos] reverted task #${task.id} to review — ${note}`);
+  }
+}

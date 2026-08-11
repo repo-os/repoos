@@ -64,3 +64,4 @@ If the review agent is disabled on the Agents page, moving a task to `review` do
 - 2026-08-11T18:56:18Z · cli_override, model_override
 - 2026-08-11T18:59:08Z · status active→ready
 - 2026-08-11T18:59:09Z · status ready→active
+- 2026-08-12T02:20:00Z · status active→review

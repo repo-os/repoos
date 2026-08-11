@@ -2,7 +2,17 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore } from "./ui";
-import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, SystemStats, Task } from "../types";
+import type {
+  AgentOutputEntry,
+  Counts,
+  Health,
+  RepoEvent,
+  RepoIndex,
+  ReviewReport,
+  ReviewState,
+  SystemStats,
+  Task,
+} from "../types";
 
 export interface FeedItem {
   key: number;
@@ -99,6 +109,8 @@ export const useRepoStore = defineStore("repo", () => {
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  /** The review agent's report per task, hydrated on demand + via SSE. */
+  const reviews = ref<Record<string, ReviewState>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
@@ -274,6 +286,30 @@ export const useRepoStore = defineStore("repo", () => {
         e.preview ? "#39e0ff" : "#ffb454",
         "preview",
       );
+    } else if (e.type === "review") {
+      // The review agent started or finished on a task in review. Mark it live
+      // immediately, then pull the finished report from the server.
+      const prev = reviews.value[e.id];
+      reviews.value = {
+        ...reviews.value,
+        [e.id]: {
+          running: e.state === "running",
+          enabled: true,
+          report: prev?.report ?? null,
+        },
+      };
+      if (e.state === "running") {
+        pushFeed(`<b>agent review</b> started on #${e.id}`, "#ffb454", "review");
+      } else if (e.state !== "cancelled") {
+        void loadReview(e.id);
+        pushFeed(
+          e.state === "ready"
+            ? `<b>agent review</b> ready for #${e.id}`
+            : `<b>agent review failed</b> on #${e.id}${e.error ? ` — ${e.error}` : ""}`,
+          e.state === "ready" ? "#39e0ff" : "#ff6b7d",
+          "review",
+        );
+      }
     } else if (e.type === "index.rebuilt") {
       void refresh();
     } else if (e.type === "system.stats") {
@@ -290,7 +326,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output", "system.stats"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "system.stats"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -380,6 +416,31 @@ export const useRepoStore = defineStore("repo", () => {
       /* endpoint unavailable — transcript is best-effort */
     }
   }
+
+  /**
+   * Fetch the agent's review of a task. Best-effort: a task with no review
+   * (agent disabled, never reviewed) simply has no report to show.
+   */
+  async function loadReview(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        running: boolean;
+        enabled: boolean;
+        review: ReviewReport | null;
+      }>(`/api/tasks/${id}/review`);
+      if (!r.ok) return;
+      reviews.value = {
+        ...reviews.value,
+        [id]: { running: r.running, enabled: r.enabled, report: r.review },
+      };
+    } catch {
+      /* endpoint unavailable — the review is advisory, never blocking */
+    }
+  }
+
+  /** The review state for a task, or null when it has not been fetched. */
+  const reviewFor = (id: string): ReviewState | null => reviews.value[id] ?? null;
 
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
@@ -506,6 +567,7 @@ export const useRepoStore = defineStore("repo", () => {
     runningIds,
     outputs,
     doneSteps,
+    reviews,
     sortOrder,
     toasts,
     systemStats,
@@ -534,6 +596,8 @@ export const useRepoStore = defineStore("repo", () => {
     completeTask,
     loadOutput,
     clearOutput,
+    loadReview,
+    reviewFor,
     sendMessage,
     fetchRunning,
     startPreview,
