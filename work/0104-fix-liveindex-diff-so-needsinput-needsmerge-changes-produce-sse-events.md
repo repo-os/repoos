@@ -2,7 +2,7 @@
 id: "0104"
 title: Fix LiveIndex diff so needsInput/needsMerge changes produce SSE events
 type: bug
-status: ready
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -60,3 +60,4 @@ same as it already does for `status` and `title` changes.
 ## Activity
 
 - 2026-08-11T19:26:42Z · cli_override, model_override
+- 2026-08-12T03:34:00Z · status active→review · 7 added fields, repoos check green
