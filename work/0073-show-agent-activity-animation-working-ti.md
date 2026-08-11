@@ -2,7 +2,7 @@
 id: "0073"
 title: "Show agent activity animation, working time, and stall alert in the chat panel"
 type: feature
-status: ready
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,6 +11,14 @@ branch: ""
 created_at: "2026-08-11T04:14:02Z"
 updated_at: "2026-08-11T08:16:51Z"
 ---
+> **Closed as a duplicate of [0080](0080-add-a-working-animation-and-live-time-to.md).**
+> 0080 independently asked for the same working animation and cumulative
+> working-time display, plus token/cost counters and default-tab behavior
+> this task didn't cover. Rather than build the same UI element twice, this
+> task's unique piece — the 20-second stall/death alert — was folded into
+> 0080's Desired UX and Acceptance criteria. All implementation work for
+> this scope now happens on 0080; nothing here should be picked up.
+
 ## Problem
 
 The per-task Agent tab (0042) streams the agent's raw log, but gives no
@@ -111,3 +119,4 @@ to stare at the raw log and guess.
 
 - 2026-08-11T04:14:02Z · created · unknown
 - 2026-08-11T08:16:51Z · status inbox→ready
+- 2026-08-11T08:52:00Z · status ready→done · superseded by 0080 (stall alert folded in; animation + working-time were already in 0080's scope)
