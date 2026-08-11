@@ -2,14 +2,14 @@
 id: "0070"
 title: Keep paused tasks in Active status instead of reverting to Ready
 type: bug
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/keep-paused-tasks-in-active-status-inste
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T18:36:22Z"
+updated_at: "2026-08-11T18:36:27Z"
 ---
 ## Problem
 
@@ -83,3 +83,4 @@ Relevant code:
 - 2026-08-11T03:51:07Z · status inbox→ready
 - 2026-08-11T18:34:40Z · status ready→active, branch
 - 2026-08-11T18:36:22Z · status active→ready
+- 2026-08-11T18:36:27Z · status ready→active
