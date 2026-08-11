@@ -2,7 +2,7 @@
 id: "0077"
 title: Harden the review-status readback so it can't false-positive from inside a worktree
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
