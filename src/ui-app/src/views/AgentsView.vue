@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { onBeforeRouteLeave } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
@@ -19,9 +18,15 @@ const config = useConfigStore();
 
 const localAgents = ref<Agent[]>([]);
 const newName = ref("");
+let syncing = false;
+let autoSaveTimer: ReturnType<typeof setTimeout> | undefined;
+let saveInFlight = false;
+let savePending = false;
 
 function sync(): void {
+  syncing = true;
   localAgents.value = config.agents.map((a) => ({ ...a }));
+  syncing = false;
 }
 
 watch(
@@ -39,8 +44,6 @@ const defaultAgents = computed(() =>
 const customAgents = computed(() =>
   localAgents.value.filter((a) => !defaultNames.value.includes(a.name)),
 );
-
-const dirty = computed(() => JSON.stringify(localAgents.value) !== JSON.stringify(config.agents));
 
 const CLI_LABELS: Record<string, string> = {
   "claude code": "Claude Code",
@@ -170,41 +173,58 @@ function setInstr(a: Agent, e: Event): void {
   a.instructions = (e.target as HTMLTextAreaElement).value;
 }
 
-async function save(): Promise<void> {
+function validatedAgents(): Agent[] | undefined {
   const seen = new Set<string>();
   for (const a of localAgents.value) {
     const key = a.name.trim().toLowerCase();
     if (!key) {
       config.error = "Every agent needs a name.";
-      return;
+      return undefined;
     }
     if (seen.has(key)) {
       config.error = `Duplicate agent name "${a.name}".`;
-      return;
+      return undefined;
     }
     seen.add(key);
   }
-  await config.saveAgents(localAgents.value.map((a) => ({ ...a, name: a.name.trim() })));
-  sync();
+  return localAgents.value.map((a) => ({ ...a, name: a.name.trim() }));
 }
 
-// ---- Unsaved-changes guard ----
-// Leaving the Agents page (or the app) with local edits pending must ask for
-// confirmation instead of silently discarding them. `dirty` is the single
-// source of truth; when it is false neither prompt fires.
-
-function leaveGuard(): boolean {
-  if (!dirty.value) return true;
-  return window.confirm("You have unsaved agent changes. Leave the Agents page without saving?");
+async function autoSave(): Promise<void> {
+  if (saveInFlight) {
+    savePending = true;
+    return;
+  }
+  const agents = validatedAgents();
+  if (!agents) return;
+  saveInFlight = true;
+  savePending = false;
+  try {
+    await config.saveAgents(agents);
+  } catch {
+    // The store exposes the error inline; keep edits in place for the next retry.
+  } finally {
+    saveInFlight = false;
+    if (savePending) scheduleAutoSave(0);
+  }
 }
 
-onBeforeRouteLeave(() => leaveGuard());
-
-function handleBeforeUnload(e: BeforeUnloadEvent): void {
-  if (!dirty.value) return;
-  e.preventDefault();
-  e.returnValue = "";
+function scheduleAutoSave(delay = 450): void {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => void autoSave(), delay);
 }
+
+watch(
+  localAgents,
+  () => {
+    if (syncing || !config.loaded) return;
+    config.msg = "";
+    config.error = "";
+    if (saveInFlight) savePending = true;
+    scheduleAutoSave();
+  },
+  { deep: true, flush: "sync" },
+);
 
 // ---- Detected coding agents ----
 
@@ -268,13 +288,12 @@ function copyHint(hint: string): void {
 }
 
 onMounted(() => {
-  window.addEventListener("beforeunload", handleBeforeUnload);
   void checkAgents();
   void loadModels();
 });
 
 onUnmounted(() => {
-  window.removeEventListener("beforeunload", handleBeforeUnload);
+  clearTimeout(autoSaveTimer);
 });
 </script>
 
@@ -283,6 +302,9 @@ onUnmounted(() => {
     <div class="page-title">Agents</div>
     <div class="page-desc">
       The AI agents that work this repo · opencode + big pickle by default
+      <span v-if="config.saving"> · Saving…</span>
+      <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+      <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
     </div>
 
     <div v-if="!config.loaded" class="spin"></div>
@@ -520,28 +542,6 @@ onUnmounted(() => {
         </template>
       </Card>
 
-      <div class="save-bar agents-savebar" :class="{ dirty }">
-        <div v-if="dirty" class="save-callout">
-          <span class="save-dot"></span>
-          <div>
-            <div class="save-title">Unsaved changes</div>
-            <div class="save-sub">Save to apply your edits</div>
-          </div>
-        </div>
-        <div v-if="config.msg" class="save-msg ok">{{ config.msg }}</div>
-        <div v-if="config.error" class="save-msg err">{{ config.error }}</div>
-        <div class="save-actions">
-          <Button
-            variant="default"
-            class="agents-save-btn"
-            :class="{ dirty }"
-            @click="save"
-            :disabled="config.saving || !config.loaded"
-          >
-            {{ config.saving ? "Saving…" : "Save agents" }}
-          </Button>
-        </div>
-      </div>
     </template>
   </div>
 </template>
