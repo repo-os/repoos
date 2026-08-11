@@ -2,14 +2,14 @@
 id: "0083"
 title: Test and validate coding-agent/model combinations from the Agents page
 type: feature
-status: review
+status: done
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/0083-test-agent-model-combinations
 created_at: "2026-08-11T09:10:32Z"
-updated_at: "2026-08-11T10:10:10Z"
+updated_at: "2026-08-11T10:20:33Z"
 ---
 
 ## Problem
@@ -175,3 +175,5 @@ continuous background health checks.
   feat/0083-test-agent-model-combinations (0c0bf1e); `repoos check` green · ai
 - 2026-08-11T10:10:10Z · review fix: replaced cross-CLI fallback labels with
   Codex's live account model catalog and made testing target configured CLIs (f0be1c0) · ai
+- 2026-08-11T10:20:33Z · status review→done · human sign-off; approved for
+  fast-forward merge to main · human
