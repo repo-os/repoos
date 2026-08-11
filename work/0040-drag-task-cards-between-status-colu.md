@@ -2,14 +2,14 @@
 id: "0040"
 title: Drag task cards between status columns on the Work board
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/drag-task-cards-between-status-columns-o
 created_at: "2026-08-06T10:30:00Z"
-updated_at: "2026-08-11T00:11:28Z"
+updated_at: "2026-08-11T00:16:29Z"
 ---
 ## Activity
 
@@ -67,3 +67,4 @@ status updates immediately — same effect as the drawer dropdown, no navigation
 - 2026-08-10T23:59:08Z · status ready→active
 - 2026-08-11T00:11:28Z · status active→review
 - 2026-08-11T00:11:28Z · follow-on noted: reordering cards within a column (no ordering field; status stays the only ordering dimension)
+- 2026-08-11T00:16:29Z · status review→done
