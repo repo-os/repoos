@@ -68,6 +68,7 @@ import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
+import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 
 export interface ServeOptions {
   root?: string;
@@ -384,6 +385,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const previews = new PreviewManager(config, emitEvent);
   previews.cleanupOrphans();
 
+  // System resource polling over SSE. Samples CPU/memory/process stats every
+  // 5s while at least one SSE client is connected; idles when no one is
+  // listening (a headless server should not burn cycles measuring itself for
+  // nobody). Graceful: skips sampling entirely when `ps` is unavailable.
+  const SYSTEM_SAMPLE_INTERVAL_MS = 5000;
+  const systemSampleTimer = setInterval(() => {
+    if (clients.size === 0 || !psAvailable()) return;
+    try {
+      const stats = sampleSystem({
+        serverPid: process.pid,
+        cacheDir: join(config.root, config.cacheDir),
+        runningAgents: runner.running(),
+      });
+      emitEvent({ type: "system.stats", stats });
+    } catch {
+      /* sampling is best-effort — never crash the poll loop */
+    }
+  }, SYSTEM_SAMPLE_INTERVAL_MS);
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
@@ -579,6 +599,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           agents = [];
         }
         return json(res, 200, { agents });
+      }
+      if (path === "/api/system" && method === "GET") {
+        const stats = sampleSystem({
+          serverPid: process.pid,
+          cacheDir: join(config.root, config.cacheDir),
+          runningAgents: runner.running(),
+        });
+        return json(res, 200, stats);
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
@@ -1301,6 +1329,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         } catch {
           /* ignore */
         }
+        clearInterval(systemSampleTimer);
         throw err;
       }
 
@@ -1314,6 +1343,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         port: actualPort,
         index,
         close: async () => {
+          clearInterval(systemSampleTimer);
           unsubscribe();
           unsubscribeCleanup();
           watcher.stop();

@@ -2,7 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore } from "./ui";
-import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, Task } from "../types";
+import type { AgentOutputEntry, Counts, Health, RepoEvent, RepoIndex, SystemStats, Task } from "../types";
 
 export interface FeedItem {
   key: number;
@@ -93,6 +93,8 @@ export const useRepoStore = defineStore("repo", () => {
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  /** Live system resource stats from the SSE stream. */
+  const systemStats = ref<SystemStats | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
@@ -253,6 +255,8 @@ export const useRepoStore = defineStore("repo", () => {
       );
     } else if (e.type === "index.rebuilt") {
       void refresh();
+    } else if (e.type === "system.stats") {
+      systemStats.value = e.stats;
     }
   }
 
@@ -265,7 +269,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "agent.running", "agent.exited", "agent.output", "system.stats"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -476,6 +480,7 @@ export const useRepoStore = defineStore("repo", () => {
     doneSteps,
     sortOrder,
     toasts,
+    systemStats,
     pushToast,
     removeToast,
     setSortOrder,

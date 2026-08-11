@@ -4,6 +4,7 @@ import { useRepoStore } from "../stores/repo";
 import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
 import AiTasksPanel from "../components/AiTasksPanel.vue";
+import SystemResourcePanel from "../components/SystemResourcePanel.vue";
 
 const repo = useRepoStore();
 const { counts, repoName } = storeToRefs(repo);
@@ -13,6 +14,8 @@ const { counts, repoName } = storeToRefs(repo);
   <div>
     <div class="page-title">Mission Control</div>
     <div class="page-desc">{{ repoName }} · live from {{ repo.origin }}</div>
+
+    <SystemResourcePanel />
 
     <div class="stat-grid">
       <router-link :to="{ path: '/work', query: { status: 'draft' } }" class="stat-link">
