@@ -8,8 +8,10 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/keep-paused-tasks-in-active-status-inste
+cli_override: claude code
+model_override: sonnet
 created_at: "2026-08-11T03:17:31Z"
-updated_at: "2026-08-11T18:52:30Z"
+updated_at: "2026-08-11T18:57:27Z"
 ---
 ## Problem
 
@@ -84,3 +86,4 @@ Relevant code:
 - 2026-08-11T18:34:40Z · status ready→active, branch
 - 2026-08-11T18:36:22Z · status active→ready
 - 2026-08-11T18:36:27Z · status ready→active
+- 2026-08-11T18:57:27Z · cli_override, model_override
