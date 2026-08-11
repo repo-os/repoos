@@ -2,14 +2,14 @@
 id: "0086"
 title: Simplify agent chat continuation controls
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T11:55:10Z"
-updated_at: "2026-08-11T11:55:10Z"
+updated_at: "2026-08-11T11:59:03Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Keep the “Continue” line in task agent chats and display a timestamp with it
 ## Activity
 
 - 2026-08-11T11:55:10Z · created · unknown
+- 2026-08-11T11:59:03Z · status inbox→ready
