@@ -5,12 +5,30 @@ import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
+  dragEnabled: true,
+});
 
 const ui = useUiStore();
 const repo = useRepoStore();
 
 const busy = ref(false);
+const dragging = ref(false);
+
+function onDragStart(e: DragEvent): void {
+  if (!props.dragEnabled) return;
+  const dt = e.dataTransfer;
+  if (!dt) return;
+  dt.effectAllowed = "move";
+  dt.setData("text/plain", props.task.id);
+  dragging.value = true;
+}
+
+function onDragEnd(): void {
+  dragging.value = false;
+  window.dispatchEvent(new CustomEvent("repoos:board-dragend"));
+}
+
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
 const restartTask = ref<Task | null>(null);
 
@@ -103,9 +121,13 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       running: repo.isRunning(task.id),
+      dragging,
       'has-action': !!action,
     }"
+    :draggable="dragEnabled"
     @click="ui.openTask(task)"
+    @dragstart="onDragStart"
+    @dragend="onDragEnd"
   >
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>

@@ -269,6 +269,11 @@
   .board-col.collapsed::after{display:none}
   .col-empty{font-size:10.5px;color:var(--txt-faint);text-align:center;padding:14px 0;font-family:'JetBrains Mono',monospace}
 
+  /* drag-and-drop drop-target highlight */
+  .board-col.drag-over{outline:1px dashed var(--cyan);outline-offset:-1px;border-radius:13px;box-shadow:0 0 14px -5px var(--cyan)}
+  .board-col.drag-over .col-body{background:var(--cyan-dim);border-radius:12px}
+  .board-col.drag-over .col-body .col-empty{color:var(--cyan)}
+
   /* collapsed: slim neutral vertical bar, colored cap with count, bottom fades out */
   .board-col.collapsed{flex:0 0 38px;width:38px;-webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);mask-image:linear-gradient(to bottom,#000 55%,transparent 100%)}
   .board-col.collapsed .col-body{display:none}
@@ -311,6 +316,10 @@
   .tc-foot svg{width:11px;height:11px}
   .tc-git{margin-left:auto;color:var(--green)}
   .task-card.running{border-color:var(--violet-border-tint)}
+  .task-card[draggable="true"]{cursor:grab}
+  .task-card[draggable="true"]:hover{cursor:grab}
+  .task-card.dragging{opacity:.35;transform:scale(.97);cursor:grabbing;box-shadow:none}
+  .task-card.dragging .tc-actions{pointer-events:none}
   .task-card.has-action .tc-git{margin-left:0}
   .task-card.has-action .tc-actions{margin-left:auto}
   .tc-actions{display:flex;align-items:center;gap:6px}
