@@ -39,4 +39,4 @@ The task panel should show the existing prominent "Move to done" button. Clickin
 - 2026-08-11T20:02:12Z · created · unknown
 - 2026-08-11T20:02:19Z · status inbox→ready
 - 2026-08-11T20:02:41Z · cli_override, model_override
-- 2026-08-11T20:02:43Z · status ready→active, branch
+- 2026-08-12T04:07:00Z · status active→review · removed confirmation step, repoos check green

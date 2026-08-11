@@ -225,7 +225,6 @@ async function deleteTask(): Promise<void> {
 
 // ---- review → done close-out ----
 
-const confirmDone = ref(false);
 /** True while the merge+build+check+cleanup request is in flight. */
 const doingDone = ref(false);
 /** Elapsed seconds shown next to the progress label while the flow runs. */
@@ -279,16 +278,6 @@ const doneProgress = computed(() => {
   return doingDone.value && doneTicks.value > 0 ? `${base} ${doneTicks.value}s` : base;
 });
 
-function startDoneConfirm(): void {
-  confirmDone.value = true;
-  doneFailure.value = null;
-}
-
-function cancelDoneConfirm(): void {
-  confirmDone.value = false;
-  doneFailure.value = null;
-}
-
 async function moveToDone(): Promise<void> {
   if (!ui.active) return;
   ui.saving = true;
@@ -297,7 +286,6 @@ async function moveToDone(): Promise<void> {
   startDoneTimer();
   try {
     await repo.completeTask(ui.active);
-    confirmDone.value = false;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const step = ui.active ? repo.doneSteps[ui.active.id] ?? "merge" : "merge";
@@ -309,7 +297,6 @@ async function moveToDone(): Promise<void> {
       message,
     };
     repo.onError(err);
-    confirmDone.value = false;
   } finally {
     doingDone.value = false;
     stopDoneTimer();
@@ -1206,40 +1193,16 @@ function resetFreeformOverrides(): void {
             </span>
           </div>
           <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
-            <template v-if="!confirmDone">
-              <Button
-                variant="default"
-                class="w-full"
-                :disabled="ui.saving"
-                @click="startDoneConfirm"
-              >
-                <CheckCheck class="size-3.5" />
-                Move to done
-              </Button>
-            </template>
-            <template v-else>
-              <p class="delete-prompt">
-                Move task #{{ ui.active.id }} to done? This merges
-                <span class="mono">{{ effectiveBranch }}</span> into main (syncing it with main
-                first if the merge can't proceed cleanly), runs
-                <span class="mono">repoos check</span>, then deletes the branch and closes the
-                worktree.
-              </p>
-              <div class="delete-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="ui.saving"
-                  @click="cancelDoneConfirm"
-                >
-                  Cancel
-                </Button>
-                <Button variant="default" size="sm" :disabled="ui.saving" @click="moveToDone">
-                  <ActivityIndicator v-if="doingDone" />
-                  {{ doingDone ? doneProgress : "Move to done" }}
-                </Button>
-              </div>
-            </template>
+            <Button
+              variant="default"
+              class="w-full"
+              :disabled="ui.saving"
+              @click="moveToDone"
+            >
+              <CheckCheck v-if="!doingDone" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ doingDone ? doneProgress : "Move to done" }}
+            </Button>
             <div
               v-if="doneFailure"
               class="done-failure"
