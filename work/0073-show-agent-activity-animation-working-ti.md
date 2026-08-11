@@ -2,14 +2,14 @@
 id: "0073"
 title: "Show agent activity animation, working time, and stall alert in the chat panel"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T04:14:02Z"
-updated_at: "2026-08-11T04:14:02Z"
+updated_at: "2026-08-11T08:16:51Z"
 ---
 ## Problem
 
@@ -110,3 +110,4 @@ to stare at the raw log and guess.
 ## Activity
 
 - 2026-08-11T04:14:02Z · created · unknown
+- 2026-08-11T08:16:51Z · status inbox→ready
