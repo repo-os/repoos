@@ -2,14 +2,14 @@
 id: "0096"
 title: Make agent previews server-owned and protect the main server port
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T15:13:09Z"
-updated_at: "2026-08-11T15:13:09Z"
+updated_at: "2026-08-11T15:22:46Z"
 ---
 ## Activity
 
@@ -115,3 +115,7 @@ the main RepoOS process.
 - 0087 — release agent processes when tasks leave active
 - 0090 — persist agent sessions and survive server reloads
 - ADR-0005 — agents use RepoOS APIs for privileged operations
+
+## Activity
+
+- 2026-08-11T15:22:46Z · status inbox→ready
