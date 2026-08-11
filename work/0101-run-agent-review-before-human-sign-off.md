@@ -2,7 +2,7 @@
 id: "0101"
 title: Run agent review before human sign-off
 type: feature
-status: active
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/run-agent-review-before-human-sign-off
 cli_override: claude code
 model_override: opus
 created_at: "2026-08-11T16:24:27Z"
-updated_at: "2026-08-11T18:57:27Z"
+updated_at: "2026-08-11T18:59:08Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ If the review agent is disabled on the Agents page, moving a task to `review` do
 - 2026-08-11T18:35:08Z · status inbox→ready
 - 2026-08-11T18:44:25Z · status ready→active, branch
 - 2026-08-11T18:56:18Z · cli_override, model_override
+- 2026-08-11T18:59:08Z · status active→ready
