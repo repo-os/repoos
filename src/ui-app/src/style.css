@@ -460,6 +460,7 @@
   .agent-step{display:flex;align-items:center;gap:7px;color:var(--txt-faint);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;padding:2px 2px}
   .agent-step-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 6px var(--violet-tint);flex:none}
   .agent-step.fin .agent-step-dot{background:var(--green);box-shadow:0 0 6px var(--green-tint)}
+  .agent-step-time{color:var(--txt-faint);text-transform:none;letter-spacing:.02em;font-size:10px}
   .agent-step-reason{margin-left:auto;color:var(--txt-faint);text-transform:none;letter-spacing:.02em;font-size:10px}
   .agent-tool{border:1px solid var(--border);border-radius:9px;overflow:hidden;font-size:11.5px;background:var(--panel-solid)}
   .agent-tool summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;list-style:none;user-select:none}

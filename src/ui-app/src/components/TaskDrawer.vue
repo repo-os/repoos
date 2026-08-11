@@ -454,6 +454,7 @@ interface DisplayEntry {
   toolOutput?: string;
   stepKind?: "start" | "finish";
   stepReason?: string;
+  stepAt?: string;
 }
 
 /**
@@ -485,7 +486,16 @@ const displayEntries = computed<DisplayEntry[]>(() => {
           toolOutput: e.output ? stripAnsi(e.output) : undefined,
         });
       } else if (e.type === "step") {
-        out.push({ key: out.length, kind: "step", stepKind: e.kind, stepReason: e.reason });
+        // Only finish markers are useful continuation information; drop the
+        // "step" start line so the chat is less noisy.
+        if (e.kind === "start") continue;
+        out.push({
+          key: out.length,
+          kind: "step",
+          stepKind: e.kind,
+          stepReason: e.reason,
+          stepAt: e.at,
+        });
       } else {
         out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
       }
@@ -1043,19 +1053,16 @@ async function sendTurn(): Promise<void> {
               </div>
               <!-- assistant text block -->
               <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
-              <!-- step boundary marker -->
+              <!-- continuation marker -->
               <div
                 v-else-if="entry.kind === 'step'"
                 class="agent-step"
                 :class="{ fin: entry.stepKind === 'finish' }"
               >
                 <span class="agent-step-dot"></span>
-                <span>{{
-                  entry.stepKind === "start"
-                    ? "step"
-                    : entry.stepReason === "stop"
-                      ? "done"
-                      : "continue"
+                <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
+                <span v-if="entry.stepReason !== 'stop' && entry.stepAt" class="agent-step-time">{{
+                  repo.fmtDate(entry.stepAt)
                 }}</span>
                 <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
               </div>

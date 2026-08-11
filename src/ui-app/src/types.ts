@@ -84,7 +84,7 @@ export type AgentOutputEntry =
       output?: string;
       state?: string;
     }
-  | { type: "step"; kind: "start" | "finish"; reason?: string }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   | { type: "sys"; d: string }
   | { s: "out" | "err" | "sys"; d: string };
 
