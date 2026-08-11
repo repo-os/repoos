@@ -2,14 +2,14 @@
 id: "0097"
 title: Generate cached task context packs and bootstrap worktrees before launching agents
 type: feature
-status: ready
+status: review
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T15:19:05Z"
-updated_at: "2026-08-11T15:20:17Z"
+updated_at: "2026-08-12T00:24:00Z"
 ---
 ## Problem
 
@@ -133,3 +133,4 @@ of spending several minutes on repeated orientation.
 
 - 2026-08-11T15:19:05Z · created · unknown
 - 2026-08-11T15:20:17Z · status inbox→ready
+- 2026-08-12T00:24:00Z · status ready→review · Implemented bootstrap phase (src/core/bootstrap.ts) and cached context pack generation (src/core/context-pack.ts). All 224 tests pass; repoos check green (pre-existing screenshots staleness only).
