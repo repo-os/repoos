@@ -9,13 +9,14 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T14:42:54Z"
-updated_at: "2026-08-11T14:47:51Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
 ## Activity
 
 - 2026-08-11T14:42:54Z · created · unknown
 - 2026-08-11T14:45:55Z · updated · specify RepoOS-owned sandbox handoff
 - 2026-08-11T14:47:51Z · updated · make API-first privilege separation explicit
+- 2026-08-11T15:37:46Z · updated · sequence behind active runner-orchestration work
 
 
 ## Problem
@@ -103,9 +104,14 @@ appropriate RepoOS operation can exist.
   and a small handoff orchestration module comparable to `src/server/done.ts`.
   Test areas include `src/ui-app/tests/agent-drivers.test.ts`, server route
   tests, and existing Git worktree tests.
+- Coordinate with active tasks 0096 and 0097 before implementation because all
+  three touch runner orchestration and structured server-side operations. Land
+  this after their contracts settle rather than creating parallel handoff APIs.
 
 ## Related
 
 - 0029 — failure observed during its completed implementation handoff
 - 0041 — task worktree support
 - 0067 — canonical task state across the main checkout and worktree
+- 0096 — managed task-specific previews and runner lifecycle changes (active)
+- 0097 — cached context packs and agent bootstrap changes (active)

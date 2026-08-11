@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T13:32:49Z"
-updated_at: "2026-08-11T13:33:09Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
 ## Problem
 
@@ -26,6 +26,8 @@ Moving a task to its next state produces a clear, creative animation in both the
 - [ ] The animation communicates that the task successfully moved to its next state.
 - [ ] The animation appears on the task affected by the action.
 - [ ] The open task panel and card view use a visually consistent transition treatment.
+- [ ] Failed transitions show the existing error feedback and never play the success animation.
+- [ ] With `prefers-reduced-motion: reduce`, the UI uses a brief non-motion highlight or equivalent accessible confirmation.
 
 ## Notes for AI
 
@@ -33,6 +35,10 @@ Moving a task to its next state produces a clear, creative animation in both the
 - Be creative with the visual treatment; a wave of color is a suggested direction, not a strict requirement.
 - Assume the existing state-transition behavior remains unchanged and only its visual feedback needs enhancement.
 - Keep the animation noticeable enough to resolve uncertainty without introducing new interaction steps.
+- Trigger the effect only after the server confirms the state change. If the card
+  immediately leaves the current column, use a short leaving/ghost transition so
+  the feedback remains attached to the affected task rather than flashing on an
+  unrelated destination.
 
 ## Scope
 
@@ -42,3 +48,4 @@ This task covers animation feedback when a task advances to its next state from 
 
 - 2026-08-11T13:32:49Z · created · unknown
 - 2026-08-11T13:33:09Z · status inbox→ready
+- 2026-08-11T15:37:46Z · updated · define success timing, failure behavior, and reduced-motion fallback

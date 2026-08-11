@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-cloudflare-tunnel-toggle-and-setup-u
 created_at: "2026-08-11T05:59:26Z"
-updated_at: "2026-08-11T14:30:31Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
 ## Problem
 
@@ -69,14 +69,16 @@ surfaced there as an explicit, opt-in toggle.
       delete existing tunnel configuration.
 - [ ] Existing Settings page behavior (General/Advanced groups, save flow,
       deep-link focus via `?focus=` query param) is unaffected.
+- [ ] Browser actions use narrow RepoOS tunnel/status/config API operations;
+      the UI never attempts to execute `cloudflared` or shell commands itself,
+      and no general command-execution endpoint is introduced.
 
 ## Notes for AI
 
-- This task is UI-only: building the Settings toggle and the side panel
-  shell/content. It depends on the underlying `repoos tunnel` CLI/config
-  functionality from #68 (already `done`) to actually perform setup and
-  manage tunnels — wire the panel's actions to that existing functionality
-  rather than reimplementing tunnel logic in the UI layer.
+- This is a UI-led vertical slice, not literally UI-only. A browser cannot call
+  the CLI directly, so the panel may add narrow server endpoints that invoke
+  the existing tunnel/config domain functions from #68. Reuse those functions;
+  do not duplicate tunnel logic or expose arbitrary process execution.
 - Reference `src/ui-app/src/views/SettingsView.vue` for the settings-row
   pattern (`setting-row`, `setting-label`, `setting-desc`, `Switch` from
   `components/ui/switch.vue`) and `src/ui-app/src/components/TaskDrawer.vue`
@@ -102,7 +104,8 @@ surfaced there as an explicit, opt-in toggle.
 ## Scope
 
 In scope: Settings page toggle, side panel UI (setup instructions, wiring to
-existing tunnel CLI/config), persistence of the enabled/disabled setting.
+existing tunnel domain functions through narrow APIs), persistence of the
+enabled/disabled setting.
 
 Deferred: any new Cloudflare Tunnel backend/CLI capability (covered by #68),
 a generic reusable side-panel component abstraction, in-panel editing of
@@ -121,3 +124,4 @@ per-app Access allowlists unless it falls out naturally from the setup flow.
 - 2026-08-11T13:01:51Z · status active→ready
 - 2026-08-11T13:01:52Z · status ready→active
 - 2026-08-11T14:30:31Z · status active→ready
+- 2026-08-11T15:37:46Z · updated · clarify required narrow backend API boundary for browser actions

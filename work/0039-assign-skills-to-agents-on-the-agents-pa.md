@@ -9,12 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T10:05:00Z"
-updated_at: "2026-08-11T12:00:01Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
-## Activity
-
-- 2026-08-06T10:05:00Z · created · unknown
-
 ## Problem
 
 Skills exist on the Context page (`skills/<name>/SKILL.md`) and the Agents page
@@ -59,12 +55,12 @@ multi-select: the repo's discovered skills, each toggleable on/off per agent.
 
 ## Notes for AI
 
-- **Dependencies**: this builds on `#0035` (Agents page + agent config),
-  `#0038` (skills discovery + read path), and `#0037` (start-work launch
-  mechanics). Order: `#0037`'s launch hook is where skill injection lands; if
-  `#0037` is not done yet, this task must not fake-launch — keep the injection
-  point stubbed behind the launch path. The picker + persistence can land
-  independently of `#0037`.
+- **Dependencies**: `#0035` (Agents page + agent config), `#0038` (skills
+  discovery), and `#0037` (start-work launch mechanics) are complete. Build on
+  their current APIs rather than retaining the old conditional/stub guidance.
+- Coordinate context assembly with active task 0097. Skill contents should be
+  referenced by, or included in, the same cached context-pack mechanism rather
+  than creating a second unbounded prompt-concatenation path.
 - **Config**: extend `Agent` in `src/core/types.ts` + UI mirror with
   `skills?: string[]`. The server agents PATCH validation in
   `src/server/server.ts` already validates agents — add skills validation
@@ -96,7 +92,11 @@ multi-select: the repo's discovered skills, each toggleable on/off per agent.
 - `#0035` built the Agents page + agent config this extends; `#0038` built the
   skills read path this picks from; `#0037` provides the launch mechanics where
   injection happens.
+- `#0097` adds cached launch context packs; land skill injection against that
+  contract after it stabilizes.
 
 ## Activity
 
+- 2026-08-06T10:05:00Z · created · unknown
 - 2026-08-11T12:00:01Z · status inbox→draft
+- 2026-08-11T15:37:46Z · updated · remove completed dependency caveats and coordinate with context packs

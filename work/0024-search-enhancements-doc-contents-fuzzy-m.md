@@ -1,6 +1,6 @@
 ---
 id: "0024"
-title: "Search enhancements: doc contents, fuzzy matching, recent searches"
+title: "Improve global search with doc contents, fuzzy matching, history, and status cues"
 type: feature
 status: inbox
 priority: p2
@@ -9,11 +9,13 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-04T09:17:40Z"
-updated_at: "2026-08-04T09:17:40Z"
+updated_at: "2026-08-11T15:37:46Z"
 ---
 ## Activity
 
 - 2026-08-04T09:17:40Z · created · unknown
+- 2026-08-11T15:37:46Z · updated · fold in duplicate task 0030 and refresh CLI names
+- 2026-08-11T15:37:46Z · updated · fold in duplicate cross-theme search task 0057
 
 ## Problem
 
@@ -24,6 +26,10 @@ AGENTS.md rule) is unfindable; a typo or slight misspelling returns nothing; and
 there's no record of what you've searched for. Each of these was explicitly
 deferred from 0022 to its own follow-up — this is that follow-up.
 
+Task 0030 separately requested a status-colored dot on task search results.
+That is a small change to the same component and verification surface, so it is
+folded into this task rather than retaining a second search-polish task.
+
 ## Desired UX
 
 - Typing in the search bar finds matches INSIDE doc contents, not just titles
@@ -32,6 +38,10 @@ deferred from 0022 to its own follow-up — this is that follow-up.
   "tasks", "tasts" doesn't dead-end.
 - The dropdown shows recent searches (last N per session, or persisted), so
   re-finding something takes one keystroke.
+- Task results use the board's existing status-colored dot while retaining the
+  textual status for accessibility and clarity.
+- Search input, selected-result, hover, and focus states remain legible and
+  visually intentional in every built-in theme, not only Classic.
 - Results keep the 0022 behavior: grouped by kind, click-to-open the thing.
 
 ## Acceptance criteria
@@ -40,8 +50,12 @@ deferred from 0022 to its own follow-up — this is that follow-up.
       with a snippet around the match (doc list is no longer title/path-only)
 - [ ] Fuzzy/typo-tolerant matching returns near-misses instead of empty results
 - [ ] Recent searches appear in the dropdown and re-run on click
+- [ ] Task results show the existing board status dot (`statusColor`) without
+      changing document or setting results; the textual status remains visible
+- [ ] The search field and selected-result treatment are verified in every
+      built-in light and dark theme with adequate text/focus contrast
 - [ ] Existing 0022 behavior preserved: grouping, click-through, ⌘K/↑↓/Enter/Esc
-- [ ] `ros check` passes; any new runtime dependency must be explicitly listed
+- [ ] `repoos check` passes; any new runtime dependency must be explicitly listed
       and justified (see Notes — it may be preferable to hand-roll)
 
 ## Notes for AI
@@ -64,7 +78,9 @@ deferred from 0022 to its own follow-up — this is that follow-up.
   match context readable in a monospace-friendly row.
 - Recent searches: a small in-memory list is enough; persistence (localStorage or
   server-side) is a judgment call — note which you chose and why.
-- `ros check` is the green bar; RepoOS runs compiled JS from `dist/` so rebuild
+- Reuse `statusColor` from `src/ui-app/src/stores/repo.ts` and the existing
+  compact `.cdot` treatment; do not introduce another status palette.
+- `repoos check` is the green bar; RepoOS runs compiled JS from `dist/` so rebuild
   (`bun run build`) before trusting output.
 
 ## Scope
@@ -78,5 +94,7 @@ deferred from 0022 to its own follow-up — this is that follow-up.
 
 - 0022: the v1 search this enhances (its `## Scope` explicitly deferred this
   work to "a SEPARATE task").
+- 0030: folded into this task; its only scope was the task-result status dot.
+- 0057: folded into this task; its only scope was cross-theme search styling.
 - 0019/0021 (PWA): offline-shell behavior affects whether client-side or
   server-side search is the right call.
