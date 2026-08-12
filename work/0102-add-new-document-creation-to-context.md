@@ -2,7 +2,7 @@
 id: "0102"
 title: Add new document creation to Context
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
