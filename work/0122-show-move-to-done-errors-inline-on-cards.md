@@ -90,6 +90,5 @@ review task's Work card and inside the task panel.
 ## Activity
 
 - 2026-08-12T06:04:02Z · status inbox→ready
-- 2026-08-12T11:34:12Z · status ready→active, branch
-- 2026-08-12T14:28:11Z · status active→review
 - 2026-08-12T14:28:12Z · needs_merge
+- 2026-08-12T22:32:00Z · status active→review

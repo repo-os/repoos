@@ -51,6 +51,43 @@ export interface DoneResult {
   task?: Task;
 }
 
+/**
+ * A failed review→done close-out, kept scoped to the task that produced it so
+ * both the board card and the task panel render the same inline error directly
+ * below the button the user pressed — never under a different task.
+ */
+export interface DoneError {
+  message: string;
+  conflicts: string[];
+  step: string;
+}
+
+/**
+ * Marker thrown by `completeTask` on failure. The caller renders the inline
+ * error (already stored per task) instead of a global toast, so `onError` can
+ * skip the toast for exactly this kind of failure and nothing else.
+ */
+export class MoveToDoneError extends Error {
+  readonly taskId: string;
+  constructor(taskId: string, message: string) {
+    super(message);
+    this.name = "MoveToDoneError";
+    this.taskId = taskId;
+  }
+}
+
+/** Pull the conflicting file names out of the server's close-out error. */
+export function extractConflicts(message: string): string[] {
+  const prefix = "merge conflict: ";
+  const idx = message.indexOf(prefix);
+  if (idx === -1) return [];
+  return message
+    .slice(idx + prefix.length)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
 
@@ -131,6 +168,8 @@ export const useRepoStore = defineStore("repo", () => {
   const agentStats = ref<Record<string, AgentSessionStats>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  /** Last failed review→done close-out per task id (inline error card). */
+  const doneErrors = ref<Record<string, DoneError>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
   /** Live system resource stats from the SSE stream. */
@@ -222,6 +261,17 @@ export const useRepoStore = defineStore("repo", () => {
     }, 800);
   }
 
+  /** Store or clear the inline move-to-done error for a task. */
+  function setDoneError(id: string, err: DoneError | null): void {
+    const next = { ...doneErrors.value };
+    if (err === null) delete next[id];
+    else next[id] = err;
+    doneErrors.value = next;
+  }
+
+  /** The inline move-to-done error for a task, or null when none is pending. */
+  const doneErrorFor = (id: string): DoneError | null => doneErrors.value[id] ?? null;
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") return;
@@ -244,6 +294,10 @@ export const useRepoStore = defineStore("repo", () => {
       const ui = useUiStore();
       if (ui.active && ui.active.id === e.task.id) ui.open(merged);
       recount();
+      // A close-out error only makes sense while the task is still in review;
+      // once it leaves review (done, moved back, etc.) the stale card would
+      // mislead, so drop it.
+      if (e.task.status !== "review") setDoneError(e.task.id, null);
       const changed = Object.keys(e.prev ?? {});
       const statusBit =
         e.prev && e.prev.status !== undefined
@@ -262,6 +316,7 @@ export const useRepoStore = defineStore("repo", () => {
       tasks.value = tasks.value.filter((t) => t.id !== e.id);
       const ui = useUiStore();
       if (ui.active && ui.active.id === e.id) ui.close();
+      setDoneError(e.id, null);
       recount();
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
     } else if (e.type === "agent.running") {
@@ -423,6 +478,9 @@ export const useRepoStore = defineStore("repo", () => {
     if (t.status === status) return;
     try {
       await patchTask(t.id, { status });
+      // Moving a review task anywhere (other than through the done workflow)
+      // invalidates any close-out error shown on its card.
+      if (status !== "review") setDoneError(t.id, null);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       pushToast(message, "error");
@@ -456,17 +514,28 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  /** Summary returned by the review→done close-out. */
+  /**
+   * Review→done close-out. On failure the error is kept on the task (the
+   * caller renders it inline below the button) and no global toast is shown;
+   * on success any previous inline error is cleared.
+   */
   async function completeTask(t: Task): Promise<DoneResult> {
-    const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
-      method: "POST",
-    });
-    if (!r.ok) {
-      const message = r.error ?? "could not complete task";
-      pushToast(message, "error");
-      throw new Error(message);
+    try {
+      const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
+        method: "POST",
+      });
+      if (!r.ok) throw new Error(r.error ?? "could not complete task");
+      setDoneError(t.id, null);
+      return r;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setDoneError(t.id, {
+        message,
+        conflicts: extractConflicts(message),
+        step: doneSteps.value[t.id] ?? "merge",
+      });
+      throw new MoveToDoneError(t.id, message);
     }
-    return r;
   }
 
   /**
@@ -655,7 +724,9 @@ export const useRepoStore = defineStore("repo", () => {
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
-    pushToast(message, "error");
+    // A failed move-to-done is surfaced inline on the task; a toast for it
+    // would duplicate the visible error and detach it from the action.
+    if (!(err instanceof MoveToDoneError)) pushToast(message, "error");
   }
 
   async function init(): Promise<void> {
@@ -687,6 +758,8 @@ export const useRepoStore = defineStore("repo", () => {
     outputs,
     agentStats,
     doneSteps,
+    doneErrors,
+    doneErrorFor,
     reviews,
     sortOrder,
     toasts,
