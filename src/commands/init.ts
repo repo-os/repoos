@@ -103,6 +103,10 @@ off; the implementer never merges to \`main\` at \`review\` time.
 ## Rules
 
 - **Never** move task files between folders. Status lives in frontmatter.
+- **Never write directly to \`work/*.md\` files.** All task creation and
+  manipulation goes through \`repoos\` commands or HTTP API endpoints
+  (\`POST /api/tasks\`, \`PATCH /api/tasks/:id\`, etc.). If the RepoOS server
+  is unreachable, stop and report the issue — do not hand-write task files.
 - **Never** deploy to production without human sign-off.
 - Keep frontmatter tidy; \`repoos\` will normalize key order on write.
 - One task = one focused worktree.

@@ -1,9 +1,14 @@
 ---
+id: "0147"
 title: Add Create draft button to the freeform New Task tab
 type: feature
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
+created_by: ""
+created_at: "2026-08-12T22:35:00Z"
+updated_at: "2026-08-12T22:35:00Z"
 ---
 
 ## Problem

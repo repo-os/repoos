@@ -25,6 +25,7 @@ import {
   type Status,
 } from "./types.js";
 import { parseTask } from "./task.js";
+import { parseDocument } from "./frontmatter.js";
 import {
   isGitRepo,
   localBranches,
@@ -67,8 +68,17 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
   const branches = useGit ? localBranches(config.root) : new Set<string>();
   const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
 
-  const tasks: Task[] = files.map((absPath) => {
+  let skippedTaskFiles = 0;
+  const tasks: Task[] = files.flatMap((absPath) => {
     const content = readFileSync(absPath, "utf8");
+    // Reject files with no explicit `id` in frontmatter — the API always sets
+    // it, so a missing id means a human or AI agent hand-wrote the file. These
+    // get an opaque derived id and would silently pollute the task list.
+    const { data } = parseDocument(content);
+    if (!("id" in data)) {
+      skippedTaskFiles++;
+      return [];
+    }
     const base = parseTask({
       content,
       absPath,
@@ -91,8 +101,14 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
         dirty: wt.dirty,
       };
     }
-    return base;
+    return [base];
   });
+  if (skippedTaskFiles > 0) {
+    console.warn(
+      `[repoos] skipped ${skippedTaskFiles} task file(s) with no \`id\` in frontmatter — ` +
+        `use the API (POST /api/tasks or PATCH /api/tasks/:id) instead of writing work/*.md directly`,
+    );
+  }
 
   tasks.sort((a, b) => {
     const s = statusRank(a.status) - statusRank(b.status);

@@ -1,16 +1,4 @@
 ---
-id: "0145"
-title: Add ntfy test notification button
-type: feature
-status: ready
-priority: p2
-area: general
-assigned_to: ai
-created_by: ""
-branch: feat/add-ntfy-test-notification-button
-created_at: "2026-08-12T13:45:39Z"
-updated_at: "2026-08-12T13:48:20Z"
----
 id: "0135"
 title: Add ntfy test notification button
 type: feature
@@ -75,12 +63,3 @@ Deferred / out of scope:
 - Notification delivery guarantee (remains best-effort, fire-and-forget)
 - Persistent notification history or delivery log
 - Client-side ntfy topic validation beyond non-empty check
-```
-
-Written to `work/0135-add-ntfy-test-notification-button.md`.
-
-## Activity
-
-- 2026-08-12T13:45:39Z · created · unknown
-- 2026-08-12T13:48:19Z · title, branch
-- 2026-08-12T13:48:20Z · status inbox→ready

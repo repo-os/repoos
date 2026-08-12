@@ -525,7 +525,19 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     }
 
     if (!found) {
-      result.push(`${key} = ${serialized}`);
+      // A brand-new scalar must land at root scope. Appending at the very end
+      // of the file is only safe when nothing after it is a `[section]` or
+      // `[[array-of-tables]]` block — otherwise the line reads back as a
+      // member of that table instead of the root config (the reader has no
+      // way to know the table "ended" without a following header). Insert
+      // before the first header line instead, so newly-saved keys are always
+      // unambiguously root-level regardless of what tables follow.
+      const firstHeaderIndex = result.findIndex((l) => l.replace(/#.*$/, "").trim().startsWith("["));
+      if (firstHeaderIndex === -1) {
+        result.push(`${key} = ${serialized}`);
+      } else {
+        result.splice(firstHeaderIndex, 0, `${key} = ${serialized}`);
+      }
       modified = true;
     }
   }
