@@ -8,9 +8,10 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/stream-claude-code-output-as-structured-
+cli_override: opencode
 model_override: opencode/big-pickle
 created_at: "2026-08-11T20:16:14Z"
-updated_at: "2026-08-12T04:13:31Z"
+updated_at: "2026-08-12T04:13:52Z"
 ---
 ## Activity
 
@@ -174,3 +175,4 @@ Notes that matter:
 - 2026-08-11T20:18:23Z · status inbox→ready
 - 2026-08-11T20:19:02Z · model_override
 - 2026-08-11T20:19:12Z · status ready→active, branch
+- 2026-08-12T04:13:52Z · cli_override
