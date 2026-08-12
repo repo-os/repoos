@@ -44,6 +44,10 @@ function makeFixture(checkExit = 0): Fixture {
   mkdirSync(bin, { recursive: true });
   writeFileSync(taskPath, taskText("active"));
   writeFileSync(join(root, "source.txt"), "base\n");
+  mkdirSync(join(root, "dist"), { recursive: true });
+  mkdirSync(join(root, "screenshots"), { recursive: true });
+  writeFileSync(join(root, "dist", "app.js"), "built from main\n");
+  writeFileSync(join(root, "screenshots", "board.png"), "captured on main\n");
   writeFileSync(join(bin, "repoos"), `#!/bin/sh\nexit ${checkExit}\n`, { mode: 0o755 });
   git(root, ["init", "-q"]);
   git(root, ["config", "user.email", "test@example.com"]);
@@ -119,6 +123,47 @@ describe("trusted server-side handoff", () => {
       const repeated = await handoffTask(fx.config, readTask(fx), request(fx));
       expect(repeated).toMatchObject({ ok: true, detail: "handoff was already finalized" });
       expect(Number(git(fx.worktree, ["rev-list", "--count", "HEAD"]))).toBe(count);
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("keeps locally rebuilt dist and screenshots out of feature commits and merge conflicts", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const base = git(fx.worktree, ["rev-parse", "HEAD"]);
+      writeFileSync(join(fx.worktree, "dist", "app.js"), "built in feature worktree\n");
+      writeFileSync(join(fx.worktree, "screenshots", "board.png"), "captured in feature worktree\n");
+      git(fx.worktree, ["add", "dist", "screenshots"]); // Even pre-staged artifacts are excluded.
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      const committed = git(fx.worktree, ["diff", "--name-only", `${base}..HEAD`]).split("\n");
+      expect(committed).toContain("source.txt");
+      expect(committed.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/"))).toBe(false);
+      expect(git(fx.worktree, ["status", "--porcelain", "--", "dist", "screenshots"])).toContain("dist/app.js");
+
+      // Main can regenerate the same tracked artifacts without creating an
+      // artifact conflict when the feature branch is merged.
+      writeFileSync(join(fx.root, "dist", "app.js"), "rebuilt on main\n");
+      writeFileSync(join(fx.root, "screenshots", "board.png"), "recaptured on main\n");
+      git(fx.root, ["add", "dist", "screenshots"]);
+      git(fx.root, ["commit", "-m", "chore: regenerate artifacts on main"]);
+      try {
+        git(fx.root, ["merge", "--no-commit", "--no-ff", "feat/handoff"]);
+      } catch {
+        // The task file is intentionally edited on both sides and may need the
+        // done flow's existing auto-resolution. Generated artifacts must not.
+      }
+      const conflicts = git(fx.root, ["diff", "--name-only", "--diff-filter=U"])
+        .split("\n")
+        .filter(Boolean);
+      expect(conflicts.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/"))).toBe(false);
+      git(fx.root, ["merge", "--abort"]);
     } finally {
       process.env.PATH = oldPath;
       fx.clean();

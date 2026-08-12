@@ -6,8 +6,8 @@
  * a missing CLI or a broken agent config must never crash the server or block
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
-import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
@@ -38,7 +38,7 @@ export type AgentEvent =
 
 export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
 
-/** A capability minted by the runner for one completed task-agent turn. */
+/** A capability minted by the runner for one completed agent turn. */
 export interface AgentHandoffRequest {
   taskId: string;
   runId: string;
@@ -75,7 +75,7 @@ interface Entry {
   killTimer?: ReturnType<typeof setTimeout>;
   /** The task being worked on (start turns only — resume turns have none). */
   task?: Task;
-  branch?: string;
+  branch: string;
   runId: string;
   handoffRequested: boolean;
 }
@@ -87,6 +87,8 @@ interface Session {
   bytes: number;
   workdir?: string;
   sessionId?: string;
+  task?: Task;
+  branch?: string;
   /** Whether the session runs a structured-event CLI (opencode `--format json`
    *  or claude code `--output-format stream-json`) or a plain-line CLI (qwen /
    *  codex). claude gets its own branch because its stream-json event shapes
@@ -117,9 +119,6 @@ interface Session {
    * arriving after a stall clears it exactly once too.
    */
   stalledEmitted: boolean;
-  /** Task identity retained across follow-up turns for server-owned handoff. */
-  task?: Task;
-  branch?: string;
 }
 
 const now = (): string => new Date().toISOString();
@@ -831,12 +830,8 @@ function missionFor(
   contextPack?: string,
   resumePreamble?: string,
 ): string {
-  // The same task file exists in the worktree (checked out on `branch`) and in
-  // the main checkout. The live board reads the MAIN copy; the branch carries
-  // the worktree copy. Status edits must reach BOTH so the user sees review
-  // immediately without serving a per-task port — and the read-back step below
-  // verifies the board actually reflects the real status before the agent
-  // stops (the anti-#0063 fix).
+  // Source edits stay inside the sandbox. RepoOS owns the privileged Git and
+  // canonical-board mutations after the structured signal below (ADR-0005).
   const worktreeTask = join(workdir, relative(config.root, task.path));
   const parts: string[] = [];
 
@@ -855,24 +850,20 @@ function missionFor(
     "",
     `Task #${task.id}: ${task.title}`,
     `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
-    `Task file (this worktree — edit + commit on the branch): ${worktreeTask}`,
-    `Task file (main checkout — the live board reads this copy): ${task.path}`,
+    `Task file (read this worktree copy for the specification): ${worktreeTask}`,
     "",
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
     "",
     "1. Read the task file and implement what it describes.",
-    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before you commit, set review, or stop.",
-    "3. Commit all your work on this branch (git add + git commit).",
-    `4. Set \`status: review\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
-    `5. Set \`status: review\` in the main-checkout copy (${task.path}) — edit it WITHOUT committing.`,
-    `6. Read the main-checkout copy back at the literal file path ${task.path} — use your Read tool or \`cat\` on that exact path, NEVER \`repoos show\`/\`list\`/\`index\`: from inside a worktree those CLI commands resolve to the worktree's own root and can false-positive on the live board. confirm it shows \`status: review\`. If it does not, repeat step 5 until it does.`,
-    "7. Stop and report. Leave the worktree open — do NOT merge or delete the branch.",
+    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before requesting handoff.",
+    "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
+    "   RepoOS commits only source, work, docs, and config files to the branch — never `dist/` or `screenshots/`; build artifacts created by `repoos check` stay local.",
+    `4. When the implementation is ready, finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
+    "5. Stop. RepoOS will independently run `repoos check`, commit the implementation, set the worktree task to review, and update the canonical board copy.",
     "",
     "If you are blocked or need a decision from the human:",
-    `1. Set \`needs_input: true\` in the worktree copy (${worktreeTask}) and commit that change on the branch.`,
-    `2. Set \`needs_input: true\` in the main-checkout copy (${task.path}) WITHOUT committing.`,
-    "3. Leave the task status `active` and STOP.",
-    "Never silently leave the task `active` without the `needs_input` flag when you are waiting on the human.",
+    "1. Explain the blocker clearly and do NOT emit the handoff-ready signal.",
+    "2. Leave the task active and STOP so the same worktree/session can be resumed.",
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
@@ -889,8 +880,6 @@ function missionFor(
     "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
-    "",
-    `After the checklist is complete, finish with this exact line so RepoOS can validate the handoff: ${HANDOFF_READY_SIGNAL}`,
   );
   return parts.join("\n");
 }
@@ -1054,11 +1043,8 @@ export function runPrompt(
 export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
-  private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
-  private readonly handoffsInFlight = new Set<string>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
-  private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
   /**
    * The main RepoOS server's own API URL, injected into every agent process so
    * the mission's managed-preview request resolves the ACTUAL control plane,
@@ -1068,6 +1054,10 @@ export class AgentRunner {
   private readonly stallTimeoutMs: number;
   private readonly stallTimer: ReturnType<typeof setInterval>;
 
+  private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
+  private readonly handoffsInFlight = new Set<string>();
+  private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
    * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
@@ -1076,15 +1066,11 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    onHandoffOrOpts:
-      | ((request: AgentHandoffRequest) => void | Promise<void>)
-      | { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
-    runnerOpts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void> } = {},
   ) {
     this.config = config;
     this.emit = emit;
-    this.onHandoff = typeof onHandoffOrOpts === "function" ? onHandoffOrOpts : undefined;
-    const opts = typeof onHandoffOrOpts === "function" ? runnerOpts : onHandoffOrOpts;
+    this.onHandoff = opts.onHandoff;
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
     const checkMs =
       opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
@@ -1095,6 +1081,30 @@ export class AgentRunner {
   /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
   dispose(): void {
     clearInterval(this.stallTimer);
+  }
+
+  /** Append trusted server orchestration progress to the retained transcript. */
+  system(taskId: string, text: string): void {
+    this.appendLine(taskId, "sys", text);
+  }
+
+  /** Validate that a handoff capability was minted by a successful active turn. */
+  validateHandoff(request: AgentHandoffRequest): boolean {
+    const issued = this.authorizedHandoffs.get(request.runId);
+    return Boolean(
+      issued &&
+      issued.taskId === request.taskId &&
+      issued.branch === request.branch &&
+      this.samePath(issued.workdir, request.workdir) &&
+      issued.sessionId === request.sessionId,
+    );
+  }
+
+  /** Validate and expire one runner-issued handoff capability atomically. */
+  consumeHandoff(request: AgentHandoffRequest): boolean {
+    if (!this.validateHandoff(request)) return false;
+    this.authorizedHandoffs.delete(request.runId);
+    return true;
   }
 
   isRunning(taskId: string): boolean {
@@ -1232,25 +1242,6 @@ export class AgentRunner {
     return this.sessions.get(taskId) ?? null;
   }
 
-  /** Append trusted server orchestration progress to a retained transcript. */
-  system(taskId: string, text: string): void {
-    this.appendLine(taskId, "sys", text);
-  }
-
-  /** Validate and atomically expire one runner-issued handoff capability. */
-  consumeHandoff(request: AgentHandoffRequest): boolean {
-    const issued = this.authorizedHandoffs.get(request.runId);
-    const valid = Boolean(
-      issued &&
-      issued.taskId === request.taskId &&
-      issued.branch === request.branch &&
-      this.samePath(issued.workdir, request.workdir) &&
-      issued.sessionId === request.sessionId,
-    );
-    if (valid) this.authorizedHandoffs.delete(request.runId);
-    return valid;
-  }
-
   /**
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
@@ -1278,6 +1269,7 @@ export class AgentRunner {
           ...process.env,
           REPOOS_AGENT: "1",
           REPOOS_TASK_ID: taskId,
+          REPOOS_RUN_ID: runId,
           ...(this.apiUrl ? { REPOOS_API_URL: this.apiUrl } : {}),
         },
       });
@@ -1293,7 +1285,7 @@ export class AgentRunner {
       startedAt: now(),
       workdir: cwd,
       task,
-      branch,
+      branch: branch ?? task?.branch ?? "",
       runId,
       handoffRequested: false,
     });
@@ -1338,12 +1330,6 @@ export class AgentRunner {
     const session = this.sessions.get(taskId);
     if (!session) return;
 
-    if (stream === "out" && raw.includes(HANDOFF_READY_SIGNAL)) {
-      const running = this.entries.get(taskId);
-      if (running?.task && running.branch) running.handoffRequested = true;
-      return;
-    }
-
     // claude's stream-json event shapes (nested under `message.content[]`)
     // differ from opencode's `part` shapes, so it gets its own parser branch
     // rather than a merged parser sniffing both (0109).
@@ -1366,6 +1352,11 @@ export class AgentRunner {
       // session-id extraction (opencode's session-id event, unknown schemas).
       entry = { s: stream, d: raw };
       this.tryExtractSessionId(raw, session);
+    }
+    if (stream === "out" && this.isHandoffSignal(raw, entry)) {
+      const running = this.entries.get(taskId);
+      if (running) running.handoffRequested = true;
+      entry = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     this.recordEntry(taskId, session, stream, entry);
     this.lineTouched(taskId, session, raw);
@@ -1456,7 +1447,13 @@ export class AgentRunner {
       // An orphaned tool_result (an id we never saw a tool_use for) has
       // nothing to attach to — drop it rather than fabricate a tool card.
     } else if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", parsed.entry);
+      if (this.isHandoffSignal(raw, parsed.entry)) {
+        const running = this.entries.get(taskId);
+        if (running) running.handoffRequested = true;
+        this.recordEntry(taskId, session, "out", { s: "sys", d: "✓ agent requested server-side handoff" });
+      } else {
+        this.recordEntry(taskId, session, "out", parsed.entry);
+      }
     }
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
@@ -1471,6 +1468,12 @@ export class AgentRunner {
       tool: pending.name,
       ...(pending.input ? { input: pending.input } : {}),
     };
+  }
+
+  /** Recognize the exact capability-request signal in plain or structured output. */
+  private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
+    if (raw.trim() === HANDOFF_READY_SIGNAL) return true;
+    return "type" in entry && entry.type === "text" && entry.text.trim() === HANDOFF_READY_SIGNAL;
   }
 
   /**
@@ -1623,12 +1626,12 @@ export class AgentRunner {
       this.authorizedHandoffs.set(request.runId, request);
       this.handoffsInFlight.add(taskId);
       void Promise.resolve(this.onHandoff?.(request))
-        .catch((error) => {
-          this.system(taskId, `✗ server-side handoff failed: ${(error as Error).message}`);
+        .catch((err) => {
+          this.appendLine(taskId, "sys", `✗ server-side handoff failed: ${(err as Error).message}`);
         })
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && !exitedCleanly) {
-      this.system(taskId, "✗ handoff was not started because the agent turn was interrupted");
+      this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
     }
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the

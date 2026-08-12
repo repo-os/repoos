@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, extractUsage, promptCommand, runPrompt } from "../../server/agents";
+import { AgentRunner, extractUsage, HANDOFF_READY_SIGNAL, promptCommand, runPrompt } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -22,6 +22,8 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process
 process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
+if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
+if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
 interface SpawnRecord {
@@ -118,6 +120,8 @@ function spawns(fx: Fixture): SpawnRecord[] {
 
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
+  delete process.env.REPOOS_FAKEBIN_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
 describe("model-aware driver commands", () => {
@@ -447,7 +451,7 @@ process.stdout.write("plain answer\\n");
   });
 });
 
-describe("fail-safe mission checklist (0067)", () => {
+describe("server-owned handoff mission (#0094)", () => {
   /**
    * The launch mission must be a literal, verifiable checklist so an agent
    * cannot silently drop the both-copies status sync (the #0063 failure) or
@@ -455,7 +459,7 @@ describe("fail-safe mission checklist (0067)", () => {
    * human. These assertions keep the two load-bearing instructions in the
    * mission text so future rewrites can't silently remove them.
    */
-  it("asserts the read-back verification and needs-input instructions", async () => {
+  it("keeps privileged mutations out of the sandbox and specifies one signal", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -467,18 +471,67 @@ describe("fail-safe mission checklist (0067)", () => {
       const [run] = spawns(fx);
       const mission = run.args[1];
       expect(mission).toContain("Task #0001");
-      // both-copies status sync + read-back verification (anti-#0063)
-      expect(mission).toContain("main-checkout copy");
-      expect(mission).toContain("confirm it shows `status: review`");
-      // The readback must read the literal file path, never the CLI — from
-      // inside a worktree `repoos show`/`list`/`index` resolve to the
-      // worktree's own root and can false-positive on the live board (#0077).
-      expect(mission).toContain("literal file path");
-      expect(mission).toMatch(/NEVER `repoos show`\/`list`\/`index`/);
-      // needs-input instruction: flag both copies, keep the task active, stop
-      expect(mission).toContain("needs_input: true");
-      expect(mission).toContain("WITHOUT committing");
-      expect(mission).toMatch(/Never silently leave the task `active` without the `needs_input` flag/);
+      expect(mission).toContain("Do not run git add/commit");
+      expect(mission).toContain("do not edit the main checkout");
+      expect(mission).toContain("commits only source, work, docs, and config files");
+      expect(mission).toContain("never `dist/` or `screenshots/`");
+      expect(mission).toContain("build artifacts created by `repoos check` stay local");
+      expect(mission).toContain(HANDOFF_READY_SIGNAL);
+      expect(mission).toContain("RepoOS will independently run `repoos check`");
+      expect(mission).toContain("do NOT emit the handoff-ready signal");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("structured runner handoff (#0094)", () => {
+  it("issues one scoped request after a successful initial or resumed turn", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_HANDOFF = "1";
+    try {
+      const requests: Array<{ taskId: string; runId: string; branch: string; workdir: string }> = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "initial handoff request");
+      expect(requests[0]).toMatchObject({ taskId: "0001", branch: "feat/x", workdir: fx.bin });
+      expect(requests[0].runId).toBeTruthy();
+      expect(runner.validateHandoff(requests[0])).toBe(true);
+      expect(runner.validateHandoff({ ...requests[0], runId: "forged-session" })).toBe(false);
+
+      runner.send("0001", "finish the resumed turn", agent("codex"));
+      await waitFor(() => requests.length === 2, "resumed handoff request");
+      expect(requests[1].runId).not.toBe(requests[0].runId);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("does not authorize a signal from an interrupted turn", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_HANDOFF = "1";
+    process.env.REPOOS_FAKEBIN_FAIL = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "failed turn exit");
+      expect(requests).toEqual([]);
+      expect(runner.output("0001")!.lines.map(dOf)).toContain(
+        "✗ handoff was not started because the agent turn was interrupted",
+      );
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

@@ -576,7 +576,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const task = index.getTask(e.id);
       if (task?.status === "review") void reviews.run(task);
     },
-    async (request) => {
+    { onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
@@ -608,7 +608,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
       }
-    },
+    } },
   );
 
   // Read-only preview servers for review/active tasks. Orphans from a crashed

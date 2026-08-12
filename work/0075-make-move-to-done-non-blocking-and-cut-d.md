@@ -59,8 +59,8 @@ things follow from that:
 
 - [ ] `POST /api/tasks/:id/done` responds immediately (e.g. 202 + `{ started:
       true }`) once pre-flight checks pass (task is `review`, has a branch,
-      no agent turn in progress), then runs `completeTask` detached from the
-      request/response cycle.
+      no agent turn in progress), then enqueues the task with #0118's durable
+      close-out coordinator instead of awaiting the pipeline in the request.
 - [ ] Final outcome (success, or failure with reason/conflicts/step-reached)
       is delivered via the SSE stream (extend `task.progress` or add a
       terminal `task.done-result` event) — the frontend must not need to poll.
@@ -78,9 +78,9 @@ things follow from that:
       practical in scope, at minimum reuse the same ephemeral server (still
       two browser launches is acceptable as a partial win — call this out
       explicitly in the PR if you scope it down).
-- [ ] Two concurrent `/done` requests for the same task can't both run
-      `completeTask` at once (there's currently no lock beyond the
-      `runner.isRunning` agent-turn check, which doesn't cover this case).
+- [ ] Repeated `/done` requests for the same task return #0118's existing job.
+      Cross-task FIFO ordering, main-SHA validation, and publication locking
+      remain owned by #0118 and are not reimplemented here.
 - [ ] `repoos check` passes; measure and note the before/after wall-clock
       time for a full move-to-done in the PR description.
 
@@ -90,15 +90,12 @@ things follow from that:
   route around the `actionMatch[2] === "done"` branch), `src/commands/check.ts`
   (`cmdCheck` / `runUISmokeTest`), `scripts/capture-screenshots.mjs`,
   `src/ui-app/src/components/TaskDrawer.vue`, `src/ui-app/src/stores/repo.ts`.
-- **Sequence after #0095.** #0069 is done and its conflict pre-flight/error UI
-  are now baseline behavior. #0095 is actively changing the same review→done
-  synchronization path to make sync automatic. Do not resume this task's stale
-  worktree until #0095 reaches done; then sync/rebase onto current `main` and
-  preserve #0095's retry semantics while making the operation asynchronous.
-- Don't change the conflict-resolution or auto-merge semantics in
-  `mergeBranch`/`autoResolve` — that's #0069's territory, not this task's.
-  This task is about the request/response lifecycle and pipeline redundancy,
-  not merge correctness.
+- **Sequence after #0118.** Do not add a second in-memory done lock or detached
+  `completeTask` runner. Use #0118's durable job API/state as the source of
+  truth. This task owns request/response lifecycle, SSE/UI, and pipeline
+  redundancy—not merge correctness or publication.
+- Don't change conflict resolution, candidate validation, queue ordering, or
+  atomic publication semantics; those belong to #0118.
 - Keep `repoos check` behaving identically when run standalone from the CLI
   (agents rely on it as the definition-of-done gate before requesting
   review) — any build-skip optimization must be opt-in and internal to the
@@ -113,6 +110,8 @@ things follow from that:
 - 0069 · Surface mutation errors visibly and stop branch drift from blocking
   move-to-done — done; this task builds on its pre-flight and drawer changes.
 - 0095 · Automatic sync-and-retry during review completion — must land first.
+- 0118 · Durable repository-wide integration queue and SHA-validated atomic
+  publication — must land before this task's asynchronous UI wiring.
 - 0047 · Add a Move-to-done action for review tasks (original implementation)
 - 0053 · Keep agent logs and chat available in review state (SSE precedent)
 

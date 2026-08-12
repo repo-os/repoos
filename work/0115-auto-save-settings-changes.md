@@ -2,14 +2,14 @@
 id: "0115"
 title: Auto-save settings changes
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T04:12:31Z"
-updated_at: "2026-08-12T04:12:31Z"
+updated_at: "2026-08-12T04:30:53Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Changes made on the settings page save automatically, following the existing age
 ## Activity
 
 - 2026-08-12T04:12:31Z · created · unknown
+- 2026-08-12T04:30:53Z · status inbox→ready
