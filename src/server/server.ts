@@ -1373,6 +1373,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, result.ok ? 200 : 400, {
             ok: result.ok,
             merged: result.merged,
+            alreadyMerged: result.alreadyMerged,
             conflicts: result.conflicts,
             ff: result.ff,
             drifted: result.drifted,

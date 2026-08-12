@@ -33,10 +33,18 @@ export interface ToastItem {
 export interface DoneResult {
   ok: boolean;
   merged: boolean;
+  alreadyMerged?: boolean;
   conflicts: string[];
   ff: boolean;
   drifted?: boolean;
-  check?: { ok: boolean; detail?: string };
+  check?: {
+    ok: boolean;
+    detail?: string;
+    stage?: string;
+    command?: string;
+    exitCode?: number | null;
+    output?: string;
+  };
   error?: string;
   task?: Task;
 }

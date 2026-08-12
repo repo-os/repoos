@@ -412,6 +412,15 @@ export async function preflightMerge(
   const head = currentBranch(root);
   const drifted = head !== null && branch !== head && isAncestor(root, head, branch) !== true;
 
+  // A missing branch used to "pass" pre-flight (a `git merge` of a nonexistent
+  // ref fails without producing conflicts), so a branch that was already
+  // merged and cleaned up was mislabelled as a fresh failed merge. Fail fast
+  // with an explicit reason instead — the close-out's `alreadyMerged` handling
+  // resumes those retries before this is ever reached (#0130).
+  if (!localBranches(root).has(branch)) {
+    return { ok: false, drifted, conflicts: [], reason: `branch \`${branch}\` does not exist` };
+  }
+
   let run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
   if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr)) {
     const blocking = blockingFiles(run.stderr);
