@@ -12,6 +12,7 @@ const { health, connected, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
 const isDark = computed(() => config.effectiveTheme === "dark");
+const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
 
 function toggleTheme(): void {
   void config.setTheme(isDark.value ? "light" : "dark");
@@ -20,6 +21,7 @@ function toggleTheme(): void {
 
 <template>
   <div class="topbar">
+    <span v-if="isPreviewBuild" class="preview-build-banner">Preview Build</span>
     <div class="logo-mark">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" />

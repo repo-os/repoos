@@ -919,6 +919,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // actually serves, not whatever may have landed on disk since. The UI
           // uses it to clear a "new version available" notice after a reload.
           buildHash: loadedHash,
+          isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
           ...(handshake ? { reloadHandshake: true } : {}),
         });
       }
