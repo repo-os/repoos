@@ -24,7 +24,7 @@ implementation effort and ongoing maintenance cost. Evidence task IDs in
 | R3 | AGENTS.md additions: commit-policy rule + one-retry flake protocol | AGENTS.md/docs | 0063, 0076, 0113 | Med | High | Med | Trivial | None |
 | R4 | Create skill `ui-verify` (server-owned preview verification) | **New skill** | 0046, 0054, 0080, 0096 | Med | High | Med | Low | Low |
 | R5 | Fix activity-log integrity (duplicate sections, out-of-order timestamps) | RepoOS tooling fix (new task) | 0041, 0063, 0068, 0070, 0075, 0077, 0080, 0085, 0094, 0099, 0108, 0109 | Med | High | Med (blocks future audits) | Med | Low |
-| R6 | Fix reviewer-agent crashes (3/4 runs failed with no report — all failures on `opus`; the one success ran a different model) | RepoOS tooling fix (new task) | reviews 0090, 0094, 0104, 0106 | Med | Med | Med | Low | Low |
+| R6 | Fix reviewer-agent crashes (3/8 reports failed — all failures on `opus`; all five non-`opus` reports succeeded) | RepoOS tooling fix (new task) | reviews 0090, 0094, 0104, 0106, 0107, 0114, 0119, 0120 | Med | Med | Med | Low | Low |
 | R7 | Proceed with #0111 (evidence-based agent/model recommendations) | Agent/model configuration | 0080, 0106, 0109 (override churn) | Med | Med | Low | Med | Med |
 | R8 | Adopt a lightweight skill-candidate flagging mechanism (§6) | RepoOS API/tooling fix | this audit | Med | — | Low | Low | Low |
 | R9 | No action: tunnel setup, preview ports, stale builds, sandbox handoff | No action (already covered) | §5 | — | — | — | — | — |
@@ -61,7 +61,7 @@ in full): 0036, 0049, 0089, 0101, 0104.
 
 - Task files under `work/` — frontmatter, spec, and `## Activity` logs
 - Git history (`git log --all`): merge-fix and sync commits (§4, F1)
-- Reviewer-agent reports: `.repoos/reviews/{0090,0094,0104,0106}.md` (main
+- Reviewer-agent reports: `.repoos/reviews/{0090,0094,0104,0106,0107,0114,0119,0120}.md` (main
   checkout)
 - RepoOS sources as evidence of existing guidance: `src/server/agents.ts`
   (mission text), `src/core/context-pack.ts` (context packs), `AGENTS.md`,
@@ -339,16 +339,17 @@ sections inconsistently, and some timestamps suggest timezone/clock
 mishandling. It directly limits this audit's confidence and will limit any
 future one.
 
-### F12 — Reviewer agent failed 3 of 4 runs, with a model correlation
+### F12 — Reviewer agent failures correlate with the configured model
 
-**Evidence:** four reports exist in `.repoos/reviews/` (main checkout).
-Three are failures — 0094, 0104, 0106, all run with `cli: opencode` and
+**Evidence:** eight reports existed in `.repoos/reviews/` at the v3 review
+snapshot. Three are failures — 0094, 0104, 0106, all run with `cli: opencode` and
 `model: opus`: "The review agent produced no report: opencode exited
 without output" followed by a truncated JSON error fragment (`err_…`).
-One is a success — 0090 (`state: ok`, `model: opencode/big-pickle`), a
-full usable report (verdict, bugs, edge cases). The failure set is
-uniformly `opus`; the single non-`opus` run succeeded. (v1 missed the
-0090 report and overstated this as 3/3.)
+Five are successes — 0090, 0107, 0114, 0119, and 0120 (`state: ok`,
+`model: opencode/big-pickle`) with usable verdict, bug, and edge-case
+sections. The failure set is uniformly `opus`; all five non-`opus` runs
+succeeded. (v1 missed the 0090 report and overstated the initial snapshot
+as 3/3; v2 captured the then-current 3/4 snapshot.)
 
 **Existing coverage:** none — #0101 built the mechanism, but the runner
 failure is unaddressed.
@@ -468,8 +469,8 @@ creating skills automatically**.
   2026-08-12 (the worktree era); only #0012 dates to June. May–June tasks
   have thin logs (e.g., #0012's log starts mid-lifecycle). Pre-worktree
   failure modes may be under-represented.
-- **Reviewer reports unavailable for most tasks** (F12): only four exist;
-  three are crash artifacts and one (0090) is usable.
+- **Reviewer reports unavailable for most tasks** (F12): only eight existed
+  at the v3 snapshot; three are crash artifacts and five are usable.
 - **Second-hand citations:** tasks 0036, 0049, 0089, 0101, 0104 are cited
   via other tasks' incident accounts, not read in full.
 
@@ -528,3 +529,4 @@ requiring approval. This audit created none.
 | 1 | 2026-08-12 | Initial audit (#0107): 51-task sample, 12 findings, 2 proposed skills, 9 ranked recommendations |
 | 2 | 2026-08-12 | Corrections after re-verification: reviewer report 0090 (usable, `state: ok`) added to F12/R6 — failures are 3/4 and correlate with the `opus` model; #0090 landed mid-audit so transcript persistence now exists but covers no sampled history; fixed stale "0090 still active" claim (worktree copy was stale; main checkout showed `review`) |
 | 3 | 2026-08-12 | F1 sync-commit count corrected and scoped per review feedback: v1's "13" was under-scoped — `main` has 56 `chore: sync working tree before merge` commits (6 on 08-07, 32 on 08-11, 18 on 08-12 through 13:05) plus 3 on unmerged branches; added new evidence that the ritual continued during this audit's review cycle (3 more sync commits 13:31–13:34, incl. `351ea0c` on this task's branch) |
+| 4 | 2026-08-12 | Refreshed F12 after review feedback: eight reviewer reports existed at the v3 snapshot; all three failures used `opus`, while all five `opencode/big-pickle` reviews succeeded. |
