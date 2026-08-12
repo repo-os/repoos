@@ -53,5 +53,4 @@ The panel has two tabs:
 - 2026-08-11T17:40:49Z · status inbox→ready
 - 2026-08-11T17:40:54Z · status ready→inbox
 - 2026-08-11T17:40:59Z · status inbox→ready
-- 2026-08-12T18:38:37Z · status ready→active, branch
-- 2026-08-12T18:45:43Z · status active→review
+- 2026-08-12T18:45:43Z · status ready→review, branch
