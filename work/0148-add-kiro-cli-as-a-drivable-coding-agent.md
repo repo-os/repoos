@@ -214,5 +214,4 @@ The current `installHint` for kiro is `"npm i -g kiro-cli"`. Verify this is corr
 ## Activity
 
 - 2026-08-12T16:46:36Z · created · unknown
-- 2026-08-12T17:05:06Z · status ready→active
-- 2026-08-12T17:15:00Z · status active→review · worktree commit 4cc778b
+- 2026-08-12T17:15:00Z · status active→review · worktree only (branch feat/0148-kiro-cli-agent)
