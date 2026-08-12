@@ -113,6 +113,10 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   read-only in that task's worktree -> its report is stored under `.repoos/` and
   served by GET /api/tasks/:id/review -> the drawer shows it beside "Move to
   done", which stays the human's call.
+- Release: after the review-to-done flow merges a task and its post-merge checks
+  pass, it appends a `released` entry to that task's Activity log. The Control
+  page derives its persistent feature-release timeline from those entries;
+  ordinary status edits and failed close-outs never create releases.
 
 This convergence — API edits, raw file edits, and agent output all producing
 the same event stream — is the architectural payoff: agents participate by
