@@ -2,14 +2,14 @@
 id: "0114"
 title: Add persistent repo-aware agent chat
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-persistent-repo-aware-agent-chat
 created_at: "2026-08-12T04:07:06Z"
-updated_at: "2026-08-12T09:07:13Z"
+updated_at: "2026-08-12T09:17:49Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ This task covers the persistent floating chat experience, its repo-aware default
 - 2026-08-12T06:13:35Z · needs_merge
 - 2026-08-12T09:00:44Z · status review→active
 - 2026-08-12T09:07:13Z · status active→review
+- 2026-08-12T09:17:49Z · status review→done, release:success
