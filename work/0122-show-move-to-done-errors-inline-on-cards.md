@@ -2,14 +2,14 @@
 id: "0122"
 title: Show move-to-done errors inline on cards and in the task panel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T05:51:20Z"
-updated_at: "2026-08-12T05:51:20Z"
+updated_at: "2026-08-12T06:04:02Z"
 ---
 ## Activity
 
@@ -85,3 +85,7 @@ review task's Work card and inside the task panel.
   focused tests.
 - Related: #0069 introduced global mutation toasts and inline done-failure
   reporting; #0108 simplified the move-to-done interaction.
+
+## Activity
+
+- 2026-08-12T06:04:02Z · status inbox→ready
