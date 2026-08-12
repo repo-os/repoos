@@ -36,6 +36,12 @@ const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
   ...COLUMNS,
 ]);
+// Done is a protected close-out workflow, not an ordinary status mutation.
+// Keep it visible for already-completed tasks, but do not offer a selector
+// choice that the server must reject for every other status.
+const selectableStatuses = computed(() =>
+  allStatuses.value.filter((status) => status.id !== "done" || ui.active?.status === "done"),
+);
 
 const open = computed(() => ui.active !== null || ui.isNew);
 function setOpen(v: boolean): void {
@@ -1214,7 +1220,7 @@ function resetFreeformOverrides(): void {
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                <SelectItem v-for="col in allStatuses" :key="col.id" :value="col.id">
+                <SelectItem v-for="col in selectableStatuses" :key="col.id" :value="col.id">
                   <span class="cdot" :style="{ background: col.color }"></span>{{ col.label }}
                 </SelectItem>
               </SelectViewport>
