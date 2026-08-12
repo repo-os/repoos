@@ -47,5 +47,4 @@ This task covers testing and improving the chat presentation of streamed output 
 - 2026-08-12T06:14:28Z · model_override
 - 2026-08-12T06:14:34Z · model_override
 - 2026-08-12T06:14:35Z · status inbox→ready
-- 2026-08-12T06:15:18Z · status ready→active, branch
-- 2026-08-12T06:22:31Z · status active→review
+- 2026-08-12T06:22:31Z · status ready→review, branch
