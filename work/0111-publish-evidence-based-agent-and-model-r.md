@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/publish-evidence-based-agent-and-model-r
 model_override: opencode/deepseek-v4-pro
 created_at: "2026-08-12T03:44:24Z"
-updated_at: "2026-08-12T11:39:49Z"
+updated_at: "2026-08-12T11:39:53Z"
 ---
 ## Problem
 
