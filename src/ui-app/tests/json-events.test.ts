@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, parseClaudeEvent, parseJsonEvent } from "../../server/agents";
+import { AgentRunner, parseClaudeEvent, parseCopilotEvent, parseJsonEvent } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -142,6 +142,32 @@ describe("parseClaudeEvent (0109)", () => {
         '{"type":"system","subtype":"init","session_id":"78dc4e6a-abcd","model":"claude-sonnet-5"}',
       ),
     ).toEqual({ sessionID: "78dc4e6a-abcd" });
+  });
+
+  describe("parseCopilotEvent", () => {
+    it("maps assistant text, tool completion, and the result session id", () => {
+      expect(
+        parseCopilotEvent('{"type":"assistant.message","data":{"content":"Hello from Copilot"}}'),
+      ).toEqual({ entry: { type: "text", text: "Hello from Copilot" } });
+      expect(
+        parseCopilotEvent('{"type":"tool.execution_complete","data":{"toolName":"shell","arguments":{"command":"git status"},"result":"clean"}}'),
+      ).toEqual({
+        entry: { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+      });
+      expect(parseCopilotEvent('{"type":"result","sessionId":"copilot-session-123"}')).toEqual({
+        sessionID: "copilot-session-123",
+      });
+    });
+
+    it("swallows Copilot lifecycle noise and retains errors", () => {
+      expect(
+        parseCopilotEvent('{"type":"assistant.message_delta","data":{"deltaContent":"Hel"}}'),
+      ).toEqual({});
+      expect(parseCopilotEvent('{"type":"session.mcp_servers_loaded","data":{"servers":[]}}')).toEqual({});
+      expect(parseCopilotEvent('{"type":"error","data":{"message":"permission denied"}}')).toEqual({
+        entry: { type: "sys", d: "error: permission denied" },
+      });
+    });
   });
 
   it("swallows rate_limit events", () => {
