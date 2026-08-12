@@ -65,9 +65,6 @@ dist/screenshots conflict resolution.
 
 - 2026-08-12T04:10:06Z · status inbox→ready
 - 2026-08-12T04:11:49Z · status ready→active, branch
-<<<<<<< HEAD
 - 2026-08-12T04:26:00Z · implementation verified; handoff blocked because shared Git metadata and the canonical board are outside the agent sandbox
-=======
 - 2026-08-12T04:38:46Z · status active→review
->>>>>>> main
 - 2026-08-12T04:44:33Z · status review→done
