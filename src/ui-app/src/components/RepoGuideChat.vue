@@ -184,11 +184,11 @@ onMounted(() => void hydrate());
       <div class="guide-footnote">Repo-aware · Conversation stays open while you navigate</div>
     </section>
 
-    <button v-else class="guide-launcher" type="button" aria-label="Open RepoOS Guide chat" title="Ask RepoOS Guide" @click="toggle">
+    <button v-else class="guide-launcher" type="button" aria-label="Open RepoOS Guide chat" title="Open RepoOS Guide" @click="toggle">
       <svg viewBox="0 0 24 24" fill="none">
-        <path d="M7 8.5h10M7 12h7M8.5 19l-3.5 2v-4.2A7.5 7.5 0 0 1 3 11.7C3 7.45 6.8 4 11.5 4S20 7.45 20 11.7s-3.8 7.7-8.5 7.7c-1.05 0-2.07-.18-3-.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" />
+        <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
       </svg>
-      <span class="guide-launcher-label">Ask RepoOS Guide</span>
       <i v-if="busy" class="guide-running-dot"></i>
     </button>
   </aside>
@@ -198,11 +198,11 @@ onMounted(() => void hydrate());
 .guide-shell{position:fixed;right:22px;bottom:22px;z-index:70;pointer-events:none}
 .guide-shell-open{bottom:18px}
 .guide-launcher,.guide-panel{pointer-events:auto}
-.guide-launcher{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;border:1px solid var(--border-bright);border-radius:999px;color:var(--btn-primary-color);background:var(--btn-primary-bg),var(--panel-solid);box-shadow:0 14px 36px rgba(0,0,0,.24),0 0 24px -12px var(--cyan);font:600 12.5px var(--font-sans);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.guide-launcher{position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--border-bright);border-radius:50%;background:var(--btn-primary-bg),var(--panel-solid);box-shadow:0 14px 36px rgba(0,0,0,.24),0 0 24px -12px var(--cyan);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
 .guide-launcher:hover{transform:translateY(-2px);box-shadow:0 17px 42px rgba(0,0,0,.3),0 0 28px -10px var(--cyan)}
 .guide-launcher:focus-visible,.guide-minimize:focus-visible,.guide-compose button:focus-visible,.guide-prompts button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.guide-launcher svg{width:23px;height:23px;color:var(--cyan)}
-.guide-running-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:guide-pulse 1.2s infinite}
+.guide-launcher svg{width:23px;height:23px}
+.guide-running-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:guide-pulse 1.2s infinite}
 .guide-panel{width:min(390px,calc(100vw - 28px));height:min(610px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border-bright);border-radius:18px;background:var(--panel-gradient);box-shadow:0 24px 70px rgba(0,0,0,.38);backdrop-filter:blur(18px);animation:guide-open .18s ease-out}
 .guide-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .guide-avatar{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:12px;color:var(--cyan);background:linear-gradient(135deg,var(--cyan-dim),var(--violet-dim));border:1px solid var(--border-bright)}
@@ -253,6 +253,6 @@ onMounted(() => void hydrate());
 @keyframes guide-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes guide-pulse{50%{opacity:.35}}
 @keyframes guide-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
-@media(max-width:760px){.guide-shell{right:12px;bottom:calc(74px + var(--safe-bot))}.guide-shell-open{left:12px}.guide-launcher{width:50px;height:50px;justify-content:center;padding:0}.guide-launcher-label{display:none}.guide-panel{width:100%;height:min(560px,calc(100dvh - 150px))}}
+@media(max-width:760px){.guide-shell{right:12px;bottom:calc(74px + var(--safe-bot))}.guide-shell-open{left:12px}.guide-launcher{width:50px;height:50px;justify-content:center;padding:0}.guide-panel{width:100%;height:min(560px,calc(100dvh - 150px))}}
 @media(prefers-reduced-motion:reduce){.guide-launcher,.guide-panel,.guide-thinking span,.guide-running-dot{animation:none;transition:none}}
 </style>
