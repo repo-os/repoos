@@ -16,6 +16,8 @@
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
+ *   GET  /api/chat             -> RepoOS Guide identity, transcript, and running state
+ *   POST /api/chat/message     -> start or continue the persistent repository chat
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   POST /api/tasks/freeform   -> create from a freeform explanation via the PM agent
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
@@ -51,6 +53,7 @@ import {
   AGENT_CLIS,
   AGENT_MODELS,
   DEFAULT_AGENTS,
+  agentsForConfig,
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
@@ -78,6 +81,7 @@ import {
   resolveEngineer,
   resolvePmAgent,
   resolveAgentForTask,
+  resolveRepoGuide,
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
@@ -130,6 +134,25 @@ function storedCloudflareToken(): boolean {
     /* unavailable or not stored */
   }
   return false;
+}
+
+const REPO_GUIDE_SESSION_ID = "repoos-guide";
+
+/** Compact live context for the guide; detailed answers can read the listed files. */
+function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
+  const counts = new Map<string, number>();
+  for (const task of tasks) counts.set(task.status, (counts.get(task.status) ?? 0) + 1);
+  const statusSummary = STATUSES.map((status) => `${status}: ${counts.get(status) ?? 0}`).join(", ");
+  const taskSummary = tasks
+    .map(
+      (task) =>
+        `- #${task.id} [${task.status}] ${task.title} (type: ${task.type}, priority: ${task.priority}, area: ${task.area || "unspecified"}, file: ${task.path})`,
+    )
+    .join("\n");
+  const docs = listDocs(config)
+    .map((doc) => `- ${doc.title} (${doc.path})`)
+    .join("\n");
+  return `Repository: ${basename(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
 }
 
 function tunnelProcessRunning(): boolean {
@@ -837,6 +860,46 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/skills" && method === "GET") {
         return json(res, 200, listSkills(config));
       }
+      if (path === "/api/chat" && method === "GET") {
+        const agent = agentsForConfig(config).find(
+          (candidate) => candidate.name.toLowerCase() === "repoos guide",
+        ) ?? null;
+        const session = runner.output(REPO_GUIDE_SESSION_ID);
+        return json(res, 200, {
+          ok: true,
+          agent,
+          enabled: Boolean(agent?.enabled),
+          lines: session?.lines ?? [],
+          running: runner.isRunning(REPO_GUIDE_SESSION_ID),
+          stats: runner.stats(REPO_GUIDE_SESSION_ID),
+        });
+      }
+      if (path === "/api/chat/message" && method === "POST") {
+        const agent = resolveRepoGuide(config);
+        if (!agent) {
+          return json(res, 400, {
+            error: "RepoOS Guide is disabled — enable it on the Agents page to chat",
+          });
+        }
+        const body = (await readBody(req)) as { text?: unknown };
+        const text = typeof body?.text === "string" ? body.text.trim() : "";
+        if (!text) return json(res, 400, { error: "message text is required" });
+
+        const context = repoGuideContext(config, index.getTasks());
+        const existing = runner.output(REPO_GUIDE_SESSION_ID);
+        const result = existing
+          ? runner.send(REPO_GUIDE_SESSION_ID, text, agent, {
+              resumePreamble: `Updated repository context:\n${context}`,
+            })
+          : runner.startChat(REPO_GUIDE_SESSION_ID, text, agent, context);
+        if (!result.ok && result.busy) {
+          return json(res, 409, { error: result.reason ?? "RepoOS Guide is busy" });
+        }
+        if (!result.ok) {
+          return json(res, 400, { error: result.reason ?? "could not send message" });
+        }
+        return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+      }
       if (path === "/api/agents/running" && method === "GET") {
         return json(res, 200, { tasks: runner.running() });
       }
@@ -989,7 +1052,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Resolve the PM agent, applying any one-shot override.
         let pm: Agent | null;
         if (hasFreeformOverride) {
-          const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+          const list = agentsForConfig(config);
           const baseName = freeformAgentName || "pm";
           const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
           pm = base
@@ -1358,8 +1421,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // ---- config read / write ----
       if (path === "/api/config" && method === "GET") {
         // Agents default at runtime: when nothing is stored, serve the built-ins.
-        const storedAgents = Array.isArray(repoos.config.agents) ? repoos.config.agents : [];
-        const agents = storedAgents.length ? storedAgents : DEFAULT_AGENTS;
+        const agents = agentsForConfig(repoos.config);
         return json(res, 200, {
           config: { ...repoos.config, agents },
           schema: getConfigSchema(),

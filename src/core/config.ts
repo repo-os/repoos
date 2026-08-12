@@ -16,6 +16,14 @@ export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 /** Built-in agents, seeded at runtime when the config has none. */
 export const DEFAULT_AGENTS: Agent[] = [
   {
+    name: "RepoOS Guide",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: true,
+    instructions:
+      "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state.",
+  },
+  {
     name: "engineer",
     cli: "opencode",
     model: "big pickle",
@@ -43,6 +51,22 @@ export const DEFAULT_AGENTS: Agent[] = [
 
 /** Default agent names — these are seeded and cannot be removed. */
 export const DEFAULT_AGENT_NAMES = DEFAULT_AGENTS.map((a) => a.name);
+
+/**
+ * Merge built-in roles into a stored agent list without replacing user edits.
+ * New RepoOS releases can add a default role (such as RepoOS Guide) and it
+ * becomes discoverable immediately, while configured defaults and custom
+ * agents keep their saved order and values.
+ */
+export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
+  const stored = Array.isArray(config.agents) ? config.agents : [];
+  if (!stored.length) return DEFAULT_AGENTS.map((agent) => ({ ...agent }));
+  const names = new Set(stored.map((agent) => agent.name.toLowerCase()));
+  const missingDefaults = DEFAULT_AGENTS.filter(
+    (agent) => !names.has(agent.name.toLowerCase()),
+  );
+  return [...stored.map((agent) => ({ ...agent })), ...missingDefaults.map((agent) => ({ ...agent }))];
+}
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",

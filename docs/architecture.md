@@ -71,7 +71,8 @@ Adds liveness over the one-shot core. No new business logic.
   serving of markdown docs for the Context view.
 - `agents.ts` — the AgentRunner: spawns coding agents in task worktrees, streams
   output as structured events over SSE, manages session transcripts for resume,
-  and self-heals board state when the agent exits.
+  self-heals board state when the agent exits, and hosts the persistent
+  repository-level RepoOS Guide conversation using the same session model.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
 - `done.ts` — review-to-done close-out: merges the task branch into main,
@@ -106,6 +107,10 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   transcript -> structured JSON events parsed and emitted as SSE `agent.output`
   events -> the UI renders the agent chat tab in real time. Follow-ups via
   POST /api/tasks/:id/message resume the same session.
+- Guide chat: the app-root launcher -> POST /api/chat/message -> the built-in
+  RepoOS Guide agent runs read-only at the repository root with a live task and
+  context-document summary. Its streamed transcript uses the same AgentRunner
+  and SSE events, so it survives client-side route changes without becoming a task.
 - Review: a task reaching `review` -> live-index event -> the review agent runs
   read-only in that task's worktree -> its report is stored under `.repoos/` and
   served by GET /api/tasks/:id/review -> the drawer shows it beside "Move to

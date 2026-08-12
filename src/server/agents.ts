@@ -7,10 +7,11 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
-import { DEFAULT_AGENTS } from "../core/config.js";
+import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
@@ -34,6 +35,17 @@ export type AgentEvent =
       note: string;
       at: string;
     };
+
+export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
+
+/** A capability minted by the runner for one completed task-agent turn. */
+export interface AgentHandoffRequest {
+  taskId: string;
+  runId: string;
+  branch: string;
+  workdir: string;
+  sessionId?: string;
+}
 
 export interface StartResult {
   ok: boolean;
@@ -63,6 +75,9 @@ interface Entry {
   killTimer?: ReturnType<typeof setTimeout>;
   /** The task being worked on (start turns only — resume turns have none). */
   task?: Task;
+  branch?: string;
+  runId: string;
+  handoffRequested: boolean;
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -102,6 +117,9 @@ interface Session {
    * arriving after a stall clears it exactly once too.
    */
   stalledEmitted: boolean;
+  /** Task identity retained across follow-up turns for server-owned handoff. */
+  task?: Task;
+  branch?: string;
 }
 
 const now = (): string => new Date().toISOString();
@@ -564,13 +582,13 @@ export function deriveBranch(title: string): string {
 
 /** Resolve the enabled `engineer` agent, or null when none is configured. */
 export function resolveEngineer(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 }
 
 /** Resolve the enabled `pm` agent, or null when none is configured. */
 export function resolvePmAgent(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "pm") ?? null;
 }
 
@@ -582,7 +600,7 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * into `repoos.toml`, and null here means "no agent review runs".
  */
 export function resolveReviewer(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
 }
 
@@ -605,7 +623,7 @@ export function resolveAgentForTask(
   task: Task,
   role: string = "engineer",
 ): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
@@ -622,6 +640,13 @@ export function resolveAgentForTask(
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
     ...(task.modelOverride ? { model: task.modelOverride } : {}),
   };
+}
+
+/** Resolve the enabled built-in repository assistant. */
+export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
+  return agentsForConfig(config).find(
+    (agent) => agent.enabled && agent.name.toLowerCase() === "repoos guide",
+  ) ?? null;
 }
 
 /**
@@ -772,6 +797,30 @@ function resumeCommand(
   };
 }
 
+/** Build the read-only mission used by the persistent repository chat. */
+export function repoGuidePrompt(
+  question: string,
+  repositoryContext: string,
+  agent: Agent,
+): string {
+  return `You are RepoOS Guide, the always-available assistant for the repository in your current working directory.
+
+${agent.instructions ?? "Answer questions about RepoOS and this repository."}
+
+Rules:
+- Answer the user's question directly and concisely.
+- Ground answers in the repository context below and inspect repository files when useful.
+- You may read files and run read-only discovery commands. Never edit files, change task status, commit, launch servers, or start agents.
+- When discussing tasks, include task IDs and current statuses when relevant.
+- If the repository does not support a claim, say what you could not verify.
+
+Current repository context:
+${repositoryContext}
+
+User question:
+${question}`;
+}
+
 /** The mission handed to the coding agent: instructions + task pointer. */
 function missionFor(
   task: Task,
@@ -840,6 +889,8 @@ function missionFor(
     "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
+    "",
+    `After the checklist is complete, finish with this exact line so RepoOS can validate the handoff: ${HANDOFF_READY_SIGNAL}`,
   );
   return parts.join("\n");
 }
@@ -1003,8 +1054,11 @@ export function runPrompt(
 export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
+  private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
+  private readonly handoffsInFlight = new Set<string>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
   /**
    * The main RepoOS server's own API URL, injected into every agent process so
    * the mission's managed-preview request resolves the ACTUAL control plane,
@@ -1022,10 +1076,15 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
+    onHandoffOrOpts:
+      | ((request: AgentHandoffRequest) => void | Promise<void>)
+      | { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
+    runnerOpts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
   ) {
     this.config = config;
     this.emit = emit;
+    this.onHandoff = typeof onHandoffOrOpts === "function" ? onHandoffOrOpts : undefined;
+    const opts = typeof onHandoffOrOpts === "function" ? runnerOpts : onHandoffOrOpts;
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
     const checkMs =
       opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
@@ -1075,8 +1134,8 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id)) {
-      return { ok: false, reason: "task is already running" };
+    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id)) {
+      return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
     const session =
@@ -1091,10 +1150,41 @@ export class AgentRunner {
       };
     session.workdir = cwd;
     session.engine = engineForCli(agent.cli);
+    session.task = task;
+    session.branch = branch;
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd, task);
+    return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
+  }
+
+  /** Start the persistent, non-task repository conversation. */
+  startChat(
+    sessionId: string,
+    text: string,
+    agent: Agent,
+    repositoryContext: string,
+  ): StartResult {
+    if (this.entries.has(sessionId)) {
+      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
+    }
+    if (this.sessions.has(sessionId)) {
+      return { ok: false, reason: "conversation already exists — send a follow-up instead" };
+    }
+    const human: AgentOutputEntry = { type: "human", text };
+    const session: Session = {
+      lines: [human],
+      pending: "",
+      bytes: entryBytes(human),
+      workdir: this.config.root,
+      engine: engineForCli(agent.cli),
+      accumulatedMs: 0,
+      stalledEmitted: false,
+    };
+    this.sessions.set(sessionId, session);
+    const mission = repoGuidePrompt(text, repositoryContext, agent);
+    const { cmd, args } = cliCommand(agent, mission, this.config.root);
+    return this.spawnTurn(sessionId, cmd, args, this.config.root);
   }
 
   /**
@@ -1112,8 +1202,8 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId)) {
-      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
+    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
+      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     const entry: AgentOutputEntry = { type: "human", text };
     session.lines.push(entry);
@@ -1127,7 +1217,14 @@ export class AgentRunner {
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
     const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
-    return this.spawnTurn(taskId, cmd, args, session.workdir ?? this.config.root);
+    return this.spawnTurn(
+      taskId,
+      cmd,
+      args,
+      session.workdir ?? this.config.root,
+      session.task,
+      session.branch,
+    );
   }
 
   /** The retained transcript for a task, or null when no session exists. */
@@ -1135,11 +1232,38 @@ export class AgentRunner {
     return this.sessions.get(taskId) ?? null;
   }
 
+  /** Append trusted server orchestration progress to a retained transcript. */
+  system(taskId: string, text: string): void {
+    this.appendLine(taskId, "sys", text);
+  }
+
+  /** Validate and atomically expire one runner-issued handoff capability. */
+  consumeHandoff(request: AgentHandoffRequest): boolean {
+    const issued = this.authorizedHandoffs.get(request.runId);
+    const valid = Boolean(
+      issued &&
+      issued.taskId === request.taskId &&
+      issued.branch === request.branch &&
+      this.samePath(issued.workdir, request.workdir) &&
+      issued.sessionId === request.sessionId,
+    );
+    if (valid) this.authorizedHandoffs.delete(request.runId);
+    return valid;
+  }
+
   /**
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
-  private spawnTurn(taskId: string, cmd: string, args: string[], cwd: string, task?: Task): StartResult {
+  private spawnTurn(
+    taskId: string,
+    cmd: string,
+    args: string[],
+    cwd: string,
+    task?: Task,
+    branch?: string,
+  ): StartResult {
+    const runId = randomUUID();
     let proc: ChildProcess;
     try {
       // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
@@ -1169,6 +1293,9 @@ export class AgentRunner {
       startedAt: now(),
       workdir: cwd,
       task,
+      branch,
+      runId,
+      handoffRequested: false,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
     // clock resets here too, not just on output, so a follow-up turn on a
@@ -1185,8 +1312,8 @@ export class AgentRunner {
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
     // (not `exit`) fires only after stdio has drained, so a trailing line with
     // no final newline is still in `pending` when cleanup flushes it.
-    proc.on("close", () => this.cleanup(taskId));
-    proc.on("error", () => this.cleanup(taskId));
+    proc.on("close", (code) => this.cleanup(taskId, code === 0));
+    proc.on("error", () => this.cleanup(taskId, false));
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
     this.emitStats(taskId);
@@ -1210,6 +1337,12 @@ export class AgentRunner {
   private appendLine(taskId: string, stream: "out" | "err" | "sys", raw: string): void {
     const session = this.sessions.get(taskId);
     if (!session) return;
+
+    if (stream === "out" && raw.includes(HANDOFF_READY_SIGNAL)) {
+      const running = this.entries.get(taskId);
+      if (running?.task && running.branch) running.handoffRequested = true;
+      return;
+    }
 
     // claude's stream-json event shapes (nested under `message.content[]`)
     // differ from opencode's `part` shapes, so it gets its own parser branch
@@ -1447,7 +1580,7 @@ export class AgentRunner {
   }
 
   /** Drop the registry entry for a task (idempotent) and announce it. */
-  private cleanup(taskId: string): void {
+  private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
     const session = this.sessions.get(taskId);
@@ -1479,6 +1612,24 @@ export class AgentRunner {
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);
+    if (entry.handoffRequested && exitedCleanly && entry.task && entry.branch && entry.workdir) {
+      const request: AgentHandoffRequest = {
+        taskId,
+        runId: entry.runId,
+        branch: entry.branch,
+        workdir: entry.workdir,
+        ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+      };
+      this.authorizedHandoffs.set(request.runId, request);
+      this.handoffsInFlight.add(taskId);
+      void Promise.resolve(this.onHandoff?.(request))
+        .catch((error) => {
+          this.system(taskId, `✗ server-side handoff failed: ${(error as Error).message}`);
+        })
+        .finally(() => this.handoffsInFlight.delete(taskId));
+    } else if (entry.handoffRequested && !exitedCleanly) {
+      this.system(taskId, "✗ handoff was not started because the agent turn was interrupted");
+    }
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the
     // fail-safe checklist's main-copy sync silently failed (the #0068 shape).

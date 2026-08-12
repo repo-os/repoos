@@ -102,7 +102,9 @@ task's git worktree to implement the task. Agents are first-class: you configure
 them on the Agents page (CLI, model, instructions), launch them from a task
 card, stream their output live, send follow-up messages, and resume sessions.
 The engineer agent is the primary worker; PM and reviewer agents handle drafting
-and review respectively.
+and review respectively. RepoOS Guide is the built-in general-purpose,
+repository-aware assistant surfaced by the persistent floating chat and on the
+Agents page; unlike task agents, it answers questions without changing task state.
 
 ## Worktree
 
