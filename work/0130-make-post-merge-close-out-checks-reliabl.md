@@ -2,14 +2,14 @@
 id: "0130"
 title: Make post-merge close-out checks reliable and diagnosable
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/make-post-merge-close-out-checks-reliabl
 created_at: "2026-08-12T09:21:08Z"
-updated_at: "2026-08-12T10:42:09Z"
+updated_at: "2026-08-12T10:56:17Z"
 ---
 ## Activity
 
@@ -66,3 +66,4 @@ server reload must remain safe.
 
 - 2026-08-12T09:21:28Z · status inbox→ready
 - 2026-08-12T10:42:09Z · status ready→active, branch
+- 2026-08-12T10:56:17Z · status active→review
