@@ -1,17 +1,16 @@
 ---
 id: "0143"
-title: Defer server auto-reload during close-out; surface "new version available" instead
+title: "Defer server auto-reload during close-out; surface \"new version available\" instead"
 type: feature
-status: ready
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ai
-branch: ""
+branch: feat/defer-server-auto-reload-during-close-ou
 created_at: "2026-08-12T21:35:00Z"
-updated_at: "2026-08-12T21:35:00Z"
+updated_at: "2026-08-12T14:18:39Z"
 ---
-
 ## Problem
 
 When a task moves to `done`, the close-out pipeline (`completeTask` in `src/server/done.ts`) merges the feature branch, runs `bun run build`, commits `dist/` and `screenshots/`, then runs `repoos check`. The `bun run build` step updates `dist/.build-info.json`, which is watched by the `ReloadManager` (`src/server/reload.ts`). The manager auto-reloads the `repoos serve` process in the middle of the pipeline, killing the server that is orchestrating the close-out.
@@ -49,3 +48,4 @@ This has caused tasks to be left in `review` even after their code was merged in
 ## Activity
 
 - 2026-08-12T21:35:00Z · created · ai
+- 2026-08-12T14:18:39Z · status ready→review, branch
