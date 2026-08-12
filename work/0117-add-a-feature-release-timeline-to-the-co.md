@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-feature-release-timeline-to-the-co
 created_at: "2026-08-12T04:22:25Z"
-updated_at: "2026-08-12T06:10:43Z"
+updated_at: "2026-08-12T08:41:10Z"
 ---
 ## Problem
 
@@ -47,3 +47,5 @@ This task covers recording and displaying task-backed feature releases on the co
 - 2026-08-12T05:54:15Z · status ready→active, branch
 - 2026-08-12T06:10:42Z · status active→review
 - 2026-08-12T06:10:43Z · needs_merge
+- 2026-08-12T08:39:30Z · status review→active
+- 2026-08-12T08:41:10Z · status active→review
