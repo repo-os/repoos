@@ -2,7 +2,7 @@
 id: "0116"
 title: Improve agent streaming output formatting
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: cli
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: gpt-5.6-luna
 created_at: "2026-08-12T04:16:02Z"
-updated_at: "2026-08-12T06:14:34Z"
+updated_at: "2026-08-12T06:14:35Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ This task covers testing and improving the chat presentation of streamed output 
 - 2026-08-12T04:16:02Z · created · unknown
 - 2026-08-12T06:14:28Z · model_override
 - 2026-08-12T06:14:34Z · model_override
+- 2026-08-12T06:14:35Z · status inbox→ready
