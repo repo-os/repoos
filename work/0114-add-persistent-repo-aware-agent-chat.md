@@ -3,14 +3,14 @@ id: "0114"
 title: Add persistent repo-aware agent chat
 type: feature
 status: review
-needs_input: false
+needs_merge: true
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-persistent-repo-aware-agent-chat
 created_at: "2026-08-12T04:07:06Z"
-updated_at: "2026-08-12T05:33:23Z"
+updated_at: "2026-08-12T05:34:06Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ This task covers the persistent floating chat experience, its repo-aware default
 - 2026-08-12T04:28:30Z · needs_input · managed preview control plane unavailable at 127.0.0.1:7171
 - 2026-08-12T04:20:03Z · status ready→active, branch
 - 2026-08-12T05:33:23Z · status active→review · managed preview succeeded; repoos check green (305 tests and UI smoke)
+- 2026-08-12T05:34:06Z · needs_merge
