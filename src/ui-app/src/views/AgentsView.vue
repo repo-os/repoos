@@ -13,6 +13,7 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
+import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 
 const config = useConfigStore();
 
@@ -319,11 +320,13 @@ onUnmounted(() => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="m in modelsFor(a.cli, a.model)" :key="m.value" :value="m.value" :disabled="m.disabled">
-                      {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
-                    </SelectItem>
-                  </SelectViewport>
+                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
+                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectSearchGroup>
                 </SelectContent>
               </Select>
             </div>
@@ -411,11 +414,13 @@ onUnmounted(() => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="m in modelsFor(a.cli, a.model)" :key="m.value" :value="m.value" :disabled="m.disabled">
-                      {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
-                    </SelectItem>
-                  </SelectViewport>
+                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
+                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectSearchGroup>
                 </SelectContent>
               </Select>
             </div>

@@ -2,7 +2,7 @@
 id: "0132"
 title: Add search bar to model dropdowns
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
