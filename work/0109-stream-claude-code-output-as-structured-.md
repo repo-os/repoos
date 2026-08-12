@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/stream-claude-code-output-as-structured-
 model_override: opencode/big-pickle
 created_at: "2026-08-11T20:16:14Z"
-updated_at: "2026-08-11T20:19:12Z"
+updated_at: "2026-08-12T04:13:26Z"
 ---
 ## Activity
 
