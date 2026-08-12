@@ -2,7 +2,7 @@
 id: "0148"
 title: Add Kiro CLI as a drivable coding agent
 type: feature
-status: done
+status: review
 needs_merge: true
 priority: p1
 area: agents
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/0148-kiro-cli-agent
 created_at: "2026-08-12T16:46:36Z"
-updated_at: "2026-08-12T17:38:59Z"
+updated_at: "2026-08-12T17:56:33Z"
 ---
 ## Problem
 
@@ -219,3 +219,4 @@ The current `installHint` for kiro is `"npm i -g kiro-cli"`. Verify this is corr
 - 2026-08-12T17:28:33Z · status active→review
 - 2026-08-12T17:28:33Z · needs_merge
 - 2026-08-12T17:38:59Z · status review→done, release:success
+- 2026-08-12T17:56:33Z · status done→review
