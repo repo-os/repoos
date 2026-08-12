@@ -180,9 +180,13 @@ export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
     defaultStatus: config.defaultStatus,
     defaultAssignee: config.defaultAssignee,
   });
+  // A close-out retry after the successful marker was written must not create a
+  // second release or move the timeline entry.
+  if (task.releasedAt) return task;
+
   const previousStatus = task.status;
   task.status = "done";
-  recordChange(task, `status ${previousStatus}→done, released`);
+  recordChange(task, `status ${previousStatus}→done, release:success`);
   writeFileSync(absPath, serializeTask(task));
   commitTaskFile(config.root, absPath, `docs(${task.id}): set status done`);
 

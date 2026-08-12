@@ -31,7 +31,12 @@ const KEY_ORDER = [
 ];
 
 const ACTIVITY_HEADING = "## Activity";
-const RELEASE_ACTIVITY = /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · .*\breleased\b.*$/gm;
+/**
+ * A release is a successful close-out event, not any prose mentioning a
+ * release. `markTaskReleased` is the sole writer of this exact marker.
+ */
+const RELEASE_ACTIVITY =
+  /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · status [a-z]+→done, release:success\r?$/gmu;
 
 /** ISO-8601 UTC timestamp to the second, e.g. 2026-06-01T09:14:02Z. */
 export function utcTimestamp(): string {
@@ -75,7 +80,7 @@ export function recordChange(task: Task, entry: string): void {
   task.body = appendActivityEntry(task.body, `- ${task.updated_at} · ${entry}`);
 }
 
-/** Latest successful-release timestamp recorded in the append-only activity log. */
+/** Latest successful-close-out timestamp recorded in the append-only activity log. */
 export function releasedAtFromActivity(body: string): string | null {
   let releasedAt: string | null = null;
   for (const match of body.matchAll(RELEASE_ACTIVITY)) releasedAt = match[1];

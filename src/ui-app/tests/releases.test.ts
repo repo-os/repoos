@@ -52,6 +52,26 @@ describe("feature releases", () => {
       expect(releasedAtFromActivity(readFileSync(pending.absPath, "utf8"))).toBe(
         released.releasedAt,
       );
+      expect(markTaskReleased(config(root), pending.absPath).releasedAt).toBe(released.releasedAt);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not mistake release prose for a successful close-out", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-release-"));
+    try {
+      const work = join(root, "work");
+      mkdirSync(work);
+      const pending = task(
+        root,
+        "0002",
+        "## Activity\r\n\r\n- 2026-01-01T00:00:00Z · blocked until v2 is released\r\n",
+      );
+
+      const ordinaryDone = patchTaskFile(config(root), pending.absPath, { status: "done" });
+      expect(ordinaryDone.releasedAt).toBeNull();
+      expect(releasedAtFromActivity(readFileSync(pending.absPath, "utf8"))).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
