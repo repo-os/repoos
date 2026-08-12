@@ -2,14 +2,14 @@
 id: "0127"
 title: Add GitHub Copilot CLI agent support
 type: feature
-status: review
+status: done
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/add-github-copilot-cli-agent-support
 created_at: "2026-08-12T07:14:12Z"
-updated_at: "2026-08-12T07:32:33Z"
+updated_at: "2026-08-12T07:37:45Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ configure it, including compatible model choices where verified.
 - 2026-08-12T07:27:14Z · status active→review
 - 2026-08-12T07:30:54Z · status review→active
 - 2026-08-12T07:32:33Z · status active→review
+- 2026-08-12T07:37:45Z · status review→done
