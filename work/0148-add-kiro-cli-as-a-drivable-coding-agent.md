@@ -2,8 +2,7 @@
 id: "0148"
 title: Add Kiro CLI as a drivable coding agent
 type: feature
-status: review
-needs_merge: true
+status: done
 priority: p1
 area: agents
 assigned_to: ai
