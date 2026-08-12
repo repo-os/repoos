@@ -63,5 +63,4 @@ Add an identical "New task" button to the upper right corner of the Control page
 
 - 2026-08-12T12:09:39Z · created · unknown
 - 2026-08-13T00:00:00Z · fleshed out and moved to ready
-- 2026-08-12T18:35:13Z · status ready→active, branch
-- 2026-08-12T18:37:12Z · status active→review
+- 2026-08-12T18:37:12Z · status ready→review, branch
