@@ -34,6 +34,7 @@ process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
 if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
+if (process.env.REPOOS_FAKEBIN_CODEX_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
 if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
@@ -138,6 +139,7 @@ function expectCodexExecOptionsBeforeResume(args: string[]): void {
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -515,6 +517,25 @@ describe("server-owned handoff mission (#0094)", () => {
 });
 
 describe("structured runner handoff (#0094)", () => {
+  it("recognizes the handoff signal inside a Codex JSON agent_message", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_CODEX_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "Codex JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("issues one scoped request after a successful initial or resumed turn", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
