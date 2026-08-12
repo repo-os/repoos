@@ -86,6 +86,8 @@ export interface Health {
   buildAt: string | null;
   /** Build hash the running server loaded, or null in dev mode. */
   buildHash: string | null;
+  /** True when this server is a preview instance serving a specific task's worktree. */
+  isPreviewBuild: boolean;
 }
 
 export interface Counts {

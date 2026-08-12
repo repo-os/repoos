@@ -179,9 +179,6 @@ async function openAgent(): Promise<void> {
     @dragstart="onDragStart"
     @dragend="onDragEnd"
   >
-    <span v-if="task.preview" class="tc-preview-banner" title="Live preview running">
-      Preview
-    </span>
     <div class="tc-top">
       <span class="tc-id">#{{ task.id }}</span>
       <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">
