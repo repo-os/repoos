@@ -40,6 +40,13 @@ export interface PreviewResult {
   error?: string;
 }
 
+/** Result of a trusted server-side health/static probe of a preview URL (#0121). */
+export interface PreviewProbe {
+  ok: boolean;
+  detail?: string;
+  error?: string;
+}
+
 /** Registry persisted between main-server runs (for orphan cleanup at boot). */
 interface RegistryFile {
   mainPid: number;
@@ -82,6 +89,48 @@ async function waitForHealth(url: string, timeoutMs: number): Promise<boolean> {
     await sleep(150);
   }
   return false;
+}
+
+/**
+ * Probe a live preview URL from the trusted server side (#0121): the health
+ * endpoint first, then the root page. A healthy health endpoint is enough for
+ * a pass — the static-page check is informational so the transcript can state
+ * exactly what was verified. Used when a sandboxed agent cannot open the
+ * returned URL itself.
+ */
+export async function probePreview(url: string): Promise<PreviewProbe> {
+  const deadline = Date.now() + HEALTH_TIMEOUT_MS;
+  let lastError = "preview did not respond";
+  while (Date.now() < deadline) {
+    let healthStatus = 0;
+    try {
+      const r = await fetch(`${url}/api/health`);
+      healthStatus = r.status;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    if (healthStatus === 200) {
+      let pageStatus = 0;
+      try {
+        const page = await fetch(url);
+        pageStatus = page.status;
+      } catch {
+        /* static-page check is best-effort */
+      }
+      return {
+        ok: true,
+        detail:
+          pageStatus === 200
+            ? "health endpoint and root page respond"
+            : `health endpoint responds (root page: HTTP ${pageStatus || "unreachable"})`,
+      };
+    }
+    if (healthStatus > 0) {
+      return { ok: false, error: `preview health endpoint returned HTTP ${healthStatus}` };
+    }
+    await sleep(150);
+  }
+  return { ok: false, error: lastError };
 }
 
 /** Absolute path of the compiled CLI entrypoint relative to this module. */

@@ -339,6 +339,7 @@ describe("context pack", () => {
   it("includes managed preview instructions", () => {
     const pack = generateContextPack(config, task, task.branch, root, null);
     expect(pack.content).toContain("Managed Preview");
+    expect(pack.content).toContain("::repoos-preview-request::");
     expect(pack.content).toContain("/api/tasks/:id/preview");
   });
 

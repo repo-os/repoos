@@ -103,10 +103,14 @@ cannot tell from the code alone:
   and verify with a browser probe before reporting done.
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
   the control-plane port and every preview port. To verify a UI change, request
-  this task's managed preview (idempotent, returns the same URL on repeat calls):
-  `curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"`, parse the
-  returned `url`, and probe that. Direct `repoos serve` attempts from agent
-  processes are rejected; the preview is reaped when the task leaves active/review.
+  this task's managed preview by emitting the exact signal line (idempotent —
+  repeat requests return the same task preview, and no localhost/curl is
+  needed):
+  `::repoos-preview-request::`. RepoOS validates the request against your live
+  run, starts the preview from your worktree, probes it server-side, and records
+  the preview URL and probe result in your task transcript. Direct `repoos
+  serve` attempts from agent processes are rejected; the preview is reaped when
+  the task leaves active/review.
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse

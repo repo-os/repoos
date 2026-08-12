@@ -105,5 +105,4 @@ runner-mediated control path, like the server-owned handoff capability.
 
 ## Activity
 
-- 2026-08-12T10:42:29Z · status ready→active, branch
-- 2026-08-12T10:58:09Z · status active→review
+- 2026-08-12T10:58:09Z · status ready→review, branch

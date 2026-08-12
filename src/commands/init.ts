@@ -116,12 +116,16 @@ Document stack-specific conventions here (framework, lint, test commands).
 Never run \`repoos serve\` yourself and never pick a port — RepoOS owns the
 control-plane port and every preview port, and direct serve attempts from agent
 processes are rejected. To verify a UI change, request this task's managed
-preview (idempotent — repeat requests return the same URL):
+preview by emitting the exact signal line (idempotent, and no localhost or
+curl is required — your sandbox may have no network access to the control
+plane):
 
-    curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"
+    ::repoos-preview-request::
 
-Parse the returned \`url\` and probe that; the preview is reaped when the task
-leaves active/review.
+RepoOS validates the request against your live run, starts the preview from
+your worktree, probes it server-side, and records the preview URL and probe
+result in your task transcript. The preview is reaped when the task leaves
+active/review.
 `;
 
 function repoosToml(layout: "root" | "repoos"): string {

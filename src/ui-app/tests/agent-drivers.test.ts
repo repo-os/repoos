@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, extractUsage, HANDOFF_READY_SIGNAL, promptCommand, runPrompt } from "../../server/agents";
+import { AgentRunner, extractUsage, HANDOFF_READY_SIGNAL, PREVIEW_REQUEST_SIGNAL, promptCommand, runPrompt } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -664,14 +664,16 @@ describe("structured runner handoff (#0094)", () => {
   });
 });
 
-describe("server-owned previews in the mission and spawn env (#0096)", () => {
+describe("server-owned previews in the mission and spawn env (#0096/#0121)", () => {
   /**
    * The launch mission must explicitly prohibit direct `repoos serve` / manual
-   * port selection and provide ONE structured, task-scoped preview request.
-   * The spawn must carry the agent markers so the CLI's defense in depth can
-   * reject an accidental direct serve, plus the ACTUAL control-plane URL.
+   * port selection and provide ONE sandbox-compatible, task-scoped preview
+   * request: the exact output signal (#0121) — never a localhost `curl` that a
+   * sandboxed agent cannot reach. The spawn must carry the agent markers so
+   * the CLI's defense in depth can reject an accidental direct serve, plus the
+   * ACTUAL control-plane URL.
    */
-  it("prohibits direct serve in the mission, injects the real API URL and markers", async () => {
+  it("prohibits direct serve, instructs the preview signal, injects the real API URL and markers", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -688,9 +690,12 @@ describe("server-owned previews in the mission and spawn env (#0096)", () => {
       // Prohibits direct serve and manual port selection.
       expect(mission).toContain("never run `repoos serve` yourself");
       expect(mission).toMatch(/do NOT launch `repoos serve` directly/i);
-      // One structured, task-scoped preview request using the injected URL.
-      expect(mission).toContain('"${REPOOS_API_URL}/api/tasks/${REPOOS_TASK_ID}/preview"');
-      // The unsafe pattern is gone from the mission.
+      // One sandbox-compatible, task-scoped preview request: the signal line.
+      expect(mission).toContain(PREVIEW_REQUEST_SIGNAL);
+      // The old mandatory localhost curl is gone from the mission — the signal
+      // replaces it, so an agent is never told to reach the control plane.
+      expect(mission).not.toContain('curl -s -X POST');
+      expect(mission).not.toContain('"${REPOOS_API_URL}/api/tasks/${REPOOS_TASK_ID}/preview"');
       expect(mission).not.toContain("--port 7171");
 
       // Managed-agent markers on the spawn.
