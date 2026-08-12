@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
+import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -18,19 +19,18 @@ const config = useConfigStore();
 const ui = useUiStore();
 const route = useRoute();
 const router = useRouter();
+const tunnelReadiness = ref<Record<string, any> | null>(null);
+const tunnelStatus = computed(() => {
+  if (!tunnelReadiness.value?.configured?.tunnelId) return "Not configured";
+  if (tunnelReadiness.value.running) return "Running";
+  return tunnelReadiness.value.originCertificate?.usable ? "Configured but stopped" : "Needs attention";
+});
+onMounted(async () => {
+  try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
+});
 const generalFields = computed(() =>
   config.visibleFields.filter((field) => field.key !== "tunnelEnabled"),
 );
-
-async function toggleTunnel(enabled: boolean): Promise<void> {
-  try {
-    await config.setTunnelEnabled(enabled);
-    if (enabled) ui.openTunnel();
-    else ui.closeTunnel();
-  } catch {
-    // The config store restores the previous value and surfaces the error.
-  }
-}
 
 function focusSetting(key: string): void {
   const el = document.getElementById(`setting-${key}`);
@@ -102,7 +102,7 @@ watch(
                 v-else-if="f.type === 'boolean'"
                 :checked="!!config.form[f.key]"
                 :disabled="config.saving"
-                @update:checked="(v) => (config.form[f.key] = v)"
+                @update:checked="(v: boolean) => (config.form[f.key] = v)"
               />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
@@ -117,27 +117,15 @@ watch(
           </div>
           <div id="setting-tunnelEnabled" class="setting-row">
             <div class="setting-info">
-              <div class="setting-label">Cloudflare Tunnel</div>
+              <div class="setting-label">Cloudflare publishing</div>
               <div class="setting-desc">
-                Publish local apps securely through Cloudflare Tunnel + Access. Off by default.
+                Configure a protected public hostname for a local RepoOS service. This card reports
+                status; it does not start or stop cloudflared.
               </div>
             </div>
             <div class="setting-input tunnel-setting-actions">
-              <Button
-                v-if="config.form.tunnelEnabled"
-                variant="outline"
-                size="sm"
-                :disabled="config.saving"
-                @click="ui.openTunnel()"
-              >
-                Open setup
-              </Button>
-              <Switch
-                :checked="!!config.form.tunnelEnabled"
-                :disabled="config.saving"
-                aria-label="Enable Cloudflare Tunnel publishing"
-                @update:checked="toggleTunnel"
-              />
+              <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
+              <Button variant="outline" size="sm" @click="ui.openTunnel()">Configure publishing</Button>
             </div>
           </div>
         </div>

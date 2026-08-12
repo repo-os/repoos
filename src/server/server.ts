@@ -36,7 +36,10 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { homedir } from "node:os";
+import { connect } from "node:net";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
@@ -61,9 +64,22 @@ import {
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
-import { patchTaskFile, deleteTaskFile, WriteError, PathGuardError, type TaskPatch } from "./write.js";
+import {
+  patchTaskFile,
+  deleteTaskFile,
+  WriteError,
+  PathGuardError,
+  type TaskPatch,
+} from "./write.js";
 import { renderInstanceIcon } from "./icons.js";
-import { AgentRunner, deriveBranch, resolveEngineer, resolvePmAgent, resolveAgentForTask, runPrompt } from "./agents.js";
+import {
+  AgentRunner,
+  deriveBranch,
+  resolveEngineer,
+  resolvePmAgent,
+  resolveAgentForTask,
+  runPrompt,
+} from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { PreviewManager } from "./preview.js";
@@ -74,6 +90,142 @@ import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
+
+function findCloudflared(): string | null {
+  for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
+    const candidate = join(dir, "cloudflared");
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      /* next PATH entry */
+    }
+  }
+  return null;
+}
+
+function storedCloudflareToken(): boolean {
+  if (process.env.CLOUDFLARE_API_TOKEN?.trim()) return true;
+  try {
+    if (process.platform === "darwin") {
+      return (
+        execFileSync(
+          "security",
+          ["find-generic-password", "-a", "repoos", "-s", "repoos:cloudflare-token", "-w"],
+          { encoding: "utf8", timeout: 2000 },
+        ).trim().length > 0
+      );
+    }
+    if (process.platform === "linux") {
+      return (
+        execFileSync(
+          "secret-tool",
+          ["lookup", "service", "repoos:cloudflare-token", "user", "repoos"],
+          { encoding: "utf8", timeout: 2000 },
+        ).trim().length > 0
+      );
+    }
+  } catch {
+    /* unavailable or not stored */
+  }
+  return false;
+}
+
+function tunnelProcessRunning(): boolean {
+  try {
+    return (
+      execFileSync("pgrep", ["-f", "cloudflared.*tunnel.*run"], {
+        encoding: "utf8",
+        timeout: 2000,
+      }).trim() !== ""
+    );
+  } catch {
+    return false;
+  }
+}
+
+function usableOriginCertificate(path: string): boolean {
+  if (!existsSync(path)) return false;
+  try {
+    const pem = readFileSync(path, "utf8");
+    return /-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----/.test(pem);
+  } catch {
+    return false;
+  }
+}
+
+function serviceRunning(): boolean {
+  try {
+    if (process.platform === "darwin") {
+      const out = execFileSync("launchctl", ["list"], { encoding: "utf8", timeout: 2000 });
+      return out
+        .split("\n")
+        .some((line) => line.includes("com.cloudflare.cloudflared") && /^\s*\d+\s+/.test(line));
+    }
+    if (process.platform === "linux")
+      return (
+        execFileSync("systemctl", ["is-active", "cloudflared"], {
+          encoding: "utf8",
+          timeout: 2000,
+        }).trim() === "active"
+      );
+  } catch {
+    /* service manager unavailable */
+  }
+  return false;
+}
+
+function portListening(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = connect({ host: "127.0.0.1", port });
+    const finish = (value: boolean) => {
+      socket.destroy();
+      resolve(value);
+    };
+    socket.once("connect", () => finish(true));
+    socket.once("error", () => finish(false));
+    socket.setTimeout(800, () => finish(false));
+  });
+}
+
+async function tunnelReadiness(root: string, port?: number) {
+  const tunnel = readTunnelConfig(root);
+  const bin = findCloudflared();
+  let version: string | null = null;
+  if (bin) {
+    try {
+      version =
+        execFileSync(bin, ["--version"], { encoding: "utf8", timeout: 3000 })
+          .trim()
+          .split("\n")[0] || null;
+    } catch {
+      /* installed but unavailable */
+    }
+  }
+  const certPath = join(homedir(), ".cloudflared", "cert.pem");
+  const originCertificate = {
+    present: existsSync(certPath),
+    usable: usableOriginCertificate(certPath),
+  };
+  const originListening =
+    typeof port === "number" && Number.isInteger(port) ? await portListening(port) : null;
+  return {
+    cloudflared: { installed: !!bin, version },
+    originCertificate,
+    apiTokenStored: storedCloudflareToken(),
+    configured: {
+      tunnelName: tunnel.tunnelId ? tunnel.name : null,
+      tunnelId: tunnel.tunnelId || null,
+      baseDomain: tunnel.domain || null,
+    },
+    localOrigin: { port: port ?? null, listening: originListening },
+    running: tunnelProcessRunning() || serviceRunning(),
+    publishedHostnames: Object.values(tunnel.apps)
+      .map((app) => app.hostname)
+      .sort(),
+    checkedAt: new Date().toISOString(),
+  };
+}
 
 export interface ServeOptions {
   root?: string;
@@ -143,7 +295,10 @@ function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
       const st = statSync(full);
       if (st.isDirectory()) walk(full);
       else if (extname(e) === ".md") {
-        const rel = full.slice(config.root.length + 1).split("\\").join("/");
+        const rel = full
+          .slice(config.root.length + 1)
+          .split("\\")
+          .join("/");
         add(full, rel);
       }
     }
@@ -285,11 +440,7 @@ const UI_MIME: Record<string, string> = {
 };
 
 /** Serve a static file from the UI build directory. Returns false on miss. */
-function serveStaticUi(
-  res: ServerResponse,
-  uiDir: string,
-  urlPath: string,
-): boolean {
+function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   const abs = resolve(uiDir, rel || "index.html");
@@ -518,9 +669,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const wtPath = worktreePathForBranch(config.root, task.branch);
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
-      const mainUpdated = patchTaskFile(config, task.absPath, { needsMerge: value }, {
-        onStatusChange: onServerStatusChange,
-      });
+      const mainUpdated = patchTaskFile(
+        config,
+        task.absPath,
+        { needsMerge: value },
+        {
+          onStatusChange: onServerStatusChange,
+        },
+      );
       index.applyFileChange(mainUpdated.absPath);
       // Mirror the flag on the worktree copy so an agent resuming there sees it.
       if (wtPath) {
@@ -602,9 +758,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // it can never confirm itself.
         const secret = process.env.REPOOS_RELOAD_SECRET;
         const handshake =
-          typeof secret === "string" &&
-          secret !== "" &&
-          url.searchParams.get("reload") === secret;
+          typeof secret === "string" && secret !== "" && url.searchParams.get("reload") === secret;
         return json(res, 200, {
           ok: true,
           root: config.root,
@@ -619,10 +773,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Best-effort manual reload (same path as the build watch): reloads
         // now when stale and idle, defers while agents run, or reports
         // not-stale when this process already serves the current build.
-        const state = reload?.requestReload("manual restart") ?? {
-          state: "not-stale",
-          reason: "auto-reload unavailable",
-        } as const;
+        const state =
+          reload?.requestReload("manual restart") ??
+          ({
+            state: "not-stale",
+            reason: "auto-reload unavailable",
+          } as const);
         return json(res, 200, state);
       }
       if (path === "/api/tasks" && method === "GET") {
@@ -665,6 +821,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           runningAgents: runner.running(),
         });
         return json(res, 200, stats);
+      }
+      if (path === "/api/tunnel/readiness" && method === "GET") {
+        const rawPort = url.searchParams.get("port");
+        const port = rawPort ? Number(rawPort) : undefined;
+        if (rawPort) {
+          if (port === undefined || !Number.isInteger(port) || port < 1 || port > 65535) {
+            return json(res, 400, { error: "port must be an integer from 1 to 65535" });
+          }
+        }
+        return json(res, 200, await tunnelReadiness(config.root, port));
       }
       const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
       if (outputMatch && method === "GET") {
@@ -739,8 +905,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (path === "/api/tasks/freeform" && method === "POST") {
         const body = (await readBody(req)) as Record<string, unknown>;
-        const explanation =
-          typeof body?.explanation === "string" ? body.explanation.trim() : "";
+        const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
         if (!explanation) {
           return json(res, 400, { error: "explanation is required" });
         }
@@ -768,12 +933,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         };
 
         // Build a one-shot agent override for this freeform request.
-        const freeformAgentName = typeof body?.agentOverride === "string" && body.agentOverride
-          ? body.agentOverride : undefined;
-        const freeformCli = typeof body?.cliOverride === "string" && body.cliOverride
-          ? body.cliOverride : undefined;
-        const freeformModel = typeof body?.modelOverride === "string" && body.modelOverride
-          ? body.modelOverride : undefined;
+        const freeformAgentName =
+          typeof body?.agentOverride === "string" && body.agentOverride
+            ? body.agentOverride
+            : undefined;
+        const freeformCli =
+          typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+        const freeformModel =
+          typeof body?.modelOverride === "string" && body.modelOverride
+            ? body.modelOverride
+            : undefined;
         const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
 
         // Resolve the PM agent, applying any one-shot override.
@@ -782,7 +951,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
           const baseName = freeformAgentName || "pm";
           const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
-          pm = base ? { ...base, ...(freeformCli ? { cli: freeformCli } : {}), ...(freeformModel ? { model: freeformModel } : {}) } : null;
+          pm = base
+            ? {
+                ...base,
+                ...(freeformCli ? { cli: freeformCli } : {}),
+                ...(freeformModel ? { model: freeformModel } : {}),
+              }
+            : null;
         } else {
           pm = resolvePmAgent(config);
         }
@@ -953,7 +1128,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             task: index.getTask(updated.id),
             branch,
             clean,
-            git: wtRes.ok ? "ok" : wtRes.reason ?? "unknown",
+            git: wtRes.ok ? "ok" : (wtRes.reason ?? "unknown"),
             worktree: wtRes.ok ? wtRes.path : undefined,
             spawn: {
               ok: spawnRes.ok,
@@ -1101,11 +1276,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Status stays `active` — pausing only stops the agent process, it no
         // longer demotes the task back to `ready` (see #0070). `needsInput`
         // still clears: a stopped agent isn't waiting on a reply.
-        const updated = patchTaskFile(config, existing.absPath, {
-          needsInput: false,
-        }, {
-          onStatusChange: onServerStatusChange,
-        });
+        const updated = patchTaskFile(
+          config,
+          existing.absPath,
+          {
+            needsInput: false,
+          },
+          {
+            onStatusChange: onServerStatusChange,
+          },
+        );
         index.applyFileChange(updated.absPath);
         return json(res, 200, {
           ok: true,
@@ -1163,7 +1343,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (path === "/api/models/test" && method === "POST") {
         try {
           const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
-          if (typeof body.cli !== "string" || !AGENT_CLIS.includes(body.cli as typeof AGENT_CLIS[number])) {
+          if (
+            typeof body.cli !== "string" ||
+            !AGENT_CLIS.includes(body.cli as (typeof AGENT_CLIS)[number])
+          ) {
             return json(res, 400, { error: "cli must be a supported coding agent" });
           }
           if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
@@ -1207,7 +1390,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             // accepted so dynamically-selected models save. AGENT_MODELS remains
             // the fallback suggested list, never an allowlist.
             if (typeof a.model !== "string" || !a.model.trim()) {
-              return json(res, 400, { error: `agent "${a.name}" model must be a non-empty string` });
+              return json(res, 400, {
+                error: `agent "${a.name}" model must be a non-empty string`,
+              });
             }
             if (typeof a.enabled !== "boolean") {
               return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });
@@ -1265,7 +1450,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
             for (const item of val) {
               if (typeof item !== "string" || !item.trim()) {
-                return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
+                return json(res, 400, {
+                  error: `${field.label} entries must be non-empty strings`,
+                });
               }
             }
             patch[field.key] = (val as string[]).map((s) => s.trim());
@@ -1419,7 +1606,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               await sleep(RELOAD_BIND_RETRY_MS);
             }
           }
-          if (!bound) throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
+          if (!bound)
+            throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
         } else {
           await bindOnce(false);
         }
