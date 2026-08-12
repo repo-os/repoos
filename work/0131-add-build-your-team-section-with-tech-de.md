@@ -2,14 +2,14 @@
 id: "0131"
 title: Add Build Your Team section with Tech Debt Agent
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: unassigned
 created_by: ""
 branch: ""
 created_at: "2026-08-12T10:01:45Z"
-updated_at: "2026-08-12T10:01:45Z"
+updated_at: "2026-08-12T10:02:06Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ A new "Build Your Team" section appears on the agents page below "Custom Agents,
 ## Activity
 
 - 2026-08-12T10:01:45Z · created · unknown
+- 2026-08-12T10:02:06Z · status inbox→ready
