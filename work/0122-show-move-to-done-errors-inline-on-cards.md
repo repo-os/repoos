@@ -2,7 +2,7 @@
 id: "0122"
 title: Show move-to-done errors inline on cards and in the task panel
 type: feature
-status: active
+status: review
 needs_merge: true
 priority: p2
 area: ui
@@ -91,3 +91,4 @@ review task's Work card and inside the task panel.
 
 - 2026-08-12T06:04:02Z · status inbox→ready
 - 2026-08-12T14:28:12Z · needs_merge
+- 2026-08-12T22:32:00Z · status active→review
