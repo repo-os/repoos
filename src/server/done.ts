@@ -330,10 +330,16 @@ const BUILD_STEPS: string[][] = [
  */
 const SCREENSHOT_STEPS: string[][] = [["node", "scripts/capture-screenshots.mjs"]];
 
-/** Commit regenerated `dist/` and `screenshots/` so main stays clean and mergeable. */
-async function commitGenerated(root: string): Promise<void> {
-  await runProcess("git", ["add", "-A", "--", "dist", "screenshots"], { cwd: root, timeout: 4000 });
-  await runProcess("git", ["commit", "-m", "chore: regenerate dist and screenshots"], {
+/**
+ * Commit regenerated `dist/` (always — the post-merge build just rewrote it)
+ * and `screenshots/` when they were re-captured, so main stays clean and
+ * mergeable. Screenshot regeneration is an adhoc opt-in, so screenshots are
+ * only staged when they were actually generated.
+ */
+async function commitGenerated(root: string, withScreenshots: boolean): Promise<void> {
+  const paths = withScreenshots ? ["dist", "screenshots"] : ["dist"];
+  await runProcess("git", ["add", "-A", "--", ...paths], { cwd: root, timeout: 4000 });
+  await runProcess("git", ["commit", "-m", withScreenshots ? "chore: regenerate dist and screenshots" : "chore: regenerate dist"], {
     cwd: root,
     timeout: 4000,
   });
@@ -372,6 +378,15 @@ export async function completeTask(
   steps: CompleteTaskSteps = {},
 ): Promise<CompleteResult> {
   const root = config.root;
+
+  // Screenshot regeneration is OFF by default: it launches a headless browser
+  // against a fixture repo purely to refresh the committed PNGs, which most
+  // close-outs never consult (the UI smoke test in `repoos check` already
+  // catches mounting failures, console errors, and CSS regressions). Opt back
+  // in adhoc with `REPOOS_DONE_SCREENSHOTS=1` (deployment prep, UI doc
+  // refresh). The screenshots freshness guard in `repoos check` skips when no
+  // screenshots are committed, so skipping here stays green.
+  const withScreenshots = process.env.REPOOS_DONE_SCREENSHOTS === "1";
 
   onProgress?.("merge");
   // Ensure the task file is committed in main before merging: API-created tasks
@@ -430,24 +445,28 @@ export async function completeTask(
       reason: `build failed after merge (${build.exitCode ?? build.errorCode ?? "killed"}) — the branch IS merged into main; retrying resumes from the build step. Task kept in review.`,
     };
   }
-  // Re-capture screenshots against the merged UI so `repoos check` stays green.
-  onProgress?.("screenshots");
-  const shots = steps.screenshots
-    ? await steps.screenshots(root)
-    : await runDoneStep({ cwd: root, candidates: SCREENSHOT_STEPS, label: "repoos screenshots", stage: "screenshots", timeout: 300_000 });
-  if (!shots.ok) {
-    return {
-      ok: false,
-      merged: true,
-      alreadyMerged: merge.alreadyMerged,
-      conflicts: [],
-      ff: merge.ff,
-      drifted: merge.drifted,
-      check: shots,
-      reason: `screenshot regeneration failed after merge (${shots.exitCode ?? shots.errorCode ?? "killed"}) — the branch IS merged into main; retrying resumes from screenshot generation. Task kept in review.`,
-    };
+  // Re-capture screenshots against the merged UI so `repoos check` stays green
+  // — but only when explicitly opted in (REPOOS_DONE_SCREENSHOTS=1). The whole
+  // section is skipped by default: no browser launch, no PNGs, no hash file.
+  if (withScreenshots) {
+    onProgress?.("screenshots");
+    const shots = steps.screenshots
+      ? await steps.screenshots(root)
+      : await runDoneStep({ cwd: root, candidates: SCREENSHOT_STEPS, label: "repoos screenshots", stage: "screenshots", timeout: 300_000 });
+    if (!shots.ok) {
+      return {
+        ok: false,
+        merged: true,
+        alreadyMerged: merge.alreadyMerged,
+        conflicts: [],
+        ff: merge.ff,
+        drifted: merge.drifted,
+        check: shots,
+        reason: `screenshot regeneration failed after merge (${shots.exitCode ?? shots.errorCode ?? "killed"}) — the branch IS merged into main; retrying resumes from screenshot generation. Task kept in review.`,
+      };
+    }
   }
-  await commitGenerated(root);
+  await commitGenerated(root, withScreenshots);
 
   onProgress?.("check");
   const check = steps.check
