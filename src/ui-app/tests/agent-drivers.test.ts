@@ -171,6 +171,15 @@ describe("model-aware driver commands", () => {
       expect(command.args).not.toContain("--model");
     },
   );
+
+  it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {
+    const command = promptCommand(agent("github copilot"), "write a task file");
+    expect(command).toEqual({
+      cmd: "copilot",
+      args: expect.arrayContaining(["-p", "write a task file", "--no-ask-user"]),
+    });
+    expect(command.args).not.toContain("--output-format");
+  });
 });
 
 describe("qwen code driver", () => {

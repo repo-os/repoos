@@ -1066,7 +1066,10 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
   if (agent.cli === "github copilot") {
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, "--output-format", "json", "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
+      // One-shot callers (PM/freeform and model probes) consume the final
+      // response, not the streaming transcript. Keep JSONL exclusive to the
+      // AgentRunner so freeform task parsing receives markdown.
+      args: ["-p", prompt, ...extra, "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
     };
   }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
