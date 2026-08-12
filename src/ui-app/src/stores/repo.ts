@@ -123,6 +123,8 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
+  /** When each task's agent last exited (ms timestamp), for the "paused" grace period. */
+  const agentExitedAt = ref<Record<string, number>>({});
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live run telemetry per task (time/tokens/cost/stalled), keyed by task id. */
   const agentStats = ref<Record<string, AgentSessionStats>>({});
@@ -291,6 +293,7 @@ export const useRepoStore = defineStore("repo", () => {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
+      agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
       if (outputs.value[e.id]) {
         outputs.value = {
@@ -667,6 +670,7 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     transitionState,
     runningIds,
+    agentExitedAt,
     outputs,
     agentStats,
     doneSteps,
