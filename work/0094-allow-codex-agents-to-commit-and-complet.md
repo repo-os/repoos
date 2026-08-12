@@ -2,7 +2,7 @@
 id: "0094"
 title: Let RepoOS finalize sandboxed agent worktree handoffs
 type: bug
-status: review
+status: done
 priority: p1
 area: agent
 assigned_to: ai

@@ -495,6 +495,8 @@ describe("structured runner handoff (#0094)", () => {
       expect(requests[0].runId).toBeTruthy();
       expect(runner.validateHandoff(requests[0])).toBe(true);
       expect(runner.validateHandoff({ ...requests[0], runId: "forged-session" })).toBe(false);
+      expect(runner.consumeHandoff(requests[0])).toBe(true);
+      expect(runner.consumeHandoff(requests[0])).toBe(false);
 
       runner.send("0001", "finish the resumed turn", agent("codex"));
       await waitFor(() => requests.length === 2, "resumed handoff request");

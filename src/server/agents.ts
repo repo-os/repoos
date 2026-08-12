@@ -814,6 +814,13 @@ export class AgentRunner {
     );
   }
 
+  /** Validate and expire one runner-issued handoff capability atomically. */
+  consumeHandoff(request: AgentHandoffRequest): boolean {
+    if (!this.validateHandoff(request)) return false;
+    this.authorizedHandoffs.delete(request.runId);
+    return true;
+  }
+
   /**
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.

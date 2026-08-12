@@ -403,7 +403,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (task?.status === "review") void reviews.run(task);
     },
     async (request) => {
-      if (!runner.validateHandoff(request)) {
+      if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }

@@ -70,15 +70,19 @@ function concise(run: RunResult): string {
     .join(" · ") || `exit ${run.status}`;
 }
 
-const CHECK_STEPS = [
-  ["repoos", "check"],
-  ["bun", "run", "repoos", "check"],
-  ["node", "dist/cli/index.js", "check"],
-] as const;
-
 async function runCheck(worktree: string): Promise<RunResult> {
+  // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
+  // resolves build freshness relative to its own package checkout, which can
+  // falsely pass or fail when finalizing a different linked worktree.
+  const localCli = join(worktree, "dist", "cli", "index.js");
+  const candidates: ReadonlyArray<readonly [string, ...string[]]> = existsSync(localCli)
+    ? [[process.execPath, localCli, "check"]]
+    : [
+        ["repoos", "check"],
+        ["bun", "run", "repoos", "check"],
+      ];
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
-  for (const candidate of CHECK_STEPS) {
+  for (const candidate of candidates) {
     last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000);
     if (last.status === 0) return last;
     if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;

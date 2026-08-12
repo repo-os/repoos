@@ -75,6 +75,12 @@ function makeFixture(checkExit = 0): Fixture {
   };
 }
 
+function installLocalCheck(fx: Fixture, checkExit: number): void {
+  const cli = join(fx.worktree, "dist", "cli", "index.js");
+  mkdirSync(join(fx.worktree, "dist", "cli"), { recursive: true });
+  writeFileSync(cli, `process.exit(${checkExit});\n`);
+}
+
 function readTask(fx: Fixture): Task {
   return parseTask({
     content: readFileSync(fx.taskPath, "utf8"),
@@ -128,6 +134,21 @@ describe("trusted server-side handoff", () => {
       expect(result).toMatchObject({ ok: false, step: "check" });
       expect(readTask(fx).status).toBe("active");
       expect(git(fx.worktree, ["status", "--porcelain"])).toContain("source.txt");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("uses the assigned worktree's CLI instead of an unrelated global repoos", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      installLocalCheck(fx, 0);
+      writeFileSync(join(fx.bin, "repoos"), "#!/bin/sh\nexit 23\n", { mode: 0o755 });
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
     } finally {
       process.env.PATH = oldPath;
       fx.clean();
