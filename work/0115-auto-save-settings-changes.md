@@ -2,7 +2,7 @@
 id: "0115"
 title: Auto-save settings changes
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-save-settings-changes
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-08-12T04:12:31Z"
-updated_at: "2026-08-12T05:56:28Z"
+updated_at: "2026-08-12T05:57:09Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Changes made on the settings page save automatically, following the existing age
 - 2026-08-12T04:30:53Z · status inbox→ready
 - 2026-08-12T05:48:06Z · cli_override, model_override
 - 2026-08-12T05:56:28Z · status ready→review, branch
+- 2026-08-12T05:57:09Z · status review→done
