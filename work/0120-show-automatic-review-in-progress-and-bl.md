@@ -2,8 +2,7 @@
 id: "0120"
 title: Show automatic review in progress and block move-to-done until it finishes
 type: feature
-status: review
-needs_merge: true
+status: done
 priority: p1
 area: ui
 assigned_to: ai
@@ -93,3 +92,4 @@ That creates two problems:
 - 2026-08-12T06:07:10Z · status review→active
 - 2026-08-12T06:07:14Z · status active→review
 - 2026-08-12T09:47:22Z · model_override
+- 2026-08-12T09:51:00Z · status review→done
