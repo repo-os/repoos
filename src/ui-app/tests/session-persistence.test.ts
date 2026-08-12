@@ -163,6 +163,30 @@ describe("agent session persistence", () => {
     );
   });
 
+  it("hydrates a persisted guide session before sending a follow-up", async () => {
+    const fx = fixture("done");
+    const guideFile = join(fx.root, ".repoos", "sessions", "repoos-guide.json");
+    mkdirSync(join(fx.root, ".repoos", "sessions"), { recursive: true });
+    writeFileSync(
+      guideFile,
+      JSON.stringify({
+        ...JSON.parse(saved([{ s: "out", d: "from guide" }])),
+        workdir: fx.root,
+      }),
+    );
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+
+    expect(runner.send("repoos-guide", "What changed?", agent).ok).toBe(true);
+    await waitFor(() => !runner.isRunning("repoos-guide"), "guide follow-up exit");
+    expect(runner.output("repoos-guide")?.lines).toEqual(
+      expect.arrayContaining([
+        { s: "out", d: "from guide" },
+        { type: "human", text: "What changed?" },
+        { s: "out", d: "persisted output" },
+      ]),
+    );
+  });
+
   it("flushes completed sessions, evicts RAM, and serves output cold from disk", async () => {
     const fx = fixture("active");
     const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });

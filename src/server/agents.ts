@@ -1251,13 +1251,17 @@ export class AgentRunner {
     agent: Agent,
     opts: { resumePreamble?: string } = {},
   ): StartResult {
-    const session = this.sessions.get(taskId);
+    // Completed/non-task conversations are deliberately not preloaded at boot.
+    // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
+    // after a server reload instead of being visible-but-unsendable.
+    const session = this.sessions.get(taskId) ?? this.loadSession(taskId);
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
     if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
+    this.sessions.set(taskId, session);
     const entry: AgentOutputEntry = { type: "human", text };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
