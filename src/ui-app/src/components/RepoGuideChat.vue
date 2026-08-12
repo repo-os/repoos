@@ -11,6 +11,7 @@ const repo = useRepoStore();
 const config = useConfigStore();
 const open = ref(false);
 const draft = ref("");
+const submitting = ref(false);
 const hydratedEnabled = ref(true);
 const hydratedAgent = ref<Agent | null>(null);
 const log = ref<HTMLElement | null>(null);
@@ -29,7 +30,7 @@ const configuredAgent = computed(
 );
 const agent = computed(() => configuredAgent.value ?? hydratedAgent.value);
 const enabled = computed(() => agent.value?.enabled ?? hydratedEnabled.value);
-const busy = computed(() => repo.runningIds.includes(CHAT_ID));
+const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID));
 const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
 
@@ -85,17 +86,30 @@ function toggle(): void {
 async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
-  repo.outputs[CHAT_ID] = [...lines.value, { type: "human", text }];
+  // Lock synchronously before the request starts so Enter + click (or two
+  // rapid submits) cannot race before the SSE running event arrives.
+  submitting.value = true;
+  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimisticIndex = lines.value.length;
+  repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
   scrollToLatest();
   try {
     await api("/api/chat/message", JSON_OPTS("POST", { text }));
   } catch (error) {
+    // The server rejected the message, so remove only this optimistic entry.
+    // Keep any transcript events that may have arrived independently.
+    repo.outputs[CHAT_ID] = (repo.outputs[CHAT_ID] ?? []).filter(
+      (_entry, index) => index !== optimisticIndex,
+    );
+    draft.value = text;
     repo.outputs[CHAT_ID] = [
-      ...lines.value,
+      ...(repo.outputs[CHAT_ID] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
     ];
     repo.onError(error);
+  } finally {
+    submitting.value = false;
   }
 }
 
