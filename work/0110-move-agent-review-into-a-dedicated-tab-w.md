@@ -2,14 +2,14 @@
 id: "0110"
 title: Move agent review into a dedicated tab with follow-up controls
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T02:34:47Z"
-updated_at: "2026-08-12T02:34:47Z"
+updated_at: "2026-08-12T11:10:11Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ A "Review again" button starts a fresh reviewer run. While the reviewer is worki
 ## Activity
 
 - 2026-08-12T02:34:47Z · created · unknown
+- 2026-08-12T11:10:11Z · status inbox→ready
