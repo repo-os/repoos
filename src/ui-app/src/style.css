@@ -531,6 +531,12 @@
   .ro-value{font-size:13px;color:var(--txt);padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel-solid);min-height:20px;word-break:break-word}
   .ro-value.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}
 
+  .drawer-quickbar{padding:0 22px 14px;display:flex;flex-direction:column;gap:8px}
+  .quickbar-row{display:flex;align-items:center;gap:8px}
+  .quickbar-row>:first-child{flex:1;min-width:0}
+  .quickbar-row .preview-url{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--cyan-dim);background:var(--cyan-dim);margin-bottom:0}
+  .quickbar-row button{white-space:nowrap}
+
   .drawer-tabs{display:flex;gap:4px;padding:8px 22px 0;border-bottom:1px solid var(--border);background:var(--panel-solid)}
   .tab-btn{padding:8px 14px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:.15s}
   .tab-btn:hover{color:var(--txt)}

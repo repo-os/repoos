@@ -1169,6 +1169,119 @@ function resetFreeformOverrides(): void {
             <X class="size-[15px]" />
           </DialogClose>
         </div>
+        <div class="drawer-quickbar">
+          <div class="quickbar-row">
+            <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
+              <SelectTrigger :disabled="ui.saving">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem v-for="col in allStatuses" :key="col.id" :value="col.id">
+                    <span class="cdot" :style="{ background: col.color }"></span>{{ col.label }}
+                  </SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+            <Button
+              v-if="ui.active.status === 'inbox'"
+              variant="outline"
+              :disabled="ui.saving"
+              @click="setStatus('ready')"
+            >
+              <ArrowRight class="size-3.5" />
+              Move to ready
+            </Button>
+            <Button
+              v-if="(ui.active.status === 'ready' || ui.active.status === 'active') && (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))"
+              variant="accent"
+              :disabled="ui.saving"
+              @click="startWork"
+            >
+              <Play v-if="!startingWork" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ startingWork ? "Starting work…" : ui.active.status === "active" ? "Restart work" : "Start work" }}
+            </Button>
+            <Button
+              v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+              variant="outline"
+              :disabled="ui.saving"
+              @click="pauseWork"
+            >
+              <Pause class="size-3.5" />
+              Pause work
+            </Button>
+            <Button
+              v-if="ui.active.status === 'review'"
+              variant="default"
+              :disabled="ui.saving"
+              @click="moveToDone"
+            >
+              <CheckCheck v-if="!doingDone" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ doingDone ? doneProgress : "Move to done" }}
+            </Button>
+          </div>
+          <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
+            <ActivityIndicator /> agent running
+          </span>
+          <div v-if="ui.active.status === 'review' && doneFailure" class="done-failure">
+            <div class="done-failure-title">
+              <X class="size-3.5" />
+              Close-out failed at “{{ doneFailure?.step }}”
+              <span class="done-failure-time">{{ doneFailure?.elapsedSeconds }}s</span>
+            </div>
+            <p class="done-failure-msg">{{ doneFailure?.message }}</p>
+            <div v-if="doneFailure?.conflicts.length" class="done-failure-files">
+              <div class="done-failure-sub">Conflicting files</div>
+              <ul>
+                <li v-for="f in doneFailure?.conflicts" :key="f" class="mono">{{ f }}</li>
+              </ul>
+            </div>
+            <p class="done-failure-hint">
+              RepoOS couldn't sync this branch with main automatically — resolve the
+              conflicting files in the worktree, then retry.
+            </p>
+          </div>
+          <div v-if="ui.active.status === 'active' || ui.active.status === 'review'" class="quickbar-row">
+            <template v-if="ui.active.preview">
+              <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                <ExternalLink class="size-3.5" />
+                {{ ui.active.preview.url }}
+              </a>
+              <Button
+                variant="outline"
+                :disabled="ui.saving || previewBusy"
+                @click="stopPreview"
+              >
+                <Square class="size-3.5" />
+                Stop preview
+              </Button>
+            </template>
+            <Button
+              v-else
+              variant="outline"
+              :disabled="ui.saving || previewBusy || !previewable"
+              @click="startPreview"
+            >
+              <Eye class="size-3.5" />
+              {{ previewBusy ? "Starting…" : "Preview" }}
+            </Button>
+          </div>
+          <p
+            v-if="(ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview && !ui.active.branch"
+            class="preview-hint"
+          >
+            No branch yet — start work to create the worktree this previews.
+          </p>
+          <p
+            v-else-if="(ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview && !ui.active.git?.worktreeExists"
+            class="preview-hint"
+          >
+            No git worktree is checked out for
+            <span class="mono">{{ ui.active.branch }}</span>.
+          </p>
+        </div>
         <div class="drawer-tabs">
           <button
             type="button"
@@ -1207,89 +1320,6 @@ function resetFreeformOverrides(): void {
               <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
             </div>
           </div>
-          <div class="md-h" style="margin-top: 14px">move to</div>
-          <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
-            <SelectTrigger :disabled="ui.saving">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                <SelectItem v-for="col in allStatuses" :key="col.id" :value="col.id">
-                  <span class="cdot" :style="{ background: col.color }"></span>{{ col.label }}
-                </SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </Select>
-          <div v-if="ui.active.status === 'inbox'" class="field" style="margin-top: 16px">
-            <Button
-              variant="outline"
-              class="w-full"
-              :disabled="ui.saving"
-              @click="setStatus('ready')"
-            >
-              <ArrowRight class="size-3.5" />
-              Move to ready
-            </Button>
-          </div>
-          <div v-if="ui.active.status === 'ready' || ui.active.status === 'active'" class="field" style="margin-top: 16px">
-            <Button
-              v-if="ui.active.status === 'ready' || !repo.isRunning(ui.active.id)"
-              variant="accent"
-              class="w-full"
-              :disabled="ui.saving"
-              @click="startWork"
-            >
-              <Play v-if="!startingWork" class="size-3.5" />
-              <ActivityIndicator v-else />
-              {{ startingWork ? "Starting work…" : ui.active.status === "active" ? "Restart work" : "Start work" }}
-            </Button>
-            <Button
-              v-else
-              variant="outline"
-              class="w-full"
-              :disabled="ui.saving"
-              @click="pauseWork"
-            >
-              <Pause class="size-3.5" />
-              Pause work
-            </Button>
-            <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
-              <ActivityIndicator /> agent running
-            </span>
-          </div>
-          <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
-            <Button
-              variant="default"
-              class="w-full"
-              :disabled="ui.saving"
-              @click="moveToDone"
-            >
-              <CheckCheck v-if="!doingDone" class="size-3.5" />
-              <ActivityIndicator v-else />
-              {{ doingDone ? doneProgress : "Move to done" }}
-            </Button>
-            <div
-              v-if="doneFailure"
-              class="done-failure"
-            >
-              <div class="done-failure-title">
-                <X class="size-3.5" />
-                Close-out failed at “{{ doneFailure?.step }}”
-                <span class="done-failure-time">{{ doneFailure?.elapsedSeconds }}s</span>
-              </div>
-              <p class="done-failure-msg">{{ doneFailure?.message }}</p>
-              <div v-if="doneFailure?.conflicts.length" class="done-failure-files">
-                <div class="done-failure-sub">Conflicting files</div>
-                <ul>
-                  <li v-for="f in doneFailure?.conflicts" :key="f" class="mono">{{ f }}</li>
-                </ul>
-              </div>
-              <p class="done-failure-hint">
-                RepoOS couldn't sync this branch with main automatically — resolve the
-                conflicting files in the worktree, then retry.
-              </p>
-            </div>
-          </div>
           <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
             <label>Agent review</label>
             <div v-if="review?.running" class="review-running">
@@ -1314,48 +1344,6 @@ function resetFreeformOverrides(): void {
               The review agent is disabled on the Agents page, so no automatic review runs.
             </p>
             <p v-else class="review-hint">No agent review for this task.</p>
-          </div>
-          <div
-            v-if="ui.active.status === 'active' || ui.active.status === 'review'"
-            class="field"
-            style="margin-top: 16px"
-          >
-            <label>Preview</label>
-            <template v-if="ui.active.preview">
-              <div class="preview-live">
-                <span class="preview-dot"></span>
-                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
-                  <ExternalLink class="size-3.5" />
-                  {{ ui.active.preview.url }}
-                </a>
-              </div>
-              <Button
-                variant="outline"
-                class="w-full"
-                :disabled="ui.saving || previewBusy"
-                @click="stopPreview"
-              >
-                <Square class="size-3.5" />
-                Stop preview
-              </Button>
-            </template>
-            <Button
-              v-else
-              variant="outline"
-              class="w-full"
-              :disabled="ui.saving || previewBusy || !previewable"
-              @click="startPreview"
-            >
-              <Eye class="size-3.5" />
-              {{ previewBusy ? "Starting…" : "Preview" }}
-            </Button>
-            <p v-if="!ui.active.branch" class="preview-hint">
-              No branch yet — start work to create the worktree this previews.
-            </p>
-            <p v-else-if="!ui.active.git?.worktreeExists" class="preview-hint">
-              No git worktree is checked out for
-              <span class="mono">{{ ui.active.branch }}</span>.
-            </p>
           </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
