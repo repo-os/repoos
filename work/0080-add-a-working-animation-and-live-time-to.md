@@ -151,7 +151,6 @@ with nothing in the UI distinguishing that from normal slow progress.
 - 2026-08-11T06:25:10Z · created · unknown
 - 2026-08-11T08:17:03Z · status inbox→ready
 - 2026-08-11T15:37:46Z · updated · remove completed animation overlap and replace the 20-second dead inference with a conservative warning
-<<<<<<< HEAD
 - 2026-08-11T19:03:12Z · status ready→active, branch
 - 2026-08-11T19:28:50Z · status ready→active · implementing
 - 2026-08-11T19:28:50Z · implemented · Server: `AgentRunner` (src/server/agents.ts) now tracks
