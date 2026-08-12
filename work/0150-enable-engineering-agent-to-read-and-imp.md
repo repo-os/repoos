@@ -2,14 +2,14 @@
 id: "0150"
 title: Enable engineering agent to read and implement review recommendations
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T18:57:27Z"
-updated_at: "2026-08-12T18:57:27Z"
+updated_at: "2026-08-12T18:58:08Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Assume the review contains structured feedback (comments, suggestions) that shou
 ## Activity
 
 - 2026-08-12T18:57:27Z · created · unknown
+- 2026-08-12T18:58:08Z · status inbox→ready
