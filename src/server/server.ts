@@ -1064,6 +1064,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           priority: body.priority as string | undefined,
           assignedTo: body.assignedTo as string | undefined,
           status: body.status as Status | undefined,
+          body: typeof body.body === "string" ? body.body : undefined,
         });
         // The watcher will also fire, but emit immediately so the requester's
         // own SSE stream sees it without waiting on fs latency.

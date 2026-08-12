@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-create-draft-button-to-the-freeform-
 created_at: "2026-08-12T11:29:37Z"
-updated_at: "2026-08-12T11:59:41Z"
+updated_at: "2026-08-12T11:59:40Z"
 ---
 ## Problem
 
@@ -46,5 +46,4 @@ In the freeform tab of the New Task drawer, a third button labeled **Create draf
 
 - 2026-08-12T11:29:37Z · created · unknown
 - 2026-08-12T11:37:20Z · status inbox→ready
-- 2026-08-12T11:55:11Z · status ready→active, branch
-- 2026-08-12T11:59:41Z · status active→review
+- 2026-08-12T11:59:40Z · status ready→review, branch
