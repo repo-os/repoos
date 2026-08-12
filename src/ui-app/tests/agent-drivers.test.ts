@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, HANDOFF_READY_SIGNAL, promptCommand, runPrompt } from "../../server/agents";
+import { AgentRunner, extractUsage, promptCommand, runPrompt } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -22,8 +22,6 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process
 process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
-if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
-if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
 interface SpawnRecord {
@@ -120,8 +118,6 @@ function spawns(fx: Fixture): SpawnRecord[] {
 
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
-  delete process.env.REPOOS_FAKEBIN_HANDOFF;
-  delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
 describe("model-aware driver commands", () => {
@@ -306,7 +302,7 @@ describe("claude code driver", () => {
    * every write and build command, does nothing, and leaves the task wedged in
    * `active` — the exact failure this asserts against.
    */
-  it("passes --dangerously-skip-permissions on both first turn and resume", async () => {
+  it("passes stream-json + --verbose and --dangerously-skip-permissions on both first turn and resume", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -322,6 +318,10 @@ describe("claude code driver", () => {
       expect(run.args[0]).toBe("-p");
       expect(run.args[1]).toContain("Task #0001");
       expect(run.args).toContain("--dangerously-skip-permissions");
+      // stream-json un-buffers stdout so the Agent tab fills in live instead of
+      // blank until exit (0109); --verbose is required alongside it in print mode.
+      expect(run.args).toEqual(expect.arrayContaining(["--output-format", "stream-json"]));
+      expect(run.args).toContain("--verbose");
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "keep going", agent("claude code"));
@@ -330,6 +330,8 @@ describe("claude code driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toContain("keep going");
       expect(resume.args).toContain("--dangerously-skip-permissions");
+      expect(resume.args).toEqual(expect.arrayContaining(["--output-format", "stream-json"]));
+      expect(resume.args).toContain("--verbose");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -445,7 +447,7 @@ process.stdout.write("plain answer\\n");
   });
 });
 
-describe("server-owned handoff mission (#0094)", () => {
+describe("fail-safe mission checklist (0067)", () => {
   /**
    * The launch mission must be a literal, verifiable checklist so an agent
    * cannot silently drop the both-copies status sync (the #0063 failure) or
@@ -453,7 +455,7 @@ describe("server-owned handoff mission (#0094)", () => {
    * human. These assertions keep the two load-bearing instructions in the
    * mission text so future rewrites can't silently remove them.
    */
-  it("keeps privileged mutations out of the sandbox and specifies one signal", async () => {
+  it("asserts the read-back verification and needs-input instructions", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -465,66 +467,18 @@ describe("server-owned handoff mission (#0094)", () => {
       const [run] = spawns(fx);
       const mission = run.args[1];
       expect(mission).toContain("Task #0001");
-      expect(mission).toContain("Do not run git add/commit");
-      expect(mission).toContain("do not edit the main checkout");
-      expect(mission).toContain(HANDOFF_READY_SIGNAL);
-      expect(mission).toContain("RepoOS will independently run `repoos check`");
-      expect(mission).toContain("do NOT emit the handoff-ready signal");
-    } finally {
-      process.env.PATH = oldPath;
-      delete process.env.REPOOS_FAKEBIN_LOG;
-      fx.clean();
-    }
-  });
-});
-
-describe("structured runner handoff (#0094)", () => {
-  it("issues one scoped request after a successful initial or resumed turn", async () => {
-    const fx = makeFixture();
-    const oldPath = withFakePath(fx);
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    process.env.REPOOS_FAKEBIN_HANDOFF = "1";
-    try {
-      const requests: Array<{ taskId: string; runId: string; branch: string; workdir: string }> = [];
-      const runner = new AgentRunner(config(fx.bin), () => {}, (request) => {
-        requests.push(request);
-      });
-      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
-      await waitFor(() => requests.length === 1, "initial handoff request");
-      expect(requests[0]).toMatchObject({ taskId: "0001", branch: "feat/x", workdir: fx.bin });
-      expect(requests[0].runId).toBeTruthy();
-      expect(runner.validateHandoff(requests[0])).toBe(true);
-      expect(runner.validateHandoff({ ...requests[0], runId: "forged-session" })).toBe(false);
-      expect(runner.consumeHandoff(requests[0])).toBe(true);
-      expect(runner.consumeHandoff(requests[0])).toBe(false);
-
-      runner.send("0001", "finish the resumed turn", agent("codex"));
-      await waitFor(() => requests.length === 2, "resumed handoff request");
-      expect(requests[1].runId).not.toBe(requests[0].runId);
-    } finally {
-      process.env.PATH = oldPath;
-      delete process.env.REPOOS_FAKEBIN_LOG;
-      fx.clean();
-    }
-  });
-
-  it("does not authorize a signal from an interrupted turn", async () => {
-    const fx = makeFixture();
-    const oldPath = withFakePath(fx);
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    process.env.REPOOS_FAKEBIN_HANDOFF = "1";
-    process.env.REPOOS_FAKEBIN_FAIL = "1";
-    try {
-      const requests: unknown[] = [];
-      const runner = new AgentRunner(config(fx.bin), () => {}, (request) => {
-        requests.push(request);
-      });
-      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
-      await waitFor(() => !runner.isRunning("0001"), "failed turn exit");
-      expect(requests).toEqual([]);
-      expect(runner.output("0001")!.lines.map(dOf)).toContain(
-        "✗ handoff was not started because the agent turn was interrupted",
-      );
+      // both-copies status sync + read-back verification (anti-#0063)
+      expect(mission).toContain("main-checkout copy");
+      expect(mission).toContain("confirm it shows `status: review`");
+      // The readback must read the literal file path, never the CLI — from
+      // inside a worktree `repoos show`/`list`/`index` resolve to the
+      // worktree's own root and can false-positive on the live board (#0077).
+      expect(mission).toContain("literal file path");
+      expect(mission).toMatch(/NEVER `repoos show`\/`list`\/`index`/);
+      // needs-input instruction: flag both copies, keep the task active, stop
+      expect(mission).toContain("needs_input: true");
+      expect(mission).toContain("WITHOUT committing");
+      expect(mission).toMatch(/Never silently leave the task `active` without the `needs_input` flag/);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -574,6 +528,199 @@ describe("server-owned previews in the mission and spawn env (#0096)", () => {
       expect(resume.agent).toBe("1");
       expect(resume.task).toBe("0001");
       expect(resume.api).toBe("http://127.0.0.1:7777");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
+
+describe("extractUsage (0080)", () => {
+  it("reads token/cost fields from a JSON usage payload", () => {
+    expect(
+      extractUsage(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.0021 })),
+    ).toEqual({ tokens: 15, costUsd: 0.0021 });
+  });
+
+  it("reads a JSON total_tokens field directly", () => {
+    expect(extractUsage(JSON.stringify({ total_tokens: 42 }))).toEqual({ tokens: 42 });
+  });
+
+  it("falls back to plain-text cost/token summaries", () => {
+    expect(extractUsage("Total cost: $0.1234")).toEqual({ costUsd: 0.1234 });
+    expect(extractUsage("used 1,234 tokens this turn")).toEqual({ tokens: 1234 });
+  });
+
+  it("reads claude's nested message.usage and authoritative result totals (0109)", () => {
+    expect(
+      extractUsage(
+        JSON.stringify({
+          type: "assistant",
+          message: { content: [], usage: { input_tokens: 4, output_tokens: 91 } },
+        }),
+      ),
+    ).toEqual({ tokens: 95 });
+    // The terminal `result` reports the turn's authoritative numbers; the cache
+    // fields bill at different rates and must NOT be summed into the headline.
+    expect(
+      extractUsage(
+        JSON.stringify({
+          type: "result",
+          subtype: "success",
+          is_error: false,
+          total_cost_usd: 0.0731223,
+          result: "Hello world greeting.",
+          usage: {
+            input_tokens: 4,
+            output_tokens: 91,
+            cache_creation_input_tokens: 9403,
+            cache_read_input_tokens: 49071,
+          },
+        }),
+      ),
+    ).toEqual({ tokens: 95, costUsd: 0.0731223 });
+  });
+
+  it("returns an empty object when nothing usage-shaped is present", () => {
+    expect(extractUsage("just a normal line of output")).toEqual({});
+    expect(extractUsage(JSON.stringify({ type: "text", text: "hello" }))).toEqual({});
+  });
+});
+
+describe("live run stats (0080)", () => {
+  it("accumulates elapsed time across turns instead of resetting it", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    // A tiny delay before exit guarantees a non-zero, measurable turn duration.
+    const slowBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("line one\\n");
+setTimeout(() => process.exit(0), 30);
+`;
+    writeFileSync(join(fx.bin, "claude"), slowBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "first turn exit");
+
+      const afterFirst = runner.stats("0001");
+      expect(afterFirst.accumulatedMs).toBeGreaterThan(0);
+      expect(afterFirst.turnStartedAt).toBeNull();
+
+      runner.send("0001", "continue", agent("claude code"));
+      await waitFor(() => !runner.isRunning("0001"), "second turn exit");
+
+      const afterSecond = runner.stats("0001");
+      expect(afterSecond.accumulatedMs).toBeGreaterThanOrEqual(afterFirst.accumulatedMs);
+      expect(afterSecond.turnStartedAt).toBeNull();
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("extracts and monotonically accumulates tokens/cost from live output", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const usageBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 } }) + "\\n");
+process.stdout.write(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.004 }) + "\\n");
+`;
+    writeFileSync(join(fx.bin, "codex"), usageBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "usage turn exit");
+
+      const stats = runner.stats("0001");
+      expect(stats.tokens).toBe(15);
+      expect(stats.costUsd).toBe(0.004);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("has no session stats for a task that never started", () => {
+    const runner = new AgentRunner(config("/tmp"), () => {});
+    const stats = runner.stats("9999");
+    expect(stats).toEqual({
+      accumulatedMs: 0,
+      turnStartedAt: null,
+      lastOutputAt: null,
+      tokens: null,
+      costUsd: null,
+      stalled: false,
+    });
+  });
+});
+
+describe("stall detection (0080)", () => {
+  /**
+   * Confirmed live on #0069/#0077: a process that stops emitting output but
+   * hasn't exited must be flagged as POSSIBLY stalled (never "dead") — and the
+   * flag must clear the instant new output arrives, since that's proof it was
+   * only ever a slow step. A tiny `stallTimeoutMs` override keeps this test
+   * fast instead of waiting on the real 90s default.
+   */
+  it("flags a silent-but-alive turn as stalled, then clears it when output resumes", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const quietBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("first line\\n");
+setTimeout(() => {
+  process.stdout.write("second line\\n");
+  process.exit(0);
+}, 300);
+`;
+    writeFileSync(join(fx.bin, "claude"), quietBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      expect(runner.isRunning("0001")).toBe(true); // stalled is never "dead"
+
+      await waitFor(() => runner.stats("0001").stalled === false, "stall flag cleared by output", 2000);
+      await waitFor(() => !runner.isRunning("0001"), "turn exit");
+      expect(runner.stats("0001").stalled).toBe(false);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("clears the stall flag once the turn is confirmed exited", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const hangBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+process.stdout.write("only line\\n");
+setTimeout(() => process.exit(0), 200);
+`;
+    writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      await waitFor(() => !runner.isRunning("0001"), "process exits while still flagged");
+      expect(runner.stats("0001").stalled).toBe(false);
+      expect(runner.stats("0001").turnStartedAt).toBeNull();
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

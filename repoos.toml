@@ -6,26 +6,26 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "dark"
+theme = "light"
 strictBuild = false
-uiTheme = "gen z"
+uiTheme = "clear"
 
 [tunnel]
 provider = "cloudflare"
-enabled = false
+enabled = true
 name = "repoos-local"
 domain = "dev"
 tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 [[agents]]
 name = "engineer"
-cli = "opencode"
-model = "openai/gpt-5.6-luna-pro"
+cli = "codex"
+model = "gpt-5.6-sol"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status."
 [[agents]]
 name = "reviewer"
 cli = "opencode"
-model = "opus"
+model = "opencode/big-pickle"
 enabled = true
 instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
 [[agents]]
@@ -34,4 +34,3 @@ cli = "codex"
 model = "gpt-5.6-sol"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
-
