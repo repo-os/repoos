@@ -2,14 +2,14 @@
 id: "0110"
 title: Move agent review into a dedicated tab with follow-up controls
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/move-agent-review-into-a-dedicated-tab-w
 created_at: "2026-08-12T02:34:47Z"
-updated_at: "2026-08-12T11:10:11Z"
+updated_at: "2026-08-12T11:40:09Z"
 ---
 ## Problem
 
@@ -30,6 +30,7 @@ A "Review again" button starts a fresh reviewer run. While the reviewer is worki
 - [ ] Selecting "Review again" starts a fresh review run.
 - [ ] The UI shows active AI state animations while the reviewer is working.
 - [ ] The reviewer conversation and activity state are displayed within the Agent Review tab.
+- [ ] The review agent posts a colored verdict callout at the top of each review: "good to go" (green), "needs some work" (yellow), or "back to the drawing board" (red).
 
 ## Notes for AI
 
@@ -43,3 +44,4 @@ A "Review again" button starts a fresh reviewer run. While the reviewer is worki
 
 - 2026-08-12T02:34:47Z · created · unknown
 - 2026-08-12T11:10:11Z · status inbox→ready
+- 2026-08-12T11:40:09Z · status ready→active, branch
