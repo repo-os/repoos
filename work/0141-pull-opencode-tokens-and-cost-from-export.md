@@ -2,7 +2,7 @@
 id: "0141"
 title: "Pull opencode token usage and cost from `opencode export` instead of showing \"—\""
 type: feature
-status: review
+status: done
 needs_merge: true
 priority: p1
 area: agent
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pull-opencode-token-usage-and-cost-from-
 created_at: "2026-08-12T19:40:00Z"
-updated_at: "2026-08-12T14:22:50Z"
+updated_at: "2026-08-12T14:44:54Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Every opencode agent session should report authoritative token counts and cost i
 
 - 2026-08-12T22:10:00Z · status ready→review, branch
 - 2026-08-12T14:22:50Z · needs_merge
+- 2026-08-12T14:44:54Z · status review→done, release:success
