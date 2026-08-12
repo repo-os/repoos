@@ -2,7 +2,7 @@
 id: "0109"
 title: Stream claude code output as structured events so its Agent tab is not blank
 type: bug
-status: active
+status: review
 priority: p1
 area: agent
 assigned_to: ai
