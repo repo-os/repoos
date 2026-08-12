@@ -11,6 +11,11 @@ export interface NewTaskForm {
   assignedTo: string;
 }
 
+export interface NewDocForm {
+  path: string;
+  content: string;
+}
+
 /** A screenshot picked in the New task panel, held in memory until the task exists. */
 export interface PendingScreenshot {
   name: string;
@@ -34,6 +39,8 @@ export const useUiStore = defineStore("ui", () => {
   const tunnelOpen = ref(false);
   /** Active drawer tab: task details, the agent session, or agent review. */
   const activeTab = ref<"details" | "agent" | "review">("details");
+  /** True when showing the new-document panel instead of a task. */
+  const isNewDoc = ref(false);
 
   const nt = reactive<NewTaskForm>({
     title: "",
@@ -43,17 +50,31 @@ export const useUiStore = defineStore("ui", () => {
     assignedTo: "",
   });
 
+  const nd = reactive<NewDocForm>({
+    path: "",
+    content: "",
+  });
+
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
   function openNewTask(): void {
     isNew.value = true;
     active.value = null;
+    isNewDoc.value = false;
     nt.title = "";
     nt.area = "web";
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = "";
     clearScreenshots();
+  }
+
+  function openNewDoc(): void {
+    isNewDoc.value = true;
+    active.value = null;
+    isNew.value = false;
+    nd.path = "";
+    nd.content = "";
   }
 
   /** Read each image file into memory as a data URL and queue it for the new task. */
@@ -107,6 +128,7 @@ export const useUiStore = defineStore("ui", () => {
   function close(): void {
     active.value = null;
     isNew.value = false;
+    isNewDoc.value = false;
     activeTab.value = "details";
   }
 
@@ -138,16 +160,19 @@ export const useUiStore = defineStore("ui", () => {
   return {
     active,
     isNew,
+    isNewDoc,
     saving,
     drawerWidth,
     tunnelOpen,
     activeTab,
     nt,
+    nd,
     pendingScreenshots,
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
     openNewTask,
+    openNewDoc,
     open,
     openTask,
     close,

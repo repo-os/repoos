@@ -20,6 +20,8 @@
  *   POST /api/chat/message     -> start or continue the persistent repository chat
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   POST /api/tasks/freeform   -> create from a freeform explanation via the PM agent
+ *   POST /api/docs/create      -> create a document { path, content }
+ *   POST /api/docs/freeform    -> create a document from description via the PM agent
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active);
  *                                also relaunches a paused active task (stays active)
@@ -43,7 +45,7 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants, writeFileSync, mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { connect } from "node:net";
@@ -530,6 +532,43 @@ function safeRepoFile(root: string, urlPath: string): string | null {
   if (!existsSync(abs) || !statSync(abs).isFile()) return null;
   if (extname(abs) !== ".md") return null; // only markdown docs are servable
   return abs;
+}
+
+/** Build the PM agent's prompt from a document description. */
+function docFreeformPrompt(description: string): string {
+  return [
+    "You are the PM agent for RepoOS. Turn the user's description into a well-formatted,",
+    "complete Markdown document.",
+    "",
+    "The user's description:",
+    "",
+    "```",
+    description.trim(),
+    "```",
+    "",
+    "Respond with ONLY a JSON object with two fields:",
+    "- path: the destination file path relative to the repo root (e.g., 'docs/my-doc.md' or 'docs/adr/0001-title.md')",
+    "- content: the complete Markdown document content",
+    "",
+    "Format your response as valid JSON like: {\"path\": \"docs/...\", \"content\": \"# Title\\n...\"",
+    "Do NOT include markdown code fences or any preamble.",
+  ].join("\n");
+}
+
+/** Parse the PM agent's generated JSON document response. */
+function parseGeneratedDocument(output: string): { path: string; content: string } {
+  try {
+    const trimmed = output.trim();
+    const parsed = JSON.parse(trimmed);
+    const path = typeof parsed.path === "string" ? parsed.path.trim() : "";
+    const content = typeof parsed.content === "string" ? parsed.content : "";
+    if (path && content) {
+      return { path, content };
+    }
+  } catch {
+    /* fallback below */
+  }
+  return { path: "", content: "" };
 }
 
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
@@ -1301,6 +1340,96 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           fallback: false,
           task: index.getTask(created.id),
         });
+      }
+      if (path === "/api/docs/create" && method === "POST") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        if (!body.path || typeof body.path !== "string") {
+          return json(res, 400, { error: "path is required" });
+        }
+        if (!body.content || typeof body.content !== "string") {
+          return json(res, 400, { error: "content is required" });
+        }
+        const docPath = body.path as string;
+        if (docPath.includes("..") || docPath.startsWith("/")) {
+          return json(res, 400, { error: "invalid path" });
+        }
+        const absPath = join(config.root, docPath);
+        const dir = dirname(absPath);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(absPath, body.content as string, "utf8");
+        return json(res, 201, { ok: true });
+      }
+      if (path === "/api/docs/freeform" && method === "POST") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        const description = typeof body?.description === "string" ? body.description.trim() : "";
+        if (!description) {
+          return json(res, 400, { error: "description is required" });
+        }
+        const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
+
+        let pm: Agent | null;
+        const freeformAgentName =
+          typeof body?.agentOverride === "string" && body.agentOverride
+            ? body.agentOverride
+            : undefined;
+        const freeformCli =
+          typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+        const freeformModel =
+          typeof body?.modelOverride === "string" && body.modelOverride
+            ? body.modelOverride
+            : undefined;
+        const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
+
+        if (hasFreeformOverride) {
+          const list = agentsForConfig(config);
+          const baseName = freeformAgentName || "pm";
+          const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+          pm = base
+            ? {
+                ...base,
+                ...(freeformCli ? { cli: freeformCli } : {}),
+                ...(freeformModel ? { model: freeformModel } : {}),
+              }
+            : null;
+        } else {
+          pm = resolvePmAgent(config);
+        }
+        if (!pm) {
+          return json(res, 400, { ok: false, reason: "No PM agent is configured" });
+        }
+
+        const result = await runPrompt(pm, docFreeformPrompt(description), {
+          cwd: config.root,
+          onLine: runId
+            ? (line) => {
+                emitEvent({
+                  type: "agent.output",
+                  id: runId,
+                  entry: { s: "out", d: line },
+                  stream: "out",
+                  at: new Date().toISOString(),
+                });
+              }
+            : undefined,
+        });
+        if (!result.ok || !result.output) {
+          return json(res, 400, {
+            ok: false,
+            reason: result.error ?? "the PM agent returned no usable output",
+          });
+        }
+        const { path: docPath, content } = parseGeneratedDocument(result.output);
+        if (!docPath || !content) {
+          return json(res, 400, {
+            ok: false,
+            reason: "the PM agent returned unusable output (missing path or content)",
+          });
+        }
+        const absPath = join(config.root, docPath);
+        const dir = dirname(absPath);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(absPath, content, "utf8");
+        return json(res, 201, { ok: true });
       }
       if (taskMatch && method === "PATCH") {
         const existing = index.getTask(taskMatch[1]);

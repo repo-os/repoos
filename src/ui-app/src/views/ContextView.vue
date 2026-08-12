@@ -3,10 +3,14 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useDocsStore } from "../stores/docs";
+import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
+import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
+import NewDocPanel from "../components/NewDocPanel.vue";
 
 const docs = useDocsStore();
+const ui = useUiStore();
 const {
   docs: docList,
   selDoc,
@@ -44,8 +48,30 @@ watch(
 
 <template>
   <div class="ctx-page">
-    <div class="page-title">Repo Context</div>
-    <div class="page-desc">AI-readable docs · ADRs · skills</div>
+    <div
+      style="
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      "
+    >
+      <div>
+        <div class="page-title">Repo Context</div>
+        <div class="page-desc" style="margin: 3px 0 0">AI-readable docs · ADRs · skills</div>
+      </div>
+      <Button variant="accent" class="new-btn" @click="ui.openNewDoc()">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        New doc
+      </Button>
+    </div>
 
     <div class="ctx-tabs">
       <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="tab = 'docs'">Docs</button>
@@ -125,5 +151,7 @@ watch(
         </template>
       </Card>
     </div>
+
+    <NewDocPanel />
   </div>
 </template>
