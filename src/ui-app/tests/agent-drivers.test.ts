@@ -473,6 +473,9 @@ describe("server-owned handoff mission (#0094)", () => {
       expect(mission).toContain("Task #0001");
       expect(mission).toContain("Do not run git add/commit");
       expect(mission).toContain("do not edit the main checkout");
+      expect(mission).toContain("commits only source, work, docs, and config files");
+      expect(mission).toContain("never `dist/` or `screenshots/`");
+      expect(mission).toContain("build artifacts created by `repoos check` stay local");
       expect(mission).toContain(HANDOFF_READY_SIGNAL);
       expect(mission).toContain("RepoOS will independently run `repoos check`");
       expect(mission).toContain("do NOT emit the handoff-ready signal");

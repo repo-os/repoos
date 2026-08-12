@@ -151,7 +151,27 @@ export async function handoffTask(
   }
 
   onProgress?.("commit");
-  const add = await runGit(registered, ["add", "-A"], 30_000);
+  // `repoos check` intentionally rebuilds these tracked artifacts in the
+  // feature worktree. Keep them available for local verification, but never
+  // let them enter a feature-branch commit: main regenerates and commits both
+  // directories after the branch is merged in the done flow.
+  const unstageGenerated = await runGit(
+    registered,
+    ["reset", "--quiet", "HEAD", "--", "dist", "screenshots"],
+    10_000,
+  );
+  if (unstageGenerated.status !== 0) {
+    return {
+      ok: false,
+      step: "commit",
+      detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
+    };
+  }
+  const add = await runGit(
+    registered,
+    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots"],
+    30_000,
+  );
   if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
