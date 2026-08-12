@@ -365,7 +365,35 @@ export interface CompleteTaskSteps {
   check?: (cwd: string) => Promise<CheckSummary>;
 }
 
+/**
+ * A server-owned close-out lock (0143). The serve process's ReloadManager
+ * reads `closingOut()` and defers every auto-reload while the pipeline runs —
+ * a close-out builds/checks dist itself, so an auto-reload mid-flight would
+ * kill the very server orchestrating the close-out. `completeTask` acquires
+ * the lock for its whole run and always releases it.
+ */
+export interface CloseOutLock {
+  closingOut: () => boolean;
+  acquire: () => void;
+  release: () => void;
+}
+
 export async function completeTask(
+  config: RepoOSConfig,
+  task: Task,
+  onProgress?: (step: DoneStep) => void,
+  steps: CompleteTaskSteps = {},
+  closeOut?: CloseOutLock,
+): Promise<CompleteResult> {
+  closeOut?.acquire();
+  try {
+    return await completeTaskLocked(config, task, onProgress, steps);
+  } finally {
+    closeOut?.release();
+  }
+}
+
+async function completeTaskLocked(
   config: RepoOSConfig,
   task: Task,
   onProgress?: (step: DoneStep) => void,

@@ -85,7 +85,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
-import { completeTask, type DoneStep } from "./done.js";
+import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -538,6 +538,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
 
+  // Close-out lock (0143): while `completeTask` holds it, the reload manager
+  // defers every auto-reload and parks the new build for the user instead —
+  // the close-out pipeline builds/checks dist itself and would be killed by a
+  // mid-flight reload. The lock is server-owned: the UI never touches it.
+  let closeOutInProgress = false;
+  const closeOutLock: CloseOutLock = {
+    closingOut: () => closeOutInProgress,
+    acquire: () => {
+      closeOutInProgress = true;
+    },
+    release: () => {
+      closeOutInProgress = false;
+    },
+  };
+
   const watcher = new WorkWatcher(config, index);
   watcher.start();
 
@@ -889,6 +904,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           workDir: config.workDir,
           version: build.version,
           buildAt: build.buildAt,
+          // The build hash THIS process loaded — the code the running server
+          // actually serves, not whatever may have landed on disk since. The UI
+          // uses it to clear a "new version available" notice after a reload.
+          buildHash: loadedHash,
           ...(handshake ? { reloadHandshake: true } : {}),
         });
       }
@@ -1370,6 +1389,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // case of a genuinely-active turn; this is belt-and-braces for a turn
           // still in its stop grace window. A no-op when nothing is running.
           void runner.stop(id);
+          // Hold the server-owned close-out lock for the whole pipeline (0143):
+          // the ReloadManager defers auto-reloads and parks any build this
+          // produces, so the server survives to finish the close-out.
           const result = await completeTask(config, existing, (step: DoneStep) => {
             emitEvent({
               type: "task.progress",
@@ -1377,7 +1399,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               step,
               at: new Date().toISOString(),
             });
-          });
+          }, {}, closeOutLock);
           if (result.task) index.applyFileChange(result.task.absPath);
           index.refreshBranches();
           return json(res, result.ok ? 200 : 400, {
@@ -1873,6 +1895,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // An in-flight agent review is a spawned turn like any other: reloading
         // under it would kill the report the human is waiting on.
         isBusy: () => runner.running().length + reviews.runningCount(),
+        // A close-out holds this lock for its whole pipeline (0143): no
+        // auto-reload may fire under it, and any build it produces is parked
+        // for the user to apply on their own schedule.
+        closingOut: closeOutLock.closingOut,
+        // A close-out build landed on disk: surface a persistent "New version
+        // available" notice so the user can reload when they choose.
+        onBuildAvailable: (hash) => {
+          emitEvent({
+            type: "build.available",
+            hash,
+            buildAt: loadBuildInfo().buildAt,
+            at: new Date().toISOString(),
+          });
+        },
         cliEntry: cliEntryPath,
         stopListening: closeHttp,
         listen: () => bindOnce(false),
@@ -1882,6 +1918,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         },
         onReloadFailed: (reason) => {
           console.log(`  ${reason} — old process keeps serving`);
+          // A manual restart failed: the old server keeps serving (no outage).
+          // Release the UI's "Restarting…" state so the notice stays actionable.
+          emitEvent({
+            type: "reload.failed",
+            reason,
+            at: new Date().toISOString(),
+          });
         },
         log: (msg) => console.log(msg),
       });

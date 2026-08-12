@@ -20,6 +20,13 @@
  *   output, and leave the runner registry inaccurate. When the runner
  *   drains (agent.exited) the deferred reload fires, and a low-frequency retry
  *   poll backs that up.
+ * - A close-out (0143) is a harder deferral: the pipeline itself runs builds
+ *   and checks, so reloading under it would kill the server mid-close-out.
+ *   While the close-out lock is held, a new build is PARKED instead — the UI
+ *   is told a new version is available and the reload fires only when the
+ *   user asks for it (POST /api/server/restart). A reload already in flight
+ *   when a close-out begins is aborted at handover so the pipeline is never
+ *   killed.
  * - Reload = spawn a replacement `repoos serve` on the same host/port
  *   (REPOOS_RELOAD=1 + a per-reload handshake secret), confirm it is up by
  *   polling /api/health for the handshake, then exit cleanly. The replacement
@@ -59,6 +66,20 @@ export interface ReloadManagerOptions {
   isReplacement?: boolean;
   /** Count of running agent turns — a reload is deferred while > 0. */
   isBusy: () => number;
+  /**
+   * True while a review→done close-out is running (0143). The close-out
+   * pipeline builds/checks dist itself, so an auto-reload must never fire
+   * under it. New builds it produces are parked (`build.available`) for a
+   * user-triggered reload instead.
+   */
+  closingOut: () => boolean;
+  /**
+   * Fired once when a new build lands on disk while a close-out holds the
+   * deferral — the build is parked for a user-triggered reload (via
+   * POST /api/server/restart) rather than applied automatically. Receives the
+   * on-disk build hash.
+   */
+  onBuildAvailable?: (hash: string) => void;
   /** Resolve the compiled CLI entrypoint used to spawn the replacement. */
   cliEntry: () => string | null;
   /** Release only the HTTP listener (the drain window); the process keeps running. */
@@ -155,6 +176,11 @@ export class ReloadManager {
   private childExited = false;
   /** Whether we released our own HTTP listener for the replacement to bind. */
   private drained = false;
+  /**
+   * Hash of a build parked by a close-out (0143). Never auto-reloaded — it
+   * waits for the user to trigger POST /api/server/restart.
+   */
+  private buildAvailableHash: string | null = null;
 
   constructor(options: ReloadManagerOptions) {
     this.options = options;
@@ -211,6 +237,17 @@ export class ReloadManager {
     if (this.stopped) return { state: "not-stale", reason: "server is shutting down" };
     if (this.reloading) return { state: "reloading", reason };
     const running = this.options.isBusy();
+    // Close-out deferral (0143): the close-out pipeline merges the branch and
+    // runs build/screenshots/check, all of which would be killed if the server
+    // reloaded itself mid-flight. Park the new build and surface it to the UI —
+    // the user reloads when they choose (POST /api/server/restart).
+    if (this.options.closingOut()) {
+      const current = readBuildHash(this.options.root);
+      if (this.loadedHash !== null && current !== null && current !== this.loadedHash) {
+        this.parkBuild(current);
+      }
+      return { state: "deferred", running, reason };
+    }
     if (running > 0) {
       this.pending = true;
       this.armRetry();
@@ -234,19 +271,54 @@ export class ReloadManager {
   }
 
   private onPoll(): void {
-    if (this.stopped || this.reloading || this.pending) return;
+    if (this.stopped || this.reloading) return;
     const current = readBuildHash(this.options.root);
-    if (current !== null && this.loadedHash !== null && current !== this.loadedHash) {
-      void this.requestReload("build changed (poll)");
+    if (current === null || this.loadedHash === null || current === this.loadedHash) return;
+    // A close-out landed a new build on disk: park it for the user instead of
+    // reloading under the pipeline that is orchestrating the close-out. This
+    // runs even while a busy-deferral is armed — the park supersedes it.
+    if (this.options.closingOut()) {
+      this.parkBuild(current);
+      return;
     }
+    if (this.pending) return;
+    // A build parked by a finished close-out is not auto-reloadable — only a
+    // fresh hash beyond it (a normal dev build) triggers live reload.
+    if (current === this.buildAvailableHash) return;
+    void this.requestReload("build changed (poll)");
   }
 
   private tryFirePending(): void {
-    if (this.pending && !this.reloading && !this.stopped && this.options.isBusy() === 0) {
+    if (!this.pending || this.reloading || this.stopped || this.options.isBusy() !== 0) return;
+    // A close-out started while the reload was deferred: the build it produces
+    // must wait for the user, not auto-fire on drain.
+    if (this.options.closingOut()) {
       this.pending = false;
       this.clearRetry();
-      void this.reload("deferred reload: agents drained");
+      const current = readBuildHash(this.options.root);
+      if (current !== null && this.loadedHash !== null && current !== this.loadedHash) {
+        this.parkBuild(current);
+      }
+      return;
     }
+    this.pending = false;
+    this.clearRetry();
+    void this.reload("deferred reload: agents drained");
+  }
+
+  /**
+   * Park a build that landed during a close-out: it is served only once the
+   * user triggers a reload. Idempotent per hash. Supersedes any armed
+   * busy-deferral so an eventual drain does not auto-fire it.
+   */
+  private parkBuild(hash: string): void {
+    if (this.buildAvailableHash === hash) return;
+    this.buildAvailableHash = hash;
+    if (this.pending) {
+      this.pending = false;
+      this.clearRetry();
+    }
+    this.options.onBuildAvailable?.(hash);
   }
 
   private startWatching(): void {
@@ -324,7 +396,21 @@ export class ReloadManager {
     // process is still alive at the moment of handover. If it died during the
     // sustained-health window or right at confirmation, we must NOT log
     // "replacement is up" or exit — we re-bind and keep serving instead.
-    if (confirmed && !this.childExited) {
+    if (confirmed && !this.childExited && this.options.closingOut()) {
+      // A close-out started while the replacement was warming up. Handing over
+      // now would kill the server mid-pipeline (0143), so abort the reload:
+      // kill the replacement, re-bind, and park the new build for the user.
+      this.reloading = false;
+      await this.killChild();
+      const rebound = await this.tryRebind();
+      const current = readBuildHash(this.options.root);
+      if (current !== null && this.loadedHash !== null && current !== this.loadedHash) {
+        this.parkBuild(current);
+      }
+      this.log(
+        `reload: handover aborted — close-out in progress${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
+      );
+    } else if (confirmed && !this.childExited) {
       this.stopped = true;
       const detach = (stream: unknown): void => {
         (stream as { unref?: () => void } | null)?.unref?.();

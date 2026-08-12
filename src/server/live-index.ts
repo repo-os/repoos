@@ -61,6 +61,19 @@ export type RepoEvent =
       at: string;
       error?: string;
     }
+  /**
+   * A newer build landed on disk (typically a close-out merge). It is parked
+   * for a user-triggered reload (0143) — the running server keeps serving the
+   * old build until POST /api/server/restart.
+   */
+  | {
+      type: "build.available";
+      hash: string;
+      buildAt: string | null;
+      at: string;
+    }
+  /** A user-triggered reload could not hand over — the old build keeps serving. */
+  | { type: "reload.failed"; reason: string; at: string }
   | { type: "hello"; taskCount: number; at: string }
   | { type: "system.stats"; stats: SystemStats };
 

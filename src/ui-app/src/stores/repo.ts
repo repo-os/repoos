@@ -87,6 +87,7 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
+const NEW_VERSION_KEY = "repoos.newVersion";
 
 function readSortOrder(): SortOrder {
   try {
@@ -97,6 +98,21 @@ function readSortOrder(): SortOrder {
   } catch {
     return "recent";
   }
+}
+
+/** The persisted "new version available" notice, or null. */
+function readNewVersion(): { hash: string; buildAt: string | null } | null {
+  try {
+    const raw = localStorage.getItem(NEW_VERSION_KEY);
+    if (raw === null) return null;
+    const v = JSON.parse(raw);
+    if (v && typeof v.hash === "string") {
+      return { hash: v.hash, buildAt: typeof v.buildAt === "string" ? v.buildAt : null };
+    }
+  } catch {
+    /* ignore corrupt/private-mode storage */
+  }
+  return null;
 }
 
 export const useRepoStore = defineStore("repo", () => {
@@ -128,6 +144,14 @@ export const useRepoStore = defineStore("repo", () => {
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
+  /**
+   * A newer build parked on disk by a close-out (0143). Persisted so a page
+   * reload does not drop the notice; cleared when the running server actually
+   * serves that build.
+   */
+  const newVersion = ref<{ hash: string; buildAt: string | null } | null>(readNewVersion());
+  /** True from clicking the notice until the reload swap reconnects. */
+  const restarting = ref(false);
 
   let feedKey = 0;
   let toastId = 0;
@@ -214,7 +238,33 @@ export const useRepoStore = defineStore("repo", () => {
 
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
-    if (e.type === "hello") return;
+    if (e.type === "hello") {
+      // Every SSE (re)connect announces a server. If this server already runs
+      // the build the notice points at, a reload landed (or the server was
+      // restarted into it) — clear the notice. Otherwise it persists.
+      void reconcileVersion();
+      return;
+    }
+    if (e.type === "build.available") {
+      // A close-out parked a newer build on disk (0143). The server keeps
+      // serving the current build until the user clicks the notice.
+      const v = { hash: e.hash, buildAt: e.buildAt };
+      newVersion.value = v;
+      try {
+        localStorage.setItem(NEW_VERSION_KEY, JSON.stringify(v));
+      } catch {
+        /* ignore quota / privacy-mode failures */
+      }
+      pushFeed(`<b>new build</b> available — restart to apply`, "#39e0ff", "build.available");
+      return;
+    }
+    if (e.type === "reload.failed") {
+      // The reload swap failed and the old server kept serving (no outage).
+      // Release the "Restarting…" state so the notice stays actionable.
+      restarting.value = false;
+      pushToast("Restart failed — the server kept running the current build", "error");
+      return;
+    }
     if (e.type === "task.created") {
       if (!tasks.value.find((t) => t.id === e.task.id)) tasks.value.push(e.task);
       recount();
@@ -347,7 +397,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -389,6 +439,69 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function patchTask(id: string, fields: Record<string, unknown>): Promise<Task> {
     return api<Task>(`/api/tasks/${id}`, JSON_OPTS("PATCH", fields));
+  }
+
+  /**
+   * Ask the running server whether it already serves the parked build. Clears
+   * the "new version available" notice when it does (a reload landed or the
+   * server restarted into it); keeps it otherwise — the notice persists until
+   * the user acts.
+   */
+  async function reconcileVersion(): Promise<void> {
+    try {
+      const h = await api<Health>("/api/health");
+      health.value = h;
+      const v = newVersion.value;
+      if (!v) return;
+      const sameHash = h.buildHash !== null && h.buildHash === v.hash;
+      // A normal dev build can auto-reload the server into a build NEWER than
+      // the parked one (0143 parks only close-out builds). Timestamps tell:
+      // once the running build is at least as new as the parked one, the
+      // notice has no value left — clear it.
+      const atLeastAsNew =
+        h.buildAt !== null && v.buildAt !== null && new Date(h.buildAt).getTime() >= new Date(v.buildAt).getTime();
+      if (sameHash || atLeastAsNew) clearNewVersion();
+    } catch {
+      /* server unreachable — keep the notice and the restarting state */
+    }
+  }
+
+  function clearNewVersion(): void {
+    newVersion.value = null;
+    restarting.value = false;
+    try {
+      localStorage.removeItem(NEW_VERSION_KEY);
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  /**
+   * Trigger a server reload into the parked build (0143). The reload swap drops
+   * SSE; the reconnect's hello handler reconciles and clears the notice once
+   * the server reports the new build. When the server already runs the current
+   * build (a reload landed while the tab was open elsewhere), clear directly.
+   */
+  async function restartServer(): Promise<void> {
+    try {
+      const r = await api<{ state: string; reason?: string }>("/api/server/restart", {
+        method: "POST",
+      });
+      if (r.state === "not-stale") {
+        clearNewVersion();
+        pushToast("Server already runs the current build", "info");
+      } else if (r.state === "reloading") {
+        restarting.value = true;
+        pushToast("Reloading server into the new build…", "info");
+      } else {
+        // Deferred: an agent turn or the close-out pipeline itself is still
+        // running. The reload will apply once the server is idle.
+        pushToast("Reload deferred — the server is busy right now", "info");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pushToast(message, "error");
+    }
   }
 
   async function setStatus(t: Task, status: string): Promise<void> {
@@ -589,6 +702,9 @@ export const useRepoStore = defineStore("repo", () => {
       health.value = await api<Health>("/api/health");
       await refresh();
       await fetchRunning();
+      // A persisted notice from before this page load: reconcile it against
+      // the running server so a reload that already landed clears it.
+      void reconcileVersion();
     } catch {
       /* server not reachable — UI still renders */
     } finally {
@@ -616,9 +732,13 @@ export const useRepoStore = defineStore("repo", () => {
     sortOrder,
     toasts,
     systemStats,
+    newVersion,
+    restarting,
     pushToast,
     removeToast,
     setSortOrder,
+    restartServer,
+    clearNewVersion,
     repoName,
     workDir,
     total,

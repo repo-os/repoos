@@ -212,6 +212,7 @@ function makeManager(
     loadedHash: "hash-aaa",
     enabled: true,
     isBusy: () => 0,
+    closingOut: () => false,
     cliEntry: () => fx.readyCli,
     stopListening: async () => {
       calls.drained++;
@@ -369,6 +370,63 @@ describe("ReloadManager", () => {
       expect(calls.reListen).toBeGreaterThan(0); // listener re-bound: old process keeps serving
       const [spawn] = spawns(fx);
       expect(spawn.dead).toBe(true);
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("0143: parks a build that lands while a close-out holds the lock (no auto-reload, notice emitted)", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    let closingOut = true;
+    let available: string | null = null;
+    const { manager, calls } = makeManager(fx, {
+      closingOut: () => closingOut,
+      onBuildAvailable: (hash) => {
+        available = hash;
+      },
+    });
+    try {
+      manager.start();
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-closeout" }));
+
+      await waitFor(() => available === "hash-closeout", "build parked and surfaced");
+      await sleep(300);
+      expect(spawns(fx)).toHaveLength(0); // never spawned a replacement mid-close-out
+      expect(calls.confirmed).toBe(0);
+
+      // Once the close-out releases, the parked build must NOT auto-fire — it
+      // waits for the user's POST /api/server/restart.
+      closingOut = false;
+      await sleep(300);
+      expect(spawns(fx)).toHaveLength(0);
+
+      // A manual restart applies it now.
+      manager.requestReload("manual restart");
+      await waitFor(() => calls.confirmed > 0, "manual restart applies parked build");
+      expect(spawns(fx)).toHaveLength(1);
+    } finally {
+      await killReplacement(fx);
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("0143: requestReload defers while a close-out holds the lock and reports the parked state", async () => {
+    const fx = await makeFixture();
+    let available: string | null = null;
+    const { manager } = makeManager(fx, {
+      closingOut: () => true,
+      onBuildAvailable: (hash) => {
+        available = hash;
+      },
+    });
+    try {
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-closeout" }));
+      const state = manager.requestReload("manual restart");
+      expect(state.state).toBe("deferred");
+      expect(available).toBe("hash-closeout");
     } finally {
       manager.stop();
       fx.clean();

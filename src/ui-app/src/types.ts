@@ -70,6 +70,8 @@ export interface Health {
   version: string | null;
   /** ISO timestamp of the last build, or null when unavailable. */
   buildAt: string | null;
+  /** Build hash the running server loaded, or null in dev mode. */
+  buildHash: string | null;
 }
 
 export interface Counts {
@@ -176,7 +178,14 @@ export type RepoEvent =
   | { type: "agent.exited"; id: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
-  | { type: "system.stats"; stats: SystemStats };
+  | { type: "system.stats"; stats: SystemStats }
+  | {
+      type: "build.available";
+      hash: string;
+      buildAt: string | null;
+      at: string;
+    }
+  | { type: "reload.failed"; reason: string; at: string };
 
 export interface ConfigField {
   key: string;

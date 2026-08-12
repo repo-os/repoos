@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { RefreshCw, RotateCcw } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
-const { health, connected } = storeToRefs(repo);
+const { health, connected, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 </script>
 
@@ -25,6 +26,17 @@ const { repoName } = storeToRefs(repo);
     </div>
     <div class="spacer"></div>
     <SearchBar />
+    <button
+      v-if="newVersion"
+      type="button"
+      class="version-notice"
+      :disabled="restarting"
+      @click="repo.restartServer()"
+    >
+      <RefreshCw v-if="restarting" class="size-[13px] icon-spin" />
+      <RotateCcw v-else class="size-[13px]" />
+      <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
+    </button>
     <div class="conn" :class="connected ? 'live' : 'down'">
       <span class="dot"></span>{{ connected ? "live" : "offline" }}
     </div>

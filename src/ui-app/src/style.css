@@ -163,6 +163,13 @@
   .conn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:var(--dot-glow)}
   .conn.live .dot{animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .version-notice{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;
+    font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;
+    color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(57,224,255,0.3);
+    transition:filter .15s ease,border-color .15s ease}
+  .version-notice:hover:not(:disabled){filter:brightness(1.12);border-color:rgba(57,224,255,0.55)}
+  .version-notice:disabled{opacity:.7;cursor:default}
+  .version-notice .icon-spin{animation:spin 0.8s linear infinite}
 
   /* global search */
   .search-wrap{position:relative;flex:0 1 380px;min-width:150px}
