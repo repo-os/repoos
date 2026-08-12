@@ -266,7 +266,6 @@ onUnmounted(() => {
                   <Input
                     :model-value="String(form.ntfyTopic ?? '')"
                     type="text"
-                    :disabled="config.saving"
                     placeholder="repoos_myproject"
                     @update:model-value="(v) => (form.ntfyTopic = v)"
                   />
@@ -324,14 +323,12 @@ onUnmounted(() => {
                   v-if="f.type === 'string'"
                   :model-value="String(form[f.key])"
                   type="text"
-                  :disabled="config.saving"
                   @update:model-value="(v) => (form[f.key] = v)"
                 />
                 <Input
                   v-else-if="f.type === 'array'"
                   :model-value="String(form[f.key])"
                   type="text"
-                  :disabled="config.saving"
                   placeholder=".md, .markdown"
                   @update:model-value="(v) => (form[f.key] = v)"
                 />
