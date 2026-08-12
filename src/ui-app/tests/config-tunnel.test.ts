@@ -54,7 +54,7 @@ describe("Cloudflare Tunnel UI config", () => {
     expect(config.ntfyEnabled).toBe(true);
     expect(config.ntfyTopic).toBe("repoos_myproject");
     // The agent table must stay clean — no stray root keys nested inside it.
-    expect(Object.keys(config.agents[0])).toEqual(["name", "cli", "enabled"]);
+    expect(Object.keys((config.agents ?? [])[0])).toEqual(["name", "cli", "enabled"]);
 
     // A second save (key now exists) must update in place, not duplicate or
     // re-append after the table.
