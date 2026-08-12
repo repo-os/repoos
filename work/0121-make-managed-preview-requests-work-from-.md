@@ -2,14 +2,14 @@
 id: "0121"
 title: Make managed preview requests work from sandboxed agents without localhost access
 type: bug
-status: active
+status: review
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/make-managed-preview-requests-work-from-
 created_at: "2026-08-12T05:23:56Z"
-updated_at: "2026-08-12T10:42:29Z"
+updated_at: "2026-08-12T10:58:09Z"
 ---
 ## Activity
 
@@ -106,3 +106,4 @@ runner-mediated control path, like the server-owned handoff capability.
 ## Activity
 
 - 2026-08-12T10:42:29Z · status ready→active, branch
+- 2026-08-12T10:58:09Z · status active→review
