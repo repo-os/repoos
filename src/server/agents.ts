@@ -8,11 +8,22 @@
  */
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
+import { buildIndex } from "../core/indexer.js";
 import { parseTask } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 
@@ -221,6 +232,30 @@ function costFromObject(obj: Record<string, unknown>): number | undefined {
     if (typeof usage.total_cost_usd === "number") return usage.total_cost_usd;
   }
   return undefined;
+}
+
+/** On-disk transcript schema. Bump when persisted fields change incompatibly. */
+const SESSION_FILE_VERSION = 1;
+const SESSION_WRITE_DELAY_MS = 500;
+const SESSION_RETENTION_DAYS = 30;
+const SESSION_RETENTION_COUNT = 1000;
+
+interface PersistedSession {
+  version: typeof SESSION_FILE_VERSION;
+  lines: AgentOutputEntry[];
+  sessionId?: string;
+  engine: Session["engine"];
+  workdir?: string;
+  completedAt?: string;
+  updatedAt: string;
+}
+
+export interface AgentRunnerOptions {
+  /** Test/embedding overrides; production defaults are the documented policy. */
+  writeDelayMs?: number;
+  retentionDays?: number;
+  retentionCount?: number;
+  now?: () => Date;
 }
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
@@ -771,13 +806,13 @@ function resumeCommand(
       cmd: "codex",
       args: [
         "exec",
-        "resume",
-        ...(sessionId ? [sessionId] : ["--last"]),
-        text,
-        ...modelArgs(cli, model),
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        ...modelArgs(cli, model),
+        "--json",
+        ...(sessionId ? [sessionId] : ["--last"]),
+        text,
       ],
     };
   }
@@ -1045,6 +1080,13 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  private readonly sessionsDir: string;
+  private readonly writeDelayMs: number;
+  private readonly retentionDays: number;
+  private readonly retentionCount: number;
+  private readonly clock: () => Date;
+  private readonly writeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly pendingCompletion = new Set<string>();
   /**
    * The main RepoOS server's own API URL, injected into every agent process so
    * the mission's managed-preview request resolves the ACTUAL control plane,
@@ -1066,16 +1108,23 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void> } = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void> } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.emit = emit;
     this.onHandoff = opts.onHandoff;
+    this.sessionsDir = join(config.root, config.cacheDir, "sessions");
+    this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
+    this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
+    this.retentionCount = opts.retentionCount ?? SESSION_RETENTION_COUNT;
+    this.clock = opts.now ?? (() => new Date());
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
     const checkMs =
       opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
     this.stallTimer = setInterval(() => this.checkStalls(), checkMs);
     this.stallTimer.unref();
+    this.loadHotSessions();
+    this.pruneSessions();
   }
 
   /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
@@ -1150,14 +1199,8 @@ export class AgentRunner {
     const cwd = opts.cwd ?? this.config.root;
     const session =
       this.sessions.get(task.id) ??
-      {
-        lines: [],
-        pending: "",
-        bytes: 0,
-        engine: "plain" as const,
-        accumulatedMs: 0,
-        stalledEmitted: false,
-      };
+      this.loadSession(task.id) ??
+      this.emptySession();
     session.workdir = cwd;
     session.engine = engineForCli(agent.cli);
     session.task = task;
@@ -1223,6 +1266,7 @@ export class AgentRunner {
       if (!dropped) break;
       session.bytes -= entryBytes(dropped);
     }
+    this.schedulePersist(taskId);
     const fullText = opts.resumePreamble
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
@@ -1239,7 +1283,24 @@ export class AgentRunner {
 
   /** The retained transcript for a task, or null when no session exists. */
   output(taskId: string): Session | null {
-    return this.sessions.get(taskId) ?? null;
+    return this.sessions.get(taskId) ?? this.loadSession(taskId);
+  }
+
+  /**
+   * Mark a task transcript complete and release its RAM. If its child is still
+   * draining after a stop request, cleanup performs the final flush/eviction.
+   */
+  complete(taskId: string): void {
+    if (this.entries.has(taskId)) {
+      this.pendingCompletion.add(taskId);
+      return;
+    }
+    this.finishCompletion(taskId);
+  }
+
+  /** Flush all debounced transcript writes before shutdown/reload handover. */
+  flushAll(): void {
+    for (const taskId of this.writeTimers.keys()) this.persist(taskId);
   }
 
   /**
@@ -1387,6 +1448,7 @@ export class AgentRunner {
       if (!dropped) break;
       session.bytes -= entryBytes(dropped);
     }
+    this.schedulePersist(taskId);
   }
 
   /**
@@ -1473,7 +1535,25 @@ export class AgentRunner {
   /** Recognize the exact capability-request signal in plain or structured output. */
   private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
     if (raw.trim() === HANDOFF_READY_SIGNAL) return true;
-    return "type" in entry && entry.type === "text" && entry.text.trim() === HANDOFF_READY_SIGNAL;
+    if (
+      "type" in entry &&
+      entry.type === "text" &&
+      entry.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL)
+    ) return true;
+    // Codex --json wraps the final assistant response in an item.completed
+    // event. The signal is therefore inside item.text, not a standalone line.
+    try {
+      const event = JSON.parse(raw) as {
+        type?: unknown;
+        item?: { type?: unknown; text?: unknown };
+      };
+      return event.type === "item.completed" &&
+        event.item?.type === "agent_message" &&
+        typeof event.item.text === "string" &&
+        event.item.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -1638,6 +1718,162 @@ export class AgentRunner {
     // fail-safe checklist's main-copy sync silently failed (the #0068 shape).
     // Patch the main copy to match so the live board cannot drift silently.
     this.healBoardDivergence(taskId, entry, session);
+    // Self-heal may have appended a final system line, so persist only after it.
+    this.persist(taskId);
+    if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);
+  }
+
+  private emptySession(): Session {
+    return { lines: [], pending: "", bytes: 0, engine: "plain", accumulatedMs: 0, stalledEmitted: false };
+  }
+
+  private sessionFile(taskId: string): string | null {
+    // Task ids normally contain digits, but keep route input from becoming a
+    // path traversal primitive if a caller asks output for an arbitrary id.
+    if (!/^[A-Za-z0-9._-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
+    return join(this.sessionsDir, `${taskId}.json`);
+  }
+
+  /** Read and validate one versioned file. Corruption/version drift fails soft. */
+  private readPersisted(taskId: string): PersistedSession | null {
+    const file = this.sessionFile(taskId);
+    if (!file || !existsSync(file)) return null;
+    try {
+      const value = JSON.parse(readFileSync(file, "utf8")) as Partial<PersistedSession>;
+      if (
+        value.version !== SESSION_FILE_VERSION ||
+        !Array.isArray(value.lines) ||
+        !value.lines.every((line) => typeof line === "object" && line !== null) ||
+        (value.engine !== "opencode" && value.engine !== "plain") ||
+        typeof value.updatedAt !== "string" ||
+        (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
+        (value.workdir !== undefined && typeof value.workdir !== "string") ||
+        (value.completedAt !== undefined && typeof value.completedAt !== "string")
+      )
+        return null;
+      return value as PersistedSession;
+    } catch {
+      return null;
+    }
+  }
+
+  private loadSession(taskId: string): Session | null {
+    const saved = this.readPersisted(taskId);
+    if (!saved) return null;
+    const session: Session = {
+      lines: [...saved.lines],
+      pending: "",
+      bytes: saved.lines.reduce((sum, line) => sum + entryBytes(line), 0),
+      engine: saved.engine,
+      sessionId: saved.sessionId,
+      workdir: saved.workdir,
+      accumulatedMs: 0,
+      stalledEmitted: false,
+    };
+    while (session.bytes > OUTPUT_CAP_BYTES) {
+      const dropped = session.lines.shift();
+      if (!dropped) break;
+      session.bytes -= entryBytes(dropped);
+    }
+    return session;
+  }
+
+  /** Boot only hot lifecycle states; completed transcripts remain cold. */
+  private loadHotSessions(): void {
+    try {
+      const hot = new Set(
+        buildIndex(this.config)
+          .tasks.filter((task) => task.status === "active" || task.status === "review")
+          .map((task) => task.id),
+      );
+      for (const taskId of hot) {
+        const session = this.loadSession(taskId);
+        if (session) this.sessions.set(taskId, session);
+      }
+    } catch {
+      // A bad task or unreadable cache must never prevent `repoos serve` boot.
+    }
+  }
+
+  private schedulePersist(taskId: string): void {
+    const existing = this.writeTimers.get(taskId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => this.persist(taskId), this.writeDelayMs);
+    timer.unref?.();
+    this.writeTimers.set(taskId, timer);
+  }
+
+  /** Atomic temp-file + rename write; persistence remains best-effort. */
+  private persist(taskId: string, completedAt?: string): void {
+    const timer = this.writeTimers.get(taskId);
+    if (timer) clearTimeout(timer);
+    this.writeTimers.delete(taskId);
+    const session = this.sessions.get(taskId);
+    const file = this.sessionFile(taskId);
+    if (!session || !file) return;
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      const payload: PersistedSession = {
+        version: SESSION_FILE_VERSION,
+        lines: session.lines,
+        sessionId: session.sessionId,
+        engine: session.engine,
+        workdir: session.workdir,
+        completedAt,
+        updatedAt: this.clock().toISOString(),
+      };
+      const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+      try {
+        writeFileSync(temp, JSON.stringify(payload, null, 2), "utf8");
+        renameSync(temp, file);
+      } finally {
+        if (existsSync(temp)) unlinkSync(temp);
+      }
+    } catch {
+      // Session history is useful but must never take down the server/agent.
+    }
+  }
+
+  private finishCompletion(taskId: string): void {
+    const hot = this.sessions.get(taskId);
+    const saved = hot ? null : this.readPersisted(taskId);
+    const session = hot ?? (saved?.completedAt ? null : this.loadSession(taskId));
+    if (session) {
+      this.sessions.set(taskId, session);
+      this.persist(taskId, this.clock().toISOString());
+    }
+    this.sessions.delete(taskId);
+    this.pendingCompletion.delete(taskId);
+    this.pruneSessions();
+  }
+
+  /** Remove completed files older than the age bound or beyond the count cap. */
+  private pruneSessions(): void {
+    let completed: { file: string; at: number }[] = [];
+    try {
+      completed = readdirSync(this.sessionsDir)
+        .filter((name) => name.endsWith(".json"))
+        .flatMap((name) => {
+          const taskId = name.slice(0, -5);
+          const saved = this.readPersisted(taskId);
+          if (!saved?.completedAt) return [];
+          const at = Date.parse(saved.completedAt);
+          return Number.isFinite(at) ? [{ file: join(this.sessionsDir, name), at }] : [];
+        })
+        .sort((a, b) => b.at - a.at);
+    } catch {
+      return;
+    }
+    const cutoff = this.clock().getTime() - this.retentionDays * 24 * 60 * 60 * 1000;
+    for (let i = 0; i < completed.length; i++) {
+      if (completed[i].at >= cutoff && i < this.retentionCount) continue;
+      try {
+        // Re-check it is still a regular file before deletion.
+        if (statSync(completed[i].file).isFile()) unlinkSync(completed[i].file);
+      } catch {
+        /* pruning is best-effort */
+      }
+    }
   }
 
   /**

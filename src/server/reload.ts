@@ -14,9 +14,10 @@
  *   low-frequency hash poll as a platform-proof fallback). A hash CHANGE
  *   schedules a reload — the same hash mechanism the CLI staleness guard uses,
  *   never mtimes or timers.
- * - A reload is DEFERRED while an agent turn is running: the in-memory running
- *   registry and sessions are not disposable, and restarting mid-turn would
- *   strand a task's agent exactly as a manual kill does. When the runner
+ * - A reload is DEFERRED while an agent turn is running: persisted transcript
+ *   history does not transfer ownership of the live child process or its
+ *   streaming pipes. Restarting mid-turn would orphan the child, lose new
+ *   output, and leave the runner registry inaccurate. When the runner
  *   drains (agent.exited) the deferred reload fires, and a low-frequency retry
  *   poll backs that up.
  * - Reload = spawn a replacement `repoos serve` on the same host/port

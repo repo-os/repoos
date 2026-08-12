@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
@@ -58,6 +58,98 @@ watch(
   },
   { immediate: true },
 );
+
+// ---- Auto-save settings (mirrors the Agents page implementation) ----
+
+const form = reactive<Record<string, unknown>>({});
+let syncing = false;
+let autoSaveTimer: ReturnType<typeof setTimeout> | undefined;
+let saveInFlight = false;
+let savePending = false;
+
+function sync(): void {
+  syncing = true;
+  for (const key of Object.keys(config.form)) {
+    form[key] = config.form[key];
+  }
+  syncing = false;
+}
+
+watch(
+  () => config.loaded,
+  (loaded) => {
+    if (loaded) sync();
+  },
+  { immediate: true },
+);
+
+function buildBody(): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  for (const f of config.schema) {
+    if (f.tier === "guarded" && !config.showAdvanced) continue;
+    let val = form[f.key];
+    if (f.type === "array" && typeof val === "string") {
+      val = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    body[f.key] = val;
+  }
+  return body;
+}
+
+async function autoSave(): Promise<void> {
+  if (saveInFlight) {
+    savePending = true;
+    return;
+  }
+  saveInFlight = true;
+  savePending = false;
+  try {
+    await config.save(buildBody());
+  } catch {
+    // The store exposes the error inline; keep edits in place for the next retry.
+  } finally {
+    saveInFlight = false;
+    if (savePending) scheduleAutoSave(0);
+  }
+}
+
+function scheduleAutoSave(delay = 450): void {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => void autoSave(), delay);
+}
+
+watch(
+  form,
+  () => {
+    if (syncing || !config.loaded) return;
+    config.msg = "";
+    config.error = "";
+    if (saveInFlight) savePending = true;
+    scheduleAutoSave();
+  },
+  { deep: true, flush: "sync" },
+);
+
+// Apply theme preferences live as the user changes them.
+watch(
+  () => form.theme,
+  (t) => {
+    if (typeof t === "string") config.applyTheme(t, true);
+  },
+);
+watch(
+  () => form.uiTheme,
+  (t) => {
+    if (typeof t === "string") config.applyUiTheme(t, true);
+  },
+);
+
+onUnmounted(() => {
+  clearTimeout(autoSaveTimer);
+});
 </script>
 
 <template>
@@ -65,6 +157,9 @@ watch(
     <div class="page-title">Settings</div>
     <div class="page-desc">
       RepoOS configuration · <span class="mono" style="color: var(--cyan)">repoos.toml</span>
+      <span v-if="config.saving"> · Saving…</span>
+      <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+      <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
     </div>
 
     <div v-if="!config.loaded" class="spin"></div>
@@ -83,9 +178,9 @@ watch(
             <div class="setting-input">
               <Select
                 v-if="f.type === 'select'"
-                :model-value="String(config.form[f.key])"
+                :model-value="String(form[f.key])"
                 :disabled="config.saving"
-                @update:model-value="(v) => (config.form[f.key] = v)"
+                @update:model-value="(v) => (form[f.key] = v)"
               >
                 <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
                   <SelectValue />
@@ -100,9 +195,9 @@ watch(
               </Select>
               <Switch
                 v-else-if="f.type === 'boolean'"
-                :checked="!!config.form[f.key]"
+                :checked="!!form[f.key]"
                 :disabled="config.saving"
-                @update:checked="(v: boolean) => (config.form[f.key] = v)"
+                @update:checked="(v: boolean) => (form[f.key] = v)"
               />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
@@ -160,18 +255,18 @@ watch(
               <div class="setting-input">
                 <Input
                   v-if="f.type === 'string'"
-                  :model-value="String(config.form[f.key])"
+                  :model-value="String(form[f.key])"
                   type="text"
                   :disabled="config.saving"
-                  @update:model-value="(v) => (config.form[f.key] = v)"
+                  @update:model-value="(v) => (form[f.key] = v)"
                 />
                 <Input
                   v-else-if="f.type === 'array'"
-                  :model-value="String(config.form[f.key])"
+                  :model-value="String(form[f.key])"
                   type="text"
                   :disabled="config.saving"
                   placeholder=".md, .markdown"
-                  @update:model-value="(v) => (config.form[f.key] = v)"
+                  @update:model-value="(v) => (form[f.key] = v)"
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
@@ -180,17 +275,6 @@ watch(
         </div>
       </Card>
 
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
-        <Button
-          variant="default"
-          @click="config.save()"
-          :disabled="config.saving || !config.loaded"
-        >
-          {{ config.saving ? "Saving…" : "Save changes" }}
-        </Button>
-        <div v-if="config.msg" class="save-msg ok">{{ config.msg }}</div>
-        <div v-if="config.error" class="save-msg err">{{ config.error }}</div>
-      </div>
     </div>
   </div>
 </template>
