@@ -2,14 +2,14 @@
 id: "0146"
 title: "bug: preview banner isn't showing in the right place"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/bug-preview-banner-isn-t-showing-in-the-
 created_at: "2026-08-12T14:19:58Z"
-updated_at: "2026-08-12T17:51:16Z"
+updated_at: "2026-08-12T18:00:29Z"
 ---
 ## Description
 
@@ -45,3 +45,4 @@ The preview banner that indicates a preview build of the repoos UI is not displa
 - 2026-08-12T14:19:58Z · created · unknown
 - 2026-08-13T00:00:00Z · fleshed out and moved to ready
 - 2026-08-12T17:51:16Z · status ready→active, branch
+- 2026-08-12T18:00:29Z · status active→review
