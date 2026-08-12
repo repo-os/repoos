@@ -2,16 +2,15 @@
 id: "0140"
 title: Make screenshot regeneration adhoc at done-time (skip by default)
 type: chore
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ai
-branch: ""
+branch: feat/make-screenshot-regeneration-adhoc-at-do
 created_at: "2026-08-12T13:00:00Z"
-updated_at: "2026-08-12T13:00:00Z"
+updated_at: "2026-08-12T13:10:37Z"
 ---
-
 ## Problem
 
 Every move-to-done runs `scripts/capture-screenshots.mjs` unconditionally as part of the close-out pipeline. Screenshots are only consulted in two contexts:
@@ -46,3 +45,4 @@ For the vast majority of task close-outs, regenerating screenshots is pure waste
 ## Activity
 
 - 2026-08-12T13:00:00Z · created · ai
+- 2026-08-12T13:10:37Z · status ready→active, branch
