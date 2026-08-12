@@ -11,6 +11,7 @@ import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import DoneErrorCard from "./DoneErrorCard.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -238,15 +239,6 @@ const doingDone = ref(false);
 const doneTicks = ref(0);
 let doneTimer: number | undefined;
 
-interface DoneFailure {
-  step: string;
-  elapsedSeconds: number;
-  conflicts: string[];
-  message: string;
-}
-/** Detailed failure state from the last move-to-done attempt. */
-const doneFailure = ref<DoneFailure | null>(null);
-
 function startDoneTimer(): void {
   doneTicks.value = 0;
   window.clearInterval(doneTimer);
@@ -289,37 +281,18 @@ async function moveToDone(): Promise<void> {
   if (!ui.active || review.value?.running) return;
   ui.saving = true;
   doingDone.value = true;
-  doneFailure.value = null;
   startDoneTimer();
   try {
     await repo.completeTask(ui.active);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const step = ui.active ? repo.doneSteps[ui.active.id] ?? "merge" : "merge";
-    const conflicts = extractConflicts(message);
-    doneFailure.value = {
-      step,
-      elapsedSeconds: doneTicks.value,
-      conflicts,
-      message,
-    };
+    // The failure is rendered inline below the button via the store's
+    // per-task doneErrorFor; no global toast for this action.
     repo.onError(err);
   } finally {
     doingDone.value = false;
     stopDoneTimer();
     ui.saving = false;
   }
-}
-
-function extractConflicts(message: string): string[] {
-  const prefix = "merge conflict: ";
-  const idx = message.indexOf(prefix);
-  if (idx === -1) return [];
-  return message
-    .slice(idx + prefix.length)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
 }
 
 interface TaskDraft {
@@ -1236,24 +1209,13 @@ function resetFreeformOverrides(): void {
           <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
             <ActivityIndicator /> agent running
           </span>
-          <div v-if="ui.active.status === 'review' && doneFailure" class="done-failure">
-            <div class="done-failure-title">
-              <X class="size-3.5" />
-              Close-out failed at “{{ doneFailure?.step }}”
-              <span class="done-failure-time">{{ doneFailure?.elapsedSeconds }}s</span>
-            </div>
-            <p class="done-failure-msg">{{ doneFailure?.message }}</p>
-            <div v-if="doneFailure?.conflicts.length" class="done-failure-files">
-              <div class="done-failure-sub">Conflicting files</div>
-              <ul>
-                <li v-for="f in doneFailure?.conflicts" :key="f" class="mono">{{ f }}</li>
-              </ul>
-            </div>
-            <p class="done-failure-hint">
-              RepoOS couldn't sync this branch with main automatically — resolve the
-              conflicting files in the worktree, then retry.
-            </p>
-          </div>
+          <DoneErrorCard
+            v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
+            class="drawer-done-error"
+            :message="repo.doneErrorFor(ui.active.id)!.message"
+            :step="repo.doneErrorFor(ui.active.id)!.step"
+            :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+          />
           <div v-if="ui.active.status === 'active' || ui.active.status === 'review'" class="quickbar-row">
             <template v-if="ui.active.preview">
               <div class="preview-live">

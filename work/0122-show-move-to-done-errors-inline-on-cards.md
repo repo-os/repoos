@@ -2,7 +2,7 @@
 id: "0122"
 title: Show move-to-done errors inline on cards and in the task panel
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
