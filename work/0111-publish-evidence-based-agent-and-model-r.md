@@ -8,10 +8,9 @@ area: agent
 assigned_to: AI
 created_by: ""
 branch: feat/publish-evidence-based-agent-and-model-r
-cli_override: opencode
-model_override: openai/gpt-5.6-sol
+model_override: opencode/deepseek-v4-pro
 created_at: "2026-08-12T03:44:24Z"
-updated_at: "2026-08-12T07:20:21Z"
+updated_at: "2026-08-12T11:39:49Z"
 ---
 ## Problem
 
@@ -59,3 +58,4 @@ Start with repository evidence, including task metadata, persisted transcripts w
 - 2026-08-12T03:45:22Z · body
 - 2026-08-12T06:26:06Z · cli_override, model_override
 - 2026-08-12T06:26:22Z · status ready→active, branch
+- 2026-08-12T11:39:49Z · cli_override, model_override
