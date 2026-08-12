@@ -8,8 +8,10 @@ area: agent
 assigned_to: AI
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: opencode-go/qwen3.8-max
 created_at: "2026-08-11T19:49:57Z"
-updated_at: "2026-08-11T19:50:32Z"
+updated_at: "2026-08-12T04:59:30Z"
 ---
 ## Problem
 
@@ -47,3 +49,4 @@ This is an analysis and documentation task, not permission to create or install 
 ## Activity
 
 - 2026-08-11T19:50:32Z · body
+- 2026-08-12T04:59:30Z · cli_override, model_override
