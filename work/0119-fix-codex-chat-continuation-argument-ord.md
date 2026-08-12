@@ -2,18 +2,19 @@
 id: "0119"
 title: Fix Codex chat continuation argument ordering
 type: bug
-status: active
+status: done
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/fix-codex-chat-continuation-argument-ord
 created_at: "2026-08-12T05:02:11Z"
-updated_at: "2026-08-12T05:18:34Z"
+updated_at: "2026-08-12T05:49:31Z"
 ---
 ## Activity
 
 - 2026-08-12T05:02:11Z · created · unknown
+- 2026-08-12T05:30:32Z · status active→review · implementation and handoff-event regression checks green
 
 
 ## Problem
@@ -79,3 +80,5 @@ than a CLI usage error.
 ## Activity
 
 - 2026-08-12T05:18:34Z · status ready→active, branch
+- 2026-08-12T05:31:41Z · status active→review
+- 2026-08-12T05:49:31Z · status review→done

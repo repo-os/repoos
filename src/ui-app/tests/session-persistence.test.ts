@@ -91,12 +91,16 @@ if (process.env.REPOOS_SESSION_TEST_HOLD === "1") setTimeout(() => {}, 800);
 
 const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", enabled: true };
 
-function saved(lines: unknown[], completedAt?: string): string {
+function saved(
+  lines: unknown[],
+  completedAt?: string,
+  engine: "opencode" | "claude" | "copilot" | "plain" = "plain",
+): string {
   return JSON.stringify({
     version: 1,
     lines,
     sessionId: "disk-session",
-    engine: "plain",
+    engine,
     workdir: "/tmp/worktree",
     completedAt,
     updatedAt: "2026-08-01T00:00:00.000Z",
@@ -162,6 +166,46 @@ describe("agent session persistence", () => {
       ]),
     );
   });
+
+  it("hydrates a persisted guide session before sending a follow-up", async () => {
+    const fx = fixture("done");
+    const guideFile = join(fx.root, ".repoos", "sessions", "repoos-guide.json");
+    mkdirSync(join(fx.root, ".repoos", "sessions"), { recursive: true });
+    writeFileSync(
+      guideFile,
+      JSON.stringify({
+        ...JSON.parse(saved([{ s: "out", d: "from guide" }])),
+        workdir: fx.root,
+      }),
+    );
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+
+    expect(runner.send("repoos-guide", "What changed?", agent).ok).toBe(true);
+    await waitFor(() => !runner.isRunning("repoos-guide"), "guide follow-up exit");
+    expect(runner.output("repoos-guide")?.lines).toEqual(
+      expect.arrayContaining([
+        { s: "out", d: "from guide" },
+        { type: "human", text: "What changed?" },
+        { s: "out", d: "persisted output" },
+      ]),
+    );
+  });
+
+  it.each(["claude", "copilot"] as const)(
+    "reloads a persisted %s session with its resumable session id",
+    (engine) => {
+      const fx = fixture("done");
+      mkdirSync(join(fx.root, ".repoos", "sessions"), { recursive: true });
+      writeFileSync(fx.file, saved([{ type: "text", text: "from disk" }], undefined, engine));
+
+      const rebooted = new AgentRunner(fx.config, () => {});
+      const loaded = rebooted.output(fx.task.id);
+      unlinkSync(fx.file);
+
+      expect(loaded?.sessionId).toBe("disk-session");
+      expect(loaded?.engine).toBe(engine);
+    },
+  );
 
   it("flushes completed sessions, evicts RAM, and serves output cold from disk", async () => {
     const fx = fixture("active");

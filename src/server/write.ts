@@ -68,13 +68,8 @@ export function patchTaskFile(
   if (!existsSync(absPath)) {
     throw new WriteError(`Task file not found: ${absPath}`);
   }
-  if (
-    patch.status !== undefined &&
-    !(STATUSES as readonly string[]).includes(patch.status)
-  ) {
-    throw new WriteError(
-      `Invalid status "${patch.status}". Valid: ${STATUSES.join(", ")}`,
-    );
+  if (patch.status !== undefined && !(STATUSES as readonly string[]).includes(patch.status)) {
+    throw new WriteError(`Invalid status "${patch.status}". Valid: ${STATUSES.join(", ")}`);
   }
 
   // Re-read CURRENT on-disk state right before writing.
@@ -129,11 +124,7 @@ export function patchTaskFile(
     if (patch.assignedTo !== current.assignedTo) changes.push("assigned_to");
     current.assignedTo = patch.assignedTo;
     current.assignee =
-      patch.assignedTo.toLowerCase() === "ai"
-        ? "ai"
-        : patch.assignedTo
-          ? "human"
-          : "unassigned";
+      patch.assignedTo.toLowerCase() === "ai" ? "ai" : patch.assignedTo ? "human" : "unassigned";
   }
   if (patch.body !== undefined) {
     if (patch.body !== current.body) changes.push("body");
@@ -165,6 +156,40 @@ export function patchTaskFile(
   commitTaskFile(config.root, absPath, `docs(${current.id}): update task`);
 
   // Re-parse so the returned object reflects exactly what's on disk.
+  return parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  });
+}
+
+/**
+ * Mark the successful end of the review-to-done flow in the task's existing
+ * append-only activity log. This is deliberately separate from TaskPatch so a
+ * normal status edit cannot make an unmerged task appear in release history.
+ */
+export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
+  if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
+
+  const task = parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  });
+  // A close-out retry after the successful marker was written must not create a
+  // second release or move the timeline entry.
+  if (task.releasedAt) return task;
+
+  const previousStatus = task.status;
+  task.status = "done";
+  recordChange(task, `status ${previousStatus}→done, release:success`);
+  writeFileSync(absPath, serializeTask(task));
+  commitTaskFile(config.root, absPath, `docs(${task.id}): set status done`);
+
   return parseTask({
     content: readFileSync(absPath, "utf8"),
     absPath,

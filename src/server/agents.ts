@@ -21,7 +21,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
-import { DEFAULT_AGENTS } from "../core/config.js";
+import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask } from "../core/task.js";
@@ -100,11 +100,10 @@ interface Session {
   sessionId?: string;
   task?: Task;
   branch?: string;
-  /** Whether the session runs a structured-event CLI (opencode `--format json`
-   *  or claude code `--output-format stream-json`) or a plain-line CLI (qwen /
-   *  codex). claude gets its own branch because its stream-json event shapes
-   *  (nested under `message.content[]`) differ from opencode's `part` shapes. */
-  engine: "opencode" | "claude" | "plain";
+  /*  * Whether the session runs a structured-event CLI (opencode `--format json`,
+  * claude code `--output-format stream-json`, or Copilot `--output-format
+  * json`) or a plain-line CLI (qwen / codex). */
+  engine: "opencode" | "claude" | "copilot" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
@@ -273,6 +272,7 @@ const SESSION_ID_PATTERNS: RegExp[] = [
  */
 function engineForCli(cli: string): Session["engine"] {
   if (cli === "claude code") return "claude";
+  if (cli === "github copilot") return "copilot";
   if (cli === "qwen code" || cli === "codex") return "plain";
   return "opencode";
 }
@@ -531,6 +531,7 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
   } catch {
     return null;
   }
+
   if (typeof parsed !== "object" || parsed === null) return null;
   const ev = parsed as ClaudeEvent;
   const type = typeof ev.type === "string" ? ev.type : "";
@@ -597,6 +598,116 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
   }
 }
 
+/** The Copilot CLI JSONL event fields consumed by the task transcript. */
+interface CopilotEvent {
+  type?: unknown;
+  data?: {
+    content?: unknown;
+    deltaContent?: unknown;
+    toolName?: unknown;
+    tool?: unknown;
+    arguments?: unknown;
+    input?: unknown;
+    result?: unknown;
+    output?: unknown;
+    error?: unknown;
+    message?: unknown;
+  };
+  sessionId?: unknown;
+}
+
+/** Text-bearing values in Copilot tool results and error payloads. */
+function copilotText(value: unknown): string | undefined {
+  if (typeof value === "string" && value) return value;
+  if (!value || typeof value !== "object") return undefined;
+  const obj = value as Record<string, unknown>;
+  for (const key of ["content", "text", "message", "error"]) {
+    if (typeof obj[key] === "string" && obj[key]) return obj[key] as string;
+  }
+  return toolOutputText(value);
+}
+
+/**
+ * Parse Copilot CLI's `--output-format json` JSONL stream. The CLI emits
+ * lifecycle telemetry alongside assistant and tool events; lifecycle records
+ * are recognized and swallowed so the Agent tab remains a useful transcript.
+ */
+export function parseCopilotEvent(
+  raw: string,
+): { entry?: AgentOutputEntry; sessionID?: string } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const event = parsed as CopilotEvent;
+  const type = typeof event.type === "string" ? event.type : "";
+  if (!type) return null;
+  const data = event.data ?? {};
+  const sessionID = typeof event.sessionId === "string" && event.sessionId
+    ? event.sessionId
+    : undefined;
+
+  // Copilot sends streamed deltas before the final assistant.message. Retain
+  // the complete message only so every response has one transcript entry.
+  if (type === "assistant.message_delta") return { sessionID };
+  if (type === "assistant.message") {
+    const text = typeof data.content === "string" ? data.content : "";
+    return text ? { entry: { type: "text", text }, sessionID } : { sessionID };
+  }
+
+  if (type === "tool.execution_start") {
+    const tool = typeof data.toolName === "string"
+      ? data.toolName
+      : typeof data.tool === "string"
+        ? data.tool
+        : "";
+    if (!tool) return { sessionID };
+    const input = toolInputText(data.arguments ?? data.input);
+    return {
+      entry: { type: "tool", tool, ...(input ? { input } : {}), state: "running" },
+      sessionID,
+    };
+  }
+
+  if (type === "tool.execution_complete") {
+    const tool = typeof data.toolName === "string"
+      ? data.toolName
+      : typeof data.tool === "string"
+        ? data.tool
+        : "tool";
+    const input = toolInputText(data.arguments ?? data.input);
+    const output = copilotText(data.result ?? data.output ?? data.error);
+    return {
+      entry: {
+        type: "tool",
+        tool,
+        ...(input ? { input } : {}),
+        ...(output ? { output } : {}),
+        ...(data.error ? { state: "error" } : { state: "completed" }),
+      },
+      sessionID,
+    };
+  }
+
+  if (type === "error" || type.endsWith(".error")) {
+    const message = copilotText(data.error ?? data.message ?? data);
+    return message ? { entry: { type: "sys", d: `error: ${message}` }, sessionID } : { sessionID };
+  }
+
+  // `result` contains the stable session id used by --resume. All other
+  // session/model/MCP lifecycle events are deliberately voiceless.
+  if (
+    type === "result" ||
+    type.startsWith("session.") ||
+    type.startsWith("model.") ||
+    type.startsWith("mcp.")
+  ) return { sessionID };
+  return null;
+}
+
 /** Byte estimate of one entry, for the transcript cap. */
 function entryBytes(e: AgentOutputEntry): number {
   const legacy = e as { d?: string };
@@ -616,13 +727,13 @@ export function deriveBranch(title: string): string {
 
 /** Resolve the enabled `engineer` agent, or null when none is configured. */
 export function resolveEngineer(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 }
 
 /** Resolve the enabled `pm` agent, or null when none is configured. */
 export function resolvePmAgent(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "pm") ?? null;
 }
 
@@ -634,7 +745,7 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * into `repoos.toml`, and null here means "no agent review runs".
  */
 export function resolveReviewer(config: RepoOSConfig): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
 }
 
@@ -657,7 +768,7 @@ export function resolveAgentForTask(
   task: Task,
   role: string = "engineer",
 ): Agent | null {
-  const list = config.agents?.length ? config.agents : DEFAULT_AGENTS;
+  const list = agentsForConfig(config);
   const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
@@ -674,6 +785,13 @@ export function resolveAgentForTask(
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
     ...(task.modelOverride ? { model: task.modelOverride } : {}),
   };
+}
+
+/** Resolve the enabled built-in repository assistant. */
+export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
+  return agentsForConfig(config).find(
+    (agent) => agent.enabled && agent.name.toLowerCase() === "repoos guide",
+  ) ?? null;
 }
 
 /**
@@ -718,6 +836,29 @@ function modelArgs(cli: string, model: string): string[] {
   return ["--model", model];
 }
 
+const COPILOT_TOOL_PERMISSIONS = [
+  "--allow-tool", "write",
+  "--allow-tool", "shell(bun:*)",
+  "--allow-tool", "shell(node:*)",
+  "--allow-tool", "shell(npm:*)",
+  "--allow-tool", "shell(npx:*)",
+  "--allow-tool", "shell(git:*)",
+  "--allow-tool", "shell(curl:*)",
+  "--allow-tool", "shell(ls)",
+  "--allow-tool", "shell(cat)",
+] as const;
+
+function copilotArgs(options: { write: boolean }): string[] {
+  return [
+    "--output-format", "json",
+    "--no-ask-user",
+    "--no-auto-update",
+    "--no-remote",
+    "--no-remote-export",
+    ...(options.write ? COPILOT_TOOL_PERMISSIONS : []),
+  ];
+}
+
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   if (cli === "claude code") {
@@ -739,6 +880,12 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
   }
   if (cli === "codex") {
     return { cmd: "codex", args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"] };
+  }
+  if (cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ write: true })],
+    };
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
@@ -799,13 +946,27 @@ function resumeCommand(
       cmd: "codex",
       args: [
         "exec",
-        "resume",
-        ...(sessionId ? [sessionId] : ["--last"]),
-        text,
-        ...modelArgs(cli, model),
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        ...modelArgs(cli, model),
+        "--json",
+        ...(sessionId ? [sessionId] : ["--last"]),
+        text,
+      ],
+    };
+  }
+  if (cli === "github copilot") {
+    // Never use --continue here: it could attach a different task's most
+    // recent Copilot session. Without a saved id, start a fresh safe turn.
+    return {
+      cmd: "copilot",
+      args: [
+        "-p",
+        text,
+        ...(sessionId ? [`--resume=${sessionId}`] : []),
+        ...modelArgs(cli, model),
+        ...copilotArgs({ write: true }),
       ],
     };
   }
@@ -822,6 +983,30 @@ function resumeCommand(
       text,
     ],
   };
+}
+
+/** Build the read-only mission used by the persistent repository chat. */
+export function repoGuidePrompt(
+  question: string,
+  repositoryContext: string,
+  agent: Agent,
+): string {
+  return `You are RepoOS Guide, the always-available assistant for the repository in your current working directory.
+
+${agent.instructions ?? "Answer questions about RepoOS and this repository."}
+
+Rules:
+- Answer the user's question directly and concisely.
+- Ground answers in the repository context below and inspect repository files when useful.
+- You may read files and run read-only discovery commands. Never edit files, change task status, commit, launch servers, or start agents.
+- When discussing tasks, include task IDs and current statuses when relevant.
+- If the repository does not support a claim, say what you could not verify.
+
+Current repository context:
+${repositoryContext}
+
+User question:
+${question}`;
 }
 
 /** The mission handed to the coding agent: instructions + task pointer. */
@@ -909,6 +1094,15 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
   if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt, ...extra] };
   if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
   if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      // One-shot callers (PM/freeform and model probes) consume the final
+      // response, not the streaming transcript. Keep JSONL exclusive to the
+      // AgentRunner so freeform task parsing receives markdown.
+      args: ["-p", prompt, ...extra, "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
+    };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -940,6 +1134,12 @@ export function reviewCommand(
   }
   if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
   if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+    };
+  }
   return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
 }
 
@@ -1180,6 +1380,35 @@ export class AgentRunner {
     return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
   }
 
+  /** Start the persistent, non-task repository conversation. */
+  startChat(
+    sessionId: string,
+    text: string,
+    agent: Agent,
+    repositoryContext: string,
+  ): StartResult {
+    if (this.entries.has(sessionId)) {
+      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
+    }
+    if (this.sessions.has(sessionId)) {
+      return { ok: false, reason: "conversation already exists — send a follow-up instead" };
+    }
+    const human: AgentOutputEntry = { type: "human", text };
+    const session: Session = {
+      lines: [human],
+      pending: "",
+      bytes: entryBytes(human),
+      workdir: this.config.root,
+      engine: engineForCli(agent.cli),
+      accumulatedMs: 0,
+      stalledEmitted: false,
+    };
+    this.sessions.set(sessionId, session);
+    const mission = repoGuidePrompt(text, repositoryContext, agent);
+    const { cmd, args } = cliCommand(agent, mission, this.config.root);
+    return this.spawnTurn(sessionId, cmd, args, this.config.root);
+  }
+
   /**
    * Send a follow-up message to a task's session, resuming the same
    * conversation as a new turn. Rejected when the task has no session yet
@@ -1191,13 +1420,17 @@ export class AgentRunner {
     agent: Agent,
     opts: { resumePreamble?: string } = {},
   ): StartResult {
-    const session = this.sessions.get(taskId);
+    // Completed/non-task conversations are deliberately not preloaded at boot.
+    // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
+    // after a server reload instead of being visible-but-unsendable.
+    const session = this.sessions.get(taskId) ?? this.loadSession(taskId);
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
     if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
+    this.sessions.set(taskId, session);
     const entry: AgentOutputEntry = { type: "human", text };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
@@ -1338,6 +1571,10 @@ export class AgentRunner {
       this.appendClaudeLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "copilot") {
+      this.appendCopilotLine(taskId, session, raw);
+      return;
+    }
 
     const parsed =
       stream === "out" && session.engine === "opencode"
@@ -1463,6 +1700,28 @@ export class AgentRunner {
     this.lineTouched(taskId, session, raw);
   }
 
+  /** Copilot's JSONL branch; unlike Claude, tool start/finish events stand alone. */
+  private appendCopilotLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseCopilotEvent(raw);
+    if (!parsed) {
+      this.recordEntry(taskId, session, "out", { s: "out", d: raw });
+      this.tryExtractSessionId(raw, session);
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.entry) {
+      if (this.isHandoffSignal(raw, parsed.entry)) {
+        const running = this.entries.get(taskId);
+        if (running) running.handoffRequested = true;
+        this.recordEntry(taskId, session, "out", { s: "sys", d: "✓ agent requested server-side handoff" });
+      } else {
+        this.recordEntry(taskId, session, "out", parsed.entry);
+      }
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
   /** The transcript entry for a tool_use whose result never arrived. */
   private pendingToolEntry(pending: { name: string; input?: string }): AgentOutputEntry {
     return {
@@ -1475,7 +1734,25 @@ export class AgentRunner {
   /** Recognize the exact capability-request signal in plain or structured output. */
   private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
     if (raw.trim() === HANDOFF_READY_SIGNAL) return true;
-    return "type" in entry && entry.type === "text" && entry.text.trim() === HANDOFF_READY_SIGNAL;
+    if (
+      "type" in entry &&
+      entry.type === "text" &&
+      entry.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL)
+    ) return true;
+    // Codex --json wraps the final assistant response in an item.completed
+    // event. The signal is therefore inside item.text, not a standalone line.
+    try {
+      const event = JSON.parse(raw) as {
+        type?: unknown;
+        item?: { type?: unknown; text?: unknown };
+      };
+      return event.type === "item.completed" &&
+        event.item?.type === "agent_message" &&
+        typeof event.item.text === "string" &&
+        event.item.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -1666,7 +1943,10 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        (value.engine !== "opencode" && value.engine !== "plain") ||
+        (value.engine !== "opencode" &&
+          value.engine !== "claude" &&
+          value.engine !== "copilot" &&
+          value.engine !== "plain") ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||

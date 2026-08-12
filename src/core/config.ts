@@ -9,12 +9,20 @@ import type { Agent, RepoOSConfig, Status, Assignee, Theme, UiTheme } from "./ty
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
-export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "codex"] as const;
+export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "codex", "github copilot"] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
 /** Built-in agents, seeded at runtime when the config has none. */
 export const DEFAULT_AGENTS: Agent[] = [
+  {
+    name: "RepoOS Guide",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: true,
+    instructions:
+      "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state.",
+  },
   {
     name: "engineer",
     cli: "opencode",
@@ -43,6 +51,24 @@ export const DEFAULT_AGENTS: Agent[] = [
 
 /** Default agent names — these are seeded and cannot be removed. */
 export const DEFAULT_AGENT_NAMES = DEFAULT_AGENTS.map((a) => a.name);
+
+const REPO_GUIDE_NAME = "RepoOS Guide";
+
+/**
+ * Add RepoOS Guide to an existing stored agent list without replacing user
+ * edits. The other defaults deliberately are not re-seeded: a user may have
+ * removed one of those roles from an older configuration.
+ */
+export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
+  const stored = Array.isArray(config.agents) ? config.agents : [];
+  if (!stored.length) return DEFAULT_AGENTS.map((agent) => ({ ...agent }));
+  const names = new Set(stored.map((agent) => agent.name.toLowerCase()));
+  const guide = DEFAULT_AGENTS.find((agent) => agent.name === REPO_GUIDE_NAME);
+  return [
+    ...stored.map((agent) => ({ ...agent })),
+    ...(guide && !names.has(REPO_GUIDE_NAME.toLowerCase()) ? [{ ...guide }] : []),
+  ];
+}
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",

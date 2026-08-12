@@ -88,7 +88,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     id: "copilot",
     name: "github copilot",
     binary: "copilot",
-    drivable: false,
+    drivable: true,
     installHint: "npm i -g @github/copilot",
   },
   {

@@ -35,6 +35,8 @@ export interface Task {
   tags: string[];
   created_at: string | null;
   updated_at: string | null;
+  /** Successful review-to-done merge timestamp, or null when not released. */
+  releasedAt?: string | null;
   path: string;
   absPath: string;
   body: string;

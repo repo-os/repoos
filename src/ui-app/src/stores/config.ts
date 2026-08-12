@@ -204,23 +204,11 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
-  async function save(): Promise<void> {
+  async function save(body: Record<string, unknown>): Promise<void> {
     saving.value = true;
     msg.value = "";
     error.value = "";
     try {
-      const body: Record<string, unknown> = {};
-      for (const f of schema.value) {
-        if (f.tier === "guarded" && !showAdvanced.value) continue;
-        let val = form[f.key];
-        if (f.type === "array" && typeof val === "string") {
-          val = val
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-        }
-        body[f.key] = val;
-      }
       await api("/api/config", JSON_OPTS("PATCH", body));
       const needsRestart = Object.keys(body).some((k) => {
         const f = schema.value.find((x) => x.key === k);
@@ -236,6 +224,7 @@ export const useConfigStore = defineStore("config", () => {
       applyUiTheme(String(res.config.uiTheme ?? "classic"));
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
+      throw err;
     } finally {
       saving.value = false;
     }

@@ -18,11 +18,30 @@ const dOf = (entry: AgentOutputEntry): string | undefined =>
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+const path = require("path");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+if (path.basename(process.argv[1]) === "copilot") {
+  process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_complete", data: { toolName: "shell", arguments: { command: "git status" }, result: "clean" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "result", sessionId: "copilot-session-123" }) + "\\n");
+  process.exit(0);
+}
+const resumeIndex = args.indexOf("resume");
+if (path.basename(process.argv[1]) === "codex" && resumeIndex !== -1) {
+  const sandboxIndex = args.indexOf("--sandbox");
+  if (sandboxIndex > resumeIndex) {
+    process.stderr.write("error: unexpected argument '--sandbox' found\\n");
+    process.exit(2);
+  }
+  process.stdout.write("received resume prompt: " + args.at(-1) + "\\n");
+}
 process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
 if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
+if (process.env.REPOOS_FAKEBIN_CODEX_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
+if (process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "text", sessionID: "sess-123", part: { type: "text", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
 if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
@@ -47,7 +66,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode", "copilot"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -118,9 +137,17 @@ function spawns(fx: Fixture): SpawnRecord[] {
   return text.split("\n").map((l) => JSON.parse(l) as SpawnRecord);
 }
 
+function expectCodexExecOptionsBeforeResume(args: string[]): void {
+  const resumeIndex = args.indexOf("resume");
+  expect(resumeIndex).toBeGreaterThan(0);
+  expect(args.indexOf("--sandbox")).toBeLessThan(resumeIndex);
+}
+
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -130,19 +157,29 @@ describe("model-aware driver commands", () => {
     ["claude code", "claude"],
     ["qwen code", "qwen"],
     ["codex", "codex"],
+    ["github copilot", "copilot"],
   ])("forwards an explicit model for %s", (cli, binary) => {
     const command = promptCommand({ ...agent(cli), model: "provider/model-x" }, "ping");
     expect(command.cmd).toBe(binary);
     expect(command.args).toEqual(expect.arrayContaining(["--model", "provider/model-x"]));
   });
 
-  it.each(["opencode", "claude code", "qwen code", "codex"])(
+  it.each(["opencode", "claude code", "qwen code", "codex", "github copilot"])(
     "omits the model flag for %s default",
     (cli) => {
       const command = promptCommand({ ...agent(cli), model: "default" }, "ping");
       expect(command.args).not.toContain("--model");
     },
   );
+
+  it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {
+    const command = promptCommand(agent("github copilot"), "write a task file");
+    expect(command).toEqual({
+      cmd: "copilot",
+      args: expect.arrayContaining(["-p", "write a task file", "--no-ask-user"]),
+    });
+    expect(command.args).not.toContain("--output-format");
+  });
 });
 
 describe("qwen code driver", () => {
@@ -223,7 +260,7 @@ describe("qwen code driver", () => {
 });
 
 describe("codex driver", () => {
-  it("spawns exec args, streams output, and resumes by session id", async () => {
+  it("sends and streams a follow-up using a known session id", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -246,21 +283,28 @@ describe("codex driver", () => {
       );
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
-      runner.send("0001", "continue the work", agent("codex"));
+      runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
       await waitFor(() => spawns(fx).length === 2, "codex resume spawn");
       await waitFor(() => !runner.isRunning("0001"), "resume turn exit");
 
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "resume",
-        "sess-123",
-        "continue the work",
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        "--model",
+        "gpt-5.6",
+        "--json",
+        "sess-123",
+        "continue the work",
       ]);
+      expectCodexExecOptionsBeforeResume(resume.args);
+      expect(resume.args.filter((arg) => arg === "sess-123")).toHaveLength(1);
       expect(resume.cwd).toBe(realpathSync(cwd));
+      expect(runner.output("0001")!.lines.map(dOf)).toContain(
+        "received resume prompt: continue the work",
+      );
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -284,13 +328,16 @@ describe("codex driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "resume",
-        "--last",
-        "keep going",
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        "--json",
+        "--last",
+        "keep going",
       ]);
+      expectCodexExecOptionsBeforeResume(resume.args);
+      expect(resume.args.filter((arg) => arg === "--last")).toHaveLength(1);
+      expect(resume.args).not.toContain("--model");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -341,6 +388,45 @@ describe("claude code driver", () => {
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();
     }
+  });
+
+  describe("GitHub Copilot CLI driver", () => {
+    it("uses JSONL, narrow permissions, and an extracted session id for resume", async () => {
+      const fx = makeFixture();
+      const oldPath = withFakePath(fx);
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      try {
+        const runner = new AgentRunner(config(fx.bin), () => {});
+        const cwd = join(fx.bin, "wt", "copilot");
+        mkdirSync(cwd, { recursive: true });
+        runner.start(TASK, "feat/x", agent("github copilot"), { cwd });
+        await waitFor(() => !runner.isRunning("0001"), "Copilot first-turn exit");
+
+        expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
+        expect(runner.output("0001")!.lines).toEqual(expect.arrayContaining([
+          { type: "text", text: "Copilot response" },
+          { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+        ]));
+        const [run] = spawns(fx);
+        expect(run.args).toEqual(expect.arrayContaining([
+          "-p", "--output-format", "json", "--no-ask-user",
+          "--allow-tool", "write", "shell(git:*)",
+        ]));
+        expect(run.args).not.toEqual(expect.arrayContaining(["--allow-all", "--allow-all-tools", "--yolo"]));
+        expect(run.cwd).toBe(realpathSync(cwd));
+
+        runner.send("0001", "continue the work", agent("github copilot"));
+        await waitFor(() => spawns(fx).length === 2, "Copilot resume spawn");
+        const [, resume] = spawns(fx);
+        expect(resume.args).toEqual(expect.arrayContaining([
+          "-p", "continue the work", "--resume=copilot-session-123", "--output-format", "json",
+        ]));
+      } finally {
+        process.env.PATH = oldPath;
+        delete process.env.REPOOS_FAKEBIN_LOG;
+        fx.clean();
+      }
+    });
   });
 });
 
@@ -488,6 +574,44 @@ describe("server-owned handoff mission (#0094)", () => {
 });
 
 describe("structured runner handoff (#0094)", () => {
+  it("recognizes the handoff signal inside a multiline OpenCode text event", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("recognizes the handoff signal inside a Codex JSON agent_message", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_CODEX_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "Codex JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("issues one scoped request after a successful initial or resumed turn", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);

@@ -111,7 +111,7 @@ describe("parseLiveModels", () => {
 describe("MODEL_SOURCES registry", () => {
   it("keys adapters by Agent.cli", () => {
     expect(Object.keys(MODEL_SOURCES)).toEqual(
-      expect.arrayContaining(["opencode", "claude code", "qwen code", "codex"]),
+      expect.arrayContaining(["opencode", "claude code", "qwen code", "codex", "github copilot"]),
     );
   });
 
@@ -119,6 +119,7 @@ describe("MODEL_SOURCES registry", () => {
     expect(MODEL_SOURCES.opencode.supported).toBe(true);
     expect(MODEL_SOURCES["claude code"].supported).toBe(false);
     expect(MODEL_SOURCES.codex.supported).toBe(true);
+    expect(MODEL_SOURCES["github copilot"].supported).toBe(true);
   });
 });
 
