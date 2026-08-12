@@ -89,6 +89,9 @@ interface CardHint {
 
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
+  if (t.status === "review" && repo.reviewFor(t.id)?.running) {
+    return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
+  }
   if (t.status === "active" || t.status === "review") {
     if (repo.isRunning(t.id)) {
       return { label: "running", title: "agent running — click to watch the session", cls: "tc-run" };
@@ -117,6 +120,7 @@ const isLaunchAction = computed(
 
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
+  if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
   // A dirty worktree means restarting would either resume prior work or
   // discard it — surface that choice instead of starting silently.
   if (isLaunchAction.value && props.task.git?.dirty) {
@@ -164,6 +168,7 @@ async function openAgent(): Promise<void> {
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
       running: repo.isRunning(task.id),
+      reviewing: task.status === 'review' && repo.reviewFor(task.id)?.running,
       'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
@@ -200,6 +205,7 @@ async function openAgent(): Promise<void> {
         @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
       >
         <ActivityIndicator v-if="hint.cls === 'tc-run'" />
+        <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
         {{ hint.label }}
       </span>
       <span
@@ -215,8 +221,8 @@ async function openAgent(): Promise<void> {
         <button
           class="tc-btn"
           :class="action.variant"
-          :disabled="busy"
-          :title="action.title"
+          :disabled="busy || (task.status === 'review' && repo.reviewFor(task.id)?.running)"
+          :title="task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : action.title"
           @click.stop="runAction"
         >
           <svg viewBox="0 0 24 24" fill="none">

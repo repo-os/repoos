@@ -309,6 +309,32 @@ describe("agent running state", () => {
   });
 });
 
+describe("automatic review state", () => {
+  it("hydrates review activity from the index and updates it through SSE", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const reviewing = makeTask({
+      status: "review",
+      automaticReview: { running: true, enabled: true },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index")) return json({ tasks: [reviewing], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review")) return json({ ok: true, running: false, enabled: true, review: null });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.reviewFor("0001")).toMatchObject({ running: true, enabled: true });
+
+    const es = FakeEventSource.instances[0];
+    es.emit("review", { type: "review", id: "0001", state: "failed", at: "2026-08-12T00:00:00Z", error: "boom" });
+    await Promise.resolve();
+    expect(repo.reviewFor("0001")).toMatchObject({ running: false, enabled: true });
+  });
+});
+
 describe("preview state", () => {
   it("updates a task's preview on start and clears it on stop", async () => {
     const repo = useRepoStore();

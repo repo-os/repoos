@@ -2,19 +2,20 @@
 id: "0120"
 title: Show automatic review in progress and block move-to-done until it finishes
 type: feature
-status: ready
+status: review
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/show-automatic-review-in-progress-and-bl
 model_override: gpt-5.6-terra
 created_at: "2026-08-12T05:13:23Z"
-updated_at: "2026-08-12T05:19:41Z"
+updated_at: "2026-08-12T05:30:32Z"
 ---
 ## Activity
 
 - 2026-08-12T05:13:23Z · created · unknown
+- 2026-08-12T05:30:32Z · status active→review · repoos check green (310 tests and UI smoke)
 
 
 ## Problem

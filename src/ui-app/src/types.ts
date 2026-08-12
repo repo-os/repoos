@@ -9,6 +9,14 @@ export interface PreviewInfo {
   startedAt: string;
 }
 
+/** Lightweight automatic-review state included with indexed tasks. */
+export interface AutomaticReview {
+  /** True only while the configured reviewer is actively inspecting this task. */
+  running: boolean;
+  /** Whether automatic review is configured at all. */
+  enabled: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -47,6 +55,8 @@ export interface Task {
   };
   /** Running preview of this task's worktree, or null when stopped. */
   preview: PreviewInfo | null;
+  /** Server-authoritative automatic-review activity, refreshed with the index. */
+  automaticReview?: AutomaticReview;
 }
 
 export interface Health {

@@ -153,6 +153,14 @@ async function getReview(server: ServerHandle, id: string): Promise<ReviewRespon
   return (await res.json()) as ReviewResponse;
 }
 
+async function waitForReviewRunning(server: ServerHandle, id: string, running: boolean): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  while ((await getReview(server, id)).running !== running) {
+    if (Date.now() > deadline) throw new Error(`timed out waiting for review running=${running}`);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
 /** Run `fn` with the fixture's fake binaries on PATH and the server booted. */
 async function withServer(
   fx: Fixture,
@@ -303,6 +311,29 @@ ${printReport}`,
       expect(served.review?.markdown).toContain("boom");
       // A failed review never blocks or moves the human's task.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+    });
+  });
+
+  it("rejects move-to-done while automatic review is still running without cancelling it", async () => {
+    const fx = makeFixture(`setTimeout(() => { ${printReport} }, 500);`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Wait for reviewer");
+      // The review's process itself is the authoritative in-flight signal;
+      // wait for it so this assertion cannot race the trigger.
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await waitForReviewRunning(server, task.id, true);
+
+      const index = await api(server, "GET", "/api/index");
+      const indexed = (index.body.tasks as Array<Record<string, unknown>>).find((t) => t.id === task.id);
+      expect(indexed?.automaticReview).toEqual({ running: true, enabled: true });
+
+      const blocked = await api(server, "POST", `/api/tasks/${task.id}/done`);
+      expect(blocked.status).toBe(409);
+      expect(blocked.body.error).toMatch(/automatic review to finish/i);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+
+      await waitForReviewRunning(server, task.id, false);
+      expect((await getReview(server, task.id)).review?.state).toBe("ok");
     });
   });
 

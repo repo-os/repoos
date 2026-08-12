@@ -338,6 +338,7 @@
   .tc-foot svg{width:11px;height:11px}
   .tc-hint{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;cursor:help}
   .task-card.running{border-color:var(--violet-border-tint)}
+  .task-card.reviewing{border-color:var(--amber-tint)}
   .task-card[draggable="true"]{cursor:grab}
   .task-card[draggable="true"]:hover{cursor:grab}
   .task-card.dragging{opacity:.35;transform:scale(.97);cursor:grabbing;box-shadow:none}
@@ -345,6 +346,7 @@
   .task-card.has-action .tc-actions{margin-left:auto}
   .tc-actions{display:flex;align-items:center;gap:6px}
   .tc-run{color:var(--violet)}
+  .tc-reviewing{color:var(--amber)}
   .tc-run::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 6px var(--violet);animation:tcpulse 1.1s ease-in-out infinite}
   .task-card .tc-run::before{display:none}
   .tc-needs-input{color:var(--amber)}
@@ -373,8 +375,10 @@
   /* activity indicator — theme-aware pulsing dots (0049) */
   .ai{display:inline-flex;align-items:center;gap:4px;flex:none;vertical-align:middle}
   .ai-dot{width:5px;height:5px;border-radius:50%;background:var(--violet);box-shadow:var(--dot-glow);animation:ai-bounce 1.2s ease-in-out infinite}
+  .ai-reviewing .ai-dot{background:var(--amber);box-shadow:0 0 7px var(--amber);animation-name:review-sweep}
   .ai-md .ai-dot{width:7px;height:7px}
   @keyframes ai-bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-3px);opacity:1}}
+  @keyframes review-sweep{0%,100%{transform:scale(.7);opacity:.35}50%{transform:scale(1.15);opacity:1}}
 
   /* freeform PM-agent live stream (0049) */
   .ff-stream{margin-top:14px;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--panel)}

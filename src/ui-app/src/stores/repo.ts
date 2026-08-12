@@ -351,6 +351,19 @@ export const useRepoStore = defineStore("repo", () => {
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
     }));
+    // Index hydration is the recovery path after reconnecting while a review
+    // was running. Reports remain lazy-loaded by the drawer, but cards get
+    // their live activity state immediately.
+    const hydratedReviews: Record<string, ReviewState> = {};
+    for (const task of idx.tasks) {
+      if (!task.automaticReview) continue;
+      hydratedReviews[task.id] = {
+        running: task.automaticReview.running,
+        enabled: task.automaticReview.enabled,
+        report: reviews.value[task.id]?.report ?? null,
+      };
+    }
+    reviews.value = { ...reviews.value, ...hydratedReviews };
     Object.assign(counts, idx.counts);
   }
 

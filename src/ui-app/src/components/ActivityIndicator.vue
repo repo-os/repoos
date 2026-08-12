@@ -1,12 +1,14 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ size?: "sm" | "md"; dots?: number }>(), {
+withDefaults(defineProps<{ size?: "sm" | "md"; dots?: number; label?: string; variant?: "working" | "reviewing" }>(), {
   size: "sm",
   dots: 3,
+  label: "Working…",
+  variant: "working",
 });
 </script>
 
 <template>
-  <span class="ai" :class="size === 'md' ? 'ai-md' : 'ai-sm'" role="status" aria-label="Working…">
+  <span class="ai" :class="[size === 'md' ? 'ai-md' : 'ai-sm', `ai-${variant}`]" role="status" :aria-label="label">
     <span
       v-for="n in dots"
       :key="n"

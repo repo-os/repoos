@@ -279,7 +279,7 @@ const doneProgress = computed(() => {
 });
 
 async function moveToDone(): Promise<void> {
-  if (!ui.active) return;
+  if (!ui.active || review.value?.running) return;
   ui.saving = true;
   doingDone.value = true;
   doneFailure.value = null;
@@ -1261,13 +1261,15 @@ function resetFreeformOverrides(): void {
             <Button
               variant="default"
               class="w-full"
-              :disabled="ui.saving"
+              :disabled="ui.saving || review?.running"
+              :title="review?.running ? 'Waiting for automatic review to finish.' : undefined"
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone" class="size-3.5" />
               <ActivityIndicator v-else />
               {{ doingDone ? doneProgress : "Move to done" }}
             </Button>
+            <p v-if="review?.running" class="review-hint">Waiting for automatic review to finish.</p>
             <div
               v-if="doneFailure"
               class="done-failure"
@@ -1292,8 +1294,8 @@ function resetFreeformOverrides(): void {
           </div>
           <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
             <label>Agent review</label>
-            <div v-if="review?.running" class="review-running">
-              <ActivityIndicator /> the review agent is inspecting this task…
+            <div v-if="review?.running" class="review-running" role="status">
+              <ActivityIndicator variant="reviewing" label="Reviewing…" /> Reviewing… the automatic review agent is inspecting this task.
             </div>
             <template v-else-if="review?.report">
               <div class="review-meta">

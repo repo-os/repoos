@@ -538,6 +538,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Advisory only — it never moves a task to `done`.
   const reviews = new ReviewManager(config, emitEvent);
 
+  // Review activity is transient server state, not task-file frontmatter. Add
+  // its small authoritative summary to index-shaped API responses so a board
+  // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
+  const withReviewStatus = <T extends Task>(task: T): T & {
+    automaticReview: { running: boolean; enabled: boolean };
+  } => ({
+    ...task,
+    automaticReview: {
+      running: reviews.isRunning(task.id),
+      enabled: reviews.enabled(),
+    },
+  });
+
   // Tasks that landed in `review` while their engineer turn was still winding
   // down. Reviewing a worktree an agent is still committing to would report on
   // a half-written state, so the review waits for `agent.exited`.
@@ -824,13 +837,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (status && !(STATUSES as readonly string[]).includes(status)) {
           return json(res, 400, { error: `Invalid status "${status}"` });
         }
-        return json(res, 200, index.getTasks(status ?? undefined));
+        return json(res, 200, index.getTasks(status ?? undefined).map(withReviewStatus));
       }
       if (path === "/api/counts" && method === "GET") {
         return json(res, 200, index.counts());
       }
       if (path === "/api/index" && method === "GET") {
-        return json(res, 200, index.snapshot());
+        const snapshot = index.snapshot();
+        return json(res, 200, {
+          ...snapshot,
+          tasks: snapshot.tasks.map(withReviewStatus),
+        });
       }
       if (path === "/api/docs" && method === "GET") {
         return json(res, 200, listDocs(config));
@@ -895,7 +912,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (taskMatch && method === "GET") {
         const t = index.getTask(taskMatch[1]);
         return t
-          ? json(res, 200, { ...t, preview: previews.get(t.id) ?? null })
+          ? json(res, 200, { ...withReviewStatus(t), preview: previews.get(t.id) ?? null })
           : json(res, 404, { error: `Task #${taskMatch[1]} not found` });
       }
 
@@ -1206,6 +1223,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (runner.isRunning(id)) {
             return json(res, 409, {
               error: `Task #${id} has an agent turn in progress`,
+            });
+          }
+          // A reviewer reads this worktree and its report is part of the
+          // human sign-off decision. Do this check before stopping previews,
+          // cancelling processes, or beginning any close-out work.
+          if (reviews.isRunning(id)) {
+            return json(res, 409, {
+              error: `Task #${id} is waiting for automatic review to finish`,
             });
           }
           // The merge removes the worktree, so the preview of it must die first.
