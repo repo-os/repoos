@@ -498,6 +498,7 @@ function missionFor(
     "1. Read the task file and implement what it describes.",
     "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before requesting handoff.",
     "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
+    "   RepoOS commits only source, work, docs, and config files to the branch — never `dist/` or `screenshots/`; build artifacts created by `repoos check` stay local.",
     `4. When the implementation is ready, finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
     "5. Stop. RepoOS will independently run `repoos check`, commit the implementation, set the worktree task to review, and update the canonical board copy.",
     "",

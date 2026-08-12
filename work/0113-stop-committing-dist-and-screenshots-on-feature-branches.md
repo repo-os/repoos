@@ -2,12 +2,13 @@
 id: "0113"
 title: Stop committing dist/ and screenshots/ on feature branches to eliminate merge conflicts
 type: chore
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
+needs_input: true
 created_by: ""
-branch: ""
+branch: feat/stop-committing-dist-and-screenshots-on-
 created_at: "2026-08-12T04:40:00Z"
 updated_at: "2026-08-12T04:10:06Z"
 ---
@@ -64,3 +65,5 @@ dist/screenshots conflict resolution.
 ## Activity
 
 - 2026-08-12T04:10:06Z · status inbox→ready
+- 2026-08-12T04:11:49Z · status ready→active, branch
+- 2026-08-12T04:26:00Z · implementation verified; handoff blocked because shared Git metadata and the canonical board are outside the agent sandbox
