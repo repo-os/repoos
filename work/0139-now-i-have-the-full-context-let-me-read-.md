@@ -2,16 +2,15 @@
 id: "0139"
 title: "feature: add new task button to control page"
 type: feature
-status: ready
+status: review
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/feature-add-new-task-button-to-control-p
 created_at: "2026-08-12T12:09:39Z"
-updated_at: "2026-08-13T00:00:00Z"
+updated_at: "2026-08-12T18:37:12Z"
 ---
-
 ## Description
 
 The "New task" button currently exists only on the Work page (`/work`). Since the Control page (`/`) is the default landing page and the first thing users see when opening RepoOS, users who want to create a task must navigate away from Control to find the button. This adds unnecessary friction to the task creation workflow.
@@ -64,3 +63,4 @@ Add an identical "New task" button to the upper right corner of the Control page
 
 - 2026-08-12T12:09:39Z · created · unknown
 - 2026-08-13T00:00:00Z · fleshed out and moved to ready
+- 2026-08-12T18:37:12Z · status ready→review, branch
