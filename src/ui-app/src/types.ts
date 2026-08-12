@@ -61,6 +61,20 @@ export interface Task {
   automaticReview?: AutomaticReview;
 }
 
+/** One persisted screenshot attached to a task (0123). */
+export interface ScreenshotMeta {
+  /** 1-based index within the task's attachment folder. */
+  id: string;
+  /** Original file name (sanitized). */
+  name: string;
+  /** Repo-relative path, e.g. "work/.attachments/0123/screenshot-1.png". */
+  path: string;
+  /** API URL the UI can load the image from. */
+  url: string;
+  size: number;
+  mime: string;
+}
+
 export interface Health {
   ok: boolean;
   root: string;

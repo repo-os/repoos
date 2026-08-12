@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
-import { useUiStore } from "./ui";
+import { useUiStore, type PendingScreenshot } from "./ui";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -11,6 +11,7 @@ import type {
   RepoIndex,
   ReviewReport,
   ReviewState,
+  ScreenshotMeta,
   Status,
   SystemStats,
   Task,
@@ -599,6 +600,18 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
 
+  /** Persist one pending screenshot on an existing task (0123). */
+  async function uploadScreenshot(
+    taskId: string,
+    s: PendingScreenshot,
+  ): Promise<{ ok: true; attachment: ScreenshotMeta }> {
+    const data = s.dataUrl.split(",")[1] ?? "";
+    return api<{ ok: true; attachment: ScreenshotMeta }>(
+      `/api/tasks/${taskId}/attachments`,
+      JSON_OPTS("POST", { name: s.name, mime: s.mime, data }),
+    );
+  }
+
   /**
    * Freeform create: routes the explanation through the PM agent server-side.
    * `runId` (optional) tags the streamed `agent.output` events the server
@@ -695,6 +708,7 @@ export const useRepoStore = defineStore("repo", () => {
     setStatus,
     patchTask,
     createTask,
+    uploadScreenshot,
     createFreeformTask,
     deleteTask,
     isRunning,

@@ -33,6 +33,9 @@
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
  *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
+ *   POST /api/tasks/:id/attachments   -> attach a screenshot { name, mime, data(base64) };
+ *                                        records a `## Screenshots` section in the task body
+ *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
@@ -91,6 +94,12 @@ import { completeTask, type DoneStep } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import {
+  appendScreenshotsSection,
+  mimeForExtension,
+  resolveScreenshot,
+  saveScreenshot,
+} from "./attachments.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
@@ -1106,6 +1115,42 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, 400, { error: result.error ?? "could not start preview" });
         }
         return json(res, 200, { ok: true, port: result.port, url: result.url });
+      }
+
+      // ---- task screenshot attachments (0123) ----
+      const screenshotServeMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/);
+      if (screenshotServeMatch && method === "GET") {
+        const abs = resolveScreenshot(config, screenshotServeMatch[1], screenshotServeMatch[2]);
+        if (!abs) {
+          return json(res, 404, { error: "Attachment not found" });
+        }
+        const mime = mimeForExtension(abs);
+        res.writeHead(200, {
+          "Content-Type": mime ?? "application/octet-stream",
+          "Cache-Control": "no-cache",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(readFileSync(abs));
+        return;
+      }
+      const screenshotUploadMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments$/);
+      if (screenshotUploadMatch && method === "POST") {
+        const task = index.getTask(screenshotUploadMatch[1]);
+        if (!task) {
+          return json(res, 404, { error: `Task #${screenshotUploadMatch[1]} not found` });
+        }
+        const body = (await readBody(req)) as { name?: unknown; mime?: unknown; data?: unknown };
+        const result = saveScreenshot(config, task, body ?? {});
+        if ("error" in result) {
+          return json(res, 400, { error: result.error });
+        }
+        // Record the screenshot in the task body (before the Activity section),
+        // re-commit the task file, and push the change through the index.
+        const updated = patchTaskFile(config, task.absPath, {
+          body: appendScreenshotsSection(task.body, [result]),
+        });
+        index.applyFileChange(updated.absPath);
+        return json(res, 201, { ok: true, attachment: result });
       }
 
       // ---- writes ----
