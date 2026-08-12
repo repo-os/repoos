@@ -50,5 +50,4 @@ The filter applies only to the model dropdown — other selects in the UI (e.g. 
 
 - 2026-08-12T10:33:46Z · created · unknown
 - 2026-08-12T10:34:35Z · status inbox→ready
-- 2026-08-12T10:34:50Z · status ready→active, branch
-- 2026-08-12T10:50:18Z · status active→review
+- 2026-08-12T10:50:18Z · status active→review, branch

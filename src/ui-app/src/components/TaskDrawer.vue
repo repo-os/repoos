@@ -23,6 +23,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import SelectSearchGroup from "./SelectSearchGroup.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -1006,9 +1007,11 @@ function resetFreeformOverrides(): void {
                       <SelectValue placeholder="model" />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in freeformModelOptions" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                      </SelectViewport>
+                      <SelectSearchGroup :options="freeformModelOptions" #default="{ options }">
+                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                          <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                        </SelectViewport>
+                      </SelectSearchGroup>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1550,9 +1553,11 @@ function resetFreeformOverrides(): void {
                     <SelectValue placeholder="model" />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in modelOptions" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                    </SelectViewport>
+                    <SelectSearchGroup :options="modelOptions" #default="{ options }">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                      </SelectViewport>
+                    </SelectSearchGroup>
                   </SelectContent>
                 </Select>
               </div>
