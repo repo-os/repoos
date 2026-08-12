@@ -2,14 +2,14 @@
 id: "0140"
 title: Make screenshot regeneration adhoc at done-time (skip by default)
 type: chore
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
 created_by: ai
 branch: feat/make-screenshot-regeneration-adhoc-at-do
 created_at: "2026-08-12T13:00:00Z"
-updated_at: "2026-08-12T13:10:37Z"
+updated_at: "2026-08-12T13:22:25Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ For the vast majority of task close-outs, regenerating screenshots is pure waste
 
 - 2026-08-12T13:00:00Z · created · ai
 - 2026-08-12T13:10:37Z · status ready→active, branch
+- 2026-08-12T13:22:25Z · status active→review
