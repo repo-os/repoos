@@ -2,14 +2,14 @@
 id: "0132"
 title: Add search bar to model dropdowns
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T10:33:46Z"
-updated_at: "2026-08-12T10:33:46Z"
+updated_at: "2026-08-12T10:34:35Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ The filter applies only to the model dropdown — other selects in the UI (e.g. 
 ## Activity
 
 - 2026-08-12T10:33:46Z · created · unknown
+- 2026-08-12T10:34:35Z · status inbox→ready
