@@ -45,6 +45,5 @@ Every opencode agent session should report authoritative token counts and cost i
 
 ## Activity
 
-- 2026-08-12T13:10:20Z · status ready→active, branch
-- 2026-08-12T14:22:49Z · status active→review
+- 2026-08-12T22:10:00Z · status ready→review, branch
 - 2026-08-12T14:22:50Z · needs_merge
