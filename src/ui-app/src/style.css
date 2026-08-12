@@ -42,6 +42,7 @@
     --red-tint:rgba(255,107,125,0.14);
     --red-border-tint:rgba(255,107,125,0.25);
     --amber-tint:rgba(255,180,84,0.14);
+    --amber-border-tint:rgba(255,180,84,0.28);
     --violet-tint:var(--violet-dim);
     --violet-border-tint:rgba(157,123,255,0.25);
     --tag-stream-bg:var(--cyan-dim);
@@ -94,6 +95,7 @@
     --red-tint:rgba(201,58,78,0.08);
     --red-border-tint:rgba(201,58,78,0.2);
     --amber-tint:rgba(184,122,42,0.08);
+    --amber-border-tint:rgba(184,122,42,0.22);
     --violet-border-tint:rgba(107,63,192,0.2);
     --tag-stream-bg:rgba(6,120,179,0.06);
     --tag-stream-color:#0678b3;
@@ -495,6 +497,16 @@
   .review-card{cursor:default;margin-bottom:4px}
   .review-failed{padding:12px;border-radius:10px;background:var(--red-tint);border:1px solid var(--red-border-tint);font-size:12px;color:var(--txt);word-break:break-word}
   .review-hint{font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace;margin-top:8px;line-height:1.5}
+  .review-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .review-toolbar-title{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--txt);font-family:'JetBrains Mono',monospace}
+  .review-toolbar-sub{color:var(--txt-faint);font-weight:400;text-transform:none;letter-spacing:0}
+  .review-log-wrap{position:relative;margin-top:10px}
+  .review-log{min-height:140px}
+  .verdict-callout{display:flex;align-items:center;gap:9px;padding:9px 12px;margin-bottom:8px;border-radius:10px;border:1px solid;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.05em}
+  .verdict-dot{width:8px;height:8px;border-radius:50%;flex:none;background:currentColor;box-shadow:0 0 8px currentColor}
+  .verdict-callout.tone-green{color:var(--green);background:var(--green-tint);border-color:var(--green-border-tint)}
+  .verdict-callout.tone-amber{color:var(--amber);background:var(--amber-tint);border-color:var(--amber-border-tint)}
+  .verdict-callout.tone-red{color:var(--red);background:var(--red-tint);border-color:var(--red-border-tint)}
   .save-bar{display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--panel-solid);border-top:1px solid var(--border-bright);box-shadow:0 -10px 24px -12px rgba(0,0,0,0.5);z-index:5}
   .save-callout{display:flex;align-items:center;gap:10px;min-width:0}
   .save-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:none;animation:pulse 2s ease-in-out infinite}

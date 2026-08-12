@@ -146,6 +146,8 @@ interface ReviewResponse {
     state: string;
     markdown: string;
   } | null;
+  /** The reviewer conversation, isolated from the engineer session. */
+  lines: Array<{ type?: string; s?: string; d?: string; text?: string }>;
 }
 
 async function getReview(server: ServerHandle, id: string): Promise<ReviewResponse> {
@@ -157,6 +159,15 @@ async function waitForReviewRunning(server: ServerHandle, id: string, running: b
   const deadline = Date.now() + 10_000;
   while ((await getReview(server, id)).running !== running) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for review running=${running}`);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+/** Async poll for an observable outcome (the reviewer runs are fire-and-forget). */
+async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  while (!(await fn())) {
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`);
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
 }
@@ -261,6 +272,11 @@ describe("agent review before human sign-off (#0101)", () => {
       const served = await getReview(server, task.id);
       expect(served.enabled).toBe(false);
       expect(served.review).toBeNull();
+
+      // "Review again" surfaces the same disabled gate instead of quietly doing nothing.
+      const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
+      expect(again.status).toBe(400);
+      expect(again.body.error).toMatch(/disabled/i);
     });
   });
 
@@ -361,6 +377,132 @@ ${printReport}`,
       const served = await getReview(server, id);
       expect(served.enabled).toBe(true);
       expect(served.review).toBeNull();
+    });
+  });
+
+  it("'Review again' starts a fresh review run that replaces the report", async () => {
+    const reportA = [
+      "## Verdict",
+      "good to go — the change is complete.",
+      "",
+      "## Bugs",
+      "- FIRST RUN MARKER",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- none found",
+    ].join("\n");
+    const reportB = [
+      "## Verdict",
+      "needs some work — see Bugs.",
+      "",
+      "## Bugs",
+      "- SECOND RUN MARKER: the retry still fails.",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- none found",
+    ].join("\n");
+    const fx = makeFixture(`
+let n = 0;
+try { n = fs.readFileSync(process.env.REPOOS_FAKEBIN_LOG, "utf8").split("\\n").filter(Boolean).length; } catch (e) {}
+if (n <= 1) process.stdout.write(${JSON.stringify(reportA)} + "\\n");
+else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
+`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Re-review me");
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await waitFor(
+        () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
+        "the first review report is written",
+      );
+      await waitForReviewRunning(server, task.id, false);
+
+      const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
+      expect(again.status).toBe(200);
+      expect(again.body.ok).toBe(true);
+
+      // The fresh run replaces the report and drops the prior conversation.
+      await waitForAsync(
+        async () => (await getReview(server, task.id)).review?.markdown.includes("SECOND RUN MARKER") ?? false,
+        "the fresh report replaces the old one",
+      );
+      const served = await getReview(server, task.id);
+      expect(served.review?.markdown).toContain("SECOND RUN MARKER");
+      expect(served.review?.markdown).not.toContain("FIRST RUN MARKER");
+      expect(served.lines.some((l) => l.d?.includes("FIRST RUN MARKER"))).toBe(false);
+      expect(spawns(fx).filter((a) => a.includes("--dir")).length).toBe(2);
+    });
+  });
+
+  it("routes reviewer chat to its own session and serves the conversation", async () => {
+    const report = [
+      "## Verdict",
+      "good to go — looks right.",
+      "",
+      "## Bugs",
+      "- None found",
+      "",
+      "## Edge cases",
+      "- None found",
+      "",
+      "## Suggestions",
+      "- None found",
+    ].join("\n");
+    const reply = "The empty-list case is handled by the early return in src/thing.ts.";
+    const fx = makeFixture(`
+let n = 0;
+try { n = fs.readFileSync(process.env.REPOOS_FAKEBIN_LOG, "utf8").split("\\n").filter(Boolean).length; } catch (e) {}
+if (n <= 1) process.stdout.write(${JSON.stringify(report)} + "\\n");
+else process.stdout.write(${JSON.stringify(reply)} + "\\n");
+`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Chat with reviewer");
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await waitFor(
+        () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
+        "the review report is written",
+      );
+      await waitForReviewRunning(server, task.id, false);
+
+      // Reject an empty follow-up before any process is spawned.
+      const empty = await api(server, "POST", `/api/tasks/${task.id}/review/message`, { text: "  " });
+      expect(empty.status).toBe(400);
+
+      const sent = await api(server, "POST", `/api/tasks/${task.id}/review/message`, {
+        text: "why did you flag the empty list?",
+      });
+      expect(sent.status).toBe(200);
+
+      // The conversation is served with the human turn and the reviewer reply.
+      await waitForAsync(
+        async () =>
+          (await getReview(server, task.id)).lines.some((l) => l.d?.includes("early return")),
+        "the reviewer's reply arrives",
+      );
+
+      // The follow-up reached the reviewer as a continuation mission. Read the
+      // log only after the reply landed, so the child has written its argv.
+      const reviewSpawns = spawns(fx).filter((a) => a.includes("--dir"));
+      const mission = reviewSpawns[reviewSpawns.length - 1]?.join(" ") ?? "";
+      expect(mission).toMatch(/continuing an earlier review conversation/i);
+      expect(mission).toMatch(/why did you flag the empty list/);
+
+      const served = await getReview(server, task.id);
+      expect(
+        served.lines.some((l) => l.type === "human" && l.text === "why did you flag the empty list?"),
+      ).toBe(true);
+      expect(served.lines.some((l) => l.d?.includes("early return"))).toBe(true);
+
+      // A chat turn never overwrites the stored report...
+      expect(served.review?.markdown).toContain("good to go");
+      // ...and never leaks into the engineer session output.
+      const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+      expect(output.body.lines).toEqual([]);
     });
   });
 });

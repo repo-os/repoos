@@ -134,6 +134,11 @@ export interface ReviewState {
   enabled: boolean;
   /** The stored report, or null when none has been written yet. */
   report: ReviewReport | null;
+  /**
+   * The reviewer conversation, kept separate from the engineer session (0110).
+   * Human messages and the reviewer's streamed output share this buffer only.
+   */
+  lines: AgentOutputEntry[];
 }
 
 /**
