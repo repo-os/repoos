@@ -2,7 +2,7 @@
 id: "0090"
 title: Persist agent session transcripts to disk so they survive reloads and don't leak memory
 type: feature
-status: ready
+status: review
 priority: p1
 area: server
 assigned_to: ai
