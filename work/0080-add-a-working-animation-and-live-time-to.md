@@ -2,14 +2,16 @@
 id: "0080"
 title: "Add agent run telemetry, default Agent tab, and an evidence-based stall warning"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-agent-run-telemetry-default-agent-ta
+cli_override: codex
+model_override: gpt-5.6-luna
 created_at: "2026-08-11T06:25:10Z"
-updated_at: "2026-08-11T19:03:12Z"
+updated_at: "2026-08-11T20:08:34Z"
 ---
 ## Problem
 
@@ -150,3 +152,8 @@ with nothing in the UI distinguishing that from normal slow progress.
 - 2026-08-11T08:17:03Z · status inbox→ready
 - 2026-08-11T15:37:46Z · updated · remove completed animation overlap and replace the 20-second dead inference with a conservative warning
 - 2026-08-11T19:03:12Z · status ready→active, branch
+- 2026-08-11T20:05:56Z · cli_override, model_override
+- 2026-08-11T20:06:01Z · status review→active
+- 2026-08-11T20:07:12Z · status active→ready
+- 2026-08-11T20:07:21Z · status ready→active
+- 2026-08-11T20:08:34Z · status active→review
