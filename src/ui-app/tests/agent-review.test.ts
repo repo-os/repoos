@@ -332,6 +332,14 @@ ${printReport}`,
       expect(blocked.body.error).toMatch(/automatic review to finish/i);
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
 
+      // Drag/drop uses PATCH today in older clients. The server must give that
+      // route the same 409 rather than silently cancelling the reviewer and
+      // turning the task into done.
+      const dragged = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "done" });
+      expect(dragged.status).toBe(409);
+      expect(dragged.body.error).toMatch(/automatic review to finish/i);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+
       await waitForReviewRunning(server, task.id, false);
       expect((await getReview(server, task.id)).review?.state).toBe("ok");
     });

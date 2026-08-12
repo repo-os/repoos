@@ -132,7 +132,20 @@ async function onDrop(e: DragEvent): Promise<void> {
   const task = repo.tasks.find((t) => t.id === id);
   if (!task || task.status === props.col.id) return;
   try {
-    await repo.setStatus(task, props.col.id);
+    if (props.col.id === "done") {
+      // Done is never an ordinary board status transition: its endpoint owns
+      // the review-running 409, merge, check, and worktree cleanup. This also
+      // prevents a drag from bypassing the disabled drawer/card action.
+      if (task.status !== "review") {
+        throw new Error("Only review tasks can be moved to done");
+      }
+      if (repo.reviewFor(task.id)?.running) {
+        throw new Error("Waiting for automatic review to finish.");
+      }
+      await repo.completeTask(task);
+    } else {
+      await repo.setStatus(task, props.col.id);
+    }
     if (collapsedIds.value.has(props.col.id)) toggle();
   } catch (err) {
     repo.onError(err);
@@ -211,4 +224,3 @@ const toggle = () => {
     </div>
   </div>
 </template>
-

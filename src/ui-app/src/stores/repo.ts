@@ -327,6 +327,13 @@ export const useRepoStore = defineStore("repo", () => {
     es = new EventSource(origin + "/api/events");
     es.onopen = () => {
       connected.value = true;
+      // Events emitted while EventSource reconnects are not replayed. Refresh
+      // the server-authoritative index on every open so a reviewer that
+      // started, finished, or failed during that gap cannot leave a stale card
+      // or disabled/enabled done action behind.
+      void refresh().catch(() => {
+        /* connection state already reflects the successful SSE open */
+      });
     };
     es.onerror = () => {
       connected.value = false;

@@ -1064,6 +1064,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         const body = (await readBody(req)) as TaskPatch;
         const prevStatus = existing.status;
+        // Completion is a close-out workflow, not a plain status edit. In
+        // particular, board drag/drop and stale clients must not skip the
+        // automatic-review guard (or merge/check work) by PATCHing `done`.
+        if (body.status === "done" && prevStatus !== "done") {
+          if (reviews.isRunning(existing.id)) {
+            return json(res, 409, {
+              error: `Task #${existing.id} is waiting for automatic review to finish`,
+            });
+          }
+          return json(res, 400, {
+            error: `Use POST /api/tasks/${existing.id}/done to complete a review task`,
+          });
+        }
         const updated = patchTaskFile(config, existing.absPath, body, {
           onStatusChange: onServerStatusChange,
         });

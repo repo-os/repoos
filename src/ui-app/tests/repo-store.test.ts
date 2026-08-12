@@ -333,6 +333,26 @@ describe("automatic review state", () => {
     await Promise.resolve();
     expect(repo.reviewFor("0001")).toMatchObject({ running: false, enabled: true });
   });
+
+  it("rehydrates review activity when SSE reconnects", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const idle = makeTask({ status: "review", automaticReview: { running: false, enabled: true } });
+    const running = makeTask({ status: "review", automaticReview: { running: true, enabled: true } });
+    let indexReads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index")) return json({ tasks: [indexReads++ === 0 ? idle : running], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.reviewFor("0001")).toMatchObject({ running: false });
+    FakeEventSource.instances[0].onopen?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(repo.reviewFor("0001")).toMatchObject({ running: true, enabled: true });
+  });
 });
 
 describe("preview state", () => {
