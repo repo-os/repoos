@@ -2,14 +2,14 @@
 id: "0128"
 title: Place task panel actions and preview controls above tabs
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/place-task-panel-actions-and-preview-con
 created_at: "2026-08-12T07:23:05Z"
-updated_at: "2026-08-12T09:19:28Z"
+updated_at: "2026-08-12T09:31:54Z"
 ---
 ## Problem
 
@@ -98,3 +98,6 @@ current status-specific and preview lifecycle behavior.
 - 2026-08-12T07:23:05Z · created · unknown
 - 2026-08-12T07:23:08Z · status inbox→ready
 - 2026-08-12T09:17:02Z · status ready→active, branch
+- 2026-08-12T09:26:38Z · status active→review
+- 2026-08-12T09:31:52Z · status review→active
+- 2026-08-12T09:31:54Z · status active→review
