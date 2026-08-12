@@ -106,7 +106,7 @@ import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
-import { notifyStatusChange, notifyTaskCreated } from "./ntfy.js";
+import { notifyStatusChange, notifyTaskCreated, publish, ntfyBaseUrl } from "./ntfy.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -1804,6 +1804,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
 
         return json(res, 200, { ok: true, config: repoos.config });
+      }
+
+      // ---- ntfy test notification ----
+      if (path === "/api/ntfy/test" && method === "POST") {
+        if (!config.ntfyEnabled) {
+          return json(res, 400, { error: "ntfy notifications are disabled" });
+        }
+        const topic = (config.ntfyTopic ?? "").trim();
+        if (!topic) {
+          return json(res, 400, { error: "ntfy topic is empty" });
+        }
+        const repoName = basename(config.root);
+        const message = `Hello from RepoOS at ${repoName}!`;
+        publish(config, message);
+        return json(res, 200, { ok: true });
       }
 
       // ---- PWA: per-instance manifest + icons ----
