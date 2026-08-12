@@ -2,14 +2,14 @@
 id: "0129"
 title: Discover available GitHub Copilot CLI models
 type: feature
-status: ready
+status: active
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/discover-available-github-copilot-cli-mo
 created_at: "2026-08-12T07:45:00Z"
-updated_at: "2026-08-12T07:49:12Z"
+updated_at: "2026-08-12T07:50:00Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ compatibility tests without presenting an invented static list.
 - 2026-08-12T07:45:00Z · created · unknown
 - 2026-08-12T07:46:53Z · repaired malformed Copilot JSONL task output
 - 2026-08-12T07:49:12Z · status inbox→ready
+- 2026-08-12T07:50:00Z · status ready→active, branch
