@@ -82,6 +82,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   uiTheme: "classic",
   defaultTaskMode: "freeform",
   tunnelEnabled: false,
+  ntfyEnabled: false,
+  ntfyTopic: "",
+  ntfyBaseUrl: "https://ntfy.sh",
   agents: [],
 };
 
@@ -247,6 +250,9 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
     const tunnelEnabled = parsed["tunnel.enabled"];
     if (typeof tunnelEnabled === "boolean") cfg.tunnelEnabled = tunnelEnabled;
+    if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
+    if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
+    if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
     if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
     if (typeof get("uiTheme") === "string") cfg.uiTheme = get("uiTheme") as UiTheme;
     const taskMode = get("defaultTaskMode");
@@ -306,6 +312,33 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.tunnelEnabled,
       description: "Publish local apps securely through Cloudflare Tunnel + Access",
+    },
+    {
+      key: "ntfyEnabled",
+      label: "ntfy notifications",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.ntfyEnabled,
+      description: "Send push notifications on task lifecycle events",
+    },
+    {
+      key: "ntfyTopic",
+      label: "ntfy topic",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.ntfyTopic,
+      description: "The ntfy topic RepoOS publishes events to (e.g. repoos_myproject)",
+    },
+    {
+      key: "ntfyBaseUrl",
+      label: "ntfy base URL",
+      type: "string",
+      tier: "guarded",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.ntfyBaseUrl,
+      description: "Self-hosted ntfy server base URL (NTFY_BASE_URL env var overrides)",
     },
     {
       key: "defaultStatus",

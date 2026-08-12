@@ -2,7 +2,7 @@
 id: "0134"
 title: Add optional ntfy notification support
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai

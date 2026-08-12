@@ -223,6 +223,12 @@ export interface RepoOSConfig {
   strictBuild?: boolean;
   /** Whether Cloudflare Tunnel controls are surfaced in the web UI. */
   tunnelEnabled?: boolean;
+  /** When true, RepoOS publishes task lifecycle events to a ntfy topic. */
+  ntfyEnabled?: boolean;
+  /** The ntfy topic RepoOS publishes task events to (empty = never send). */
+  ntfyTopic?: string;
+  /** Base URL of the ntfy server. Defaults to https://ntfy.sh. */
+  ntfyBaseUrl?: string;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;
   /** UI design language: classic (current) or clear. Cosmetic only. */

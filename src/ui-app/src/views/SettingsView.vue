@@ -29,7 +29,12 @@ onMounted(async () => {
   try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
 });
 const generalFields = computed(() =>
-  config.visibleFields.filter((field) => field.key !== "tunnelEnabled"),
+  config.visibleFields.filter(
+    (field) =>
+      field.key !== "tunnelEnabled" &&
+      field.key !== "ntfyEnabled" &&
+      field.key !== "ntfyTopic",
+  ),
 );
 
 function focusSetting(key: string): void {
@@ -222,6 +227,68 @@ onUnmounted(() => {
               <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
               <Button variant="outline" size="sm" @click="ui.openTunnel()">Configure publishing</Button>
             </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>ntfy Notifications
+          </div>
+          <div class="ntfy-layout">
+            <div class="ntfy-controls">
+              <div id="setting-ntfyEnabled" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Enable ntfy notifications</div>
+                  <div class="setting-desc">
+                    When on, RepoOS publishes a message to your topic on task lifecycle events
+                    (moved to review, approved, or returned with issues).
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="!!form.ntfyEnabled"
+                    :disabled="config.saving"
+                    @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
+                  />
+                </div>
+              </div>
+              <div id="setting-ntfyTopic" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Subscription topic</div>
+                  <div class="setting-desc">
+                    The ntfy topic RepoOS publishes events to, e.g. <code>repoos_myproject</code>.
+                    Leave empty to never send.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Input
+                    :model-value="String(form.ntfyTopic ?? '')"
+                    type="text"
+                    :disabled="config.saving"
+                    placeholder="repoos_myproject"
+                    @update:model-value="(v) => (form.ntfyTopic = v)"
+                  />
+                </div>
+              </div>
+            </div>
+            <aside class="ntfy-info">
+              <h3>About ntfy</h3>
+              <p>
+                ntfy is a free, open-source push notification service. Install the ntfy app on
+                your phone from the App Store or Google Play, subscribe to a unique topic (e.g.
+                <code>repoos_myproject</code>), and enter that topic below.
+              </p>
+              <p>
+                Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
+                instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or
+                the <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
+              </p>
+              <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
+                ntfy install + subscribe guide →
+              </a>
+            </aside>
           </div>
         </div>
       </Card>
