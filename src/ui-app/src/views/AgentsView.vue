@@ -276,6 +276,13 @@ onUnmounted(() => {
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
+          <a
+            class="model-pricing-link"
+            href="/repo?doc=docs/opencode-models.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open model pricing & use cases in the Repo Context docs"
+          >Model pricing &amp; use cases</a>
           <Button
             variant="outline"
             size="sm"

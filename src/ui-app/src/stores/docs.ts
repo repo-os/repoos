@@ -27,7 +27,8 @@ export const useDocsStore = defineStore("docs", () => {
     selDoc.value = path;
     try {
       const r = await fetch(path);
-      docContent.value = r.ok ? await r.text() : "(could not load)";
+      const text = r.ok ? await r.text() : "(could not load)";
+      docContent.value = text.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
       const d = docs.value.find((x) => x.path === path);
       docTitle.value = d ? d.title : path;
     } catch {

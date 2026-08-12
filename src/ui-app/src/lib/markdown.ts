@@ -41,6 +41,7 @@ type Block =
   | { kind: "ol"; items: string[] }
   | { kind: "quote"; lines: string[] }
   | { kind: "hr" }
+  | { kind: "table"; rows: string[][] }
   | { kind: "p"; lines: string[] };
 
 function parseBlocks(src: string): Block[] {
@@ -84,6 +85,25 @@ function parseBlocks(src: string): Block[] {
     if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
       blocks.push({ kind: "hr" });
       i++;
+      continue;
+    }
+
+    // table: a header row (contains a pipe) followed by an alignment row.
+    const delimRow = lines[i + 1];
+    if (line.includes("|") && delimRow && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(delimRow)) {
+      const rows: string[][] = [];
+      const splitRow = (l: string): string[] =>
+        l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+      while (i < lines.length && lines[i]!.includes("|")) {
+        // skip the `| --- | --- |` alignment row (only ever sits after the header)
+        if (rows.length === 1 && /^\|?[\s:|-]*-[\s:|-]*\|?$/.test(lines[i]!.trim())) {
+          i++;
+          continue;
+        }
+        rows.push(splitRow(lines[i]!));
+        i++;
+      }
+      blocks.push({ kind: "table", rows });
       continue;
     }
 
@@ -179,6 +199,15 @@ function renderBlock(b: Block): string {
     case "ol": {
       const items = b.items.map((t) => `<li>${inline(escapeHtml(t))}</li>`).join("");
       return `<ol>${items}</ol>`;
+    }
+    case "table": {
+      const [head, ...body] = b.rows;
+      if (!head) return "";
+      const th = head.map((c) => `<th>${inline(escapeHtml(c))}</th>`).join("");
+      const trs = body
+        .map((r) => `<tr>${r.map((c) => `<td>${inline(escapeHtml(c))}</td>`).join("")}</tr>`)
+        .join("");
+      return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
     }
     case "p": {
       // soft line breaks inside a paragraph become <br>

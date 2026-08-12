@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { useDocsStore } from "../stores/docs";
 import { renderMarkdown } from "../lib/markdown";
 import Card from "../components/ui/card.vue";
@@ -25,6 +26,20 @@ const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(pat
 
 const docHtml = computed(() => renderMarkdown(docContent.value));
 const skillHtml = computed(() => renderMarkdown(skillContent.value));
+
+// Preselect a doc from the URL (?doc=docs/foo.md) — e.g. the Agents page's
+// "Model pricing & use cases" link opens /repo?doc=docs/opencode-models.md.
+const route = useRoute();
+watch(
+  docList,
+  (list) => {
+    const target = typeof route.query.doc === "string" ? route.query.doc : null;
+    if (target && list.some((d) => d.path === target) && selDoc.value !== target) {
+      void docs.loadDoc(target);
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
