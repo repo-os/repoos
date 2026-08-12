@@ -1,94 +1,54 @@
 ---
 id: "0058"
-title: Drive the gemini CLI as a headless engineer agent
+title: Drive Antigravity CLI (agy) as a headless engineer agent and retire Gemini CLI
 type: feature
 status: ready
-priority: p2
-area: core
+priority: p1
+area: agent
 assigned_to: ai
 created_by: ""
-branch: feat/0058-gemini-driver
+branch: feat/0058-antigravity-cli-driver
 created_at: "2026-08-10T23:03:19Z"
-updated_at: "2026-08-10T23:03:19Z"
+updated_at: "2026-08-12T03:44:17Z"
 ---
-## Activity
-
-- 2026-08-10T23:03:19Z · created · unknown
-
 ## Problem
 
-RepoOS drives coding agents headless (0037), streams their output (0042), and
-detects installed CLIs (0043). Today only four CLIs are `drivable`: opencode,
-claude code, qwen code, and codex. The gemini CLI
-(`@google/gemini-cli`, binary `gemini`) is detected but marked
-`drivable: false` — even though its headless surface matches the qwen/codex
-driver shape almost 1:1. A user with `gemini` installed cannot select it on the
-Agents page (`cli` is not in `AGENT_CLIS`), and there is no spawn/resume wiring
-for it.
+RepoOS currently detects the legacy Gemini CLI but cannot drive it, and task #0058 proposed completing that integration. Google now positions Antigravity CLI, binary agy, as the successor for terminal agent workflows and encourages Gemini CLI users to migrate. Keeping Gemini visible on the Agents page while adding a parallel replacement would confuse users and duplicate driver work.
+
+Antigravity has promising automation surfaces: non-interactive prompts, per-run model selection, a programmatic model list, configurable permissions, local repository tools, and support for AGENTS.md and SKILL.md. Its documented non-interactive mode may not support conversational follow-ups, and a structured streaming format or stable resumable session interface is not yet established. RepoOS must represent those capabilities honestly instead of assuming parity with OpenCode, Claude Code, Qwen Code, or Codex.
 
 ## Desired UX
 
-An agent configured with `cli = "gemini"` can be started on a task, stream live
-output to the task's chat tab, and be resumed for follow-up turns — exactly as
-opencode/claude/qwen/codex behave today. The Agents page shows gemini as
-installed & headless-ready when it's on PATH.
+When agy is installed and authenticated, the Agents page detects Antigravity CLI and lets the user configure it for RepoOS tasks. RepoOS can launch it in the task worktree, select a model reported by agy models, retain useful output, stop it, and interpret completion safely. Unsupported capabilities such as structured streaming or same-session resume are clearly degraded rather than silently simulated. Gemini CLI is removed from the supported/detected Agents-page choices, with concise migration guidance wherever a legacy manual configuration is encountered.
 
 ## Acceptance criteria
 
-- [ ] `AGENT_CLIS` in `src/core/config.ts` includes `"gemini"` so the Agents
-      page offers it as a `cli` choice.
-- [ ] `drivable` is `true` for gemini in `KNOWN_AGENTS`
-      (`src/core/detect.ts`); `GET /api/agents/detect` reports it headless-ready
-      when the binary resolves on PATH.
-- [ ] `cliCommand` in `src/server/agents.ts` maps `gemini` to
-      `gemini -p <mission> --output-format stream-json` (spawn `cwd` is the
-      worktree — gemini needs no `--dir` flag, like claude/qwen).
-- [ ] `resumeCommand` maps follow-up turns to
-      `gemini -p <text> --resume <id> --output-format stream-json`, falling
-      back to `--resume latest` when no session id was captured. Use `-p` for
-      the follow-up text: stable gemini builds reject positional args/stdin
-      with `--resume` (resolved upstream in 0.20, but `-p` works everywhere).
-- [ ] `promptCommand` maps gemini to `gemini -p <prompt>` so the one-shot PM
-      agent path works too.
-- [ ] Streaming and session resume work end to end: the runner's existing
-      `SESSION_ID_PATTERNS` already match gemini's `init` event
-      (`"session_id":"..."`), so a follow-up turn resumes the same session; a
-      fixture E2E with a fake `gemini` binary verifies spawn args, streaming,
-      and resume args (matching the 0042/0043 fakebin pattern).
-- [ ] `repoos check` passes; zero new runtime dependencies.
+- [ ] Replace the legacy Gemini CLI scope of this task with an Antigravity CLI adapter using the agy binary; do not add a second duplicate Gemini task.
+- [ ] Add Antigravity to the supported CLI/config registry and installed-agent detection with an accurate install or migration hint. Detection is fail-soft and bounded by a timeout.
+- [ ] Remove Gemini CLI from the Agents-page known/supported agent list and from user-facing model/agent choices. Remove stale copy that recommends installing or integrating Gemini CLI.
+- [ ] If a manually written legacy config still names gemini, preserve the file and return a clear unsupported/migrate-to-agy diagnostic; do not silently rewrite user configuration.
+- [ ] During implementation, verify the installed/current agy --help and official documentation for non-interactive invocation, model selection, model listing, permissions, output formats, cancellation, exit codes, and any session/resume support. Record the verified compatibility matrix in tests or focused documentation.
+- [ ] Launch initial engineer turns non-interactively in the task worktree with the configured model when provided. Default model selection omits the model argument.
+- [ ] Integrate agy models as a CLI-specific model source. Parse defensively, deduplicate results, bound execution time and output, and fail soft when unauthenticated, unavailable, or changed.
+- [ ] Reuse the real Antigravity command builder in the Agents-page compatibility probe so a passing model test represents the command RepoOS will launch.
+- [ ] Do not claim same-session chat resume unless a stable programmatic interface and session identifier are verified. If unavailable, follow-up work uses a clearly labelled fresh Antigravity turn in the same worktree with RepoOS resume context, or the UI disables unsupported continuation behavior.
+- [ ] Do not claim structured tool events unless agy exposes a documented machine-readable stream. Plain output must remain readable and must not be misparsed as OpenCode events.
+- [ ] Stop/pause terminates the correct process tree and releases RepoOS resources without affecting other task agents.
+- [ ] Choose the narrowest supported non-interactive permission policy that permits worktree edits. Do not broaden filesystem or network authority beyond the task worktree merely to avoid prompts, and document any unavoidable limitation.
+- [ ] Add fake-binary tests covering detection, start arguments, default and explicit models, model-list parsing, output capture, non-zero exit, missing authentication, timeout/cancellation, legacy Gemini diagnostics, and the verified resume/degradation behavior.
+- [ ] Update relevant product/agent documentation, rebuild UI assets, refresh affected screenshots, and pass repoos check.
 
 ## Notes for AI
 
-- **Flags (verified against gemini-cli docs, headless mode):**
-  - `gemini -p "query"` runs headless print mode (also triggers on non-TTY).
-  - `--output-format stream-json` emits newline-delimited JSON: `init`
-    (carries `session_id` and `model`), `message` (user/assistant deltas),
-    `tool_use`, `tool_result`, `error`, `result`. This is the same JSONL shape
-    the qwen/codex drivers already stream, and the existing line-buffered
-    `onData`/`tryExtractSessionId` handles it unchanged.
-  - Resume: `gemini --resume latest "query"` or `--resume <id>`. Known caveat
-    (issue #14180): positional args and stdin don't work with `--resume` in
-    stable builds (≤0.18/0.19) — only `--prompt`. Use `-p` to be safe.
-- **Zero runtime deps**: spawn is already `node:child_process`; no new deps.
-- **Don't regress the existing drivers**: gemini is additive. Keep the default
-  (opencode) branch of each mapping untouched; `resolveEngineer` and the agent
-  config model must keep working unchanged. gemini must not become the launch
-  command unless the user configured it.
-- **Cwd is the worktree**: gemini resolves its project from the spawn `cwd`,
-  so resume must pass `session.workdir ?? config.root` exactly as qwen/claude
-  do — do not add a `--dir` flag.
-- **Test alongside**: unit tests for the three command mappings (fake gemini
-  bin asserting exact args, including the `--resume` fallback) and a
-  fixture E2E for streaming + resume, mirroring the 0042 pattern. The detect
-  flip is covered by the existing detection tests.
-- **Out of scope**: UI work beyond exposing the `cli` choice (the Agents page
-  reads `AGENT_CLIS` dynamically); no changes to the opencode-style output
-  rendering (0053/0045 territory). `AGENT_MODELS` labels stay RepoOS-side and
-  are deliberately not forwarded to any CLI.
+Use Antigravity CLI, not the Antigravity desktop orchestration application; RepoOS remains the task/worktree orchestrator. Prefer an explicit driver capability shape such as structuredOutput, resumableSession, modelDiscovery, and headlessWrite rather than CLI-name conditionals that imply every driver supports every feature. The Antigravity SDK and remote managed agents are out of scope for this local CLI integration. Add no runtime dependency. Avoid undocumented flags based only on similarity with Gemini CLI.
 
 ## Related
 
-- 0037 · Start/Pause + headless spawn (the runner this wires into)
-- 0042 · Streaming agent output (the JSONL/SSE pattern to mirror)
-- 0043 · Detect installed coding agents (gemini currently listed as undrivable)
-- 0056 · Test Claude Code agent for PM (the one-shot PM-agent path)
+- #0043 — installed coding-agent detection
+- #0083 — real CLI/model compatibility testing
+- #0097 — task context packs and same-worktree resume context
+- #0107 — audit recurring agent skill gaps
+
+## Activity
+
+- 2026-08-12T03:44:17Z · title, priority, area, branch, body
