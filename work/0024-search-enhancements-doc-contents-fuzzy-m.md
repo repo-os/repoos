@@ -2,14 +2,14 @@
 id: "0024"
 title: "Improve global search with doc contents, fuzzy matching, history, and status cues"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-04T09:17:40Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-08-12T19:03:39Z"
 ---
 ## Activity
 
@@ -98,3 +98,7 @@ folded into this task rather than retaining a second search-polish task.
 - 0057: folded into this task; its only scope was cross-theme search styling.
 - 0019/0021 (PWA): offline-shell behavior affects whether client-side or
   server-side search is the right call.
+
+## Activity
+
+- 2026-08-12T19:03:39Z · status inbox→ready
