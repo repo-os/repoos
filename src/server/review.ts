@@ -20,9 +20,16 @@
  * Zero runtime deps — node:fs / node:path only.
  */
 import type { ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
-import type { Agent, RepoOSConfig, Task } from "../core/types.js";
+import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
@@ -69,6 +76,20 @@ const SPEC_CHARS = 6000;
 
 /** Cap on the stored report (a runaway agent must not fill the cache dir). */
 const REPORT_CHARS = 20_000;
+
+/**
+ * Prefix on the SSE event id used for a task's reviewer conversation. The
+ * engineer session streams under the plain task id; reviewer output streams
+ * under `review:<taskId>` so the two conversations can never mix on the wire
+ * or in the UI (0110).
+ */
+export const REVIEW_SESSION_ID_PREFIX = "review:";
+
+/** Cap on retained reviewer-conversation entries in the client and on disk. */
+const SESSION_LINES_CAP = 2000;
+
+/** Debounce window for persisting the reviewer conversation to disk. */
+const SESSION_WRITE_DEBOUNCE_MS = 300;
 
 const now = (): string => new Date().toISOString();
 
@@ -131,7 +152,12 @@ export function reviewMission(
     "these sections, and write `None found` under any that is genuinely empty:",
     "",
     "## Verdict",
-    "One or two sentences: what the change does and whether anything blocks sign-off.",
+    "Open the report with EXACTLY one of these three verdict labels, then one or two",
+    "sentences saying what the change does and whether anything blocks sign-off:",
+    "",
+    "`good to go` — the change is correct and complete.",
+    "`needs some work` — the change is close, but has issues worth fixing first.",
+    "`back to the drawing board` — the change is off the mark.",
     "",
     "## Bugs",
     "Concrete defects, each with the file and what goes wrong.",
@@ -141,6 +167,68 @@ export function reviewMission(
     "",
     "## Suggestions",
     "Improvements worth making. Say so plainly when there are none.",
+  );
+  return parts.join("\n");
+}
+
+/**
+ * The mission handed to the review agent for a follow-up chat turn. The human
+ * asked a question about the review; the reviewer answers in the same read-only
+ * style, grounded in the task spec, its own previous report (when one exists),
+ * and the actual code. It still never touches the repo beyond reading.
+ */
+export function reviewFollowupMission(
+  task: Task,
+  agent: Agent,
+  workdir: string,
+  baseBranch: string,
+  text: string,
+  previousReport: ReviewReport | null,
+): string {
+  const spec = task.body.trim().slice(0, SPEC_CHARS);
+  const role = agent.instructions?.trim();
+  const parts: string[] = [];
+  if (role) parts.push(role, "");
+  parts.push(
+    "You are the REVIEW agent for RepoOS, continuing an earlier review conversation.",
+    "A human is asking a follow-up question about your review of a task. Answer it",
+    "directly and concisely, grounded in the actual code. You still do not approve",
+    "anything and you do not finish the task — the human does.",
+    "",
+    `Task #${task.id}: ${task.title}`,
+    `Worktree (read-only for you): ${workdir}`,
+    `Branch under review: ${task.branch || "(none)"} · base branch: ${baseBranch}`,
+    "",
+    "## The task spec",
+    "",
+    spec || "(the task file has no body)",
+    "",
+    ...(previousReport
+      ? [
+          "## Your previous review",
+          "",
+          previousReport.markdown.trim().slice(0, REPORT_CHARS),
+          "",
+        ]
+      : []),
+    "## Hard boundaries",
+    "",
+    "- Do NOT edit, create, or delete ANY file, including the task file.",
+    "- Do NOT commit, push, merge, sync, or delete branches.",
+    "- Do NOT change the task's status, and NEVER move it to `done` — the task stays",
+    "  in `review` for the human. Approving, merging, and completing are not yours.",
+    "- Do NOT start servers or long-running processes.",
+    "",
+    "## What to output",
+    "",
+    "Answer the human's follow-up question in plain markdown, under 400 words. Quote",
+    "specific files and lines where useful. If the question is about the verdict,",
+    "say clearly whether it stays one of: `good to go`, `needs some work`, or",
+    "`back to the drawing board`.",
+    "",
+    "## The human's question",
+    "",
+    text,
   );
   return parts.join("\n");
 }
@@ -160,6 +248,13 @@ export class ReviewManager {
   private readonly runs = new Map<string, Run>();
   /** Tasks the status guard just put back in `review`, by timestamp. */
   private readonly reverted = new Map<string, number>();
+  /**
+   * The reviewer conversation per task, in-memory. Kept apart from the
+   * engineer session (which lives in AgentRunner): reviewer chat must stay
+   * isolated in both UI state and message routing (0110).
+   */
+  private readonly sessions = new Map<string, AgentOutputEntry[]>();
+  private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
     this.config = config;
@@ -226,11 +321,49 @@ export class ReviewManager {
   }
 
   /**
+   * The synchronous gate both `run` and `send` share: is a review possible for
+   * this task right now? Resolved before firing the async spawn so an HTTP
+   * handler can answer "why not" without waiting for a prompt that will never
+   * start.
+   */
+  canRun(task: Task): { ok: boolean; reason?: string } {
+    if (this.runs.has(task.id)) {
+      return { ok: false, reason: "a review is already running for this task" };
+    }
+    const agent = resolveReviewer(this.config);
+    if (!agent) {
+      return { ok: false, reason: "the review agent is disabled on the Agents page" };
+    }
+    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    if (!workdir) {
+      return { ok: false, reason: "the task has no worktree to review" };
+    }
+    return { ok: true };
+  }
+
+  /**
+   * Same gate for a follow-up chat turn, which additionally needs a prior
+   * conversation (a review must have run at least once).
+   */
+  canSend(task: Task): { ok: boolean; reason?: string } {
+    const base = this.canRun(task);
+    if (!base.ok) return base;
+    if (!this.hasSession(task.id)) {
+      return { ok: false, reason: "no review has run for this task — start a review first" };
+    }
+    return { ok: true };
+  }
+
+  /**
    * Run the review agent against a task sitting in `review`.
    *
    * Skips silently (no event, no file) when the review agent is disabled or
    * the task has no worktree to inspect — "disabled means nothing happens" is
    * the contract, not "something happens quietly and fails".
+   *
+   * A fresh run every time: the reviewer conversation is reset, so the run is
+   * a new assessment (the initial landing review, or a deliberate "Review
+   * again"), never a continuation of the prior one (0110).
    */
   async run(task: Task): Promise<ReviewRunResult> {
     if (this.runs.has(task.id)) {
@@ -248,9 +381,14 @@ export class ReviewManager {
     }
     const baseBranch = currentBranch(this.config.root) ?? "main";
 
+    // Fresh run: drop any earlier conversation and its persisted copy so the
+    // new report reads as a new assessment, not a continuation of the old one.
+    this.resetSession(task.id);
+
     const run: Run = { cancelled: false };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
+    this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
     const mission = reviewMission(task, agent, workdir, baseBranch);
     let result;
@@ -264,6 +402,7 @@ export class ReviewManager {
           // A cancel that landed between spawn and this callback still kills.
           if (run.cancelled) proc.kill("SIGTERM");
         },
+        onLine: (line) => this.appendSessionLine(task.id, line),
       });
     } finally {
       this.runs.delete(task.id);
@@ -293,6 +432,11 @@ export class ReviewManager {
       markdown: body.slice(0, REPORT_CHARS),
     };
     this.write(report);
+    this.appendMarker(
+      task.id,
+      state === "ok" ? "✓ review complete" : `✗ review failed: ${result.error ?? "no report"}`,
+    );
+    this.persistSession(task.id);
     this.emit({
       type: "review",
       id: task.id,
@@ -304,6 +448,88 @@ export class ReviewManager {
     return state === "ok"
       ? { ok: true, report }
       : { ok: false, reason: result.error ?? "the review agent failed", report };
+  }
+
+  /**
+   * Send a follow-up chat turn to the reviewer. The human's message joins the
+   * reviewer conversation (never the engineer session), and the reviewer's
+   * answer streams into the same conversation. Chat turns do not overwrite the
+   * stored report — the verdict callout keeps describing the last full review.
+   */
+  async send(task: Task, text: string): Promise<ReviewRunResult> {
+    if (this.runs.has(task.id)) {
+      return { ok: false, reason: "a review is already running for this task" };
+    }
+    const agent = resolveReviewer(this.config);
+    if (!agent) {
+      return { ok: false, reason: "the review agent is disabled" };
+    }
+    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    if (!workdir) {
+      return { ok: false, reason: "the task has no worktree to review" };
+    }
+    const baseBranch = currentBranch(this.config.root) ?? "main";
+
+    // The human's message starts the turn. The conversation must already exist
+    // (a review ran first) so the reviewer has context; the report on disk
+    // still feeds the follow-up mission even after a server restart.
+    if (!this.hasSession(task.id)) {
+      this.sessions.set(task.id, []);
+    }
+    this.appendEntry(task.id, { type: "human", text });
+
+    const run: Run = { cancelled: false };
+    this.runs.set(task.id, run);
+    this.emit({ type: "review", id: task.id, state: "running", at: now() });
+
+    const mission = reviewFollowupMission(task, agent, workdir, baseBranch, text, this.read(task.id));
+    let result;
+    try {
+      result = await runPrompt(agent, mission, {
+        cwd: workdir,
+        timeoutMs: REVIEW_TIMEOUT_MS,
+        command: reviewCommand(agent, mission, workdir),
+        onSpawn: (proc) => {
+          run.proc = proc;
+          if (run.cancelled) proc.kill("SIGTERM");
+        },
+        onLine: (line) => this.appendSessionLine(task.id, line),
+      });
+    } finally {
+      this.runs.delete(task.id);
+    }
+
+    if (run.cancelled) {
+      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+      return { ok: false, skipped: true, reason: "review cancelled" };
+    }
+
+    if (!result.ok) {
+      this.appendMarker(task.id, `✗ the reviewer could not answer: ${result.error ?? "unknown error"}`);
+      this.persistSession(task.id);
+      this.emit({
+        type: "review",
+        id: task.id,
+        state: "failed",
+        at: now(),
+        ...(result.error ? { error: result.error } : {}),
+      });
+      this.enforceStillInReview(task);
+      return { ok: false, reason: result.error ?? "the reviewer failed to answer" };
+    }
+
+    this.persistSession(task.id);
+    this.emit({ type: "review", id: task.id, state: "ready", at: now() });
+    this.enforceStillInReview(task);
+    return { ok: true };
+  }
+
+  /** The retained reviewer conversation for a task, or [] when none exists. */
+  session(taskId: string): AgentOutputEntry[] {
+    const lines = this.sessions.get(taskId);
+    if (lines) return lines;
+    const loaded = this.readSession(taskId);
+    return loaded ?? [];
   }
 
   /**
@@ -327,6 +553,119 @@ export class ReviewManager {
   /** Cancel every in-flight review (server shutdown). */
   cancelAll(): void {
     for (const id of [...this.runs.keys()]) this.cancel(id);
+  }
+
+  // ---- reviewer conversation (isolated from the engineer session) ----
+
+  /** The SSE event id used to stream a task's reviewer conversation. */
+  private sessionId(taskId: string): string {
+    return `${REVIEW_SESSION_ID_PREFIX}${taskId}`;
+  }
+
+  /** Whether a conversation is held for the task (in memory or persisted). */
+  private hasSession(taskId: string): boolean {
+    if (this.sessions.has(taskId)) return true;
+    const file = this.sessionFile(taskId);
+    return file !== null && existsSync(file);
+  }
+
+  /** Sidecar file holding the reviewer conversation, or null when unsafe. */
+  private sessionFile(taskId: string): string | null {
+    if (!/^[A-Za-z0-9._-]+$/.test(taskId)) return null;
+    return join(this.config.root, this.config.cacheDir, "reviews", `${taskId}.session.json`);
+  }
+
+  /** Read a persisted reviewer conversation (server restart survival). */
+  private readSession(taskId: string): AgentOutputEntry[] | null {
+    const file = this.sessionFile(taskId);
+    if (!file || !existsSync(file)) return null;
+    try {
+      const parsed = JSON.parse(readFileSync(file, "utf8")) as { lines?: unknown };
+      if (!Array.isArray(parsed.lines)) return null;
+      const lines = parsed.lines as AgentOutputEntry[];
+      this.sessions.set(taskId, lines.slice(-SESSION_LINES_CAP));
+      return lines;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Write the conversation atomically (temp + rename), best-effort. */
+  private persistSession(taskId: string): void {
+    const timer = this.sessionTimers.get(taskId);
+    if (timer) clearTimeout(timer);
+    this.sessionTimers.delete(taskId);
+    const lines = this.sessions.get(taskId);
+    const file = this.sessionFile(taskId);
+    if (!lines || !file) return;
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+      try {
+        writeFileSync(temp, JSON.stringify({ lines }, null, 2), "utf8");
+        renameSync(temp, file);
+      } finally {
+        if (existsSync(temp)) unlinkSync(temp);
+      }
+    } catch {
+      /* the conversation is best-effort — never take the server down */
+    }
+  }
+
+  /** Debounced write, so a fast-running agent does not write per line. */
+  private scheduleSessionWrite(taskId: string): void {
+    const existing = this.sessionTimers.get(taskId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => this.persistSession(taskId), SESSION_WRITE_DEBOUNCE_MS);
+    timer.unref?.();
+    this.sessionTimers.set(taskId, timer);
+  }
+
+  /** Drop a task's conversation, in memory and on disk (a fresh run starts clean). */
+  private resetSession(taskId: string): void {
+    const timer = this.sessionTimers.get(taskId);
+    if (timer) {
+      clearTimeout(timer);
+      this.sessionTimers.delete(taskId);
+    }
+    this.sessions.delete(taskId);
+    const file = this.sessionFile(taskId);
+    if (file) {
+      try {
+        if (existsSync(file)) unlinkSync(file);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  /** Append a human/system entry and stream it under the review session id. */
+  private appendEntry(taskId: string, entry: AgentOutputEntry): void {
+    let lines = this.sessions.get(taskId);
+    if (!lines) {
+      lines = [];
+      this.sessions.set(taskId, lines);
+    }
+    lines.push(entry);
+    if (lines.length > SESSION_LINES_CAP) lines.splice(0, lines.length - SESSION_LINES_CAP);
+    this.emit({
+      type: "agent.output",
+      id: this.sessionId(taskId),
+      entry,
+      stream: "out",
+      at: now(),
+    });
+    this.scheduleSessionWrite(taskId);
+  }
+
+  /** Append a plain streamed line from the agent's stdout. */
+  private appendSessionLine(taskId: string, line: string): void {
+    this.appendEntry(taskId, { s: "out", d: line });
+  }
+
+  /** Append a trusted system marker (run start / completion). */
+  private appendMarker(taskId: string, text: string): void {
+    this.appendEntry(taskId, { type: "sys", d: text });
   }
 
   /** Persist a report, creating `<cacheDir>/reviews/` on first use. */

@@ -53,6 +53,13 @@ export interface DoneResult {
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
 
+/**
+ * Prefix on the SSE id used to stream a task's reviewer conversation. The
+ * engineer session streams under the plain task id; reviewer output streams
+ * under `review:<taskId>` so the two conversations never mix (0110).
+ */
+const REVIEW_SESSION_PREFIX = "review:";
+
 export const STATUS_COLORS: Record<string, string> = {
   draft: "#3a4055",
   inbox: "#566081",
@@ -260,6 +267,21 @@ export const useRepoStore = defineStore("repo", () => {
       }
       pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
+      if (e.id.startsWith(REVIEW_SESSION_PREFIX)) {
+        // Reviewer conversation output — routed to the review lines buffer,
+        // never into the engineer transcript.
+        const tid = e.id.slice(REVIEW_SESSION_PREFIX.length);
+        const state = reviews.value[tid];
+        if (!state) return;
+        reviews.value = {
+          ...reviews.value,
+          [tid]: {
+            ...state,
+            lines: [...(state.lines ?? []), e.entry].slice(-OUTPUT_MAX_LINES),
+          },
+        };
+        return;
+      }
       const prev = outputs.value[e.id] ?? [];
       outputs.value = {
         ...outputs.value,
@@ -310,6 +332,7 @@ export const useRepoStore = defineStore("repo", () => {
           running: e.state === "running",
           enabled: true,
           report: prev?.report ?? null,
+          lines: prev?.lines ?? [],
         },
       };
       if (e.state === "running") {
@@ -377,6 +400,7 @@ export const useRepoStore = defineStore("repo", () => {
         running: task.automaticReview.running,
         enabled: task.automaticReview.enabled,
         report: reviews.value[task.id]?.report ?? null,
+        lines: reviews.value[task.id]?.lines ?? [],
       };
     }
     reviews.value = { ...reviews.value, ...hydratedReviews };
@@ -470,11 +494,17 @@ export const useRepoStore = defineStore("repo", () => {
         running: boolean;
         enabled: boolean;
         review: ReviewReport | null;
+        lines?: AgentOutputEntry[];
       }>(`/api/tasks/${id}/review`);
       if (!r.ok) return;
       reviews.value = {
         ...reviews.value,
-        [id]: { running: r.running, enabled: r.enabled, report: r.review },
+        [id]: {
+          running: r.running,
+          enabled: r.enabled,
+          report: r.review,
+          lines: r.lines ?? [],
+        },
       };
     } catch {
       /* endpoint unavailable — the review is advisory, never blocking */
@@ -499,6 +529,34 @@ export const useRepoStore = defineStore("repo", () => {
     );
     if (!r.ok) {
       const message = r.reason ?? "could not send message";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
+  /** Start a fresh review run against the task's current worktree state. */
+  async function reviewAgain(id: string): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${id}/review/again`, {
+      method: "POST",
+    });
+    if (!r.ok) {
+      const message = r.reason ?? "could not start a fresh review";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Send a follow-up to the reviewer. Routed to the reviewer's own session,
+   * never to the engineer session.
+   */
+  async function sendReviewMessage(id: string, text: string): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${id}/review/message`,
+      JSON_OPTS("POST", { text }),
+    );
+    if (!r.ok) {
+      const message = r.reason ?? "could not send message to the reviewer";
       pushToast(message, "error");
       throw new Error(message);
     }
@@ -644,6 +702,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadReview,
     reviewFor,
     sendMessage,
+    reviewAgain,
+    sendReviewMessage,
     fetchRunning,
     startPreview,
     stopPreview,

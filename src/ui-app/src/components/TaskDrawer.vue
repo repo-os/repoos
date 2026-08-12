@@ -555,6 +555,143 @@ const reviewHtml = computed(() =>
   review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
 );
 
+// ---- agent review tab (0110) ----
+
+/** The three canonical verdict labels, most specific first. */
+const VERDICTS = [
+  { label: "back to the drawing board", tone: "red" },
+  { label: "needs some work", tone: "amber" },
+  { label: "good to go", tone: "green" },
+] as const;
+
+/** The review agent's verdict, derived from the report's verdict line. */
+const verdict = computed<{ label: string; tone: string } | null>(() => {
+  const md = review.value?.report?.markdown ?? "";
+  if (!md) return null;
+  const lower = md.toLowerCase();
+  for (const v of VERDICTS) {
+    if (lower.includes(v.label)) return { label: v.label, tone: v.tone };
+  }
+  return null;
+});
+
+/** True while a "Review again" / reviewer-chat request is in flight. */
+const reviewBusy = ref(false);
+/** A follow-up message typed in the Agent Review tab. */
+const reviewDraftMsg = ref("");
+
+/** The rendered reviewer conversation (report streaming + human messages). */
+const reviewEntries = computed<DisplayEntry[]>(() => {
+  const src = review.value?.lines ?? [];
+  const out: DisplayEntry[] = [];
+  for (const e of src) {
+    if ("type" in e) {
+      if (e.type === "text") {
+        const text = stripAnsi(e.text);
+        const last = out[out.length - 1];
+        if (last && last.kind === "text" && text) {
+          last.text = `${last.text}\n\n${text}`;
+          continue;
+        }
+        out.push({ key: out.length, kind: "text", text });
+      } else if (e.type === "human") {
+        out.push({ key: out.length, kind: "human", text: e.text });
+      } else if (e.type === "tool") {
+        out.push({
+          key: out.length,
+          kind: "tool",
+          toolName: e.tool,
+          toolState: e.state,
+          toolInput: e.input ? stripAnsi(e.input) : undefined,
+          toolOutput: e.output ? stripAnsi(e.output) : undefined,
+        });
+      } else if (e.type === "step") {
+        if (e.kind === "start") continue;
+        out.push({
+          key: out.length,
+          kind: "step",
+          stepKind: e.kind,
+          stepReason: e.reason,
+          stepAt: e.at,
+        });
+      } else {
+        out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
+      }
+    } else {
+      out.push({ key: out.length, kind: "line", s: e.s, d: stripAnsi(e.d) });
+    }
+  }
+  return out;
+});
+
+/** Stick-to-bottom for the reviewer conversation, like the agent log. */
+const reviewStick = ref(true);
+const reviewLogEl = ref<HTMLElement | null>(null);
+watch(reviewEntries, () => {
+  if (reviewStick.value) {
+    nextTick(() => {
+      const el = reviewLogEl.value;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  }
+});
+function onReviewLogScroll(e: Event): void {
+  const el = e.target as HTMLElement;
+  reviewStick.value = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+}
+function scrollReviewToBottom(smooth = false): void {
+  const el = reviewLogEl.value;
+  if (!el) return;
+  reviewStick.value = true;
+  el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+}
+
+/** Hydrate the reviewer conversation whenever the Agent Review tab opens. */
+watch(
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    if (!ui.active || ui.activeTab !== "review" || ui.active.status !== "review") return;
+    reviewStick.value = true;
+    void repo.loadReview(ui.active.id).then(() => nextTick(() => scrollReviewToBottom()));
+  },
+);
+
+/** Send a follow-up message to the reviewer (its own session, never the engineer's). */
+async function sendReviewTurn(): Promise<void> {
+  if (!ui.active) return;
+  const text = reviewDraftMsg.value.trim();
+  if (!text || review.value?.running || reviewBusy.value) return;
+  const prev = review.value?.lines ?? [];
+  repo.reviews[ui.active.id] = {
+    ...(review.value ?? { running: false, enabled: true, report: null, lines: [] }),
+    lines: [...prev, { type: "human", text }],
+  };
+  reviewDraftMsg.value = "";
+  reviewStick.value = true;
+  nextTick(() => scrollReviewToBottom());
+  reviewBusy.value = true;
+  try {
+    await repo.sendReviewMessage(ui.active.id, text);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    reviewBusy.value = false;
+  }
+}
+
+/** Start a fresh review run — a new assessment, not a continuation. */
+async function reviewAgain(): Promise<void> {
+  if (!ui.active || review.value?.running || reviewBusy.value) return;
+  reviewBusy.value = true;
+  try {
+    await repo.reviewAgain(ui.active.id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    reviewBusy.value = false;
+  }
+}
+
 /** Hydrate the report whenever the drawer shows a task in review. */
 watch(
   () => [ui.active?.id, ui.active?.status],
@@ -1358,6 +1495,20 @@ function resetFreeformOverrides(): void {
           >
             Agent
           </button>
+          <button
+            v-if="ui.active.status === 'review'"
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'review' }"
+            @click="ui.activeTab = 'review'"
+          >
+            Agent Review
+            <ActivityIndicator
+              v-if="ui.activeTab !== 'review' && review?.running"
+              variant="reviewing"
+              label="Reviewing…"
+            />
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -1380,31 +1531,6 @@ function resetFreeformOverrides(): void {
             </div>
           </div>
 
-          <div v-if="ui.active.status === 'review'" class="field" style="margin-top: 16px">
-            <label>Agent review</label>
-            <div v-if="review?.running" class="review-running" role="status">
-              <ActivityIndicator variant="reviewing" label="Reviewing…" /> Reviewing… the automatic review agent is inspecting this task.
-            </div>
-            <template v-else-if="review?.report">
-              <div class="review-meta">
-                <span>{{ repo.fmtDate(review.report.at) }}</span>
-                <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
-              </div>
-              <div v-if="review.report.state === 'failed'" class="review-failed">
-                {{ review.report.markdown }}
-              </div>
-              <div v-else class="md-card review-card">
-                <div class="md-rendered" v-html="reviewHtml"></div>
-              </div>
-              <p class="review-hint">
-                Findings only — you decide whether this task is done.
-              </p>
-            </template>
-            <p v-else-if="review && !review.enabled" class="review-hint">
-              The review agent is disabled on the Agents page, so no automatic review runs.
-            </p>
-            <p v-else class="review-hint">No agent review for this task.</p>
-          </div>
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
               <label>Type</label>
@@ -1562,7 +1688,7 @@ function resetFreeformOverrides(): void {
             </template>
           </div>
         </div>
-        <div v-else class="drawer-body" :class="{ 'transition-success': transitioned }">
+        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field">
@@ -1747,6 +1873,142 @@ function resetFreeformOverrides(): void {
             class="agent-hint"
           >
             Task is {{ ui.active.status }} — start work to run an agent turn.
+          </div>
+        </div>
+        <div v-else-if="ui.activeTab === 'review'" class="drawer-body">
+          <div class="review-toolbar">
+            <span class="review-toolbar-title">
+              Agent review
+              <span v-if="ui.active && review" class="review-toolbar-sub">· {{ ui.active.path }}</span>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="ui.saving || reviewBusy || review?.running"
+              :title="review?.running ? 'Waiting for the current review run to finish.' : 'Start a fresh review of the current worktree state'"
+              @click="reviewAgain"
+            >
+              <RotateCcw v-if="!reviewBusy" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ reviewBusy ? "Starting…" : "Review again" }}
+            </Button>
+          </div>
+
+          <div v-if="review?.running" class="review-running" role="status" style="margin-top: 10px">
+            <ActivityIndicator variant="reviewing" label="Reviewing…" />
+            Reviewing… the review agent is inspecting this task.
+          </div>
+
+          <template v-else-if="review?.report">
+            <div v-if="review.report.state === 'failed'" class="review-failed">
+              {{ review.report.markdown }}
+            </div>
+            <template v-else>
+              <div
+                v-if="verdict"
+                class="verdict-callout"
+                :class="`tone-${verdict.tone}`"
+                role="status"
+              >
+                <span class="verdict-dot"></span>
+                <span class="verdict-label">{{ verdict.label }}</span>
+              </div>
+              <div class="review-meta">
+                <span>{{ repo.fmtDate(review.report.at) }}</span>
+                <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
+              </div>
+              <div class="md-card review-card">
+                <div class="md-rendered" v-html="reviewHtml"></div>
+              </div>
+            </template>
+            <p class="review-hint">Findings only — you decide whether this task is done.</p>
+          </template>
+          <p v-else-if="review && !review.enabled" class="review-hint">
+            The review agent is disabled on the Agents page, so no automatic review runs.
+          </p>
+          <p v-else class="review-hint">No agent review for this task yet.</p>
+
+          <div class="review-log-wrap">
+            <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
+              <template v-if="reviewEntries.length === 0">
+                <div class="agent-empty">
+                  The reviewer's conversation appears here once a review runs.
+                  <br />
+                  Start a review to see the reviewer at work, then chat below.
+                </div>
+              </template>
+              <div v-for="entry in reviewEntries" :key="entry.key" class="agent-entry">
+                <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
+                  <span class="agent-pfx" :class="entry.s">{{
+                    entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
+                  }}</span>
+                  <span class="agent-d">{{ entry.d }}</span>
+                </div>
+                <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                  <span class="agent-pfx">·</span>
+                  <span class="agent-d">{{ entry.d }}</span>
+                </div>
+                <div v-else-if="entry.kind === 'human'" class="agent-human">
+                  <div class="agent-human-bubble">{{ entry.text }}</div>
+                </div>
+                <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
+                <div
+                  v-else-if="entry.kind === 'step'"
+                  class="agent-step"
+                  :class="{ fin: entry.stepKind === 'finish' }"
+                >
+                  <span class="agent-step-dot"></span>
+                  <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
+                  <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
+                </div>
+                <details v-else class="agent-tool" :class="entry.toolState">
+                  <summary>
+                    <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
+                    <span class="agent-tool-name">{{ entry.toolName }}</span>
+                    <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
+                      entry.toolInput
+                    }}</span>
+                    <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
+                      entry.toolState
+                    }}</span>
+                  </summary>
+                  <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
+                </details>
+              </div>
+            </div>
+            <button
+              v-if="!reviewStick"
+              type="button"
+              class="agent-jump"
+              @click="scrollReviewToBottom(true)"
+              aria-label="Jump to latest review message"
+            >
+              <ArrowDown class="size-3.5" />
+              Latest
+            </button>
+          </div>
+
+          <div class="agent-input-row">
+            <textarea
+              v-model="reviewDraftMsg"
+              class="agent-input"
+              rows="2"
+              placeholder="Ask the reviewer a follow-up question…"
+              :disabled="review?.running || reviewBusy || ui.saving"
+              @keydown.enter.exact.prevent="sendReviewTurn"
+            ></textarea>
+            <Button
+              variant="accent"
+              size="sm"
+              :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
+              @click="sendReviewTurn"
+            >
+              <Send class="size-3.5" />
+              Send
+            </Button>
+          </div>
+          <div v-if="review?.running" class="agent-hint">
+            <ActivityIndicator /> reviewer is working — wait for this turn to finish
           </div>
         </div>
         <div v-if="dirty" class="save-bar">
