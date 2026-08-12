@@ -3,13 +3,14 @@ id: "0117"
 title: Add a feature release timeline to the control page
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-feature-release-timeline-to-the-co
 created_at: "2026-08-12T04:22:25Z"
-updated_at: "2026-08-12T06:10:42Z"
+updated_at: "2026-08-12T06:10:43Z"
 ---
 ## Problem
 
@@ -45,3 +46,4 @@ This task covers recording and displaying task-backed feature releases on the co
 - 2026-08-12T04:53:23Z · status inbox→ready
 - 2026-08-12T05:54:15Z · status ready→active, branch
 - 2026-08-12T06:10:42Z · status active→review
+- 2026-08-12T06:10:43Z · needs_merge
