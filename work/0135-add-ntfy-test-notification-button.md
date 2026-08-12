@@ -2,13 +2,13 @@
 id: "0135"
 title: Add ntfy test notification button
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-ntfy-test-notification-button
-updated_at: "2026-08-12T17:42:50Z"
+updated_at: "2026-08-12T17:50:07Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Deferred / out of scope:
 
 - 2026-08-12T17:39:45Z · status inbox→ready
 - 2026-08-12T17:42:50Z · status ready→review
+- 2026-08-12T17:50:07Z · status review→done, release:success
