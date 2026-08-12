@@ -799,13 +799,13 @@ function resumeCommand(
       cmd: "codex",
       args: [
         "exec",
-        "resume",
-        ...(sessionId ? [sessionId] : ["--last"]),
-        text,
-        ...modelArgs(cli, model),
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        ...modelArgs(cli, model),
+        "--json",
+        ...(sessionId ? [sessionId] : ["--last"]),
+        text,
       ],
     };
   }
