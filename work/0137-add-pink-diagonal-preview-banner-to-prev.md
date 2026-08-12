@@ -2,14 +2,14 @@
 id: "0137"
 title: "Add pink diagonal \"Preview\" banner to preview links"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T11:57:02Z"
-updated_at: "2026-08-12T11:57:02Z"
+updated_at: "2026-08-12T11:57:13Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Any task card or row that has an active preview displays a small pink diagonal b
 ## Activity
 
 - 2026-08-12T11:57:02Z · created · unknown
+- 2026-08-12T11:57:13Z · status inbox→ready
