@@ -1876,7 +1876,10 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        (value.engine !== "opencode" && value.engine !== "plain") ||
+        (value.engine !== "opencode" &&
+          value.engine !== "claude" &&
+          value.engine !== "copilot" &&
+          value.engine !== "plain") ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
