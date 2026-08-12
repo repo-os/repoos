@@ -2,7 +2,7 @@
 id: "0120"
 title: Show automatic review in progress and block move-to-done until it finishes
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/show-automatic-review-in-progress-and-bl
 model_override: gpt-5.6-terra
 created_at: "2026-08-12T05:13:23Z"
-updated_at: "2026-08-12T05:19:44Z"
+updated_at: "2026-08-12T05:31:48Z"
 ---
 ## Activity
 
@@ -87,3 +87,4 @@ That creates two problems:
 
 - 2026-08-12T05:19:41Z · model_override
 - 2026-08-12T05:19:44Z · status ready→active, branch
+- 2026-08-12T05:31:48Z · status active→review
