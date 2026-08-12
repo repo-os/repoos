@@ -119,10 +119,8 @@ interface Session {
   sessionId?: string;
   task?: Task;
   branch?: string;
-  /*  * Whether the session runs a structured-event CLI (opencode `--format json`,
-  * claude code `--output-format stream-json`, or Copilot `--output-format
-  * json`) or a plain-line CLI (qwen / codex). */
-  engine: "opencode" | "claude" | "copilot" | "plain";
+  /** Which session engine parses the CLI output into AgentOutputEntry cards. */
+  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
@@ -286,13 +284,13 @@ const SESSION_ID_PATTERNS: RegExp[] = [
  * Which structured-event engine (if any) a session should use for a CLI. Both
  * structured engines parse newline-delimited JSON events; they differ only in
  * event shape (`part` vs `message.content[]`), so each gets its own parser
- * branch in `appendLine`. qwen/codex stay on the plain-line path — their
- * stream-json payloads have never been mapped onto `AgentOutputEntry` shapes.
+ * branch in `appendLine`.
  */
 function engineForCli(cli: string): Session["engine"] {
   if (cli === "claude code") return "claude";
   if (cli === "github copilot") return "copilot";
-  if (cli === "qwen code" || cli === "codex") return "plain";
+  if (cli === "qwen code") return "qwen";
+  if (cli === "codex") return "codex";
   return "opencode";
 }
 
@@ -669,8 +667,6 @@ export function parseCopilotEvent(
     ? event.sessionId
     : undefined;
 
-  // Copilot sends streamed deltas before the final assistant.message. Retain
-  // the complete message only so every response has one transcript entry.
   if (type === "assistant.message_delta") return { sessionID };
   if (type === "assistant.message") {
     const text = typeof data.content === "string" ? data.content : "";
@@ -716,8 +712,6 @@ export function parseCopilotEvent(
     return message ? { entry: { type: "sys", d: `error: ${message}` }, sessionID } : { sessionID };
   }
 
-  // `result` contains the stable session id used by --resume. All other
-  // session/model/MCP lifecycle events are deliberately voiceless.
   if (
     type === "result" ||
     type.startsWith("session.") ||
@@ -725,6 +719,136 @@ export function parseCopilotEvent(
     type.startsWith("mcp.")
   ) return { sessionID };
   return null;
+}
+
+/**
+ * Qwen's stream-json is Claude-compatible for assistant/tool content, but
+ * versions in the wild also emit the shorter `{type, content}` form. Keep
+ * this adapter deliberately tolerant so a CLI upgrade cannot turn the chat
+ * into a wall of JSON.
+ */
+export function parseQwenEvent(raw: string): ClaudeParseResult | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!value || typeof value !== "object") return null;
+  const event = value as Record<string, unknown>;
+  const sessionID =
+    typeof event.session_id === "string" ? event.session_id :
+    typeof event.sessionId === "string" ? event.sessionId : undefined;
+  const type = typeof event.type === "string" ? event.type : "";
+  if (!type) return null;
+  const message = event.message && typeof event.message === "object"
+    ? (event.message as Record<string, unknown>)
+    : undefined;
+  const content = Array.isArray(message?.content)
+    ? message.content as ClaudeContentBlock[]
+    : typeof event.content === "string"
+      ? [{ type: "text", text: event.content }]
+      : [];
+  if (type === "system" || type === "session_start" || type === "session_started") {
+    return { sessionID };
+  }
+  if (type === "assistant" || type === "message" || type === "assistant_message") {
+    const surfaced = claudeAssistantEntry(content);
+    return surfaced ? { ...surfaced, sessionID } : { sessionID };
+  }
+  if (type === "content_block_delta" || type === "message_delta") {
+    const delta = event.delta && typeof event.delta === "object"
+      ? event.delta as Record<string, unknown>
+      : undefined;
+    const text = typeof delta?.text === "string" ? delta.text :
+      typeof event.text === "string" ? event.text : "";
+    return text ? { entry: { type: "text", text }, sessionID } : { sessionID };
+  }
+  if (type === "user") {
+    for (const block of content) {
+      if (block.type !== "tool_result" || typeof block.tool_use_id !== "string") continue;
+      return {
+        toolResult: {
+          id: block.tool_use_id,
+          ...(toolResultText(block.content) ? { content: toolResultText(block.content) } : {}),
+          ...(block.is_error === true ? { isError: true } : {}),
+        },
+        sessionID,
+      };
+    }
+  }
+  if (content.length) {
+    const surfaced = claudeAssistantEntry(content);
+    return surfaced ? { ...surfaced, sessionID } : { sessionID };
+  }
+  if (["result", "turn_complete", "turn.completed", "rate_limit_event"].includes(type)) {
+    return { sessionID };
+  }
+  return null;
+}
+
+interface CodexEventResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+}
+
+/** Parse Codex `exec --json` JSONL into the same chat cards as OpenCode. */
+export function parseCodexEvent(raw: string): CodexEventResult | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!value || typeof value !== "object") return null;
+  const event = value as Record<string, unknown>;
+  const type = typeof event.type === "string" ? event.type : "";
+  const sessionID =
+    typeof event.thread_id === "string" ? event.thread_id :
+    typeof event.session_id === "string" ? event.session_id : undefined;
+  if (!type) return null;
+  const item = event.item && typeof event.item === "object"
+    ? event.item as Record<string, unknown>
+    : undefined;
+  if (type === "thread.started") return { sessionID };
+  if (type === "item.updated" && typeof event.delta === "string") {
+    return event.delta.trim() ? { entry: { type: "text", text: event.delta }, sessionID } : { sessionID };
+  }
+  if (type === "error" || type === "turn.failed") {
+    const message = typeof event.message === "string" ? event.message :
+      typeof event.error === "string" ? event.error : undefined;
+    return message ? { entry: { type: "sys", d: `error: ${message}` }, sessionID } : { sessionID };
+  }
+  if (!item) return { sessionID };
+  const itemType = typeof item.type === "string" ? item.type : "";
+  if (itemType === "agent_message") {
+    const text = typeof item.text === "string" ? item.text :
+      typeof item.delta === "string" ? item.delta : "";
+    return text.trim() ? { entry: { type: "text", text }, sessionID } : { sessionID };
+  }
+  if (itemType === "command_execution") {
+    const command = typeof item.command === "string" ? item.command : undefined;
+    const output = typeof item.aggregated_output === "string" ? item.aggregated_output :
+      typeof item.output === "string" ? item.output : undefined;
+    const state = typeof item.status === "string" ? item.status :
+      typeof item.exit_code === "number" ? (item.exit_code === 0 ? "completed" : "error") : undefined;
+    return {
+      entry: {
+        type: "tool",
+        tool: "shell",
+        ...(command ? { input: command } : {}),
+        ...(output ? { output } : {}),
+        ...(state ? { state } : {}),
+      },
+      sessionID,
+    };
+  }
+  if (itemType === "file_change" || itemType === "file_changes") {
+    const changes = item.changes ?? item.files;
+    const detail = typeof changes === "string" ? changes : toolOutputText(changes);
+    return { entry: { type: "tool", tool: "file changes", ...(detail ? { output: detail } : {}) }, sessionID };
+  }
+  return { sessionID };
 }
 
 /** Byte estimate of one entry, for the transcript cap. */
@@ -889,13 +1013,14 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
         ...modelArgs(cli, model),
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
         "--verbose",
         "--dangerously-skip-permissions",
       ],
     };
   }
   if (cli === "qwen code") {
-    return { cmd: "qwen", args: ["-p", mission, ...modelArgs(cli, model), "--output-format", "stream-json"] };
+    return { cmd: "qwen", args: ["-p", mission, ...modelArgs(cli, model), "--output-format", "stream-json", "--include-partial-messages"] };
   }
   if (cli === "codex") {
     return { cmd: "codex", args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"] };
@@ -942,6 +1067,7 @@ function resumeCommand(
         ...modelArgs(cli, model),
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
         "--verbose",
         "--dangerously-skip-permissions",
       ],
@@ -957,6 +1083,7 @@ function resumeCommand(
         ...modelArgs(cli, model),
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
       ],
     };
   }
@@ -1635,6 +1762,14 @@ export class AgentRunner {
       this.appendCopilotLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "qwen") {
+      this.appendClaudeLine(taskId, session, raw, parseQwenEvent);
+      return;
+    }
+    if (stream === "out" && session.engine === "codex") {
+      this.appendCodexLine(taskId, session, raw);
+      return;
+    }
 
     const parsed =
       stream === "out" && session.engine === "opencode"
@@ -1708,8 +1843,13 @@ export class AgentRunner {
    * unknown schema) falls back to the plain-line path so nothing the CLI said
    * is lost.
    */
-  private appendClaudeLine(taskId: string, session: Session, raw: string): void {
-    const parsed = parseClaudeEvent(raw);
+  private appendClaudeLine(
+    taskId: string,
+    session: Session,
+    raw: string,
+    parser: (line: string) => ClaudeParseResult | null = parseClaudeEvent,
+  ): void {
+    const parsed = parser(raw);
     if (!parsed) {
       this.recordEntry(taskId, session, "out", { s: "out", d: raw });
       this.tryExtractSessionId(raw, session);
@@ -1758,6 +1898,23 @@ export class AgentRunner {
     if (!parsed) {
       this.recordEntry(taskId, session, "out", { s: "out", d: raw });
       this.tryExtractSessionId(raw, session);
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.entry) {
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** Codex has one completed item per tool/message rather than Claude blocks. */
+  private appendCodexLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseCodexEvent(raw);
+    if (!parsed) {
+      const entry: AgentOutputEntry = { s: "out", d: raw };
+      this.tryExtractSessionId(raw, session);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
       this.lineTouched(taskId, session, raw);
       return;
     }
@@ -1958,7 +2115,7 @@ export class AgentRunner {
     if (entry.killTimer) clearTimeout(entry.killTimer);
     // claude stream (0109): a tool_use whose result never arrived before the
     // turn ended still gets its card, so a call is never silently invisible.
-    if (session?.engine === "claude" && session.pendingTool) {
+    if ((session?.engine === "claude" || session?.engine === "qwen") && session.pendingTool) {
       this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
       session.pendingTool = undefined;
     }
@@ -2042,10 +2199,7 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        (value.engine !== "opencode" &&
-          value.engine !== "claude" &&
-          value.engine !== "copilot" &&
-          value.engine !== "plain") ||
+        !["opencode", "claude", "copilot", "qwen", "codex", "plain"].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||

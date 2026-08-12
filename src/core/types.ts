@@ -141,8 +141,8 @@ export interface Agent {
 /**
  * One entry of an agent session transcript.
  *
- * Legacy entries carry `s`/`d` — plain lines from claude (`-p`), qwen/codex
- * stream-json, and sessions recorded before structured output. Entries derived
+ * Legacy entries carry `s`/`d` — plain lines from older sessions or CLI
+ * warnings that do not match a structured event. Entries derived
  * from opencode's `--format json` event stream carry a `type` discriminator
  * (`text`/`tool`/`step`/`sys`) so the UI can render them as cards instead of
  * a flat wall of text.
@@ -167,7 +167,7 @@ export type AgentOutputEntry =
   | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
   /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
   | { type: "sys"; d: string }
-  /** A legacy plain line, kept for claude / qwen / codex and old sessions. */
+  /** A legacy plain line, kept for compatibility and unknown CLI warnings. */
   | { s: "out" | "err" | "sys"; d: string };
 
 /**

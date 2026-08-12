@@ -221,6 +221,7 @@ describe("qwen code driver", () => {
         "continue the work",
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
       ]);
       expect(resume.cwd).toBe(realpathSync(cwd));
     } finally {
@@ -250,6 +251,7 @@ describe("qwen code driver", () => {
         "keep going",
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
       ]);
     } finally {
       process.env.PATH = oldPath;

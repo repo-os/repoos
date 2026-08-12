@@ -138,7 +138,7 @@ describe("agent session persistence", () => {
     const disk = JSON.parse(readFileSync(fx.file, "utf8")) as Record<string, unknown>;
     expect(disk.version).toBe(1);
     expect(disk.sessionId).toBe("session-persisted");
-    expect(disk.engine).toBe("plain");
+    expect(disk.engine).toBe("qwen");
     expect(disk.workdir).toBe(fx.root);
     expect(disk.lines).toEqual([
       { s: "out", d: "persisted output" },

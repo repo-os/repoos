@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, parseClaudeEvent, parseCopilotEvent, parseJsonEvent } from "../../server/agents";
+import { AgentRunner, parseClaudeEvent, parseCodexEvent, parseCopilotEvent, parseJsonEvent, parseQwenEvent } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -236,6 +236,32 @@ describe("parseClaudeEvent (0109)", () => {
     expect(parseClaudeEvent('{"type":"text","sessionID":"ses","part":{"type":"text","text":"hi"}}')).toBeNull();
     expect(parseClaudeEvent('{"type":"step_start","part":{"type":"step-start"}}')).toBeNull();
     expect(parseClaudeEvent('{"session_id":"sess-123"}')).toBeNull();
+  });
+});
+
+describe("agent-specific streaming adapters (0116)", () => {
+  it("renders Codex messages and shell work as chat entries", () => {
+    expect(parseCodexEvent('{"type":"thread.started","thread_id":"thread-1"}')).toEqual({ sessionID: "thread-1" });
+    expect(parseCodexEvent('{"type":"item.completed","item":{"type":"agent_message","text":"I found the issue."}}')).toEqual({
+      entry: { type: "text", text: "I found the issue." },
+    });
+    expect(parseCodexEvent('{"type":"item.completed","item":{"type":"command_execution","command":"bun test","aggregated_output":"1 passed","status":"completed"}}')).toEqual({
+      entry: { type: "tool", tool: "shell", input: "bun test", output: "1 passed", state: "completed" },
+    });
+    expect(parseCodexEvent('{"type":"item.updated","delta":"still working"}')).toEqual({
+      entry: { type: "text", text: "still working" },
+    });
+  });
+
+  it("renders Qwen stream-json assistant content and does not leak event JSON", () => {
+    expect(parseQwenEvent('{"type":"session_start","session_id":"qwen-1"}')).toEqual({ sessionID: "qwen-1" });
+    expect(parseQwenEvent('{"type":"assistant","message":{"content":[{"type":"text","text":"I will update the file."}]}}')).toEqual({
+      entry: { type: "text", text: "I will update the file." },
+    });
+    expect(parseQwenEvent('{"type":"content_block_delta","delta":{"type":"text_delta","text":"still writing"}}')).toEqual({
+      entry: { type: "text", text: "still writing" },
+    });
+    expect(parseQwenEvent('{"type":"rate_limit_event","status":"allowed"}')).toEqual({});
   });
 });
 
@@ -525,6 +551,7 @@ describe("claude code driver (stream-json events, 0109)", () => {
         "big pickle",
         "--output-format",
         "stream-json",
+        "--include-partial-messages",
         "--verbose",
         "--dangerously-skip-permissions",
       ]);
