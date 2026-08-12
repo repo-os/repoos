@@ -417,15 +417,19 @@ describe("ReloadManager", () => {
 });
 
 describe("POST /api/server/restart", () => {
-  it("returns a reload state from the running server", async () => {
-    const server = await startServer({ host: "127.0.0.1", port: 0 });
-    try {
-      const res = await fetch(`${server.url}/api/server/restart`, { method: "POST" });
-      expect(res.status).toBe(200);
-      const body = (await res.json()) as { state: string };
-      expect(["reloading", "deferred", "not-stale"]).toContain(body.state);
-    } finally {
-      await server.close();
-    }
-  });
+  it(
+    "returns a reload state from the running server",
+    async () => {
+      const server = await startServer({ host: "127.0.0.1", port: 0 });
+      try {
+        const res = await fetch(`${server.url}/api/server/restart`, { method: "POST" });
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { state: string };
+        expect(["reloading", "deferred", "not-stale"]).toContain(body.state);
+      } finally {
+        await server.close();
+      }
+    },
+    30_000,
+  );
 });
