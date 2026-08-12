@@ -1,7 +1,7 @@
 // Writes dist/.build-info.json with a hash of src/ for staleness detection.
 // The web UI is no longer copied verbatim — it is built by Vite into dist/ui/
 // via `bun run build:ui` (see src/ui-app/vite.config.ts).
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -48,3 +48,8 @@ if (existsSync(srcDir)) {
 const infoPath = join(root, "dist", ".build-info.json");
 writeFileSync(infoPath, JSON.stringify(buildInfo, null, 2) + "\n");
 console.log("copy-assets: dist/.build-info.json → " + buildInfo.hash.slice(0, 12) + "…");
+
+// The CLI entrypoint needs execute permission after every build (tsc emits
+// non-executable files, and git does not reliably preserve the mode bit).
+const cliEntry = join(root, "dist", "cli", "index.js");
+if (existsSync(cliEntry)) chmodSync(cliEntry, 0o755);
