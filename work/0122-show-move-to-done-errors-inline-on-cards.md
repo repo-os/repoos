@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-move-to-done-errors-inline-on-cards
 created_at: "2026-08-12T05:51:20Z"
-updated_at: "2026-08-12T11:37:05Z"
+updated_at: "2026-08-12T13:52:10Z"
 ---
 ## Activity
 
