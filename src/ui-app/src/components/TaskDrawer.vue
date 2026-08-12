@@ -1245,10 +1245,13 @@ function resetFreeformOverrides(): void {
           </div>
           <div v-if="ui.active.status === 'active' || ui.active.status === 'review'" class="quickbar-row">
             <template v-if="ui.active.preview">
-              <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
-                <ExternalLink class="size-3.5" />
-                {{ ui.active.preview.url }}
-              </a>
+              <div class="preview-live">
+                <span class="preview-dot"></span>
+                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                  <ExternalLink class="size-3.5" />
+                  {{ ui.active.preview.url }}
+                </a>
+              </div>
               <Button
                 variant="outline"
                 :disabled="ui.saving || previewBusy"
