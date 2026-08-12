@@ -2,16 +2,16 @@
 id: "0126"
 title: Optimize AI token usage to reduce provider costs
 type: chore
-status: ready
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/optimize-ai-token-usage-to-reduce-provid
 cli_override: claude code
 model_override: haiku
 created_at: "2026-08-12T06:49:58Z"
-updated_at: "2026-08-12T06:51:11Z"
+updated_at: "2026-08-12T06:58:46Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ A documented, actionable optimization strategy that includes:
 - 2026-08-12T06:49:58Z · created · unknown
 - 2026-08-12T06:51:08Z · cli_override, model_override
 - 2026-08-12T06:51:11Z · status inbox→ready
+- 2026-08-12T06:58:46Z · status ready→review, branch
