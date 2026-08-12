@@ -2,14 +2,14 @@
 id: "0133"
 title: Document opencode model pricing and use cases for RepoOS agents
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/document-opencode-model-pricing-and-use-
 created_at: "2026-08-12T10:42:58Z"
-updated_at: "2026-08-12T11:16:32Z"
+updated_at: "2026-08-12T19:32:00Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Deferred:
 - 2026-08-12T10:42:58Z · created · unknown
 - 2026-08-12T11:05:59Z · status inbox→ready
 - 2026-08-12T11:16:32Z · status ready→review, branch
+- 2026-08-12T19:32:00Z · status review→done
