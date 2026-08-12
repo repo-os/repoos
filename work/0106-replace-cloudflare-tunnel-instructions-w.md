@@ -2,7 +2,7 @@
 id: "0106"
 title: Replace Cloudflare tunnel instructions with a validated publishing setup assistant
 type: feature
-status: review
+status: done
 needs_input: true
 priority: p1
 area: ui
