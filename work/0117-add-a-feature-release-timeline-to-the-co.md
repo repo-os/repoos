@@ -2,14 +2,14 @@
 id: "0117"
 title: Add a feature release timeline to the control page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T04:22:25Z"
-updated_at: "2026-08-12T04:22:25Z"
+updated_at: "2026-08-12T04:53:23Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ This task covers recording and displaying task-backed feature releases on the co
 ## Activity
 
 - 2026-08-12T04:22:25Z · created · unknown
+- 2026-08-12T04:53:23Z · status inbox→ready
