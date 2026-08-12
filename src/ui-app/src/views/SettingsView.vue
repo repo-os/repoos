@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
+import { useRepoStore } from "../stores/repo";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
@@ -17,6 +18,7 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 
 const config = useConfigStore();
 const ui = useUiStore();
+const repo = useRepoStore();
 const route = useRoute();
 const router = useRouter();
 const tunnelReadiness = ref<Record<string, any> | null>(null);
@@ -28,6 +30,24 @@ const tunnelStatus = computed(() => {
 onMounted(async () => {
   try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
 });
+
+const testState = ref<"idle" | "sending" | "sent" | "failed">("idle");
+let testStateTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function sendTestNotification(): Promise<void> {
+  testState.value = "sending";
+  clearTimeout(testStateTimer);
+  try {
+    await api("/api/ntfy/test", { method: "POST" });
+    testState.value = "sent";
+  } catch {
+    testState.value = "failed";
+  }
+  testStateTimer = setTimeout(() => {
+    testState.value = "idle";
+  }, 2000);
+}
+
 const generalFields = computed(() =>
   config.visibleFields.filter(
     (field) =>
@@ -154,6 +174,7 @@ watch(
 
 onUnmounted(() => {
   clearTimeout(autoSaveTimer);
+  clearTimeout(testStateTimer);
 });
 </script>
 
@@ -262,13 +283,21 @@ onUnmounted(() => {
                     Leave empty to never send.
                   </div>
                 </div>
-                <div class="setting-input">
+                <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
                   <Input
                     :model-value="String(form.ntfyTopic ?? '')"
                     type="text"
                     placeholder="repoos_myproject"
                     @update:model-value="(v) => (form.ntfyTopic = v)"
                   />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
+                    @click="sendTestNotification"
+                  >
+                    {{ testState === "sent" ? "✓ Sent!" : testState === "failed" ? "✗ Failed" : "Send test" }}
+                  </Button>
                 </div>
               </div>
             </div>

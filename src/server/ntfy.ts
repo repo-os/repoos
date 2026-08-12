@@ -35,14 +35,14 @@ export function ntfyMessageFor(prev: Status, next: Status, title: string): strin
 }
 
 /** True when notifications are enabled AND a topic is configured. */
-function shouldSend(config: RepoOSConfig): boolean {
+export function shouldSend(config: RepoOSConfig): boolean {
   if (config.ntfyEnabled !== true) return false;
   const topic = (config.ntfyTopic ?? "").trim();
   return topic.length > 0;
 }
 
 /** Best-effort publish of a message to the configured topic. Never throws. */
-function publish(config: RepoOSConfig, message: string): void {
+export function publish(config: RepoOSConfig, message: string): void {
   if (!shouldSend(config)) return;
   const topic = encodeURIComponent((config.ntfyTopic ?? "").trim());
   const url = `${ntfyBaseUrl(config)}/${topic}`;

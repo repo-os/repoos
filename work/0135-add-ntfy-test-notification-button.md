@@ -67,5 +67,4 @@ Deferred / out of scope:
 ## Activity
 
 - 2026-08-12T17:39:45Z · status inbox→ready
-- 2026-08-12T17:39:56Z · status ready→active
-- 2026-08-12T17:42:50Z · status active→review
+- 2026-08-12T17:42:50Z · status ready→review
