@@ -55,4 +55,20 @@ describe("renderMarkdown", () => {
   it("renders inline code", () => {
     expect(renderMarkdown("use `repoos check`")).toContain("<code>repoos check</code>");
   });
+
+  it("renders markdown tables with header, body, and inline formatting", () => {
+    const src =
+      "| Model | Tier | Best for |\n" +
+      "| --- | --- | --- |\n" +
+      "| `opencode/deepseek-v4-flash` | 🟢 Budget | **Cheap** coder |\n" +
+      "| `opencode/claude-opus-5` | 🔴 Premium | reviewer |\n";
+    const html = renderMarkdown(src);
+    expect(html).toContain("<table><thead><tr>");
+    expect(html).toContain("<th>Model</th><th>Tier</th><th>Best for</th>");
+    expect(html).toContain("<tbody>");
+    expect(html).toContain("<code>opencode/deepseek-v4-flash</code>");
+    expect(html).toContain("<strong>Cheap</strong>");
+    expect(html).toContain("</tbody></table>");
+    expect(html).toContain("<td>🟢 Budget</td>");
+  });
 });
