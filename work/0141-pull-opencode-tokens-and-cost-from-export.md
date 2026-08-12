@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pull-opencode-token-usage-and-cost-from-
 created_at: "2026-08-12T19:40:00Z"
-updated_at: "2026-08-12T13:10:20Z"
+updated_at: "2026-08-12T13:51:53Z"
 ---
 ## Problem
 
