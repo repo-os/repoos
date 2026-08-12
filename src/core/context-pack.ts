@@ -717,9 +717,10 @@ function renderPack(
   // ---- Managed Preview ----
   push("### Managed Preview");
   push("");
-  push("RepoOS can serve a read-only preview of the worktree:");
-  push("- Start: `POST /api/tasks/:id/preview` (via the UI's Preview button)");
-  push("- View: the preview URL returned in the response");
+  push("RepoOS serves a read-only preview of the worktree — you never need localhost or a port:");
+  push("- Request: emit the exact signal line `::repoos-preview-request::` in your response");
+  push("- RepoOS validates your live run, starts the preview from your worktree, probes it server-side, and records the preview URL + result in your transcript");
+  push("- View: the recorded preview URL (or the UI's Preview button)");
   push("- Stop: `POST /api/tasks/:id/preview/stop` or close via UI");
   push("- Previews are ephemeral: they stop when the task leaves active/review");
   push("");

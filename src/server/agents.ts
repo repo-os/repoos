@@ -49,8 +49,25 @@ export type AgentEvent =
 
 export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
 
+/**
+ * The exact line a sandboxed agent emits to request ITS managed preview
+ * (#0121). Like the handoff signal, it is an output-only intent: the agent
+ * never touches localhost or picks a port — the runner binds it to the live
+ * run and the server starts/probes the preview on the agent's behalf.
+ */
+export const PREVIEW_REQUEST_SIGNAL = "::repoos-preview-request::";
+
 /** A capability minted by the runner for one completed agent turn. */
 export interface AgentHandoffRequest {
+  taskId: string;
+  runId: string;
+  branch: string;
+  workdir: string;
+  sessionId?: string;
+}
+
+/** A capability minted when a clean turn requested its managed preview (#0121). */
+export interface AgentPreviewRequest {
   taskId: string;
   runId: string;
   branch: string;
@@ -89,6 +106,8 @@ interface Entry {
   branch: string;
   runId: string;
   handoffRequested: boolean;
+  /** Whether the agent requested its managed preview during this run (#0121). */
+  previewRequested: boolean;
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -1056,17 +1075,17 @@ function missionFor(
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
-    "## UI previews are server-owned — never run `repoos serve` yourself",
+    "## Managed previews are server-owned — never run `repoos serve` yourself",
     "",
-    "RepoOS owns previews and the control-plane port (7171). Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: that competes with the main server and other tasks, and direct serve attempts from agent processes are rejected. Preview ports and lifecycle are managed for you.",
+    "RepoOS owns previews and the control-plane port. Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: direct serve attempts from managed agent processes are rejected. Preview ports and lifecycle are managed for you.",
     "",
-    "To verify a UI change, request THIS task's managed preview (idempotent — repeat requests return the same URL):",
+    "To verify a UI change, request THIS task's managed preview (idempotent — repeat requests return the same task preview). Do NOT call the control-plane HTTP API and do NOT use `curl`: your sandbox may have no localhost network access. Instead, include this exact line in your response so RepoOS can start and verify the preview for you:",
     "",
-    `    curl -s -X POST "\${REPOOS_API_URL}/api/tasks/\${REPOOS_TASK_ID}/preview"`,
+    `    ${PREVIEW_REQUEST_SIGNAL}`,
     "",
-    "Parse the JSON response — {\"ok\": true, \"port\": <port>, \"url\": \"http://127.0.0.1:<port>\"} — and use the returned `url` to view or probe the worktree UI. The preview is reaped automatically when the task leaves active/review.",
+    "RepoOS validates the request against your live run, starts the preview from your worktree, probes it server-side (health + static page), and records the result — the preview URL and the probe outcome — in your task transcript as trusted system entries. You never need a port or localhost.",
     "",
-    "If the request errors, stop and report the error. Do NOT fall back to launching your own server.",
+    "If the preview fails, RepoOS records an actionable reason in your transcript. Leave the task active and stop so the same worktree/session can be resumed. Do NOT retry the request repeatedly, and never fall back to launching your own server.",
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
   );
@@ -1258,8 +1277,10 @@ export class AgentRunner {
   private readonly pendingCompletion = new Set<string>();
   /**
    * The main RepoOS server's own API URL, injected into every agent process so
-   * the mission's managed-preview request resolves the ACTUAL control plane,
-   * never a hardcoded port.
+   * agents with host networking have an informational pointer at the ACTUAL
+   * control plane, never a hardcoded port. Managed previews are requested by
+   * signal (#0121), so this is not a requirement — it stays for diagnostics
+   * and future HTTP-capable drivers.
    */
   apiUrl?: string;
   private readonly stallTimeoutMs: number;
@@ -1270,6 +1291,14 @@ export class AgentRunner {
   private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
 
   /**
+   * Preview capabilities minted per clean run (#0121). Superseded when a new
+   * run starts for the same task, so a stale request can never start a preview
+   * against a different worktree.
+   */
+  private readonly authorizedPreviews = new Map<string, AgentPreviewRequest>();
+  private readonly onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>;
+
+  /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
    * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
    * overrides the poll cadence, which otherwise scales with the timeout.
@@ -1277,11 +1306,12 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void> } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void> } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.emit = emit;
     this.onHandoff = opts.onHandoff;
+    this.onPreviewRequest = opts.onPreviewRequest;
     this.sessionsDir = join(config.root, config.cacheDir, "sessions");
     this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
     this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
@@ -1323,6 +1353,24 @@ export class AgentRunner {
     if (!this.validateHandoff(request)) return false;
     this.authorizedHandoffs.delete(request.runId);
     return true;
+  }
+
+  /**
+   * Validate that a preview capability was minted by a real, current runner
+   * turn (#0121). The capability carries the task id, the run id issued for
+   * that turn, the registered branch, and the registered worktree — a forged,
+   * expired (superseded by a newer run), cross-task, or path-substituted
+   * request never matches all four.
+   */
+  validatePreview(request: AgentPreviewRequest): boolean {
+    const issued = this.authorizedPreviews.get(request.runId);
+    return Boolean(
+      issued &&
+        issued.taskId === request.taskId &&
+        issued.branch === request.branch &&
+        this.samePath(issued.workdir, request.workdir) &&
+        issued.sessionId === request.sessionId,
+    );
   }
 
   isRunning(taskId: string): boolean {
@@ -1464,6 +1512,9 @@ export class AgentRunner {
    * draining after a stop request, cleanup performs the final flush/eviction.
    */
   complete(taskId: string): void {
+    for (const [runId, req] of this.authorizedPreviews) {
+      if (req.taskId === taskId) this.authorizedPreviews.delete(runId);
+    }
     if (this.entries.has(taskId)) {
       this.pendingCompletion.add(taskId);
       return;
@@ -1489,13 +1540,21 @@ export class AgentRunner {
     branch?: string,
   ): StartResult {
     const runId = randomUUID();
+    // A new run supersedes the previous run's preview capability for this task
+    // (#0121): a capability minted for an older run is expired the moment a
+    // newer turn claims the task.
+    for (const [prevRunId, req] of this.authorizedPreviews) {
+      if (req.taskId === taskId) this.authorizedPreviews.delete(prevRunId);
+    }
     let proc: ChildProcess;
     try {
       // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
       // in depth can reject an accidental direct `repoos serve` attempt, and
-      // REPOOS_API_URL/REPOOS_TASK_ID give the agent the one task-scoped way to
-      // request a managed preview (ADR-0005: agents express intent, RepoOS owns
-      // privileged process/network lifecycle).
+      // REPOOS_TASK_ID/REPOOS_RUN_ID let the runner bind any capability-request
+      // signal to this exact turn. REPOOS_API_URL is kept as an informational
+      // pointer at the control plane (ADR-0005: agents express intent, RepoOS
+      // owns privileged process/network lifecycle) — managed previews are
+      // requested by signal, never by a sandboxed localhost call (#0121).
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", "pipe", "pipe"],
@@ -1522,6 +1581,7 @@ export class AgentRunner {
       branch: branch ?? task?.branch ?? "",
       runId,
       handoffRequested: false,
+      previewRequested: false,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
     // clock resets here too, not just on output, so a follow-up turn on a
@@ -1591,10 +1651,8 @@ export class AgentRunner {
       entry = { s: stream, d: raw };
       this.tryExtractSessionId(raw, session);
     }
-    if (stream === "out" && this.isHandoffSignal(raw, entry)) {
-      const running = this.entries.get(taskId);
-      if (running) running.handoffRequested = true;
-      entry = { s: "sys", d: "✓ agent requested server-side handoff" };
+    if (stream === "out") {
+      entry = this.applySignals(taskId, raw, entry);
     }
     this.recordEntry(taskId, session, stream, entry);
     this.lineTouched(taskId, session, raw);
@@ -1686,13 +1744,7 @@ export class AgentRunner {
       // An orphaned tool_result (an id we never saw a tool_use for) has
       // nothing to attach to — drop it rather than fabricate a tool card.
     } else if (parsed.entry) {
-      if (this.isHandoffSignal(raw, parsed.entry)) {
-        const running = this.entries.get(taskId);
-        if (running) running.handoffRequested = true;
-        this.recordEntry(taskId, session, "out", { s: "sys", d: "✓ agent requested server-side handoff" });
-      } else {
-        this.recordEntry(taskId, session, "out", parsed.entry);
-      }
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
     }
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
@@ -1711,13 +1763,7 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      if (this.isHandoffSignal(raw, parsed.entry)) {
-        const running = this.entries.get(taskId);
-        if (running) running.handoffRequested = true;
-        this.recordEntry(taskId, session, "out", { s: "sys", d: "✓ agent requested server-side handoff" });
-      } else {
-        this.recordEntry(taskId, session, "out", parsed.entry);
-      }
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -1731,16 +1777,19 @@ export class AgentRunner {
     };
   }
 
-  /** Recognize the exact capability-request signal in plain or structured output. */
-  private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
-    if (raw.trim() === HANDOFF_READY_SIGNAL) return true;
+  /**
+   * Whether a raw line carries the exact capability-request `signal` in plain
+   * or structured output. Codex `--json` wraps the final assistant response in
+   * an `item.completed` event, so the signal is matched inside `item.text` too,
+   * not just as a standalone line.
+   */
+  private signalPresent(raw: string, entry: AgentOutputEntry, signal: string): boolean {
+    if (raw.trim() === signal) return true;
     if (
       "type" in entry &&
       entry.type === "text" &&
-      entry.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL)
+      entry.text.split("\n").some((line) => line.trim() === signal)
     ) return true;
-    // Codex --json wraps the final assistant response in an item.completed
-    // event. The signal is therefore inside item.text, not a standalone line.
     try {
       const event = JSON.parse(raw) as {
         type?: unknown;
@@ -1749,10 +1798,42 @@ export class AgentRunner {
       return event.type === "item.completed" &&
         event.item?.type === "agent_message" &&
         typeof event.item.text === "string" &&
-        event.item.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL);
+        event.item.text.split("\n").some((line) => line.trim() === signal);
     } catch {
       return false;
     }
+  }
+
+  /** Recognize the exact handoff-request signal in plain or structured output. */
+  private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
+    return this.signalPresent(raw, entry, HANDOFF_READY_SIGNAL);
+  }
+
+  /** Recognize the exact managed-preview request signal (#0121). */
+  private isPreviewRequestSignal(raw: string, entry: AgentOutputEntry): boolean {
+    return this.signalPresent(raw, entry, PREVIEW_REQUEST_SIGNAL);
+  }
+
+  /**
+   * Detect the runner's capability-request signals in one output line and act:
+   * the handoff signal is recorded for turn-end finalization, and the preview
+   * request is recorded for server-side start+probe at turn exit (#0121). The
+   * surfaced entry becomes a trusted system line so the raw signal text never
+   * clutters the transcript.
+   */
+  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry): AgentOutputEntry {
+    let out = entry;
+    if (this.isPreviewRequestSignal(raw, entry)) {
+      const running = this.entries.get(taskId);
+      if (running) running.previewRequested = true;
+      out = { s: "sys", d: "✓ agent requested a managed preview" };
+    }
+    if (this.isHandoffSignal(raw, entry)) {
+      const running = this.entries.get(taskId);
+      if (running) running.handoffRequested = true;
+      out = { s: "sys", d: "✓ agent requested server-side handoff" };
+    }
+    return out;
   }
 
   /**
@@ -1911,6 +1992,24 @@ export class AgentRunner {
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && !exitedCleanly) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
+    }
+    // A preview request is honored only after a clean turn (#0121): the runner
+    // mints a capability bound to that run's task/branch/worktree and hands the
+    // request to the server, which owns preview process and network lifecycle.
+    if (entry.previewRequested && exitedCleanly && entry.task && entry.branch && entry.workdir) {
+      const request: AgentPreviewRequest = {
+        taskId,
+        runId: entry.runId,
+        branch: entry.branch,
+        workdir: entry.workdir,
+        ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+      };
+      this.authorizedPreviews.set(request.runId, request);
+      void Promise.resolve(this.onPreviewRequest?.(request)).catch((err) => {
+        this.appendLine(taskId, "sys", `✗ managed preview failed: ${(err as Error).message}`);
+      });
+    } else if (entry.previewRequested && !exitedCleanly) {
+      this.appendLine(taskId, "sys", "✗ managed preview was not started because the agent turn was interrupted");
     }
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the

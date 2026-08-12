@@ -87,7 +87,7 @@ import {
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep } from "./done.js";
 import { handoffTask } from "./handoff.js";
-import { PreviewManager } from "./preview.js";
+import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
@@ -579,6 +579,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // a half-written state, so the review waits for `agent.exited`.
   const pendingReview = new Set<string>();
 
+  // Read-only preview servers for review/active tasks. Orphans from a crashed
+  // previous main server are reaped at boot; this instance starts with none.
+  // Declared before the runner so its preview-request handler can close over it.
+  const previews = new PreviewManager(config, emitEvent);
+  previews.cleanupOrphans();
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   const runner = new AgentRunner(
@@ -621,13 +627,47 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
       }
+    },
+    onPreviewRequest: async (request) => {
+      // The capability was minted by the runner for THIS run: task id, run id,
+      // registered branch, and registered worktree all bind to server state.
+      // Anything else — a forged or expired run, a cross-task claim, or a
+      // substituted path — is rejected before any process is started (#0121).
+      if (!runner.validatePreview(request)) {
+        runner.system(request.taskId, "✗ managed preview request rejected: no matching live runner run");
+        return;
+      }
+      const task = index.getTask(request.taskId);
+      if (!task) {
+        runner.system(request.taskId, "✗ managed preview request failed: task no longer exists");
+        return;
+      }
+      runner.system(
+        request.taskId,
+        "Server-owned preview requested — validating the run and starting the worktree preview",
+      );
+      // Reuse the existing PreviewManager: idempotent per task, RepoOS chooses
+      // the port and owns the process lifecycle. Never a parallel implementation.
+      const result = await previews.start(task);
+      if (!result.ok) {
+        runner.system(
+          request.taskId,
+          `✗ managed preview failed: ${result.error ?? "could not start the preview"}. The worktree is unchanged and the same session can be resumed.`,
+        );
+        return;
+      }
+      const url = result.url ?? "";
+      runner.system(request.taskId, `✓ Managed preview ready: ${url}`);
+      // The sandbox may not be able to open the URL — probe it from the
+      // privileged server side and record the structured outcome.
+      const probe = await probePreview(url);
+      if (probe.ok) {
+        runner.system(request.taskId, `✓ Server-side preview probe passed — ${probe.detail ?? "preview responds"}`);
+      } else {
+        runner.system(request.taskId, `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`);
+      }
     } },
   );
-
-  // Read-only preview servers for review/active tasks. Orphans from a crashed
-  // previous main server are reaped at boot; this instance starts with none.
-  const previews = new PreviewManager(config, emitEvent);
-  previews.cleanupOrphans();
 
   // System resource polling over SSE. Samples CPU/memory/process stats every
   // 5s while at least one SSE client is connected; idles when no one is

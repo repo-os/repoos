@@ -3,6 +3,7 @@
  * watcher, JSON API, and SSE event stream. Stays running until interrupted.
  */
 import { startServer } from "../server/server.js";
+import { PREVIEW_REQUEST_SIGNAL } from "../server/agents.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
 
@@ -27,17 +28,15 @@ export async function cmdServe(args: string[]): Promise<void> {
   // directly is rejected here BEFORE binding, so it can never grab the main
   // server port.
   if (directServeBlockedByAgent()) {
-    const api = process.env.REPOOS_API_URL ?? "http://127.0.0.1:7171";
-    const task = process.env.REPOOS_TASK_ID ?? "<task id>";
     console.error(
       c.red("  ✗ Managed agent processes may not launch `repoos serve`."),
     );
     console.error(
       c.dim("    RepoOS owns previews and the control-plane port. Request a managed preview instead:"),
     );
-    console.error(c.dim(`      curl -s -X POST "${api}/api/tasks/${task}/preview"`));
+    console.error(c.dim(`      include this exact line in your response: ${PREVIEW_REQUEST_SIGNAL}`));
     console.error(
-      c.dim("    Use the returned `url` to view the worktree UI; the preview is reaped automatically."),
+      c.dim("    RepoOS starts the preview from your worktree, probes it server-side, and records the URL + result in your transcript."),
     );
     process.exitCode = 1;
     return;
