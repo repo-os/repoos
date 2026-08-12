@@ -2,14 +2,14 @@
 id: "0135"
 title: Add ntfy test notification button
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-ntfy-test-notification-button
+updated_at: "2026-08-12T17:39:45Z"
 ---
-
 ## Problem
 
 After configuring an ntfy topic, there is no way to verify that notifications actually work without triggering a real task lifecycle event. Users need a quick, low-stakes way to confirm their topic is correct and the ntfy delivery path is functional.
@@ -63,3 +63,7 @@ Deferred / out of scope:
 - Notification delivery guarantee (remains best-effort, fire-and-forget)
 - Persistent notification history or delivery log
 - Client-side ntfy topic validation beyond non-empty check
+
+## Activity
+
+- 2026-08-12T17:39:45Z · status inbox→ready
