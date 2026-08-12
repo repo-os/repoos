@@ -2,14 +2,14 @@
 id: "0113"
 title: Stop committing dist/ and screenshots/ on feature branches to eliminate merge conflicts
 type: chore
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/stop-committing-dist-and-screenshots-on-
 created_at: "2026-08-12T04:40:00Z"
-updated_at: "2026-08-12T04:23:41Z"
+updated_at: "2026-08-12T04:38:46Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ dist/screenshots conflict resolution.
 
 - 2026-08-12T04:10:06Z · status inbox→ready
 - 2026-08-12T04:11:49Z · status ready→active, branch
+- 2026-08-12T04:38:46Z · status active→review
