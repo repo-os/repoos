@@ -6,6 +6,7 @@ import {
   detectAgents,
   isAppBundleBinary,
   isDesktopOutputSignature,
+  KNOWN_AGENTS,
   resolveBinary,
   type KnownAgent,
 } from "../../core/detect";
@@ -15,6 +16,7 @@ const FIXTURE_AGENTS: KnownAgent[] = [
   { id: "opencode", name: "opencode", binary: "opencode", drivable: true, installHint: "npm i -g opencode-ai" },
   { id: "claude-code", name: "claude code", binary: "claude", drivable: true, installHint: "npm i -g @anthropic-ai/claude-code" },
   { id: "qwen-code", name: "qwen code", binary: "qwen", drivable: false, installHint: "npm i -g @qwen-code/qwen-code" },
+  { id: "copilot", name: "github copilot", binary: "copilot", drivable: true, installHint: "npm i -g @github/copilot" },
 ];
 
 const tmpRoots: string[] = [];
@@ -86,6 +88,14 @@ describe("isDesktopOutputSignature", () => {
 });
 
 describe("detectAgents", () => {
+  it("registers GitHub Copilot CLI as a drivable agent", () => {
+    expect(KNOWN_AGENTS.find((agent) => agent.id === "copilot")).toMatchObject({
+      name: "github copilot",
+      binary: "copilot",
+      drivable: true,
+    });
+  });
+
   it("reports installed, version-carrying headless binaries", async () => {
     const root = tmpDir();
     makeBin(join(root, "bin"), "opencode", "#!/bin/sh\necho 'opencode v0.3.0'\n");
@@ -122,7 +132,7 @@ describe("detectAgents", () => {
   it("reports missing binaries as not installed", async () => {
     const rows = await detectAgents({ pathEnv: tmpDir(), agents: FIXTURE_AGENTS });
 
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(FIXTURE_AGENTS.length);
     for (const row of rows) {
       expect(row.installed).toBe(false);
       expect(row.path).toBeNull();
@@ -135,7 +145,7 @@ describe("detectAgents", () => {
   it("never throws on broken PATH entries", async () => {
     const broken = `${join(tmpDir(), "nope")}${delimiter}${delimiter}/nonexistent${delimiter}`;
     const rows = await detectAgents({ pathEnv: broken, agents: FIXTURE_AGENTS });
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(FIXTURE_AGENTS.length);
     for (const row of rows) expect(row.installed).toBe(false);
   });
 

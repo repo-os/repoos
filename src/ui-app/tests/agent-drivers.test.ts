@@ -21,6 +21,12 @@ const fs = require("fs");
 const path = require("path");
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+if (path.basename(process.argv[1]) === "copilot") {
+  process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_complete", data: { toolName: "shell", arguments: { command: "git status" }, result: "clean" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "result", sessionId: "copilot-session-123" }) + "\\n");
+  process.exit(0);
+}
 const resumeIndex = args.indexOf("resume");
 if (path.basename(process.argv[1]) === "codex" && resumeIndex !== -1) {
   const sandboxIndex = args.indexOf("--sandbox");
@@ -60,7 +66,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude", "opencode"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode", "copilot"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -151,13 +157,14 @@ describe("model-aware driver commands", () => {
     ["claude code", "claude"],
     ["qwen code", "qwen"],
     ["codex", "codex"],
+    ["github copilot", "copilot"],
   ])("forwards an explicit model for %s", (cli, binary) => {
     const command = promptCommand({ ...agent(cli), model: "provider/model-x" }, "ping");
     expect(command.cmd).toBe(binary);
     expect(command.args).toEqual(expect.arrayContaining(["--model", "provider/model-x"]));
   });
 
-  it.each(["opencode", "claude code", "qwen code", "codex"])(
+  it.each(["opencode", "claude code", "qwen code", "codex", "github copilot"])(
     "omits the model flag for %s default",
     (cli) => {
       const command = promptCommand({ ...agent(cli), model: "default" }, "ping");
@@ -372,6 +379,45 @@ describe("claude code driver", () => {
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();
     }
+  });
+
+  describe("GitHub Copilot CLI driver", () => {
+    it("uses JSONL, narrow permissions, and an extracted session id for resume", async () => {
+      const fx = makeFixture();
+      const oldPath = withFakePath(fx);
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      try {
+        const runner = new AgentRunner(config(fx.bin), () => {});
+        const cwd = join(fx.bin, "wt", "copilot");
+        mkdirSync(cwd, { recursive: true });
+        runner.start(TASK, "feat/x", agent("github copilot"), { cwd });
+        await waitFor(() => !runner.isRunning("0001"), "Copilot first-turn exit");
+
+        expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
+        expect(runner.output("0001")!.lines).toEqual(expect.arrayContaining([
+          { type: "text", text: "Copilot response" },
+          { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+        ]));
+        const [run] = spawns(fx);
+        expect(run.args).toEqual(expect.arrayContaining([
+          "-p", "--output-format", "json", "--no-ask-user",
+          "--allow-tool", "write", "shell(git:*)",
+        ]));
+        expect(run.args).not.toEqual(expect.arrayContaining(["--allow-all", "--allow-all-tools", "--yolo"]));
+        expect(run.cwd).toBe(realpathSync(cwd));
+
+        runner.send("0001", "continue the work", agent("github copilot"));
+        await waitFor(() => spawns(fx).length === 2, "Copilot resume spawn");
+        const [, resume] = spawns(fx);
+        expect(resume.args).toEqual(expect.arrayContaining([
+          "-p", "continue the work", "--resume=copilot-session-123", "--output-format", "json",
+        ]));
+      } finally {
+        process.env.PATH = oldPath;
+        delete process.env.REPOOS_FAKEBIN_LOG;
+        fx.clean();
+      }
+    });
   });
 });
 
