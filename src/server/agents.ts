@@ -72,8 +72,11 @@ interface Session {
   bytes: number;
   workdir?: string;
   sessionId?: string;
-  /** Whether the session runs the opencode CLI (structured JSON events). */
-  engine: "opencode" | "plain";
+  /** Whether the session runs a structured-event CLI (opencode `--format json`
+   *  or claude code `--output-format stream-json`) or a plain-line CLI (qwen /
+   *  codex). claude gets its own branch because its stream-json event shapes
+   *  (nested under `message.content[]`) differ from opencode's `part` shapes. */
+  engine: "opencode" | "claude" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
@@ -84,6 +87,14 @@ interface Session {
   tokens?: number;
   /** Best-effort cumulative cost (USD) reported by the CLI, or undefined if never reported. */
   costUsd?: number;
+  /**
+   * claude stream only (0109): a `tool_use` whose `tool_result` has not
+   * arrived yet. claude emits the call and its result as separate events, so
+   * the tool card is held back until the result line arrives and the entry
+   * can carry name + input + output together. Flushed without output if the
+   * turn ends before the result.
+   */
+  pendingTool?: { id: string; name: string; input?: string };
   /**
    * Edge-detection only, not part of the public stats shape: whether the last
    * `agent.stats` snapshot we pushed already reported `stalled: true`, so the
@@ -146,14 +157,36 @@ export function extractUsage(raw: string): { tokens?: number; costUsd?: number }
   return out;
 }
 
-/** Token count from a `usage`-shaped JSON object, or undefined if absent. */
+/**
+ * Locate a `usage`-shaped block: top-level (codex/opencode events and claude's
+ * terminal `result`) or nested at `message.usage` (claude per-`assistant`
+ * events, 0109).
+ */
+function findUsage(obj: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (obj.usage && typeof obj.usage === "object") return obj.usage as Record<string, unknown>;
+  const msg = obj.message;
+  if (msg && typeof msg === "object") {
+    const m = msg as Record<string, unknown>;
+    if (m.usage && typeof m.usage === "object") return m.usage as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+/**
+ * Token count from a `usage`-shaped JSON object, or undefined if absent.
+ *
+ * Only billable input+output (or an explicit `total_tokens`) count toward the
+ * headline number: claude's `cache_creation_input_tokens` / `cache_read_input_tokens`
+ * bill at different rates, so summing them into the same "tokens" figure would
+ * be fabricated precision (0109). The terminal `result` event reports the
+ * authoritative turn total, so the running figure converges on it.
+ */
 function tokensFromObject(obj: Record<string, unknown>): number | undefined {
-  const usage = obj.usage;
-  if (usage && typeof usage === "object") {
-    const u = usage as Record<string, unknown>;
-    if (typeof u.total_tokens === "number") return u.total_tokens;
-    const input = typeof u.input_tokens === "number" ? u.input_tokens : 0;
-    const output = typeof u.output_tokens === "number" ? u.output_tokens : 0;
+  const usage = findUsage(obj);
+  if (usage) {
+    if (typeof usage.total_tokens === "number") return usage.total_tokens;
+    const input = typeof usage.input_tokens === "number" ? usage.input_tokens : 0;
+    const output = typeof usage.output_tokens === "number" ? usage.output_tokens : 0;
     if (input || output) return input + output;
   }
   if (typeof obj.total_tokens === "number") return obj.total_tokens;
@@ -162,13 +195,13 @@ function tokensFromObject(obj: Record<string, unknown>): number | undefined {
 
 /** Cost (USD) from a `usage`-shaped JSON object, or undefined if absent. */
 function costFromObject(obj: Record<string, unknown>): number | undefined {
+  // claude's terminal `result` event reports the authoritative per-turn cost.
   if (typeof obj.total_cost_usd === "number") return obj.total_cost_usd;
   if (typeof obj.cost_usd === "number") return obj.cost_usd;
-  const usage = obj.usage;
-  if (usage && typeof usage === "object") {
-    const u = usage as Record<string, unknown>;
-    if (typeof u.cost_usd === "number") return u.cost_usd;
-    if (typeof u.total_cost_usd === "number") return u.total_cost_usd;
+  const usage = findUsage(obj);
+  if (usage) {
+    if (typeof usage.cost_usd === "number") return usage.cost_usd;
+    if (typeof usage.total_cost_usd === "number") return usage.total_cost_usd;
   }
   return undefined;
 }
@@ -179,9 +212,17 @@ const SESSION_ID_PATTERNS: RegExp[] = [
   /session[ \t]+id[:\s]*["']?([A-Za-z0-9][A-Za-z0-9_.-]{5,})/i,
 ];
 
-/** True when the agent's CLI is opencode (emits structured JSON events). */
-function isOpenCode(cli: string): boolean {
-  return cli !== "claude code" && cli !== "qwen code" && cli !== "codex";
+/**
+ * Which structured-event engine (if any) a session should use for a CLI. Both
+ * structured engines parse newline-delimited JSON events; they differ only in
+ * event shape (`part` vs `message.content[]`), so each gets its own parser
+ * branch in `appendLine`. qwen/codex stay on the plain-line path — their
+ * stream-json payloads have never been mapped onto `AgentOutputEntry` shapes.
+ */
+function engineForCli(cli: string): Session["engine"] {
+  if (cli === "claude code") return "claude";
+  if (cli === "qwen code" || cli === "codex") return "plain";
+  return "opencode";
 }
 
 /** The opencode `--format json` event fields we consume. */
@@ -328,6 +369,182 @@ export function parseJsonEvent(
   }
 }
 
+/**
+ * Result of parsing one line of claude code's `--output-format stream-json`
+ * stream (0109). Fields are mutually exclusive:
+ *
+ * - `entry` — a ready-to-surface transcript entry (assistant text, a completed
+ *   tool call, or a step boundary).
+ * - `pendingTool` — a `tool_use` whose `tool_result` hasn't arrived yet. The
+ *   line has no entry yet; the runner buffers it and emits the tool card only
+ *   when the matching `tool_result` line arrives (name + input + output
+ *   together).
+ * - `toolResult` — a `tool_result` line to attach to the buffered tool.
+ * - `sessionID` — the `system/init` event's real `session_id` field (never
+ *   regex-scraped).
+ *
+ * `null` means the line is not a claude stream event (a non-JSON warning line,
+ * unknown JSON schema, …) — callers fall back to the plain-line path.
+ */
+export interface ClaudeParseResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+  pendingTool?: { id: string; name: string; input?: string };
+  toolResult?: { id: string; content?: string; isError?: boolean };
+}
+
+/** The claude stream-json event fields we consume. */
+interface ClaudeEvent {
+  type?: unknown;
+  subtype?: unknown;
+  session_id?: unknown;
+  message?: { content?: unknown };
+}
+
+/** A single block inside `message.content` (text / tool_use / tool_result / …). */
+interface ClaudeContentBlock {
+  type?: unknown;
+  text?: unknown;
+  id?: unknown;
+  name?: unknown;
+  input?: unknown;
+  tool_use_id?: unknown;
+  content?: unknown;
+  is_error?: unknown;
+}
+
+/** Render a claude tool_result `content` (string or a list of text blocks). */
+function toolResultText(content: unknown): string | undefined {
+  if (typeof content === "string" && content) return content;
+  if (Array.isArray(content)) {
+    const text = content
+      .filter((b): b is ClaudeContentBlock => !!b && typeof b === "object")
+      .map((b) => (typeof b.text === "string" ? b.text : ""))
+      .join("\n");
+    return text || undefined;
+  }
+  if (typeof content === "object" && content !== null) {
+    try {
+      const s = JSON.stringify(content);
+      return s && s !== "{}" ? s : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/** A claude `assistant` event's first surfaceable content block, if any. */
+function claudeAssistantEntry(
+  content: ClaudeContentBlock[],
+):
+  | { entry: AgentOutputEntry }
+  | { pendingTool: { id: string; name: string; input?: string } }
+  | null {
+  for (const block of content) {
+    if (typeof block.type !== "string") continue;
+    if (block.type === "text") {
+      const text = typeof block.text === "string" ? block.text : "";
+      if (!text.trim()) continue;
+      return { entry: { type: "text", text } };
+    }
+    if (block.type === "tool_use") {
+      const id = typeof block.id === "string" ? block.id : "";
+      const name = typeof block.name === "string" ? block.name : "";
+      if (!id || !name) continue;
+      const input = toolInputText(block.input);
+      return { pendingTool: { id, name, ...(input ? { input } : {}) } };
+    }
+    // thinking / unknown blocks are not surfaced — same policy as opencode's
+    // reasoning events. Swallowed by the caller, never dumped as raw JSON.
+  }
+  return null;
+}
+
+/**
+ * Parse one line of claude code's `--output-format stream-json` stream into a
+ * structured transcript result. Mirrors `parseJsonEvent` for opencode but with
+ * claude's event shapes: content is nested under `message.content[]` (not
+ * `part`), the session id is a real `session_id` field on `system/init`, and
+ * tool results arrive as separate `user` events. Recognized-but-voiceless
+ * events (rate_limit, thinking-only assistant messages, the terminal `result`)
+ * are returned without an `entry` so the runner swallows them instead of
+ * dumping raw JSON into the transcript. `null` for anything else — callers
+ * fall back to the plain-line path.
+ */
+export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const ev = parsed as ClaudeEvent;
+  const type = typeof ev.type === "string" ? ev.type : "";
+  if (!type) return null;
+  const sessionID =
+    typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
+  const content = Array.isArray(ev.message?.content)
+    ? (ev.message.content as ClaudeContentBlock[])
+    : [];
+
+  switch (type) {
+    case "system": {
+      const subtype = typeof ev.subtype === "string" ? ev.subtype : "";
+      if (subtype === "init") {
+        // The stream's real session id lives here; the runner captures it for
+        // `--resume` on follow-up turns instead of regex-scraping prose.
+        return { sessionID };
+      }
+      if (subtype === "thinking_tokens") {
+        // A thinking phase begins — a step boundary the UI renders as a start
+        // marker (visually dropped in favor of a quiet timeline).
+        return { entry: { type: "step", kind: "start", at: now() }, sessionID };
+      }
+      if (subtype === "post_turn_summary") {
+        // The turn's work is done — the boundary before the `result` line.
+        return { entry: { type: "step", kind: "finish", at: now() }, sessionID };
+      }
+      // Unknown system subtypes: swallow, don't dump.
+      return { sessionID };
+    }
+    case "assistant": {
+      const surfaced = claudeAssistantEntry(content);
+      if (surfaced) return { ...surfaced, sessionID };
+      // Thinking-only (or empty) assistant events are voiceless — swallow.
+      return { sessionID };
+    }
+    case "user": {
+      for (const block of content) {
+        if (typeof block.type !== "string" || block.type !== "tool_result") continue;
+        const id = typeof block.tool_use_id === "string" ? block.tool_use_id : "";
+        if (!id) continue;
+        const contentText = toolResultText(block.content);
+        return {
+          toolResult: {
+            id,
+            ...(contentText ? { content: contentText } : {}),
+            ...(block.is_error === true ? { isError: true } : {}),
+          },
+          sessionID,
+        };
+      }
+      return { sessionID };
+    }
+    case "result": {
+      // Authoritative usage/cost totals — consumed by extractUsage on the raw
+      // line; the `result` text duplicates the final assistant text, so it is
+      // never surfaced as its own entry.
+      return { sessionID };
+    }
+    case "rate_limit_event":
+      return { sessionID };
+    default:
+      return null;
+  }
+}
+
 /** Byte estimate of one entry, for the transcript cap. */
 function entryBytes(e: AgentOutputEntry): number {
   const legacy = e as { d?: string };
@@ -417,14 +634,18 @@ export function resolveAgentForTask(
  * `cwd` and need no flag.
  *
  * Verified flags (0042/0043):
- * - claude code: `claude -p <prompt> --dangerously-skip-permissions` (print
- *   mode). The permission flag is REQUIRED here, not optional: the agent is
- *   spawned with stdin ignored, so no approval prompt can ever reach a human.
- *   Without it every non-read-only command (`bun`, `repoos check`, writes) is
- *   denied instantly, the agent stalls explaining it needs approval, and the
- *   task is left stuck in `active` with no changes. Same intent as codex's
- *   `--sandbox workspace-write` below; the blast radius is the task's own
- *   git worktree.
+ * - claude code: `claude -p <prompt> --output-format stream-json --verbose
+ *   --dangerously-skip-permissions` (print mode, 0109). stream-json emits one
+ *   JSON event per line (assistant text, tool calls, results) that streams
+ *   live instead of claude buffering all stdout until exit — the #0070/#0101/
+ *   #0080 blank-Agent-tab fix. `--verbose` is required alongside stream-json
+ *   in print mode. The permission flag is REQUIRED here, not optional: the
+ *   agent is spawned with stdin ignored, so no approval prompt can ever reach
+ *   a human. Without it every non-read-only command (`bun`, `repoos check`,
+ *   writes) is denied instantly, the agent stalls explaining it needs
+ *   approval, and the task is left stuck in `active` with no changes. Same
+ *   intent as codex's `--sandbox workspace-write` below; the blast radius is
+ *   the task's own git worktree.
  * - qwen code: `qwen -p <prompt> --output-format stream-json` — stream-json
  *   emits one JSON event per line, which streams live and carries a
  *   `session_id` RepoOS can resume.
@@ -448,7 +669,18 @@ function modelArgs(cli: string, model: string): string[] {
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   if (cli === "claude code") {
-    return { cmd: "claude", args: ["-p", mission, ...modelArgs(cli, model), "--dangerously-skip-permissions"] };
+    return {
+      cmd: "claude",
+      args: [
+        "-p",
+        mission,
+        ...modelArgs(cli, model),
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--dangerously-skip-permissions",
+      ],
+    };
   }
   if (cli === "qwen code") {
     return { cmd: "qwen", args: ["-p", mission, ...modelArgs(cli, model), "--output-format", "stream-json"] };
@@ -468,10 +700,10 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
 
 /**
  * Map a follow-up turn to a resume invocation that continues the SAME session.
- * claude: `-p --resume <id>` (falls back to `-c --continue` when the id is
- * unknown). opencode: `run --format json --session <id>`. qwen: `--resume <id>`
- * / `--continue` with `-p` + stream-json. codex: `exec resume <id>` / `exec
- * resume --last`.
+ * claude: `-p --resume <id>` + stream-json/--verbose (falls back to
+ * `-c --continue` when the id is unknown). opencode: `run --format json
+ * --session <id>`. qwen: `--resume <id>` / `--continue` with `-p` +
+ * stream-json. codex: `exec resume <id>` / `exec resume --last`.
  * All degrade to a fresh run with the user's text if resume metadata is
  * unavailable — the turn still happens.
  */
@@ -490,6 +722,9 @@ function resumeCommand(
         ...(sessionId ? ["--resume", sessionId] : ["-c", "--continue"]),
         text,
         ...modelArgs(cli, model),
+        "--output-format",
+        "stream-json",
+        "--verbose",
         "--dangerously-skip-permissions",
       ],
     };
@@ -855,7 +1090,7 @@ export class AgentRunner {
         stalledEmitted: false,
       };
     session.workdir = cwd;
-    session.engine = isOpenCode(agent.cli) ? "opencode" : "plain";
+    session.engine = engineForCli(agent.cli);
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
@@ -975,8 +1210,17 @@ export class AgentRunner {
   private appendLine(taskId: string, stream: "out" | "err" | "sys", raw: string): void {
     const session = this.sessions.get(taskId);
     if (!session) return;
+
+    // claude's stream-json event shapes (nested under `message.content[]`)
+    // differ from opencode's `part` shapes, so it gets its own parser branch
+    // rather than a merged parser sniffing both (0109).
+    if (stream === "out" && session.engine === "claude") {
+      this.appendClaudeLine(taskId, session, raw);
+      return;
+    }
+
     const parsed =
-      session.engine === "opencode" && stream === "out"
+      stream === "out" && session.engine === "opencode"
         ? parseJsonEvent(raw)
         : null;
     let entry: AgentOutputEntry;
@@ -984,16 +1228,29 @@ export class AgentRunner {
       if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
       entry = parsed.entry;
     } else {
-      // Plain line: claude / qwen / codex output, malformed JSON, or anything
-      // on stderr. Keep the legacy `{s,d}` shape and the regex session-id
-      // extraction.
+      // Plain line: qwen / codex output, malformed JSON, anything on stderr,
+      // or a `sys` notice. Keep the legacy `{s,d}` shape and the regex
+      // session-id extraction (opencode's session-id event, unknown schemas).
       entry = { s: stream, d: raw };
       this.tryExtractSessionId(raw, session);
     }
+    this.recordEntry(taskId, session, stream, entry);
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /**
+   * Append a transcript entry, stream it out, and enforce the output cap.
+   * `sys` entries (self-heal notices) flow on the "out" stream, matching how
+   * parsed `error`/`file-update` events already surface as sys lines.
+   */
+  private recordEntry(
+    taskId: string,
+    session: Session,
+    stream: "out" | "err" | "sys",
+    entry: AgentOutputEntry,
+  ): void {
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
-    // `sys` entries (self-heal notices) flow on the "out" stream, matching how
-    // parsed `error`/`file-update` events already surface as sys lines.
     this.emit({
       type: "agent.output",
       id: taskId,
@@ -1006,9 +1263,16 @@ export class AgentRunner {
       if (!dropped) break;
       session.bytes -= entryBytes(dropped);
     }
-    // Live stats (0080): any output is evidence the process isn't hung, so it
-    // resets the silence clock and clears a stall warning immediately — the
-    // periodic check only ever needs to raise the flag, never lower it.
+  }
+
+  /**
+   * Per-line bookkeeping shared by every append path: fold any usage/cost the
+   * line reported into the session and reset the stall clock. Any output is
+   * evidence the process isn't hung, so it resets the silence clock and clears
+   * a stall warning immediately — the periodic check only ever needs to raise
+   * the flag, never lower it.
+   */
+  private lineTouched(taskId: string, session: Session, raw: string): void {
     const usageChanged = this.applyUsage(session, raw);
     session.lastOutputAt = now();
     const stallCleared = session.stalledEmitted;
@@ -1017,11 +1281,76 @@ export class AgentRunner {
   }
 
   /**
+   * The claude stream-json branch of `appendLine` (0109). Recognized events
+   * map onto structured entries, or are swallowed when they have no transcript
+   * representation; anything else (a non-JSON `Warning: no stdin…` line, an
+   * unknown schema) falls back to the plain-line path so nothing the CLI said
+   * is lost.
+   */
+  private appendClaudeLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseClaudeEvent(raw);
+    if (!parsed) {
+      this.recordEntry(taskId, session, "out", { s: "out", d: raw });
+      this.tryExtractSessionId(raw, session);
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.pendingTool) {
+      // A tool call with its result still to come: buffer it and emit the card
+      // only when the matching tool_result line arrives, so it carries name +
+      // input + output together. If a second call starts before the first
+      // resolved, flush the stale one without its output so it isn't lost.
+      if (session.pendingTool && session.pendingTool.id !== parsed.pendingTool.id) {
+        this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
+      }
+      session.pendingTool = parsed.pendingTool;
+    } else if (parsed.toolResult) {
+      const pending =
+        session.pendingTool && session.pendingTool.id === parsed.toolResult.id
+          ? session.pendingTool
+          : undefined;
+      if (pending) {
+        session.pendingTool = undefined;
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.name,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(parsed.toolResult.content ? { output: parsed.toolResult.content } : {}),
+          ...(parsed.toolResult.isError ? { state: "error" } : {}),
+        });
+      }
+      // An orphaned tool_result (an id we never saw a tool_use for) has
+      // nothing to attach to — drop it rather than fabricate a tool card.
+    } else if (parsed.entry) {
+      this.recordEntry(taskId, session, "out", parsed.entry);
+    }
+    // Otherwise the line was a recognized-but-voiceless claude event (init,
+    // rate_limit, thinking-only assistant message, terminal `result`) — it is
+    // swallowed rather than dumped into the transcript as raw JSON.
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** The transcript entry for a tool_use whose result never arrived. */
+  private pendingToolEntry(pending: { name: string; input?: string }): AgentOutputEntry {
+    return {
+      type: "tool",
+      tool: pending.name,
+      ...(pending.input ? { input: pending.input } : {}),
+    };
+  }
+
+  /**
    * Fold any usage/cost found in a raw output line into the session, clamped
    * to never move backward — some CLIs report a running total, some reset per
    * turn, and this readout must count up, never flicker down. Returns true
    * when a stored value actually changed (so callers only emit stats when
    * there's something new to show).
+   *
+   * The clamp also implements claude's contract naturally (0109): its terminal
+   * `result` event reports the authoritative, cumulative-for-the-turn totals,
+   * so `Math.max` "replaces" the per-message figures with the real number
+   * rather than summing it on top of them.
    */
   private applyUsage(session: Session, raw: string): boolean {
     const found = extractUsage(raw);
@@ -1131,6 +1460,12 @@ export class AgentRunner {
       session.pending = "";
     }
     if (entry.killTimer) clearTimeout(entry.killTimer);
+    // claude stream (0109): a tool_use whose result never arrived before the
+    // turn ended still gets its card, so a call is never silently invisible.
+    if (session?.engine === "claude" && session.pendingTool) {
+      this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
+      session.pendingTool = undefined;
+    }
     // Fold the finished turn's wall time into the running total (0080) — the
     // time-spent counter accumulates across turns rather than resetting each
     // time a follow-up message starts a fresh process.

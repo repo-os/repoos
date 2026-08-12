@@ -302,7 +302,7 @@ describe("claude code driver", () => {
    * every write and build command, does nothing, and leaves the task wedged in
    * `active` — the exact failure this asserts against.
    */
-  it("passes --dangerously-skip-permissions on both first turn and resume", async () => {
+  it("passes stream-json + --verbose and --dangerously-skip-permissions on both first turn and resume", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -318,6 +318,10 @@ describe("claude code driver", () => {
       expect(run.args[0]).toBe("-p");
       expect(run.args[1]).toContain("Task #0001");
       expect(run.args).toContain("--dangerously-skip-permissions");
+      // stream-json un-buffers stdout so the Agent tab fills in live instead of
+      // blank until exit (0109); --verbose is required alongside it in print mode.
+      expect(run.args).toEqual(expect.arrayContaining(["--output-format", "stream-json"]));
+      expect(run.args).toContain("--verbose");
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "keep going", agent("claude code"));
@@ -326,6 +330,8 @@ describe("claude code driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toContain("keep going");
       expect(resume.args).toContain("--dangerously-skip-permissions");
+      expect(resume.args).toEqual(expect.arrayContaining(["--output-format", "stream-json"]));
+      expect(resume.args).toContain("--verbose");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -544,6 +550,36 @@ describe("extractUsage (0080)", () => {
   it("falls back to plain-text cost/token summaries", () => {
     expect(extractUsage("Total cost: $0.1234")).toEqual({ costUsd: 0.1234 });
     expect(extractUsage("used 1,234 tokens this turn")).toEqual({ tokens: 1234 });
+  });
+
+  it("reads claude's nested message.usage and authoritative result totals (0109)", () => {
+    expect(
+      extractUsage(
+        JSON.stringify({
+          type: "assistant",
+          message: { content: [], usage: { input_tokens: 4, output_tokens: 91 } },
+        }),
+      ),
+    ).toEqual({ tokens: 95 });
+    // The terminal `result` reports the turn's authoritative numbers; the cache
+    // fields bill at different rates and must NOT be summed into the headline.
+    expect(
+      extractUsage(
+        JSON.stringify({
+          type: "result",
+          subtype: "success",
+          is_error: false,
+          total_cost_usd: 0.0731223,
+          result: "Hello world greeting.",
+          usage: {
+            input_tokens: 4,
+            output_tokens: 91,
+            cache_creation_input_tokens: 9403,
+            cache_read_input_tokens: 49071,
+          },
+        }),
+      ),
+    ).toEqual({ tokens: 95, costUsd: 0.0731223 });
   });
 
   it("returns an empty object when nothing usage-shaped is present", () => {
