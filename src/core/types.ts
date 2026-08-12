@@ -83,6 +83,8 @@ export interface Task {
   tags: string[];
   created_at: string | null;
   updated_at: string | null;
+  /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
+  releasedAt?: string | null;
 
   /** Path relative to repo root, e.g. "work/0012-company-dashboard.md". */
   path: string;

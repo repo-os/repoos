@@ -6,13 +6,7 @@
  */
 import { basename, relative } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
-import {
-  STATUSES,
-  type Task,
-  type Status,
-  type Assignee,
-  type TaskGitInfo,
-} from "./types.js";
+import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
 import { emptyGitInfo } from "./git.js";
 
 /** Canonical frontmatter key order, so writes produce tidy, stable diffs. */
@@ -37,6 +31,7 @@ const KEY_ORDER = [
 ];
 
 const ACTIVITY_HEADING = "## Activity";
+const RELEASE_ACTIVITY = /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · .*\breleased\b.*$/gm;
 
 /** ISO-8601 UTC timestamp to the second, e.g. 2026-06-01T09:14:02Z. */
 export function utcTimestamp(): string {
@@ -80,6 +75,13 @@ export function recordChange(task: Task, entry: string): void {
   task.body = appendActivityEntry(task.body, `- ${task.updated_at} · ${entry}`);
 }
 
+/** Latest successful-release timestamp recorded in the append-only activity log. */
+export function releasedAtFromActivity(body: string): string | null {
+  let releasedAt: string | null = null;
+  for (const match of body.matchAll(RELEASE_ACTIVITY)) releasedAt = match[1];
+  return releasedAt;
+}
+
 function deriveIdFromFilename(file: string): string {
   const name = basename(file).replace(/\.[^.]+$/, "");
   const m = name.match(/^(\d{2,})/);
@@ -120,9 +122,7 @@ export function parseTask(args: ParseTaskArgs): Task {
   const relPath = relative(root, absPath).split("\\").join("/");
 
   const id = String(data.id ?? deriveIdFromFilename(absPath));
-  const title = String(
-    data.title ?? deriveTitleFromBody(body, id),
-  );
+  const title = String(data.title ?? deriveTitleFromBody(body, id));
   const assignedTo = String(data.assigned_to ?? "");
   const assignee = resolveAssignee(
     assignedTo || (defaultAssignee === "unassigned" ? "" : defaultAssignee),
@@ -136,9 +136,12 @@ export function parseTask(args: ParseTaskArgs): Task {
   }
 
   // Per-task agent override fields
-  const agentOverride = typeof data.agent_override === "string" && data.agent_override ? data.agent_override : null;
-  const cliOverride = typeof data.cli_override === "string" && data.cli_override ? data.cli_override : null;
-  const modelOverride = typeof data.model_override === "string" && data.model_override ? data.model_override : null;
+  const agentOverride =
+    typeof data.agent_override === "string" && data.agent_override ? data.agent_override : null;
+  const cliOverride =
+    typeof data.cli_override === "string" && data.cli_override ? data.cli_override : null;
+  const modelOverride =
+    typeof data.model_override === "string" && data.model_override ? data.model_override : null;
 
   // read created_at with fallback to deprecated created
   const created_at = data.created_at
@@ -169,6 +172,7 @@ export function parseTask(args: ParseTaskArgs): Task {
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
     created_at,
     updated_at,
+    releasedAt: releasedAtFromActivity(body),
     path: relPath,
     absPath,
     body,
