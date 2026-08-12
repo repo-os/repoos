@@ -100,11 +100,10 @@ interface Session {
   sessionId?: string;
   task?: Task;
   branch?: string;
-  /** Whether the session runs a structured-event CLI (opencode `--format json`
-   *  or claude code `--output-format stream-json`) or a plain-line CLI (qwen /
-   *  codex). claude gets its own branch because its stream-json event shapes
-   *  (nested under `message.content[]`) differ from opencode's `part` shapes. */
-  engine: "opencode" | "claude" | "plain";
+  /*  * Whether the session runs a structured-event CLI (opencode `--format json`,
+  * claude code `--output-format stream-json`, or Copilot `--output-format
+  * json`) or a plain-line CLI (qwen / codex). */
+  engine: "opencode" | "claude" | "copilot" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
@@ -273,6 +272,7 @@ const SESSION_ID_PATTERNS: RegExp[] = [
  */
 function engineForCli(cli: string): Session["engine"] {
   if (cli === "claude code") return "claude";
+  if (cli === "github copilot") return "copilot";
   if (cli === "qwen code" || cli === "codex") return "plain";
   return "opencode";
 }
@@ -531,6 +531,7 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
   } catch {
     return null;
   }
+
   if (typeof parsed !== "object" || parsed === null) return null;
   const ev = parsed as ClaudeEvent;
   const type = typeof ev.type === "string" ? ev.type : "";
@@ -595,6 +596,116 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
     default:
       return null;
   }
+}
+
+/** The Copilot CLI JSONL event fields consumed by the task transcript. */
+interface CopilotEvent {
+  type?: unknown;
+  data?: {
+    content?: unknown;
+    deltaContent?: unknown;
+    toolName?: unknown;
+    tool?: unknown;
+    arguments?: unknown;
+    input?: unknown;
+    result?: unknown;
+    output?: unknown;
+    error?: unknown;
+    message?: unknown;
+  };
+  sessionId?: unknown;
+}
+
+/** Text-bearing values in Copilot tool results and error payloads. */
+function copilotText(value: unknown): string | undefined {
+  if (typeof value === "string" && value) return value;
+  if (!value || typeof value !== "object") return undefined;
+  const obj = value as Record<string, unknown>;
+  for (const key of ["content", "text", "message", "error"]) {
+    if (typeof obj[key] === "string" && obj[key]) return obj[key] as string;
+  }
+  return toolOutputText(value);
+}
+
+/**
+ * Parse Copilot CLI's `--output-format json` JSONL stream. The CLI emits
+ * lifecycle telemetry alongside assistant and tool events; lifecycle records
+ * are recognized and swallowed so the Agent tab remains a useful transcript.
+ */
+export function parseCopilotEvent(
+  raw: string,
+): { entry?: AgentOutputEntry; sessionID?: string } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const event = parsed as CopilotEvent;
+  const type = typeof event.type === "string" ? event.type : "";
+  if (!type) return null;
+  const data = event.data ?? {};
+  const sessionID = typeof event.sessionId === "string" && event.sessionId
+    ? event.sessionId
+    : undefined;
+
+  // Copilot sends streamed deltas before the final assistant.message. Retain
+  // the complete message only so every response has one transcript entry.
+  if (type === "assistant.message_delta") return { sessionID };
+  if (type === "assistant.message") {
+    const text = typeof data.content === "string" ? data.content : "";
+    return text ? { entry: { type: "text", text }, sessionID } : { sessionID };
+  }
+
+  if (type === "tool.execution_start") {
+    const tool = typeof data.toolName === "string"
+      ? data.toolName
+      : typeof data.tool === "string"
+        ? data.tool
+        : "";
+    if (!tool) return { sessionID };
+    const input = toolInputText(data.arguments ?? data.input);
+    return {
+      entry: { type: "tool", tool, ...(input ? { input } : {}), state: "running" },
+      sessionID,
+    };
+  }
+
+  if (type === "tool.execution_complete") {
+    const tool = typeof data.toolName === "string"
+      ? data.toolName
+      : typeof data.tool === "string"
+        ? data.tool
+        : "tool";
+    const input = toolInputText(data.arguments ?? data.input);
+    const output = copilotText(data.result ?? data.output ?? data.error);
+    return {
+      entry: {
+        type: "tool",
+        tool,
+        ...(input ? { input } : {}),
+        ...(output ? { output } : {}),
+        ...(data.error ? { state: "error" } : { state: "completed" }),
+      },
+      sessionID,
+    };
+  }
+
+  if (type === "error" || type.endsWith(".error")) {
+    const message = copilotText(data.error ?? data.message ?? data);
+    return message ? { entry: { type: "sys", d: `error: ${message}` }, sessionID } : { sessionID };
+  }
+
+  // `result` contains the stable session id used by --resume. All other
+  // session/model/MCP lifecycle events are deliberately voiceless.
+  if (
+    type === "result" ||
+    type.startsWith("session.") ||
+    type.startsWith("model.") ||
+    type.startsWith("mcp.")
+  ) return { sessionID };
+  return null;
 }
 
 /** Byte estimate of one entry, for the transcript cap. */
@@ -725,6 +836,29 @@ function modelArgs(cli: string, model: string): string[] {
   return ["--model", model];
 }
 
+const COPILOT_TOOL_PERMISSIONS = [
+  "--allow-tool", "write",
+  "--allow-tool", "shell(bun:*)",
+  "--allow-tool", "shell(node:*)",
+  "--allow-tool", "shell(npm:*)",
+  "--allow-tool", "shell(npx:*)",
+  "--allow-tool", "shell(git:*)",
+  "--allow-tool", "shell(curl:*)",
+  "--allow-tool", "shell(ls)",
+  "--allow-tool", "shell(cat)",
+] as const;
+
+function copilotArgs(options: { write: boolean }): string[] {
+  return [
+    "--output-format", "json",
+    "--no-ask-user",
+    "--no-auto-update",
+    "--no-remote",
+    "--no-remote-export",
+    ...(options.write ? COPILOT_TOOL_PERMISSIONS : []),
+  ];
+}
+
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   if (cli === "claude code") {
@@ -746,6 +880,12 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
   }
   if (cli === "codex") {
     return { cmd: "codex", args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"] };
+  }
+  if (cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ write: true })],
+    };
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
@@ -813,6 +953,20 @@ function resumeCommand(
         "--json",
         ...(sessionId ? [sessionId] : ["--last"]),
         text,
+      ],
+    };
+  }
+  if (cli === "github copilot") {
+    // Never use --continue here: it could attach a different task's most
+    // recent Copilot session. Without a saved id, start a fresh safe turn.
+    return {
+      cmd: "copilot",
+      args: [
+        "-p",
+        text,
+        ...(sessionId ? [`--resume=${sessionId}`] : []),
+        ...modelArgs(cli, model),
+        ...copilotArgs({ write: true }),
       ],
     };
   }
@@ -940,6 +1094,15 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
   if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt, ...extra] };
   if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
   if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      // One-shot callers (PM/freeform and model probes) consume the final
+      // response, not the streaming transcript. Keep JSONL exclusive to the
+      // AgentRunner so freeform task parsing receives markdown.
+      args: ["-p", prompt, ...extra, "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
+    };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -971,6 +1134,12 @@ export function reviewCommand(
   }
   if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
   if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "github copilot") {
+    return {
+      cmd: "copilot",
+      args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+    };
+  }
   return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
 }
 
@@ -1402,6 +1571,10 @@ export class AgentRunner {
       this.appendClaudeLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "copilot") {
+      this.appendCopilotLine(taskId, session, raw);
+      return;
+    }
 
     const parsed =
       stream === "out" && session.engine === "opencode"
@@ -1524,6 +1697,28 @@ export class AgentRunner {
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
     // swallowed rather than dumped into the transcript as raw JSON.
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** Copilot's JSONL branch; unlike Claude, tool start/finish events stand alone. */
+  private appendCopilotLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseCopilotEvent(raw);
+    if (!parsed) {
+      this.recordEntry(taskId, session, "out", { s: "out", d: raw });
+      this.tryExtractSessionId(raw, session);
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.entry) {
+      if (this.isHandoffSignal(raw, parsed.entry)) {
+        const running = this.entries.get(taskId);
+        if (running) running.handoffRequested = true;
+        this.recordEntry(taskId, session, "out", { s: "sys", d: "✓ agent requested server-side handoff" });
+      } else {
+        this.recordEntry(taskId, session, "out", parsed.entry);
+      }
+    }
     this.lineTouched(taskId, session, raw);
   }
 
@@ -1748,7 +1943,10 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        (value.engine !== "opencode" && value.engine !== "plain") ||
+        (value.engine !== "opencode" &&
+          value.engine !== "claude" &&
+          value.engine !== "copilot" &&
+          value.engine !== "plain") ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||

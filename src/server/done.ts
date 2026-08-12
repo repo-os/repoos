@@ -22,7 +22,7 @@ import {
   removeWorktree,
   commitTaskFile,
 } from "../core/git.js";
-import { patchTaskFile } from "./write.js";
+import { markTaskReleased } from "./write.js";
 
 export interface CheckSummary {
   ok: boolean;
@@ -155,11 +155,7 @@ function runProcess(
   });
 }
 
-async function runStep(
-  cwd: string,
-  candidates: string[][],
-  label: string,
-): Promise<CheckSummary> {
+async function runStep(cwd: string, candidates: string[][], label: string): Promise<CheckSummary> {
   let missing = "";
   for (const cmd of candidates) {
     const run = await runProcess(cmd[0], cmd.slice(1), { cwd, timeout: 240_000 });
@@ -291,7 +287,7 @@ export async function completeTask(
   }
 
   onProgress?.("done");
-  const updated = patchTaskFile(config, task.absPath, { status: "done" });
+  const updated = markTaskReleased(config, task.absPath);
   // Best-effort cleanup; content is preserved in the merged main. The worktree
   // must go first — git refuses to delete a branch checked out in a worktree.
   removeWorktree(root, task.branch);

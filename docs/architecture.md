@@ -46,9 +46,10 @@ Pure logic, no transport. Everything else calls into this.
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
 - `detect.ts` — probes PATH for installed coding agents (opencode, Claude Code,
-  Qwen, Codex) and reports version + availability.
+  Qwen, Codex, GitHub Copilot CLI) and reports version + availability.
 - `models.ts` — per-CLI model list adapters (e.g. sources `opencode models`
-  live for the Agents page dropdown).
+  live for the Agents page dropdown). Copilot model discovery is not stable, so
+  it offers its default and supports per-model compatibility probes.
 - `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`).
 
 ### src/cli + src/commands — one-shot commands
@@ -72,7 +73,9 @@ Adds liveness over the one-shot core. No new business logic.
 - `agents.ts` — the AgentRunner: spawns coding agents in task worktrees, streams
   output as structured events over SSE, manages session transcripts for resume,
   self-heals board state when the agent exits, and hosts the persistent
-  repository-level RepoOS Guide conversation using the same session model.
+  repository-level RepoOS Guide conversation using the same session model. Its
+  Copilot CLI driver uses JSONL output and explicit, narrow write/shell
+  permissions; it never uses the CLI's unrestricted permission switches.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
 - `done.ts` — review-to-done close-out: merges the task branch into main,
@@ -115,10 +118,31 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   read-only in that task's worktree -> its report is stored under `.repoos/` and
   served by GET /api/tasks/:id/review -> the drawer shows it beside "Move to
   done", which stays the human's call.
+- Release: after the review-to-done flow merges a task and its post-merge checks
+  pass, it appends a `released` entry to that task's Activity log. The Control
+  page derives its persistent feature-release timeline from those entries;
+  ordinary status edits and failed close-outs never create releases.
 
 This convergence — API edits, raw file edits, and agent output all producing
 the same event stream — is the architectural payoff: agents participate by
 editing files, needing to know nothing about RepoOS itself.
+
+## GitHub Copilot CLI driver
+
+RepoOS runs GitHub Copilot CLI (`npm i -g @github/copilot`) in a task worktree
+with `-p`, `--output-format json`, and `--no-ask-user`. Its JSONL transcript
+captures assistant text, tool activity, errors, and the final `sessionId`;
+follow-up task-chat prompts use that id with `--resume=<session-id>`. It does
+not use `--continue`, which could resume a different task's most recent
+session.
+
+The driver intentionally never passes `--allow-all`, `--allow-all-tools`, or
+`--yolo`. It grants file writes and only the engineering command families
+needed for a RepoOS task (`bun`, `node`, `npm`, `npx`, `git`, `curl`, `ls`, and
+`cat`), while the CLI's default worktree path boundary remains in force.
+Copilot's live model listing is not yet a stable CLI interface, so the Agents
+page offers `default`; any configured model id can still be checked through the
+existing compatibility probe.
 
 ## The three runtime states (don't conflate them)
 

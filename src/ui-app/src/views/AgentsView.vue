@@ -47,6 +47,7 @@ const customAgents = computed(() =>
 
 const CLI_LABELS: Record<string, string> = {
   "claude code": "Claude Code",
+  "github copilot": "GitHub Copilot CLI",
   "qwen code": "qwen code",
   codex: "codex",
 };

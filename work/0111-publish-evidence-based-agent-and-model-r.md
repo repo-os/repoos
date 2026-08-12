@@ -2,14 +2,16 @@
 id: "0111"
 title: Publish evidence-based agent and model recommendations for RepoOS tasks
 type: feature
-status: ready
+status: active
 priority: p2
 area: agent
 assigned_to: AI
 created_by: ""
-branch: ""
+branch: feat/publish-evidence-based-agent-and-model-r
+cli_override: opencode
+model_override: openai/gpt-5.6-sol
 created_at: "2026-08-12T03:44:24Z"
-updated_at: "2026-08-12T03:45:22Z"
+updated_at: "2026-08-12T07:20:21Z"
 ---
 ## Problem
 
@@ -55,3 +57,5 @@ Start with repository evidence, including task metadata, persisted transcripts w
 ## Activity
 
 - 2026-08-12T03:45:22Z · body
+- 2026-08-12T06:26:06Z · cli_override, model_override
+- 2026-08-12T06:26:22Z · status ready→active, branch

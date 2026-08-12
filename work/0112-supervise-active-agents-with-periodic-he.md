@@ -36,6 +36,21 @@ No recovery may discard or reset worktree changes. No action may be based on sil
 - [ ] Each cycle evaluates every active task using existing signals where available: runner/process liveness, PID ownership and start identity, last output, process CPU/memory, session/turn state and exit result, needs-input/needs-merge flags, worktree existence and dirtiness, recent file changes/commits, local command or test activity, resource pressure, and transcript tail. Missing signals are reported as unknown, not treated as failure.
 - [ ] Classify tasks into explicit states such as healthy, quiet-but-alive, progressing-without-output, waiting-for-human, blocked-on-merge, resource-constrained, exited-unexpectedly, confirmed-stalled, orphaned, inconsistent, and unknown. Classification rules are deterministic, testable, and include the evidence and timestamps that produced the state.
 - [ ] Quiet output alone never triggers an automatic restart. Confirmed-stall recovery requires corroborating evidence across multiple cycles or a definite process exit/failure, and respects configured minimum age, cooldown and attempt limits.
+- [ ] Apply explicit research budgets to exploratory tasks: configurable elapsed-time,
+  tool-call, and diagnostic-AI-spend ceilings, plus an early evidence checkpoint
+  (for example, a documented command/API found within a bounded investigation).
+  Exhaustion pauses the task and records a human decision request rather than
+  allowing open-ended investigation.
+- [ ] Detect low-progress loops independently of process liveness: repeated or
+  near-duplicate commands, repeated permission denials, no source/test/doc
+  changes across configured checkpoints, and attempts to use disallowed
+  techniques. Report the evidence and suppress further automatic retries until
+  the human chooses to continue, redirect, or stop.
+- [ ] Treat unsupported integration research as a first-class terminal outcome.
+  When no documented interface is found within the budget, the supervisor
+  recommends preserving a safe fallback and documenting the limitation; it must
+  not encourage binary scraping, hidden RPCs, or broader permissions merely to
+  continue the investigation.
 - [ ] Deterministic recovery can safely reconcile stale runner records, stop a positively identified RepoOS-owned orphan, and resume or restart a failed task in the same existing worktree/session context. Verify PID, process start identity, executable, task ownership and worktree before signaling a process so PID reuse or an unrelated human process cannot be killed. Ambiguous ownership produces a warning only.
 - [ ] Dirty worktrees are preserved exactly. Restart/resume uses the existing RepoOS API/service and context-pack bootstrap; it never deletes, resets, recreates, or overwrites a worktree merely because the agent stalled.
 - [ ] In recover mode, agent/model fallback is allowed only after a classified, repeated compatibility/provider/context failure that the fallback plausibly addresses, only from an explicitly configured fallback list, and only within a bounded attempt budget. Authentication, permission, merge and local resource failures must not be disguised by switching models.
@@ -74,3 +89,4 @@ This task authorizes a bounded supervisor and recovery policy, not general auton
 ## Activity
 
 - 2026-08-12T04:01:21Z · body
+- 2026-08-12T08:15:49Z · added bounded research and low-progress loop safeguards

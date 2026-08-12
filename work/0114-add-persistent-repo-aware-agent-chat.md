@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-persistent-repo-aware-agent-chat
 created_at: "2026-08-12T04:07:06Z"
-updated_at: "2026-08-12T06:13:35Z"
+updated_at: "2026-08-12T09:07:13Z"
 ---
 ## Problem
 
@@ -64,3 +64,5 @@ This task covers the persistent floating chat experience, its repo-aware default
 - 2026-08-12T06:13:28Z · status review→active
 - 2026-08-12T06:13:34Z · status active→review
 - 2026-08-12T06:13:35Z · needs_merge
+- 2026-08-12T09:00:44Z · status review→active
+- 2026-08-12T09:07:13Z · status active→review
