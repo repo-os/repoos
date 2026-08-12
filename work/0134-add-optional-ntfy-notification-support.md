@@ -2,14 +2,14 @@
 id: "0134"
 title: Add optional ntfy notification support
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-optional-ntfy-notification-support
 created_at: "2026-08-12T11:13:43Z"
-updated_at: "2026-08-12T11:39:07Z"
+updated_at: "2026-08-12T11:39:19Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ Deferred / out of scope:
 - 2026-08-12T11:13:43Z · created · unknown
 - 2026-08-12T11:14:07Z · status inbox→ready
 - 2026-08-12T11:14:20Z · status ready→active, branch
+- 2026-08-12T11:39:19Z · status active→review
