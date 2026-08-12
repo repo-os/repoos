@@ -2,14 +2,14 @@
 id: "0139"
 title: "feature: add new task button to control page"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/feature-add-new-task-button-to-control-p
 created_at: "2026-08-12T12:09:39Z"
-updated_at: "2026-08-12T18:37:12Z"
+updated_at: "2026-08-12T18:39:59Z"
 ---
 ## Description
 
@@ -64,3 +64,4 @@ Add an identical "New task" button to the upper right corner of the Control page
 - 2026-08-12T12:09:39Z · created · unknown
 - 2026-08-13T00:00:00Z · fleshed out and moved to ready
 - 2026-08-12T18:37:12Z · status ready→review, branch
+- 2026-08-12T18:39:59Z · status review→done, release:success
