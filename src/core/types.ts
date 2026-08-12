@@ -237,6 +237,10 @@ export interface RepoOSConfig {
   defaultTaskMode?: TaskMode;
   /** User-defined agents (defaults are applied at runtime when this is empty). */
   agents?: Agent[];
+  /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
+  autoEngineeringMode?: boolean;
+  /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */
+  maxActiveTasks?: number;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

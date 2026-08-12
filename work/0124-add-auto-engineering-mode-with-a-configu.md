@@ -2,12 +2,12 @@
 id: "0124"
 title: Add auto-engineering mode with a configurable active-task target
 type: feature
-status: ready
+status: review
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-auto-engineering-mode-with-a-configu
 created_at: "2026-08-12T06:02:20Z"
 updated_at: "2026-08-12T06:03:55Z"
 ---

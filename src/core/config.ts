@@ -86,6 +86,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   ntfyTopic: "",
   ntfyBaseUrl: "https://ntfy.sh",
   agents: [],
+  autoEngineeringMode: false,
+  maxActiveTasks: 3,
 };
 
 /**
@@ -258,6 +260,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
+    if (typeof get("autoEngineeringMode") === "boolean")
+      cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    const maxActiveTasks = get("maxActiveTasks");
+    if (typeof maxActiveTasks === "number" && maxActiveTasks > 0)
+      cfg.maxActiveTasks = maxActiveTasks as number;
   }
   return cfg;
 }
@@ -430,6 +437,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: DEFAULT_CONFIG.cacheDir,
       description: "Directory for derived index cache (relative to repo root)",
+    },
+    {
+      key: "autoEngineeringMode",
+      label: "Auto-engineering mode",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineeringMode,
+      description: "Automatically select and start ready tasks up to the maximum",
+    },
+    {
+      key: "maxActiveTasks",
+      label: "Maximum active tasks",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.maxActiveTasks,
+      options: Array.from({ length: 20 }, (_, i) => {
+        const val = i + 1;
+        return { value: String(val), label: String(val) };
+      }),
+      description:
+        "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
     },
   ];
 }

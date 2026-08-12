@@ -94,6 +94,7 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
 import {
   appendScreenshotsSection,
   mimeForExtension,
@@ -601,6 +602,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     },
   });
 
+  // Auto-engineering orchestration (0124): when enabled, automatically selects
+  // and starts ready tasks up to the configured maximum via the PM agent.
+  const autoEngineering = new AutoEngineeringOrchestrator();
+
   // Tasks that landed in `review` while their engineer turn was still winding
   // down. Reviewing a worktree an agent is still committing to would report on
   // a half-written state, so the review waits for `agent.exited`.
@@ -808,6 +813,96 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const nextNeedsInput = e.task.needsInput;
     if (!prevNeedsInput && nextNeedsInput) {
       notifyNeedsInput(config, e.task);
+    }
+  });
+
+  // Auto-engineering reconciliation triggers on: active→review (freed capacity)
+  // and inbox→ready (new work available). Deferred to async so reconciliation
+  // doesn't block the index event stream.
+  const unsubscribeAutoEngineering = index.on((e) => {
+    if (e.type !== "task.updated") return;
+    const prev = e.prev.status;
+    if (prev === undefined || prev === e.task.status) return;
+
+    let trigger: "active-to-review" | "inbox-to-ready" | null = null;
+    if (prev === "active" && e.task.status === "review") {
+      trigger = "active-to-review";
+    } else if (prev === "inbox" && e.task.status === "ready") {
+      trigger = "inbox-to-ready";
+    }
+
+    if (trigger) {
+      // Async reconciliation: attempt to start selected ready tasks if capacity exists.
+      void (async () => {
+        const result = await autoEngineering.reconcile(config, index.getTasks(), trigger);
+        // Emit auto-engineering state change so Control page updates in real-time
+        emitEvent({
+          type: "auto-engineering.state",
+          state: {
+            enabled: config.autoEngineeringMode ?? false,
+            maxActiveTasks: config.maxActiveTasks ?? 3,
+            activeCount: index.getTasks().filter((t) => t.status === "active").length,
+            decision: autoEngineering.getLastDecision(),
+          },
+          at: new Date().toISOString(),
+        } as any);
+        if (result.outcome === "selected" && result.selectedIds && result.selectedIds.length > 0) {
+          // Re-read state before starting each task: only start if still ready
+          // and haven't exceeded the max (concurrent human starts, etc).
+          for (const id of result.selectedIds) {
+            const task = index.getTask(id);
+            if (!task || task.status !== "ready") continue;
+
+            const activeCount = index.getTasks().filter((t) => t.status === "active").length;
+            const maxActiveTasks = config.maxActiveTasks ?? 3;
+            if (activeCount >= maxActiveTasks) break;
+
+            // Start through the normal /start flow to preserve all orchestration
+            // (engineer resolution, worktree, context, lifecycle, etc).
+            const engineer = resolveAgentForTask(config, task);
+            if (!engineer) continue;
+
+            const branch = task.branch || deriveBranch(task.title);
+            const wtRes = ensureWorktree(config.root, branch);
+            const patch: TaskPatch = { status: "active", needsInput: false };
+            if (!task.branch) patch.branch = branch;
+
+            try {
+              const updated = patchTaskFile(config, task.absPath, patch, {
+                onStatusChange: onServerStatusChange,
+              });
+              index.applyFileChange(updated.absPath);
+              index.refreshBranches();
+              const cwd = wtRes.ok ? wtRes.path : config.root;
+
+              const bootResult = await bootstrap(config, task, branch, cwd);
+              if (!bootResult.ok) {
+                // Bootstrap failed; task stays active, can be retried
+                runner.system(id, `Auto-engineering boot failed: ${bootResult.reason ?? "unknown"}`);
+                continue;
+              }
+
+              const pack = generateContextPack(config, task, branch, cwd, bootResult);
+              const preamble =
+                !task.branch ? undefined : resumePreamble(config, task, branch, cwd);
+
+              const spawnRes = runner.start(updated, branch, engineer, {
+                cwd,
+                contextPack: pack.content,
+                resumePreamble: preamble,
+              });
+
+              if (spawnRes.ok) {
+                runner.system(id, `Auto-engineering: task started by PM selection`);
+              } else {
+                runner.system(id, `Auto-engineering spawn failed: ${spawnRes.reason ?? "unknown"}`);
+              }
+            } catch (e) {
+              runner.system(id, `Auto-engineering error: ${e instanceof Error ? e.message : String(e)}`);
+            }
+          }
+        }
+      })();
     }
   });
 
@@ -1750,6 +1845,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
         // Validate every field against the schema
         const schema = getConfigSchema();
+        let autoEngineeringChanged = false;
         for (const field of schema) {
           if (body[field.key] === undefined) continue;
           const val = body[field.key];
@@ -1766,6 +1862,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               return json(res, 400, { error: `${field.label} must be true or false` });
             }
             patch[field.key] = val;
+            if (field.key === "autoEngineeringMode") autoEngineeringChanged = true;
           } else if (field.type === "select") {
             const valid = field.options?.map((o) => o.value) ?? [];
             if (!valid.includes(val as string)) {
@@ -1773,7 +1870,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
                 error: `${field.label} must be one of: ${valid.join(", ")}`,
               });
             }
-            patch[field.key] = val;
+            // maxActiveTasks comes as string from select, convert to number
+            if (field.key === "maxActiveTasks") {
+              const num = Number(val);
+              if (!Number.isInteger(num) || num < 1 || num > 20) {
+                return json(res, 400, {
+                  error: `${field.label} must be an integer between 1 and 20`,
+                });
+              }
+              patch[field.key] = num;
+              autoEngineeringChanged = true;
+            } else {
+              patch[field.key] = val;
+            }
           } else if (field.type === "array") {
             if (!Array.isArray(val) || !val.length) {
               return json(res, 400, { error: `${field.label} must be a non-empty array` });
@@ -1814,7 +1923,40 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           index.refreshAll();
         }
 
+        // Trigger auto-engineering reconciliation if mode or max changed
+        if (autoEngineeringChanged) {
+          void (async () => {
+            await autoEngineering.reconcile(config, index.getTasks(), "config-change");
+            emitEvent({
+              type: "auto-engineering.state",
+              state: {
+                enabled: config.autoEngineeringMode ?? false,
+                maxActiveTasks: config.maxActiveTasks ?? 3,
+                activeCount: index.getTasks().filter((t) => t.status === "active").length,
+                decision: autoEngineering.getLastDecision(),
+              },
+              at: new Date().toISOString(),
+            } as any);
+          })();
+        }
+
         return json(res, 200, { ok: true, config: repoos.config });
+      }
+
+      // ---- auto-engineering state ----
+      if (path === "/api/auto-engineering/state" && method === "GET") {
+        const enabled = config.autoEngineeringMode ?? false;
+        const maxActiveTasks = config.maxActiveTasks ?? 3;
+        const activeCount = index.getTasks().filter((t) => t.status === "active").length;
+        const availableSlots = Math.max(0, maxActiveTasks - activeCount);
+        const lastDecision = autoEngineering.getLastDecision();
+        return json(res, 200, {
+          enabled,
+          maxActiveTasks,
+          activeCount,
+          availableSlots,
+          lastDecision,
+        });
       }
 
       // ---- ntfy test notification ----
@@ -1990,6 +2132,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();
+          unsubscribeAutoEngineering();
           watcher.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
@@ -2061,6 +2204,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Stale-boot self-heal: a newer build that landed while we were starting
       // is picked up immediately (skipped by REPOOS_RELOAD=1 replacements).
       void reload.bootSelfHeal();
+
+      // Auto-engineering reconciliation at startup: ensure the queue is filled
+      // to the configured maximum if the mode is enabled.
+      void autoEngineering.reconcile(config, index.getTasks(), "startup");
 
       resolve(handle);
     })().catch((e) => reject(e as Error));
