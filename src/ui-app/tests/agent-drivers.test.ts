@@ -18,11 +18,24 @@ const dOf = (entry: AgentOutputEntry): string | undefined =>
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+const path = require("path");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+const resumeIndex = args.indexOf("resume");
+if (path.basename(process.argv[1]) === "codex" && resumeIndex !== -1) {
+  const sandboxIndex = args.indexOf("--sandbox");
+  if (sandboxIndex > resumeIndex) {
+    process.stderr.write("error: unexpected argument '--sandbox' found\\n");
+    process.exit(2);
+  }
+  process.stdout.write("received resume prompt: " + args.at(-1) + "\\n");
+}
 process.stdout.write("fake output line\\n");
 if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"session_id":"sess-123"}\\n');
 process.stdout.write("done\\n");
 if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
+if (process.env.REPOOS_FAKEBIN_CODEX_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
+if (process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "text", sessionID: "sess-123", part: { type: "text", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
 if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
@@ -47,7 +60,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -118,9 +131,17 @@ function spawns(fx: Fixture): SpawnRecord[] {
   return text.split("\n").map((l) => JSON.parse(l) as SpawnRecord);
 }
 
+function expectCodexExecOptionsBeforeResume(args: string[]): void {
+  const resumeIndex = args.indexOf("resume");
+  expect(resumeIndex).toBeGreaterThan(0);
+  expect(args.indexOf("--sandbox")).toBeLessThan(resumeIndex);
+}
+
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -223,7 +244,7 @@ describe("qwen code driver", () => {
 });
 
 describe("codex driver", () => {
-  it("spawns exec args, streams output, and resumes by session id", async () => {
+  it("sends and streams a follow-up using a known session id", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -246,21 +267,28 @@ describe("codex driver", () => {
       );
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
-      runner.send("0001", "continue the work", agent("codex"));
+      runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
       await waitFor(() => spawns(fx).length === 2, "codex resume spawn");
       await waitFor(() => !runner.isRunning("0001"), "resume turn exit");
 
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "resume",
-        "sess-123",
-        "continue the work",
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        "--model",
+        "gpt-5.6",
+        "--json",
+        "sess-123",
+        "continue the work",
       ]);
+      expectCodexExecOptionsBeforeResume(resume.args);
+      expect(resume.args.filter((arg) => arg === "sess-123")).toHaveLength(1);
       expect(resume.cwd).toBe(realpathSync(cwd));
+      expect(runner.output("0001")!.lines.map(dOf)).toContain(
+        "received resume prompt: continue the work",
+      );
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -284,13 +312,16 @@ describe("codex driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "resume",
-        "--last",
-        "keep going",
-        "--json",
         "--sandbox",
         "workspace-write",
+        "resume",
+        "--json",
+        "--last",
+        "keep going",
       ]);
+      expectCodexExecOptionsBeforeResume(resume.args);
+      expect(resume.args.filter((arg) => arg === "--last")).toHaveLength(1);
+      expect(resume.args).not.toContain("--model");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -488,6 +519,44 @@ describe("server-owned handoff mission (#0094)", () => {
 });
 
 describe("structured runner handoff (#0094)", () => {
+  it("recognizes the handoff signal inside a multiline OpenCode text event", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("recognizes the handoff signal inside a Codex JSON agent_message", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_CODEX_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "Codex JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("issues one scoped request after a successful initial or resumed turn", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
