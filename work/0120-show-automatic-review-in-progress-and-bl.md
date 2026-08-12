@@ -2,14 +2,15 @@
 id: "0120"
 title: Show automatic review in progress and block move-to-done until it finishes
 type: feature
-status: ready
+status: active
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/show-automatic-review-in-progress-and-bl
+model_override: gpt-5.6-terra
 created_at: "2026-08-12T05:13:23Z"
-updated_at: "2026-08-12T05:13:23Z"
+updated_at: "2026-08-12T05:19:44Z"
 ---
 ## Activity
 
@@ -81,3 +82,8 @@ That creates two problems:
   that stage.
 - Do not fold this into #0118. #0118 serializes publication after sign-off;
   this task prevents sign-off from racing the reviewer.
+
+## Activity
+
+- 2026-08-12T05:19:41Z · model_override
+- 2026-08-12T05:19:44Z · status ready→active, branch

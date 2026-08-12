@@ -2,14 +2,14 @@
 id: "0119"
 title: Fix Codex chat continuation argument ordering
 type: bug
-status: ready
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-codex-chat-continuation-argument-ord
 created_at: "2026-08-12T05:02:11Z"
-updated_at: "2026-08-12T05:02:11Z"
+updated_at: "2026-08-12T05:18:34Z"
 ---
 ## Activity
 
@@ -75,3 +75,7 @@ than a CLI usage error.
 - Related but separate: sandboxed agents currently cannot reach RepoOS's
   localhost preview API. Do not broaden this small task into control-plane
   transport design.
+
+## Activity
+
+- 2026-08-12T05:18:34Z · status ready→active, branch
