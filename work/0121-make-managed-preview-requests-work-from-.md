@@ -2,14 +2,14 @@
 id: "0121"
 title: Make managed preview requests work from sandboxed agents without localhost access
 type: bug
-status: ready
+status: review
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-managed-preview-requests-work-from-
 created_at: "2026-08-12T05:23:56Z"
-updated_at: "2026-08-12T05:23:56Z"
+updated_at: "2026-08-12T10:58:09Z"
 ---
 ## Activity
 
@@ -102,3 +102,7 @@ runner-mediated control path, like the server-owned handoff capability.
   independent from this preview transport bug.
 - #0114 is the primary reproduction: builds and all tests passed, while every
   agent turn stopped solely because sandboxed `curl` could not reach 7171.
+
+## Activity
+
+- 2026-08-12T10:58:09Z · status ready→review, branch
