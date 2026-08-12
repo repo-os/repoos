@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
 import type { ReviewState, Task } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -118,10 +118,12 @@ async function createFreeform(): Promise<void> {
     if (res.fallback && res.fallbackReason === "agent-failed") {
       draftSaved.value = res.task;
       freeformError.value = res.reason ?? "The PM agent failed";
+      await uploadPendingScreenshots(res.task.id);
       return;
     }
     // Success, or the no-PM-agent fallback (raw explanation saved as draft):
     // open the resulting task in the drawer's edit view so it can be tweaked.
+    await uploadPendingScreenshots(res.task.id);
     ui.close();
     freeformText.value = "";
     await ui.openTask(res.task);
@@ -147,7 +149,8 @@ async function createTask(): Promise<void> {
   if (!ui.nt.title) return;
   ui.saving = true;
   try {
-    await repo.createTask({ ...ui.nt });
+    const created = await repo.createTask({ ...ui.nt });
+    await uploadPendingScreenshots(created.id);
     ui.close();
     ui.nt.title = "";
     ui.nt.area = "web";
@@ -160,6 +163,39 @@ async function createTask(): Promise<void> {
   } finally {
     ui.saving = false;
   }
+}
+
+/** Upload the in-panel screenshots to a just-created task. Clears them on success. */
+async function uploadPendingScreenshots(taskId: string): Promise<void> {
+  for (const s of [...ui.pendingScreenshots]) {
+    await repo.uploadScreenshot(taskId, s);
+  }
+  ui.clearScreenshots();
+}
+
+// ---- screenshot picking (file select + drag & drop, 0123) ----
+const shotInput = ref<HTMLInputElement | null>(null);
+/** Depth counter: dragenter/leave fire once per element boundary. */
+const dragDepth = ref(0);
+
+function onShotFiles(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  if (input.files) ui.addScreenshots(Array.from(input.files));
+  input.value = "";
+}
+
+function onDragEnter(): void {
+  dragDepth.value++;
+}
+
+function onDragLeave(): void {
+  dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+
+function onDrop(e: DragEvent): void {
+  dragDepth.value = 0;
+  const files = e.dataTransfer?.files;
+  if (files && files.length) ui.addScreenshots(Array.from(files));
 }
 
 async function setStatus(status: string): Promise<void> {
@@ -930,6 +966,10 @@ function resetFreeformOverrides(): void {
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
       @open-auto-focus="onOpenAutoFocus"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="onDragLeave"
+      @drop.prevent="onDrop"
     >
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
 
@@ -961,6 +1001,51 @@ function resetFreeformOverrides(): void {
           </button>
         </div>
         <div class="drawer-body">
+          <div class="field" style="margin-top: 4px">
+            <label>Screenshots</label>
+            <div
+              class="shot-dropzone"
+              :class="{ over: dragDepth > 0 }"
+              role="button"
+              tabindex="0"
+              @click="shotInput?.click()"
+              @keydown.enter="shotInput?.click()"
+            >
+              <ImagePlus class="size-4" />
+              <span>{{
+                ui.pendingScreenshots.length
+                  ? `Add more — ${ui.pendingScreenshots.length} screenshot${ui.pendingScreenshots.length === 1 ? "" : "s"} added`
+                  : "Click to add screenshots, or drop them anywhere on this panel"
+              }}</span>
+              <input
+                ref="shotInput"
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+                multiple
+                class="shot-input"
+                @change="onShotFiles"
+                @click.stop
+              />
+            </div>
+            <div v-if="ui.pendingScreenshots.length" class="shot-grid">
+              <div v-for="(s, i) in ui.pendingScreenshots" :key="s.name + i" class="shot-thumb">
+                <img :src="s.dataUrl" :alt="s.name" />
+                <button
+                  type="button"
+                  class="shot-remove"
+                  :aria-label="`Remove ${s.name}`"
+                  title="Remove screenshot"
+                  @click.stop="ui.removeScreenshot(i)"
+                >
+                  <X class="size-3.5" />
+                </button>
+                <span class="shot-name" :title="s.name">{{ s.name }}</span>
+              </div>
+            </div>
+            <p class="shot-hint" v-else>
+              PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
+            </p>
+          </div>
           <template v-if="newMode === 'freeform'">
             <div class="field">
               <label for="nt-freeform">Describe the task</label>
