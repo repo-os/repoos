@@ -6,6 +6,7 @@
  * a missing CLI or a broken agent config must never crash the server or block
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
+import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -34,6 +35,17 @@ export type AgentEvent =
       note: string;
       at: string;
     };
+
+export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
+
+/** A capability minted by the runner for one completed agent turn. */
+export interface AgentHandoffRequest {
+  taskId: string;
+  runId: string;
+  branch: string;
+  workdir: string;
+  sessionId?: string;
+}
 
 export interface StartResult {
   ok: boolean;
@@ -1014,6 +1026,10 @@ export class AgentRunner {
   private readonly stallTimeoutMs: number;
   private readonly stallTimer: ReturnType<typeof setInterval>;
 
+  private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
+  private readonly handoffsInFlight = new Set<string>();
+  private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
    * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
@@ -1022,10 +1038,11 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number } = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void> } = {},
   ) {
     this.config = config;
     this.emit = emit;
+    this.onHandoff = opts.onHandoff;
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
     const checkMs =
       opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
@@ -1036,6 +1053,24 @@ export class AgentRunner {
   /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
   dispose(): void {
     clearInterval(this.stallTimer);
+  }
+
+  /** Append trusted server orchestration progress to the retained transcript. */
+  system(taskId: string, text: string): void {
+    this.appendLine(taskId, "sys", text);
+  }
+
+  /** Validate that a handoff capability was minted by a successful active turn. */
+  validateHandoff(request: AgentHandoffRequest): boolean {
+    const issued = this.authorizedHandoffs.get(request.runId);
+    return Boolean(issued);
+  }
+
+  /** Validate and expire one runner-issued handoff capability atomically. */
+  consumeHandoff(request: AgentHandoffRequest): boolean {
+    if (!this.validateHandoff(request)) return false;
+    this.authorizedHandoffs.delete(request.runId);
+    return true;
   }
 
   isRunning(taskId: string): boolean {
