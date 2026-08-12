@@ -117,7 +117,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     id: "kiro",
     name: "kiro",
     binary: "kiro-cli",
-    drivable: false,
+    drivable: true,
     installHint: "npm i -g kiro-cli",
   },
   {

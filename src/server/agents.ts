@@ -120,7 +120,7 @@ interface Session {
   task?: Task;
   branch?: string;
   /** Which session engine parses the CLI output into AgentOutputEntry cards. */
-  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "plain";
+  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "kiro" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
@@ -193,6 +193,16 @@ export function extractUsage(raw: string): { tokens?: number; costUsd?: number }
   if (out.costUsd === undefined) {
     const m =
       raw.match(/total cost[:\s]+\$?([\d.]+)/i) ?? raw.match(/\bcost_usd\b["'\s:=]+\$?([\d.]+)/i);
+    if (m) {
+      const n = Number(m[1]);
+      if (Number.isFinite(n)) out.costUsd = n;
+    }
+  }
+  // Kiro CLI emits a credits footer on stderr: " ▸ Credits: 0.15 • Time: 12s"
+  // Map credits → costUsd so the task panel shows the charge. Note: for Kiro
+  // sessions, costUsd holds credits (Kiro's billing unit), not US dollars.
+  if (out.costUsd === undefined) {
+    const m = raw.match(/▸\s*Credits:\s*([\d.]+)/i);
     if (m) {
       const n = Number(m[1]);
       if (Number.isFinite(n)) out.costUsd = n;
@@ -291,6 +301,7 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "github copilot") return "copilot";
   if (cli === "qwen code") return "qwen";
   if (cli === "codex") return "codex";
+  if (cli === "kiro") return "kiro";
   return "opencode";
 }
 
@@ -1031,6 +1042,17 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
       args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ write: true })],
     };
   }
+  if (cli === "kiro") {
+    // --no-interactive: headless mode (no TUI, answer is printed to stdout).
+    // --trust-all-tools: REQUIRED — stdin is ignored so no approval prompt can
+    // ever be answered. Without it every file write/shell call is denied and
+    // the agent stalls. Same blast radius as claude's --dangerously-skip-permissions:
+    // the task's own git worktree.
+    return {
+      cmd: "kiro-cli",
+      args: ["chat", "--no-interactive", "--trust-all-tools", ...modelArgs(cli, model), mission],
+    };
+  }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
   // the runner parses into structured transcript entries. `--dir` (0044) keeps
@@ -1113,6 +1135,21 @@ function resumeCommand(
         ...(sessionId ? [`--resume=${sessionId}`] : []),
         ...modelArgs(cli, model),
         ...copilotArgs({ write: true }),
+      ],
+    };
+  }
+  if (cli === "kiro") {
+    // --resume-id <uuid>: resume a specific session by UUID (preferred).
+    // -r / --resume: fall back to most-recent session in cwd when no id yet.
+    return {
+      cmd: "kiro-cli",
+      args: [
+        "chat",
+        "--no-interactive",
+        "--trust-all-tools",
+        ...(sessionId ? ["--resume-id", sessionId] : ["-r"]),
+        ...modelArgs(cli, model),
+        text,
       ],
     };
   }
@@ -1249,6 +1286,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
       args: ["-p", prompt, ...extra, "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
     };
   }
+  if (agent.cli === "kiro") {
+    return {
+      cmd: "kiro-cli",
+      args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
+    };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -1284,6 +1327,14 @@ export function reviewCommand(
     return {
       cmd: "copilot",
       args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+    };
+  }
+  if (agent.cli === "kiro") {
+    // Review is read-only; --trust-all-tools still needed so file reads
+    // aren't gated behind a prompt that can never be answered (stdin ignored).
+    return {
+      cmd: "kiro-cli",
+      args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
   return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
@@ -2128,6 +2179,15 @@ export class AgentRunner {
     }
     if (session) session.stalledEmitted = false;
     this.entries.delete(taskId);
+    // Kiro CLI does not print a session ID during the run. Capture it now by
+    // querying the CLI's session list in the same cwd. Best-effort: if the
+    // probe fails, sessionId stays undefined and the next turn falls back to
+    // `-r` (most-recent resume). The lookup is synchronous-in-practice because
+    // cleanup() is called from proc.on("close") — we fire-and-update so the
+    // emit below is not delayed waiting for a CLI round-trip.
+    if (session?.engine === "kiro" && !session.sessionId && entry.workdir) {
+      void this.captureKiroSessionId(taskId, session, entry.workdir);
+    }
     this.emit({ type: "agent.exited", id: taskId, at: now() });
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
@@ -2178,6 +2238,47 @@ export class AgentRunner {
     if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);
   }
 
+  /**
+   * Post-run session-id capture for Kiro CLI (#0148). Kiro does not print its
+   * session id during the run; after the process exits we query the CLI's local
+   * session list for the cwd and take the most-recently-updated entry — that is
+   * the turn that just finished. Best-effort and fail-soft: any failure leaves
+   * sessionId undefined so the next turn falls back to `-r` (most-recent resume).
+   */
+  private captureKiroSessionId(taskId: string, session: Session, cwd: string): Promise<void> {
+    return new Promise((resolve) => {
+      let proc: ChildProcess;
+      try {
+        proc = spawn("kiro-cli", ["chat", "--list-sessions", "--format", "json"], {
+          cwd,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+      } catch {
+        resolve();
+        return;
+      }
+      let out = "";
+      const timer = setTimeout(() => {
+        try { proc.kill("SIGKILL"); } catch { /* already gone */ }
+        resolve();
+      }, 5000);
+      proc.stdout?.on("data", (c: Buffer) => { out += c.toString("utf8"); });
+      proc.on("error", () => { clearTimeout(timer); resolve(); });
+      proc.on("close", () => {
+        clearTimeout(timer);
+        try {
+          const rows = JSON.parse(out) as Array<{ cwd?: string; sessions?: Array<{ sessionId?: string }> }>;
+          const sessionId = rows[0]?.sessions?.[0]?.sessionId;
+          if (typeof sessionId === "string" && sessionId) {
+            session.sessionId = sessionId;
+            this.schedulePersist(taskId);
+          }
+        } catch { /* malformed JSON — leave sessionId undefined */ }
+        resolve();
+      });
+    });
+  }
+
   private emptySession(): Session {
     return { lines: [], pending: "", bytes: 0, engine: "plain", accumulatedMs: 0, stalledEmitted: false };
   }
@@ -2199,7 +2300,7 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        !["opencode", "claude", "copilot", "qwen", "codex", "plain"].includes(value.engine as string) ||
+        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "plain"].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
