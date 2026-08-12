@@ -636,6 +636,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
+    if (next === "done") runner.complete(task.id);
   };
 
   /**
@@ -1694,6 +1695,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // launched it and wait 15 minutes to write a report nobody reads.
           reviews.cancelAll();
           await previews.stopAll();
+          runner.flushAll();
           for (const c of clients) {
             try {
               c.end();
