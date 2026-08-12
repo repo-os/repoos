@@ -38,6 +38,7 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
+ *   POST /api/agents/built-in/:agent/run -> run a built-in agent (e.g. "tech-debt"); returns { ok, taskCount }
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -107,6 +108,7 @@ import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, publish, ntfyBaseUrl } from "./ntfy.js";
+import { scanForTechDebt, createTechDebtTasks } from "./built-in-agents.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -1011,6 +1013,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           agents = [];
         }
         return json(res, 200, { agents });
+      }
+      const builtInMatch = path.match(/^\/api\/agents\/built-in\/([^/]+)\/run$/);
+      if (builtInMatch && method === "POST") {
+        const agentName = builtInMatch[1];
+        if (agentName === "tech-debt") {
+          try {
+            const issues = scanForTechDebt(config);
+            const taskCount = await createTechDebtTasks(config, issues);
+            index.refreshAll();
+            return json(res, 200, { ok: true, taskCount });
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to run tech debt scan";
+            return json(res, 500, { error: message });
+          }
+        } else {
+          return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+        }
       }
       if (path === "/api/system" && method === "GET") {
         const stats = sampleSystem({
