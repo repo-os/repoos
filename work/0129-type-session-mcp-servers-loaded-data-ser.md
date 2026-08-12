@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/discover-available-github-copilot-cli-mo
 created_at: "2026-08-12T07:45:00Z"
-updated_at: "2026-08-12T08:01:12Z"
+updated_at: "2026-08-12T08:10:52Z"
 ---
 ## Problem
 
