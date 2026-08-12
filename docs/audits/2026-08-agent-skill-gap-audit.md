@@ -1,6 +1,6 @@
 # Agent skill-gap audit
 
-**Version:** 2 · **Date:** 2026-08-12 · **Task:** #0107 · **Status:** review
+**Version:** 3 · **Date:** 2026-08-12 · **Task:** #0107 · **Status:** review
 
 Audit of RepoOS agent task histories for recurring skill gaps, repeated
 discoveries, stalls, and manual recoveries — with the smallest durable
@@ -114,9 +114,14 @@ For each candidate gap, the intervention choice answers:
   three restore-after-merge rework commits (`fix: restore handoff features
   lost in #0109 merge`, `fix: restore stats and dispose methods lost in
   #0094 merge`, `fix(agents): restore server-owned handoff after merge`);
-  13 identical `chore: sync working tree before merge` commits — a
-  ritualized manual workaround; `6c6dcee merge: sync repaired main into
-  task 0113` (main itself needed repair mid-flow).
+  `6c6dcee merge: sync repaired main into task 0113` (main itself needed
+  repair mid-flow).
+- The sync ritual at scale (v1's "13" was under-scoped; corrected in v3):
+  `main` carries **56** identical `chore: sync working tree before merge`
+  commits — 6 on 2026-08-07, 32 on 2026-08-11, 18 on 2026-08-12 (through
+  13:05 local) — plus 3 more on unmerged branches. The ritual continued
+  during this audit's own review cycle: three further sync commits at
+  13:31–13:34 on 2026-08-12, including `351ea0c` on this task's branch.
 - #0069: move-to-done failed silently with HTTP 400 on conflict; "#0063 was
   blocked by `TaskCard.vue`, #0054 by `server.ts` — both trivial 'keep both
   sides' merges, but the close-out has no remedy except a human resolving in
@@ -522,3 +527,4 @@ requiring approval. This audit created none.
 |---|---|---|
 | 1 | 2026-08-12 | Initial audit (#0107): 51-task sample, 12 findings, 2 proposed skills, 9 ranked recommendations |
 | 2 | 2026-08-12 | Corrections after re-verification: reviewer report 0090 (usable, `state: ok`) added to F12/R6 — failures are 3/4 and correlate with the `opus` model; #0090 landed mid-audit so transcript persistence now exists but covers no sampled history; fixed stale "0090 still active" claim (worktree copy was stale; main checkout showed `review`) |
+| 3 | 2026-08-12 | F1 sync-commit count corrected and scoped per review feedback: v1's "13" was under-scoped — `main` has 56 `chore: sync working tree before merge` commits (6 on 08-07, 32 on 08-11, 18 on 08-12 through 13:05) plus 3 on unmerged branches; added new evidence that the ritual continued during this audit's review cycle (3 more sync commits 13:31–13:34, incl. `351ea0c` on this task's branch) |

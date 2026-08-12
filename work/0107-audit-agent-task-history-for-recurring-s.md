@@ -56,3 +56,4 @@ This is an analysis and documentation task, not permission to create or install 
 - 2026-08-12T05:50:00Z · status active→review · repoos check green (build, css-layers, theme-contrast, screenshots, tests 302/302, ui-smoke)
 - 2026-08-12T13:25:00Z · audit v2 corrections: reviewer report 0090 (usable) added — F12/R6 now 3/4 failures with `opus` model correlation; transcript-persistence limitation restated (#0090 landed mid-audit); repoos check re-run green (tests 302/302)
 - 2026-08-12T05:31:54Z · needs_merge
+- 2026-08-12T13:40:00Z · audit v3 per review feedback: F1 sync-commit count corrected and scoped (main has 56, not 13; 6 on 08-07, 32 on 08-11, 18 on 08-12 through 13:05, +3 on unmerged branches); added new evidence — 3 further sync commits 13:31–13:34 during this audit's own review cycle (incl. 351ea0c on this branch)
