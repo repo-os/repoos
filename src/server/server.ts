@@ -95,6 +95,7 @@ import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
+import { notifyStatusChange, notifyTaskCreated } from "./ntfy.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -756,10 +757,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
   const unsubscribeCleanup = index.on((e) => {
+    // Optional ntfy push notifications hang off the index stream for the same
+    // reason the cleanup does: it is the one place every transition surfaces,
+    // exactly once per real change (applyFileChange dedupes by state diff).
+    if (e.type === "task.created") {
+      notifyTaskCreated(config, e.task);
+      return;
+    }
     if (e.type !== "task.updated") return;
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
     onStatusChange(e.task, prev, e.task.status);
+    notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off.
@@ -1610,7 +1619,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const val = body[field.key];
 
           if (field.type === "string") {
-            if (typeof val !== "string" || !val.toString().trim()) {
+            // An empty ntfyTopic is valid — it means "never send" even if the
+            // toggle is on. Every other string field must be non-empty.
+            if (typeof val !== "string" || (!val.toString().trim() && field.key !== "ntfyTopic")) {
               return json(res, 400, { error: `${field.label} must be a non-empty string` });
             }
             patch[field.key] = val.toString().trim();
