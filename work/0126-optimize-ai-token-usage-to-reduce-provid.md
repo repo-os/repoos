@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: claude code
+model_override: haiku
 created_at: "2026-08-12T06:49:58Z"
-updated_at: "2026-08-12T06:49:58Z"
+updated_at: "2026-08-12T06:51:08Z"
 ---
 ## Problem
 
@@ -51,3 +53,4 @@ A documented, actionable optimization strategy that includes:
 ## Activity
 
 - 2026-08-12T06:49:58Z · created · unknown
+- 2026-08-12T06:51:08Z · cli_override, model_override
