@@ -1,0 +1,362 @@
+/**
+ * Post-merge close-out reliability (#0130).
+ *
+ * `POST /api/tasks/:id/done` must either complete the whole lifecycle or
+ * return an actionable failure that names the failing stage. These tests cover
+ * the two failure shapes observed on #0117/#0114:
+ *
+ *   1. an already-merged retry (an earlier close-out integrated the branch but
+ *      stranded the task in review) — the merge step must be a no-op and the
+ *      remaining steps must resume instead of mislabelling a failed merge;
+ *   2. a subprocess gate failure — the exit status, exact command, and a
+ *      redacted tail of stdout/stderr must survive into the result so the
+ *      failing stage is diagnosable without leaking credentials.
+ */
+import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { deleteBranch, ensureWorktree, removeWorktree } from "../../core/git";
+import { parseTask } from "../../core/task";
+import type { RepoOSConfig, Task } from "../../core/types";
+import {
+  captureOutput,
+  completeTask,
+  mergeTaskBranchWithAutoSync,
+  redactSecrets,
+  runDoneStep,
+} from "../../server/done";
+
+function git(root: string, args: string[]): string {
+  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+}
+
+/** Real repo with user identity configured and an initial commit. */
+function makeRepo(): { root: string; clean: () => void } {
+  const root = mkdtempSync(join(tmpdir(), "repoos-done-rel-"));
+  git(root, ["init", "-q"]);
+  git(root, ["config", "user.email", "t@example.com"]);
+  git(root, ["config", "user.name", "Test"]);
+  git(root, ["commit", "--allow-empty", "-m", "init"]);
+  return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+/** Commit a file with the given content in `dir` (any checkout/worktree). */
+function commitFile(dir: string, name: string, content: string, msg: string): void {
+  writeFileSync(join(dir, name), content);
+  git(dir, ["add", "--", name]);
+  git(dir, ["commit", "-m", msg]);
+}
+
+const config = (root: string): RepoOSConfig => ({
+  root,
+  workDir: "work",
+  docsDir: "docs",
+  skillsDir: "skills",
+  taskExtensions: [".md"],
+  defaultStatus: "inbox",
+  defaultAssignee: "unassigned",
+  cacheDir: ".repoos",
+});
+
+/** A review task on `branch`, committed in main, with a linked worktree. */
+function reviewTask(root: string, id: string, branch: string): { task: Task; clean: () => void } {
+  mkdirSync(join(root, "work"), { recursive: true });
+  const absPath = join(root, `work/${id}-task.md`);
+  const body = `---\nid: "${id}"\ntitle: Task ${id}\ntype: feature\nstatus: review\nbranch: ${branch}\n---\n## Activity\n`;
+  writeFileSync(absPath, body);
+  git(root, ["add", "--", `work/${id}-task.md`]);
+  git(root, ["commit", "-m", `docs(${id}): add task`]);
+
+  const task = parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root,
+    defaultStatus: "inbox",
+    defaultAssignee: "unassigned",
+  });
+
+  const wt = ensureWorktree(root, branch);
+  expect(wt.ok).toBe(true);
+  commitFile(wt.path, "b.txt", "branch work\n", "branch work");
+  return { task, clean: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+describe("mergeTaskBranchWithAutoSync — idempotent retry", () => {
+  it("reports alreadyMerged when the branch is already integrated into main", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/merged");
+      expect(wt.ok).toBe(true);
+      commitFile(wt.path, "b.txt", "work\n", "branch work");
+
+      // Simulate an earlier close-out that merged the branch and stranded the
+      // task in review: main now contains the branch tip.
+      git(root, ["merge", "--no-edit", "feat/merged"]);
+
+      const result = await mergeTaskBranchWithAutoSync(root, "feat/merged");
+
+      expect(result.merged).toBe(true);
+      expect(result.alreadyMerged).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      expect(result.ff).toBe(true);
+      // The branch is untouched — nothing was re-merged.
+      expect(git(root, ["rev-parse", "feat/merged"])).toBe(git(root, ["rev-parse", "main"]));
+    } finally {
+      clean();
+    }
+  });
+
+  it("reports alreadyMerged when the branch and worktree were already cleaned up", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/gone");
+      expect(wt.ok).toBe(true);
+      commitFile(wt.path, "b.txt", "work\n", "branch work");
+      git(root, ["merge", "--no-edit", "feat/gone"]);
+
+      // The close-out cleanup already ran (deleteBranch refuses unmerged
+      // branches, so a missing branch was integrated).
+      removeWorktree(root, "feat/gone");
+      deleteBranch(root, "feat/gone");
+
+      const result = await mergeTaskBranchWithAutoSync(root, "feat/gone");
+
+      expect(result.merged).toBe(true);
+      expect(result.alreadyMerged).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      // Nothing is left behind to re-merge.
+      expect(git(root, ["branch", "--list", "feat/gone"])).toBe("");
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not treat a present-but-unmerged branch as already merged", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      commitFile(root, "f.txt", "base\n", "base file");
+      const wt = ensureWorktree(root, "feat/conflict");
+      expect(wt.ok).toBe(true);
+      commitFile(wt.path, "f.txt", "branch\n", "branch edit");
+      commitFile(root, "f.txt", "main\n", "main edit");
+
+      const result = await mergeTaskBranchWithAutoSync(root, "feat/conflict");
+
+      // A branch that still needs merging must NOT be resumed as already-merged.
+      expect(result.merged).toBe(false);
+      expect(result.alreadyMerged).toBeUndefined();
+      expect(result.conflicts).toEqual(["f.txt"]);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("runDoneStep — diagnosable gate failures", () => {
+  it("preserves stage, command, exit status, and the output tail", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const script =
+        'for (let i = 0; i < 50; i++) console.log("noise line " + i);' +
+        ' console.error("TypeError: gate X broke"); process.exit(1);';
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", script]],
+        label: "repoos check",
+        stage: "check",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.stage).toBe("check");
+      expect(result.exitCode).toBe(1);
+      expect(result.command).toContain("-e");
+      // The tail is what matters — errors print last, not first.
+      expect(result.output).toContain("TypeError: gate X broke");
+      expect(result.output).not.toContain("noise line 0");
+      expect(result.detail).toContain("exit 1");
+      expect(result.detail).toContain("repoos check failed");
+    } finally {
+      clean();
+    }
+  });
+
+  it("falls through to the next candidate when the first is not available", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [
+          ["definitely-not-a-real-repoos-bin", "check"],
+          [process.execPath, "-e", "console.log('ok')"],
+        ],
+        label: "repoos check",
+        stage: "check",
+      });
+
+      expect(result.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("reports which tool is missing when every candidate cannot start", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [["definitely-not-a-real-repoos-bin", "check"]],
+        label: "repoos check",
+        stage: "check",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.detail).toMatch(/is not available/);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("diagnostic output hygiene", () => {
+  it("redacts credential-shaped values", () => {
+    const out = redactSecrets(
+      "token=ghp_AbCdEf123456, pat=github_pat_XX_ab12, key=sk-abcdef123456, slack=xoxb-1234, aws=AKIAIOSFODNN7EXAMPLE, auth=Bearer eyJhbGciOi.eyJzdWI.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw",
+    );
+    expect(out).not.toMatch(/ghp_|github_pat_|sk-|xoxb-|AKIA|Bearer/);
+    expect(out).toContain("***");
+  });
+
+  it("captures the tail, not the head, of combined output", () => {
+    const head = Array.from({ length: 50 }, (_, i) => `noise ${i}`).join("\n");
+    const out = captureOutput(head + "\n", "warning noise\nError: the real reason");
+    expect(out.endsWith("Error: the real reason")).toBe(true);
+    expect(out).not.toContain("noise 0");
+    expect(out).toContain("noise 40");
+  });
+
+  it("strips ANSI escapes so diagnostics stay readable", () => {
+    const out = captureOutput("\u001b[31merror\u001b[0m: boom", "");
+    expect(out).toContain("error: boom");
+    expect(out).not.toContain("\u001b[");
+  });
+});
+
+describe("completeTask — resume and recovery", () => {
+  it("completes the lifecycle in order on an already-merged retry", async () => {
+    const fx = makeRepo();
+    const { task, clean } = reviewTask(fx.root, "0130", "feat/rel");
+    try {
+      // Simulate the stranded close-out: the branch is already integrated.
+      git(fx.root, ["merge", "--no-edit", "feat/rel"]);
+
+      const progress: string[] = [];
+      const result = await completeTask(
+        config(fx.root),
+        task,
+        (step) => progress.push(step),
+        {
+          build: async () => ({ ok: true }),
+          screenshots: async () => ({ ok: true }),
+          check: async () => ({ ok: true }),
+        },
+      );
+
+      expect(progress).toEqual(["merge", "build", "screenshots", "check", "done"]);
+      expect(result.ok).toBe(true);
+      expect(result.merged).toBe(true);
+      expect(result.alreadyMerged).toBe(true);
+      expect(result.task?.status).toBe("done");
+      expect(result.task?.releasedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      // Cleanup ran: worktree gone, branch deleted, work preserved in main.
+      expect(git(fx.root, ["branch", "--list", "feat/rel"])).toBe("");
+      expect(git(fx.root, ["worktree", "list", "--porcelain"])).not.toContain("feat/rel");
+    } finally {
+      clean();
+    }
+  });
+
+  it("preserves diagnostics and strands nothing when the check gate fails", async () => {
+    const fx = makeRepo();
+    const { task, clean } = reviewTask(fx.root, "0131", "feat/fail");
+    try {
+      git(fx.root, ["merge", "--no-edit", "feat/fail"]);
+
+      const result = await completeTask(
+        config(fx.root),
+        task,
+        undefined,
+        {
+          build: async () => ({ ok: true }),
+          screenshots: async () => ({ ok: true }),
+          check: async () => ({
+            ok: false,
+            stage: "check",
+            command: "node dist/cli/index.js check",
+            exitCode: 1,
+            output: "1 check(s) failed.\n✗ ui-smoke: WebKit could not mount the app",
+            detail: "repoos check failed (exit 1) — node dist/cli/index.js check — 1 check(s) failed.",
+          }),
+        },
+      );
+
+      expect(result.ok).toBe(false);
+      expect(result.merged).toBe(true);
+      expect(result.alreadyMerged).toBe(true);
+      expect(result.reason).toMatch(/repoos check failed after merge/);
+      // The diagnostics survive: stage, command, exit status, output tail.
+      expect(result.check?.stage).toBe("check");
+      expect(result.check?.command).toContain("check");
+      expect(result.check?.exitCode).toBe(1);
+      expect(result.check?.output).toContain("WebKit could not mount");
+      // The task is NOT marked done and cleanup did NOT run before a green gate.
+      expect(result.task).toBeUndefined();
+      const onDisk = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: fx.root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(onDisk.status).toBe("review");
+      expect(git(fx.root, ["branch", "--list", "feat/fail"])).toContain("feat/fail");
+    } finally {
+      clean();
+    }
+  });
+
+  it("reports a real source conflict and keeps the task in review", async () => {
+    const fx = makeRepo();
+    const { task, clean } = reviewTask(fx.root, "0132", "feat/conflict");
+    try {
+      // Drift main so the branch merge conflicts on b.txt.
+      commitFile(fx.root, "b.txt", "main edit\n", "main edit");
+
+      const result = await completeTask(
+        config(fx.root),
+        task,
+        undefined,
+        {
+          build: async () => ({ ok: true }),
+          screenshots: async () => ({ ok: true }),
+          check: async () => ({ ok: true }),
+        },
+      );
+
+      expect(result.ok).toBe(false);
+      expect(result.merged).toBe(false);
+      expect(result.conflicts).toContain("b.txt");
+      const onDisk = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: fx.root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(onDisk.status).toBe("review");
+    } finally {
+      clean();
+    }
+  });
+});
