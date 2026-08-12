@@ -35,6 +35,7 @@ if (process.env.REPOOS_FAKEBIN_EMIT_SESSION !== "0") process.stdout.write('{"ses
 process.stdout.write("done\\n");
 if (process.env.REPOOS_FAKEBIN_HANDOFF === "1") process.stdout.write("${HANDOFF_READY_SIGNAL}\\n");
 if (process.env.REPOOS_FAKEBIN_CODEX_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
+if (process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF === "1") process.stdout.write(JSON.stringify({ type: "text", sessionID: "sess-123", part: { type: "text", text: "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" } }) + "\\n");
 if (process.env.REPOOS_FAKEBIN_FAIL === "1") process.exitCode = 1;
 `;
 
@@ -59,7 +60,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -140,6 +141,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_EMIT_SESSION;
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -517,6 +519,25 @@ describe("server-owned handoff mission (#0094)", () => {
 });
 
 describe("structured runner handoff (#0094)", () => {
+  it("recognizes the handoff signal inside a multiline OpenCode text event", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => { requests.push(request); },
+      });
+      runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("recognizes the handoff signal inside a Codex JSON agent_message", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);

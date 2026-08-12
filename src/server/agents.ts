@@ -1475,7 +1475,11 @@ export class AgentRunner {
   /** Recognize the exact capability-request signal in plain or structured output. */
   private isHandoffSignal(raw: string, entry: AgentOutputEntry): boolean {
     if (raw.trim() === HANDOFF_READY_SIGNAL) return true;
-    if ("type" in entry && entry.type === "text" && entry.text.trim() === HANDOFF_READY_SIGNAL) return true;
+    if (
+      "type" in entry &&
+      entry.type === "text" &&
+      entry.text.split("\n").some((line) => line.trim() === HANDOFF_READY_SIGNAL)
+    ) return true;
     // Codex --json wraps the final assistant response in an item.completed
     // event. The signal is therefore inside item.text, not a standalone line.
     try {
