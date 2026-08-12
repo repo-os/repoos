@@ -8,8 +8,9 @@ area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: gpt-5.6-terra
 created_at: "2026-08-12T04:16:02Z"
-updated_at: "2026-08-12T04:16:02Z"
+updated_at: "2026-08-12T06:14:28Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ This task covers testing and improving the chat presentation of streamed output 
 ## Activity
 
 - 2026-08-12T04:16:02Z · created · unknown
+- 2026-08-12T06:14:28Z · model_override
