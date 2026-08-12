@@ -2,14 +2,14 @@
 id: "0136"
 title: Add Create draft button to the freeform New Task tab
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T11:29:37Z"
-updated_at: "2026-08-12T11:29:37Z"
+updated_at: "2026-08-12T11:37:20Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ In the freeform tab of the New Task drawer, a third button labeled **Create draf
 ## Activity
 
 - 2026-08-12T11:29:37Z · created · unknown
+- 2026-08-12T11:37:20Z · status inbox→ready
