@@ -2,16 +2,16 @@
 id: "0107"
 title: Audit agent task history for recurring skill gaps and propose reusable skills
 type: task
-status: ready
+status: review
 priority: p2
 area: agent
 assigned_to: AI
 created_by: ""
-branch: ""
+branch: feat/audit-agent-task-history-for-recurring-s
 cli_override: opencode
 model_override: opencode-go/qwen3.8-max
 created_at: "2026-08-11T19:49:57Z"
-updated_at: "2026-08-12T04:59:30Z"
+updated_at: "2026-08-12T05:30:32Z"
 ---
 ## Problem
 
@@ -50,3 +50,7 @@ This is an analysis and documentation task, not permission to create or install 
 
 - 2026-08-11T19:50:32Z · body
 - 2026-08-12T04:59:30Z · cli_override, model_override
+- 2026-08-12T05:10:00Z · status ready→active
+- 2026-08-12T05:45:00Z · audit v1 written: docs/audits/2026-08-agent-skill-gap-audit.md — 51-task sample, 12 findings, 2 proposed skills (agent-cli-probe, ui-verify), 9 ranked recommendations, skill-candidate flagging mechanism proposed; no skills created, no other tasks mutated
+- 2026-08-12T05:50:00Z · status active→review · repoos check green (build, css-layers, theme-contrast, screenshots, tests 302/302, ui-smoke)
+- 2026-08-12T13:25:00Z · audit v2 corrections: reviewer report 0090 (usable) added — F12/R6 now 3/4 failures with `opus` model correlation; transcript-persistence limitation restated (#0090 landed mid-audit); repoos check re-run green (tests 302/302)
