@@ -2,14 +2,14 @@
 id: "0024"
 title: "Improve global search with doc contents, fuzzy matching, history, and status cues"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/improve-global-search-with-doc-contents-
 created_at: "2026-08-04T09:17:40Z"
-updated_at: "2026-08-12T19:03:39Z"
+updated_at: "2026-08-12T19:03:43Z"
 ---
 ## Activity
 
@@ -102,3 +102,4 @@ folded into this task rather than retaining a second search-polish task.
 ## Activity
 
 - 2026-08-12T19:03:39Z · status inbox→ready
+- 2026-08-12T19:03:43Z · status ready→active, branch
