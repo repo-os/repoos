@@ -2,7 +2,7 @@
 id: "0107"
 title: Audit agent task history for recurring skill gaps and propose reusable skills
 type: task
-status: review
+status: active
 needs_merge: true
 priority: p2
 area: agent
@@ -12,7 +12,7 @@ branch: feat/audit-agent-task-history-for-recurring-s
 cli_override: opencode
 model_override: opencode-go/qwen3.8-max
 created_at: "2026-08-11T19:49:57Z"
-updated_at: "2026-08-12T05:31:54Z"
+updated_at: "2026-08-12T06:06:18Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ This is an analysis and documentation task, not permission to create or install 
 - 2026-08-12T04:59:32Z · status ready→active, branch
 - 2026-08-12T05:31:53Z · status active→review
 - 2026-08-12T05:31:54Z · needs_merge
+- 2026-08-12T06:06:18Z · status review→active
