@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-optional-ntfy-notification-support
 created_at: "2026-08-12T11:13:43Z"
-updated_at: "2026-08-12T11:14:20Z"
+updated_at: "2026-08-12T11:36:59Z"
 ---
 ## Problem
 
