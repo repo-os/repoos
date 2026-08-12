@@ -17,6 +17,14 @@ function escapeHtml(s: string): string {
 function inline(s: string): string {
   // fenced-style inline code first so emphasis doesn't touch its contents
   s = s.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  // images: ![alt](src) — must run BEFORE links, whose pattern also matches
+  // the `[alt](src)` tail. Only http(s) and repo-relative paths are allowed.
+  s = s.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()]*\))*)\)/g, (_m, alt: string, src: string) => {
+    const safe =
+      /^(https?:|\/|[a-zA-Z0-9._~/-])/.test(src) && !/^\s*javascript:/i.test(src);
+    if (!safe) return alt;
+    return `<img src="${src}" alt="${alt}" loading="lazy">`;
+  });
   // links: [label](url) — only allow http(s)/mailto/# relative paths
   s = s.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()]*\))*)\)/g, (_m, label: string, href: string) => {
     const safe =

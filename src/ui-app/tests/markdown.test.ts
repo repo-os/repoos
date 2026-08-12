@@ -71,4 +71,21 @@ describe("renderMarkdown", () => {
     expect(html).toContain("</tbody></table>");
     expect(html).toContain("<td>🟢 Budget</td>");
   });
+
+  it("renders images from repo-relative paths", () => {
+    const html = renderMarkdown(
+      "![bug](/api/tasks/0001/attachments/screenshot-1.png)\n\n[link](/work)\n",
+    );
+    expect(html).toContain(
+      '<img src="/api/tasks/0001/attachments/screenshot-1.png" alt="bug" loading="lazy">',
+    );
+    expect(html).toContain('<a href="/work"');
+  });
+
+  it("renders https images and drops javascript: sources", () => {
+    const ok = renderMarkdown("![shot](https://example.com/a.png)");
+    expect(ok).toContain('<img src="https://example.com/a.png"');
+    const bad = renderMarkdown("![x](javascript:alert(1))");
+    expect(bad).not.toContain("javascript:");
+  });
 });

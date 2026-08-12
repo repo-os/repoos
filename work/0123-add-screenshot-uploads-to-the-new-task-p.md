@@ -2,14 +2,14 @@
 id: "0123"
 title: Add screenshot uploads to the New task panel
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-screenshot-uploads-to-the-new-task-p
 created_at: "2026-08-12T05:52:42Z"
-updated_at: "2026-08-12T11:39:06Z"
+updated_at: "2026-08-12T22:30:00Z"
 ---
 ## Problem
 
@@ -40,3 +40,5 @@ Users can add screenshots through a file upload control in the New task panel or
 - 2026-08-12T05:53:03Z · status inbox→ready
 - 2026-08-12T11:08:04Z · status ready→active, branch
 - 2026-08-12T11:39:06Z · status active→review
+- 2026-08-12T13:38:22Z · status done→review
+- 2026-08-12T22:30:00Z · status review→done

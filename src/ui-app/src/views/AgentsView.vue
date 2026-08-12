@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { labelForModel, useConfigStore } from "../stores/config";
+import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
 import Button from "../components/ui/button.vue";
@@ -16,6 +18,15 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 
 const config = useConfigStore();
+const router = useRouter();
+const docs = useDocsStore();
+
+const RECOMMENDATIONS_DOC = "docs/agent-model-recommendations.md";
+
+function openRecommendations(): void {
+  void docs.loadDoc(RECOMMENDATIONS_DOC);
+  void router.push({ name: "repo" });
+}
 
 const localAgents = ref<Agent[]>([]);
 const newName = ref("");
@@ -273,6 +284,29 @@ onUnmounted(() => {
     <div v-if="!config.loaded" class="spin"></div>
 
     <template v-else>
+      <Card style="padding: 0 18px 12px; margin-bottom: 16px">
+        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+          <span class="live-dot" style="background: var(--green)"></span>Choosing an agent
+        </div>
+        <div class="agent-desc rec-desc">
+          <p>
+            <strong>opencode</strong> is the most mature driver (structured output, model discovery, session resume).
+            Nearly all completed RepoOS tasks used it with <strong>big pickle</strong>, though evidence is provisional
+            — no other CLI has been tested on a real task.
+          </p>
+          <p>
+            Use live model discovery ("Refresh models") to find what's available on your machine.
+            Compatibility testing (the "Test" button) proves a CLI/model responds, not that it performs well on real tasks.
+          </p>
+          <p>
+            <button class="rec-link" @click="openRecommendations">
+              View the full agent &amp; model selection guide →
+            </button>
+            <span class="rec-freshness">Last verified 2026-08-12 · refreshed manually until #0093</span>
+          </p>
+        </div>
+      </Card>
+
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents

@@ -258,12 +258,15 @@ describe("completeTask — resume and recovery", () => {
         (step) => progress.push(step),
         {
           build: async () => ({ ok: true }),
-          screenshots: async () => ({ ok: true }),
+          screenshots: async () => {
+            throw new Error("screenshots step must not run by default");
+          },
           check: async () => ({ ok: true }),
         },
       );
 
-      expect(progress).toEqual(["merge", "build", "screenshots", "check", "done"]);
+      // Screenshot regeneration is skipped by default (#0140).
+      expect(progress).toEqual(["merge", "build", "check", "done"]);
       expect(result.ok).toBe(true);
       expect(result.merged).toBe(true);
       expect(result.alreadyMerged).toBe(true);
@@ -273,6 +276,37 @@ describe("completeTask — resume and recovery", () => {
       expect(git(fx.root, ["branch", "--list", "feat/rel"])).toBe("");
       expect(git(fx.root, ["worktree", "list", "--porcelain"])).not.toContain("feat/rel");
     } finally {
+      clean();
+    }
+  });
+
+  it("runs the screenshots step when REPOOS_DONE_SCREENSHOTS=1 is set", async () => {
+    const fx = makeRepo();
+    const { task, clean } = reviewTask(fx.root, "0140", "feat/shots");
+    try {
+      git(fx.root, ["merge", "--no-edit", "feat/shots"]);
+
+      const progress: string[] = [];
+      process.env.REPOOS_DONE_SCREENSHOTS = "1";
+      const result = await completeTask(
+        config(fx.root),
+        task,
+        (step) => progress.push(step),
+        {
+          build: async () => ({ ok: true }),
+          screenshots: async () => ({ ok: true }),
+          check: async () => ({ ok: true }),
+        },
+      );
+
+      expect(progress).toEqual(["merge", "build", "screenshots", "check", "done"]);
+      expect(result.ok).toBe(true);
+      expect(result.task?.status).toBe("done");
+      // Cleanup ran: worktree gone, branch deleted, work preserved in main.
+      expect(git(fx.root, ["branch", "--list", "feat/shots"])).toBe("");
+      expect(git(fx.root, ["worktree", "list", "--porcelain"])).not.toContain("feat/shots");
+    } finally {
+      delete process.env.REPOOS_DONE_SCREENSHOTS;
       clean();
     }
   });

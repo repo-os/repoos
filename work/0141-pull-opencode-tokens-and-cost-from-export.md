@@ -1,16 +1,17 @@
 ---
 id: "0141"
-title: Pull opencode token usage and cost from `opencode export` instead of showing "—"
+title: "Pull opencode token usage and cost from `opencode export` instead of showing \"—\""
 type: feature
-status: ready
+status: done
+needs_merge: true
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
+branch: feat/pull-opencode-token-usage-and-cost-from-
 created_at: "2026-08-12T19:40:00Z"
-updated_at: "2026-08-12T19:40:00Z"
+updated_at: "2026-08-12T14:44:54Z"
 ---
-
 ## Problem
 
 The Agent tab on each task shows a "time — tokens — cost" section, but tokens and cost always display `"—"` when using opencode as the coding agent. The current `extractUsage()` function (`src/server/agents.ts:172`) passively regex-matches raw CLI output lines for usage data, but opencode's `--format json` output doesn't include a usage/result event — the data exists in opencode's own session store but never reaches RepoOS.
@@ -41,3 +42,9 @@ Every opencode agent session should report authoritative token counts and cost i
 - `opencode export` with no session ID is interactive — always pass the session ID
 - Test with a fixture that mocks `opencode export` output
 - Also consider: can this be called on `GET /api/tasks/:id/output` (lazy, on demand) instead of during the turn, to avoid blocking the agent stream?
+
+## Activity
+
+- 2026-08-12T22:10:00Z · status ready→review, branch
+- 2026-08-12T14:22:50Z · needs_merge
+- 2026-08-12T14:44:54Z · status review→done, release:success

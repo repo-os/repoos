@@ -5,6 +5,7 @@ import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import DoneErrorCard from "./DoneErrorCard.vue";
 
 const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
   dragEnabled: true,
@@ -241,6 +242,16 @@ async function openAgent(): Promise<void> {
         </button>
       </div>
     </div>
+    <!-- A failed move-to-done stays with the card that triggered it, directly
+         below the button, instead of detaching into a global toast. -->
+    <DoneErrorCard
+      v-if="task.status === 'review' && repo.doneErrorFor(task.id)"
+      class="tc-done-error"
+      :message="repo.doneErrorFor(task.id)!.message"
+      :step="repo.doneErrorFor(task.id)!.step"
+      :conflicts="repo.doneErrorFor(task.id)!.conflicts"
+      @click.stop
+    />
   </div>
 
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />

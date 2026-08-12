@@ -2,14 +2,15 @@
 id: "0122"
 title: Show move-to-done errors inline on cards and in the task panel
 type: feature
-status: active
+status: done
+needs_merge: true
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/show-move-to-done-errors-inline-on-cards
 created_at: "2026-08-12T05:51:20Z"
-updated_at: "2026-08-12T11:37:05Z"
+updated_at: "2026-08-12T14:45:27Z"
 ---
 ## Activity
 
@@ -89,4 +90,6 @@ review task's Work card and inside the task panel.
 ## Activity
 
 - 2026-08-12T06:04:02Z · status inbox→ready
-- 2026-08-12T11:34:12Z · status ready→active, branch
+- 2026-08-12T14:28:12Z · needs_merge
+- 2026-08-12T22:32:00Z · status active→review
+- 2026-08-12T14:45:27Z · status review→done, release:success

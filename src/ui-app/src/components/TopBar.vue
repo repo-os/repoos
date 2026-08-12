@@ -1,12 +1,21 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { RefreshCw, RotateCcw } from "lucide-vue-next";
+import { Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
+const config = useConfigStore();
 const { health, connected, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
+
+const isDark = computed(() => config.effectiveTheme === "dark");
+
+function toggleTheme(): void {
+  void config.setTheme(isDark.value ? "light" : "dark");
+}
 </script>
 
 <template>
@@ -25,6 +34,16 @@ const { repoName } = storeToRefs(repo);
       <span class="mono">{{ repoName }}</span>
     </div>
     <div class="spacer"></div>
+    <button
+      class="theme-toggle"
+      type="button"
+      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      @click="toggleTheme"
+    >
+      <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
+      <Sun v-else :size="15" :stroke-width="1.8" />
+    </button>
     <SearchBar />
     <button
       v-if="newVersion"

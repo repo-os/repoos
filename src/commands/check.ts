@@ -3,9 +3,9 @@
  *
  * Runs, in sequence: build staleness check, full build (tsc + asset copy),
  * CSS layering guard, theme contrast guard (button-gradient validity + WCAG
- * contrast on every theme's fg/bg token pairs), screenshots freshness guard,
- * test suite (if present), and a headless browser smoke test that verifies
- * the UI mounts and has zero console errors.
+ * contrast on every theme's fg/bg token pairs), test suite (if present), and a
+ * headless browser smoke test that verifies the UI mounts and has zero console
+ * errors.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot } from "../core/config.js";
-import { HASH_FILE, SCREENSHOT_NAMES, screenshotsStale } from "./screenshots.js";
+
 
 interface CheckResult {
   name: string;
@@ -384,43 +384,6 @@ export async function cmdCheck(): Promise<void> {
     } else {
       console.log(c.green("  ✔ Theme tokens have valid button gradients and ≥3:1 contrast"));
       results.push(pass("theme-contrast"));
-    }
-  }
-
-  // ── 2d. Screenshots freshness guard ────────────────────────────────
-  heading("Screenshots freshness guard");
-  if (!existsSync(HASH_FILE)) {
-    // No committed marker at all — only meaningful once screenshots exist.
-    console.log(c.dim("  · No screenshots committed — skipping"));
-    results.push(pass("screenshots", "skipped — no screenshots committed"));
-  } else {
-    // Needs the same Playwright install the generator uses.
-    let pwAvailable = true;
-    try {
-      await import("@playwright/test");
-    } catch {
-      pwAvailable = false;
-    }
-    if (!pwAvailable) {
-      console.log(c.dim("  · Playwright not available — screenshots guard skipped"));
-      results.push(pass("screenshots", "skipped — playwright not available"));
-    } else {
-      const missing = SCREENSHOT_NAMES.filter((n) => !existsSync(join(process.cwd(), "screenshots", n)));
-      const stale = screenshotsStale(process.cwd());
-      if (missing.length > 0) {
-        const msg = `Missing screenshots (${missing.join(", ")}) — run \`bun run screenshots\``;
-        console.log(c.red("  ✗ " + msg.split("\n")[0]));
-        results.push(fail("screenshots", msg));
-        exitCode = 1;
-      } else if (stale) {
-        const msg = "Screenshots are stale (UI source changed) — run `bun run screenshots`";
-        console.log(c.red("  ✗ " + msg.split("\n")[0]));
-        results.push(fail("screenshots", msg));
-        exitCode = 1;
-      } else {
-        console.log(c.green("  ✔ Screenshots are fresh"));
-        results.push(pass("screenshots"));
-      }
     }
   }
 

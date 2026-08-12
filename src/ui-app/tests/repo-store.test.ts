@@ -355,6 +355,58 @@ describe("automatic review state", () => {
   });
 });
 
+describe("reviewer conversation (0110)", () => {
+  it("routes reviewer output into its own conversation and sends follow-ups", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const reviewing = makeTask({
+      status: "review",
+      automaticReview: { running: false, enabled: true },
+    });
+    const posts: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [reviewing], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review/again")) {
+        posts.push("again");
+        return json({ ok: true });
+      }
+      if (url.includes("/review/message")) {
+        posts.push("message");
+        return json({ ok: true });
+      }
+      if (url.includes("/review"))
+        return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+
+    // Reviewer output streams under the `review:<id>` event id and lands in the
+    // conversation buffer — never in the engineer transcript.
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "review:0001",
+      entry: { type: "text", text: "inspecting the diff…" },
+      stream: "out",
+    });
+    await Promise.resolve();
+    expect(repo.reviewFor("0001")?.lines).toContainEqual({
+      type: "text",
+      text: "inspecting the diff…",
+    });
+    expect(repo.outputs["0001"]).toBeUndefined();
+
+    await repo.reviewAgain("0001");
+    await repo.sendReviewMessage("0001", "why?");
+    expect(posts).toEqual(["again", "message"]);
+  });
+});
+
 describe("preview state", () => {
   it("updates a task's preview on start and clears it on stop", async () => {
     const repo = useRepoStore();
@@ -615,14 +667,17 @@ describe("error toasts", () => {
 });
 
 describe("default drawer tab (0080)", () => {
-  it.each(["active", "review"] as const)(
-    "opens on the Agent tab for a %s task — that's where the live action is",
-    (status) => {
-      const ui = useUiStore();
-      ui.open(makeTask({ status }));
-      expect(ui.activeTab).toBe("agent");
-    },
-  );
+  it("opens on the Agent tab for an active task — that's where the live action is", () => {
+    const ui = useUiStore();
+    ui.open(makeTask({ status: "active" }));
+    expect(ui.activeTab).toBe("agent");
+  });
+
+  it("opens on the Agent Review tab for a review task (0110)", () => {
+    const ui = useUiStore();
+    ui.open(makeTask({ status: "review" }));
+    expect(ui.activeTab).toBe("review");
+  });
 
   it.each(["draft", "inbox", "ready", "done"] as const)(
     "opens on the Details tab for a %s task",

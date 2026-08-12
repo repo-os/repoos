@@ -57,6 +57,14 @@ try {
 const errors = [];
 const done = [];
 
+/** Non-critical resources whose load failures are ignored by the screenshot guard. */
+function isNonCriticalResource(url) {
+  return (
+    url.includes("fonts.gstatic.com") ||
+    /\/(favicon|icon|apple-touch-icon)/i.test(url)
+  );
+}
+
 async function capture(newPage, name, url, ready, act) {
   const page = await newPage;
   const pageErrors = [];
@@ -64,6 +72,17 @@ async function capture(newPage, name, url, ready, act) {
     if (m.type() === "error") pageErrors.push(`[console] ${m.text()}`);
   });
   page.on("pageerror", (e) => pageErrors.push(`[pageerror] ${e.message}`));
+  page.on("requestfailed", (req) => {
+    if (isNonCriticalResource(req.url())) return;
+    pageErrors.push(`[requestfailed] ${req.url()}: ${req.failure()?.errorText ?? ""}`);
+  });
+  page.on("response", (resp) => {
+    const status = resp.status();
+    const u = resp.url();
+    if (status >= 400 && !isNonCriticalResource(u)) {
+      pageErrors.push(`[response ${status}] ${u}`);
+    }
+  });
 
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20_000 });
   await page.waitForSelector(ready, { timeout: 15_000 });

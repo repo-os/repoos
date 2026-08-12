@@ -26,11 +26,16 @@
  *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
  *   GET  /api/tasks/:id/output -> { lines, stats } the retained transcript + live run stats (0080)
- *   GET  /api/tasks/:id/review -> { ok, running, enabled, review } the agent's
- *                                 review report for a task in `review`
+ *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's
+ *                                 review report + reviewer conversation for a task in `review`
+ *   POST /api/tasks/:id/review/again   -> start a fresh review run against the current worktree
+ *   POST /api/tasks/:id/review/message -> send a follow-up to the reviewer (its own session)
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
  *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
+ *   POST /api/tasks/:id/attachments   -> attach a screenshot { name, mime, data(base64) };
+ *                                        records a `## Screenshots` section in the task body
+ *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/events           -> SSE stream of RepoEvent
@@ -89,6 +94,12 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import {
+  appendScreenshotsSection,
+  mimeForExtension,
+  resolveScreenshot,
+  saveScreenshot,
+} from "./attachments.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
@@ -1037,7 +1048,62 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /** Whether the review agent is enabled on the Agents page at all. */
           enabled: reviews.enabled(),
           review: reviews.read(reviewId),
+          /** The reviewer conversation, separate from the engineer session. */
+          lines: reviews.session(reviewId),
         });
+      }
+      // "Review again" (0110): a fresh review run against the current worktree
+      // state — a new assessment, never a continuation of the prior run. The
+      // run happens server-side, so the response returns as soon as it starts.
+      const reviewAgainMatch = path.match(/^\/api\/tasks\/([^/]+)\/review\/again$/);
+      if (reviewAgainMatch && method === "POST") {
+        const id = reviewAgainMatch[1];
+        const existing = index.getTask(id);
+        if (!existing) {
+          return json(res, 404, { error: `Task #${id} not found` });
+        }
+        if (existing.status !== "review") {
+          return json(res, 400, {
+            error: `Only review tasks can be re-reviewed (#${id} is ${existing.status})`,
+          });
+        }
+        if (runner.isRunning(id)) {
+          return json(res, 409, {
+            error: `Task #${id} has an agent turn in progress — wait for it to finish`,
+          });
+        }
+        const gate = reviews.canRun(existing);
+        if (!gate.ok) {
+          return json(res, 400, { error: gate.reason ?? "could not start the review" });
+        }
+        void reviews.run(existing);
+        return json(res, 200, { ok: true });
+      }
+      // Chat with the reviewer (0110): a follow-up turn in the reviewer's own
+      // conversation, never routed to the engineer session.
+      const reviewMessageMatch = path.match(/^\/api\/tasks\/([^/]+)\/review\/message$/);
+      if (reviewMessageMatch && method === "POST") {
+        const id = reviewMessageMatch[1];
+        const existing = index.getTask(id);
+        if (!existing) {
+          return json(res, 404, { error: `Task #${id} not found` });
+        }
+        if (existing.status !== "review") {
+          return json(res, 400, {
+            error: `Only review tasks accept reviewer messages (#${id} is ${existing.status})`,
+          });
+        }
+        const body = (await readBody(req)) as { text?: unknown };
+        const text = typeof body?.text === "string" ? body.text.trim() : "";
+        if (!text) {
+          return json(res, 400, { error: "message text is required" });
+        }
+        const gate = reviews.canSend(existing);
+        if (!gate.ok) {
+          return json(res, 400, { error: gate.reason ?? "could not send to the reviewer" });
+        }
+        void reviews.send(existing, text);
+        return json(res, 200, { ok: true });
       }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
@@ -1068,6 +1134,42 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, 400, { error: result.error ?? "could not start preview" });
         }
         return json(res, 200, { ok: true, port: result.port, url: result.url });
+      }
+
+      // ---- task screenshot attachments (0123) ----
+      const screenshotServeMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/);
+      if (screenshotServeMatch && method === "GET") {
+        const abs = resolveScreenshot(config, screenshotServeMatch[1], screenshotServeMatch[2]);
+        if (!abs) {
+          return json(res, 404, { error: "Attachment not found" });
+        }
+        const mime = mimeForExtension(abs);
+        res.writeHead(200, {
+          "Content-Type": mime ?? "application/octet-stream",
+          "Cache-Control": "no-cache",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(readFileSync(abs));
+        return;
+      }
+      const screenshotUploadMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments$/);
+      if (screenshotUploadMatch && method === "POST") {
+        const task = index.getTask(screenshotUploadMatch[1]);
+        if (!task) {
+          return json(res, 404, { error: `Task #${screenshotUploadMatch[1]} not found` });
+        }
+        const body = (await readBody(req)) as { name?: unknown; mime?: unknown; data?: unknown };
+        const result = saveScreenshot(config, task, body ?? {});
+        if ("error" in result) {
+          return json(res, 400, { error: result.error });
+        }
+        // Record the screenshot in the task body (before the Activity section),
+        // re-commit the task file, and push the change through the index.
+        const updated = patchTaskFile(config, task.absPath, {
+          body: appendScreenshotsSection(task.body, [result]),
+        });
+        index.applyFileChange(updated.absPath);
+        return json(res, 201, { ok: true, attachment: result });
       }
 
       // ---- writes ----

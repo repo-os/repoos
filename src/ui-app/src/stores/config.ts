@@ -126,6 +126,31 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
+  /** The effective mode the UI is showing right now: resolves "system" to dark/light. */
+  const effectiveTheme = computed<string>(() => {
+    const stored = typeof form.theme === "string" ? form.theme : "system";
+    if (stored !== "system") return stored;
+    if (typeof window === "undefined" || !window.matchMedia) return "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  /**
+   * Persist an explicit dark/light choice. Never toggles back to "system" —
+   * a click is an explicit choice. Rollback on failure like setUiTheme.
+   */
+  async function setTheme(t: string): Promise<void> {
+    const prev = typeof form.theme === "string" ? form.theme : "system";
+    applyTheme(t, true);
+    try {
+      await api("/api/config", JSON_OPTS("PATCH", { theme: t }));
+      if (data.value) data.value.theme = t;
+      form.theme = t;
+    } catch (err) {
+      applyTheme(prev);
+      throw err;
+    }
+  }
+
   /** Persist the tunnel UI opt-in immediately; setup itself remains CLI-driven. */
   async function setTunnelEnabled(enabled: boolean): Promise<void> {
     const previous = !!form.tunnelEnabled;
@@ -247,6 +272,8 @@ export const useConfigStore = defineStore("config", () => {
     applyTheme,
     applyUiTheme,
     setUiTheme,
+    setTheme,
+    effectiveTheme,
     setTunnelEnabled,
     uiTheme,
     agents,

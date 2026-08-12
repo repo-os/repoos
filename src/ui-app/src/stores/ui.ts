@@ -11,6 +11,18 @@ export interface NewTaskForm {
   assignedTo: string;
 }
 
+/** A screenshot picked in the New task panel, held in memory until the task exists. */
+export interface PendingScreenshot {
+  name: string;
+  mime: string;
+  /** base64 data URL of the image, used for the in-panel thumbnail. */
+  dataUrl: string;
+  size: number;
+}
+
+/** The panel only ever holds the latest N, so a huge drop can't pin memory. */
+const MAX_PENDING_SCREENSHOTS = 12;
+
 export const useUiStore = defineStore("ui", () => {
   /** Currently open drawer task, or null when closed. */
   const active = ref<Task | null>(null);
@@ -20,8 +32,8 @@ export const useUiStore = defineStore("ui", () => {
   const drawerWidth = ref(680);
   /** Cloudflare setup drawer is independent of the task drawer. */
   const tunnelOpen = ref(false);
-  /** Active drawer tab: task details, or the agent session view. */
-  const activeTab = ref<"details" | "agent">("details");
+  /** Active drawer tab: task details, the agent session, or agent review. */
+  const activeTab = ref<"details" | "agent" | "review">("details");
 
   const nt = reactive<NewTaskForm>({
     title: "",
@@ -31,6 +43,8 @@ export const useUiStore = defineStore("ui", () => {
     assignedTo: "",
   });
 
+  const pendingScreenshots = reactive<PendingScreenshot[]>([]);
+
   function openNewTask(): void {
     isNew.value = true;
     active.value = null;
@@ -39,11 +53,40 @@ export const useUiStore = defineStore("ui", () => {
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = "";
+    clearScreenshots();
+  }
+
+  /** Read each image file into memory as a data URL and queue it for the new task. */
+  function addScreenshots(files: File[]): void {
+    for (const file of files) {
+      if (!/^image\/(png|jpe?g|gif|webp|avif|bmp)$/i.test(file.type)) continue;
+      if (pendingScreenshots.length >= MAX_PENDING_SCREENSHOTS) break;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== "string") return;
+        pendingScreenshots.push({
+          name: file.name,
+          mime: file.type,
+          dataUrl: reader.result,
+          size: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeScreenshot(index: number): void {
+    pendingScreenshots.splice(index, 1);
+  }
+
+  function clearScreenshots(): void {
+    pendingScreenshots.splice(0);
   }
 
   /** Tasks the agent has already started on default straight to the live action. */
-  function defaultTabFor(t: Task): "details" | "agent" {
-    return t.status === "active" || t.status === "review" ? "agent" : "details";
+  function defaultTabFor(t: Task): "details" | "agent" | "review" {
+    if (t.status === "review") return "review";
+    return t.status === "active" ? "agent" : "details";
   }
 
   function open(t: Task): void {
@@ -100,6 +143,10 @@ export const useUiStore = defineStore("ui", () => {
     tunnelOpen,
     activeTab,
     nt,
+    pendingScreenshots,
+    addScreenshots,
+    removeScreenshot,
+    clearScreenshots,
     openNewTask,
     open,
     openTask,
