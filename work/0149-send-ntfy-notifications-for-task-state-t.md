@@ -2,14 +2,14 @@
 id: "0149"
 title: Send ntfy notifications for task state transitions
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-12T18:19:01Z"
-updated_at: "2026-08-12T18:19:01Z"
+updated_at: "2026-08-12T18:19:25Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ When a task transitions between workflow states, an ntfy notification is automat
 ## Activity
 
 - 2026-08-12T18:19:01Z · created · unknown
+- 2026-08-12T18:19:25Z · status inbox→ready
