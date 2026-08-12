@@ -22,6 +22,9 @@ export function ntfyBaseUrl(config: RepoOSConfig): string {
 
 /** Human-readable message for a status transition, or null when it isn't one. */
 export function ntfyMessageFor(prev: Status, next: Status, title: string): string | null {
+  if (prev === "ready" && next === "active") {
+    return `Task "${title}" started (ready → active)`;
+  }
   if (prev === "active" && next === "review") {
     return `Task "${title}" moved from active to review`;
   }
@@ -32,6 +35,11 @@ export function ntfyMessageFor(prev: Status, next: Status, title: string): strin
     return `Task "${title}" review returned with issues — moved back from review to ${next}`;
   }
   return null;
+}
+
+/** Human-readable message when a task needs human input. */
+export function ntfyMessageForNeedsInput(title: string): string {
+  return `Task "${title}" is waiting for human input`;
 }
 
 /** True when notifications are enabled AND a topic is configured. */
@@ -69,4 +77,10 @@ export function notifyStatusChange(
 /** Fire a notification when a task is created (stretch from #0134). */
 export function notifyTaskCreated(config: RepoOSConfig, task: Task): void {
   publish(config, `Task "${task.title}" created`);
+}
+
+/** Fire a notification when a task needs human input. */
+export function notifyNeedsInput(config: RepoOSConfig, task: Task): void {
+  const message = ntfyMessageForNeedsInput(task.title);
+  publish(config, message);
 }

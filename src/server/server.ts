@@ -106,7 +106,7 @@ import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
-import { notifyStatusChange, notifyTaskCreated, publish, ntfyBaseUrl } from "./ntfy.js";
+import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -799,6 +799,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off.
     if (e.task.status === "review") startReview(e.task);
+  });
+
+  // Handle needsInput changes separately (fires alongside status change when both occur).
+  const unsubscribeNeedsInput = index.on((e) => {
+    if (e.type !== "task.updated") return;
+    const prevNeedsInput = e.prev.needsInput ?? false;
+    const nextNeedsInput = e.task.needsInput;
+    if (!prevNeedsInput && nextNeedsInput) {
+      notifyNeedsInput(config, e.task);
+    }
   });
 
   interface SyncResult {
@@ -1979,6 +1989,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
+          unsubscribeNeedsInput();
           watcher.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an

@@ -50,5 +50,4 @@ When a task transitions between workflow states, an ntfy notification is automat
 
 - 2026-08-12T18:19:01Z · created · unknown
 - 2026-08-12T18:19:25Z · status inbox→ready
-- 2026-08-12T18:19:57Z · status ready→active, branch
-- 2026-08-12T18:26:39Z · status active→review
+- 2026-08-12T18:26:39Z · status ready→review, branch

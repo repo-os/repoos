@@ -9,8 +9,10 @@ import type { RepoOSConfig, Status, Task } from "../../core/types";
 import {
   ntfyBaseUrl,
   ntfyMessageFor,
+  ntfyMessageForNeedsInput,
   notifyStatusChange,
   notifyTaskCreated,
+  notifyNeedsInput,
 } from "../../server/ntfy";
 
 function config(over: Partial<RepoOSConfig> = {}): RepoOSConfig {
@@ -64,6 +66,12 @@ function task(title = "Fix the widget"): Task {
 }
 
 describe("ntfyMessageFor", () => {
+  it("returns a message for ready -> active", () => {
+    expect(ntfyMessageFor("ready", "active", "Fix it")).toBe(
+      'Task "Fix it" started (ready → active)',
+    );
+  });
+
   it("returns a message for active -> review", () => {
     expect(ntfyMessageFor("active", "review", "Fix it")).toBe(
       'Task "Fix it" moved from active to review',
@@ -87,7 +95,6 @@ describe("ntfyMessageFor", () => {
 
   it("returns null for transitions that do not warrant a notification", () => {
     for (const [prev, next] of [
-      ["ready", "active"],
       ["inbox", "ready"],
       ["active", "active"],
       ["done", "active"],
@@ -95,6 +102,14 @@ describe("ntfyMessageFor", () => {
     ] as [Status, Status][]) {
       expect(ntfyMessageFor(prev, next, "Fix it")).toBeNull();
     }
+  });
+});
+
+describe("ntfyMessageForNeedsInput", () => {
+  it("returns a message for task needing human input", () => {
+    expect(ntfyMessageForNeedsInput("Fix it")).toBe(
+      'Task "Fix it" is waiting for human input',
+    );
   });
 });
 
@@ -183,10 +198,12 @@ describe("notifyStatusChange / notifyTaskCreated", () => {
     expect(sent[0].url).toBe("https://ntfy.example.com/repoos_test");
   });
 
-  it("does not send for transitions that produce no message", () => {
+  it("sends a notification for ready -> active transition", () => {
     stubFetch();
     notifyStatusChange(config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }), task(), "ready", "active");
-    expect(sent).toHaveLength(0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
+    expect(sent[0].body).toBe('Task "Fix the widget" started (ready → active)');
   });
 
   it("sends a created notification for a new task", () => {
@@ -195,5 +212,25 @@ describe("notifyStatusChange / notifyTaskCreated", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
     expect(sent[0].body).toBe('Task "Ship it" created');
+  });
+
+  it("sends a needs input notification", () => {
+    stubFetch();
+    notifyNeedsInput(config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }), task("Fix the widget"));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
+    expect(sent[0].body).toBe('Task "Fix the widget" is waiting for human input');
+  });
+
+  it("never sends needs input notification when disabled", () => {
+    stubFetch();
+    notifyNeedsInput(config({ ntfyEnabled: false, ntfyTopic: "repoos_test" }), task());
+    expect(sent).toHaveLength(0);
+  });
+
+  it("never sends needs input notification when topic is empty", () => {
+    stubFetch();
+    notifyNeedsInput(config({ ntfyEnabled: true, ntfyTopic: "" }), task());
+    expect(sent).toHaveLength(0);
   });
 });
