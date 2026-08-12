@@ -2,14 +2,14 @@
 id: "0144"
 title: Replace the chat help button with a simple RepoOS-icon bubble
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/replace-the-chat-help-button-with-a-simp
 created_at: "2026-08-12T13:08:52Z"
-updated_at: "2026-08-12T13:09:27Z"
+updated_at: "2026-08-12T13:09:29Z"
 ---
 ```markdown
 ---
@@ -58,3 +58,4 @@ A circular chat bubble sits in the lower-right corner (same fixed position: `rig
 
 - 2026-08-12T13:08:52Z · created · unknown
 - 2026-08-12T13:09:27Z · title, branch
+- 2026-08-12T13:09:29Z · status inbox→ready
