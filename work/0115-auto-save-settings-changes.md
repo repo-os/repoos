@@ -39,5 +39,4 @@ Changes made on the settings page save automatically, following the existing age
 - 2026-08-12T04:12:31Z · created · unknown
 - 2026-08-12T04:30:53Z · status inbox→ready
 - 2026-08-12T05:48:06Z · cli_override, model_override
-- 2026-08-12T05:48:14Z · status ready→active, branch
-- 2026-08-12T05:56:28Z · status active→review
+- 2026-08-12T05:56:28Z · status ready→review, branch
