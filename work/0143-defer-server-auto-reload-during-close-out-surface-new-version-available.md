@@ -2,14 +2,14 @@
 id: "0143"
 title: "Defer server auto-reload during close-out; surface \"new version available\" instead"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ai
 branch: feat/defer-server-auto-reload-during-close-ou
 created_at: "2026-08-12T21:35:00Z"
-updated_at: "2026-08-12T13:52:00Z"
+updated_at: "2026-08-12T14:18:39Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ This has caused tasks to be left in `review` even after their code was merged in
 
 - 2026-08-12T21:35:00Z · created · ai
 - 2026-08-12T13:06:37Z · status ready→active, branch
+- 2026-08-12T14:18:39Z · status active→review
