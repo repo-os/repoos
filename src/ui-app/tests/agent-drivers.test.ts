@@ -770,6 +770,14 @@ describe("extractUsage (0080)", () => {
     expect(extractUsage("just a normal line of output")).toEqual({});
     expect(extractUsage(JSON.stringify({ type: "text", text: "hello" }))).toEqual({});
   });
+
+  it("extracts kiro credits as costUsd from the stderr footer (#0148)", () => {
+    // Kiro CLI emits " ▸ Credits: 0.15 • Time: 12s" on stderr after each turn.
+    // Credits are Kiro's billing unit (not USD), mapped to costUsd for display.
+    expect(extractUsage(" ▸ Credits: 0.15 • Time: 12s")).toEqual({ costUsd: 0.15 });
+    expect(extractUsage(" ▸ Credits: 0.02 • Time: 2s")).toEqual({ costUsd: 0.02 });
+    expect(extractUsage("▸ Credits: 1.00 • Time: 30s")).toEqual({ costUsd: 1.0 });
+  });
 });
 
 describe("live run stats (0080)", () => {
