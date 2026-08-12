@@ -11,6 +11,7 @@ import type {
   RepoIndex,
   ReviewReport,
   ReviewState,
+  Status,
   SystemStats,
   Task,
 } from "../types";
@@ -531,6 +532,8 @@ export const useRepoStore = defineStore("repo", () => {
     priority: string;
     area: string;
     assignedTo: string;
+    status?: Status;
+    body?: string;
   }): Promise<Task> {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }

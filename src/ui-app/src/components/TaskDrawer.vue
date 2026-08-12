@@ -143,6 +143,44 @@ function openDraft(): void {
   draftSaved.value = null;
 }
 
+/** Short title for a raw draft, mirroring the server's explanationTitle. */
+function draftTitle(text: string): string {
+  const line =
+    text
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => Boolean(l) && l !== "---") ?? "";
+  if (line.length > 0) {
+    return line.length <= 60 ? line : `${line.slice(0, 57).trimEnd()}…`;
+  }
+  const flat = text.replace(/\s+/g, " ").replace(/\s*---\s*/g, " ").trim();
+  return flat.length <= 60 ? flat || "Untitled task" : `${flat.slice(0, 57).trimEnd()}…`;
+}
+
+/** Save the raw freeform text as a draft task, bypassing the PM agent. */
+async function createDraft(): Promise<void> {
+  const text = freeformText.value.trim();
+  if (!text) return;
+  ui.saving = true;
+  freeformError.value = "";
+  draftSaved.value = null;
+  try {
+    await repo.createTask({
+      ...ui.nt,
+      title: draftTitle(text),
+      body: text,
+      status: "draft",
+    });
+    ui.close();
+    freeformText.value = "";
+    router.push("/work");
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
 async function createTask(): Promise<void> {
   if (!ui.nt.title) return;
   ui.saving = true;
@@ -1046,6 +1084,13 @@ function resetFreeformOverrides(): void {
             <div v-else-if="freeformError" class="ff-error">{{ freeformError }}</div>
             <div class="btn-row" style="margin-top: 20px">
               <Button variant="outline" @click="ui.close()">Cancel</Button>
+              <Button
+                variant="outline"
+                @click="createDraft"
+                :disabled="ui.saving || !freeformText.trim()"
+              >
+                Create draft
+              </Button>
               <Button
                 variant="default"
                 @click="createFreeform"
