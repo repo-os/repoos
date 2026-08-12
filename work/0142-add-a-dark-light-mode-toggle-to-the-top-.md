@@ -2,14 +2,14 @@
 id: "0142"
 title: Add a dark/light mode toggle to the top bar
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-dark-light-mode-toggle-to-the-top-
 created_at: "2026-08-12T12:48:49Z"
-updated_at: "2026-08-12T13:10:44Z"
+updated_at: "2026-08-12T13:21:36Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ A compact moon/sun icon button in the TopBar's upper-right corner. It shows the 
 - 2026-08-12T12:48:49Z · created · unknown
 - 2026-08-12T12:49:04Z · status inbox→ready
 - 2026-08-12T13:10:44Z · status ready→active, branch
+- 2026-08-12T13:21:36Z · status active→review
