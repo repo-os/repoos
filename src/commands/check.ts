@@ -13,7 +13,8 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
-import { checkBuild, type BuildCheckResult } from "../core/build.js";
+import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
+import { findRepoRoot } from "../core/config.js";
 import { HASH_FILE, SCREENSHOT_NAMES, screenshotsStale } from "./screenshots.js";
 
 interface CheckResult {
@@ -314,7 +315,10 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 1. Build staleness ──────────────────────────────────────────────
   heading("Build staleness check");
-  const stale: BuildCheckResult = checkBuild();
+  // `repoos check` validates the checkout it was invoked in. In particular,
+  // a global/dev-linked CLI may be running from the main checkout while cwd
+  // is a task worktree with its own source and build marker.
+  const stale: BuildCheckResult = checkBuildForRoot(findRepoRoot());
   if (stale.stale) {
     console.log(c.yellow(`  ⚠ ${stale.message}`));
     results.push(fail("staleness", stale.message ?? "build is stale"));
