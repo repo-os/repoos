@@ -10,7 +10,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
+import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { DEFAULT_AGENTS } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { parseTask } from "../core/task.js";
@@ -703,6 +703,14 @@ export class AgentRunner {
     this.config = config;
     this.emit = emit;
     this.onHandoff = onHandoff;
+  }
+
+  /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
+  dispose(): void {}
+
+  /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
+  stats(taskId: string): AgentSessionStats {
+    return { accumulatedMs: 0, turnStartedAt: null, lastOutputAt: null, tokens: null, costUsd: null, stalled: false };
   }
 
   isRunning(taskId: string): boolean {
