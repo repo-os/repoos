@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/serialize-task-close-outs-with-a-merge-q
 created_at: "2026-08-12T04:47:03Z"
-updated_at: "2026-08-13T12:47:06Z"
+updated_at: "2026-08-13T12:58:53Z"
 ---
 ## Activity
 
@@ -118,3 +118,4 @@ single-writer operation and must be coordinated by RepoOS.
 ## Activity
 
 - 2026-08-13T12:47:06Z · status ready→active, branch
+- 2026-08-13T12:58:53Z · watchdog: automatic resume attempted
