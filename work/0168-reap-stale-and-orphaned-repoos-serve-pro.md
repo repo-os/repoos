@@ -2,14 +2,14 @@
 id: "0168"
 title: Reap stale and orphaned repoos serve processes
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T13:50:20Z"
-updated_at: "2026-08-13T13:50:20Z"
+updated_at: "2026-08-13T14:00:12Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ One healthy `repoos serve` per repo. Stale processes are detected and reaped aut
 ## Activity
 
 - 2026-08-13T13:50:20Z · created · unknown
+- 2026-08-13T14:00:12Z · status inbox→ready
