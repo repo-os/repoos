@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-file-tree-navigation-and-refresh-but
 created_at: "2026-08-13T05:43:16Z"
-updated_at: "2026-08-13T06:26:30Z"
+updated_at: "2026-08-13T10:18:50Z"
 ---
 ## Problem
 
@@ -42,4 +42,6 @@ A hierarchical file tree view where documentation directories can be expanded an
 - 2026-08-13T05:52:00Z · corrected · title/frontmatter/body cleaned up — the kiro agent's raw terminal output (ANSI color codes + box-drawing rendering of the `---` frontmatter delimiters) was stored verbatim instead of being parsed
 - 2026-08-13T06:16:10Z · status inbox→ready
 - 2026-08-13T06:16:22Z · status ready→active, branch
-- 2026-08-13T06:26:30Z · completed · hierarchical file tree with expand/collapse, file leaf nodes, refresh button, and session-scoped state persistence
+- 2026-08-13T09:46:05Z · watchdog: automatic resume attempted
+- 2026-08-13T09:52:05Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-13T10:18:50Z · status active→review, needs_input
