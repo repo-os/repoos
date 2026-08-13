@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/product-manager-tab-with-task-chat-and-e
 created_at: "2026-08-13T13:54:10Z"
-updated_at: "2026-08-13T14:56:41Z"
+updated_at: "2026-08-13T15:27:17Z"
 ---
 ## Problem
 
@@ -60,3 +60,6 @@ Tasks today are static artifacts: once created, there is no built-in way for a u
 - 2026-08-13T14:56:06Z · status ready→active
 - 2026-08-13T14:56:25Z · status active→ready
 - 2026-08-13T14:56:41Z · status ready→active, branch
+- 2026-08-13T15:17:31Z · watchdog: automatic resume attempted
+- 2026-08-13T15:22:31Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-13T15:27:17Z · needs_input
