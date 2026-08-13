@@ -2,14 +2,14 @@
 id: "0112"
 title: "Supervise active agents with periodic health checks, safe recovery, and heartbeat reports"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: AI
 created_by: ""
 branch: feat/supervise-active-agents-with-periodic-he
 created_at: "2026-08-12T04:00:13Z"
-updated_at: "2026-08-13T13:28:50Z"
+updated_at: "2026-08-13T16:25:59Z"
 ---
 ## Problem
 
@@ -94,3 +94,4 @@ This task authorizes a bounded supervisor and recovery policy, not general auton
 - 2026-08-13T13:18:32Z · watchdog: automatic resume attempted
 - 2026-08-13T13:24:19Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T13:28:50Z · needs_input
+- 2026-08-13T16:25:59Z · status active→review
