@@ -2,14 +2,14 @@
 id: "0118"
 title: Serialize task close-outs with a merge queue and main-SHA validation
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/serialize-task-close-outs-with-a-merge-q
 created_at: "2026-08-12T04:47:03Z"
-updated_at: "2026-08-13T12:58:53Z"
+updated_at: "2026-08-13T13:55:10Z"
 ---
 ## Activity
 
@@ -119,3 +119,6 @@ single-writer operation and must be coordinated by RepoOS.
 
 - 2026-08-13T12:47:06Z · status ready→active, branch
 - 2026-08-13T12:58:53Z · watchdog: automatic resume attempted
+- 2026-08-13T13:08:03Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-13T13:28:50Z · needs_input
+- 2026-08-13T13:55:10Z · status active→review

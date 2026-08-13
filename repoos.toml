@@ -6,12 +6,15 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
 uiTheme = "classic"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
+
+autoEngineeringMode = true
+maxActiveTasks = 3
 
 [tunnel]
 provider = "cloudflare"
@@ -19,6 +22,7 @@ enabled = true
 name = "repoos-local"
 domain = "dev"
 tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
+
 [[agents]]
 name = "engineer"
 cli = "claude code"
@@ -39,7 +43,9 @@ enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
 name = "RepoOS Guide"
-cli = "opencode"
-model = "opencode/mimo-v2.5-free"
+cli = "claude code"
+model = "haiku"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
+
+

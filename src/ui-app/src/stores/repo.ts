@@ -5,6 +5,7 @@ import { useUiStore, type PendingScreenshot } from "./ui";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
+  AutoEngineeringState,
   Counts,
   Health,
   RepoEvent,
@@ -190,6 +191,8 @@ export const useRepoStore = defineStore("repo", () => {
   const reviews = ref<Record<string, ReviewState>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
+  const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
@@ -460,6 +463,17 @@ export const useRepoStore = defineStore("repo", () => {
       void refresh();
     } else if (e.type === "system.stats") {
       systemStats.value = e.stats;
+    } else if (e.type === "auto-engineering.state") {
+      autoEng.value = e.state;
+    }
+  }
+
+  /** Hydrate auto-engineering state after a refresh/SSE gap (0124). */
+  async function refreshAutoEng(): Promise<void> {
+    try {
+      autoEng.value = await api<AutoEngineeringState>("/api/auto-engineering/state");
+    } catch {
+      /* non-fatal — the panel falls back to its empty state */
     }
   }
 
@@ -474,6 +488,9 @@ export const useRepoStore = defineStore("repo", () => {
       // or disabled/enabled done action behind.
       void refresh().catch(() => {
         /* connection state already reflects the successful SSE open */
+      });
+      void refreshAutoEng().catch(() => {
+        /* non-fatal hydration */
       });
     };
     es.onerror = () => {
@@ -920,6 +937,8 @@ export const useRepoStore = defineStore("repo", () => {
     sortOrder,
     toasts,
     systemStats,
+    autoEng,
+    refreshAutoEng,
     newVersion,
     restarting,
     pushToast,

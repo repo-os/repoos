@@ -952,10 +952,14 @@ export function resolveAgentForTask(
   };
 }
 
-/** Resolve the enabled built-in repository assistant. */
+/** Resolve the enabled built-in repository assistant (by current "Ross" name or legacy "RepoOS Guide"). */
 export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
-  return agentsForConfig(config).find(
-    (agent) => agent.enabled && agent.name.toLowerCase() === "repoos guide",
+  const agents = agentsForConfig(config);
+  return agents.find(
+    (agent) =>
+      agent.enabled &&
+      (agent.name.toLowerCase() === "ross" ||
+        agent.name.toLowerCase() === "repoos guide"),
   ) ?? null;
 }
 
@@ -1185,7 +1189,7 @@ export function repoGuidePrompt(
   repositoryContext: string,
   agent: Agent,
 ): string {
-  return `You are RepoOS Guide, the always-available assistant for the repository in your current working directory.
+  return `You are Ross, the always-available assistant for the repository in your current working directory.
 
 ${agent.instructions ?? "Answer questions about RepoOS and this repository."}
 

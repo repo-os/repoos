@@ -2,7 +2,8 @@
 id: "0075"
 title: Make move-to-done non-blocking and cut duplicate build/browser launches
 type: feature
-status: ready
+status: active
+needs_input: true
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +12,7 @@ branch: feat/make-move-to-done-non-blocking-and-cut-d
 cli_override: codex
 model_override: gpt-5.6-sol
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-11T20:08:01Z"
+updated_at: "2026-08-13T14:08:59Z"
 ---
 ## Problem
 
@@ -133,3 +134,6 @@ things follow from that:
 - 2026-08-11T19:29:03Z · status ready→active
 - 2026-08-11T20:07:59Z · cli_override, model_override
 - 2026-08-11T20:08:01Z · status active→ready
+- 2026-08-13T13:58:52Z · status ready→active
+- 2026-08-13T14:03:59Z · watchdog: automatic resume attempted
+- 2026-08-13T14:08:59Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)

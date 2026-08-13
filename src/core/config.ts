@@ -25,12 +25,12 @@ export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 /** Built-in agents, seeded at runtime when the config has none. */
 export const DEFAULT_AGENTS: Agent[] = [
   {
-    name: "RepoOS Guide",
+    name: "Ross",
     cli: "opencode",
     model: "big pickle",
     enabled: true,
     instructions:
-      "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state.",
+      "You are Ross, a repository-aware assistant inspired by Ross Geller from Friends — warm, enthusiastic, and genuinely curious about code and context. You answer questions about this repository, RepoOS, tasks, statuses, issues, and code with clear, helpful explanations and occasional dry wit. Never edit files, change task state, or modify the repository.",
   },
   {
     name: "engineer",
@@ -61,20 +61,30 @@ export const DEFAULT_AGENTS: Agent[] = [
 /** Default agent names — these are seeded and cannot be removed. */
 export const DEFAULT_AGENT_NAMES = DEFAULT_AGENTS.map((a) => a.name);
 
-const REPO_GUIDE_NAME = "RepoOS Guide";
+const REPO_GUIDE_NAME = "Ross";
+const REPO_GUIDE_LEGACY_NAME = "RepoOS Guide";
 
 /**
- * Add RepoOS Guide to an existing stored agent list without replacing user
- * edits. The other defaults deliberately are not re-seeded: a user may have
- * removed one of those roles from an older configuration.
+ * Add Ross to an existing stored agent list without replacing user edits.
+ * When the stored config has the legacy "RepoOS Guide" name, rename it to "Ross"
+ * so the chat continues working. The other defaults deliberately are not
+ * re-seeded: a user may have removed one of those roles from an older configuration.
  */
 export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
   const stored = Array.isArray(config.agents) ? config.agents : [];
   if (!stored.length) return DEFAULT_AGENTS.map((agent) => ({ ...agent }));
-  const names = new Set(stored.map((agent) => agent.name.toLowerCase()));
+
+  // Migrate legacy "RepoOS Guide" name to "Ross", preserving all other fields
+  const migrated = stored.map((agent) =>
+    agent.name.toLowerCase() === REPO_GUIDE_LEGACY_NAME.toLowerCase()
+      ? { ...agent, name: REPO_GUIDE_NAME }
+      : agent
+  );
+
+  const names = new Set(migrated.map((agent) => agent.name.toLowerCase()));
   const guide = DEFAULT_AGENTS.find((agent) => agent.name === REPO_GUIDE_NAME);
   return [
-    ...stored.map((agent) => ({ ...agent })),
+    ...migrated.map((agent) => ({ ...agent })),
     ...(guide && !names.has(REPO_GUIDE_NAME.toLowerCase()) ? [{ ...guide }] : []),
   ];
 }
@@ -100,6 +110,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     interval: 300,
     mode: "observe",
   },
+  autoEngineeringMode: false,
+  maxActiveTasks: 3,
 };
 
 /**
@@ -272,6 +284,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
+    if (typeof get("autoEngineeringMode") === "boolean")
+      cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    const maxActiveTasks = get("maxActiveTasks");
+    if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
+      cfg.maxActiveTasks = maxActiveTasks as number;
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
@@ -446,6 +463,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: DEFAULT_CONFIG.cacheDir,
       description: "Directory for derived index cache (relative to repo root)",
+    },
+    {
+      key: "autoEngineeringMode",
+      label: "Auto-engineering mode",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineeringMode,
+      description: "Automatically select and start ready tasks up to the maximum",
+    },
+    {
+      key: "maxActiveTasks",
+      label: "Maximum active tasks",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.maxActiveTasks,
+      options: Array.from({ length: 20 }, (_, i) => {
+        const val = i + 1;
+        return { value: String(val), label: String(val) };
+      }),
+      description:
+        "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
     },
   ];
 }
