@@ -78,7 +78,7 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
 } from "../core/git.js";
-import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
+import { isDueForScheduledRun, runTechDebtAgent } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import {
@@ -867,22 +867,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
-  // Built-in agent scheduling: a single in-flight guard shared with the manual
-  // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
-  // schedule is due runs exactly one scan per tick; scheduled and manual runs
-  // can never overlap. Errors only log — the scheduler is best-effort and must
-  // never crash the poll loop.
+  // Built-in agent scheduling (0131): a single in-flight guard shared with the
+  // manual /run endpoint, checked once a minute. An enabled agent whose
+  // daily/weekly schedule is due runs exactly one scan per tick; scheduled and
+  // manual runs can never overlap. Errors only log — the scheduler is
+  // best-effort and must never crash the poll loop.
   const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
   const builtInRun = { inFlight: false };
   const builtInTimer = setInterval(() => {
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
-    for (const name of Object.keys(agents)) {
-      if (!isDueForScheduledRun(agents[name])) continue;
+    for (const [name, state] of Object.entries(agents)) {
+      if (!isDueForScheduledRun(state)) continue;
       builtInRun.inFlight = true;
-      void runBuiltInAgent(name, repoos.config)
+      void runTechDebtAgent(repoos.config)
         .then((result) => {
-          if (result && result.failed > 0) {
+          if (result.failed > 0) {
             console.error(
               `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
             );
@@ -1097,6 +1097,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
+    if (agentName !== "tech-debt") {
+      return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+    }
     const cfg = ctx.repoos.config;
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
@@ -1107,19 +1110,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     builtInRun.inFlight = true;
     try {
-      const result = await runBuiltInAgent(agentName, cfg);
-      if (!result) {
-        return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
-      }
+      const result = await runTechDebtAgent(cfg);
       ctx.index.refreshAll();
       return json(res, 200, {
         ok: true,
         taskCount: result.created,
-        skipped: "skipped" in result ? result.skipped : 0,
         failed: result.failed,
         errors: result.errors,
-        issuesFound: "issuesFound" in result ? result.issuesFound : 0,
-        scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+        issuesFound: result.issuesFound,
+        scannedFiles: result.scannedFiles,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to run built-in agent";
