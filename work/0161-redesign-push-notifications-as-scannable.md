@@ -2,14 +2,14 @@
 id: "0161"
 title: Redesign push notifications as scannable one-line events
 type: feature
-status: ready
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/redesign-push-notifications-as-scannable
 created_at: "2026-08-13T11:51:10Z"
-updated_at: "2026-08-13T11:53:39Z"
+updated_at: "2026-08-13T11:58:43Z"
 ---
 ## Problem
 
@@ -110,3 +110,4 @@ The underlying activity log still records both events. Push should report meanin
 
 - 2026-08-13T11:51:10Z · created · unknown
 - 2026-08-13T11:53:39Z · status inbox→ready
+- 2026-08-13T11:58:43Z · status ready→review, branch
