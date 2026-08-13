@@ -2,14 +2,14 @@
 id: "0180"
 title: Watchdog for active tasks whose agent is dead or stalled
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/watchdog-for-active-tasks-whose-agent-is
 created_at: "2026-08-13T16:53:53Z"
-updated_at: "2026-08-13T16:54:02Z"
+updated_at: "2026-08-13T17:41:14Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Add a watchdog over `active` tasks (see #0112 AgentSupervisor / task-watchdog.ts
 
 - 2026-08-13T16:53:53Z · created · unknown
 - 2026-08-13T16:54:02Z · status inbox→ready
+- 2026-08-13T17:41:14Z · status ready→active, branch
