@@ -2,14 +2,14 @@
 id: "0177"
 title: Add Performance Agent to Build Your Team
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T15:43:27Z"
-updated_at: "2026-08-13T15:43:27Z"
+updated_at: "2026-08-13T15:44:09Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ alongside the Tech Debt Agent, with:
 ## Activity
 
 - 2026-08-13T15:43:27Z · created · unknown
+- 2026-08-13T15:44:09Z · status inbox→ready
