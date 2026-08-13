@@ -5,24 +5,11 @@ import { useRoute } from "vue-router";
 import { useDocsStore } from "../stores/docs";
 import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
+import { buildDocTree, flattenDocTree } from "../lib/docTree";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import NewDocPanel from "../components/NewDocPanel.vue";
 import { RotateCcw, ChevronDown, ChevronRight, File } from "lucide-vue-next";
-
-interface TreeNode {
-  name: string;
-  path?: string;
-  isFile: boolean;
-  children?: TreeNode[];
-}
-
-interface TreeNodeBuilder {
-  name: string;
-  isFile: boolean;
-  path?: string;
-  children: Record<string, TreeNodeBuilder>;
-}
 
 const docs = useDocsStore();
 const ui = useUiStore();
@@ -41,6 +28,7 @@ const {
 const tab = ref<"docs" | "skills">("docs");
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
+const refreshError = ref("");
 
 /** Markdown files get the same rendered presentation as the tasks panel. */
 const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(path);
@@ -48,72 +36,38 @@ const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(pat
 const docHtml = computed(() => renderMarkdown(docContent.value));
 const skillHtml = computed(() => renderMarkdown(skillContent.value));
 
-/** Build a tree structure from flat doc paths. */
-function buildDocTree(items: { path: string; title: string }[]): TreeNode[] {
-  const root: Record<string, TreeNodeBuilder> = {};
+/** The doc list shaped as a tree, then flattened to the rows to render. */
+const flatDocTree = computed(() => flattenDocTree(buildDocTree(docList.value), expandedNodes.value));
 
-  for (const item of items) {
-    const parts = item.path.split("/");
-    let current = root;
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      const isLast = i === parts.length - 1;
-
-      if (!current[part]) {
-        current[part] = {
-          name: part,
-          isFile: isLast,
-          path: isLast ? item.path : undefined,
-          children: {},
-        };
-      }
-
-      if (!isLast) {
-        current = current[part].children;
-      }
-    }
-  }
-
-  const buildTree = (obj: Record<string, TreeNodeBuilder>): TreeNode[] => {
-    return Object.values(obj).sort((a, b) => {
-      if (a.isFile === b.isFile) return a.name.localeCompare(b.name);
-      return a.isFile ? 1 : -1;
-    }).map((node) => {
-      const result: TreeNode = {
-        name: node.name,
-        isFile: node.isFile,
-        path: node.path,
-      };
-      const childArray = buildTree(node.children);
-      if (childArray.length > 0) {
-        result.children = childArray;
-      }
-      return result;
-    });
-  };
-
-  return buildTree(root);
-}
-
-const docTree = computed(() => buildDocTree(docList.value));
-
-function toggleNode(path: string): void {
-  if (expandedNodes.value.has(path)) {
-    expandedNodes.value.delete(path);
+function toggleNode(key: string): void {
+  if (expandedNodes.value.has(key)) {
+    expandedNodes.value.delete(key);
   } else {
-    expandedNodes.value.add(path);
+    expandedNodes.value.add(key);
   }
 }
 
-function getNodePath(node: TreeNode): string {
-  return node.path || node.name;
+/** Indent rows by nesting depth (dirs and files share a base of 8px). */
+function rowStyle(depth: number): { paddingLeft: string } {
+  return { paddingLeft: `${8 + depth * 16}px` };
 }
 
 async function refreshDocs(): Promise<void> {
   refreshing.value = true;
+  refreshError.value = "";
   try {
-    await docs.loadDocs();
+    const ok = await docs.loadDocs();
+    if (!ok) {
+      refreshError.value = "Could not refresh docs.";
+    } else if (selDoc.value && !docList.value.some((d) => d.path === selDoc.value)) {
+      // The selected doc vanished on refresh — fall back rather than showing stale content.
+      if (docList.value.length) {
+        void docs.loadDoc(docList.value[0].path);
+      } else {
+        selDoc.value = null;
+        docContent.value = "";
+      }
+    }
   } finally {
     refreshing.value = false;
   }
@@ -182,56 +136,27 @@ watch(
         <template v-if="tab === 'docs'">
           <div v-if="!docList.length" class="ctx-empty">No docs found.</div>
           <div v-else class="doc-tree">
-            <template v-for="node in docTree" :key="getNodePath(node)">
-              <div v-if="node.isFile" class="tree-item tree-file" @click="docs.loadDoc(node.path!)">
-                <div class="tree-file-row" :class="{ sel: selDoc === node.path }">
-                  <File class="size-4" />
-                  <span>{{ node.name }}</span>
-                </div>
+            <div v-if="refreshError" class="ctx-refresh-error">{{ refreshError }}</div>
+            <template v-for="node in flatDocTree" :key="node.key">
+              <div
+                v-if="node.isFile"
+                class="tree-item tree-file"
+                :class="{ sel: selDoc === node.path }"
+                :style="rowStyle(node.depth)"
+                @click="docs.loadDoc(node.path!)"
+              >
+                <File class="size-4" />
+                <span>{{ node.name }}</span>
               </div>
-              <div v-else class="tree-item tree-dir">
-                <div class="tree-dir-row" @click="toggleNode(node.name)">
-                  <ChevronDown v-if="expandedNodes.has(node.name)" class="size-4 chevron" />
-                  <ChevronRight v-else class="size-4 chevron" />
-                  <span class="dir-name">{{ node.name }}</span>
-                </div>
-                <template v-if="expandedNodes.has(node.name)">
-                  <div class="tree-children">
-                    <div
-                      v-for="child in node.children"
-                      :key="getNodePath(child)"
-                      class="tree-item"
-                      :class="child.isFile ? 'tree-file' : 'tree-dir'"
-                    >
-                      <div v-if="child.isFile" class="tree-file-row" :class="{ sel: selDoc === child.path }" @click="docs.loadDoc(child.path!)">
-                        <File class="size-4" />
-                        <span>{{ child.name }}</span>
-                      </div>
-                      <div v-else>
-                        <div class="tree-dir-row" @click="toggleNode(child.name)">
-                          <ChevronDown v-if="expandedNodes.has(child.name)" class="size-4 chevron" />
-                          <ChevronRight v-else class="size-4 chevron" />
-                          <span class="dir-name">{{ child.name }}</span>
-                        </div>
-                        <template v-if="expandedNodes.has(child.name)">
-                          <div class="tree-children">
-                            <div
-                              v-for="grandchild in child.children"
-                              :key="getNodePath(grandchild)"
-                              class="tree-item tree-file"
-                              @click="docs.loadDoc(grandchild.path!)"
-                            >
-                              <div class="tree-file-row" :class="{ sel: selDoc === grandchild.path }">
-                                <File class="size-4" />
-                                <span>{{ grandchild.name }}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </div>
-                </template>
+              <div
+                v-else
+                class="tree-item tree-dir"
+                :style="rowStyle(node.depth)"
+                @click="toggleNode(node.key)"
+              >
+                <ChevronDown v-if="expandedNodes.has(node.key)" class="size-4 chevron" />
+                <ChevronRight v-else class="size-4 chevron" />
+                <span class="dir-name">{{ node.name }}</span>
               </div>
             </template>
           </div>
@@ -322,8 +247,8 @@ watch(
   user-select: none;
 }
 
-.tree-dir-row,
-.tree-file-row {
+.tree-dir,
+.tree-file {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -334,16 +259,12 @@ watch(
   transition: background-color 150ms ease;
 }
 
-.tree-dir-row:hover,
-.tree-file-row:hover {
+.tree-dir:hover,
+.tree-file:hover {
   background-color: var(--bg-overlay);
 }
 
-.tree-file-row {
-  padding-left: 28px;
-}
-
-.tree-file-row.sel {
+.tree-file.sel {
   background-color: var(--bg-accent-soft);
   font-weight: 500;
 }
@@ -359,9 +280,13 @@ watch(
   transition: transform 150ms ease;
 }
 
-.tree-children {
-  margin-left: 8px;
-  border-left: 1px solid var(--border-secondary);
-  padding-left: 8px;
+.ctx-refresh-error {
+  margin: 4px 8px 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--red-tint);
+  border: 1px solid var(--red-border-tint);
+  color: var(--txt);
+  font-size: 12px;
 }
 </style>

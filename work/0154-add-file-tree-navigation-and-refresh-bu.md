@@ -45,3 +45,4 @@ A hierarchical file tree view where documentation directories can be expanded an
 - 2026-08-13T09:46:05Z · watchdog: automatic resume attempted
 - 2026-08-13T09:52:05Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T10:18:50Z · status active→review, needs_input
+- 2026-08-13T10:41:00Z · updated · address review findings: tree now renders to arbitrary depth (flat recursion via lib/docTree), expansion state keyed by full path (no same-name collisions), refresh failures surfaced with a visible error, stale selection reset on refresh
