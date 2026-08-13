@@ -34,7 +34,7 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveReviewer, reviewCommand, runPrompt } from "./agents.js";
+import { resolveReviewer, reviewCommand, runPrompt, type AgentRunner } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 
 /** A stored agent review, as served to the UI. */
@@ -95,6 +95,9 @@ const now = (): string => new Date().toISOString();
 
 /** Frontmatter key order for the stored report file. */
 const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
+
+/** Max number of automatic review/fix rounds before requiring human intervention. */
+const MAX_AUTO_REVIEW_ROUNDS = 2;
 
 /**
  * The mission handed to the review agent. Deliberately narrow: what to look
@@ -242,6 +245,60 @@ interface Run {
 /** How long a guard revert stays claimable by the review trigger, in ms. */
 const REVERT_CLAIM_MS = 30_000;
 
+/** Parse the verdict from the review report markdown. */
+function parseVerdict(markdown: string): "good to go" | "needs some work" | "back to the drawing board" | null {
+  const lines = markdown.split("\n");
+  for (const line of lines) {
+    if (line.includes("`good to go`")) return "good to go";
+    if (line.includes("`needs some work`")) return "needs some work";
+    if (line.includes("`back to the drawing board`")) return "back to the drawing board";
+  }
+  return null;
+}
+
+/** Extract Bugs, Edge cases, and Suggestions sections from the report markdown. */
+function extractReportSections(markdown: string): {
+  bugs?: string;
+  edgeCases?: string;
+  suggestions?: string;
+} {
+  const sections: Record<string, string> = {};
+  const lines = markdown.split("\n");
+  let currentSection: string | null = null;
+  const sectionLines: Record<string, string[]> = {};
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === "## Bugs") {
+      currentSection = "bugs";
+      sectionLines.bugs = [];
+    } else if (trimmed === "## Edge cases") {
+      currentSection = "edgeCases";
+      sectionLines.edgeCases = [];
+    } else if (trimmed === "## Suggestions") {
+      currentSection = "suggestions";
+      sectionLines.suggestions = [];
+    } else if (trimmed.startsWith("## ") && currentSection) {
+      currentSection = null;
+    } else if (currentSection && sectionLines[currentSection]) {
+      sectionLines[currentSection].push(line);
+    }
+  }
+
+  for (const [key, lines] of Object.entries(sectionLines)) {
+    const content = lines.join("\n").trim();
+    if (content && content !== "None found") {
+      sections[key] = content;
+    }
+  }
+
+  return {
+    bugs: sections.bugs,
+    edgeCases: sections.edgeCases,
+    suggestions: sections.suggestions,
+  };
+}
+
 export class ReviewManager {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
@@ -255,10 +312,13 @@ export class ReviewManager {
    */
   private readonly sessions = new Map<string, AgentOutputEntry[]>();
   private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** AgentRunner to send auto-bounce messages to the engineer session. */
+  private readonly runner?: AgentRunner;
 
-  constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
+  constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void, runner?: AgentRunner) {
     this.config = config;
     this.emit = emit;
+    this.runner = runner;
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -445,6 +505,18 @@ export class ReviewManager {
       ...(state === "failed" ? { error: result.error } : {}),
     });
     this.enforceStillInReview(task);
+
+    // Auto-bounce if review is ok and verdict is not "good to go"
+    // Fire-and-forget (don't await) so the review completion isn't delayed
+    if (state === "ok") {
+      const verdict = parseVerdict(report.markdown);
+      if (verdict) {
+        this.autoBounce(task, report, verdict).catch((err) => {
+          console.error(`[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`);
+        });
+      }
+    }
+
     return state === "ok"
       ? { ok: true, report }
       : { ok: false, reason: result.error ?? "the review agent failed", report };
@@ -553,6 +625,130 @@ export class ReviewManager {
   /** Cancel every in-flight review (server shutdown). */
   cancelAll(): void {
     for (const id of [...this.runs.keys()]) this.cancel(id);
+  }
+
+  /**
+   * Auto-bounce logic: if the verdict is "needs some work" or "back to the
+   * drawing board" and we haven't exceeded the max rounds, send the findings
+   * back to the engineer session and increment the review_rounds counter.
+   */
+  private async autoBounce(task: Task, report: ReviewReport, verdict: string): Promise<void> {
+    if (!this.runner || verdict === "good to go") {
+      return;
+    }
+    if (verdict !== "needs some work" && verdict !== "back to the drawing board") {
+      return;
+    }
+
+    // Check if the engineer session is resumable
+    const engineerSession = this.runner.output(task.id);
+    if (!engineerSession) {
+      // Session not found or completed, log that human must step in
+      const note = "Auto-bounce could not proceed: engineer session is not resumable";
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note,
+        at: now(),
+      });
+      console.log(`[repoos] auto-bounce blocked for #${task.id}: ${note}`);
+      return;
+    }
+
+    // Get current review_rounds count
+    let reviewRounds = task.extra?.review_rounds as number | undefined;
+    if (typeof reviewRounds !== "number") reviewRounds = 0;
+
+    // Check if we've exceeded the max rounds
+    if (reviewRounds >= MAX_AUTO_REVIEW_ROUNDS) {
+      const note = `Auto-bounce stopped: reached maximum of ${MAX_AUTO_REVIEW_ROUNDS} review rounds. Human review needed.`;
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note,
+        at: now(),
+      });
+      console.log(`[repoos] auto-bounce max rounds reached for #${task.id}`);
+      return;
+    }
+
+    // Extract the report sections
+    const sections = extractReportSections(report.markdown);
+    const messageParts: string[] = [];
+    messageParts.push(`The automated review found the following (review round ${reviewRounds + 1}):`);
+    messageParts.push("");
+
+    if (sections.bugs) {
+      messageParts.push("## Bugs");
+      messageParts.push(sections.bugs);
+      messageParts.push("");
+    }
+
+    if (sections.edgeCases) {
+      messageParts.push("## Edge cases");
+      messageParts.push(sections.edgeCases);
+      messageParts.push("");
+    }
+
+    if (sections.suggestions) {
+      messageParts.push("## Suggestions");
+      messageParts.push(sections.suggestions);
+      messageParts.push("");
+    }
+
+    messageParts.push(`Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`);
+    const message = messageParts.join("\n");
+
+    // Increment review_rounds and send message
+    try {
+      const agent = resolveReviewer(this.config);
+      if (!agent) return;
+
+      // Get the engineer agent
+      const { resolveAgentForTask } = await import("./agents.js");
+      const engineerAgent = resolveAgentForTask(this.config, task);
+      if (!engineerAgent) return;
+
+      // Increment the counter in task frontmatter
+      const newRounds = reviewRounds + 1;
+
+      // Update the review_rounds counter in the task file
+      try {
+        const raw = readFileSync(task.absPath, "utf8");
+        const doc = parseDocument(raw);
+        doc.data.review_rounds = newRounds;
+        const keys = Object.keys(doc.data).filter((k) => k !== "review_rounds");
+        keys.unshift("review_rounds");
+        writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      } catch (err) {
+        console.error(`[repoos] could not update review_rounds for #${task.id}: ${(err as Error).message}`);
+        return;
+      }
+
+      // Send the message to the engineer session
+      this.runner.send(task.id, message, engineerAgent);
+
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note: `Auto-bounce sent review findings (round ${newRounds}) to engineer`,
+        at: now(),
+      });
+      console.log(`[repoos] auto-bounce sent findings for #${task.id}, round ${newRounds}`);
+    } catch (err) {
+      const note = `Auto-bounce failed: ${(err as Error).message}`;
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note,
+        at: now(),
+      });
+      console.error(`[repoos] auto-bounce error for #${task.id}: ${(err as Error).message}`);
+    }
   }
 
   // ---- reviewer conversation (isolated from the engineer session) ----

@@ -630,24 +630,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
-  // The review agent (0101): when a task lands in `review`, it inspects the
-  // implementation and writes a short report for whoever signs the task off.
-  // Advisory only — it never moves a task to `done`.
-  const reviews = new ReviewManager(config, emitEvent);
-
-  // Review activity is transient server state, not task-file frontmatter. Add
-  // its small authoritative summary to index-shaped API responses so a board
-  // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
-  const withReviewStatus = <T extends Task>(task: T): T & {
-    automaticReview: { running: boolean; enabled: boolean };
-  } => ({
-    ...task,
-    automaticReview: {
-      running: reviews.isRunning(task.id),
-      enabled: reviews.enabled(),
-    },
-  });
-
   // Tasks that landed in `review` while their engineer turn was still winding
   // down. Reviewing a worktree an agent is still committing to would report on
   // a half-written state, so the review waits for `agent.exited`.
@@ -661,6 +643,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
+  let reviews: ReviewManager; // Assigned after runner creation below
   const runner = new AgentRunner(
     config,
     (e) => {
@@ -742,6 +725,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
     } },
   );
+
+  // The review agent (0101): when a task lands in `review`, it inspects the
+  // implementation and writes a short report for whoever signs the task off.
+  // Advisory only — it never moves a task to `done`.
+  // Created after the runner so it can send auto-bounce messages to the engineer.
+  reviews = new ReviewManager(config, emitEvent, runner);
+
+  // Review activity is transient server state, not task-file frontmatter. Add
+  // its small authoritative summary to index-shaped API responses so a board
+  // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
+  const withReviewStatus = <T extends Task>(task: T): T & {
+    automaticReview: { running: boolean; enabled: boolean };
+  } => ({
+    ...task,
+    automaticReview: {
+      running: reviews.isRunning(task.id),
+      enabled: reviews.enabled(),
+    },
+  });
 
   // System resource polling over SSE. Samples CPU/memory/process stats every
   // 5s while at least one SSE client is connected; idles when no one is
