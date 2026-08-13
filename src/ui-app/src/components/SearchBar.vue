@@ -84,6 +84,10 @@ watch(query, () => {
 });
 
 async function loadDocContents(): Promise<void> {
+  // Client-side doc-content fetch: optimized for small to medium doc sets (currently ~30 docs).
+  // Pros: instant search without server latency, works offline, simple implementation.
+  // Cons: scales poorly beyond ~500 docs; for large repos, use server-side search indexing
+  // (full-text index + API endpoint) to avoid loading all content at once.
   for (const d of docList.value) {
     if (!docsWithContent.value.has(d.path)) {
       try {
@@ -91,9 +95,11 @@ async function loadDocContents(): Promise<void> {
         if (r.ok) {
           const text = await r.text();
           docsWithContent.value.set(d.path, text);
+        } else {
+          console.warn(`Failed to load doc ${d.path}: HTTP ${r.status}`);
         }
-      } catch {
-        // ignore load errors
+      } catch (e) {
+        console.warn(`Failed to load doc ${d.path}:`, e instanceof Error ? e.message : String(e));
       }
     }
   }
@@ -213,7 +219,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
                 <div class="search-row-title">{{ item.r.title }}</div>
                 <div class="search-row-sub">{{ item.r.subtitle }}</div>
                 <div v-if="(item.r as any).snippet" class="search-row-snippet">
-                  {{ (item.r as any).snippet }}
+                  <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
+                    <span v-html="(item.r as any).snippet.html"></span>
+                  </template>
+                  <template v-else>
+                    {{ (item.r as any).snippet }}
+                  </template>
                 </div>
               </div>
             </div>

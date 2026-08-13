@@ -8,7 +8,7 @@ cacheDir = ".repoos"
 
 theme = "light"
 strictBuild = false
-uiTheme = "clear"
+uiTheme = "classic"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
@@ -33,13 +33,13 @@ enabled = true
 instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
 [[agents]]
 name = "pm"
-cli = "kiro"
-model = "qwen3-coder-next"
+cli = "opencode"
+model = "opencode/big-pickle"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
 name = "RepoOS Guide"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "opencode/mimo-v2.5-free"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."

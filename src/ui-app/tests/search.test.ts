@@ -142,3 +142,62 @@ describe("searchAll", () => {
     expect(task && task.kind === "task" && task.subtitle).toContain("#0007");
   });
 });
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<mark>/g, "")
+    .replace(/<\/mark>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function docSnippet(query: string, content: string): string | undefined {
+  const hits = searchAll(query, {
+    tasks: [],
+    docs: [{ path: "test.md", title: "Test", content }],
+    fields: [],
+  });
+  const doc = hits.find((r) => r.kind === "doc" && r.path === "test.md");
+  if (!doc || doc.kind !== "doc" || typeof doc.snippet === "string" || !doc.snippet) return undefined;
+  return doc.snippet.html;
+}
+
+describe("snippet match highlighting", () => {
+  it("does not render text past the snippet boundary when a fuzzy word is truncated mid-way", () => {
+    const content = "start " + "q".repeat(70) + " end";
+    // "q"*68+"rx" is within edit distance of the long word but is not a substring,
+    // so this must take the fuzzy path and land mid-word.
+    const query = "q".repeat(68) + "rx";
+    const html = docSnippet(query, content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).toContain("<mark>");
+    expect(htmlToText(html)).toBe(content.substring(0, 60));
+    expect(htmlToText(html)).toHaveLength(60);
+    expect(htmlToText(html)).not.toContain("q".repeat(70));
+  });
+
+  it("renders a plain (unhighlighted) snippet when the fuzzy word is truncated out entirely", () => {
+    const content = "a".repeat(100) + " " + "b".repeat(100) + " " + "fuzzywordx";
+    const query = "fuzzywordz";
+    const html = docSnippet(query, content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).not.toContain("<mark>");
+    expect(htmlToText(html)).toBe(content.substring(0, 60));
+    expect(htmlToText(html)).toHaveLength(60);
+  });
+
+  it("escapes HTML in exact-match snippets while highlighting the match", () => {
+    const content = "see <b>bold</b> and <script>bad()</script> here";
+    const html = docSnippet("bold", content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).toContain("<mark>bold</mark>");
+    expect(html).toContain("&lt;b&gt;");
+    expect(htmlToText(html)).toContain("<b>bold</b>");
+  });
+});

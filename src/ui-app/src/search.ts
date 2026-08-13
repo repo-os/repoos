@@ -1,8 +1,12 @@
 import type { Task, ConfigField, DocMeta } from "./types";
 
+export interface HighlightedSnippet {
+  html: string;
+}
+
 export type SearchResult =
   | { kind: "task"; title: string; subtitle: string; task: Task; statusColor?: string }
-  | { kind: "doc"; title: string; subtitle: string; path: string; snippet?: string }
+  | { kind: "doc"; title: string; subtitle: string; path: string; snippet?: string | HighlightedSnippet }
   | { kind: "setting"; title: string; subtitle: string; key: string };
 
 export interface SearchSource {
@@ -39,29 +43,63 @@ function editDistance(a: string, b: string): number {
 function fuzzyMatch(text: string | null | undefined, query: string): boolean {
   if (!text) return false;
   if (includes(text, query)) return true;
-  const maxDist = Math.ceil(query.length / 4);
+  // Avoid false positives on very short queries: 1-char queries match only on exact substring,
+  // 2-3 char queries allow 1 edit, 4+ allow up to 2 edits.
+  const maxDist = query.length <= 1 ? 0 : query.length <= 3 ? 1 : 2;
   const words = text.toLowerCase().split(/\s+/);
   return words.some(w => editDistance(w, query) <= maxDist);
 }
 
-function extractSnippet(text: string, query: string, contextLen: number = 60): string {
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function extractSnippet(text: string, query: string, contextLen: number = 60): HighlightedSnippet {
   const lower = text.toLowerCase();
   const qLow = query.toLowerCase();
   const idx = lower.indexOf(qLow);
+
   if (idx === -1) {
     const words = text.split(/\s+/);
+    const maxDist = query.length <= 1 ? 0 : query.length <= 3 ? 1 : 2;
     for (let i = 0; i < words.length; i++) {
-      if (editDistance(words[i], query) <= 2) {
+      if (editDistance(words[i], query) <= maxDist) {
         const start = Math.max(0, i - 2);
         const end = Math.min(words.length, i + 3);
-        return words.slice(start, end).join(" ").substring(0, contextLen);
+        const snippet = words.slice(start, end).join(" ").substring(0, contextLen);
+        const wordStart = words.slice(start, i).join(" ").length;
+        const wordEnd = wordStart + words[i].length;
+        // The snippet may be truncated before (or mid-) the matched word.
+        // Highlight only the portion that actually made it into the snippet,
+        // so the rendered text never diverges from what's shown.
+        if (wordStart >= snippet.length) {
+          return { html: escapeHtml(snippet) };
+        }
+        const clampedEnd = Math.min(wordEnd, snippet.length);
+        const html = escapeHtml(snippet.substring(0, wordStart)) +
+                     "<mark>" + escapeHtml(snippet.substring(wordStart, clampedEnd)) + "</mark>" +
+                     escapeHtml(snippet.substring(clampedEnd));
+        return { html };
       }
     }
-    return text.substring(0, contextLen);
+    return { html: escapeHtml(text.substring(0, contextLen)) };
   }
+
   const start = Math.max(0, idx - contextLen / 2);
   const end = Math.min(text.length, idx + contextLen / 2);
-  return (start > 0 ? "…" : "") + text.substring(start, end) + (end < text.length ? "…" : "");
+  const snippet = (start > 0 ? "…" : "") + text.substring(start, end) + (end < text.length ? "…" : "");
+  const matchStart = idx - start + (start > 0 ? 1 : 0);
+  const matchEnd = matchStart + query.length;
+
+  const html = escapeHtml(snippet.substring(0, matchStart)) +
+               "<mark>" + escapeHtml(snippet.substring(matchStart, matchEnd)) + "</mark>" +
+               escapeHtml(snippet.substring(matchEnd));
+  return { html };
 }
 
 export function searchAll(query: string, src: SearchSource): SearchResult[] {
@@ -85,7 +123,7 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   const docHits: SearchResult[] = [];
   for (const d of src.docs) {
     let match = false;
-    let snippet: string | undefined;
+    let snippet: HighlightedSnippet | undefined;
     if (includes(d.title, q) || includes(d.path, q)) {
       match = true;
     } else if (fuzzyMatch(d.title, q) || fuzzyMatch(d.path, q)) {

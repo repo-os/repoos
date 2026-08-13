@@ -2,14 +2,14 @@
 id: "0159"
 title: "Polish global search: snippet match highlighting and documented doc-fetch strategy"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/polish-global-search-snippet-match-highl
 created_at: "2026-08-13T10:08:13Z"
-updated_at: "2026-08-13T11:23:02Z"
+updated_at: "2026-08-13T12:50:44Z"
 ---
 ## Problem
 
@@ -42,3 +42,5 @@ Task 0024 (global search: doc contents, fuzzy matching, history, status cues) is
 
 - 2026-08-13T10:08:13Z · created · unknown
 - 2026-08-13T11:23:02Z · status ready→active, branch
+- 2026-08-13T11:32:28Z · status active→review
+- 2026-08-13T12:50:44Z · status review→done

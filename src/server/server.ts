@@ -40,6 +40,7 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
+ *   POST /api/agents/built-in/:agent/run -> run a built-in agent (e.g. "tech-debt"); returns { ok, taskCount }
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -64,6 +65,8 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  sanitizeBuiltInAgents,
+  saveBuiltInAgentsConfig,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -112,6 +115,7 @@ import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
+import { runTechDebtAgent, isDueForScheduledRun } from "./built-in-agents.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -787,6 +791,38 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   taskWatchdog = new TaskWatchdog(config, index, runner);
   taskWatchdog.start();
 
+  // Built-in agent scheduling (0131): a single in-flight guard shared with the
+  // manual /run endpoint, checked once a minute. An enabled agent whose
+  // daily/weekly schedule is due runs exactly one scan per tick; scheduled and
+  // manual runs can never overlap. Errors only log — the scheduler is
+  // best-effort and must never crash the poll loop.
+  const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
+  const builtInRun = { inFlight: false };
+  const builtInTimer = setInterval(() => {
+    if (builtInRun.inFlight) return;
+    const agents = repoos.config.builtInAgents ?? {};
+    for (const [name, state] of Object.entries(agents)) {
+      if (!isDueForScheduledRun(state)) continue;
+      builtInRun.inFlight = true;
+      void runTechDebtAgent(repoos.config)
+        .then((result) => {
+          if (result.failed > 0) {
+            console.error(
+              `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
+            );
+          }
+        })
+        .catch((err) => {
+          console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
+        })
+        .finally(() => {
+          builtInRun.inFlight = false;
+          index.refreshAll();
+        });
+      break; // one built-in agent per tick
+    }
+  }, BUILT_IN_CHECK_INTERVAL_MS);
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
@@ -854,17 +890,45 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
+
+  // Dedup "New" + "Started" notifications (#0161): when a task is created and
+  // immediately started, send only "Started". Track created tasks and suppress
+  // the "New" notification if they're started within a brief window.
+  const createdTasks = new Map<string, { task: Task; timeout: NodeJS.Timeout }>();
+
   const unsubscribeCleanup = index.on((e) => {
     // Optional ntfy push notifications hang off the index stream for the same
     // reason the cleanup does: it is the one place every transition surfaces,
     // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
-      notifyTaskCreated(config, e.task);
+      // Track this task: if it's started within 500ms, suppress the "New" notification
+      const timeout = setTimeout(() => {
+        const created = createdTasks.get(e.task.id);
+        if (created) {
+          createdTasks.delete(e.task.id);
+          // Timeout expired without a start — send the "New" notification now
+          notifyTaskCreated(config, e.task);
+        }
+      }, 500);
+      createdTasks.set(e.task.id, { task: e.task, timeout });
       return;
     }
     if (e.type !== "task.updated") return;
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
+
+    // Dedup: if this is a "ready → active" (Start) for a recently created task,
+    // skip sending "New" and just send "Started"
+    const created = createdTasks.get(e.task.id);
+    if (created && prev === "ready" && e.task.status === "active") {
+      clearTimeout(created.timeout);
+      createdTasks.delete(e.task.id);
+      // Only send "Started", not "New"
+      onStatusChange(e.task, prev, e.task.status);
+      notifyStatusChange(config, e.task, prev, e.task.status);
+      return;
+    }
+
     onStatusChange(e.task, prev, e.task.status);
     notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
@@ -1174,6 +1238,39 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           agents = [];
         }
         return json(res, 200, { agents });
+      }
+      const builtInMatch = path.match(/^\/api\/agents\/built-in\/([^/]+)\/run$/);
+      if (builtInMatch && method === "POST") {
+        const agentName = builtInMatch[1];
+        if (agentName === "tech-debt") {
+          // Manual and scheduled runs share one in-flight guard, so two scans
+          // can never overlap and block the server twice over.
+          if (builtInRun.inFlight) {
+            return json(res, 409, {
+              error: "A tech debt scan is already running — wait for it to finish",
+            });
+          }
+          builtInRun.inFlight = true;
+          try {
+            const result = await runTechDebtAgent(config);
+            index.refreshAll();
+            return json(res, 200, {
+              ok: true,
+              taskCount: result.created,
+              failed: result.failed,
+              errors: result.errors,
+              issuesFound: result.issuesFound,
+              scannedFiles: result.scannedFiles,
+            });
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to run tech debt scan";
+            return json(res, 500, { error: message });
+          } finally {
+            builtInRun.inFlight = false;
+          }
+        } else {
+          return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+        }
       }
       if (path === "/api/system" && method === "GET") {
         const stats = sampleSystem({
@@ -1991,6 +2088,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           patch.agents = list;
         }
 
+        // Built-in agent state (0131) is a JSON sidecar, not a TOML field —
+        // handle it outside the schema loop like `agents`.
+        let builtInAgentsHandled = false;
+        if (body.builtInAgents !== undefined) {
+          if (
+            typeof body.builtInAgents !== "object" ||
+            body.builtInAgents === null ||
+            Array.isArray(body.builtInAgents)
+          ) {
+            return json(res, 400, {
+              error: "builtInAgents must be an object of { enabled, schedule, lastRunAt } entries",
+            });
+          }
+          const sanitized = sanitizeBuiltInAgents(body.builtInAgents);
+          saveBuiltInAgentsConfig(config.root, sanitized, config.cacheDir);
+          builtInAgentsHandled = true;
+        }
+
         // Validate every field against the schema
         const schema = getConfigSchema();
         let autoEngineeringChanged = false;
@@ -2050,7 +2165,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
         delete patch.tunnelEnabled;
 
-        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined) {
+        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsHandled) {
           return json(res, 400, { error: "No valid fields to update" });
         }
 
@@ -2254,6 +2369,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(builtInTimer);
         runner.dispose();
         throw err;
       }
@@ -2269,6 +2385,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(builtInTimer);
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
