@@ -24,7 +24,7 @@ const { docs: docList } = storeToRefs(docs);
 const { visibleFields } = storeToRefs(config);
 
 const query = ref("");
-const open = ref(false);
+const overlayOpen = ref(false);
 const highlight = ref(0);
 const inputEl = ref<HTMLInputElement | null>(null);
 const recentSearches = ref<string[]>([]);
@@ -79,15 +79,10 @@ const groups = computed<Group[]>(() => {
 });
 
 watch(query, () => {
-  open.value = query.value.trim().length > 0 || recentSearches.value.length > 0;
   highlight.value = 0;
 });
 
 async function loadDocContents(): Promise<void> {
-  // Client-side doc-content fetch: optimized for small to medium doc sets (currently ~30 docs).
-  // Pros: instant search without server latency, works offline, simple implementation.
-  // Cons: scales poorly beyond ~500 docs; for large repos, use server-side search indexing
-  // (full-text index + API endpoint) to avoid loading all content at once.
   for (const d of docList.value) {
     if (!docsWithContent.value.has(d.path)) {
       try {
@@ -123,13 +118,11 @@ function openResult(r: SearchResult): void {
     addRecentSearch(query.value);
     void router.push({ name: "settings", query: { focus: r.key } });
   }
-  open.value = false;
-  inputEl.value?.blur();
+  closeOverlay();
 }
 
 function openRecentSearch(q: string): void {
   query.value = q;
-  open.value = true;
   inputEl.value?.focus();
 }
 
@@ -159,15 +152,34 @@ function onKey(e: KeyboardEvent): void {
       }
     }
   } else if (e.key === "Escape") {
-    open.value = false;
+    closeOverlay();
+  }
+}
+
+function openOverlay(): void {
+  overlayOpen.value = true;
+  query.value = "";
+  highlight.value = 0;
+  setTimeout(() => {
+    inputEl.value?.focus();
+  }, 0);
+}
+
+function closeOverlay(): void {
+  overlayOpen.value = false;
+  query.value = "";
+}
+
+function handleBackdropClick(e: MouseEvent): void {
+  if (e.target === e.currentTarget) {
+    closeOverlay();
   }
 }
 
 function onGlobalKey(e: KeyboardEvent): void {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
-    inputEl.value?.focus();
-    inputEl.value?.select();
+    openOverlay();
   }
 }
 
@@ -179,59 +191,84 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
 </script>
 
 <template>
-  <div class="search-wrap" :class="{ open }">
-    <div class="search-input">
+  <div class="search-wrap">
+    <button
+      class="search-input"
+      type="button"
+      @click="openOverlay"
+    >
       <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
-      <input
-        ref="inputEl"
-        v-model="query"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        placeholder="Search tasks, docs, settings…"
-        @focus="open = query.trim().length > 0 || recentSearches.length > 0"
-        @keydown="onKey"
-        @blur="open = false"
-      />
+      <span class="search-placeholder">Search tasks, docs, settings…</span>
       <kbd>⌘K</kbd>
-    </div>
+    </button>
 
-    <div v-if="open" class="search-drop">
-      <template v-if="displayItems.length">
-        <div v-for="g in groups" :key="g.kind" class="search-group">
-          <div class="search-group-label">{{ g.label }}</div>
-          <div
-            v-for="item in g.items"
-            :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
-            class="search-row"
-            :class="{ hi: item.idx === highlight }"
-            @mousedown.prevent
-            @click="handleRowClick(item.r as any)"
+    <div v-if="overlayOpen" class="search-overlay-backdrop" @click="handleBackdropClick">
+      <div class="search-overlay">
+        <div class="search-overlay-header">
+          <svg class="search-ico" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input
+            ref="inputEl"
+            v-model="query"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Search tasks, docs, settings…"
+            class="search-overlay-input"
+            @keydown="onKey"
+          />
+          <button
+            class="search-overlay-close"
+            type="button"
+            @click="closeOverlay"
+            aria-label="Close search"
           >
-            <div class="search-row-content">
-              <template v-if="(g.kind as string) === 'task'">
-                <span class="cdot" :style="{ backgroundColor: statusColor((item.r as any).task.status) }"></span>
-              </template>
-              <div class="search-row-text">
-                <div class="search-row-title">{{ item.r.title }}</div>
-                <div class="search-row-sub">{{ item.r.subtitle }}</div>
-                <div v-if="(item.r as any).snippet" class="search-row-snippet">
-                  <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
-                    <span v-html="(item.r as any).snippet.html"></span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="search-overlay-body">
+          <template v-if="displayItems.length">
+            <div v-for="g in groups" :key="g.kind" class="search-group">
+              <div class="search-group-label">{{ g.label }}</div>
+              <div
+                v-for="item in g.items"
+                :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
+                class="search-row"
+                :class="{ hi: item.idx === highlight }"
+                @mousedown.prevent
+                @click="handleRowClick(item.r as any)"
+              >
+                <div class="search-row-content">
+                  <template v-if="(g.kind as string) === 'task'">
+                    <span class="cdot" :style="{ backgroundColor: statusColor((item.r as any).task.status) }"></span>
                   </template>
-                  <template v-else>
-                    {{ (item.r as any).snippet }}
-                  </template>
+                  <div class="search-row-text">
+                    <div class="search-row-title">{{ item.r.title }}</div>
+                    <div class="search-row-sub">{{ item.r.subtitle }}</div>
+                    <div v-if="(item.r as any).snippet" class="search-row-snippet">
+                      <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
+                        <span v-html="(item.r as any).snippet.html"></span>
+                      </template>
+                      <template v-else>
+                        {{ (item.r as any).snippet }}
+                      </template>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+          <div v-else class="search-empty">No results</div>
         </div>
-      </template>
-      <div v-else class="search-empty">No results</div>
+      </div>
     </div>
   </div>
 </template>

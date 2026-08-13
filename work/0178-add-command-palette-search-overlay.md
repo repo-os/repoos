@@ -81,5 +81,4 @@ backend.
 - 2026-08-13T16:15:20Z · created · unknown
 - 2026-08-13T16:15:25Z · body
 - 2026-08-13T16:16:25Z · status inbox→ready
-- 2026-08-13T16:30:05Z · status ready→active, branch
-- 2026-08-13T16:38:02Z · status active→review
+- 2026-08-13T16:38:02Z · status ready→review, branch
