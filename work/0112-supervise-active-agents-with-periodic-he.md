@@ -9,7 +9,7 @@ assigned_to: AI
 created_by: ""
 branch: feat/supervise-active-agents-with-periodic-he
 created_at: "2026-08-12T04:00:13Z"
-updated_at: "2026-08-13T16:25:59Z"
+updated_at: "2026-08-13T16:26:01Z"
 ---
 ## Problem
 
