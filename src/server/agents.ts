@@ -621,6 +621,16 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
     }
     case "rate_limit_event":
       return { sessionID };
+    case "stream_event": {
+      // Anthropic API streaming events wrapped by claude code CLI (0151).
+      // These are intermediate streaming updates (content_block_delta,
+      // content_block_stop, etc.) that are not surfaced as their own entries —
+      // they are aggregated by the API layer and only the final "message" or
+      // "assistant" event is rendered to the transcript. Swallow them here with
+      // the session id extracted from the outer wrapper.
+      const streamSessionId = typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
+      return { sessionID: streamSessionId };
+    }
     default:
       return null;
   }
