@@ -2,14 +2,14 @@
 id: "0178"
 title: Add command-palette search overlay
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-command-palette-search-overlay
 created_at: "2026-08-13T16:15:20Z"
-updated_at: "2026-08-13T16:30:05Z"
+updated_at: "2026-08-13T16:38:02Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ backend.
 - 2026-08-13T16:15:25Z · body
 - 2026-08-13T16:16:25Z · status inbox→ready
 - 2026-08-13T16:30:05Z · status ready→active, branch
+- 2026-08-13T16:38:02Z · status active→review
