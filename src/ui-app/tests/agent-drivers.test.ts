@@ -537,6 +537,46 @@ process.stdout.write("plain answer\\n");
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("strips ANSI escape sequences from agent output (0155)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-runprompt-ansi-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    // Simulate kiro-cli output with ANSI SGR codes and box-drawing characters.
+    const ansiBin = `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+// Simulates kiro-cli rendering with ANSI colors and box-drawing delimiter
+process.stdout.write("\\x1b[38;5;141m> \\x1b[0m━━━━━━━━━━━━━━━━\\n");
+process.stdout.write("id: \\"0001\\"\\x1b[0m\\n");
+process.stdout.write("title: Test task\\x1b[0m\\n");
+process.stdout.write("type: feature\\x1b[0m\\n");
+process.stdout.write("\\x1b[38;5;141m> \\x1b[0m━━━━━━━━━━━━━━━━\\n");
+process.stdout.write("\\n");
+process.stdout.write("\\x1b[38;5;252m\\x1b[1m## Problem\\x1b[0m\\n");
+process.stdout.write("Test problem description\\x1b[0m\\n");
+`;
+    writeFileSync(join(bin, "opencode"), ansiBin, { mode: 0o755 });
+    const log = join(root, "spawns.log");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = log;
+    try {
+      const result = await runPrompt(agent("opencode"), "test", { cwd: bin });
+      expect(result.ok).toBe(true);
+      // Verify ANSI codes are stripped but box-drawing characters remain.
+      expect(result.output).not.toContain("\x1b");
+      expect(result.output).toContain("> ━━━━━━━━━━━━━━━━");
+      expect(result.output).toContain("id: \"0001\"");
+      expect(result.output).toContain("## Problem");
+      expect(result.output).not.toContain("[38;5;141m");
+      expect(result.output).not.toContain("[0m");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("server-owned handoff mission (#0094)", () => {

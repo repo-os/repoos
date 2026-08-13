@@ -119,6 +119,37 @@ The parser eats the title.
     expect(out.body).toBe(src);
   });
 
+  it("recognizes box-drawing horizontal rules (kiro-rendered) as delimiters (0155)", () => {
+    const out = parseDocument(`> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+id: "0001"
+title: Add file tree navigation
+type: feature
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## Problem
+
+The context page is a flat list.
+`);
+    expect(out.hadFrontmatter).toBe(true);
+    expect(out.data.id).toBe("0001");
+    expect(out.data.title).toBe("Add file tree navigation");
+    expect(out.data.type).toBe("feature");
+    expect(out.body).toContain("## Problem");
+  });
+
+  it("recognizes box-drawing characters without blockquote prefix as delimiters", () => {
+    const out = parseDocument(`━━━━━━━━━━━━━━━━━━━━━━
+title: Clean horizontal rule
+type: feature
+━━━━━━━━━━━━━━━━━━━━━━
+
+Body content
+`);
+    expect(out.hadFrontmatter).toBe(true);
+    expect(out.data.title).toBe("Clean horizontal rule");
+    expect(out.body).toContain("Body content");
+  });
+
   it("merges a stray embedded frontmatter block in the body over the closed block", () => {
     const out = parseDocument(corrupted());
     expect(out.hadFrontmatter).toBe(true);

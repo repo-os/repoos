@@ -240,7 +240,7 @@ export function redactSecrets(text: string): string {
 }
 
 /** Strip ANSI SGR escape sequences so diagnostics stay readable in JSON. */
-function stripAnsi(text: string): string {
+export function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\u001b\[[0-9;]*m/g, "");
 }
