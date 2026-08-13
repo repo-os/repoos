@@ -3,13 +3,14 @@ id: "0172"
 title: Resume turns silently drop handoff finalization because session task/branch are never persisted
 type: bug
 status: ready
+needs_merge: true
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T13:55:49Z"
-updated_at: "2026-08-13T14:00:30Z"
+updated_at: "2026-08-13T16:32:15Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ Any turn — start or resume — that ends with the handoff signal runs server-s
 
 - 2026-08-13T13:55:49Z · created · unknown
 - 2026-08-13T14:00:30Z · status inbox→ready
+- 2026-08-13T16:32:15Z · needs_merge
