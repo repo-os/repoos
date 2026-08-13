@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cto-engineering-manager-agent-always-on-
 created_at: "2026-08-13T14:39:10Z"
-updated_at: "2026-08-13T18:01:54Z"
+updated_at: "2026-08-13T23:34:19Z"
 ---
 ## Problem
 The board needs a pair of eyes that never sleeps. Today a human (or this session's manual loop) watches for stuck tasks, wedged finalization, review verdicts nobody acted on, zombie serve processes, and stale builds — then nudges agents, re-verifies gates, and files follow-up bugs by hand. That should be a first-class RepoOS agent: always on, monitoring, and un-sticking things — with a chat panel the human can talk to like a colleague.
