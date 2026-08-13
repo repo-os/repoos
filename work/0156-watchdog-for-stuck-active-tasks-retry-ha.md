@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/watchdog-for-stuck-active-tasks-retry-ha
 created_at: "2026-08-13T06:47:22Z"
-updated_at: "2026-08-13T07:09:56Z"
+updated_at: "2026-08-13T08:06:36Z"
 ---
 ## Activity
 
@@ -100,8 +100,23 @@ stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
   cause of a missed handoff signal, but this task is about the *safety net* for ANY
   cause (crash, timeout, stop, malformed signal) — don't make this depend on #0155
   landing first.
+- **Correction (2026-08-13):** #0151 hit a *different* stuck-active failure that
+  looked identical from the board (active, unreachable finalization) but had a
+  distinct root cause: `ensureWorktree` cutting/reusing a worktree whose branch
+  never contained the task's own file (confirmed via `git ls-tree` on the
+  branch — the file's creation commit hadn't landed on `main` yet when the
+  worktree was cut, and once cut, reuse never re-checked freshness). That is now
+  self-healed in `ensureWorktree` (`src/core/git.ts`) — a resolved worktree
+  missing the task's own file gets it copied in and committed automatically, so
+  a stuck task heals itself on the next `/start` retry, no watchdog needed. Do
+  NOT fold "check for the missing task file" into this watchdog's detection —
+  it's already handled at a lower layer. This watchdog's actual scope (dead/no
+  running process, no activity, real uncommitted worktree changes) is a
+  genuinely separate condition; #0024/#0105/#0150 above are still valid
+  evidence for THIS bug, not #0151's.
 
 ## Activity
 
 - 2026-08-13T07:09:52Z · status inbox→ready
 - 2026-08-13T07:09:56Z · status ready→active, branch
+- 2026-08-13T08:06:36Z · body
