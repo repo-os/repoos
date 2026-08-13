@@ -106,6 +106,8 @@ import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { CTOManager } from "./cto.js";
+import { CTOMonitor } from "./cto-monitor.js";
 import {
   appendScreenshotsSection,
   mimeForExtension,
@@ -155,6 +157,8 @@ import {
   getTaskReview,
   reviewAgain,
   reviewMessage,
+  getCTO,
+  ctoMessage,
   pmMessage,
   getScreenshot,
   uploadScreenshot,
@@ -835,6 +839,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner);
 
+  // The CTO agent (0174): always-on board monitor that detects stuck tasks,
+  // stale reviews, and broken builds, then nudges agents or escalates to the human.
+  const cto = new CTOManager(config, emitEvent, runner);
+  const ctoMonitor = new CTOMonitor(config, index, cto);
+  // Start the CTO monitor on a 5-minute cadence when enabled
+  if (cto.enabled()) {
+    ctoMonitor.start(5 * 60 * 1000);
+  }
+
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
   // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
@@ -881,14 +894,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
       void runBuiltInAgent(name, repoos.config)
-        .then((result) => {
-          if (result && result.failed > 0) {
-            console.error(
-              `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
-            );
+        .then((result: unknown) => {
+          if (result && typeof result === "object" && "failed" in result) {
+            const res = result as { failed: number; errors: string[] };
+            if (res.failed > 0) {
+              console.error(
+                `[built-in-agents] scheduled run of "${name}" wrote ${res.failed} failed task(s): ${res.errors.join("; ")}`,
+              );
+            }
           }
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
         })
         .finally(() => {
@@ -1080,6 +1096,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("GET", "/api/cto", getCTO);
+  router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
@@ -1213,6 +1231,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       runner,
       previews,
       reviews,
+      cto,
       repoos,
       emitEvent: (e: RepoEvent) => {
         for (const client of clients) {
@@ -1359,6 +1378,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         clearInterval(systemSampleTimer);
         clearInterval(builtInTimer);
+        ctoMonitor.stop();
         runner.dispose();
         throw err;
       }
@@ -1379,6 +1399,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         close: async () => {
           clearInterval(systemSampleTimer);
           clearInterval(builtInTimer);
+          ctoMonitor.stop();
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
@@ -1392,6 +1413,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // agents — a one-shot child must not outlive the server that
           // launched it and wait 15 minutes to write a report nobody reads.
           reviews.cancelAll();
+          cto.cancelAll();
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {

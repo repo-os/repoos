@@ -617,6 +617,34 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
   return json(res, 200, { ok: true });
 };
 
+export const getCTO: RouteHandler = (ctx, _req, res) => {
+  const { cto } = ctx;
+  return json(res, 200, {
+    ok: true,
+    running: cto.isRunning(),
+    enabled: cto.enabled(),
+    report: cto.read(),
+    lines: cto.session(),
+  });
+};
+
+export const ctoMessage: RouteHandler = async (ctx, req, res) => {
+  const { cto } = ctx;
+  const body = (await readBody(req)) as { text?: unknown };
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  if (!text) {
+    return json(res, 400, { error: "message text is required" });
+  }
+  if (cto.isRunning()) {
+    return json(res, 409, { error: "a CTO run is already in progress" });
+  }
+  if (!cto.enabled()) {
+    return json(res, 400, { error: "the CTO agent is disabled" });
+  }
+  void cto.send(text);
+  return json(res, 200, { ok: true });
+};
+
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner } = ctx;
   const id = params.param1;

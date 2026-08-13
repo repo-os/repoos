@@ -563,6 +563,17 @@ export async function runTechDebtAgent(
   };
 }
 
+export async function runBuiltInAgent(
+  name: string,
+  config: RepoOSConfig,
+  options?: TechDebtScanOptions,
+): Promise<TechDebtRunResult | undefined> {
+  if (name === "tech-debt") {
+    return runTechDebtAgent(config, options);
+  }
+  return undefined;
+}
+
 function getTitleForIssueType(type: TechDebtIssueType): string {
   switch (type) {
     case "outdated-dependency":

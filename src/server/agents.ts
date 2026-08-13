@@ -916,6 +916,11 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
 }
 
+export function resolveCto(config: RepoOSConfig): Agent | null {
+  const list = agentsForConfig(config);
+  return list.find((a) => a.enabled && a.name === "cto") ?? null;
+}
+
 /**
  * Resolve the agent for a specific task, honoring per-task overrides.
  *
