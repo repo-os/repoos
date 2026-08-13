@@ -96,6 +96,4 @@ agent, human).
 ## Activity
 
 - 2026-08-13T13:44:13Z · status inbox→ready
-- 2026-08-13T13:55:27Z · status ready→active, branch
-- 2026-08-13T14:00:59Z · watchdog: automatic resume attempted
-- 2026-08-13T14:04:33Z · status active→review
+- 2026-08-13T14:04:33Z · status ready→review, branch
