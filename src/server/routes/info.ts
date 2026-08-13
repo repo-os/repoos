@@ -3,7 +3,7 @@ import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { sampleSystem } from "../system.js";
-import { agentsForConfig } from "../../core/config.js";
+import { resolveRepoGuide } from "../agents.js";
 
 const REPO_GUIDE_SESSION_ID = "__repoos-guide__";
 
@@ -103,9 +103,7 @@ export const getTunnelStatus: RouteHandler = async (ctx, req, res) => {
 
 export const getChat: RouteHandler = (ctx, _req, res) => {
   const { config, runner } = ctx;
-  const agent = agentsForConfig(config).find(
-    (candidate) => candidate.name.toLowerCase() === "repoos guide",
-  ) ?? null;
+  const agent = resolveRepoGuide(config);
   const session = runner.output(REPO_GUIDE_SESSION_ID);
   return json(res, 200, {
     ok: true,
@@ -119,12 +117,10 @@ export const getChat: RouteHandler = (ctx, _req, res) => {
 
 export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
   const { config, index, runner } = ctx;
-  const agent = agentsForConfig(config).find(
-    (candidate) => candidate.name.toLowerCase() === "repoos guide",
-  ) ?? null;
-  if (!agent?.enabled) {
+  const agent = resolveRepoGuide(config);
+  if (!agent) {
     return json(res, 400, {
-      error: "RepoOS Guide is disabled — enable it on the Agents page to chat",
+      error: "Ross is disabled — enable it on the Agents page to chat",
     });
   }
   const body = (await readBody(req)) as { text?: unknown };
@@ -139,7 +135,7 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
       })
     : (runner as any).startChat(REPO_GUIDE_SESSION_ID, text, agent, context);
   if (!result.ok && (result as any).busy) {
-    return json(res, 409, { error: result.reason ?? "RepoOS Guide is busy" });
+    return json(res, 409, { error: result.reason ?? "Ross is busy" });
   }
   if (!result.ok) {
     return json(res, 400, { error: result.reason ?? "could not send message" });
