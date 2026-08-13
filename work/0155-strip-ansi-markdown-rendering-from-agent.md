@@ -2,14 +2,14 @@
 id: "0155"
 title: Strip ANSI/markdown rendering from agent output before parsing
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/strip-ansi-markdown-rendering-from-agent
 created_at: "2026-08-13T06:15:56Z"
-updated_at: "2026-08-13T06:24:13Z"
+updated_at: "2026-08-13T06:24:16Z"
 ---
 ## Activity
 
@@ -80,3 +80,4 @@ task or doc, ever.
 ## Activity
 
 - 2026-08-13T06:24:13Z · status inbox→ready
+- 2026-08-13T06:24:16Z · status ready→active, branch

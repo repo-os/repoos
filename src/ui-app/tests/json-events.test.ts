@@ -176,6 +176,21 @@ describe("parseClaudeEvent (0109)", () => {
     ).toEqual({});
   });
 
+  it("swallows stream_event wrappers from claude code (0151)", () => {
+    // Anthropic API streaming events wrapped by claude code CLI should be
+    // recognized and swallowed rather than dumped to the transcript.
+    expect(
+      parseClaudeEvent(
+        '{"type":"stream_event","event":{"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"hello"}},"session_id":"sess-123","uuid":"uuid-1"}',
+      ),
+    ).toEqual({ sessionID: "sess-123" });
+    expect(
+      parseClaudeEvent(
+        '{"type":"stream_event","event":{"type":"content_block_stop","index":1},"session_id":"sess-123","uuid":"uuid-2"}',
+      ),
+    ).toEqual({ sessionID: "sess-123" });
+  });
+
   it("maps thinking_tokens and post_turn_summary to step boundaries", () => {
     expect(parseClaudeEvent('{"type":"system","subtype":"thinking_tokens"}')).toEqual({
       entry: expect.objectContaining({ type: "step", kind: "start" }),
