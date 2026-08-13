@@ -2,14 +2,14 @@
 id: "0157"
 title: WorkWatcher misses file-content-change events; add poll-based reconciliation fallback
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T07:04:41Z"
-updated_at: "2026-08-13T07:04:41Z"
+updated_at: "2026-08-13T13:44:13Z"
 ---
 ## Activity
 
@@ -92,3 +92,7 @@ agent, human).
   detection logic reads the live index and needs it to be trustworthy; this task is
   what makes it trustworthy. No hard ordering dependency, but worth landing first
   or together.
+
+## Activity
+
+- 2026-08-13T13:44:13Z · status inbox→ready
