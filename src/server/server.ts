@@ -68,6 +68,8 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  sanitizeBuiltInAgents,
+  saveBuiltInAgentsConfig,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -76,6 +78,7 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
 } from "../core/git.js";
+import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import {
@@ -784,6 +787,38 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
+  // Built-in agent scheduling: a single in-flight guard shared with the manual
+  // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
+  // schedule is due runs exactly one scan per tick; scheduled and manual runs
+  // can never overlap. Errors only log — the scheduler is best-effort and must
+  // never crash the poll loop.
+  const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
+  const builtInRun = { inFlight: false };
+  const builtInTimer = setInterval(() => {
+    if (builtInRun.inFlight) return;
+    const agents = repoos.config.builtInAgents ?? {};
+    for (const name of Object.keys(agents)) {
+      if (!isDueForScheduledRun(agents[name])) continue;
+      builtInRun.inFlight = true;
+      void runBuiltInAgent(name, repoos.config)
+        .then((result) => {
+          if (result && result.failed > 0) {
+            console.error(
+              `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
+            );
+          }
+        })
+        .catch((err) => {
+          console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
+        })
+        .finally(() => {
+          builtInRun.inFlight = false;
+          index.refreshAll();
+        });
+      break; // one built-in agent per tick
+    }
+  }, BUILT_IN_CHECK_INTERVAL_MS);
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
@@ -978,6 +1013,39 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
+  router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
+    const agentName = params.param1;
+    const cfg = ctx.repoos.config;
+    // Manual and scheduled runs share one in-flight guard, so two scans can
+    // never overlap and block the server twice over.
+    if (builtInRun.inFlight) {
+      return json(res, 409, {
+        error: `A built-in agent run is already in progress — wait for it to finish`,
+      });
+    }
+    builtInRun.inFlight = true;
+    try {
+      const result = await runBuiltInAgent(agentName, cfg);
+      if (!result) {
+        return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+      }
+      ctx.index.refreshAll();
+      return json(res, 200, {
+        ok: true,
+        taskCount: result.created,
+        skipped: "skipped" in result ? result.skipped : 0,
+        failed: result.failed,
+        errors: result.errors,
+        issuesFound: "issuesFound" in result ? result.issuesFound : 0,
+        scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to run built-in agent";
+      return json(res, 500, { error: message });
+    } finally {
+      builtInRun.inFlight = false;
+    }
+  });
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
@@ -1206,6 +1274,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(builtInTimer);
         runner.dispose();
         throw err;
       }
@@ -1225,6 +1294,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(builtInTimer);
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
