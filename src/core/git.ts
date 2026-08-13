@@ -4,8 +4,8 @@
  * We shell out rather than depend on a git library (zero deps).
  */
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { realpathSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, realpathSync } from "node:fs";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir } from "./config.js";
 
@@ -161,6 +161,43 @@ export function worktreePathForBranch(root: string, branch: string): string | nu
 }
 
 /**
+ * Copy `taskRelPath` from `root` into an already-resolved `worktreePath` and
+ * commit it there, ONLY when the worktree is missing it. This heals a
+ * specific, narrow race: `ensureWorktree` cuts (or reuses) a worktree from
+ * whatever main's HEAD was at that moment, but the task's own file can be
+ * absent from that HEAD if its creation commit hadn't landed yet (e.g.
+ * `commitTaskFile` silently failed at creation time) or the worktree/branch
+ * is a leftover from an earlier start attempt that raced task creation. Once
+ * a worktree exists, plain reuse (see `ensureWorktree`) never re-checks
+ * freshness, so without this the task is stuck forever: every resume reuses
+ * the same file-less worktree and finalization keeps failing validation.
+ *
+ * Best-effort and narrowly scoped to the ONE file — never touches unrelated
+ * in-progress work in the worktree, and never runs when the worktree already
+ * has its own copy (including a stale/older one; that is a different,
+ * legitimate divergence left to the normal review/merge flow).
+ */
+function healMissingTaskFile(root: string, worktreePath: string, taskRelPath: string): void {
+  if (root === worktreePath) return; // the main checkout is never a task worktree
+  const worktreeFile = join(worktreePath, taskRelPath);
+  if (existsSync(worktreeFile)) return;
+  const mainFile = join(root, taskRelPath);
+  if (!existsSync(mainFile)) return; // nothing to heal from
+  try {
+    mkdirSync(dirname(worktreeFile), { recursive: true });
+    copyFileSync(mainFile, worktreeFile);
+    if (git(worktreePath, ["add", "--", taskRelPath]) === null) return;
+    git(worktreePath, [
+      "commit",
+      "-m",
+      `chore: restore task file missing from worktree (self-heal)`,
+    ]);
+  } catch {
+    /* best-effort; handoff validation still catches an unhealed worktree */
+  }
+}
+
+/**
  * Make sure the agent for `branch` has a dedicated working directory WITHOUT
  * touching the main worktree's checkout. Three outcomes:
  *
@@ -171,8 +208,16 @@ export function worktreePathForBranch(root: string, branch: string): string | nu
  * Fail-soft like the branch-switching predecessor: returns `{ ok: false,
  * reason }` when git is missing or the worktree can't be created, so agent
  * launch degrades gracefully instead of crashing the server.
+ *
+ * `taskRelPath`, when given, is the task's own file path relative to `root`
+ * (e.g. `work/0151-....md`). Whichever worktree is resolved — new or reused —
+ * is healed if that file is missing from it; see `healMissingTaskFile`.
  */
-export function ensureWorktree(root: string, branch: string): EnsureWorktreeResult {
+export function ensureWorktree(
+  root: string,
+  branch: string,
+  taskRelPath?: string,
+): EnsureWorktreeResult {
   if (!isGitRepo(root)) {
     return { ok: false, path: "", created: false, reason: "not a git repository" };
   }
@@ -180,7 +225,10 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
     return { ok: true, path: root, created: false };
   }
   const existing = worktreePaths(root).get(branch);
-  if (existing) return { ok: true, path: existing, created: false };
+  if (existing) {
+    if (taskRelPath) healMissingTaskFile(root, existing, taskRelPath);
+    return { ok: true, path: existing, created: false };
+  }
 
   const target = join(worktreesDir(root), branch);
   const branchExists = localBranches(root).has(branch);
@@ -203,6 +251,7 @@ export function ensureWorktree(root: string, branch: string): EnsureWorktreeResu
   } catch {
     /* keep the composed path */
   }
+  if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
   return { ok: true, path, created: true };
 }
 

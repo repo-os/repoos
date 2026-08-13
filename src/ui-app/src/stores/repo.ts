@@ -852,6 +852,7 @@ export const useRepoStore = defineStore("repo", () => {
     fallback?: boolean;
     fallbackReason?: "no-pm-agent" | "agent-failed";
     reason?: string;
+    path?: string;
   }> {
     const body: Record<string, unknown> = { description };
     if (runId) body.runId = runId;
@@ -863,6 +864,7 @@ export const useRepoStore = defineStore("repo", () => {
       fallback?: boolean;
       fallbackReason?: "no-pm-agent" | "agent-failed";
       reason?: string;
+      path?: string;
     }>("/api/docs/freeform", JSON_OPTS("POST", body));
     if (!r.ok) {
       const message = r.reason ?? "could not create document";

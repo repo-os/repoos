@@ -74,6 +74,7 @@ import {
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   patchTaskFile,
   deleteTaskFile,
@@ -92,6 +93,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { parseDocument } from "../core/frontmatter.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
@@ -546,27 +548,27 @@ function docFreeformPrompt(description: string): string {
     description.trim(),
     "```",
     "",
-    "Respond with ONLY a JSON object with two fields:",
-    "- path: the destination file path relative to the repo root (e.g., 'docs/my-doc.md' or 'docs/adr/0001-title.md')",
-    "- content: the complete Markdown document content",
+    "Respond with a frontmatter block giving the destination path, then the document",
+    "body, like:",
+    "---",
+    "path: docs/my-doc.md   # or e.g. docs/adr/0001-title.md — relative to the repo root",
+    "---",
     "",
-    "Format your response as valid JSON like: {\"path\": \"docs/...\", \"content\": \"# Title\\n...\"",
-    "Do NOT include markdown code fences or any preamble.",
+    "# Title",
+    "The rest of the markdown document content goes here.",
+    "",
+    "Respond with ONLY the frontmatter block and the document content, starting with the",
+    "opening '---' line and with no preamble, commentary, or code fences.",
   ].join("\n");
 }
 
-/** Parse the PM agent's generated JSON document response. */
+/** Parse the PM agent's generated document response (frontmatter `path` + markdown body). */
 function parseGeneratedDocument(output: string): { path: string; content: string } {
-  try {
-    const trimmed = output.trim();
-    const parsed = JSON.parse(trimmed);
-    const path = typeof parsed.path === "string" ? parsed.path.trim() : "";
-    const content = typeof parsed.content === "string" ? parsed.content : "";
-    if (path && content) {
-      return { path, content };
-    }
-  } catch {
-    /* fallback below */
+  const { data, body, hadFrontmatter } = parseDocument(output.trim());
+  const path = hadFrontmatter && typeof data.path === "string" ? data.path.trim() : "";
+  const content = body.trim();
+  if (path && content) {
+    return { path, content };
   }
   return { path: "", content: "" };
 }
@@ -605,6 +607,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
+
+  // Task watchdog will be initialized after runner is created
+  let taskWatchdog: TaskWatchdog | null = null;
 
   // active SSE clients
   const clients = new Set<ServerResponse>();
@@ -753,6 +758,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* sampling is best-effort — never crash the poll loop */
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
+
+  // Task watchdog: detect and handle stuck active tasks
+  taskWatchdog = new TaskWatchdog(config, index, runner);
+  taskWatchdog.start();
 
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
@@ -1429,7 +1438,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const dir = dirname(absPath);
         mkdirSync(dir, { recursive: true });
         writeFileSync(absPath, content, "utf8");
-        return json(res, 201, { ok: true });
+        return json(res, 201, { ok: true, path: docPath });
       }
       if (taskMatch && method === "PATCH") {
         const existing = index.getTask(taskMatch[1]);
@@ -1518,7 +1527,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               });
             }
           }
-          const wtRes = ensureWorktree(config.root, branch);
+          const wtRes = ensureWorktree(config.root, branch, existing.path);
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch, {
@@ -2120,6 +2129,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeCleanup();
           unsubscribeNeedsInput();
           watcher.stop();
+          taskWatchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no

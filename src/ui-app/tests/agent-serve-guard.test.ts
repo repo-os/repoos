@@ -72,10 +72,21 @@ describe("CLI rejection (real process)", () => {
     env: Record<string, string>,
   ): Promise<{ code: number | null; stdout: string; stderr: string }> {
     return new Promise((resolve) => {
+      // The control-plane server carries REPOOS_RELOAD / REPOOS_PREVIEW_CHILD
+      // (plus the reload secret) in its environment for its whole lifetime when
+      // it was started by the auto-reload manager. Those leak into this process
+      // and, via { ...process.env }, into the child — where REPOOS_RELOAD=1
+      // would exempt it from the guard below, let the real CLI bind a server,
+      // and hang this test. This test asserts the guard in isolation, so scrub
+      // the lifecycle markers from the child env and keep only the agent's.
+      const childEnv: NodeJS.ProcessEnv = { ...process.env };
+      delete childEnv.REPOOS_RELOAD;
+      delete childEnv.REPOOS_RELOAD_SECRET;
+      delete childEnv.REPOOS_PREVIEW_CHILD;
       const child = spawn(
         process.execPath,
         [cliEntry(), "serve", "--port", String(port), "--host", "127.0.0.1"],
-        { cwd: root, env: { ...process.env, ...env } },
+        { cwd: root, env: { ...childEnv, ...env } },
       );
       let stdout = "";
       let stderr = "";
