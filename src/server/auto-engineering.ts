@@ -97,13 +97,47 @@ function parseAutoEngineeringSelection(output: string): {
 /**
  * Orchestrator for auto-engineering mode. Singleton per server lifetime;
  * tracks mode state and decision history for Control page display.
+ * Decisions persist to disk for browser refresh recovery.
  */
 export class AutoEngineeringOrchestrator {
   private lastDecision: AutoEngineeringDecision | null = null;
   private reconciling = false;
+  private cacheDir: string;
+
+  constructor(cacheDir?: string) {
+    this.cacheDir = cacheDir ?? ".repoos";
+  }
 
   getLastDecision(): AutoEngineeringDecision | null {
     return this.lastDecision;
+  }
+
+  /** Store the latest decision for recovery after server restart. */
+  private persistDecision(decision: AutoEngineeringDecision): void {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const filePath = path.join(this.cacheDir, "auto-engineering-decision.json");
+      fs.mkdirSync(this.cacheDir, { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(decision, null, 2));
+    } catch {
+      // Persistence is best-effort — failures don't block reconciliation
+    }
+  }
+
+  /** Load the last persisted decision from disk (for browser refresh recovery). */
+  loadPersistedDecision(): void {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const filePath = path.join(this.cacheDir, "auto-engineering-decision.json");
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, "utf8");
+        this.lastDecision = JSON.parse(data) as AutoEngineeringDecision;
+      }
+    } catch {
+      // Load failure is silent — just start with no persisted state
+    }
   }
 
   /**
@@ -153,6 +187,7 @@ export class AutoEngineeringOrchestrator {
         candidateIds: [],
         selectedIds: [],
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "no-capacity",
@@ -173,6 +208,7 @@ export class AutoEngineeringOrchestrator {
         candidateIds: [],
         selectedIds: [],
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "no-ready-work",
@@ -192,6 +228,7 @@ export class AutoEngineeringOrchestrator {
         selectedIds: [],
         error: "PM agent is not configured or enabled",
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "pm-unavailable",
@@ -219,6 +256,7 @@ export class AutoEngineeringOrchestrator {
         selectedIds: [],
         error,
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "pm-failed",
@@ -239,6 +277,7 @@ export class AutoEngineeringOrchestrator {
         selectedIds: [],
         error,
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "pm-failed",
@@ -259,6 +298,7 @@ export class AutoEngineeringOrchestrator {
         selectedIds: [],
         error: selection.error,
       };
+      this.persistDecision(this.lastDecision);
       return {
         triggered: true,
         outcome: "pm-failed",
@@ -281,6 +321,7 @@ export class AutoEngineeringOrchestrator {
       selectedIds: validated,
       rationale: selection.rationale,
     };
+    this.persistDecision(this.lastDecision);
 
     return {
       triggered: true,

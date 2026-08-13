@@ -648,7 +648,26 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Auto-engineering orchestration (0124): when enabled, automatically selects
   // and starts ready tasks up to the configured maximum via the PM agent.
-  const autoEngineering = new AutoEngineeringOrchestrator();
+  const autoEngineering = new AutoEngineeringOrchestrator(join(config.root, config.cacheDir));
+  autoEngineering.loadPersistedDecision();
+
+  /** Emit the auto-engineering state so the Control page updates in real time (0124). */
+  function emitAutoEngState(reconciling: boolean): void {
+    const maxActiveTasks = config.maxActiveTasks ?? 3;
+    const activeCount = index.getTasks().filter((t) => t.status === "active").length;
+    emitEvent({
+      type: "auto-engineering.state",
+      state: {
+        enabled: config.autoEngineeringMode ?? false,
+        maxActiveTasks,
+        activeCount,
+        availableSlots: Math.max(0, maxActiveTasks - activeCount),
+        reconciling,
+        decision: autoEngineering.getLastDecision(),
+      },
+      at: new Date().toISOString(),
+    });
+  }
 
   // Tasks that landed in `review` while their engineer turn was still winding
   // down. Reviewing a worktree an agent is still committing to would report on
@@ -882,18 +901,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (trigger) {
       // Async reconciliation: attempt to start selected ready tasks if capacity exists.
       void (async () => {
+        emitAutoEngState(true);
         const result = await autoEngineering.reconcile(config, index.getTasks(), trigger);
-        // Emit auto-engineering state change so Control page updates in real-time
-        emitEvent({
-          type: "auto-engineering.state",
-          state: {
-            enabled: config.autoEngineeringMode ?? false,
-            maxActiveTasks: config.maxActiveTasks ?? 3,
-            activeCount: index.getTasks().filter((t) => t.status === "active").length,
-            decision: autoEngineering.getLastDecision(),
-          },
-          at: new Date().toISOString(),
-        } as any);
+        emitAutoEngState(false);
         if (result.outcome === "selected" && result.selectedIds && result.selectedIds.length > 0) {
           // Re-read state before starting each task: only start if still ready
           // and haven't exceeded the max (concurrent human starts, etc).
@@ -2064,17 +2074,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // Trigger auto-engineering reconciliation if mode or max changed
         if (autoEngineeringChanged) {
           void (async () => {
+            emitAutoEngState(true);
             await autoEngineering.reconcile(config, index.getTasks(), "config-change");
-            emitEvent({
-              type: "auto-engineering.state",
-              state: {
-                enabled: config.autoEngineeringMode ?? false,
-                maxActiveTasks: config.maxActiveTasks ?? 3,
-                activeCount: index.getTasks().filter((t) => t.status === "active").length,
-                decision: autoEngineering.getLastDecision(),
-              },
-              at: new Date().toISOString(),
-            } as any);
+            emitAutoEngState(false);
           })();
         }
 
@@ -2093,7 +2095,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           maxActiveTasks,
           activeCount,
           availableSlots,
-          lastDecision,
+          reconciling: false,
+          decision: lastDecision,
         });
       }
 

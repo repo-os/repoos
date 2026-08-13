@@ -7,6 +7,7 @@ import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
 import AiTasksPanel from "../components/AiTasksPanel.vue";
 import SystemResourcePanel from "../components/SystemResourcePanel.vue";
+import AutoEngineeringPanel from "../components/AutoEngineeringPanel.vue";
 import ReleaseTimeline from "../components/ReleaseTimeline.vue";
 
 const repo = useRepoStore();
@@ -148,6 +149,8 @@ const { counts, repoName } = storeToRefs(repo);
         </StatCard>
       </router-link>
     </div>
+
+    <AutoEngineeringPanel />
 
     <ReleaseTimeline />
 

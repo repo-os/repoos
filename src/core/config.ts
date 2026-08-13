@@ -263,7 +263,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
     const maxActiveTasks = get("maxActiveTasks");
-    if (typeof maxActiveTasks === "number" && maxActiveTasks > 0)
+    if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
   }
   return cfg;
