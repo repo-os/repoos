@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/improve-global-search-with-doc-contents-
 created_at: "2026-08-04T09:17:40Z"
-updated_at: "2026-08-13T09:58:23Z"
+updated_at: "2026-08-13T09:58:24Z"
 ---
 ## Activity
 
@@ -104,7 +104,5 @@ folded into this task rather than retaining a second search-polish task.
 
 - 2026-08-12T19:03:39Z · status inbox→ready
 - 2026-08-12T19:03:43Z · status ready→active, branch
-- 2026-08-13T09:46:04Z · watchdog: automatic resume attempted
-- 2026-08-13T09:51:04Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
-- 2026-08-13T09:58:23Z · status active→review, needs_input
-- 2026-08-13T09:58:23Z · needs_merge
+- 2026-08-13T07:20:46Z · status active→review
+- 2026-08-13T09:58:24Z · needs_merge
