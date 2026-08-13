@@ -2,14 +2,14 @@
 id: "0154"
 title: Add file tree navigation and refresh button to context page
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-file-tree-navigation-and-refresh-but
 created_at: "2026-08-13T05:43:16Z"
-updated_at: "2026-08-13T06:16:22Z"
+updated_at: "2026-08-13T06:26:30Z"
 ---
 ## Problem
 
@@ -21,11 +21,11 @@ A hierarchical file tree view where documentation directories can be expanded an
 
 ## Acceptance criteria
 
-- [ ] Replace flat doc list with a collapsible file tree view
-- [ ] Directories show expand/collapse controls
-- [ ] Files appear as leaf nodes in the tree
-- [ ] Add a refresh button that re-scans and reloads docs
-- [ ] Tree state (expanded/collapsed) persists during the session
+- [x] Replace flat doc list with a collapsible file tree view
+- [x] Directories show expand/collapse controls
+- [x] Files appear as leaf nodes in the tree
+- [x] Add a refresh button that re-scans and reloads docs
+- [x] Tree state (expanded/collapsed) persists during the session
 
 ## Notes for AI
 
@@ -42,3 +42,4 @@ A hierarchical file tree view where documentation directories can be expanded an
 - 2026-08-13T05:52:00Z · corrected · title/frontmatter/body cleaned up — the kiro agent's raw terminal output (ANSI color codes + box-drawing rendering of the `---` frontmatter delimiters) was stored verbatim instead of being parsed
 - 2026-08-13T06:16:10Z · status inbox→ready
 - 2026-08-13T06:16:22Z · status ready→active, branch
+- 2026-08-13T06:26:30Z · completed · hierarchical file tree with expand/collapse, file leaf nodes, refresh button, and session-scoped state persistence
