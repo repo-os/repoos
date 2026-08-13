@@ -2,7 +2,7 @@
 id: "0003"
 title: On mobile online/offline should just be a colored dot
 type: chore
-status: ready
+status: review
 priority: p3
 area: mobile
 assigned_to: ai
