@@ -666,6 +666,131 @@ describe("error toasts", () => {
   });
 });
 
+describe("parked build reconciliation (0179)", () => {
+  it("surfaces a parked build on page load without any prior build.available event", async () => {
+    localStorage.removeItem("repoos.newVersion");
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const parkedHealth = {
+      ok: true,
+      root: "/tmp/repo",
+      taskCount: 0,
+      workDir: "work",
+      buildAt: "2026-08-01T00:00:00.000Z",
+      buildHash: "hash-running",
+      buildAvailableHash: "hash-parked",
+      buildAvailableAt: "2026-08-13T00:00:00.000Z",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health")) return json(parkedHealth);
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    await vi.waitFor(() => expect(repo.newVersion).toBeTruthy());
+    expect(repo.newVersion).toEqual({
+      hash: "hash-parked",
+      buildAt: "2026-08-13T00:00:00.000Z",
+    });
+  });
+
+  it("sets the notice on SSE reconnect when a build parked while the tab was closed", async () => {
+    localStorage.removeItem("repoos.newVersion");
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    let parked = false;
+    const health = () => ({
+      ok: true,
+      root: "/tmp/repo",
+      taskCount: 0,
+      workDir: "work",
+      buildAt: "2026-08-01T00:00:00.000Z",
+      buildHash: "hash-running",
+      buildAvailableHash: parked ? "hash-parked" : null,
+      buildAvailableAt: parked ? "2026-08-13T00:00:00.000Z" : null,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health")) return json(health());
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    await Promise.resolve();
+    expect(repo.newVersion).toBeNull();
+
+    // A build lands and is parked while the tab is disconnected — hello on
+    // reconnect must surface it even though no build.available event was seen.
+    parked = true;
+    FakeEventSource.instances[0].emit("hello", {
+      type: "hello",
+      taskCount: 0,
+      at: "2026-08-13T01:00:00.000Z",
+    });
+    await vi.waitFor(() => expect(repo.newVersion).toBeTruthy());
+    expect(repo.newVersion).toEqual({
+      hash: "hash-parked",
+      buildAt: "2026-08-13T00:00:00.000Z",
+    });
+  });
+
+  it("clears the notice once the running server serves the parked build (reload landed)", async () => {
+    localStorage.removeItem("repoos.newVersion");
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    let reloaded = false;
+    const health = () => ({
+      ok: true,
+      root: "/tmp/repo",
+      taskCount: 0,
+      workDir: "work",
+      buildAt: reloaded ? "2026-08-13T00:00:00.000Z" : "2026-08-01T00:00:00.000Z",
+      buildHash: reloaded ? "hash-parked" : "hash-running",
+      buildAvailableHash: reloaded ? null : "hash-parked",
+      buildAvailableAt: reloaded ? null : "2026-08-13T00:00:00.000Z",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health")) return json(health());
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    await vi.waitFor(() =>
+      expect(repo.newVersion).toEqual({
+        hash: "hash-parked",
+        buildAt: "2026-08-13T00:00:00.000Z",
+      }),
+    );
+
+    // The reload landed: the running server now serves the parked build and
+    // reports nothing parked. hello reconciles the persisted notice away.
+    reloaded = true;
+    FakeEventSource.instances[0].emit("hello", {
+      type: "hello",
+      taskCount: 0,
+      at: "2026-08-13T02:00:00.000Z",
+    });
+    await vi.waitFor(() => expect(repo.newVersion).toBeNull());
+  });
+});
+
 describe("default drawer tab (0080)", () => {
   it("opens on the Agent tab for an active task — that's where the live action is", () => {
     const ui = useUiStore();

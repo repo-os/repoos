@@ -125,6 +125,17 @@ export function readBuildHash(root: string): string | null {
   }
 }
 
+/** Read the build timestamp (generatedAt) from dist/.build-info.json, or null. */
+export function readBuildAt(root: string): string | null {
+  const file = join(root, "dist", ".build-info.json");
+  try {
+    const info = JSON.parse(readFileSync(file, "utf8")) as { generatedAt?: unknown };
+    return typeof info.generatedAt === "string" && info.generatedAt ? info.generatedAt : null;
+  } catch {
+    return null;
+  }
+}
+
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 const DEFAULT_POLL_MS = 5000;
@@ -181,6 +192,8 @@ export class ReloadManager {
    * waits for the user to trigger POST /api/server/restart.
    */
   private buildAvailableHash: string | null = null;
+  /** On-disk build timestamp of the parked build (dist/.build-info.json). */
+  private buildAvailableAt: string | null = null;
 
   constructor(options: ReloadManagerOptions) {
     this.options = options;
@@ -189,6 +202,19 @@ export class ReloadManager {
 
   get enabled(): boolean {
     return this.options.enabled !== false;
+  }
+
+  /**
+   * The build parked by a close-out (0143), if any — hash plus its on-disk
+   * build timestamp (dist/.build-info.json generatedAt). Exposed so /api/health
+   * can report it and a (re)connecting UI can surface the "new build available"
+   * notice without ever having seen the one-shot build.available SSE event.
+   * Null while nothing is parked.
+   */
+  get buildAvailable(): { hash: string; buildAt: string | null } | null {
+    return this.buildAvailableHash === null
+      ? null
+      : { hash: this.buildAvailableHash, buildAt: this.buildAvailableAt };
   }
 
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
@@ -314,6 +340,7 @@ export class ReloadManager {
   private parkBuild(hash: string): void {
     if (this.buildAvailableHash === hash) return;
     this.buildAvailableHash = hash;
+    this.buildAvailableAt = readBuildAt(this.options.root);
     if (this.pending) {
       this.pending = false;
       this.clearRetry();
