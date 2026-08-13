@@ -2,14 +2,14 @@
 id: "0153"
 title: Add CLI and core support for document creation
 type: feature
-status: review
+status: done
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/add-cli-and-core-support-for-document-cr
 created_at: "2026-08-13T05:34:11Z"
-updated_at: "2026-08-13T15:14:52Z"
+updated_at: "2026-08-13T17:28:53Z"
 ---
 ## Activity
 
@@ -74,3 +74,4 @@ Mirror the task pattern:
 - 2026-08-13T13:06:50Z · status inbox→ready
 - 2026-08-13T15:00:36Z · status ready→active, branch
 - 2026-08-13T15:14:52Z · status active→review
+- 2026-08-13T17:28:53Z · status review→done, release:success
