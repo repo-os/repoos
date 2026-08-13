@@ -41,4 +41,5 @@ Task 0024 (global search: doc contents, fuzzy matching, history, status cues) is
 ## Activity
 
 - 2026-08-13T10:08:13Z · created · unknown
-- 2026-08-13T11:32:28Z · status ready→review, branch
+- 2026-08-13T11:23:02Z · status ready→active, branch
+- 2026-08-13T11:32:28Z · status active→review
