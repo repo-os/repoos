@@ -2,7 +2,7 @@
 id: "0151"
 title: "bug: raw JSON stream events dumped in chat instead of formatted messages"
 type: bug
-status: review
+status: done
 needs_input: true
 priority: p1
 area: ui
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/bug-raw-json-stream-events-dumped-in-cha
 created_at: "2026-08-13T00:00:00Z"
-updated_at: "2026-08-13T10:52:09Z"
+updated_at: "2026-08-13T10:54:28Z"
 ---
 ## Description
 
@@ -71,3 +71,4 @@ These raw `stream_event` JSON objects (with `content_block_delta`, `content_bloc
 - 2026-08-13T09:46:04Z · watchdog: automatic resume attempted
 - 2026-08-13T09:51:04Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T10:52:09Z · status active→review
+- 2026-08-13T10:54:28Z · status review→done, release:success
