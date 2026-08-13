@@ -100,6 +100,9 @@ import {
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
+import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
+import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -145,6 +148,8 @@ import {
   deleteTask,
   getTaskOutput,
   taskAction,
+  getIntegrationJob,
+  getIntegrationJobs,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -626,6 +631,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     },
   };
 
+  // Integration job coordinator for serialized close-outs (0118)
+  const jobCoordinator = createJobCoordinator(config.root);
+  const repoLock = createRepositoryLock(config.root);
+
+  // Recovery on startup: resume interrupted jobs (0118)
+  const interruptedJobs = jobCoordinator.findInterruptedJobs();
+  for (const job of interruptedJobs) {
+    console.log(`Resuming interrupted job for task ${job.taskId} from phase ${job.phase}`);
+  }
+
+  let processingJob = false;
+  let triggerJobProcessing: () => void = () => {}; // Initialized below
+
   const watcher = new WorkWatcher(config, index);
   watcher.start();
 
@@ -644,6 +662,68 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
   const unsubscribe = index.on(emitEvent);
+
+  // Initialize job processing (runs after emitEvent is available) (0118)
+  triggerJobProcessing = () => {
+    if (processingJob) return;
+    processingJob = true;
+    setImmediate(async () => {
+      try {
+        const orchestrator = new CloseOutOrchestrator(
+          config,
+          jobCoordinator,
+          repoLock,
+          (taskId) => index.getTask(taskId),
+          (step) => {
+            const job = jobCoordinator.peekNext();
+            if (job) {
+              emitEvent({
+                type: "task.progress",
+                id: job.taskId,
+                step,
+                at: new Date().toISOString(),
+              });
+            }
+          },
+        );
+        await orchestrator.processNext();
+        // Keep the live index in sync: the orchestrator writes the task file
+        // (markTaskReleased) and merges the branch directly, bypassing the
+        // done-action's usual index.applyFileChange/refreshBranches.
+        const processed = jobCoordinator.peekNext();
+        if (processed && processed.phase === "done") {
+          const doneTask = index.getTask(processed.taskId);
+          if (doneTask) index.applyFileChange(doneTask.absPath);
+        }
+        index.refreshBranches();
+        // Continue processing if there are more jobs or recovered jobs
+        const next = jobCoordinator.peekNext();
+        if (next && next.phase !== "done" && next.phase !== "failed") {
+          processingJob = false;
+          triggerJobProcessing();
+        } else {
+          processingJob = false;
+        }
+      } catch (err) {
+        console.error("Job processor error:", err);
+        processingJob = false;
+      }
+    });
+  };
+
+  // Trigger processing of recovered jobs once emitEvent is ready (0118)
+  let triggerRecoveryJobs: (() => void) | null = () => {
+    if (interruptedJobs.length > 0) {
+      console.log(`Processing ${interruptedJobs.length} recovered jobs`);
+      triggerJobProcessing();
+    }
+    triggerRecoveryJobs = null;
+  };
+
+  // Trigger processing of recovered jobs on startup
+  if (triggerRecoveryJobs) {
+    setImmediate(triggerRecoveryJobs);
+  }
 
   // Tasks that landed in `review` while their engineer turn was still winding
   // down. Reviewing a worktree an agent is still committing to would report on
@@ -992,6 +1072,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
+  router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
@@ -1142,6 +1224,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
       },
       closeOutLock,
+      jobCoordinator,
+      triggerJobProcessing,
       pendingReview,
       uiDir,
       syncTaskBranch,

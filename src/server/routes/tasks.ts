@@ -17,7 +17,6 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { completeTask, type DoneStep } from "../done.js";
 import { commitTaskFile, worktreePathForBranch, ensureWorktree, resetWorktree } from "../../core/git.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
@@ -279,7 +278,7 @@ export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
 
 // Task actions: start, pause, message, done, sync
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, runner, previews, reviews, emitEvent, closeOutLock, syncTaskBranch, onServerStatusChange } = ctx;
+  const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange } = ctx;
   const id = params.param1;
   const action = params.param2;
   const existing = index.getTask(id);
@@ -408,26 +407,35 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     await previews.stop(id);
     reviews.cancel(id);
     void runner.stop(id);
-    const result = await completeTask(config, existing, (step: DoneStep) => {
-      emitEvent({
-        type: "task.progress",
-        id,
-        step,
-        at: new Date().toISOString(),
+
+    // Guard against task deletion mid-close-out (0118): re-validate the task
+    // exists and still has a branch before enqueueing.
+    const taskStillExists = index.getTask(id);
+    if (!taskStillExists || !taskStillExists.branch) {
+      return json(res, 400, {
+        error: `Task #${id} was deleted or lost its branch before close-out could start`,
       });
-    }, {}, closeOutLock);
-    if (result.task) index.applyFileChange(result.task.absPath);
-    index.refreshBranches();
-    return json(res, result.ok ? 200 : 400, {
-      ok: result.ok,
-      merged: result.merged,
-      alreadyMerged: result.alreadyMerged,
-      conflicts: result.conflicts,
-      ff: result.ff,
-      drifted: result.drifted,
-      check: result.check,
-      error: result.reason,
-      task: result.task ? index.getTask(result.task.id) : undefined,
+    }
+
+    // Enqueue the close-out job (idempotent per task).
+    const job = ctx.jobCoordinator.enqueue(taskStillExists);
+    if (!job) {
+      return json(res, 400, { error: `Task #${id} has no branch to merge` });
+    }
+
+    // Trigger job processing to start the pipeline.
+    ctx.triggerJobProcessing();
+
+    // Return the job status to the client.
+    return json(res, 200, {
+      ok: true,
+      job: {
+        taskId: job.taskId,
+        phase: job.phase,
+        enqueuedAt: job.enqueuedAt,
+        startedAt: job.startedAt,
+        queuePosition: ctx.jobCoordinator.allJobs().findIndex((j) => j.taskId === job.taskId),
+      },
     });
   }
 
@@ -677,4 +685,46 @@ ${existing.body || "(no description)"}`;
     return json(res, 400, { error: result.reason ?? "could not send message to PM" });
   }
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+};
+
+export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
+  const { jobCoordinator } = ctx;
+  const id = params.param1;
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `No integration job for task #${id}` });
+  }
+  const allJobs = jobCoordinator.allJobs();
+  const queuePos = allJobs.findIndex((j) => j.taskId === job.taskId);
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: job.taskId,
+      phase: job.phase,
+      enqueuedAt: job.enqueuedAt,
+      startedAt: job.startedAt,
+      baseMainSha: job.baseMainSha,
+      branchSha: job.branchSha,
+      candidateSha: job.candidateSha,
+      reason: job.reason,
+      queuePosition: queuePos,
+      queueLength: allJobs.length,
+    },
+  });
+};
+
+export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
+  const allJobs = ctx.jobCoordinator.allJobs();
+  return json(res, 200, {
+    ok: true,
+    jobs: allJobs.map((job, idx) => ({
+      taskId: job.taskId,
+      phase: job.phase,
+      enqueuedAt: job.enqueuedAt,
+      startedAt: job.startedAt,
+      reason: job.reason,
+      queuePosition: idx,
+    })),
+    queueLength: allJobs.length,
+  });
 };
