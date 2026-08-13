@@ -15,6 +15,8 @@
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
+ *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
+ *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
  *   GET  /api/chat             -> RepoOS Guide identity, transcript, and running state
  *   POST /api/chat/message     -> start or continue the persistent repository chat
@@ -127,6 +129,9 @@ import {
   getChat,
   sendChatMessage,
   initInfoHandlers,
+  // Docs routes
+  createDoc,
+  createFreeformDoc,
   // Tasks routes
   getTasks,
   createTask,
@@ -930,6 +935,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/counts", getCounts);
   router.register("GET", "/api/index", getIndex);
   router.register("GET", "/api/docs", getDocs);
+  router.register("POST", "/api/docs/create", createDoc);
+  router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/skills", getSkills);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
