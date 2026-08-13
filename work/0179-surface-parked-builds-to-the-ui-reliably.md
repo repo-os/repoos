@@ -2,14 +2,14 @@
 id: "0179"
 title: Surface parked builds to the UI reliably (reload notice is one-shot)
 type: bug
-status: ready
+status: active
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/surface-parked-builds-to-the-ui-reliably
 created_at: "2026-08-13T16:19:55Z"
-updated_at: "2026-08-13T16:20:05Z"
+updated_at: "2026-08-13T16:51:38Z"
 ---
 ## Problem
 
@@ -31,3 +31,4 @@ Observed live: a close-out parked a new build (0143 close-out lock); the "new bu
 
 - 2026-08-13T16:19:55Z · created · unknown
 - 2026-08-13T16:20:05Z · status inbox→ready
+- 2026-08-13T16:51:38Z · status ready→active, branch
