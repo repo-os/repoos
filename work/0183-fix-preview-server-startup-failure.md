@@ -2,14 +2,14 @@
 id: "0183"
 title: Fix preview server startup failure
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: unassigned
 created_by: ""
 branch: ""
 created_at: "2026-08-13T23:57:56Z"
-updated_at: "2026-08-13T23:57:56Z"
+updated_at: "2026-08-13T23:58:25Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Preview links have stopped working. The preview server for task #0182 failed to 
 ## Activity
 
 - 2026-08-13T23:57:56Z · created · unknown
+- 2026-08-13T23:58:25Z · status inbox→ready
