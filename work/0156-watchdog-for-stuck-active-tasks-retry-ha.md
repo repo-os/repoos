@@ -8,10 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/watchdog-for-stuck-active-tasks-retry-ha
-cli_override: opencode
-model_override: opencode/deepseek-v4-flash-free
 created_at: "2026-08-13T06:47:22Z"
-updated_at: "2026-08-13T09:18:11Z"
+updated_at: "2026-08-13T09:18:41Z"
 ---
 ## Activity
 
@@ -124,3 +122,4 @@ stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
 - 2026-08-13T08:06:36Z · body
 - 2026-08-13T09:17:20Z · cli_override, model_override
 - 2026-08-13T09:18:11Z · cli_override, model_override
+- 2026-08-13T09:18:41Z · cli_override, model_override
