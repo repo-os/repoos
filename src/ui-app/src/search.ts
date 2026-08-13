@@ -74,9 +74,16 @@ function extractSnippet(text: string, query: string, contextLen: number = 60): H
         const snippet = words.slice(start, end).join(" ").substring(0, contextLen);
         const wordStart = words.slice(start, i).join(" ").length;
         const wordEnd = wordStart + words[i].length;
+        // The snippet may be truncated before (or mid-) the matched word.
+        // Highlight only the portion that actually made it into the snippet,
+        // so the rendered text never diverges from what's shown.
+        if (wordStart >= snippet.length) {
+          return { html: escapeHtml(snippet) };
+        }
+        const clampedEnd = Math.min(wordEnd, snippet.length);
         const html = escapeHtml(snippet.substring(0, wordStart)) +
-                     "<mark>" + escapeHtml(words[i]) + "</mark>" +
-                     escapeHtml(snippet.substring(wordEnd));
+                     "<mark>" + escapeHtml(snippet.substring(wordStart, clampedEnd)) + "</mark>" +
+                     escapeHtml(snippet.substring(clampedEnd));
         return { html };
       }
     }
