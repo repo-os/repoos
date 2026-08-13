@@ -881,14 +881,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
       void runBuiltInAgent(name, repoos.config)
-        .then((result) => {
+        .then((result: any) => {
           if (result && result.failed > 0) {
             console.error(
               `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
             );
           }
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
         })
         .finally(() => {
