@@ -2,7 +2,7 @@
 id: "0155"
 title: Strip ANSI/markdown rendering from agent output before parsing
 type: bug
-status: review
+status: done
 needs_input: true
 priority: p2
 area: server
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/strip-ansi-markdown-rendering-from-agent
 created_at: "2026-08-13T06:15:56Z"
-updated_at: "2026-08-13T11:16:14Z"
+updated_at: "2026-08-13T11:21:22Z"
 ---
 ## Activity
 
@@ -85,3 +85,4 @@ task or doc, ever.
 - 2026-08-13T09:46:05Z · watchdog: automatic resume attempted
 - 2026-08-13T09:52:05Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T11:16:14Z · status active→review
+- 2026-08-13T11:21:22Z · status review→done, release:success
