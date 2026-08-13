@@ -3,6 +3,7 @@ id: "0024"
 title: "Improve global search with doc contents, fuzzy matching, history, and status cues"
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
@@ -106,3 +107,4 @@ folded into this task rather than retaining a second search-polish task.
 - 2026-08-13T09:46:04Z · watchdog: automatic resume attempted
 - 2026-08-13T09:51:04Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T09:58:23Z · status active→review, needs_input
+- 2026-08-13T09:58:23Z · needs_merge
