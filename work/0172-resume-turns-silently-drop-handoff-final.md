@@ -3,13 +3,14 @@ id: "0172"
 title: Resume turns silently drop handoff finalization because session task/branch are never persisted
 type: bug
 status: active
+needs_input: true
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/resume-turns-silently-drop-handoff-final
 created_at: "2026-08-13T13:55:49Z"
-updated_at: "2026-08-13T14:04:40Z"
+updated_at: "2026-08-13T14:27:30Z"
 ---
 ## Problem
 
@@ -40,3 +41,5 @@ Any turn — start or resume — that ends with the handoff signal runs server-s
 - 2026-08-13T13:55:49Z · created · unknown
 - 2026-08-13T14:00:30Z · status inbox→ready
 - 2026-08-13T14:04:40Z · status ready→active, branch
+- 2026-08-13T14:22:30Z · watchdog: automatic resume attempted
+- 2026-08-13T14:27:30Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
