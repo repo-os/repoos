@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
@@ -31,13 +31,22 @@ const defaultState: BuiltInAgentState = {
   schedule: "manual",
 };
 
-const builtInAgents = computed(() => {
-  const data = config.data as Record<string, unknown> | null;
-  return (data?.builtInAgents as Record<string, unknown>) || {};
-});
+const state = ref<BuiltInAgentState>({ ...defaultState });
 
-const state = ref<BuiltInAgentState>(
-  (builtInAgents.value[props.agent] as BuiltInAgentState) || defaultState,
+// Keeps the card in sync with persisted config: config.data may be empty when
+// the component mounts, and another tab can change builtInAgents at any time.
+// Merge the server's value over local state on every change rather than
+// initializing once (stale-state fix from review).
+watch(
+  () => {
+    const data = config.data as Record<string, unknown> | null;
+    return data?.builtInAgents as Record<string, unknown> | undefined;
+  },
+  (agents) => {
+    const persisted = agents?.[props.agent] as BuiltInAgentState | undefined;
+    if (persisted) state.value = { ...defaultState, ...persisted };
+  },
+  { immediate: true, deep: true },
 );
 
 const isRunning = ref(false);
@@ -96,6 +105,7 @@ async function updateSchedule(value: string | undefined): Promise<void> {
 }
 
 async function runNow(): Promise<void> {
+  if (isRunning.value) return;
   isRunning.value = true;
   error.value = "";
   message.value = "";
@@ -103,10 +113,25 @@ async function runNow(): Promise<void> {
     const response = (await api(
       `/api/agents/built-in/${props.agent}/run`,
       JSON_OPTS("POST", {}),
-    )) as { ok: boolean; taskCount: number };
+    )) as {
+      ok: boolean;
+      taskCount: number;
+      failed?: number;
+      errors?: string[];
+      issuesFound?: number;
+      scannedFiles?: number;
+    };
     if (response.ok) {
       state.value.lastRunAt = new Date().toISOString();
-      message.value = `Scan complete — ${response.taskCount} tech debt issues found and added to inbox.`;
+      if (response.failed && response.failed > 0) {
+        error.value = `${response.taskCount} task(s) created, ${response.failed} failed — ${
+          (response.errors ?? []).join("; ") || "unknown write error"
+        }`;
+      } else if (response.taskCount > 0) {
+        message.value = `Scan complete — ${response.taskCount} tech debt task(s) created from ${response.issuesFound ?? 0} issue(s).`;
+      } else {
+        message.value = `Scan complete — no tech debt issues found (${response.scannedFiles ?? 0} files scanned).`;
+      }
       await saveState();
     } else {
       error.value = "Failed to run agent";

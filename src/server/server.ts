@@ -65,6 +65,8 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  sanitizeBuiltInAgents,
+  saveBuiltInAgentsConfig,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -765,6 +767,38 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   taskWatchdog = new TaskWatchdog(config, index, runner);
   taskWatchdog.start();
 
+  // Built-in agent scheduling (0131): a single in-flight guard shared with the
+  // manual /run endpoint, checked once a minute. An enabled agent whose
+  // daily/weekly schedule is due runs exactly one scan per tick; scheduled and
+  // manual runs can never overlap. Errors only log — the scheduler is
+  // best-effort and must never crash the poll loop.
+  const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
+  const builtInRun = { inFlight: false };
+  const builtInTimer = setInterval(() => {
+    if (builtInRun.inFlight) return;
+    const agents = repoos.config.builtInAgents ?? {};
+    for (const [name, state] of Object.entries(agents)) {
+      if (!isDueForScheduledRun(state)) continue;
+      builtInRun.inFlight = true;
+      void runTechDebtAgent(repoos.config)
+        .then((result) => {
+          if (result.failed > 0) {
+            console.error(
+              `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
+            );
+          }
+        })
+        .catch((err) => {
+          console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
+        })
+        .finally(() => {
+          builtInRun.inFlight = false;
+          index.refreshAll();
+        });
+      break; // one built-in agent per tick
+    }
+  }, BUILT_IN_CHECK_INTERVAL_MS);
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
@@ -1076,14 +1110,30 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (builtInMatch && method === "POST") {
         const agentName = builtInMatch[1];
         if (agentName === "tech-debt") {
+          // Manual and scheduled runs share one in-flight guard, so two scans
+          // can never overlap and block the server twice over.
+          if (builtInRun.inFlight) {
+            return json(res, 409, {
+              error: "A tech debt scan is already running — wait for it to finish",
+            });
+          }
+          builtInRun.inFlight = true;
           try {
-            const issues = scanForTechDebt(config);
-            const taskCount = await createTechDebtTasks(config, issues);
+            const result = await runTechDebtAgent(config);
             index.refreshAll();
-            return json(res, 200, { ok: true, taskCount });
+            return json(res, 200, {
+              ok: true,
+              taskCount: result.created,
+              failed: result.failed,
+              errors: result.errors,
+              issuesFound: result.issuesFound,
+              scannedFiles: result.scannedFiles,
+            });
           } catch (err) {
             const message = err instanceof Error ? err.message : "Failed to run tech debt scan";
             return json(res, 500, { error: message });
+          } finally {
+            builtInRun.inFlight = false;
           }
         } else {
           return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
@@ -1905,6 +1955,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           patch.agents = list;
         }
 
+        // Built-in agent state (0131) is a JSON sidecar, not a TOML field —
+        // handle it outside the schema loop like `agents`.
+        let builtInAgentsHandled = false;
+        if (body.builtInAgents !== undefined) {
+          if (
+            typeof body.builtInAgents !== "object" ||
+            body.builtInAgents === null ||
+            Array.isArray(body.builtInAgents)
+          ) {
+            return json(res, 400, {
+              error: "builtInAgents must be an object of { enabled, schedule, lastRunAt } entries",
+            });
+          }
+          const sanitized = sanitizeBuiltInAgents(body.builtInAgents);
+          saveBuiltInAgentsConfig(config.root, sanitized, config.cacheDir);
+          builtInAgentsHandled = true;
+        }
+
         // Validate every field against the schema
         const schema = getConfigSchema();
         for (const field of schema) {
@@ -1950,7 +2018,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
         delete patch.tunnelEnabled;
 
-        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined) {
+        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsHandled) {
           return json(res, 400, { error: "No valid fields to update" });
         }
 
@@ -2128,6 +2196,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(builtInTimer);
         runner.dispose();
         throw err;
       }
@@ -2143,6 +2212,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(builtInTimer);
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
