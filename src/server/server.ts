@@ -20,6 +20,8 @@
  *   POST /api/chat/message     -> start or continue the persistent repository chat
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
  *   POST /api/tasks/freeform   -> create from a freeform explanation via the PM agent
+ *   POST /api/docs/create      -> create a document { path, content }
+ *   POST /api/docs/freeform    -> create a document from description via the PM agent
  *   PATCH/api/tasks/:id        -> patch   { status?, title?, ... }
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active);
  *                                also relaunches a paused active task (stays active)
@@ -43,7 +45,7 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants, writeFileSync, mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { connect } from "node:net";
@@ -72,6 +74,7 @@ import {
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   patchTaskFile,
   deleteTaskFile,
@@ -90,6 +93,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { parseDocument } from "../core/frontmatter.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
@@ -533,6 +537,43 @@ function safeRepoFile(root: string, urlPath: string): string | null {
   return abs;
 }
 
+/** Build the PM agent's prompt from a document description. */
+function docFreeformPrompt(description: string): string {
+  return [
+    "You are the PM agent for RepoOS. Turn the user's description into a well-formatted,",
+    "complete Markdown document.",
+    "",
+    "The user's description:",
+    "",
+    "```",
+    description.trim(),
+    "```",
+    "",
+    "Respond with a frontmatter block giving the destination path, then the document",
+    "body, like:",
+    "---",
+    "path: docs/my-doc.md   # or e.g. docs/adr/0001-title.md — relative to the repo root",
+    "---",
+    "",
+    "# Title",
+    "The rest of the markdown document content goes here.",
+    "",
+    "Respond with ONLY the frontmatter block and the document content, starting with the",
+    "opening '---' line and with no preamble, commentary, or code fences.",
+  ].join("\n");
+}
+
+/** Parse the PM agent's generated document response (frontmatter `path` + markdown body). */
+function parseGeneratedDocument(output: string): { path: string; content: string } {
+  const { data, body, hadFrontmatter } = parseDocument(output.trim());
+  const path = hadFrontmatter && typeof data.path === "string" ? data.path.trim() : "";
+  const content = body.trim();
+  if (path && content) {
+    return { path, content };
+  }
+  return { path: "", content: "" };
+}
+
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
@@ -567,6 +608,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   const watcher = new WorkWatcher(config, index);
   watcher.start();
+
+  // Task watchdog will be initialized after runner is created
+  let taskWatchdog: TaskWatchdog | null = null;
 
   // active SSE clients
   const clients = new Set<ServerResponse>();
@@ -719,6 +763,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* sampling is best-effort — never crash the poll loop */
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
+
+  // Task watchdog: detect and handle stuck active tasks
+  taskWatchdog = new TaskWatchdog(config, index, runner);
+  taskWatchdog.start();
 
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
@@ -1397,6 +1445,96 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           task: index.getTask(created.id),
         });
       }
+      if (path === "/api/docs/create" && method === "POST") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        if (!body.path || typeof body.path !== "string") {
+          return json(res, 400, { error: "path is required" });
+        }
+        if (!body.content || typeof body.content !== "string") {
+          return json(res, 400, { error: "content is required" });
+        }
+        const docPath = body.path as string;
+        if (docPath.includes("..") || docPath.startsWith("/")) {
+          return json(res, 400, { error: "invalid path" });
+        }
+        const absPath = join(config.root, docPath);
+        const dir = dirname(absPath);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(absPath, body.content as string, "utf8");
+        return json(res, 201, { ok: true });
+      }
+      if (path === "/api/docs/freeform" && method === "POST") {
+        const body = (await readBody(req)) as Record<string, unknown>;
+        const description = typeof body?.description === "string" ? body.description.trim() : "";
+        if (!description) {
+          return json(res, 400, { error: "description is required" });
+        }
+        const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
+
+        let pm: Agent | null;
+        const freeformAgentName =
+          typeof body?.agentOverride === "string" && body.agentOverride
+            ? body.agentOverride
+            : undefined;
+        const freeformCli =
+          typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+        const freeformModel =
+          typeof body?.modelOverride === "string" && body.modelOverride
+            ? body.modelOverride
+            : undefined;
+        const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
+
+        if (hasFreeformOverride) {
+          const list = agentsForConfig(config);
+          const baseName = freeformAgentName || "pm";
+          const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+          pm = base
+            ? {
+                ...base,
+                ...(freeformCli ? { cli: freeformCli } : {}),
+                ...(freeformModel ? { model: freeformModel } : {}),
+              }
+            : null;
+        } else {
+          pm = resolvePmAgent(config);
+        }
+        if (!pm) {
+          return json(res, 400, { ok: false, reason: "No PM agent is configured" });
+        }
+
+        const result = await runPrompt(pm, docFreeformPrompt(description), {
+          cwd: config.root,
+          onLine: runId
+            ? (line) => {
+                emitEvent({
+                  type: "agent.output",
+                  id: runId,
+                  entry: { s: "out", d: line },
+                  stream: "out",
+                  at: new Date().toISOString(),
+                });
+              }
+            : undefined,
+        });
+        if (!result.ok || !result.output) {
+          return json(res, 400, {
+            ok: false,
+            reason: result.error ?? "the PM agent returned no usable output",
+          });
+        }
+        const { path: docPath, content } = parseGeneratedDocument(result.output);
+        if (!docPath || !content) {
+          return json(res, 400, {
+            ok: false,
+            reason: "the PM agent returned unusable output (missing path or content)",
+          });
+        }
+        const absPath = join(config.root, docPath);
+        const dir = dirname(absPath);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(absPath, content, "utf8");
+        return json(res, 201, { ok: true, path: docPath });
+      }
       if (taskMatch && method === "PATCH") {
         const existing = index.getTask(taskMatch[1]);
         if (!existing) {
@@ -1484,7 +1622,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               });
             }
           }
-          const wtRes = ensureWorktree(config.root, branch);
+          const wtRes = ensureWorktree(config.root, branch, existing.path);
           const patch: TaskPatch = { status: "active", needsInput: false };
           if (!existing.branch) patch.branch = branch;
           const updated = patchTaskFile(config, existing.absPath, patch, {
@@ -2134,6 +2272,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeNeedsInput();
           unsubscribeAutoEngineering();
           watcher.stop();
+          taskWatchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no

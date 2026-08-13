@@ -834,6 +834,46 @@ export const useRepoStore = defineStore("repo", () => {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
+  /** Create a document manually with the provided path and content. */
+  async function createDocument(form: {
+    path: string;
+    content: string;
+  }): Promise<{ ok: true }> {
+    return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
+  }
+
+  /** Create a document via the PM agent from a freeform description. */
+  async function createFreeformDocument(
+    description: string,
+    runId?: string,
+    overrides?: { agent?: string; cli?: string; model?: string },
+  ): Promise<{
+    ok: boolean;
+    fallback?: boolean;
+    fallbackReason?: "no-pm-agent" | "agent-failed";
+    reason?: string;
+    path?: string;
+  }> {
+    const body: Record<string, unknown> = { description };
+    if (runId) body.runId = runId;
+    if (overrides?.agent) body.agentOverride = overrides.agent;
+    if (overrides?.cli) body.cliOverride = overrides.cli;
+    if (overrides?.model) body.modelOverride = overrides.model;
+    const r = await api<{
+      ok: boolean;
+      fallback?: boolean;
+      fallbackReason?: "no-pm-agent" | "agent-failed";
+      reason?: string;
+      path?: string;
+    }>("/api/docs/freeform", JSON_OPTS("POST", body));
+    if (!r.ok) {
+      const message = r.reason ?? "could not create document";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    return r;
+  }
+
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
@@ -904,6 +944,8 @@ export const useRepoStore = defineStore("repo", () => {
     uploadScreenshot,
     createFreeformTask,
     deleteTask,
+    createDocument,
+    createFreeformDocument,
     isRunning,
     startWork,
     pauseWork,

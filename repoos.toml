@@ -6,7 +6,7 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "dark"
+theme = "light"
 strictBuild = false
 uiTheme = "clear"
 ntfyEnabled = true
@@ -19,7 +19,6 @@ enabled = true
 name = "repoos-local"
 domain = "dev"
 tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
-
 [[agents]]
 name = "engineer"
 cli = "claude code"
@@ -34,8 +33,8 @@ enabled = true
 instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
 [[agents]]
 name = "pm"
-cli = "claude code"
-model = "haiku"
+cli = "kiro"
+model = "qwen3-coder-next"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]

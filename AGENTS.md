@@ -136,3 +136,34 @@ never created and all work landed on `main`. Lessons:
   first (stash, branch, re-apply if needed).
 - Once `repoos start` exists, worktree creation is RepoOS's job, not yours —
   don't hand-roll git setup for a task.
+
+## Stuck-active incident (#0151): worktree missing its own task file
+
+A task can get permanently stuck `active`, failing finalization with
+`task file is missing from the registered worktree`, retry included. Root
+cause (confirmed via git history, not guessed): task creation writes the file
+to disk and commits it to `main` (`docs(<id>): add task`), but that commit can
+silently fail (`commitTaskFile` is fail-soft) while the file is still visible
+everywhere else — API, UI, `repoos list`. If `/start` runs before a retried
+commit lands, `ensureWorktree` cuts the branch from a `main` HEAD that doesn't
+have the file yet. Once that worktree/branch exists, plain reuse never
+re-checks freshness, so every future start/resume hands back the same
+file-less worktree forever — a stuck task cannot self-recover.
+
+Fixed in `ensureWorktree` (`src/core/git.ts`): whichever worktree it resolves
+(new or reused) is now healed if the task's own file is missing from it — copy
+main's current version in and commit it on the worktree's branch, narrowly
+scoped to that one file so in-progress work is never touched. This should mean
+you never see this failure mode again; if you do, that's a bug in the heal
+itself, not something to work around by hand. **Do not "fix" a stuck task by
+manually copying the file into the worktree** — that papers over the same
+symptom without checking whether the healing logic ran or why it didn't; file
+it as a bug against `ensureWorktree` instead, and use `git ls-tree
+<worktree-branch> -- work/<file>.md` to confirm the file is genuinely absent
+from history (not just stale) before concluding it's the same issue.
+
+Related, softer version of the same gap: because `patchTaskFile` (status
+transitions, e.g. `ready`→`active`) commits only to `main`, a worktree's own
+copy of its task file can legitimately lag main's frontmatter (stale
+`status`/`branch`/`updated_at`) even when the file itself is present — this is
+expected, not a bug, and does not block review/done.

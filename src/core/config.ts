@@ -9,7 +9,7 @@ import type { Agent, RepoOSConfig, Status, Assignee, Theme, UiTheme } from "./ty
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
-export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "codex", "github copilot"] as const;
+export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "kiro", "codex", "github copilot"] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
