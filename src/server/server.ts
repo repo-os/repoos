@@ -25,6 +25,7 @@
  *                                also relaunches a paused active task (stays active)
  *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
+ *   POST /api/tasks/:id/pm/message -> send a message to the PM agent about this task
  *   GET  /api/tasks/:id/output -> { lines, stats } the retained transcript + live run stats (0080)
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's
  *                                 review report + reviewer conversation for a task in `review`
@@ -140,6 +141,7 @@ import {
   getTaskReview,
   reviewAgain,
   reviewMessage,
+  pmMessage,
   getScreenshot,
   uploadScreenshot,
   // Config routes
@@ -946,6 +948,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
 

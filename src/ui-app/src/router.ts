@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import DashboardView from "./views/DashboardView.vue";
 import WorkView from "./views/WorkView.vue";
 import ContextView from "./views/ContextView.vue";
+import ProductManagerView from "./views/ProductManagerView.vue";
 import SettingsView from "./views/SettingsView.vue";
 import AgentsView from "./views/AgentsView.vue";
 
@@ -11,6 +12,7 @@ export const router = createRouter({
     { path: "/", name: "dashboard", component: DashboardView },
     { path: "/work", name: "work", component: WorkView },
     { path: "/repo", name: "repo", component: ContextView },
+    { path: "/pm", name: "pm", component: ProductManagerView },
     { path: "/settings", name: "settings", component: SettingsView },
     { path: "/agents", name: "agents", component: AgentsView },
     { path: "/:pathMatch(.*)*", redirect: "/" },

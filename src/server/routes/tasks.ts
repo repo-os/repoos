@@ -608,3 +608,73 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
   void reviews.send(existing, text);
   return json(res, 200, { ok: true });
 };
+
+export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index, runner } = ctx;
+  const id = params.param1;
+  const existing = index.getTask(id);
+  if (!existing) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+
+  const pmSessionId = `pm-task:${id}`;
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  if (!text) {
+    return json(res, 400, { error: "message text is required" });
+  }
+
+  // Build a one-shot agent override for this PM request
+  const pmAgentName =
+    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
+  const pmCli = typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+  const pmModel = typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+  const hasPmOverride = pmAgentName || pmCli || pmModel;
+
+  // Resolve the PM agent, applying any one-shot override
+  let pm: Agent | null;
+  if (hasPmOverride) {
+    const list = agentsForConfig(config);
+    const baseName = pmAgentName || "pm";
+    const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+    pm = base
+      ? {
+          ...base,
+          ...(pmCli ? { cli: pmCli } : {}),
+          ...(pmModel ? { model: pmModel } : {}),
+        }
+      : null;
+  } else {
+    pm = resolvePmAgent(config);
+  }
+  if (!pm) {
+    return json(res, 400, {
+      error: "PM agent is not configured — enable it on the Agents page",
+    });
+  }
+
+  // Build context about the current task for the PM
+  const taskContext = `Task #${id}: ${existing.title}
+Status: ${existing.status}
+Priority: ${existing.priority || "unset"}
+Area: ${existing.area || "unset"}
+Type: ${existing.type || "unset"}
+
+Description:
+${existing.body || "(no description)"}`;
+
+  const existing_session = runner.output(pmSessionId);
+  const result = existing_session
+    ? runner.send(pmSessionId, text, pm, {
+        resumePreamble: `Task context:\n${taskContext}`,
+      })
+    : runner.startChat(pmSessionId, text, pm, taskContext);
+
+  if (!result.ok && result.busy) {
+    return json(res, 409, { error: result.reason ?? "PM is busy" });
+  }
+  if (!result.ok) {
+    return json(res, 400, { error: result.reason ?? "could not send message to PM" });
+  }
+  return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+};
