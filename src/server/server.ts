@@ -27,6 +27,7 @@
  *                                also relaunches a paused active task (stays active)
  *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
  *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
+ *   POST /api/tasks/:id/pm/message -> send a message to the PM agent about this task
  *   GET  /api/tasks/:id/output -> { lines, stats } the retained transcript + live run stats (0080)
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's
  *                                 review report + reviewer conversation for a task in `review`
@@ -1363,6 +1364,80 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         void reviews.send(existing, text);
         return json(res, 200, { ok: true });
+      }
+      const pmMessageMatch = path.match(/^\/api\/tasks\/([^/]+)\/pm\/message$/);
+      if (pmMessageMatch && method === "POST") {
+        const id = pmMessageMatch[1];
+        const existing = index.getTask(id);
+        if (!existing) {
+          return json(res, 404, { error: `Task #${id} not found` });
+        }
+        const pmSessionId = `pm-task:${id}`;
+        const body = (await readBody(req)) as Record<string, unknown>;
+        const text = typeof body?.text === "string" ? body.text.trim() : "";
+        if (!text) {
+          return json(res, 400, { error: "message text is required" });
+        }
+
+        // Build a one-shot agent override for this PM request
+        const pmAgentName =
+          typeof body?.agentOverride === "string" && body.agentOverride
+            ? body.agentOverride
+            : undefined;
+        const pmCli =
+          typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+        const pmModel =
+          typeof body?.modelOverride === "string" && body.modelOverride
+            ? body.modelOverride
+            : undefined;
+        const hasPmOverride = pmAgentName || pmCli || pmModel;
+
+        // Resolve the PM agent, applying any one-shot override
+        let pm: Agent | null;
+        if (hasPmOverride) {
+          const list = agentsForConfig(config);
+          const baseName = pmAgentName || "pm";
+          const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+          pm = base
+            ? {
+                ...base,
+                ...(pmCli ? { cli: pmCli } : {}),
+                ...(pmModel ? { model: pmModel } : {}),
+              }
+            : null;
+        } else {
+          pm = resolvePmAgent(config);
+        }
+        if (!pm) {
+          return json(res, 400, {
+            error: "PM agent is not configured — enable it on the Agents page",
+          });
+        }
+
+        // Build context about the current task for the PM
+        const taskContext = `Task #${id}: ${existing.title}
+Status: ${existing.status}
+Priority: ${existing.priority || "unset"}
+Area: ${existing.area || "unset"}
+Type: ${existing.type || "unset"}
+
+Description:
+${existing.body || "(no description)"}`;
+
+        const existing_session = runner.output(pmSessionId);
+        const result = existing_session
+          ? runner.send(pmSessionId, text, pm, {
+              resumePreamble: `Task context:\n${taskContext}`,
+            })
+          : runner.startChat(pmSessionId, text, pm, taskContext);
+
+        if (!result.ok && result.busy) {
+          return json(res, 409, { error: result.reason ?? "PM is busy" });
+        }
+        if (!result.ok) {
+          return json(res, 400, { error: result.reason ?? "could not send message to PM" });
+        }
+        return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
       }
       const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
       if (taskMatch && method === "GET") {
