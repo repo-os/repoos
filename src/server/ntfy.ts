@@ -44,9 +44,17 @@ export function ntfyMessageForNeedsInput(title: string): string {
 
 /** True when notifications are enabled AND a topic is configured. */
 export function shouldSend(config: RepoOSConfig): boolean {
-  if (config.ntfyEnabled !== true) return false;
+  if (config.ntfyEnabled !== true) {
+    console.log(`[ntfy] Notifications disabled (ntfyEnabled=${config.ntfyEnabled})`);
+    return false;
+  }
   const topic = (config.ntfyTopic ?? "").trim();
-  return topic.length > 0;
+  if (topic.length === 0) {
+    console.log(`[ntfy] No topic configured (ntfyTopic="${config.ntfyTopic}")`);
+    return false;
+  }
+  console.log(`[ntfy] Notifications enabled for topic: ${topic}`);
+  return true;
 }
 
 /** Best-effort publish of a message to the configured topic. Never throws. */
@@ -58,8 +66,9 @@ export function publish(config: RepoOSConfig, message: string): void {
     method: "POST",
     headers: { "Content-Type": "text/plain", Title: "RepoOS" },
     body: message,
-  }).catch(() => {
-    // Best-effort: a failed notification must never surface to the user.
+  }).catch((err) => {
+    // Log errors for debugging, but never throw
+    console.error(`[ntfy] Failed to send notification to ${url}:`, err);
   });
 }
 
@@ -71,7 +80,12 @@ export function notifyStatusChange(
   next: Status,
 ): void {
   const message = ntfyMessageFor(prev, next, task.title);
-  if (message) publish(config, message);
+  if (message) {
+    console.log(`[ntfy] Sending notification for ${task.id}: ${prev} → ${next}`);
+    publish(config, message);
+  } else {
+    console.log(`[ntfy] No notification for ${task.id}: ${prev} → ${next} (no message configured)`);
+  }
 }
 
 /** Fire a notification when a task is created (stretch from #0134). */

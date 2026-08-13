@@ -6,7 +6,7 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
     let message = r.statusText;
     try {
       const body = await r.json();
-      if (body && body.error) message = body.error;
+      if (body && (body.error || body.reason)) message = body.error ?? body.reason;
     } catch {
       /* keep statusText */
     }
