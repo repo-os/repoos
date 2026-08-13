@@ -866,17 +866,45 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
+
+  // Dedup "New" + "Started" notifications (#0161): when a task is created and
+  // immediately started, send only "Started". Track created tasks and suppress
+  // the "New" notification if they're started within a brief window.
+  const createdTasks = new Map<string, { task: Task; timeout: NodeJS.Timeout }>();
+
   const unsubscribeCleanup = index.on((e) => {
     // Optional ntfy push notifications hang off the index stream for the same
     // reason the cleanup does: it is the one place every transition surfaces,
     // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
-      notifyTaskCreated(config, e.task);
+      // Track this task: if it's started within 500ms, suppress the "New" notification
+      const timeout = setTimeout(() => {
+        const created = createdTasks.get(e.task.id);
+        if (created) {
+          createdTasks.delete(e.task.id);
+          // Timeout expired without a start — send the "New" notification now
+          notifyTaskCreated(config, e.task);
+        }
+      }, 500);
+      createdTasks.set(e.task.id, { task: e.task, timeout });
       return;
     }
     if (e.type !== "task.updated") return;
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
+
+    // Dedup: if this is a "ready → active" (Start) for a recently created task,
+    // skip sending "New" and just send "Started"
+    const created = createdTasks.get(e.task.id);
+    if (created && prev === "ready" && e.task.status === "active") {
+      clearTimeout(created.timeout);
+      createdTasks.delete(e.task.id);
+      // Only send "Started", not "New"
+      onStatusChange(e.task, prev, e.task.status);
+      notifyStatusChange(config, e.task, prev, e.task.status);
+      return;
+    }
+
     onStatusChange(e.task, prev, e.task.status);
     notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing

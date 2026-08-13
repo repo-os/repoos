@@ -110,5 +110,4 @@ The underlying activity log still records both events. Push should report meanin
 
 - 2026-08-13T11:51:10Z · created · unknown
 - 2026-08-13T11:53:39Z · status inbox→ready
-- 2026-08-13T11:53:41Z · status ready→active, branch
-- 2026-08-13T11:58:43Z · status active→review
+- 2026-08-13T11:58:43Z · status ready→review, branch

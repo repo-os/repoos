@@ -1,15 +1,19 @@
 /**
- * ntfy notification decisions (#0134): which transitions produce a message,
- * that sending is gated on the enabled toggle + a non-empty topic, and that
- * the base URL honors NTFY_BASE_URL / ntfyBaseUrl with https://ntfy.sh as the
- * default. The publish itself is never exercised against a real endpoint.
+ * ntfy notification redesign (#0161): scannable one-line notifications with
+ * emoji + short event + title, priority tiers, and create+start dedup. Tests
+ * verify which transitions produce notifications, the new message format, title
+ * truncation, priority headers, and the optional subtitle for "Needs you".
+ * Sending is gated on the enabled toggle + a non-empty topic. The publish
+ * itself is never exercised against a real endpoint.
  */
 import { afterEach, describe, expect, it } from "vitest";
 import type { RepoOSConfig, Status, Task } from "../../core/types";
 import {
   ntfyBaseUrl,
-  ntfyMessageFor,
-  ntfyMessageForNeedsInput,
+  notificationForStatusChange,
+  notificationForTaskCreated,
+  notificationForNeedsInput,
+  formatNotification,
   notifyStatusChange,
   notifyTaskCreated,
   notifyNeedsInput,
@@ -65,32 +69,20 @@ function task(title = "Fix the widget"): Task {
   };
 }
 
-describe("ntfyMessageFor", () => {
-  it("returns a message for ready -> active", () => {
-    expect(ntfyMessageFor("ready", "active", "Fix it")).toBe(
-      'Task "Fix it" started (ready → active)',
-    );
+describe("notificationForStatusChange", () => {
+  it("returns Started for ready -> active with low priority", () => {
+    const spec = notificationForStatusChange("ready", "active");
+    expect(spec).toEqual({ headline: "▶️ Started", priority: "low" });
   });
 
-  it("returns a message for active -> review", () => {
-    expect(ntfyMessageFor("active", "review", "Fix it")).toBe(
-      'Task "Fix it" moved from active to review',
-    );
+  it("returns Done for active -> done with low priority", () => {
+    const spec = notificationForStatusChange("active", "done");
+    expect(spec).toEqual({ headline: "✅ Done", priority: "low" });
   });
 
-  it("returns a message for review -> done (approved)", () => {
-    expect(ntfyMessageFor("review", "done", "Fix it")).toBe(
-      'Task "Fix it" moved from review to done (review approved)',
-    );
-  });
-
-  it("returns a message when review is returned with issues", () => {
-    expect(ntfyMessageFor("review", "active", "Fix it")).toBe(
-      'Task "Fix it" review returned with issues — moved back from review to active',
-    );
-    expect(ntfyMessageFor("review", "ready", "Fix it")).toBe(
-      'Task "Fix it" review returned with issues — moved back from review to ready',
-    );
+  it("returns Done for review -> done with low priority", () => {
+    const spec = notificationForStatusChange("review", "done");
+    expect(spec).toEqual({ headline: "✅ Done", priority: "low" });
   });
 
   it("returns null for transitions that do not warrant a notification", () => {
@@ -99,17 +91,56 @@ describe("ntfyMessageFor", () => {
       ["active", "active"],
       ["done", "active"],
       ["draft", "inbox"],
+      ["active", "review"],
+      ["review", "active"],
     ] as [Status, Status][]) {
-      expect(ntfyMessageFor(prev, next, "Fix it")).toBeNull();
+      expect(notificationForStatusChange(prev, next)).toBeNull();
     }
   });
 });
 
-describe("ntfyMessageForNeedsInput", () => {
-  it("returns a message for task needing human input", () => {
-    expect(ntfyMessageForNeedsInput("Fix it")).toBe(
-      'Task "Fix it" is waiting for human input',
-    );
+describe("notificationForTaskCreated", () => {
+  it("returns New with low priority", () => {
+    const spec = notificationForTaskCreated();
+    expect(spec).toEqual({ headline: "🆕 New", priority: "low" });
+  });
+});
+
+describe("notificationForNeedsInput", () => {
+  it("returns Needs you with high priority and subtitle", () => {
+    const spec = notificationForNeedsInput();
+    expect(spec).toEqual({
+      headline: "🙋 Needs you",
+      priority: "high",
+      subtitle: "Agent is waiting for your decision",
+    });
+  });
+});
+
+describe("formatNotification", () => {
+  it("formats a simple notification as emoji + event · title", () => {
+    const spec = { headline: "▶️ Started", priority: "low" as const };
+    const msg = formatNotification(spec, "Add file tree navigation");
+    expect(msg).toBe("▶️ Started · Add file tree navigation");
+  });
+
+  it("truncates long titles to fit on one line", () => {
+    const spec = { headline: "▶️ Started", priority: "low" as const };
+    const longTitle = "Add file tree navigation and refresh button and context menu to context page and activity log";
+    const msg = formatNotification(spec, longTitle);
+    expect(msg.length).toBeLessThanOrEqual(60); // ~50 char target + some buffer
+    expect(msg).toContain("…");
+    expect(msg.startsWith("▶️ Started · ")).toBe(true);
+  });
+
+  it("includes subtitle on a second line when provided", () => {
+    const spec = {
+      headline: "🙋 Needs you",
+      priority: "high" as const,
+      subtitle: "Agent is waiting for your decision",
+    };
+    const msg = formatNotification(spec, "Pick auth method");
+    expect(msg).toBe("🙋 Needs you · Pick auth method\nAgent is waiting for your decision");
   });
 });
 
@@ -143,11 +174,11 @@ describe("ntfyBaseUrl", () => {
 });
 
 describe("notifyStatusChange / notifyTaskCreated", () => {
-  const sent: { url: string; body: string }[] = [];
+  const sent: { url: string; body: string; headers: Record<string, string> }[] = [];
   const stubFetch = (): void => {
     // @ts-expect-error — global fetch is not typed in the jsdom test env
-    globalThis.fetch = (url: string, init: { body?: string }) => {
-      sent.push({ url, body: init?.body ?? "" });
+    globalThis.fetch = (url: string, init: { body?: string; headers?: Record<string, string> }) => {
+      sent.push({ url, body: init?.body ?? "", headers: init?.headers ?? {} });
       return Promise.resolve({ ok: true, status: 200 });
     };
   };
@@ -174,17 +205,31 @@ describe("notifyStatusChange / notifyTaskCreated", () => {
     expect(sent).toHaveLength(0);
   });
 
-  it("posts a transition message to https://ntfy.sh/<topic> when enabled", () => {
+  it("sends Started notification to https://ntfy.sh/<topic> with low priority", () => {
+    stubFetch();
+    notifyStatusChange(
+      config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      task("Add file tree navigation"),
+      "ready",
+      "active",
+    );
+    expect(sent).toHaveLength(1);
+    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
+    expect(sent[0].body).toBe("▶️ Started · Add file tree navigation");
+    expect(sent[0].headers.Priority).toBe("low");
+  });
+
+  it("sends Done notification with low priority", () => {
     stubFetch();
     notifyStatusChange(
       config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }),
       task("Fix the widget"),
       "active",
-      "review",
+      "done",
     );
     expect(sent).toHaveLength(1);
-    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
-    expect(sent[0].body).toBe('Task "Fix the widget" moved from active to review');
+    expect(sent[0].body).toBe("✅ Done · Fix the widget");
+    expect(sent[0].headers.Priority).toBe("low");
   });
 
   it("posts to a configured base URL when set", () => {
@@ -198,28 +243,25 @@ describe("notifyStatusChange / notifyTaskCreated", () => {
     expect(sent[0].url).toBe("https://ntfy.example.com/repoos_test");
   });
 
-  it("sends a notification for ready -> active transition", () => {
-    stubFetch();
-    notifyStatusChange(config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }), task(), "ready", "active");
-    expect(sent).toHaveLength(1);
-    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
-    expect(sent[0].body).toBe('Task "Fix the widget" started (ready → active)');
-  });
-
-  it("sends a created notification for a new task", () => {
+  it("sends New notification for a created task with low priority", () => {
     stubFetch();
     notifyTaskCreated(config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }), task("Ship it"));
     expect(sent).toHaveLength(1);
     expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
-    expect(sent[0].body).toBe('Task "Ship it" created');
+    expect(sent[0].body).toBe("🆕 New · Ship it");
+    expect(sent[0].headers.Priority).toBe("low");
   });
 
-  it("sends a needs input notification", () => {
+  it("sends Needs you notification with high priority and subtitle", () => {
     stubFetch();
-    notifyNeedsInput(config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }), task("Fix the widget"));
+    notifyNeedsInput(
+      config({ ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      task("Fix the widget"),
+    );
     expect(sent).toHaveLength(1);
     expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
-    expect(sent[0].body).toBe('Task "Fix the widget" is waiting for human input');
+    expect(sent[0].body).toBe("🙋 Needs you · Fix the widget\nAgent is waiting for your decision");
+    expect(sent[0].headers.Priority).toBe("high");
   });
 
   it("never sends needs input notification when disabled", () => {
