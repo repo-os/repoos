@@ -2,7 +2,7 @@
 id: "0156"
 title: "Watchdog for stuck active tasks: retry handoff, then escalate to human"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/watchdog-for-stuck-active-tasks-retry-ha
 cli_override: opencode
 model_override: opencode/big-pickle
 created_at: "2026-08-13T06:47:22Z"
-updated_at: "2026-08-13T09:19:39Z"
+updated_at: "2026-08-13T09:39:45Z"
 ---
 ## Activity
 
@@ -127,3 +127,4 @@ stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
 - 2026-08-13T09:18:41Z · cli_override, model_override
 - 2026-08-13T09:18:48Z · cli_override, model_override
 - 2026-08-13T09:19:35Z · model_override
+- 2026-08-13T09:39:45Z · status active→review
