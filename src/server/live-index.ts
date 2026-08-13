@@ -10,7 +10,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
-import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
+import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
@@ -74,6 +74,8 @@ export type RepoEvent =
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
   | { type: "reload.failed"; reason: string; at: string }
+  /** Supervisor heartbeat report (0112). */
+  | { type: "supervisor.heartbeat"; heartbeat: SupervisorHeartbeat; at: string }
   | { type: "hello"; taskCount: number; at: string }
   | { type: "system.stats"; stats: SystemStats };
 
