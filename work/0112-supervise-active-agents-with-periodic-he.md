@@ -2,14 +2,14 @@
 id: "0112"
 title: "Supervise active agents with periodic health checks, safe recovery, and heartbeat reports"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: AI
 created_by: ""
-branch: ""
+branch: feat/supervise-active-agents-with-periodic-he
 created_at: "2026-08-12T04:00:13Z"
-updated_at: "2026-08-12T04:01:21Z"
+updated_at: "2026-08-13T13:06:41Z"
 ---
 ## Problem
 
@@ -90,3 +90,4 @@ This task authorizes a bounded supervisor and recovery policy, not general auton
 
 - 2026-08-12T04:01:21Z · body
 - 2026-08-12T08:15:49Z · added bounded research and low-progress loop safeguards
+- 2026-08-13T13:06:41Z · status ready→active, branch
