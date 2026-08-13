@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
-import { AgentRunner } from "../../server/agents";
+import { AgentRunner, type AgentHandoffRequest } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -248,5 +248,66 @@ describe("agent session persistence", () => {
     writeFileSync(fx.file, '{"version":1,"lines":[');
     expect(() => new AgentRunner(fx.config, () => {})).not.toThrow();
     expect(new AgentRunner(fx.config, () => {}).output(fx.task.id)).toBeNull();
+  });
+
+  it("resumes a task turn with resolved task/branch so handoff finalization runs", async () => {
+    const fx = fixture("active");
+    let handoffCalled = false;
+    let handoffRequest: AgentHandoffRequest | null = null;
+
+    // Start a task to build initial session and transcript
+    const starter = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    expect(starter.start(fx.task, fx.task.branch, agent, { cwd: fx.root }).ok).toBe(true);
+    await waitFor(() => !starter.isRunning(fx.task.id), "fixture agent exit");
+
+    // Verify session was persisted (without task/branch fields)
+    const disk = JSON.parse(readFileSync(fx.file, "utf8")) as Record<string, unknown>;
+    expect(disk.version).toBe(1);
+    expect(disk).not.toHaveProperty("task");
+    expect(disk).not.toHaveProperty("branch");
+
+    // Create a new runner with getTask callback (simulating server with task index)
+    const resumeRunner = new AgentRunner(
+      fx.config,
+      () => {},
+      {
+        writeDelayMs: 10,
+        getTask: (taskId: string) => (taskId === fx.task.id ? fx.task : null),
+        onHandoff: (request) => {
+          handoffCalled = true;
+          handoffRequest = request;
+        },
+      },
+    );
+
+    // Set up fixture to emit handoff signal on resume
+    writeFileSync(
+      join(fx.root, "bin", "qwen"),
+      `#!/usr/bin/env node
+process.stdout.write("persisted output\\n");
+process.stdout.write('{"session_id":"session-persisted"}\\n');
+process.stdout.write("::repoos-handoff-ready::\\n");
+`,
+      { mode: 0o755 },
+    );
+
+    // Resume the task with a follow-up message (this simulates a resume turn)
+    expect(resumeRunner.send(fx.task.id, "Continue from here", agent).ok).toBe(true);
+    await waitFor(() => !resumeRunner.isRunning(fx.task.id), "resume agent exit");
+
+    // Get the final output for assertions
+    const output = resumeRunner.output(fx.task.id);
+
+    // Assert that handoff finalization was triggered (task/branch were resolved)
+    expect(handoffCalled).toBe(true);
+    expect(handoffRequest).not.toBeNull();
+    expect((handoffRequest as unknown as AgentHandoffRequest).taskId).toBe(fx.task.id);
+    expect((handoffRequest as unknown as AgentHandoffRequest).branch).toBe(fx.task.branch);
+
+    // Verify the transcript shows the handoff was processed (not a silent drop)
+    const hasHandoffSystemLine = output?.lines.some(
+      (line) => (line as Record<string, unknown>).d === "✓ agent requested server-side handoff",
+    );
+    expect(hasHandoffSystemLine).toBe(true);
   });
 });

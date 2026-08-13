@@ -283,6 +283,8 @@ export interface AgentRunnerOptions {
   retentionDays?: number;
   retentionCount?: number;
   now?: () => Date;
+  /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
+  getTask?: (taskId: string) => Task | null;
 }
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
@@ -1487,6 +1489,9 @@ export class AgentRunner {
   private readonly authorizedPreviews = new Map<string, AgentPreviewRequest>();
   private readonly onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>;
 
+  /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
+  private readonly getTask?: (taskId: string) => Task | null;
+
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
    * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
@@ -1501,6 +1506,7 @@ export class AgentRunner {
     this.emit = emit;
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
+    this.getTask = opts.getTask;
     this.sessionsDir = join(config.root, config.cacheDir, "sessions");
     this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
     this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
@@ -1686,6 +1692,15 @@ export class AgentRunner {
       session.bytes -= entryBytes(dropped);
     }
     this.schedulePersist(taskId);
+    // On resume turns, resolve the task from the index if not already set in the session.
+    // This ensures task/branch are always available for handoff finalization.
+    if (!session.task && this.getTask) {
+      const resolvedTask = this.getTask(taskId);
+      if (resolvedTask) {
+        session.task = resolvedTask;
+        session.branch = resolvedTask.branch;
+      }
+    }
     const fullText = opts.resumePreamble
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
@@ -1929,8 +1944,9 @@ export class AgentRunner {
   ): void {
     const parsed = parser(raw);
     if (!parsed) {
-      this.recordEntry(taskId, session, "out", { s: "out", d: raw });
+      const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
       this.lineTouched(taskId, session, raw);
       return;
     }
@@ -1974,8 +1990,9 @@ export class AgentRunner {
   private appendCopilotLine(taskId: string, session: Session, raw: string): void {
     const parsed = parseCopilotEvent(raw);
     if (!parsed) {
-      this.recordEntry(taskId, session, "out", { s: "out", d: raw });
+      const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
       this.lineTouched(taskId, session, raw);
       return;
     }
@@ -2219,7 +2236,9 @@ export class AgentRunner {
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);
-    if (entry.handoffRequested && exitedCleanly && entry.task && entry.branch && entry.workdir) {
+    // Resolve task from index if not in entry (important for resume turns).
+    const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
+    if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
       const request: AgentHandoffRequest = {
         taskId,
         runId: entry.runId,
@@ -2234,6 +2253,9 @@ export class AgentRunner {
           this.appendLine(taskId, "sys", `✗ server-side handoff failed: ${(err as Error).message}`);
         })
         .finally(() => this.handoffsInFlight.delete(taskId));
+    } else if (entry.handoffRequested && exitedCleanly && !taskForHandoff) {
+      this.appendLine(taskId, "sys", "✗ handoff was not started because the task could not be resolved");
+      this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
     } else if (entry.handoffRequested && !exitedCleanly) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
       this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted");
@@ -2241,7 +2263,7 @@ export class AgentRunner {
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
     // request to the server, which owns preview process and network lifecycle.
-    if (entry.previewRequested && exitedCleanly && entry.task && entry.branch && entry.workdir) {
+    if (entry.previewRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
       const request: AgentPreviewRequest = {
         taskId,
         runId: entry.runId,
@@ -2506,7 +2528,7 @@ export class AgentRunner {
    * a transcript sys line) because it means the checklist itself failed.
    */
   private healBoardDivergence(taskId: string, entry: Entry, session?: Session): void {
-    const task = entry.task;
+    const task = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (!task || !entry.workdir) return;
     const worktreeCopy = join(entry.workdir, task.path);
     if (this.samePath(task.absPath, worktreeCopy)) return; // same file — no divergence possible
