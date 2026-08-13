@@ -2,14 +2,14 @@
 id: "0171"
 title: Product Manager tab with task chat and editing
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/product-manager-tab-with-task-chat-and-e
 created_at: "2026-08-13T13:54:10Z"
-updated_at: "2026-08-13T15:27:17Z"
+updated_at: "2026-08-13T16:25:07Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ Tasks today are static artifacts: once created, there is no built-in way for a u
 - 2026-08-13T15:17:31Z · watchdog: automatic resume attempted
 - 2026-08-13T15:22:31Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-13T15:27:17Z · needs_input
+- 2026-08-13T16:25:07Z · status active→review
