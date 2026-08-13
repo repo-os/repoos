@@ -2,14 +2,14 @@
 id: "0162"
 title: Fix the chat bot's incoherent replies and rename it to Ross
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T13:30:59Z"
-updated_at: "2026-08-13T13:30:59Z"
+updated_at: "2026-08-13T13:34:33Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ The always-available repository chat bot — the floating widget in the lower-ri
 ## Activity
 
 - 2026-08-13T13:30:59Z · created · unknown
+- 2026-08-13T13:34:33Z · status inbox→ready
