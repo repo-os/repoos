@@ -237,6 +237,24 @@ export interface RepoOSConfig {
   defaultTaskMode?: TaskMode;
   /** User-defined agents (defaults are applied at runtime when this is empty). */
   agents?: Agent[];
+  /**
+   * Per-agent state for built-in agents (Tech Debt Agent, …), keyed by agent
+   * id: whether it's enabled, its run schedule, and when it last ran. Stored
+   * as a JSON sidecar under the cache dir — runtime state, not human-edited
+   * configuration.
+   */
+  builtInAgents?: Record<string, BuiltInAgentConfig>;
+}
+
+/** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */
+export type BuiltInAgentSchedule = "daily" | "weekly" | "manual";
+
+/** Persisted state for one built-in agent. */
+export interface BuiltInAgentConfig {
+  enabled?: boolean;
+  schedule?: BuiltInAgentSchedule;
+  /** ISO timestamp of the last completed run, set by the server. */
+  lastRunAt?: string;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

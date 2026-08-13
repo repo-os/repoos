@@ -16,6 +16,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
+import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -489,6 +490,17 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+          <span class="live-dot" style="background: var(--green)"></span>Build your team
+        </div>
+        <div class="agent-desc">
+          Pre-built optional agents that extend RepoOS. Enable them to add new capabilities.
+        </div>
+
+        <BuiltInAgentCard agent="tech-debt" />
       </Card>
 
       <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
