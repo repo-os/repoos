@@ -11,6 +11,7 @@ import {
   cmdNew,
   cmdIndex,
 } from "../commands/tasks.js";
+import { cmdNewDoc } from "../commands/docs.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdServe } from "../commands/serve.js";
 import { cmdTunnel } from "../commands/tunnel.js";
@@ -34,6 +35,7 @@ function help(): void {
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
     ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority')}
+    ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
     ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
@@ -42,6 +44,7 @@ function help(): void {
     ${c.dim("$")} repoos init
     ${c.dim("$")} repoos init myproject   # guided new-project flow outside a git repo
     ${c.dim("$")} repoos new "Add company dashboard" --ai --type feature --area web --priority p1
+    ${c.dim("$")} repoos new-doc "API design doc for the payment system"
     ${c.dim("$")} repoos mv 0012 active
     ${c.dim("$")} repoos list ready
     ${c.dim("$")} repoos index --json   ${c.dim("# machine-readable, for agents/tools")}
@@ -86,6 +89,9 @@ function main(): void {
     case "new":
     case "add":
       cmdNew(rest);
+      break;
+    case "new-doc":
+      void cmdNewDoc(rest);
       break;
     case "index":
     case "reindex":
