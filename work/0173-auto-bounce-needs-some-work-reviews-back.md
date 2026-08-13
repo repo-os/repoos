@@ -34,5 +34,4 @@ After a review run completes with a non-good-to-go verdict, automatically hand t
 ## Activity
 
 - 2026-08-13T14:15:52Z · created · unknown
-- 2026-08-13T15:37:27Z · status ready→active, branch
-- 2026-08-13T15:54:47Z · status active→review
+- 2026-08-13T15:54:47Z · status ready→review, branch
