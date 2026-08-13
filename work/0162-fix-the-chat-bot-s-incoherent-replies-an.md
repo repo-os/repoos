@@ -46,5 +46,4 @@ The always-available repository chat bot — the floating widget in the lower-ri
 
 - 2026-08-13T13:30:59Z · created · unknown
 - 2026-08-13T13:34:33Z · status inbox→ready
-- 2026-08-13T13:49:35Z · status ready→active, branch
-- 2026-08-13T13:58:43Z · status active→review
+- 2026-08-13T13:58:43Z · status ready→review, branch

@@ -26,7 +26,12 @@ interface ChatResponse {
 }
 
 const configuredAgent = computed(
-  () => config.agents.find((agent) => agent.name.toLowerCase() === "repoos guide") ?? null,
+  () =>
+    config.agents.find(
+      (agent) =>
+        agent.name.toLowerCase() === "ross" ||
+        agent.name.toLowerCase() === "repoos guide",
+    ) ?? null,
 );
 const agent = computed(() => configuredAgent.value ?? hydratedAgent.value);
 const enabled = computed(() => agent.value?.enabled ?? hydratedEnabled.value);
@@ -136,21 +141,21 @@ onMounted(() => void hydrate());
           </svg>
         </div>
         <div class="guide-identity">
-          <strong>{{ agent?.name ?? "RepoOS Guide" }}</strong>
+          <strong>{{ agent?.name ?? "Ross" }}</strong>
           <span><i :class="{ off: !enabled }"></i>{{ enabled ? "Repository assistant" : "Disabled on Agents page" }}</span>
         </div>
-        <button class="guide-minimize" type="button" aria-label="Minimize RepoOS Guide" title="Minimize" @click="toggle">
+        <button class="guide-minimize" type="button" aria-label="Minimize Ross" title="Minimize" @click="toggle">
           <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
         </button>
       </header>
 
-      <div ref="log" class="guide-log" role="log" aria-live="polite" aria-label="Conversation with RepoOS Guide">
+      <div ref="log" class="guide-log" role="log" aria-live="polite" aria-label="Conversation with Ross">
         <div v-if="!hasConversation" class="guide-welcome">
           <div class="guide-welcome-icon">R</div>
-          <strong>Ask about this repository</strong>
+          <strong>Ask Ross about this repository</strong>
           <p>I can help with RepoOS, tasks, statuses, issues, code, and repository context.</p>
           <div class="guide-prompts">
-            <button type="button" @click="draft = 'What is currently in progress?'">What’s in progress?</button>
+            <button type="button" @click="draft = 'What is currently in progress?'">What's in progress?</button>
             <button type="button" @click="draft = 'Which issues need attention?'">Issues needing attention</button>
           </div>
         </div>
@@ -163,7 +168,7 @@ onMounted(() => void hydrate());
             </div>
           </div>
         </template>
-        <div v-if="busy" class="guide-thinking" aria-label="RepoOS Guide is thinking">
+        <div v-if="busy" class="guide-thinking" aria-label="Ross is thinking">
           <span></span><span></span><span></span>
         </div>
       </div>
@@ -173,18 +178,18 @@ onMounted(() => void hydrate());
           v-model="draft"
           rows="1"
           :disabled="!enabled"
-          :placeholder="enabled ? 'Ask about this repo…' : 'Enable RepoOS Guide on the Agents page'"
-          aria-label="Message RepoOS Guide"
+          :placeholder="enabled ? 'Ask about this repo…' : 'Enable Ross on the Agents page'"
+          aria-label="Message Ross"
           @keydown="onKeydown"
         ></textarea>
         <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
           <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
         </button>
       </form>
-      <div class="guide-footnote">Repo-aware · Conversation stays open while you navigate</div>
+      <div class="guide-footnote">Repo-aware assistant · Conversation stays open while you navigate</div>
     </section>
 
-    <button v-else class="guide-launcher" type="button" aria-label="Open RepoOS Guide chat" title="Open RepoOS Guide" @click="toggle">
+    <button v-else class="guide-launcher" type="button" aria-label="Open Ross chat" title="Open Ross" @click="toggle">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" />
         <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
