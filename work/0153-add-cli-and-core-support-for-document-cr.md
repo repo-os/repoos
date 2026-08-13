@@ -2,14 +2,14 @@
 id: "0153"
 title: Add CLI and core support for document creation
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: cli
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T05:34:11Z"
-updated_at: "2026-08-13T05:34:11Z"
+updated_at: "2026-08-13T13:06:50Z"
 ---
 ## Activity
 
@@ -68,3 +68,7 @@ Mirror the task pattern:
   manual `--path`.
 - Reuse `resolvePmAgent` / `runPrompt` from `server/agents.ts` for the freeform path,
   same as the existing route.
+
+## Activity
+
+- 2026-08-13T13:06:50Z · status inbox→ready
