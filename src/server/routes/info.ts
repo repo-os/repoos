@@ -38,7 +38,7 @@ export const health: RouteHandler = (ctx, req, res) => {
 };
 
 export const restart: RouteHandler = (ctx, _req, res) => {
-  const reload = (ctx as any).reload;
+  const reload = ctx.reload;
   const state =
     reload?.requestReload("manual restart") ??
     ({

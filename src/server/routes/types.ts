@@ -6,6 +6,7 @@ import type { AgentRunner } from "../agents.js";
 import type { PreviewManager } from "../preview.js";
 import type { ReviewManager } from "../review.js";
 import type { CloseOutLock } from "../done.js";
+import type { ReloadManager } from "../reload.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -24,6 +25,7 @@ export interface RouteContext {
   closeOutLock: CloseOutLock;
   pendingReview: Set<string>;
   uiDir: string | null;
+  reload: ReloadManager | null;
   // Functions
   syncTaskBranch: (task: Task) => Promise<SyncResult>;
   onServerStatusChange: (task: Task, prev: Status, next: Status) => void;
