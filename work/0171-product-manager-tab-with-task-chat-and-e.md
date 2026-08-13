@@ -2,14 +2,14 @@
 id: "0171"
 title: Product Manager tab with task chat and editing
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/product-manager-tab-with-task-chat-and-e
 created_at: "2026-08-13T13:54:10Z"
-updated_at: "2026-08-13T14:56:25Z"
+updated_at: "2026-08-13T14:56:41Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Tasks today are static artifacts: once created, there is no built-in way for a u
 - 2026-08-13T13:55:37Z · status inbox→ready
 - 2026-08-13T14:56:06Z · status ready→active
 - 2026-08-13T14:56:25Z · status active→ready
+- 2026-08-13T14:56:41Z · status ready→active, branch
