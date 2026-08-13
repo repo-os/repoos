@@ -21,11 +21,11 @@ A hierarchical file tree view where documentation directories can be expanded an
 
 ## Acceptance criteria
 
-- [ ] Replace flat doc list with a collapsible file tree view
-- [ ] Directories show expand/collapse controls
-- [ ] Files appear as leaf nodes in the tree
-- [ ] Add a refresh button that re-scans and reloads docs
-- [ ] Tree state (expanded/collapsed) persists during the session
+- [x] Replace flat doc list with a collapsible file tree view
+- [x] Directories show expand/collapse controls
+- [x] Files appear as leaf nodes in the tree
+- [x] Add a refresh button that re-scans and reloads docs
+- [x] Tree state (expanded/collapsed) persists during the session
 
 ## Notes for AI
 

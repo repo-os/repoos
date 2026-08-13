@@ -14,12 +14,13 @@ export const useDocsStore = defineStore("docs", () => {
   const skillName = ref("");
   const skillDesc = ref("");
 
-  async function loadDocs(): Promise<void> {
+  async function loadDocs(): Promise<boolean> {
     try {
       docs.value = await api<DocMeta[]>("/api/docs");
       if (docs.value.length && !selDoc.value) await loadDoc(docs.value[0].path);
+      return true;
     } catch {
-      /* ignore */
+      return false;
     }
   }
 
