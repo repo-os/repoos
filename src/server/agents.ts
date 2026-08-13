@@ -26,6 +26,7 @@ import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
+import { stripAnsi } from "./done.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
@@ -1430,7 +1431,7 @@ export function runPrompt(
       // Flush a trailing line with no final newline so nothing is held back.
       if (opts.onLine && pending.trim()) opts.onLine(pending.trimEnd());
       pending = "";
-      const output = Buffer.concat(out).toString("utf8").trim();
+      const output = stripAnsi(Buffer.concat(out).toString("utf8").trim());
       const stderr = Buffer.concat(errOut).toString("utf8").trim();
       if (output) {
         resolve({ ok: true, output });
