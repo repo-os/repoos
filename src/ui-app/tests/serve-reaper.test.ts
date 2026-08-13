@@ -9,6 +9,9 @@ describe("ServeReaper", () => {
   let reaper: ServeReaper;
 
   beforeEach(() => {
+    // Hermetic env: another test file (reload) may set REPOOS_RELOAD, which
+    // would make cleanupStale skip reaping and flake these tests.
+    delete process.env.REPOOS_RELOAD;
     tmpDir = join(tmpdir(), `repoos-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpDir, { recursive: true });
     reaper = new ServeReaper(tmpDir, ".repoos");
