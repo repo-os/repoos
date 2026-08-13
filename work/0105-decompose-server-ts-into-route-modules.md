@@ -3,14 +3,13 @@ id: "0105"
 title: Decompose server.ts into route modules
 type: chore
 status: active
-needs_input: true
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/decompose-server-ts-into-route-modules
 created_at: "2026-08-11T14:00:00Z"
-updated_at: "2026-08-13T09:52:04Z"
+updated_at: "2026-08-13T13:28:49Z"
 ---
 ## Problem
 
@@ -67,3 +66,4 @@ setup.
 - 2026-08-12T18:42:43Z · status ready→active, branch
 - 2026-08-13T09:46:05Z · watchdog: automatic resume attempted
 - 2026-08-13T09:52:04Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-13T13:28:49Z · needs_input
