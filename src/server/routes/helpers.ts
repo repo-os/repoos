@@ -1,9 +1,8 @@
-import { basename, extname, resolve, join, dirname } from "node:path";
+import { basename, extname, resolve, join } from "node:path";
 import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { connect } from "node:net";
-import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { STATUSES } from "../../core/types.js";
 
@@ -52,23 +51,19 @@ export function safeRepoFile(root: string, urlPath: string): string | null {
 
 export function findUiDir(root: string): string | null {
   const candidates = [join(root, "dist", "ui")];
-  const here = dirname(fileURLToPath(import.meta.url)); // routes subdir
-  const serverDir = dirname(here); // server dir
+  const here = new URL(import.meta.url).pathname.split("/").slice(0, -2).join("/");
   candidates.push(
-    join(serverDir, "ui"),
-    join(serverDir, "..", "..", "dist", "ui"),
+    join(here, "ui"),
+    join(here, "..", "..", "dist", "ui"),
   );
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
 }
 
 export function findPackageRoot(): string | null {
-  const here = dirname(fileURLToPath(import.meta.url)); // routes subdir
-  const serverDir = dirname(here); // server dir
-  const srcDir = dirname(serverDir); // src dir
-  const root = dirname(srcDir); // repo root
-  if (existsSync(join(root, "package.json"))) return root;
-  const parent = dirname(root);
+  const here = new URL(import.meta.url).pathname.split("/").slice(0, -3).join("/");
+  if (existsSync(join(here, "package.json"))) return here;
+  const parent = here.split("/").slice(0, -1).join("/");
   if (existsSync(join(parent, "package.json"))) return parent;
   return null;
 }
