@@ -2,14 +2,14 @@
 id: "0156"
 title: "Watchdog for stuck active tasks: retry handoff, then escalate to human"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/watchdog-for-stuck-active-tasks-retry-ha
 created_at: "2026-08-13T06:47:22Z"
-updated_at: "2026-08-13T07:09:52Z"
+updated_at: "2026-08-13T07:09:56Z"
 ---
 ## Activity
 
@@ -104,3 +104,4 @@ stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
 ## Activity
 
 - 2026-08-13T07:09:52Z · status inbox→ready
+- 2026-08-13T07:09:56Z · status ready→active, branch
