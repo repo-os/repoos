@@ -206,7 +206,43 @@ export type RepoEvent =
       buildAt: string | null;
       at: string;
     }
-  | { type: "reload.failed"; reason: string; at: string };
+  | { type: "reload.failed"; reason: string; at: string }
+  | {
+      type: "auto-engineering.state";
+      state: {
+        enabled: boolean;
+        maxActiveTasks: number;
+        activeCount: number;
+        availableSlots: number;
+        reconciling: boolean;
+        decision: AutoEngineeringDecision | null;
+      };
+      at: string;
+    };
+
+/** Latest auto-engineering reconcile decision (mirrors the server shape). */
+export interface AutoEngineeringDecision {
+  timestamp: string;
+  trigger: "active-to-review" | "inbox-to-ready" | "config-change" | "startup";
+  outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-unavailable" | "pm-failed";
+  activeCount: number;
+  maxActiveTasks: number;
+  availableSlots: number;
+  candidateIds: string[];
+  selectedIds: string[];
+  rationale?: string;
+  error?: string;
+}
+
+/** Auto-engineering mode state shown on the Control page. */
+export interface AutoEngineeringState {
+  enabled: boolean;
+  maxActiveTasks: number;
+  activeCount: number;
+  availableSlots: number;
+  reconciling: boolean;
+  decision: AutoEngineeringDecision | null;
+}
 
 export interface ConfigField {
   key: string;

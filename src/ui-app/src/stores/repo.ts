@@ -5,6 +5,7 @@ import { useUiStore, type PendingScreenshot } from "./ui";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
+  AutoEngineeringState,
   Counts,
   Health,
   RepoEvent,
@@ -190,6 +191,8 @@ export const useRepoStore = defineStore("repo", () => {
   const reviews = ref<Record<string, ReviewState>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
+  const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
@@ -460,6 +463,17 @@ export const useRepoStore = defineStore("repo", () => {
       void refresh();
     } else if (e.type === "system.stats") {
       systemStats.value = e.stats;
+    } else if (e.type === "auto-engineering.state") {
+      autoEng.value = e.state;
+    }
+  }
+
+  /** Hydrate auto-engineering state after a refresh/SSE gap (0124). */
+  async function refreshAutoEng(): Promise<void> {
+    try {
+      autoEng.value = await api<AutoEngineeringState>("/api/auto-engineering/state");
+    } catch {
+      /* non-fatal — the panel falls back to its empty state */
     }
   }
 
@@ -474,6 +488,9 @@ export const useRepoStore = defineStore("repo", () => {
       // or disabled/enabled done action behind.
       void refresh().catch(() => {
         /* connection state already reflects the successful SSE open */
+      });
+      void refreshAutoEng().catch(() => {
+        /* non-fatal hydration */
       });
     };
     es.onerror = () => {
@@ -834,6 +851,46 @@ export const useRepoStore = defineStore("repo", () => {
     await api(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
+  /** Create a document manually with the provided path and content. */
+  async function createDocument(form: {
+    path: string;
+    content: string;
+  }): Promise<{ ok: true }> {
+    return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
+  }
+
+  /** Create a document via the PM agent from a freeform description. */
+  async function createFreeformDocument(
+    description: string,
+    runId?: string,
+    overrides?: { agent?: string; cli?: string; model?: string },
+  ): Promise<{
+    ok: boolean;
+    fallback?: boolean;
+    fallbackReason?: "no-pm-agent" | "agent-failed";
+    reason?: string;
+    path?: string;
+  }> {
+    const body: Record<string, unknown> = { description };
+    if (runId) body.runId = runId;
+    if (overrides?.agent) body.agentOverride = overrides.agent;
+    if (overrides?.cli) body.cliOverride = overrides.cli;
+    if (overrides?.model) body.modelOverride = overrides.model;
+    const r = await api<{
+      ok: boolean;
+      fallback?: boolean;
+      fallbackReason?: "no-pm-agent" | "agent-failed";
+      reason?: string;
+      path?: string;
+    }>("/api/docs/freeform", JSON_OPTS("POST", body));
+    if (!r.ok) {
+      const message = r.reason ?? "could not create document";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    return r;
+  }
+
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
@@ -880,6 +937,8 @@ export const useRepoStore = defineStore("repo", () => {
     sortOrder,
     toasts,
     systemStats,
+    autoEng,
+    refreshAutoEng,
     newVersion,
     restarting,
     pushToast,
@@ -904,6 +963,8 @@ export const useRepoStore = defineStore("repo", () => {
     uploadScreenshot,
     createFreeformTask,
     deleteTask,
+    createDocument,
+    createFreeformDocument,
     isRunning,
     startWork,
     pauseWork,

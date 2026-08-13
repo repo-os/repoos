@@ -2,14 +2,14 @@
 id: "0124"
 title: Add auto-engineering mode with a configurable active-task target
 type: feature
-status: active
+status: done
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/add-auto-engineering-mode-with-a-configu
 created_at: "2026-08-12T06:02:20Z"
-updated_at: "2026-08-12T18:38:58Z"
+updated_at: "2026-08-13T13:09:35Z"
 ---
 ## Activity
 
@@ -126,3 +126,5 @@ starting too many agents when several task transitions happen close together.
 
 - 2026-08-12T06:03:55Z · status inbox→ready
 - 2026-08-12T18:38:58Z · status ready→active, branch
+- 2026-08-12T18:46:09Z · status active→review
+- 2026-08-13T13:09:35Z · status review→done

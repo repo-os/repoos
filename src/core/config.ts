@@ -3,13 +3,22 @@
  * can override any field. We parse only the flat subset of TOML we need, again
  * to avoid a runtime dependency.
  */
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import type { Agent, RepoOSConfig, Status, Assignee, Theme, UiTheme } from "./types.js";
+import type {
+  Agent,
+  BuiltInAgentConfig,
+  BuiltInAgentSchedule,
+  RepoOSConfig,
+  Status,
+  Assignee,
+  Theme,
+  UiTheme,
+} from "./types.js";
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
-export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "codex", "github copilot"] as const;
+export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "kiro", "codex", "github copilot"] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
@@ -86,6 +95,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   ntfyTopic: "",
   ntfyBaseUrl: "https://ntfy.sh",
   agents: [],
+  autoEngineeringMode: false,
+  maxActiveTasks: 3,
 };
 
 /**
@@ -258,7 +269,14 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
+    if (typeof get("autoEngineeringMode") === "boolean")
+      cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    const maxActiveTasks = get("maxActiveTasks");
+    if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
+      cfg.maxActiveTasks = maxActiveTasks as number;
   }
+
+  cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
   return cfg;
 }
 
@@ -431,6 +449,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: DEFAULT_CONFIG.cacheDir,
       description: "Directory for derived index cache (relative to repo root)",
     },
+    {
+      key: "autoEngineeringMode",
+      label: "Auto-engineering mode",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineeringMode,
+      description: "Automatically select and start ready tasks up to the maximum",
+    },
+    {
+      key: "maxActiveTasks",
+      label: "Maximum active tasks",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.maxActiveTasks,
+      options: Array.from({ length: 20 }, (_, i) => {
+        const val = i + 1;
+        return { value: String(val), label: String(val) };
+      }),
+      description:
+        "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
   ];
 }
 
@@ -545,4 +586,76 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   if (modified) {
     writeFileSync(tomlPath, result.join("\n") + "\n", "utf8");
   }
+}
+
+/**
+ * Absolute path of the built-in agent state sidecar (a JSON file living next
+ * to the cache dir). It holds runtime state — enabled/schedule/last run — that
+ * the Tech Debt Agent's server-side scheduler reads and the Agents page
+ * writes; it is deliberately NOT part of repoos.toml.
+ */
+export function builtInAgentsPath(root: string, cacheDir?: string): string {
+  return join(root, cacheDir ?? DEFAULT_CONFIG.cacheDir, "built-in-agents.json");
+}
+
+const BUILT_IN_SCHEDULES: BuiltInAgentSchedule[] = ["daily", "weekly", "manual"];
+
+/** Coerce an unknown PATCH/read value into a sane BuiltInAgentConfig. */
+export function sanitizeBuiltInAgent(value: unknown): BuiltInAgentConfig | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const out: BuiltInAgentConfig = {};
+  if (typeof raw.enabled === "boolean") out.enabled = raw.enabled;
+  if (
+    typeof raw.schedule === "string" &&
+    (BUILT_IN_SCHEDULES as string[]).includes(raw.schedule)
+  ) {
+    out.schedule = raw.schedule as BuiltInAgentSchedule;
+  }
+  if (typeof raw.lastRunAt === "string" && !Number.isNaN(Date.parse(raw.lastRunAt))) {
+    out.lastRunAt = raw.lastRunAt;
+  }
+  return out;
+}
+
+/**
+ * Coerce a whole record of built-in agent state (as read from the sidecar or
+ * sent via PATCH) into a safe shape. Invalid entries are dropped; a valid
+ * entry with no recognized fields is dropped too.
+ */
+export function sanitizeBuiltInAgents(value: unknown): Record<string, BuiltInAgentConfig> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  const out: Record<string, BuiltInAgentConfig> = {};
+  for (const [name, entry] of Object.entries(value)) {
+    const clean = sanitizeBuiltInAgent(entry);
+    if (clean && Object.keys(clean).length > 0) out[name] = clean;
+  }
+  return out;
+}
+
+/** Read the built-in agent state sidecar, or undefined when absent/unreadable. */
+export function loadBuiltInAgentsConfig(
+  root: string,
+  cacheDir?: string,
+): Record<string, BuiltInAgentConfig> | undefined {
+  const file = builtInAgentsPath(root, cacheDir);
+  try {
+    if (!existsSync(file)) return undefined;
+    const parsed = JSON.parse(readFileSync(file, "utf8")) as unknown;
+    return sanitizeBuiltInAgents(parsed);
+  } catch {
+    // A corrupt sidecar must never block config loading — treat as empty.
+    return {};
+  }
+}
+
+/** Persist the built-in agent state sidecar, creating the cache dir as needed. */
+export function saveBuiltInAgentsConfig(
+  root: string,
+  state: Record<string, BuiltInAgentConfig>,
+  cacheDir?: string,
+): void {
+  const file = builtInAgentsPath(root, cacheDir);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(state, null, 2) + "\n", "utf8");
 }

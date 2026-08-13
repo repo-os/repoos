@@ -12,6 +12,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
 import type { SystemStats } from "./system.js";
+import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -74,6 +75,19 @@ export type RepoEvent =
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
   | { type: "reload.failed"; reason: string; at: string }
+  /** Auto-engineering mode state change (0124). */
+  | {
+      type: "auto-engineering.state";
+      state: {
+        enabled: boolean;
+        maxActiveTasks: number;
+        activeCount: number;
+        availableSlots: number;
+        reconciling: boolean;
+        decision: AutoEngineeringDecision | null;
+      };
+      at: string;
+    }
   | { type: "hello"; taskCount: number; at: string }
   | { type: "system.stats"; stats: SystemStats };
 

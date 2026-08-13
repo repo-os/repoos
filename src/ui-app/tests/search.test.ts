@@ -94,6 +94,25 @@ describe("searchAll", () => {
     expect(searchAll("docs/arch", { tasks, docs, fields }).filter((r) => r.kind === "doc").length).toBeGreaterThan(0);
   });
 
+  it("searches doc contents and provides snippets", () => {
+    const docsWithContent = [
+      { path: "AGENTS.md", title: "Agent instructions", content: "This document contains important agent rules and instructions for deployment." },
+      { path: "docs/architecture.md", title: "Architecture", content: "The system uses a modular architecture with components." },
+    ];
+    const hits = searchAll("deployment", { tasks: [], docs: docsWithContent, fields: [] });
+    const doc = hits.find((r) => r.kind === "doc");
+    expect(doc && doc.kind === "doc" && doc.title).toEqual("Agent instructions");
+    expect(doc && doc.kind === "doc" && doc.snippet).toBeTruthy();
+  });
+
+  it("uses fuzzy matching for typo tolerance", () => {
+    const src = { tasks, docs, fields };
+    const exact = searchAll("theme", src).filter((r) => r.kind === "setting");
+    const typo = searchAll("thme", src).filter((r) => r.kind === "setting");
+    expect(exact.length).toBeGreaterThan(0);
+    expect(typo.length).toBeGreaterThan(0);
+  });
+
   it("matches settings by label and key", () => {
     const byLabel = searchAll("cache directory", { tasks, docs, fields });
     expect(byLabel.filter((r) => r.kind === "setting").map((r) => r.key)).toEqual(["cacheDir"]);
@@ -121,5 +140,64 @@ describe("searchAll", () => {
     const hits = searchAll("0007", { tasks, docs, fields });
     const task = hits.find((r) => r.kind === "task");
     expect(task && task.kind === "task" && task.subtitle).toContain("#0007");
+  });
+});
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<mark>/g, "")
+    .replace(/<\/mark>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function docSnippet(query: string, content: string): string | undefined {
+  const hits = searchAll(query, {
+    tasks: [],
+    docs: [{ path: "test.md", title: "Test", content }],
+    fields: [],
+  });
+  const doc = hits.find((r) => r.kind === "doc" && r.path === "test.md");
+  if (!doc || doc.kind !== "doc" || typeof doc.snippet === "string" || !doc.snippet) return undefined;
+  return doc.snippet.html;
+}
+
+describe("snippet match highlighting", () => {
+  it("does not render text past the snippet boundary when a fuzzy word is truncated mid-way", () => {
+    const content = "start " + "q".repeat(70) + " end";
+    // "q"*68+"rx" is within edit distance of the long word but is not a substring,
+    // so this must take the fuzzy path and land mid-word.
+    const query = "q".repeat(68) + "rx";
+    const html = docSnippet(query, content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).toContain("<mark>");
+    expect(htmlToText(html)).toBe(content.substring(0, 60));
+    expect(htmlToText(html)).toHaveLength(60);
+    expect(htmlToText(html)).not.toContain("q".repeat(70));
+  });
+
+  it("renders a plain (unhighlighted) snippet when the fuzzy word is truncated out entirely", () => {
+    const content = "a".repeat(100) + " " + "b".repeat(100) + " " + "fuzzywordx";
+    const query = "fuzzywordz";
+    const html = docSnippet(query, content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).not.toContain("<mark>");
+    expect(htmlToText(html)).toBe(content.substring(0, 60));
+    expect(htmlToText(html)).toHaveLength(60);
+  });
+
+  it("escapes HTML in exact-match snippets while highlighting the match", () => {
+    const content = "see <b>bold</b> and <script>bad()</script> here";
+    const html = docSnippet("bold", content);
+    expect(html).toBeDefined();
+    if (html === undefined) return;
+    expect(html).toContain("<mark>bold</mark>");
+    expect(html).toContain("&lt;b&gt;");
+    expect(htmlToText(html)).toContain("<b>bold</b>");
   });
 });

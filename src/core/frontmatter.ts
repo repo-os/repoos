@@ -22,6 +22,26 @@ export interface ParsedDocument {
 
 export const FM_DELIM = "---";
 
+/**
+ * Check if a line is a frontmatter delimiter: either the literal `---` or a
+ * rendered horizontal rule (box-drawing characters, optionally prefixed with
+ * `> ` from markdown rendering).
+ */
+function isDelimiter(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed === FM_DELIM) return true;
+  // A line of box-drawing characters (e.g., from kiro-cli's markdown rendering).
+  // Strip optional blockquote prefix (`> `) then check if the rest is a horizontal rule.
+  const withoutPrefix = trimmed.replace(/^>\s*/, "");
+  if (withoutPrefix.length < 3) return false;
+  // A horizontal rule is a sequence of dashes/box-drawing chars with minimal variation.
+  // Strip one character class and count; if mostly the same, it's a rule.
+  // Matches lines like "━━━", "──", "═══" from markdown rendering.
+  const chars = new Set(withoutPrefix);
+  // If all or most characters are the same dash-like character, treat as delimiter.
+  return chars.size <= 2 && /^[─=━═─\-_]+$/.test(withoutPrefix);
+}
+
 function coerceScalar(raw: string): unknown {
   const v = raw.trim();
   if (v === "" || v === "~" || v === "null") return null;
@@ -123,7 +143,7 @@ function scanFrontmatterLines(
  */
 function scanEmbeddedFrontmatter(bodyLines: string[]): FrontmatterScan | null {
   const first = bodyLines.findIndex((l) => l.trim() !== "");
-  if (first === -1 || bodyLines[first].trim() !== FM_DELIM) return null;
+  if (first === -1 || !isDelimiter(bodyLines[first])) return null;
   const scan = scanFrontmatterLines(bodyLines.slice(first + 1), "unclosed");
   if (!scan.sawKey) return null;
   return { data: scan.data, next: first + 1 + scan.next, sawKey: true };
@@ -132,16 +152,16 @@ function scanEmbeddedFrontmatter(bodyLines: string[]): FrontmatterScan | null {
 /** Parse a document string into {data, body}. Never throws on malformed YAML. */
 export function parseDocument(content: string): ParsedDocument {
   const normalized = content.replace(/\r\n/g, "\n");
-  if (!normalized.startsWith(FM_DELIM)) {
+  const lines = normalized.split("\n");
+  if (lines.length === 0 || !isDelimiter(lines[0])) {
     return { data: {}, body: normalized, hadFrontmatter: false };
   }
-  const lines = normalized.split("\n");
 
   // A properly-closed frontmatter block ends at the first line that is exactly
   // the delimiter. We also absorb a stray unclosed frontmatter block that the
   // body starts with (a past createTask corrupted shape), merging its fields
   // over the closed block's so a re-serialize comes out clean.
-  const closeIndex = lines.findIndex((l, i) => i > 0 && l === FM_DELIM);
+  const closeIndex = lines.findIndex((l, i) => i > 0 && isDelimiter(l));
   if (closeIndex !== -1) {
     const closed = scanFrontmatterLines(lines.slice(1, closeIndex), "closed");
     const bodyLines = lines.slice(closeIndex + 1);
