@@ -107,6 +107,7 @@ import {
   saveScreenshot,
 } from "./attachments.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
+import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
@@ -652,6 +653,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const previews = new PreviewManager(config, emitEvent);
   previews.cleanupOrphans();
 
+  // Serve process reaper (0168): detect and reap stale serve processes,
+  // and prevent port binding conflicts.
+  const reaper = new ServeReaper(config.root, config.cacheDir);
+  reaper.cleanupStale();
+
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
 
@@ -1180,6 +1186,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (!bound)
             throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
         } else {
+          // Check for port conflicts before binding (0168)
+          const conflict = reaper.detectConflict(port, host);
+          if (conflict) throw new Error(conflict);
           await bindOnce(false);
         }
       } catch (err) {
@@ -1206,6 +1215,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
+
+      // Register this serve process in the lockfile so port conflicts can be
+      // detected on the next startup (0168).
+      reaper.register(actualPort, host);
       const handle: ServerHandle = {
         url,
         port: actualPort,
@@ -1235,6 +1248,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           }
           clients.clear();
+          reaper.unregister();
           await closeHttp();
         },
       };
