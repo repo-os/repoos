@@ -248,6 +248,8 @@ export interface RepoOSConfig {
    * configuration.
    */
   builtInAgents?: Record<string, BuiltInAgentConfig>;
+  /** Agent supervisor configuration. */
+  supervisor?: SupervisorConfig;
 }
 
 /** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */
@@ -259,6 +261,71 @@ export interface BuiltInAgentConfig {
   schedule?: BuiltInAgentSchedule;
   /** ISO timestamp of the last completed run, set by the server. */
   lastRunAt?: string;
+}
+
+/** Agent supervisor configuration. */
+export interface SupervisorConfig {
+  /** Whether supervision is enabled. Default false. */
+  enabled?: boolean;
+  /** Check interval in seconds. Default 300 (5 minutes). */
+  interval?: number;
+  /** Supervision mode: "observe" (diagnose only) or "recover" (can apply safe actions). Default "observe". */
+  mode?: "observe" | "recover";
+  /** Seconds of no output before task is considered quiet. Default 600 (10 minutes). */
+  quietThreshold?: number;
+  /** Cycles of quiet output before a confirmed stall. Default 3. */
+  stallThreshold?: number;
+  /** Max automatic restarts per task. Default 2. */
+  maxRestarts?: number;
+  /** Base cooldown between restart attempts in seconds. Default 60. */
+  cooldownSeconds?: number;
+  /** Agent name for diagnostic analysis. Optional; if omitted, deterministic classification only. */
+  diagnosticAgent?: string;
+  /** Ordered list of fallback agent/model combinations to try on repeated failures. */
+  fallbacks?: Array<{ agent?: string; model?: string }>;
+}
+
+/** A classification of a task's health status. */
+export type TaskHealthStatus =
+  | "healthy"
+  | "quiet-but-alive"
+  | "progressing-without-output"
+  | "waiting-for-human"
+  | "blocked-on-merge"
+  | "resource-constrained"
+  | "exited-unexpectedly"
+  | "confirmed-stalled"
+  | "orphaned"
+  | "inconsistent"
+  | "unknown";
+
+/** Supervisor heartbeat report for the Control page. */
+export interface SupervisorHeartbeat {
+  /** Unique cycle id. */
+  id: string;
+  /** When the cycle started (ISO-8601). */
+  startedAt: string;
+  /** When the cycle completed (ISO-8601). */
+  completedAt?: string;
+  /** When the next check will run (ISO-8601). */
+  nextCheckAt: string;
+  /** Current supervisor mode. */
+  mode: "observe" | "recover";
+  /** Total active tasks. */
+  totalActive: number;
+  /** Healthy tasks. */
+  healthy: number;
+  /** Tasks with warnings. */
+  warnings: number;
+  /** Per-task status entries. */
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: TaskHealthStatus;
+    lastOutput?: string;
+    evidence?: string;
+    action?: string;
+  }>;
 }
 
 /** The derived index. Disposable — rebuilt from files at any time. */

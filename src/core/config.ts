@@ -105,6 +105,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   ntfyTopic: "",
   ntfyBaseUrl: "https://ntfy.sh",
   agents: [],
+  supervisor: {
+    enabled: false,
+    interval: 300,
+    mode: "observe",
+  },
   autoEngineeringMode: false,
   maxActiveTasks: 3,
 };

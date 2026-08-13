@@ -10,7 +10,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
-import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex } from "../core/types.js";
+import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
@@ -75,6 +75,8 @@ export type RepoEvent =
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
   | { type: "reload.failed"; reason: string; at: string }
+  /** Supervisor heartbeat report (0112). */
+  | { type: "supervisor.heartbeat"; heartbeat: SupervisorHeartbeat; at: string }
   /** Auto-engineering mode state change (0124). */
   | {
       type: "auto-engineering.state";

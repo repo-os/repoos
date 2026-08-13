@@ -38,6 +38,9 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
+ *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
+ *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
+ *   POST /api/supervisor/check-now -> { ok } run a supervisor check immediately
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -107,6 +110,7 @@ import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
+import { AgentSupervisor } from "./supervisor.js";
 import {
   Router,
   type RouteContext,
@@ -659,6 +663,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const previews = new PreviewManager(config, emitEvent);
   previews.cleanupOrphans();
 
+  // Agent supervisor: periodic health checks and safe recovery (0112)
+  let supervisor: AgentSupervisor | null = null;
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   const runner = new AgentRunner(
@@ -1008,6 +1015,29 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return;
     }
 
+    // ---- Supervisor routes ----
+    if (path === "/api/supervisor/status" && method === "GET") {
+      const heartbeat = supervisor?.getLatestHeartbeat() ?? null;
+      return json(res, 200, {
+        ok: true,
+        enabled: supervisor?.config.enabled ?? false,
+        mode: supervisor?.config.mode ?? "observe",
+        latestHeartbeat: heartbeat,
+      });
+    }
+    if (path === "/api/supervisor/heartbeats" && method === "GET") {
+      const limit = Math.min(Number(url.searchParams.get("limit") ?? "10"), 100);
+      const heartbeats = supervisor?.getRecentHeartbeats(limit) ?? [];
+      return json(res, 200, { ok: true, heartbeats });
+    }
+    if (path === "/api/supervisor/check-now" && method === "POST") {
+      if (!supervisor) {
+        return json(res, 503, { error: "Supervisor not available" });
+      }
+      void supervisor.runCycle();
+      return json(res, 202, { ok: true, message: "Supervisor check started" });
+    }
+
     // Create the route context with all necessary dependencies
     const routeContext: RouteContext = {
       config,
@@ -1175,6 +1205,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeCleanup();
           unsubscribeNeedsInput();
           watcher.stop();
+          supervisor?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
@@ -1245,6 +1276,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Stale-boot self-heal: a newer build that landed while we were starting
       // is picked up immediately (skipped by REPOOS_RELOAD=1 replacements).
       void reload.bootSelfHeal();
+
+      // Agent supervisor: periodic health checks and safe recovery (0112)
+      supervisor = new AgentSupervisor(config, index, emitEvent);
+      supervisor.start();
 
       resolve(handle);
     })().catch((e) => reject(e as Error));
