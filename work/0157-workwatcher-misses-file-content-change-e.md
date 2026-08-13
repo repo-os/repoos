@@ -2,14 +2,14 @@
 id: "0157"
 title: WorkWatcher misses file-content-change events; add poll-based reconciliation fallback
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/workwatcher-misses-file-content-change-e
 created_at: "2026-08-13T07:04:41Z"
-updated_at: "2026-08-13T13:55:27Z"
+updated_at: "2026-08-13T14:04:33Z"
 ---
 ## Activity
 
@@ -97,3 +97,5 @@ agent, human).
 
 - 2026-08-13T13:44:13Z · status inbox→ready
 - 2026-08-13T13:55:27Z · status ready→active, branch
+- 2026-08-13T14:00:59Z · watchdog: automatic resume attempted
+- 2026-08-13T14:04:33Z · status active→review
