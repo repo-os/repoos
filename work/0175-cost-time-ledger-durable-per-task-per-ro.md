@@ -5,12 +5,14 @@ type: feature
 status: ready
 priority: p2
 area: server + ui-app
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T15:21:15Z"
-updated_at: "2026-08-13T15:21:15Z"
+updated_at: "2026-08-13T15:26:36Z"
 ---
+> **SUPERSEDED BY #0176** — this scope (durable per-task/per-round cost/time ledger) is absorbed by the universal sqlite session-stats task. See #0176; the per-task/round views described here become views over that store. Do not start this in parallel.
+
 ## Problem
 Agent and reviewer turns already extract tokens/cost/time, but only ephemerally — accumulated in memory per session and shown live in the task panel, never persisted durably or aggregated. #0118 has now gone through 4+ review rounds; nobody can see how much that cost in time and money until it is over, and there is no way to compare rounds, agents, or tasks. That invisibility is why over-rounds and runaway spend go unnoticed.
 
@@ -36,3 +38,4 @@ A durable, queryable ledger of every agent turn (engineer, reviewer, guide) reco
 ## Activity
 
 - 2026-08-13T15:21:15Z · created · unknown
+- 2026-08-13T15:26:36Z · body
