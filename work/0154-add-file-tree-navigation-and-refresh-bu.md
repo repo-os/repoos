@@ -2,14 +2,14 @@
 id: "0154"
 title: Add file tree navigation and refresh button to context page
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-file-tree-navigation-and-refresh-but
 created_at: "2026-08-13T05:43:16Z"
-updated_at: "2026-08-13T10:38:28Z"
+updated_at: "2026-08-13T10:45:15Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ A hierarchical file tree view where documentation directories can be expanded an
 - 2026-08-13T10:18:50Z · status active→review, needs_input
 - 2026-08-13T10:25:12Z · status review→active
 - 2026-08-13T10:38:27Z · status active→review
+- 2026-08-13T10:45:15Z · status review→done, release:success
