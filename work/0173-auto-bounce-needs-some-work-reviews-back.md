@@ -2,14 +2,14 @@
 id: "0173"
 title: "Auto-bounce needs-some-work reviews back to the implementer (max 2 rounds, then human)"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/auto-bounce-needs-some-work-reviews-back
 created_at: "2026-08-13T14:15:52Z"
-updated_at: "2026-08-13T15:54:47Z"
+updated_at: "2026-08-13T16:52:58Z"
 ---
 ## Problem
 When the reviewer agent finishes with a verdict other than `good to go`, the task sits in `review` and a human must manually forward the findings to the engineer, wait for fixes, and re-run the review. For small fixes this is pure friction. RepoOS should close the loop itself, but with a hard cap so a bad loop can never spin forever.
@@ -35,3 +35,4 @@ After a review run completes with a non-good-to-go verdict, automatically hand t
 
 - 2026-08-13T14:15:52Z · created · unknown
 - 2026-08-13T15:54:47Z · status ready→review, branch
+- 2026-08-13T16:52:58Z · status review→done, release:success
