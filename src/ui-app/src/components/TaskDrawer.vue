@@ -2,11 +2,12 @@
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
-import type { ReviewState, Task } from "../types";
+import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { renderMarkdown } from "../lib/markdown";
+import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -708,6 +709,118 @@ watch(
     if (ui.active?.status === "review") void repo.loadReview(ui.active.id);
   },
   { immediate: true },
+);
+
+// ---- PM tab ----
+
+/** Generate session ID for PM chat on a specific task. */
+function pmSessionId(taskId: string): string {
+  return `pm-task:${taskId}`;
+}
+
+const pmDraft = ref("");
+const pmSubmitting = ref(false);
+const pmLog = ref<HTMLElement | null>(null);
+
+/** Check if PM agent is enabled. */
+const pmAgentEnabled = computed(() => {
+  if (!config.loaded) return true;
+  return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
+});
+
+/** Get PM lines for the current task. */
+const pmLines = computed(() => {
+  if (!ui.active) return [];
+  return repo.outputs[pmSessionId(ui.active.id)] ?? [];
+});
+
+/** Check if PM is busy. */
+const pmBusy = computed(
+  () =>
+    pmSubmitting.value ||
+    (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id)))
+);
+
+const pmHasConversation = computed(() => pmLines.value.length > 0);
+
+function pmLineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
+  if ("type" in entry) {
+    if (entry.type === "human") return "human";
+    if (entry.type === "text") return "assistant";
+    if (entry.type === "step") return "hidden";
+    return "status";
+  }
+  return entry.s === "out" ? "assistant" : "status";
+}
+
+function pmLineText(entry: AgentOutputEntry): string {
+  if ("type" in entry) {
+    if (entry.type === "human" || entry.type === "text") return entry.text;
+    if (entry.type === "sys") return entry.d;
+    if (entry.type === "tool") {
+      const state = entry.state ? ` · ${entry.state}` : "";
+      return `Checked with ${entry.tool}${state}`;
+    }
+    return "";
+  }
+  return entry.d;
+}
+
+function pmScrollToLatest(): void {
+  nextTick(() => {
+    if (pmLog.value) pmLog.value.scrollTop = pmLog.value.scrollHeight;
+  });
+}
+
+watch(() => pmLines.value.length, () => {
+  pmScrollToLatest();
+});
+
+async function pmSend(): Promise<void> {
+  const text = pmDraft.value.trim();
+  if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
+
+  pmSubmitting.value = true;
+  const optimistic: AgentOutputEntry = { type: "human", text };
+  const sessionId = pmSessionId(ui.active.id);
+  const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
+  repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
+  pmDraft.value = "";
+  pmScrollToLatest();
+
+  try {
+    await api(
+      `/api/tasks/${ui.active.id}/pm/message`,
+      JSON_OPTS("POST", { text })
+    );
+  } catch (error) {
+    repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
+      (_entry, index) => index !== optimisticIndex
+    );
+    pmDraft.value = text;
+    repo.outputs[sessionId] = [
+      ...(repo.outputs[sessionId] ?? []),
+      { type: "sys", d: error instanceof Error ? error.message : String(error) },
+    ];
+    repo.onError(error);
+  } finally {
+    pmSubmitting.value = false;
+  }
+}
+
+function pmOnKeydown(event: KeyboardEvent): void {
+  if (event.key !== "Enter" || event.shiftKey) return;
+  event.preventDefault();
+  void pmSend();
+}
+
+watch(
+  () => ui.active?.id,
+  () => {
+    if (ui.active) {
+      pmScrollToLatest();
+    }
+  },
 );
 
 // ---- agent session tab ----
@@ -1556,6 +1669,14 @@ function resetFreeformOverrides(): void {
               label="Reviewing…"
             />
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'pm' }"
+            @click="ui.activeTab = 'pm'"
+          >
+            PM
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -2058,6 +2179,43 @@ function resetFreeformOverrides(): void {
             <ActivityIndicator /> reviewer is working — wait for this turn to finish
           </div>
         </div>
+        <div v-else-if="ui.activeTab === 'pm'" class="drawer-body">
+          <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">
+            <div v-if="!pmHasConversation" class="agent-empty pm-empty">
+              <div class="pm-welcome-icon">PM</div>
+              <strong>Chat about this task</strong>
+              <p>Ask the PM to edit the task, suggest changes, or discuss progress.</p>
+            </div>
+            <template v-else>
+              <template v-for="(entry, index) in pmLines" :key="index">
+                <div v-if="pmLineKind(entry) !== 'hidden'" class="pm-row" :class="`pm-row-${pmLineKind(entry)}`">
+                  <div v-if="pmLineKind(entry) === 'assistant'" class="pm-mini-avatar">PM</div>
+                  <div class="pm-bubble" :class="`pm-bubble-${pmLineKind(entry)}`">
+                    <div v-if="pmLineKind(entry) === 'assistant'" class="pm-markdown" v-html="renderMarkdown(pmLineText(entry))"></div>
+                    <span v-else>{{ pmLineText(entry) }}</span>
+                  </div>
+                </div>
+              </template>
+              <div v-if="pmBusy" class="pm-thinking" aria-label="PM is thinking">
+                <span></span><span></span><span></span>
+              </div>
+            </template>
+          </div>
+
+          <form class="pm-compose" @submit.prevent="pmSend">
+            <textarea
+              v-model="pmDraft"
+              rows="1"
+              :disabled="!pmAgentEnabled"
+              :placeholder="pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'"
+              aria-label="Message PM"
+              @keydown="pmOnKeydown"
+            ></textarea>
+            <button type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
+              <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+            </button>
+          </form>
+        </div>
         <div v-if="dirty" class="save-bar">
           <div class="save-callout">
             <span class="save-dot"></span>
@@ -2085,3 +2243,237 @@ function resetFreeformOverrides(): void {
     @started="ui.activeTab = 'agent'"
   />
 </template>
+
+<style scoped>
+.pm-log-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pm-empty {
+  margin: auto 0;
+  text-align: center;
+  padding: 22px 12px;
+  color: var(--txt-dim);
+}
+
+.pm-welcome-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 10px;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+}
+
+.pm-empty strong {
+  display: block;
+  color: var(--txt);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.pm-empty p {
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.pm-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.pm-row-human {
+  justify-content: flex-end;
+}
+
+.pm-mini-avatar {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+}
+
+.pm-bubble {
+  max-width: 84%;
+  padding: 9px 11px;
+  border-radius: 13px;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.pm-bubble-human {
+  color: var(--btn-primary-color);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--border-bright);
+  border-bottom-right-radius: 4px;
+}
+
+.pm-bubble-assistant {
+  color: var(--txt);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.pm-row-status {
+  justify-content: center;
+}
+
+.pm-bubble-status {
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--txt-faint);
+  font: 500 9.5px 'JetBrains Mono', monospace;
+  text-align: center;
+}
+
+.pm-markdown :deep(p) {
+  margin: 0 0 7px;
+}
+
+.pm-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.pm-markdown :deep(ul),
+.pm-markdown :deep(ol) {
+  padding-left: 17px;
+  margin: 5px 0;
+}
+
+.pm-markdown :deep(code) {
+  font: 10.5px 'JetBrains Mono', monospace;
+  background: var(--md-body-bg);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.pm-markdown :deep(pre) {
+  overflow: auto;
+  margin: 7px 0;
+  padding: 8px;
+  background: var(--md-body-bg);
+  border-radius: 7px;
+}
+
+.pm-markdown :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+
+.pm-markdown :deep(a) {
+  color: var(--cyan);
+}
+
+.pm-thinking {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  margin-left: 31px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+}
+
+.pm-thinking span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--txt-faint);
+  animation: pm-bounce 1.2s infinite;
+}
+
+.pm-thinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.pm-thinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.pm-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0 12px;
+  padding: 8px 9px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel-solid);
+}
+
+.pm-compose:focus-within {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--violet-dim);
+}
+
+.pm-compose textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 82px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--txt);
+  font: 12.5px / 1.55 var(--font-sans);
+}
+
+.pm-compose textarea::placeholder {
+  color: var(--txt-faint);
+}
+
+.pm-compose button {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  background: var(--btn-primary-bg);
+  color: var(--violet);
+  cursor: pointer;
+}
+
+.pm-compose button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pm-compose button svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes pm-bounce {
+  0%, 70%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  35% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+</style>
