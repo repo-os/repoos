@@ -2,14 +2,14 @@
 id: "0156"
 title: "Watchdog for stuck active tasks: retry handoff, then escalate to human"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T06:47:22Z"
-updated_at: "2026-08-13T06:47:22Z"
+updated_at: "2026-08-13T07:09:52Z"
 ---
 ## Activity
 
@@ -100,3 +100,7 @@ stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
   cause of a missed handoff signal, but this task is about the *safety net* for ANY
   cause (crash, timeout, stop, malformed signal) — don't make this depend on #0155
   landing first.
+
+## Activity
+
+- 2026-08-13T07:09:52Z · status inbox→ready
