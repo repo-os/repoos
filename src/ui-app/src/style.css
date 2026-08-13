@@ -164,6 +164,15 @@
   .conn.down{color:var(--red);background:var(--red-tint);border:1px solid var(--red-border-tint)}
   .conn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:var(--dot-glow)}
   .conn.live .dot{animation:pulse 2s infinite}
+  @media(max-width:760px){
+    .conn{padding:0;background:none;border:none;gap:0}
+    .conn.live,.conn.down{background:none;border:none;color:inherit}
+    .conn-text{display:none}
+    .conn .dot{width:8px;height:8px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .conn.live .dot{animation:none}
+  }
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   .version-notice{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;
     font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;

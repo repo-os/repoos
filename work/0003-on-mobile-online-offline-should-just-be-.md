@@ -48,5 +48,4 @@ text or pill padding.
 - 2026-05-29T00:00:00Z · created · (migrated)
 - 2026-08-11T15:37:46Z · updated · replace migrated placeholders with actionable mobile scope
 - 2026-08-13T04:48:43Z · status inbox→ready
-- 2026-08-13T11:22:31Z · status ready→active, branch
-- 2026-08-13T11:30:26Z · status active→review
+- 2026-08-13T11:30:26Z · branch

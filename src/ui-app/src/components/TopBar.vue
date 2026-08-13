@@ -58,8 +58,13 @@ function toggleTheme(): void {
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
     </button>
-    <div class="conn" :class="connected ? 'live' : 'down'">
-      <span class="dot"></span>{{ connected ? "live" : "offline" }}
+    <div
+      class="conn"
+      :class="connected ? 'live' : 'down'"
+      :aria-label="connected ? 'Server connection: live' : 'Server connection: offline'"
+      :title="connected ? 'Server connection: live' : 'Server connection: offline'"
+    >
+      <span class="dot"></span><span class="conn-text">{{ connected ? "live" : "offline" }}</span>
     </div>
   </div>
 </template>
