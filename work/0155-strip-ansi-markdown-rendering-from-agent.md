@@ -2,14 +2,14 @@
 id: "0155"
 title: Strip ANSI/markdown rendering from agent output before parsing
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-13T06:15:56Z"
-updated_at: "2026-08-13T06:15:56Z"
+updated_at: "2026-08-13T06:24:13Z"
 ---
 ## Activity
 
@@ -76,3 +76,7 @@ task or doc, ever.
 - Don't scope this to kiro only if the fix is generic (ANSI stripping) — apply it to
   all `runPrompt` output regardless of `cli`, since any driver could emit escape
   codes.
+
+## Activity
+
+- 2026-08-13T06:24:13Z · status inbox→ready
