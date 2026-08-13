@@ -2,14 +2,14 @@
 id: "0003"
 title: On mobile online/offline should just be a colored dot
 type: chore
-status: ready
+status: active
 priority: p3
 area: mobile
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/on-mobile-online-offline-should-just-be-
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-08-13T04:48:43Z"
+updated_at: "2026-08-13T11:22:31Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ text or pill padding.
 - 2026-05-29T00:00:00Z · created · (migrated)
 - 2026-08-11T15:37:46Z · updated · replace migrated placeholders with actionable mobile scope
 - 2026-08-13T04:48:43Z · status inbox→ready
+- 2026-08-13T11:22:31Z · status ready→active, branch
