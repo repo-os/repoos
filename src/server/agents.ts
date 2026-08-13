@@ -24,7 +24,7 @@ import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } f
 import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
-import { parseTask } from "../core/task.js";
+import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -1555,6 +1555,15 @@ export class AgentRunner {
     return this.entries.has(taskId);
   }
 
+  /**
+   * True while the server-side handoff for a task is still finalizing (check,
+   * commit, review). The process is already gone, so `isRunning` is false, but
+   * the task is not stuck — the close-out pipeline owns it for a few seconds.
+   */
+  isHandoffInFlight(taskId: string): boolean {
+    return this.handoffsInFlight.has(taskId);
+  }
+
   /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
   stats(taskId: string): AgentSessionStats {
     return this.snapshotStats(taskId);
@@ -2216,6 +2225,7 @@ export class AgentRunner {
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && !exitedCleanly) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
+      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted");
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
@@ -2448,6 +2458,30 @@ export class AgentRunner {
       return realpathSync(a) === realpathSync(b);
     } catch {
       return resolve(a) === resolve(b);
+    }
+  }
+
+  /**
+   * Persist a handoff failure reason to the task file's Activity log.
+   * Called when a handoff signal is expected but not detected, or the process
+   * exits uncleanly before handoff can be finalized. This persists the reason
+   * so it survives server reloads (unlike in-memory transcript entries).
+   */
+  private persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
+    if (!task) return;
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      recordChange(current, `handoff failed · ${reason}`);
+      writeFileSync(task.absPath, serializeTask(current));
+    } catch (err) {
+      // Fail-soft: if we can't persist, just log — don't crash the runner
+      console.error(`[repoos] failed to persist handoff failure for #${taskId}: ${(err as Error).message}`);
     }
   }
 
