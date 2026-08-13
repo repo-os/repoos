@@ -2,15 +2,15 @@
 id: "0105"
 title: Decompose server.ts into route modules
 type: chore
-status: active
+status: ready
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: feat/decompose-server-ts-into-route-modules
 created_at: "2026-08-11T14:00:00Z"
-updated_at: "2026-08-12T19:38:03Z"
+updated_at: "2026-08-11T14:00:00Z"
 ---
+
 ## Problem
 
 `src/server/server.ts` is 1,431 lines — the single largest file in the codebase.
@@ -60,7 +60,3 @@ setup.
   unless a handler's import path changed.
 - Grep for `startServer` references in tests to ensure the signature hasn't
   changed.
-
-## Activity
-
-- 2026-08-12T18:42:43Z · status ready→active, branch
