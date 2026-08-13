@@ -1186,9 +1186,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return json(res, 200, listSkills(config));
       }
       if (path === "/api/chat" && method === "GET") {
-        const agent = agentsForConfig(config).find(
-          (candidate) => candidate.name.toLowerCase() === "repoos guide",
-        ) ?? null;
+        const agent = resolveRepoGuide(config);
         const session = runner.output(REPO_GUIDE_SESSION_ID);
         return json(res, 200, {
           ok: true,
@@ -1203,7 +1201,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const agent = resolveRepoGuide(config);
         if (!agent) {
           return json(res, 400, {
-            error: "RepoOS Guide is disabled — enable it on the Agents page to chat",
+            error: "Ross is disabled — enable it on the Agents page to chat",
           });
         }
         const body = (await readBody(req)) as { text?: unknown };
@@ -1218,7 +1216,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             })
           : runner.startChat(REPO_GUIDE_SESSION_ID, text, agent, context);
         if (!result.ok && result.busy) {
-          return json(res, 409, { error: result.reason ?? "RepoOS Guide is busy" });
+          return json(res, 409, { error: result.reason ?? "Ross is busy" });
         }
         if (!result.ok) {
           return json(res, 400, { error: result.reason ?? "could not send message" });

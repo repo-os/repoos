@@ -18,30 +18,38 @@ const config = (agents: Agent[]): RepoOSConfig => ({
   agents,
 });
 
-describe("RepoOS Guide", () => {
-  it("adds only the guide to older saved agent configurations", () => {
+describe("Ross (Repository Assistant)", () => {
+  it("adds only Ross to older saved agent configurations (migrating legacy name)", () => {
     const saved: Agent[] = [
       { name: "engineer", cli: "codex", model: "gpt-test", enabled: true },
       { name: "my custom role", cli: "opencode", model: "default", enabled: true },
+      { name: "RepoOS Guide", cli: "opencode", model: "big pickle", enabled: true },
     ];
     const merged = agentsForConfig(config(saved));
 
     expect(merged.find((agent) => agent.name === "engineer")?.model).toBe("gpt-test");
     expect(merged.some((agent) => agent.name === "my custom role")).toBe(true);
-    expect(merged.filter((agent) => agent.name === "RepoOS Guide")).toHaveLength(1);
+    // Legacy "RepoOS Guide" should be renamed to "Ross"
+    expect(merged.filter((agent) => agent.name === "Ross")).toHaveLength(1);
+    expect(merged.some((agent) => agent.name === "RepoOS Guide")).toBe(false);
     expect(merged.some((agent) => agent.name === "reviewer")).toBe(false);
     expect(merged.some((agent) => agent.name === "pm")).toBe(false);
-    expect(DEFAULT_AGENTS.some((agent) => agent.name === "RepoOS Guide")).toBe(true);
+    expect(DEFAULT_AGENTS.some((agent) => agent.name === "Ross")).toBe(true);
   });
 
   it("honors the Agents-page enabled toggle", () => {
-    const guide = DEFAULT_AGENTS.find((agent) => agent.name === "RepoOS Guide")!;
+    const guide = DEFAULT_AGENTS.find((agent) => agent.name === "Ross")!;
     expect(resolveRepoGuide(config([{ ...guide, enabled: false }]))).toBeNull();
-    expect(resolveRepoGuide(config([{ ...guide, enabled: true }]))?.name).toBe("RepoOS Guide");
+    expect(resolveRepoGuide(config([{ ...guide, enabled: true }]))?.name).toBe("Ross");
+  });
+
+  it("resolves both the new Ross name and the legacy RepoOS Guide name", () => {
+    const legacyGuide = { name: "RepoOS Guide", cli: "opencode", model: "big pickle", enabled: true };
+    expect(resolveRepoGuide(config([legacyGuide]))?.name).toBe("Ross");
   });
 
   it("grounds the chat mission in live repository context and keeps it read-only", () => {
-    const guide = DEFAULT_AGENTS.find((agent) => agent.name === "RepoOS Guide")!;
+    const guide = DEFAULT_AGENTS.find((agent) => agent.name === "Ross")!;
     const prompt = repoGuidePrompt(
       "Which issues are active?",
       "Repository: example\n- #0114 [active] Add persistent chat",
@@ -51,7 +59,7 @@ describe("RepoOS Guide", () => {
     expect(prompt).toContain("Which issues are active?");
     expect(prompt).toContain("#0114 [active]");
     expect(prompt).toContain("Never edit files");
-    expect(prompt).toContain("RepoOS Guide");
+    expect(prompt).toContain("Ross");
   });
 });
 
