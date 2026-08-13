@@ -2,14 +2,14 @@
 id: "0175"
 title: "Cost & time ledger: durable per-task/per-round usage tracking with a queryable store + UI"
 type: feature
-status: active
+status: ready
 priority: p2
 area: server + ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/cost-time-ledger-durable-per-task-per-ro
 created_at: "2026-08-13T15:21:15Z"
-updated_at: "2026-08-13T23:34:26Z"
+updated_at: "2026-08-13T23:34:32Z"
 ---
 > **SUPERSEDED BY #0176** — this scope (durable per-task/per-round cost/time ledger) is absorbed by the universal sqlite session-stats task. See #0176; the per-task/round views described here become views over that store. Do not start this in parallel.
 
@@ -40,3 +40,4 @@ A durable, queryable ledger of every agent turn (engineer, reviewer, guide) reco
 - 2026-08-13T15:21:15Z · created · unknown
 - 2026-08-13T15:26:36Z · body
 - 2026-08-13T17:46:55Z · status ready→active, branch
+- 2026-08-13T23:34:32Z · status active→ready
