@@ -74,6 +74,7 @@ import {
 } from "../core/git.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   patchTaskFile,
   deleteTaskFile,
@@ -606,6 +607,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const watcher = new WorkWatcher(config, index);
   watcher.start();
 
+  // Task watchdog will be initialized after runner is created
+  let taskWatchdog: TaskWatchdog | null = null;
+
   // active SSE clients
   const clients = new Set<ServerResponse>();
   const emitEvent = (e: RepoEvent) => {
@@ -753,6 +757,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* sampling is best-effort — never crash the poll loop */
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
+
+  // Task watchdog: detect and handle stuck active tasks
+  taskWatchdog = new TaskWatchdog(config, index, runner);
+  taskWatchdog.start();
 
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
@@ -2120,6 +2128,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeCleanup();
           unsubscribeNeedsInput();
           watcher.stop();
+          taskWatchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
