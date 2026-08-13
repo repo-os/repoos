@@ -1,4 +1,5 @@
-import { basename, extname, resolve, join } from "node:path";
+import { basename, extname, resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
@@ -51,7 +52,7 @@ export function safeRepoFile(root: string, urlPath: string): string | null {
 
 export function findUiDir(root: string): string | null {
   const candidates = [join(root, "dist", "ui")];
-  const here = new URL(import.meta.url).pathname.split("/").slice(0, -2).join("/");
+  const here = dirname(dirname(fileURLToPath(import.meta.url))); // src/server
   candidates.push(
     join(here, "ui"),
     join(here, "..", "..", "dist", "ui"),
@@ -61,9 +62,9 @@ export function findUiDir(root: string): string | null {
 }
 
 export function findPackageRoot(): string | null {
-  const here = new URL(import.meta.url).pathname.split("/").slice(0, -3).join("/");
+  const here = dirname(dirname(dirname(fileURLToPath(import.meta.url)))); // project root
   if (existsSync(join(here, "package.json"))) return here;
-  const parent = here.split("/").slice(0, -1).join("/");
+  const parent = dirname(here);
   if (existsSync(join(parent, "package.json"))) return parent;
   return null;
 }
