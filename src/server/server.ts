@@ -669,7 +669,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const task = index.getTask(e.id);
       if (task?.status === "review") void reviews.run(task);
     },
-    { onHandoff: async (request) => {
+    { getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
