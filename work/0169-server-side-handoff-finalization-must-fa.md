@@ -2,14 +2,14 @@
 id: "0169"
 title: "Server-side handoff finalization must fail loudly and durably, never wedge silently"
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/server-side-handoff-finalization-must-fa
 created_at: "2026-08-13T13:50:42Z"
-updated_at: "2026-08-13T14:00:19Z"
+updated_at: "2026-08-13T23:53:52Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ A finalization that cannot complete must leave a durable, visible, actionable re
 
 - 2026-08-13T13:50:42Z · created · unknown
 - 2026-08-13T14:00:19Z · status inbox→ready
+- 2026-08-13T23:53:52Z · status ready→active, branch
