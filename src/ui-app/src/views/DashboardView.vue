@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
+import Button from "../components/ui/button.vue";
 import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
 import AiTasksPanel from "../components/AiTasksPanel.vue";
@@ -8,13 +10,36 @@ import SystemResourcePanel from "../components/SystemResourcePanel.vue";
 import ReleaseTimeline from "../components/ReleaseTimeline.vue";
 
 const repo = useRepoStore();
+const ui = useUiStore();
 const { counts, repoName } = storeToRefs(repo);
 </script>
 
 <template>
   <div>
-    <div class="page-title">Mission Control</div>
-    <div class="page-desc">{{ repoName }} · live from {{ repo.origin }}</div>
+    <div
+      style="
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      "
+    >
+      <div>
+        <div class="page-title">Mission Control</div>
+        <div class="page-desc">{{ repoName }} · live from {{ repo.origin }}</div>
+      </div>
+      <Button variant="accent" class="new-btn" @click="ui.openNewTask()">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        New task
+      </Button>
+    </div>
 
     <SystemResourcePanel />
 

@@ -221,6 +221,48 @@ const copilotAdapter: ModelSourceAdapter = {
   },
 };
 
+/**
+ * Kiro adapter: parses `kiro-cli chat --list-models` plain-text output.
+ * The CLI emits a human-readable table; we strip ANSI codes and take the
+ * first whitespace-delimited token from each model row (e.g. "auto",
+ * "claude-sonnet-4.5"). A leading "*" marks the default model and is
+ * stripped before taking the token. Token counts are not reported by the
+ * CLI; cost tracking uses the credits footer parsed by extractUsage.
+ */
+function parseKiroModels(text: string): string[] {
+  const seen = new Set<string>();
+  // Strip ANSI escape sequences
+  const clean = text.replace(/\x1b\[[^m]*m/g, "").replace(/\x1b\[[?][0-9]*[a-zA-Z]/g, "");
+  for (const raw of clean.split("\n")) {
+    const line = raw.trim().replace(/^\*\s*/, ""); // strip leading "*"
+    if (!line) continue;
+    const token = line.split(/\s+/)[0];
+    // Must look like a model id: alphanumeric, hyphens, dots — no spaces
+    if (!token || token.length > MODEL_ID_MAX_LEN) continue;
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(token)) continue;
+    // Skip header lines like "Available" or "models"
+    if (/^available$/i.test(token) || /^models$/i.test(token)) continue;
+    seen.add(token);
+  }
+  return [...seen];
+}
+
+const kiroAdapter: ModelSourceAdapter = {
+  id: "kiro",
+  cli: "kiro",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("kiro-cli", process.env.PATH ?? "");
+    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    const out = await spawnModels(bin, ["chat", "--list-models"], {
+      timeoutMs: MODELS_TIMEOUT_MS,
+      cwd: opts.cwd,
+    });
+    const models = parseKiroModels(out);
+    return { supported: true, models: ["default", ...models], refreshable: true };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -238,9 +280,10 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   opencode: opencodeAdapter,
   codex: codexAdapter,
   "github copilot": copilotAdapter,
+  kiro: kiroAdapter,
 };
 for (const known of KNOWN_AGENTS) {
-  if (known.id === "opencode" || known.id === "codex" || known.id === "copilot") continue;
+  if (known.id === "opencode" || known.id === "codex" || known.id === "copilot" || known.id === "kiro") continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);
 }
 

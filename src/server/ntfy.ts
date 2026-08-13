@@ -22,6 +22,9 @@ export function ntfyBaseUrl(config: RepoOSConfig): string {
 
 /** Human-readable message for a status transition, or null when it isn't one. */
 export function ntfyMessageFor(prev: Status, next: Status, title: string): string | null {
+  if (prev === "ready" && next === "active") {
+    return `Task "${title}" started (ready → active)`;
+  }
   if (prev === "active" && next === "review") {
     return `Task "${title}" moved from active to review`;
   }
@@ -34,11 +37,24 @@ export function ntfyMessageFor(prev: Status, next: Status, title: string): strin
   return null;
 }
 
+/** Human-readable message when a task needs human input. */
+export function ntfyMessageForNeedsInput(title: string): string {
+  return `Task "${title}" is waiting for human input`;
+}
+
 /** True when notifications are enabled AND a topic is configured. */
 export function shouldSend(config: RepoOSConfig): boolean {
-  if (config.ntfyEnabled !== true) return false;
+  if (config.ntfyEnabled !== true) {
+    console.log(`[ntfy] Notifications disabled (ntfyEnabled=${config.ntfyEnabled})`);
+    return false;
+  }
   const topic = (config.ntfyTopic ?? "").trim();
-  return topic.length > 0;
+  if (topic.length === 0) {
+    console.log(`[ntfy] No topic configured (ntfyTopic="${config.ntfyTopic}")`);
+    return false;
+  }
+  console.log(`[ntfy] Notifications enabled for topic: ${topic}`);
+  return true;
 }
 
 /** Best-effort publish of a message to the configured topic. Never throws. */
@@ -50,8 +66,9 @@ export function publish(config: RepoOSConfig, message: string): void {
     method: "POST",
     headers: { "Content-Type": "text/plain", Title: "RepoOS" },
     body: message,
-  }).catch(() => {
-    // Best-effort: a failed notification must never surface to the user.
+  }).catch((err) => {
+    // Log errors for debugging, but never throw
+    console.error(`[ntfy] Failed to send notification to ${url}:`, err);
   });
 }
 
@@ -63,10 +80,21 @@ export function notifyStatusChange(
   next: Status,
 ): void {
   const message = ntfyMessageFor(prev, next, task.title);
-  if (message) publish(config, message);
+  if (message) {
+    console.log(`[ntfy] Sending notification for ${task.id}: ${prev} → ${next}`);
+    publish(config, message);
+  } else {
+    console.log(`[ntfy] No notification for ${task.id}: ${prev} → ${next} (no message configured)`);
+  }
 }
 
 /** Fire a notification when a task is created (stretch from #0134). */
 export function notifyTaskCreated(config: RepoOSConfig, task: Task): void {
   publish(config, `Task "${task.title}" created`);
+}
+
+/** Fire a notification when a task needs human input. */
+export function notifyNeedsInput(config: RepoOSConfig, task: Task): void {
+  const message = ntfyMessageForNeedsInput(task.title);
+  publish(config, message);
 }

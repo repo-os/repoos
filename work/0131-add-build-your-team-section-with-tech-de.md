@@ -56,4 +56,5 @@ A new "Build Your Team" section appears on the agents page below "Custom Agents,
 
 - 2026-08-12T10:01:45Z · created · unknown
 - 2026-08-12T10:02:06Z · status inbox→ready
+- 2026-08-12T18:23:13Z · status ready→active, branch
 - 2026-08-12T18:37:05Z · status active→review

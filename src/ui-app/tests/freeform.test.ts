@@ -153,6 +153,39 @@ describe("freeform → createTask round-trip (0065)", () => {
   });
 });
 
+describe("parseGeneratedTask with kiro-rendered output (0155)", () => {
+  it("parses kiro-cli rendered output with box-drawing delimiters after ANSI stripping", () => {
+    // This simulates the output from kiro-cli after ANSI codes have been stripped by runPrompt.
+    // The horizontal rule is rendered as box-drawing characters instead of literal ---.
+    const out = [
+      "> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "id: \"0001\"",
+      "title: Add file tree navigation and refresh button to context page",
+      "type: feature",
+      "priority: p2",
+      "area: web",
+      "assigned_to: ai",
+      "> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "",
+      "## Problem",
+      "",
+      "The context page currently lists many docs in a flat layout.",
+      "",
+      "## Acceptance criteria",
+      "",
+      "- [ ] Replace flat doc list with a collapsible file tree view",
+    ].join("\n");
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.title).toBe("Add file tree navigation and refresh button to context page");
+    expect(parsed.type).toBe("feature");
+    expect(parsed.priority).toBe("p2");
+    expect(parsed.area).toBe("web");
+    expect(parsed.assignedTo).toBe("ai");
+    expect(parsed.body).toContain("## Problem");
+    expect(parsed.body).toContain("- [ ] Replace flat doc list");
+  });
+});
+
 describe("pmPrompt", () => {
   it("carries the explanation and the task-file conventions", () => {
     const prompt = pmPrompt("make issues editable");
