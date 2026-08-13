@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureWorktree, worktreeStatus, resetWorktree } from "../../core/git.js";
@@ -84,6 +92,65 @@ describe("ensureWorktree", () => {
       expect(res.created).toBe(false);
       expect(res.path).toBe(root);
       expect(git(root, ["branch", "--show-current"])).toBe("feat/current");
+    } finally {
+      clean();
+    }
+  });
+
+  it("heals a worktree cut before the task's own file landed on main", () => {
+    // Reproduces the #0151 incident: a worktree/branch got created (or was
+    // left over from an earlier aborted start) from a main HEAD that
+    // predates the task file's own commit. Once that worktree exists,
+    // reuse alone never notices the task file is missing — every future
+    // start/resume would hand the agent (and finalization) a worktree
+    // without the very file it's supposed to work from.
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/late-task");
+      expect(wt.created).toBe(true);
+
+      // The task file lands on main AFTER the worktree already exists.
+      const taskRel = "work/0151-example.md";
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, taskRel), "status: active\n");
+      git(root, ["add", "--", taskRel]);
+      git(root, ["commit", "-m", "docs(0151): add task"]);
+      expect(existsSync(join(wt.path, taskRel))).toBe(false);
+
+      const resumed = ensureWorktree(root, "feat/late-task", taskRel);
+
+      expect(resumed.ok).toBe(true);
+      expect(resumed.created).toBe(false);
+      expect(resumed.path).toBe(wt.path);
+      expect(existsSync(join(resumed.path, taskRel))).toBe(true);
+      expect(readFileSync(join(resumed.path, taskRel), "utf8")).toBe("status: active\n");
+      // Healed as a real commit on the worktree's branch, not a dirty file.
+      expect(git(resumed.path, ["status", "--porcelain", "--", taskRel])).toBe("");
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not touch a worktree that already has its own copy of the task file", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const taskRel = "work/0002-example.md";
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, taskRel), "status: ready\n");
+      git(root, ["add", "--", taskRel]);
+      git(root, ["commit", "-m", "docs(0002): add task"]);
+
+      const wt = ensureWorktree(root, "feat/has-file", taskRel);
+      expect(wt.created).toBe(true);
+      // The worktree's own copy diverges from main after the branch is cut —
+      // this must never be overwritten by the heal.
+      writeFileSync(join(wt.path, taskRel), "status: active\n");
+      git(wt.path, ["add", "--", taskRel]);
+      git(wt.path, ["commit", "-m", "docs(0002): update task"]);
+
+      const resumed = ensureWorktree(root, "feat/has-file", taskRel);
+
+      expect(readFileSync(join(resumed.path, taskRel), "utf8")).toBe("status: active\n");
     } finally {
       clean();
     }

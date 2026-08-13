@@ -2,14 +2,14 @@
 id: "0150"
 title: Enable engineering agent to read and implement review recommendations
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/enable-engineering-agent-to-read-and-imp
 created_at: "2026-08-12T18:57:27Z"
-updated_at: "2026-08-12T19:45:11Z"
+updated_at: "2026-08-13T14:47:30Z"
 ---
 ## Problem
 

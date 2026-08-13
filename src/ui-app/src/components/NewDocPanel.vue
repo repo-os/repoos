@@ -4,6 +4,7 @@ import { X, RotateCcw } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useDocsStore } from "../stores/docs";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -24,6 +25,7 @@ import SelectSearchGroup from "./SelectSearchGroup.vue";
 const ui = useUiStore();
 const repo = useRepoStore();
 const config = useConfigStore();
+const docs = useDocsStore();
 
 const open = computed(() => ui.isNewDoc);
 function setOpen(v: boolean): void {
@@ -78,6 +80,8 @@ async function createFreeform(): Promise<void> {
     ui.close();
     freeformText.value = "";
     await repo.refresh();
+    await docs.loadDocs();
+    if (res.path) await docs.loadDoc(res.path);
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -91,11 +95,14 @@ async function createDoc(): Promise<void> {
   if (!ui.nd.path || !ui.nd.content) return;
   ui.saving = true;
   try {
-    await repo.createDocument({ path: ui.nd.path, content: ui.nd.content });
+    const path = ui.nd.path;
+    await repo.createDocument({ path, content: ui.nd.content });
     ui.close();
     ui.nd.path = "";
     ui.nd.content = "";
     await repo.refresh();
+    await docs.loadDocs();
+    await docs.loadDoc(path);
   } catch (err) {
     repo.onError(err);
   } finally {

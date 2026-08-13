@@ -24,7 +24,7 @@ import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } f
 import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
-import { parseTask } from "../core/task.js";
+import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -1555,6 +1555,15 @@ export class AgentRunner {
     return this.entries.has(taskId);
   }
 
+  /**
+   * True while the server-side handoff for a task is still finalizing (check,
+   * commit, review). The process is already gone, so `isRunning` is false, but
+   * the task is not stuck — the close-out pipeline owns it for a few seconds.
+   */
+  isHandoffInFlight(taskId: string): boolean {
+    return this.handoffsInFlight.has(taskId);
+  }
+
   /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
   stats(taskId: string): AgentSessionStats {
     return this.snapshotStats(taskId);
@@ -1733,16 +1742,23 @@ export class AgentRunner {
       // pointer at the control plane (ADR-0005: agents express intent, RepoOS
       // owns privileged process/network lifecycle) — managed previews are
       // requested by signal, never by a sandboxed localhost call (#0121).
+      // A managed agent is, by definition, never a preview child or a reload
+      // replacement. Scrub the control-plane's lifecycle markers and reload
+      // secret before they can leak into the agent (and from it into the
+      // #0096 agent-serve-guard test, where REPOOS_RELOAD=1 would exempt the
+      // child from the direct-serve guard and hang the test).
+      const agentEnv: NodeJS.ProcessEnv = { ...process.env };
+      delete agentEnv.REPOOS_RELOAD;
+      delete agentEnv.REPOOS_RELOAD_SECRET;
+      delete agentEnv.REPOOS_PREVIEW_CHILD;
+      agentEnv.REPOOS_AGENT = "1";
+      agentEnv.REPOOS_TASK_ID = taskId;
+      agentEnv.REPOOS_RUN_ID = runId;
+      if (this.apiUrl) agentEnv.REPOOS_API_URL = this.apiUrl;
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          REPOOS_AGENT: "1",
-          REPOOS_TASK_ID: taskId,
-          REPOOS_RUN_ID: runId,
-          ...(this.apiUrl ? { REPOOS_API_URL: this.apiUrl } : {}),
-        },
+        env: agentEnv,
       });
     } catch (err) {
       this.emit({ type: "agent.exited", id: taskId, at: now() });
@@ -2209,6 +2225,7 @@ export class AgentRunner {
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && !exitedCleanly) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
+      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted");
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
@@ -2441,6 +2458,30 @@ export class AgentRunner {
       return realpathSync(a) === realpathSync(b);
     } catch {
       return resolve(a) === resolve(b);
+    }
+  }
+
+  /**
+   * Persist a handoff failure reason to the task file's Activity log.
+   * Called when a handoff signal is expected but not detected, or the process
+   * exits uncleanly before handoff can be finalized. This persists the reason
+   * so it survives server reloads (unlike in-memory transcript entries).
+   */
+  private persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
+    if (!task) return;
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      recordChange(current, `handoff failed · ${reason}`);
+      writeFileSync(task.absPath, serializeTask(current));
+    } catch (err) {
+      // Fail-soft: if we can't persist, just log — don't crash the runner
+      console.error(`[repoos] failed to persist handoff failure for #${taskId}: ${(err as Error).message}`);
     }
   }
 

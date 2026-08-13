@@ -94,6 +94,25 @@ describe("searchAll", () => {
     expect(searchAll("docs/arch", { tasks, docs, fields }).filter((r) => r.kind === "doc").length).toBeGreaterThan(0);
   });
 
+  it("searches doc contents and provides snippets", () => {
+    const docsWithContent = [
+      { path: "AGENTS.md", title: "Agent instructions", content: "This document contains important agent rules and instructions for deployment." },
+      { path: "docs/architecture.md", title: "Architecture", content: "The system uses a modular architecture with components." },
+    ];
+    const hits = searchAll("deployment", { tasks: [], docs: docsWithContent, fields: [] });
+    const doc = hits.find((r) => r.kind === "doc");
+    expect(doc && doc.kind === "doc" && doc.title).toEqual("Agent instructions");
+    expect(doc && doc.kind === "doc" && doc.snippet).toBeTruthy();
+  });
+
+  it("uses fuzzy matching for typo tolerance", () => {
+    const src = { tasks, docs, fields };
+    const exact = searchAll("theme", src).filter((r) => r.kind === "setting");
+    const typo = searchAll("thme", src).filter((r) => r.kind === "setting");
+    expect(exact.length).toBeGreaterThan(0);
+    expect(typo.length).toBeGreaterThan(0);
+  });
+
   it("matches settings by label and key", () => {
     const byLabel = searchAll("cache directory", { tasks, docs, fields });
     expect(byLabel.filter((r) => r.kind === "setting").map((r) => r.key)).toEqual(["cacheDir"]);
