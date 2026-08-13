@@ -107,6 +107,53 @@ import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
+import {
+  Router,
+  type RouteContext,
+  // Info routes
+  health,
+  restart,
+  getCounts,
+  getIndex,
+  getDocs,
+  getSkills,
+  getSystem,
+  getTunnelStatus,
+  getChat,
+  sendChatMessage,
+  initInfoHandlers,
+  // Tasks routes
+  getTasks,
+  createTask,
+  createFreeformTask,
+  getTask,
+  patchTask,
+  deleteTask,
+  getTaskOutput,
+  taskAction,
+  startPreview,
+  stopPreview,
+  getTaskReview,
+  reviewAgain,
+  reviewMessage,
+  getScreenshot,
+  uploadScreenshot,
+  // Config routes
+  readConfig,
+  patchConfig,
+  // Models routes
+  listModels,
+  testModel,
+  // Agents routes
+  runningAgents,
+  detectInstalledAgents,
+  // Notifications
+  testNotification,
+  // UI routes
+  serveManifest,
+  serveIcon,
+  setIconRenderer,
+} from "./routes/index.js";
 
 function findCloudflared(): string | null {
   for (const dir of (process.env.PATH ?? "").split(":").filter(Boolean)) {
@@ -859,20 +906,76 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     return { ok: true, conflicts: [] };
   }
 
+  // Initialize route handlers that need runtime configuration
+  initInfoHandlers(loadedHash || "", tunnelReadiness);
+  setIconRenderer((size: number) => renderInstanceIcon(basename(config.root) || "repoos", size));
+
+  // Create and register all routes with the router
+  const router = new Router();
+
+  // Info/metadata routes
+  router.register("GET", "/api/health", health);
+  router.register("POST", "/api/server/restart", restart);
+  router.register("GET", "/api/counts", getCounts);
+  router.register("GET", "/api/index", getIndex);
+  router.register("GET", "/api/docs", getDocs);
+  router.register("GET", "/api/skills", getSkills);
+  router.register("GET", "/api/system", getSystem);
+  router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
+  router.register("GET", "/api/chat", getChat);
+  router.register("POST", "/api/chat/message", sendChatMessage);
+
+  // Task routes
+  router.register("GET", "/api/tasks", getTasks);
+  router.register("POST", "/api/tasks", createTask);
+  router.register("POST", "/api/tasks/freeform", createFreeformTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)$/, getTask);
+  router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
+  router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
+
+  // Config routes
+  router.register("GET", "/api/config", readConfig);
+  router.register("PATCH", "/api/config", patchConfig);
+
+  // Model routes
+  router.register("GET", "/api/models", listModels);
+  router.register("POST", "/api/models/test", testModel);
+
+  // Agent routes
+  router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/detect", detectInstalledAgents);
+
+  // Notification routes
+  router.register("POST", "/api/ntfy/test", testNotification);
+
+  // UI routes
+  router.register("GET", "/manifest.webmanifest", serveManifest);
+  router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
 
-    if (method === "OPTIONS") {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      });
-      res.end();
-      return;
-    }
+    try {
+      if (method === "OPTIONS") {
+        res.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        });
+        res.end();
+        return;
+      }
 
     // ---- SSE stream ----
     if (path === "/api/events" && method === "GET") {
@@ -905,962 +1008,37 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return;
     }
 
-    try {
-      // ---- reads ----
-      if (path === "/api/health" && method === "GET") {
-        const snap = index.snapshot();
-        const build = loadBuildInfo();
-        // Readiness handshake for a reload replacement (0066): when this
-        // process carries a reload secret AND the probe matches it, the answer
-        // proves a live replacement is listening and healthy. The parent's own
-        // health handler answers without the handshake (different secret), so
-        // it can never confirm itself.
-        const secret = process.env.REPOOS_RELOAD_SECRET;
-        const handshake =
-          typeof secret === "string" && secret !== "" && url.searchParams.get("reload") === secret;
-        return json(res, 200, {
-          ok: true,
-          root: config.root,
-          taskCount: snap.taskCount,
-          workDir: config.workDir,
-          version: build.version,
-          buildAt: build.buildAt,
-          // The build hash THIS process loaded — the code the running server
-          // actually serves, not whatever may have landed on disk since. The UI
-          // uses it to clear a "new version available" notice after a reload.
-          buildHash: loadedHash,
-          isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
-          ...(handshake ? { reloadHandshake: true } : {}),
-        });
-      }
-      if (path === "/api/server/restart" && method === "POST") {
-        // Best-effort manual reload (same path as the build watch): reloads
-        // now when stale and idle, defers while agents run, or reports
-        // not-stale when this process already serves the current build.
-        const state =
-          reload?.requestReload("manual restart") ??
-          ({
-            state: "not-stale",
-            reason: "auto-reload unavailable",
-          } as const);
-        return json(res, 200, state);
-      }
-      if (path === "/api/tasks" && method === "GET") {
-        const status = url.searchParams.get("status") as Status | null;
-        if (status && !(STATUSES as readonly string[]).includes(status)) {
-          return json(res, 400, { error: `Invalid status "${status}"` });
-        }
-        return json(res, 200, index.getTasks(status ?? undefined).map(withReviewStatus));
-      }
-      if (path === "/api/counts" && method === "GET") {
-        return json(res, 200, index.counts());
-      }
-      if (path === "/api/index" && method === "GET") {
-        const snapshot = index.snapshot();
-        return json(res, 200, {
-          ...snapshot,
-          tasks: snapshot.tasks.map(withReviewStatus),
-        });
-      }
-      if (path === "/api/docs" && method === "GET") {
-        return json(res, 200, listDocs(config));
-      }
-      if (path === "/api/skills" && method === "GET") {
-        return json(res, 200, listSkills(config));
-      }
-      if (path === "/api/chat" && method === "GET") {
-        const agent = agentsForConfig(config).find(
-          (candidate) => candidate.name.toLowerCase() === "repoos guide",
-        ) ?? null;
-        const session = runner.output(REPO_GUIDE_SESSION_ID);
-        return json(res, 200, {
-          ok: true,
-          agent,
-          enabled: Boolean(agent?.enabled),
-          lines: session?.lines ?? [],
-          running: runner.isRunning(REPO_GUIDE_SESSION_ID),
-          stats: runner.stats(REPO_GUIDE_SESSION_ID),
-        });
-      }
-      if (path === "/api/chat/message" && method === "POST") {
-        const agent = resolveRepoGuide(config);
-        if (!agent) {
-          return json(res, 400, {
-            error: "RepoOS Guide is disabled — enable it on the Agents page to chat",
-          });
-        }
-        const body = (await readBody(req)) as { text?: unknown };
-        const text = typeof body?.text === "string" ? body.text.trim() : "";
-        if (!text) return json(res, 400, { error: "message text is required" });
-
-        const context = repoGuideContext(config, index.getTasks());
-        const existing = runner.output(REPO_GUIDE_SESSION_ID);
-        const result = existing
-          ? runner.send(REPO_GUIDE_SESSION_ID, text, agent, {
-              resumePreamble: `Updated repository context:\n${context}`,
-            })
-          : runner.startChat(REPO_GUIDE_SESSION_ID, text, agent, context);
-        if (!result.ok && result.busy) {
-          return json(res, 409, { error: result.reason ?? "RepoOS Guide is busy" });
-        }
-        if (!result.ok) {
-          return json(res, 400, { error: result.reason ?? "could not send message" });
-        }
-        return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
-      }
-      if (path === "/api/agents/running" && method === "GET") {
-        return json(res, 200, { tasks: runner.running() });
-      }
-      if (path === "/api/agents/detect" && method === "GET") {
-        // Best-effort: a broken PATH entry or a hung probe must never break
-        // the endpoint, so the whole detection is wrapped.
-        let agents: DetectedAgent[] = [];
-        try {
-          agents = await detectAgents();
-        } catch {
-          agents = [];
-        }
-        return json(res, 200, { agents });
-      }
-      if (path === "/api/system" && method === "GET") {
-        const stats = sampleSystem({
-          serverPid: process.pid,
-          cacheDir: join(config.root, config.cacheDir),
-          runningAgents: runner.running(),
-        });
-        return json(res, 200, stats);
-      }
-      if (path === "/api/tunnel/readiness" && method === "GET") {
-        const rawPort = url.searchParams.get("port");
-        const port = rawPort ? Number(rawPort) : undefined;
-        if (rawPort) {
-          if (port === undefined || !Number.isInteger(port) || port < 1 || port > 65535) {
-            return json(res, 400, { error: "port must be an integer from 1 to 65535" });
+    // Create the route context with all necessary dependencies
+    const routeContext: RouteContext = {
+      config,
+      index,
+      runner,
+      previews,
+      reviews,
+      repoos,
+      emitEvent: (e: RepoEvent) => {
+        for (const client of clients) {
+          try {
+            client.write(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`);
+          } catch {
+            /* client disconnected */
           }
         }
-        return json(res, 200, await tunnelReadiness(config.root, port));
-      }
-      const outputMatch = path.match(/^\/api\/tasks\/([^/]+)\/output$/);
-      if (outputMatch && method === "GET") {
-        const session = runner.output(outputMatch[1]);
-        return json(res, 200, {
-          ok: true,
-          lines: session?.lines ?? [],
-          stats: runner.stats(outputMatch[1]),
-        });
-      }
-      const reviewMatch = path.match(/^\/api\/tasks\/([^/]+)\/review$/);
-      if (reviewMatch && method === "GET") {
-        const reviewId = reviewMatch[1];
-        return json(res, 200, {
-          ok: true,
-          /** Whether an agent review is being written right now. */
-          running: reviews.isRunning(reviewId),
-          /** Whether the review agent is enabled on the Agents page at all. */
-          enabled: reviews.enabled(),
-          review: reviews.read(reviewId),
-          /** The reviewer conversation, separate from the engineer session. */
-          lines: reviews.session(reviewId),
-        });
-      }
-      // "Review again" (0110): a fresh review run against the current worktree
-      // state — a new assessment, never a continuation of the prior run. The
-      // run happens server-side, so the response returns as soon as it starts.
-      const reviewAgainMatch = path.match(/^\/api\/tasks\/([^/]+)\/review\/again$/);
-      if (reviewAgainMatch && method === "POST") {
-        const id = reviewAgainMatch[1];
-        const existing = index.getTask(id);
-        if (!existing) {
-          return json(res, 404, { error: `Task #${id} not found` });
-        }
-        if (existing.status !== "review") {
-          return json(res, 400, {
-            error: `Only review tasks can be re-reviewed (#${id} is ${existing.status})`,
-          });
-        }
-        if (runner.isRunning(id)) {
-          return json(res, 409, {
-            error: `Task #${id} has an agent turn in progress — wait for it to finish`,
-          });
-        }
-        const gate = reviews.canRun(existing);
-        if (!gate.ok) {
-          return json(res, 400, { error: gate.reason ?? "could not start the review" });
-        }
-        void reviews.run(existing);
-        return json(res, 200, { ok: true });
-      }
-      // Chat with the reviewer (0110): a follow-up turn in the reviewer's own
-      // conversation, never routed to the engineer session.
-      const reviewMessageMatch = path.match(/^\/api\/tasks\/([^/]+)\/review\/message$/);
-      if (reviewMessageMatch && method === "POST") {
-        const id = reviewMessageMatch[1];
-        const existing = index.getTask(id);
-        if (!existing) {
-          return json(res, 404, { error: `Task #${id} not found` });
-        }
-        if (existing.status !== "review") {
-          return json(res, 400, {
-            error: `Only review tasks accept reviewer messages (#${id} is ${existing.status})`,
-          });
-        }
-        const body = (await readBody(req)) as { text?: unknown };
-        const text = typeof body?.text === "string" ? body.text.trim() : "";
-        if (!text) {
-          return json(res, 400, { error: "message text is required" });
-        }
-        const gate = reviews.canSend(existing);
-        if (!gate.ok) {
-          return json(res, 400, { error: gate.reason ?? "could not send to the reviewer" });
-        }
-        void reviews.send(existing, text);
-        return json(res, 200, { ok: true });
-      }
-      const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
-      if (taskMatch && method === "GET") {
-        const t = index.getTask(taskMatch[1]);
-        return t
-          ? json(res, 200, { ...withReviewStatus(t), preview: previews.get(t.id) ?? null })
-          : json(res, 404, { error: `Task #${taskMatch[1]} not found` });
-      }
+      },
+      closeOutLock,
+      pendingReview,
+      uiDir,
+      syncTaskBranch,
+      onServerStatusChange,
+      reload,
+    } as RouteContext;
 
-      // ---- previews (read-only worktree servers, one per task) ----
-      const previewStopMatch = path.match(/^\/api\/tasks\/([^/]+)\/preview\/stop$/);
-      if (previewStopMatch && (method === "POST" || method === "DELETE")) {
-        await previews.stop(previewStopMatch[1]);
-        return json(res, 200, { ok: true });
-      }
-      const previewMatch = path.match(/^\/api\/tasks\/([^/]+)\/preview$/);
-      if (previewMatch && (method === "POST" || method === "DELETE")) {
-        if (method === "DELETE") {
-          await previews.stop(previewMatch[1]);
-          return json(res, 200, { ok: true });
-        }
-        const t = index.getTask(previewMatch[1]);
-        if (!t) {
-          return json(res, 404, { error: `Task #${previewMatch[1]} not found` });
-        }
-        const result = await previews.start(t);
-        if (!result.ok) {
-          return json(res, 400, { error: result.error ?? "could not start preview" });
-        }
-        return json(res, 200, { ok: true, port: result.port, url: result.url });
-      }
+    // Try to dispatch through the router for all API routes
+    const handled = await router.dispatch(routeContext, method, path, req, res);
+      if (handled) return;
 
-      // ---- task screenshot attachments (0123) ----
-      const screenshotServeMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/);
-      if (screenshotServeMatch && method === "GET") {
-        const abs = resolveScreenshot(config, screenshotServeMatch[1], screenshotServeMatch[2]);
-        if (!abs) {
-          return json(res, 404, { error: "Attachment not found" });
-        }
-        const mime = mimeForExtension(abs);
-        res.writeHead(200, {
-          "Content-Type": mime ?? "application/octet-stream",
-          "Cache-Control": "no-cache",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(readFileSync(abs));
-        return;
-      }
-      const screenshotUploadMatch = path.match(/^\/api\/tasks\/([^/]+)\/attachments$/);
-      if (screenshotUploadMatch && method === "POST") {
-        const task = index.getTask(screenshotUploadMatch[1]);
-        if (!task) {
-          return json(res, 404, { error: `Task #${screenshotUploadMatch[1]} not found` });
-        }
-        const body = (await readBody(req)) as { name?: unknown; mime?: unknown; data?: unknown };
-        const result = saveScreenshot(config, task, body ?? {});
-        if ("error" in result) {
-          return json(res, 400, { error: result.error });
-        }
-        // Record the screenshot in the task body (before the Activity section),
-        // re-commit the task file, and push the change through the index.
-        const updated = patchTaskFile(config, task.absPath, {
-          body: appendScreenshotsSection(task.body, [result]),
-        });
-        index.applyFileChange(updated.absPath);
-        return json(res, 201, { ok: true, attachment: result });
-      }
-
-      // ---- writes ----
-      if (path === "/api/tasks" && method === "POST") {
-        const body = (await readBody(req)) as Record<string, unknown>;
-        if (!body.title || typeof body.title !== "string") {
-          return json(res, 400, { error: "title is required" });
-        }
-        const created = repoos.createTask({
-          title: body.title,
-          type: body.type as string | undefined,
-          area: body.area as string | undefined,
-          priority: body.priority as string | undefined,
-          assignedTo: body.assignedTo as string | undefined,
-          status: body.status as Status | undefined,
-          body: typeof body.body === "string" ? body.body : undefined,
-        });
-        // The watcher will also fire, but emit immediately so the requester's
-        // own SSE stream sees it without waiting on fs latency.
-        index.applyFileChange(created.absPath);
-        // New task files are committed to main so they are never untracked
-        // when their branch is merged later. Fail-soft: creation already
-        // succeeded.
-        commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-        return json(res, 201, index.getTask(created.id));
-      }
-      if (path === "/api/tasks/freeform" && method === "POST") {
-        const body = (await readBody(req)) as Record<string, unknown>;
-        const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
-        if (!explanation) {
-          return json(res, 400, { error: "explanation is required" });
-        }
-        // The client generates a per-run id so the PM agent's streamed output
-        // (agent.output SSE events) can be correlated back to this request.
-        const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
-
-        // Fallback helper: persist the raw explanation as a draft task so a
-        // missing/failed PM agent never loses the user's capture.
-        const saveDraft = (fallbackReason: "no-pm-agent" | "agent-failed", detail?: string) => {
-          const created = repoos.createTask({
-            title: explanationTitle(explanation),
-            body: explanation,
-            status: "draft",
-          });
-          index.applyFileChange(created.absPath);
-          commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-          return json(res, 201, {
-            ok: true,
-            fallback: true,
-            fallbackReason,
-            reason: detail,
-            task: index.getTask(created.id),
-          });
-        };
-
-        // Build a one-shot agent override for this freeform request.
-        const freeformAgentName =
-          typeof body?.agentOverride === "string" && body.agentOverride
-            ? body.agentOverride
-            : undefined;
-        const freeformCli =
-          typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
-        const freeformModel =
-          typeof body?.modelOverride === "string" && body.modelOverride
-            ? body.modelOverride
-            : undefined;
-        const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
-
-        // Resolve the PM agent, applying any one-shot override.
-        let pm: Agent | null;
-        if (hasFreeformOverride) {
-          const list = agentsForConfig(config);
-          const baseName = freeformAgentName || "pm";
-          const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
-          pm = base
-            ? {
-                ...base,
-                ...(freeformCli ? { cli: freeformCli } : {}),
-                ...(freeformModel ? { model: freeformModel } : {}),
-              }
-            : null;
-        } else {
-          pm = resolvePmAgent(config);
-        }
-        if (!pm) {
-          return saveDraft("no-pm-agent");
-        }
-
-        const result = await runPrompt(pm, pmPrompt(explanation), {
-          cwd: config.root,
-          onLine: runId
-            ? (line) => {
-                emitEvent({
-                  type: "agent.output",
-                  id: runId,
-                  entry: { s: "out", d: line },
-                  stream: "out",
-                  at: new Date().toISOString(),
-                });
-              }
-            : undefined,
-        });
-        if (!result.ok || !result.output) {
-          return saveDraft(
-            "agent-failed",
-            result.error ?? "the PM agent returned no usable output",
-          );
-        }
-        const fields = parseGeneratedTask(result.output);
-        if (!fields.title || !fields.body) {
-          return saveDraft("agent-failed", "the PM agent returned unusable output");
-        }
-        const created = repoos.createTask(fields);
-        index.applyFileChange(created.absPath);
-        commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-        return json(res, 201, {
-          ok: true,
-          fallback: false,
-          task: index.getTask(created.id),
-        });
-      }
-      if (taskMatch && method === "PATCH") {
-        const existing = index.getTask(taskMatch[1]);
-        if (!existing) {
-          return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
-        }
-        const body = (await readBody(req)) as TaskPatch;
-        const prevStatus = existing.status;
-        // Completion is a close-out workflow, not a plain status edit. In
-        // particular, board drag/drop and stale clients must not skip the
-        // automatic-review guard (or merge/check work) by PATCHing `done`.
-        if (body.status === "done" && prevStatus !== "done") {
-          if (reviews.isRunning(existing.id)) {
-            return json(res, 409, {
-              error: `Task #${existing.id} is waiting for automatic review to finish`,
-            });
-          }
-          return json(res, 400, {
-            error: `Use POST /api/tasks/${existing.id}/done to complete a review task`,
-          });
-        }
-        const updated = patchTaskFile(config, existing.absPath, body, {
-          onStatusChange: onServerStatusChange,
-        });
-        index.applyFileChange(updated.absPath);
-
-        // Auto-sync main into the task branch when a task lands in review,
-        // unless an agent turn is still cleaning up. Conflicts set needs_merge.
-        if (
-          prevStatus !== "review" &&
-          updated.status === "review" &&
-          updated.branch &&
-          !runner.isRunning(updated.id)
-        ) {
-          void syncTaskBranch(updated);
-        }
-
-        return json(res, 200, index.getTask(updated.id));
-      }
-      const actionMatch = path.match(/^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/);
-      if (actionMatch && method === "POST") {
-        const id = actionMatch[1];
-        const existing = index.getTask(id);
-        if (!existing) {
-          return json(res, 404, { error: `Task #${id} not found` });
-        }
-
-        if (actionMatch[2] === "start") {
-          // A `ready` task launches fresh; an `active` task with no running
-          // agent (i.e. paused via /pause) relaunches in place — status stays
-          // `active` either way, so a paused task never bounces through `ready`.
-          if (existing.status !== "ready" && existing.status !== "active") {
-            return json(res, 400, {
-              error: `Only ready or paused tasks can be started (#${id} is ${existing.status})`,
-            });
-          }
-          if (runner.isRunning(id)) {
-            return json(res, 400, { error: `Task #${id} is already running` });
-          }
-          const agent = resolveAgentForTask(config, existing);
-          if (!agent) {
-            return json(res, 400, {
-              error: "No enabled engineer agent is configured on the Agents page",
-            });
-          }
-          // The task's branch wins; otherwise derive one from the title (the
-          // same rule the task drawer uses) and persist it with the transition.
-          // The agent works in a git worktree on that branch so the main
-          // checkout — and the user — is never yanked off the current branch.
-          // An optional `mode: "clean"` restarts a dirty task from scratch:
-          // the existing worktree and branch are discarded so the agent begins
-          // from a fresh checkout. The default ("resume") keeps the existing
-          // worktree and its uncommitted changes.
-          const body = (await readBody(req)) as { mode?: unknown };
-          const clean = body?.mode === "clean";
-          const branch = existing.branch || deriveBranch(existing.title);
-          if (clean) {
-            if (!existing.branch) {
-              return json(res, 400, {
-                error: `Task #${id} has no worktree yet — start normally instead`,
-              });
-            }
-            if (!resetWorktree(config.root, branch)) {
-              return json(res, 400, {
-                error: `Could not reset the worktree for ${branch} — is it the main checkout?`,
-              });
-            }
-          }
-          const wtRes = ensureWorktree(config.root, branch);
-          const patch: TaskPatch = { status: "active", needsInput: false };
-          if (!existing.branch) patch.branch = branch;
-          const updated = patchTaskFile(config, existing.absPath, patch, {
-            onStatusChange: onServerStatusChange,
-          });
-          index.applyFileChange(updated.absPath);
-          index.refreshBranches();
-          const cwd = wtRes.ok ? wtRes.path : config.root;
-
-          // Bootstrap: RepoOS-owned preflight before the agent sees the
-          // worktree. Validates the root/worktree/branch, checks the
-          // orchestration build, and installs missing dependencies. Failures
-          // stop the launch with a clear error — the task stays `active` and
-          // the worktree is left unchanged so the problem is recoverable.
-          const taskForLaunch = index.getTask(updated.id) ?? updated;
-          const bootResult = await bootstrap(config, taskForLaunch, branch, cwd);
-          if (!bootResult.ok) {
-            return json(res, 500, {
-              ok: false,
-              error: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}`,
-              bootstrap: {
-                ok: false,
-                durationMs: bootResult.durationMs,
-                steps: bootResult.steps.map((s) => ({
-                  name: s.name,
-                  ok: s.ok,
-                  durationMs: s.durationMs,
-                  detail: s.detail,
-                })),
-              },
-            });
-          }
-
-          // Generate a cached task context pack so the agent starts with
-          // knowledge of the repo, relevant files, tests, and worktree state.
-          const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
-
-          // Resume preamble: when resuming a dirty worktree, explicitly
-          // describe existing partial changes so the agent doesn't rediscover
-          // them from scratch.
-          const preamble =
-            clean || !existing.branch
-              ? undefined
-              : resumePreamble(config, taskForLaunch, branch, cwd);
-
-          const spawnRes = runner.start(taskForLaunch, branch, agent, {
-            cwd,
-            contextPack: pack.content,
-            resumePreamble: preamble,
-          });
-          return json(res, 200, {
-            ok: true,
-            task: index.getTask(updated.id),
-            branch,
-            clean,
-            git: wtRes.ok ? "ok" : (wtRes.reason ?? "unknown"),
-            worktree: wtRes.ok ? wtRes.path : undefined,
-            spawn: {
-              ok: spawnRes.ok,
-              pid: spawnRes.pid,
-              reason: spawnRes.reason,
-            },
-            bootstrap: {
-              ok: bootResult.ok,
-              durationMs: bootResult.durationMs,
-              steps: bootResult.steps.map((s) => ({
-                name: s.name,
-                ok: s.ok,
-                durationMs: s.durationMs,
-              })),
-            },
-            context: {
-              cacheHit: pack.cacheHit,
-              generationMs: pack.generationMs,
-              size: pack.size,
-            },
-          });
-        }
-
-        if (actionMatch[2] === "done") {
-          if (existing.status !== "review") {
-            return json(res, 400, {
-              error: `Only review tasks can be completed (#${id} is ${existing.status})`,
-            });
-          }
-          if (!existing.branch) {
-            return json(res, 400, { error: `Task #${id} has no branch to merge` });
-          }
-          if (runner.isRunning(id)) {
-            return json(res, 409, {
-              error: `Task #${id} has an agent turn in progress`,
-            });
-          }
-          // A reviewer reads this worktree and its report is part of the
-          // human sign-off decision. Do this check before stopping previews,
-          // cancelling processes, or beginning any close-out work.
-          if (reviews.isRunning(id)) {
-            return json(res, 409, {
-              error: `Task #${id} is waiting for automatic review to finish`,
-            });
-          }
-          // The merge removes the worktree, so the preview of it must die first.
-          await previews.stop(id);
-          // Same for an agent review still reading that worktree: the human is
-          // signing off now, so the report has served its purpose either way.
-          pendingReview.delete(id);
-          reviews.cancel(id);
-          // ... and any agent process must be released too, so the worktree is
-          // never torn out from under a live process. The 409 above guards the
-          // case of a genuinely-active turn; this is belt-and-braces for a turn
-          // still in its stop grace window. A no-op when nothing is running.
-          void runner.stop(id);
-          // Hold the server-owned close-out lock for the whole pipeline (0143):
-          // the ReloadManager defers auto-reloads and parks any build this
-          // produces, so the server survives to finish the close-out.
-          const result = await completeTask(config, existing, (step: DoneStep) => {
-            emitEvent({
-              type: "task.progress",
-              id,
-              step,
-              at: new Date().toISOString(),
-            });
-          }, {}, closeOutLock);
-          if (result.task) index.applyFileChange(result.task.absPath);
-          index.refreshBranches();
-          return json(res, result.ok ? 200 : 400, {
-            ok: result.ok,
-            merged: result.merged,
-            alreadyMerged: result.alreadyMerged,
-            conflicts: result.conflicts,
-            ff: result.ff,
-            drifted: result.drifted,
-            check: result.check,
-            error: result.reason,
-            task: result.task ? index.getTask(result.task.id) : undefined,
-          });
-        }
-
-        if (actionMatch[2] === "sync") {
-          if (existing.status !== "review") {
-            return json(res, 400, {
-              error: `Only review tasks can be synced (#${id} is ${existing.status})`,
-            });
-          }
-          if (!existing.branch) {
-            return json(res, 400, { error: `Task #${id} has no branch to sync` });
-          }
-          if (runner.isRunning(id)) {
-            return json(res, 409, {
-              error: `Task #${id} has an agent turn in progress`,
-            });
-          }
-          const sync = await syncTaskBranch(existing);
-          index.refreshBranches();
-          return json(res, sync.ok ? 200 : 409, {
-            ok: sync.ok,
-            conflicts: sync.conflicts,
-            error: sync.reason,
-          });
-        }
-
-        if (actionMatch[2] === "message") {
-          if (existing.status !== "active" && existing.status !== "review") {
-            return json(res, 400, {
-              error: `Only active or review tasks accept messages (#${id} is ${existing.status})`,
-            });
-          }
-          const agent = resolveAgentForTask(config, existing);
-          if (!agent) {
-            return json(res, 400, {
-              error: "No enabled engineer agent is configured on the Agents page",
-            });
-          }
-          const body = (await readBody(req)) as { text?: unknown };
-          const text = typeof body?.text === "string" ? body.text.trim() : "";
-          if (!text) {
-            return json(res, 400, { error: "message text is required" });
-          }
-          // Replying means the human is no longer needed: clear the flag on the
-          // main copy before the session resumes so the board stops signalling.
-          if (existing.needsInput) {
-            const cleared = patchTaskFile(config, existing.absPath, { needsInput: false });
-            index.applyFileChange(cleared.absPath);
-          }
-          // Build a resume preamble so the agent sees existing partial changes
-          // without rediscovering them from scratch.
-          let preamble: string | undefined;
-          if (existing.branch) {
-            const wtPath = worktreePathForBranch(config.root, existing.branch);
-            if (wtPath) {
-              preamble = resumePreamble(config, existing, existing.branch, wtPath) || undefined;
-            }
-          }
-          const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
-          if (!sendRes.ok && sendRes.busy) {
-            return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
-          }
-          if (!sendRes.ok) {
-            return json(res, 400, { error: sendRes.reason ?? "could not send message" });
-          }
-          return json(res, 200, {
-            ok: true,
-            spawn: { ok: true, pid: sendRes.pid },
-          });
-        }
-
-        if (existing.status !== "active") {
-          return json(res, 400, {
-            error: `Only active tasks can be paused (#${id} is ${existing.status})`,
-          });
-        }
-        const stopRes = runner.stop(id);
-        // Status stays `active` — pausing only stops the agent process, it no
-        // longer demotes the task back to `ready` (see #0070). `needsInput`
-        // still clears: a stopped agent isn't waiting on a reply.
-        const updated = patchTaskFile(
-          config,
-          existing.absPath,
-          {
-            needsInput: false,
-          },
-          {
-            onStatusChange: onServerStatusChange,
-          },
-        );
-        index.applyFileChange(updated.absPath);
-        return json(res, 200, {
-          ok: true,
-          task: index.getTask(updated.id),
-          stopped: stopRes.stopped,
-          reason: stopRes.reason,
-        });
-      }
-      if (taskMatch && method === "DELETE") {
-        const existing = index.getTask(taskMatch[1]);
-        if (!existing) {
-          return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
-        }
-        // A deleted task's preview must not outlive it.
-        await previews.stop(taskMatch[1]);
-        try {
-          deleteTaskFile(config, existing.absPath);
-        } catch (err) {
-          if (err instanceof PathGuardError) {
-            return json(res, 400, { error: err.message });
-          }
-          // Idempotent: the file is already gone, so the task no longer exists.
-          return json(res, 404, { error: `Task #${taskMatch[1]} not found` });
-        }
-        index.applyFileDelete(existing.absPath);
-        return json(res, 200, { ok: true });
-      }
-
-      // ---- config read / write ----
-      if (path === "/api/config" && method === "GET") {
-        // Agents default at runtime: when nothing is stored, serve the built-ins.
-        const agents = agentsForConfig(repoos.config);
-        return json(res, 200, {
-          config: { ...repoos.config, agents },
-          schema: getConfigSchema(),
-          // The static list is the fallback the Agents page shows while /api/models
-          // loads (and when no model source is available).
-          agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
-        });
-      }
-      if (path === "/api/models" && method === "GET") {
-        // Per-CLI live model lists, probed on demand (the Agents page fetches
-        // on mount and re-probes with ?refresh=1). Best-effort: a broken PATH,
-        // missing binary, or hung probe must never break the endpoint.
-        const refresh = url.searchParams.get("refresh") === "1";
-        let byCli: Record<string, ModelSourceResult> = {};
-        try {
-          byCli = await listModelSources({ refresh, cwd: config.root });
-        } catch {
-          byCli = {};
-        }
-        return json(res, 200, { byCli, at: new Date().toISOString() });
-      }
-      if (path === "/api/models/test" && method === "POST") {
-        try {
-          const body = (await readBody(req)) as { cli?: unknown; model?: unknown };
-          if (
-            typeof body.cli !== "string" ||
-            !AGENT_CLIS.includes(body.cli as (typeof AGENT_CLIS)[number])
-          ) {
-            return json(res, 400, { error: "cli must be a supported coding agent" });
-          }
-          if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
-            return json(res, 400, { error: "model must be a non-empty string" });
-          }
-          // Model discovery and execution are separate capabilities. Claude
-          // and Qwen cannot list their catalogs, but they can still execute a
-          // user-selected/default model and must reach the real probe.
-          const result = await testModelCombination(body.cli, body.model, { cwd: config.root });
-          return json(res, 200, { result, at: new Date().toISOString() });
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
-          return json(res, 500, { error: `Model compatibility test failed: ${reason}` });
-        }
-      }
-      if (path === "/api/config" && method === "PATCH") {
-        const body = (await readBody(req)) as Record<string, unknown>;
-        const patch: Record<string, unknown> = {};
-
-        // Agents are validated outside the schema loop (they're a table array).
-        if (body.agents !== undefined) {
-          if (!Array.isArray(body.agents)) {
-            return json(res, 400, { error: "agents must be an array" });
-          }
-          const list: {
-            name: string;
-            cli: string;
-            model: string;
-            enabled: boolean;
-            instructions?: string;
-          }[] = [];
-          for (const agent of body.agents) {
-            const a = agent as Record<string, unknown>;
-            if (typeof a?.name !== "string" || !a.name.trim()) {
-              return json(res, 400, { error: "each agent needs a non-empty name" });
-            }
-            if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number])) {
-              return json(res, 400, { error: `cli must be one of: ${AGENT_CLIS.join(", ")}` });
-            }
-            // The model stays a RepoOS-side label: any non-empty string is
-            // accepted so dynamically-selected models save. AGENT_MODELS remains
-            // the fallback suggested list, never an allowlist.
-            if (typeof a.model !== "string" || !a.model.trim()) {
-              return json(res, 400, {
-                error: `agent "${a.name}" model must be a non-empty string`,
-              });
-            }
-            if (typeof a.enabled !== "boolean") {
-              return json(res, 400, { error: `agent "${a.name}" enabled must be true or false` });
-            }
-            if (a.instructions !== undefined && typeof a.instructions !== "string") {
-              return json(res, 400, { error: `agent "${a.name}" instructions must be a string` });
-            }
-            const entry: {
-              name: string;
-              cli: string;
-              model: string;
-              enabled: boolean;
-              instructions?: string;
-            } = {
-              name: a.name.trim(),
-              cli: a.cli as string,
-              model: a.model as string,
-              enabled: a.enabled,
-            };
-            if (typeof a.instructions === "string" && a.instructions.trim()) {
-              entry.instructions = a.instructions.trim();
-            }
-            list.push(entry);
-          }
-          patch.agents = list;
-        }
-
-        // Validate every field against the schema
-        const schema = getConfigSchema();
-        for (const field of schema) {
-          if (body[field.key] === undefined) continue;
-          const val = body[field.key];
-
-          if (field.type === "string") {
-            // An empty ntfyTopic is valid — it means "never send" even if the
-            // toggle is on. Every other string field must be non-empty.
-            if (typeof val !== "string" || (!val.toString().trim() && field.key !== "ntfyTopic")) {
-              return json(res, 400, { error: `${field.label} must be a non-empty string` });
-            }
-            patch[field.key] = val.toString().trim();
-          } else if (field.type === "boolean") {
-            if (typeof val !== "boolean") {
-              return json(res, 400, { error: `${field.label} must be true or false` });
-            }
-            patch[field.key] = val;
-          } else if (field.type === "select") {
-            const valid = field.options?.map((o) => o.value) ?? [];
-            if (!valid.includes(val as string)) {
-              return json(res, 400, {
-                error: `${field.label} must be one of: ${valid.join(", ")}`,
-              });
-            }
-            patch[field.key] = val;
-          } else if (field.type === "array") {
-            if (!Array.isArray(val) || !val.length) {
-              return json(res, 400, { error: `${field.label} must be a non-empty array` });
-            }
-            for (const item of val) {
-              if (typeof item !== "string" || !item.trim()) {
-                return json(res, 400, {
-                  error: `${field.label} entries must be non-empty strings`,
-                });
-              }
-            }
-            patch[field.key] = (val as string[]).map((s) => s.trim());
-          }
-        }
-
-        const tunnelEnabled =
-          typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
-        delete patch.tunnelEnabled;
-
-        if (Object.keys(patch).length === 0 && tunnelEnabled === undefined) {
-          return json(res, 400, { error: "No valid fields to update" });
-        }
-
-        if (Object.keys(patch).length > 0) {
-          patchTomlConfig(join(config.root, "repoos.toml"), patch);
-        }
-        if (tunnelEnabled !== undefined) {
-          const tunnel = readTunnelConfig(config.root);
-          tunnel.enabled = tunnelEnabled;
-          writeTunnelConfig(config.root, tunnel);
-        }
-
-        // Update in-memory config so live endpoints see fresh values
-        Object.assign(repoos.config, loadConfig(config.root));
-
-        // Re-index if operational paths changed
-        if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
-          index.refreshAll();
-        }
-
-        return json(res, 200, { ok: true, config: repoos.config });
-      }
-
-      // ---- ntfy test notification ----
-      if (path === "/api/ntfy/test" && method === "POST") {
-        if (!config.ntfyEnabled) {
-          return json(res, 400, { error: "ntfy notifications are disabled" });
-        }
-        const topic = (config.ntfyTopic ?? "").trim();
-        if (!topic) {
-          return json(res, 400, { error: "ntfy topic is empty" });
-        }
-        const repoName = basename(config.root);
-        const message = `Hello from RepoOS at ${repoName}!`;
-        publish(config, message);
-        return json(res, 200, { ok: true });
-      }
-
-      // ---- PWA: per-instance manifest + icons ----
-      if (path === "/manifest.webmanifest" && method === "GET") {
-        res.writeHead(200, {
-          "Content-Type": "application/manifest+json; charset=utf-8",
-          "Cache-Control": "no-cache",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(manifestFor(config.root));
-        return;
-      }
-      const iconMatch = path.match(/^\/icons\/icon-(\d+)\.png$/);
-      if (iconMatch && method === "GET") {
-        const size = Math.min(1024, Math.max(16, Number(iconMatch[1]) || 512));
-        res.writeHead(200, {
-          "Content-Type": "image/png",
-          "Cache-Control": "max-age=86400",
-          "Access-Control-Allow-Origin": "*",
-        });
-        res.end(renderInstanceIcon(basename(config.root) || "repoos", size));
-        return;
-      }
-
-      // ---- static: built UI + doc files ----
-      if (method === "GET" && uiDir) {
-        // Built SPA assets (index.html, /assets/*, favicon, manifest, …).
-        if (serveStaticUi(res, uiDir, path)) return;
-      }
+      // ---- Not an API route; try doc serving ----
       if (method === "GET" && !path.startsWith("/api/")) {
-        // serve markdown docs (AGENTS.md, docs/**.md) for the Context view
         const docAbs = safeRepoFile(config.root, path);
         if (docAbs) {
           res.writeHead(200, {
@@ -1871,15 +1049,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return;
         }
       }
-      // SPA fallback: unknown GET paths (e.g. /work on refresh) render the app.
+
+      // ---- Static UI serving + SPA fallback ----
       if (method === "GET" && uiDir) {
-        const index = join(uiDir, "index.html");
-        if (existsSync(index)) {
+        if (serveStaticUi(res, uiDir, path)) return;
+      }
+
+      // SPA fallback: unknown GET paths render the app
+      if (method === "GET" && uiDir) {
+        const indexPath = join(uiDir, "index.html");
+        if (existsSync(indexPath)) {
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Access-Control-Allow-Origin": "*",
           });
-          res.end(readFileSync(index));
+          res.end(readFileSync(indexPath, "utf8"));
           return;
         }
         return json(res, 500, { error: "UI asset not found — run `bun run build`" });
