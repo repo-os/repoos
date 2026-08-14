@@ -35,4 +35,3 @@ updated_at: "2026-08-14T08:39:14Z"
 - 2026-08-14T00:08:58Z · status ready→active, branch
 - 2026-08-14T00:10:14Z · status active→review
 - 2026-08-14T08:39:14Z · status review→done
-
