@@ -2,14 +2,14 @@
 id: "0163"
 title: Update outdated dependencies
 type: chore
-status: ready
+status: active
 priority: p2
 area: tech-debt
 assigned_to: unassigned
 created_by: tech-debt-agent
-branch: ""
+branch: feat/update-outdated-dependencies
 created_at: "2026-08-13T13:45:29.814Z"
-updated_at: "2026-08-14T00:08:55Z"
+updated_at: "2026-08-14T00:08:58Z"
 ---
 ## Issues Identified
 
@@ -31,3 +31,4 @@ updated_at: "2026-08-14T00:08:55Z"
 ## Activity
 
 - 2026-08-14T00:08:55Z · status inbox→ready
+- 2026-08-14T00:08:58Z · status ready→active, branch
