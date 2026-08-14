@@ -210,6 +210,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
 
   let totalCpu = 0;
   let totalMem = 0;
+  let totalMemPercent = 0;
   const processes: ProcessInfo[] = [];
 
   for (const pid of allPids) {
@@ -218,6 +219,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     const memBytes = ps.rssKB * KB;
     totalCpu += ps.cpuPercent;
     totalMem += memBytes;
+    totalMemPercent += ps.memPercent;
     const owned = ownershipByPid.get(pid);
     const taskId = idByPid.get(pid) ?? owned?.taskId ?? null;
     const orphaned = ps.ppid !== serverPid && pid !== serverPid;
@@ -244,6 +246,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     const memBytes = ps.rssKB * KB;
     totalCpu += ps.cpuPercent;
     totalMem += memBytes;
+    totalMemPercent += ps.memPercent;
     processes.push({
       pid,
       taskId: owned.taskId,
@@ -266,7 +269,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     totals: {
       cpuPercent: Math.round(totalCpu * 10) / 10,
       memBytes: totalMem,
-      memPercent: machine.totalMem > 0 ? Math.round((totalMem / machine.totalMem) * 1000) / 10 : 0,
+      memPercent: Math.round(totalMemPercent * 10) / 10,
     },
     processes,
     serverPid,
