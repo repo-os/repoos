@@ -78,7 +78,7 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
 } from "../core/git.js";
-import { runTechDebtAgent, isDueForScheduledRun } from "./built-in-agents.js";
+import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import {
@@ -885,8 +885,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     for (const name of Object.keys(agents)) {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
-      void runTechDebtAgent(repoos.config)
-        .then((result) => {
+      void runBuiltInAgent(name, repoos.config)
+        .then((result: any) => {
           if (result && result.failed > 0) {
             console.error(
               `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
@@ -1102,9 +1102,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
-    if (agentName !== "tech-debt") {
-      return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
-    }
     const cfg = ctx.repoos.config;
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
@@ -1115,15 +1112,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     builtInRun.inFlight = true;
     try {
-      const result = await runTechDebtAgent(cfg);
+      const result = await runBuiltInAgent(agentName, cfg);
+      if (!result) {
+        return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+      }
       ctx.index.refreshAll();
       return json(res, 200, {
         ok: true,
         taskCount: result.created,
+        skipped: "skipped" in result ? result.skipped : 0,
         failed: result.failed,
         errors: result.errors,
-        issuesFound: result.issuesFound,
-        scannedFiles: result.scannedFiles,
+        issuesFound: "issuesFound" in result ? result.issuesFound : 0,
+        scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to run built-in agent";
