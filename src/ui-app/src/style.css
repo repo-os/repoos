@@ -374,7 +374,21 @@
      the id/title and small enough that its edges stay within the board
      gaps around the card. */
   .tc-preview-banner{position:absolute;top:3px;left:-13px;transform:rotate(-40deg);transform-origin:center;z-index:2;pointer-events:none;background:#e91e63;color:#fff;font-family:'JetBrains Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1;padding:2.5px 5px;border-radius:2px;box-shadow:0 2px 8px rgba(233,30,99,.45)}
-  .preview-build-banner{display:inline-flex;align-items:center;padding:4px 8px;background:#e91e63;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:3px;box-shadow:0 2px 8px rgba(233,30,99,.35)}
+  /*.preview-build-banner{display:inline-flex;align-items:center;padding:4px 8px;background:#e91e63;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:3px;box-shadow:0 2px 8px rgba(233,30,99,.35)}*/
+  .preview-build-banner{ display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: #e91e63;
+      color: #fff;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border-radius: 3px;
+      box-shadow: 0 2px 8px rgba(233, 30, 99, 0.35);
+      transform: rotate(-6deg);
+      transform-origin: center;
+  }
   .tc-prio{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;font-family:'JetBrains Mono',monospace}
   .p0,.p1{background:var(--red-tint);color:var(--red)}
   .p2{background:var(--amber-tint);color:var(--amber)}
@@ -382,8 +396,6 @@
   .tc-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:10px}
   .tc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .chip{font-size:9.5px;padding:2px 8px;border-radius:6px;background:var(--chip-bg);color:var(--txt-dim);font-family:'JetBrains Mono',monospace;border:1px solid var(--border)}
-  .diff-stats-chip{background:var(--green-tint);color:var(--green);border-color:var(--green-tint)}
-  .diff-stats-empty{background:var(--red-tint);color:var(--red);border-color:var(--red-tint);font-weight:700}
   .tc-foot{display:flex;align-items:center;flex-wrap:wrap;row-gap:6px;gap:8px;font-size:10px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .tc-foot svg{width:11px;height:11px}
   .tc-hint{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;cursor:help}
