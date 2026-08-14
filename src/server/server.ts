@@ -893,7 +893,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             );
           }
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
         })
         .finally(() => {
@@ -1477,7 +1477,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
         {
           autoTransition: watchdogConfig.autoTransition !== false,
-          canRun: () => !(reload?.isReloading() ?? false),
+          canRun: () => !(reload?.isReloading ?? false),
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();

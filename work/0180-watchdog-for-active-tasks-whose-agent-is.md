@@ -41,4 +41,5 @@ Add a watchdog over `active` tasks (see #0112 AgentSupervisor / task-watchdog.ts
 
 - 2026-08-13T16:53:53Z · created · unknown
 - 2026-08-13T16:54:02Z · status inbox→ready
-- 2026-08-14T03:33:13Z · status ready→review, branch
+- 2026-08-13T17:41:14Z · status ready→active, branch
+- 2026-08-14T03:33:13Z · status active→review

@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
+import { branchChangesSinceBase, currentBranch, runGit, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { AgentHandoffRequest } from "./agents.js";
 import { patchTaskFile } from "./write.js";
@@ -173,6 +173,28 @@ export async function handoffTask(
     30_000,
   );
   if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
+
+  // Reject a vacuous handoff (#0170): the branch carried no real work. Diff
+  // against the branch's own base (merge-base with the main checkout's branch),
+  // not main, so unrelated main drift cannot false-positive. Broadly-regenerated
+  // build artifacts (dist/, screenshots/) and the task file itself (whose
+  // worktree copy legitimately lags main's frontmatter) never count as
+  // implementation. `no_source_change: true` is an explicit escape hatch so a
+  // genuinely no-op task (e.g. docs-only) is not blocked forever.
+  const sinceBase = branchChangesSinceBase(registered, currentBranch(config.root) ?? "main");
+  const implementation = sinceBase.paths.filter((p) => {
+    if (p === task.path) return false;
+    if (p === "dist" || p.startsWith("dist/")) return false;
+    if (p === "screenshots" || p.startsWith("screenshots/")) return false;
+    return true;
+  });
+  if (implementation.length === 0 && !(task.noSourceChange || worktreeTask.noSourceChange)) {
+    return {
+      ok: false,
+      step: "commit",
+      detail: `no implementation found — nothing committed on the branch since ${sinceBase.base ?? "the branch base"}`,
+    };
+  }
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
     const commit = await runGit(registered, ["commit", "-m", `feat(${task.id}): implement ${task.title}`], 30_000);

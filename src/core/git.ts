@@ -332,6 +332,43 @@ export function resetWorktree(root: string, branch: string): boolean {
   return true;
 }
 
+export interface BranchChangesSinceBase {
+  /** Short ref of the branch point (merge-base), or null when undeterminable. */
+  base: string | null;
+  /** Paths that differ from the branch point, committed or uncommitted. */
+  paths: string[];
+}
+
+/**
+ * What the branch checked out in `worktree` has changed relative to its branch
+ * point — the merge-base with `baseBranch` — combining already-committed
+ * changes with the current uncommitted working-tree diff. This is the correct
+ * base for "did the agent implement anything": diffing against `baseBranch`
+ * itself would count unrelated main drift as the branch's own work. When the
+ * base cannot be resolved (no git, or the two branches share no ancestor)
+ * returns `{ base: null, paths: [] }` so callers can fail soft rather than
+ * block on a false positive.
+ */
+export function branchChangesSinceBase(
+  worktree: string,
+  baseBranch: string,
+): BranchChangesSinceBase {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { base: null, paths: [] };
+  const base = git(worktree, ["rev-parse", "--short", baseFull]) ?? baseFull;
+  const committed =
+    git(worktree, ["diff", "--name-only", baseFull, "HEAD"])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  const uncommitted =
+    git(worktree, ["diff", "--cached", "--name-only"])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  return { base, paths: [...new Set([...committed, ...uncommitted])] };
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;

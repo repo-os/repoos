@@ -200,6 +200,78 @@ describe("trusted server-side handoff", () => {
     }
   });
 
+  it("rejects a vacuous handoff with no source changes (#0170)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      // The fixture's one working change is reverted: the only thing modified
+      // in the worktree is a locally regenerated dist artifact. Nothing to
+      // implement — the handoff must not be blessed.
+      writeFileSync(join(fx.worktree, "source.txt"), "base\n");
+      writeFileSync(join(fx.worktree, "dist", "app.js"), "rebuilt by repoos check\n");
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: false, step: "commit" });
+      expect(result.detail).toMatch(/no implementation found/);
+      expect(result.detail).toContain("since");
+      // Task stays active; nothing committed, nothing moved to review.
+      expect(readTask(fx).status).toBe("active");
+      expect(Number(git(fx.worktree, ["rev-list", "--count", "HEAD"]))).toBe(1);
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("does not count dist-only or task-file changes as implementation (#0170)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(join(fx.worktree, "source.txt"), "base\n");
+      // Both pre-staged and just-dirty generated artifacts stay excluded.
+      writeFileSync(join(fx.worktree, "dist", "app.js"), "built in feature worktree\n");
+      writeFileSync(join(fx.worktree, "screenshots", "board.png"), "recaptured in feature worktree\n");
+      git(fx.worktree, ["add", "dist", "screenshots"]);
+      // Task-file churn alone is not implementation either.
+      writeFileSync(
+        join(fx.worktree, "work", "0001-handoff.md"),
+        taskText("active").replace("priority: p2", "priority: p3"),
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: false, step: "commit" });
+      expect(result.detail).toMatch(/no implementation found/);
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("honors the no_source_change escape hatch for a legitimate no-op task (#0170)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(join(fx.worktree, "source.txt"), "base\n");
+      writeFileSync(
+        fx.taskPath,
+        taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true"),
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx).status).toBe("review");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("rejects an invalid session capability before changing Git or files", async () => {
     const fx = makeFixture();
     const oldHead = git(fx.worktree, ["rev-parse", "HEAD"]);

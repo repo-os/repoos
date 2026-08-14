@@ -311,13 +311,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (e.type === "build.available") {
       // A close-out parked a newer build on disk (0143). The server keeps
       // serving the current build until the user clicks the notice.
-      const v = { hash: e.hash, buildAt: e.buildAt };
-      newVersion.value = v;
-      try {
-        localStorage.setItem(NEW_VERSION_KEY, JSON.stringify(v));
-      } catch {
-        /* ignore quota / privacy-mode failures */
-      }
+      setNewVersion(e.hash, e.buildAt);
       pushFeed(`<b>new build</b> available — restart to apply`, "#39e0ff", "build.available");
       return;
     }
@@ -542,27 +536,70 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
-   * Ask the running server whether it already serves the parked build. Clears
-   * the "new version available" notice when it does (a reload landed or the
-   * server restarted into it); keeps it otherwise — the notice persists until
-   * the user acts.
+   * Ask the running server whether a newer build is parked and whether it
+   * already serves it. On SSE `hello` (every connect/reconnect) and page load
+   * this is the reliable path to discover a parked build the one-shot
+   * `build.available` event may have arrived while we were disconnected:
+   *
+   * - When health reports a parked build NEWER than the running one, SET the
+   *   notice (the "new version available" banner) — the tab missed the event.
+   * - When the running build already serves the parked build, or is at least
+   *   as new as it, CLEAR the notice (a reload landed, or the server restarted
+   *   into it). A normal dev build can auto-reload the server into something
+   *   newer than the parked one (0143 parks only close-out builds); timestamps
+   *   tell: once the running build is at least as new as the parked one, the
+   *   notice has no value left.
    */
   async function reconcileVersion(): Promise<void> {
     try {
       const h = await api<Health>("/api/health");
       health.value = h;
       const v = newVersion.value;
+      // Normalize against servers/tests that predate these fields.
+      const parkedHash =
+        typeof h.buildAvailableHash === "string" && h.buildAvailableHash !== ""
+          ? h.buildAvailableHash
+          : null;
+      const parkedAt = parkedHash === null ? null : h.buildAvailableAt ?? null;
+
+      if (parkedHash !== null) {
+        const runningServesParked = h.buildHash !== null && h.buildHash === parkedHash;
+        const runningAtLeastAsNew =
+          h.buildAt !== null &&
+          parkedAt !== null &&
+          new Date(h.buildAt).getTime() >= new Date(parkedAt).getTime();
+        if (runningServesParked || runningAtLeastAsNew) {
+          clearNewVersion();
+          return;
+        }
+        // The parked build is newer than the running one — surface the notice,
+        // or keep it when it already points at this build.
+        if (!v || v.hash !== parkedHash) setNewVersion(parkedHash, parkedAt);
+        return;
+      }
+
+      // No parked build reported: reconcile any persisted notice against the
+      // running build so a reload that already landed clears it.
       if (!v) return;
       const sameHash = h.buildHash !== null && h.buildHash === v.hash;
-      // A normal dev build can auto-reload the server into a build NEWER than
-      // the parked one (0143 parks only close-out builds). Timestamps tell:
-      // once the running build is at least as new as the parked one, the
-      // notice has no value left — clear it.
       const atLeastAsNew =
-        h.buildAt !== null && v.buildAt !== null && new Date(h.buildAt).getTime() >= new Date(v.buildAt).getTime();
+        h.buildAt !== null &&
+        v.buildAt !== null &&
+        new Date(h.buildAt).getTime() >= new Date(v.buildAt).getTime();
       if (sameHash || atLeastAsNew) clearNewVersion();
     } catch {
       /* server unreachable — keep the notice and the restarting state */
+    }
+  }
+
+  /** Persist the "new version available" notice (survives a page reload). */
+  function setNewVersion(hash: string, buildAt: string | null): void {
+    const v = { hash, buildAt };
+    newVersion.value = v;
+    try {
+      localStorage.setItem(NEW_VERSION_KEY, JSON.stringify(v));
+    } catch {
+      /* ignore quota / privacy-mode failures */
     }
   }
 

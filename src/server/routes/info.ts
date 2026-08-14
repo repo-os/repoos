@@ -24,6 +24,10 @@ export const health: RouteHandler = (ctx, req, res) => {
   const secret = process.env.REPOOS_RELOAD_SECRET;
   const handshake =
     typeof secret === "string" && secret !== "" && url.searchParams.get("reload") === secret;
+  // A build parked by a close-out (0143). Exposing it on /api/health gives a
+  // (re)connecting UI a reliable reconcile path that does not depend on the
+  // one-shot build.available SSE event arriving while it was connected.
+  const parked = ctx.reload?.buildAvailable ?? null;
   return json(res, 200, {
     ok: true,
     root: ctx.config.root,
@@ -32,6 +36,8 @@ export const health: RouteHandler = (ctx, req, res) => {
     version: build.version,
     buildAt: build.buildAt,
     buildHash: loadedHash,
+    buildAvailableHash: parked?.hash ?? null,
+    buildAvailableAt: parked?.buildAt ?? null,
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
     ...(handshake ? { reloadHandshake: true } : {}),
   });
