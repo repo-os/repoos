@@ -2,14 +2,14 @@
 id: "0190"
 title: Show review substates clearly and rename running to coding
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-review-substates-clearly-and-rename
 created_at: "2026-08-14T07:47:22Z"
-updated_at: "2026-08-14T17:59:32Z"
+updated_at: "2026-08-14T18:00:18Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ Defers: Changes to task state machine logic or how tasks transition between revi
 - 2026-08-14T17:54:39Z · status active→ready
 - 2026-08-14T17:59:28Z · status ready→active
 - 2026-08-14T17:59:32Z · status active→ready
+- 2026-08-14T18:00:18Z · status ready→active
