@@ -2,14 +2,14 @@
 id: "0170"
 title: "Reject vacuous handoffs: repoos check green with zero source changes"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/reject-vacuous-handoffs-repoos-check-gre
 created_at: "2026-08-13T13:50:48Z"
-updated_at: "2026-08-13T17:50:58Z"
+updated_at: "2026-08-14T08:40:30Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ A handoff with no real work behind it is impossible. Before accepting a handoff,
 - 2026-08-13T14:00:09Z · status inbox→ready
 - 2026-08-13T17:42:20Z · status ready→active, branch
 - 2026-08-13T17:50:58Z · status active→review
+- 2026-08-14T08:40:30Z · status review→done
