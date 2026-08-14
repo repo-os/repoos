@@ -42,4 +42,3 @@ A finalization that cannot complete must leave a durable, visible, actionable re
 - 2026-08-13T23:53:52Z · status ready→active, branch
 - 2026-08-14T00:03:09Z · status active→review
 - 2026-08-14T08:50:00Z · status review→done
-
