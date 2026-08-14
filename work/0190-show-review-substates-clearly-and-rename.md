@@ -2,14 +2,14 @@
 id: "0190"
 title: Show review substates clearly and rename running to coding
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-review-substates-clearly-and-rename
 created_at: "2026-08-14T07:47:22Z"
-updated_at: "2026-08-14T11:08:56Z"
+updated_at: "2026-08-14T11:59:22Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Defers: Changes to task state machine logic or how tasks transition between revi
 - 2026-08-14T07:53:40Z · status inbox→ready
 - 2026-08-14T10:57:48Z · status ready→active, branch
 - 2026-08-14T11:08:56Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-14T11:59:22Z · status review→active
