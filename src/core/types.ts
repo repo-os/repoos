@@ -254,6 +254,14 @@ export interface RepoOSConfig {
   builtInAgents?: Record<string, BuiltInAgentConfig>;
   /** Agent supervisor configuration. */
   supervisor?: SupervisorConfig;
+  /** Voice transcription configuration for vibe-coding feature. */
+  whisper?: WhisperConfig;
+}
+
+/** Whisper voice transcription configuration. */
+export interface WhisperConfig {
+  provider?: "groq" | "openai" | "none";
+  apiKey?: string;
 }
 
 /** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */
