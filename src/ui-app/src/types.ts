@@ -169,6 +169,21 @@ export interface ReviewState {
   lines: AgentOutputEntry[];
 }
 
+/** Client-side view of the CTO board monitor (0174). */
+export interface CtoState {
+  /** True while a CTO run (monitor pass or a chat answer) is in progress. */
+  running: boolean;
+  /** Whether the CTO agent is enabled on the Agents page. */
+  enabled: boolean;
+  /** The latest board-health report, or null before the first run. */
+  report: { markdown: string; at: string } | null;
+  /**
+   * The CTO conversation (session `cto:board`). Proactive reports and the
+   * human's chat messages share this buffer only — never task transcripts.
+   */
+  lines: AgentOutputEntry[];
+}
+
 /**
  * Live run telemetry for one task's agent session (0080). Best-effort and
  * in-memory only. `null` means "the CLI hasn't reported this" — never a
@@ -201,6 +216,12 @@ export type RepoEvent =
   | {
       type: "review";
       id: string;
+      state: "running" | "ready" | "failed" | "cancelled";
+      at: string;
+      error?: string;
+    }
+  | {
+      type: "cto";
       state: "running" | "ready" | "failed" | "cancelled";
       at: string;
       error?: string;

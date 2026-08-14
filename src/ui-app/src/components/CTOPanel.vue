@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { api, JSON_OPTS } from "../api";
+import { computed, nextTick, onMounted, ref } from "vue";
+import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 
-const CTO_SESSION_ID = "cto:board";
 const repo = useRepoStore();
 const open = ref(false);
 const draft = ref("");
 const submitting = ref(false);
-const enabled = ref(false);
-const running = ref(false);
-const report = ref<{ markdown: string; at: string } | null>(null);
-const lines = ref<AgentOutputEntry[]>([]);
 const log = ref<HTMLElement | null>(null);
 
-const busy = computed(() => submitting.value || running.value);
+const busy = computed(() => submitting.value || repo.cto.running);
+const enabled = computed(() => repo.cto.enabled);
+const running = computed(() => repo.cto.running);
+const report = computed(() => repo.cto.report);
+const lines = computed(() => repo.cto.lines);
 
 function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
@@ -47,24 +46,6 @@ function scrollToLatest(): void {
   });
 }
 
-async function hydrate(): Promise<void> {
-  try {
-    const response = await api<{
-      ok: boolean;
-      enabled: boolean;
-      running: boolean;
-      report: { markdown: string; at: string } | null;
-      lines: AgentOutputEntry[];
-    }>("/api/cto");
-    enabled.value = response.enabled;
-    running.value = response.running;
-    report.value = response.report;
-    lines.value = response.lines;
-  } catch (error) {
-    repo.onError(error);
-  }
-}
-
 function toggle(): void {
   open.value = !open.value;
   if (open.value) scrollToLatest();
@@ -74,8 +55,9 @@ async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
   submitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
-  lines.value = [...lines.value, optimistic];
+  // No optimistic append here: the server emits the human turn back over SSE
+  // (session `cto:board`) and loadCTO() below pulls the authoritative
+  // transcript, so an optimistic copy would double the line.
   draft.value = "";
 
   try {
@@ -83,8 +65,8 @@ async function send(): Promise<void> {
       method: "POST",
       body: JSON.stringify({ text }, undefined)
     });
-    // Poll for updates
-    await hydrate();
+    // Pull the authoritative transcript (the server persists the human turn).
+    await repo.loadCTO();
   } catch (error) {
     repo.onError(error);
   } finally {
@@ -93,23 +75,14 @@ async function send(): Promise<void> {
 }
 
 onMounted(() => {
-  void hydrate();
+  void repo.loadCTO();
 });
-
-watch(
-  () => repo.runningIds.length,
-  () => {
-    if (running.value) {
-      void hydrate();
-    }
-  }
-);
 </script>
 
 <template>
   <div class="cto-panel" :class="{ open }">
     <button class="toggle-btn" @click="toggle" :title="open ? 'Close CTO panel' : 'Open CTO panel'">
-      CTO {{ running && "🔴" }}
+      CTO <span v-if="running" class="live-dot">🔴</span>
     </button>
 
     <div v-if="open" class="panel-content">

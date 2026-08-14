@@ -934,16 +934,28 @@ export function deriveBranch(title: string): string {
   return `feat/${slug || "task"}`;
 }
 
+/**
+ * Role-name matching is case-insensitive: the Agents page stores agent names
+ * verbatim (it only lowercases when checking duplicates), so a stored
+ * `"CTO"`/`"Reviewer"`/`"PM"` must still resolve to its role. This bit the CTO
+ * (0174): the merged `repoos.toml` stored `name = "CTO"`, so the exact-match
+ * `"cto"` lookup always returned null and the agent read as permanently
+ * disabled.
+ */
+function matchesRole(a: { name: string }, role: string): boolean {
+  return a.name.toLowerCase() === role;
+}
+
 /** Resolve the enabled `engineer` agent, or null when none is configured. */
 export function resolveEngineer(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && a.name === "engineer") ?? null;
+  return list.find((a) => a.enabled && matchesRole(a, "engineer")) ?? null;
 }
 
 /** Resolve the enabled `pm` agent, or null when none is configured. */
 export function resolvePmAgent(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && a.name === "pm") ?? null;
+  return list.find((a) => a.enabled && matchesRole(a, "pm")) ?? null;
 }
 
 /**
@@ -955,12 +967,12 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  */
 export function resolveReviewer(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
+  return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
 }
 
 export function resolveCto(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && a.name === "cto") ?? null;
+  return list.find((a) => a.enabled && matchesRole(a, "cto")) ?? null;
 }
 
 /**

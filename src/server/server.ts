@@ -860,12 +860,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoMonitor = new CTOMonitor(config, index, cto);
-  // Start the CTO monitor on a 5-minute cadence when enabled.
-  // Make interval configurable from config if present; default to 5 minutes.
+  // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
+  // agent is disabled, so enabling it from the Agents page takes effect on the
+  // next tick without a restart, and disabling it stops runs immediately.
+  // Interval configurable from config if present; default to 5 minutes.
   const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
-  if (cto.enabled()) {
-    ctoMonitor.start(ctoIntervalMs);
-  }
+  ctoMonitor.start(ctoIntervalMs);
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board

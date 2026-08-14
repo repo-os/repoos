@@ -407,6 +407,62 @@ describe("reviewer conversation (0110)", () => {
   });
 });
 
+describe("CTO board monitor (0174)", () => {
+  it("hydrates from /api/cto, streams monitor output, and refreshes on run end", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const report = { markdown: "**2 stuck tasks**", at: "2026-08-12T00:00:00Z" };
+    let ctoReads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/api/cto")) {
+        ctoReads++;
+        return json({
+          ok: true,
+          enabled: true,
+          running: false,
+          report: ctoReads > 1 ? report : null,
+          lines: ctoReads > 1 ? [{ s: "out", d: "CTO monitoring complete" }] : [],
+        });
+      }
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.loadCTO();
+    expect(repo.cto.enabled).toBe(true);
+    expect(repo.cto.report).toBeNull();
+
+    // Monitor output streams under the `cto:board` id and lands in the CTO
+    // conversation buffer — never in a task transcript.
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.output", {
+      type: "agent.output",
+      id: "cto:board",
+      entry: { s: "out", d: "nudging #0180…" },
+      stream: "out",
+    });
+    await Promise.resolve();
+    expect(repo.cto.lines).toContainEqual({ s: "out", d: "nudging #0180…" });
+    expect(repo.outputs["cto:board"]).toBeUndefined();
+
+    // A run starting marks it live; a finished run marks it idle and pulls the
+    // authoritative report (loadCTO is fire-and-forget, so flush it).
+    es.emit("cto", { type: "cto", state: "running", at: "2026-08-12T00:01:00Z" });
+    await Promise.resolve();
+    expect(repo.cto.running).toBe(true);
+    es.emit("cto", { type: "cto", state: "ready", at: "2026-08-12T00:02:00Z" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(repo.cto.running).toBe(false);
+    expect(repo.cto.report).toEqual(report);
+    expect(repo.cto.lines).toContainEqual({ s: "out", d: "CTO monitoring complete" });
+  });
+});
+
 describe("preview state", () => {
   it("updates a task's preview on start and clears it on stop", async () => {
     const repo = useRepoStore();
