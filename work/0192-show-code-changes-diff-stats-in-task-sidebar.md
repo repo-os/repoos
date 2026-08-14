@@ -2,14 +2,14 @@
 id: "0192"
 title: Show code changes (diff stats) in task sidebar to diagnose implementation status
 type: feature
-status: review
+status: ready
 priority: p2
 area: ui-app
 assigned_to: unassigned
 created_by: ""
 branch: feat/show-code-changes-diff-stats-in-task-sid
 created_at: "2026-08-14T08:59:00Z"
-updated_at: "2026-08-14T11:07:34Z"
+updated_at: "2026-08-14T11:54:52Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ This should appear in:
 - 2026-08-14T10:32:43Z · status inbox→ready
 - 2026-08-14T10:57:30Z · status ready→active, branch
 - 2026-08-14T11:07:34Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-14T11:54:52Z · status review→ready
