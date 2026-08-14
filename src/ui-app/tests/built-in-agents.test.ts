@@ -7,9 +7,14 @@ import {
   createTechDebtTasks,
   isDueForScheduledRun,
   runTechDebtAgent,
+  scanForPerformanceIssues,
+  createPerformanceTasks,
+  runPerformanceAgent,
   stripCommentsAndStrings,
   TechDebtError,
+  PerformanceError,
   type TechDebtIssue,
+  type PerformanceIssue,
 } from "../../server/built-in-agents.js";
 import {
   loadConfig,
@@ -357,6 +362,176 @@ describe("runTechDebtAgent", () => {
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["tech-debt"]?.lastRunAt).toBeTruthy();
     expect(config.builtInAgents?.["tech-debt"]?.lastRunAt).toBeTruthy();
+
+    const files = readdirSync(join(root, "work"));
+    expect(files.length).toBeGreaterThan(0);
+  });
+});
+
+describe("scanForPerformanceIssues", () => {
+  it("flags slow functions (>300 lines)", async () => {
+    const body = Array.from({ length: 320 }, (_, i) => `const line${i} = ${i};`).join("\n");
+    const root = makeRepo({ "src/slow.ts": body, "package.json": "{}" });
+    const result = await scanForPerformanceIssues(configFor(root));
+    const slowFunctions = result.issues.filter((i) => i.type === "slow-function");
+    expect(slowFunctions.length).toBeGreaterThan(0);
+    expect(slowFunctions[0].file).toBe("src/slow.ts");
+  });
+
+  it("detects deeply nested loops with index-based iteration", async () => {
+    const root = makeRepo({
+      "src/nested.ts": [
+        "for (let i = 0; i < 10; i++) {",
+        "  for (let j = 0; j < 10; j++) {",
+        "    for (let k = 0; k < 10; k++) {",
+        "      console.log(i, j, k);",
+        "    }",
+        "  }",
+        "}",
+      ].join("\n"),
+      "package.json": "{}",
+    });
+    const result = await scanForPerformanceIssues(configFor(root));
+    const blocking = result.issues.filter((i) => i.type === "blocking-operation");
+    expect(blocking.length).toBeGreaterThan(0);
+    expect(blocking[0].description).toContain("Nested loops detected");
+  });
+
+  it("detects synchronous file operations", async () => {
+    const root = makeRepo({
+      "src/sync.ts": [
+        "import fs from 'fs';",
+        "const data = fs.readFileSync('./file.txt', 'utf8');",
+        "console.log(data);",
+      ].join("\n"),
+      "package.json": "{}",
+    });
+    const result = await scanForPerformanceIssues(configFor(root));
+    const blocking = result.issues.filter((i) => i.type === "blocking-operation");
+    expect(blocking.some((i) => i.description.includes("Synchronous"))).toBe(true);
+  });
+
+  it("detects duplicate computations in loops", async () => {
+    const root = makeRepo({
+      "src/dup.ts": [
+        "for (let i = 0; i < items.length; i++) {",
+        "  const result = JSON.parse(items[i]);",
+        "  process(result);",
+        "}",
+      ].join("\n"),
+      "package.json": "{}",
+    });
+    const result = await scanForPerformanceIssues(configFor(root));
+    const dupComp = result.issues.filter((i) => i.type === "duplicated-computation");
+    expect(dupComp.length).toBeGreaterThan(0);
+    expect(dupComp[0].description).toContain("expensive operation");
+  });
+
+  it("detects unbounded growth (many array pushes)", async () => {
+    const lines = ["const arr = [];"];
+    for (let i = 0; i < 12; i++) {
+      lines.push(`arr.push(${i});`);
+    }
+    const root = makeRepo({
+      "src/growth.ts": lines.join("\n"),
+      "package.json": "{}",
+    });
+    const result = await scanForPerformanceIssues(configFor(root));
+    const unbounded = result.issues.filter((i) => i.type === "unbounded-growth");
+    expect(unbounded.length).toBeGreaterThan(0);
+  });
+
+  it("returns scanned file count and issues", async () => {
+    const root = makeRepo({
+      "src/a.ts": "export const a = 1;\n",
+      "src/b.ts": "export const b = 2;\n",
+      "package.json": "{}",
+    });
+    const result = await scanForPerformanceIssues(configFor(root));
+    expect(result.scannedFiles).toBeGreaterThan(0);
+    expect(Array.isArray(result.issues)).toBe(true);
+  });
+});
+
+describe("createPerformanceTasks", () => {
+  it("creates one task per issue type with a JSON-quoted title", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    const issues: PerformanceIssue[] = [
+      {
+        type: "blocking-operation",
+        file: "src/sync.ts",
+        line: 5,
+        description: "Synchronous file read blocks the event loop",
+        severity: "high",
+      },
+      {
+        type: "duplicated-computation",
+        file: "src/loop.ts",
+        line: 10,
+        description: "Expensive operation inside loop",
+        severity: "medium",
+      },
+    ];
+    const result = await createPerformanceTasks(configFor(root), issues);
+    expect(result).toEqual({ created: 2, failed: 0, errors: [] });
+
+    const files = readdirSync(join(root, "work"));
+    expect(files).toHaveLength(2);
+    const blockingTask = files.find((f) => f.includes("blocking"))!;
+    const content = readFileSync(join(root, "work", blockingTask), "utf8");
+    expect(content).toContain('title: "Fix blocking operations"');
+    expect(content).toContain('created_by: performance-agent');
+  });
+
+  it("throws a clear error when the work dir does not exist", async () => {
+    const root = makeRepo({});
+    const issues: PerformanceIssue[] = [
+      {
+        type: "slow-function",
+        file: "src/big.ts",
+        description: "Function is too long",
+        severity: "medium",
+      },
+    ];
+    await expect(createPerformanceTasks(configFor(root), issues)).rejects.toThrow(PerformanceError);
+    await expect(createPerformanceTasks(configFor(root), issues)).rejects.toThrow(/does not exist/);
+  });
+
+  it("does nothing and reports zero for an empty issue list", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    const result = await createPerformanceTasks(configFor(root), []);
+    expect(result).toEqual({ created: 0, failed: 0, errors: [] });
+    expect(readdirSync(join(root, "work"))).toHaveLength(0);
+  });
+});
+
+describe("runPerformanceAgent", () => {
+  it("runs the full pipeline and records lastRunAt", async () => {
+    const root = makeRepo({
+      "src/perf.ts": [
+        "for (let i = 0; i < 100; i++) {",
+        "  for (let j = 0; j < 100; j++) {",
+        "    for (let k = 0; k < 100; k++) {",
+        "      process(i, j, k);",
+        "    }",
+        "  }",
+        "}",
+      ].join("\n"),
+      "package.json": "{}",
+    });
+    mkdirSync(join(root, "work"));
+    const config = configFor(root);
+    const result = await runPerformanceAgent(config);
+
+    expect(result.issuesFound).toBeGreaterThan(0);
+    expect(result.created).toBeGreaterThan(0);
+    expect(result.failed).toBe(0);
+
+    const persisted = loadBuiltInAgentsConfig(root);
+    expect(persisted?.["performance"]?.lastRunAt).toBeTruthy();
+    expect(config.builtInAgents?.["performance"]?.lastRunAt).toBeTruthy();
 
     const files = readdirSync(join(root, "work"));
     expect(files.length).toBeGreaterThan(0);

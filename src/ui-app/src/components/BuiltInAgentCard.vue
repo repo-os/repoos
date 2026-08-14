@@ -61,6 +61,13 @@ const agentMeta = computed(() => {
       icon: "🔧",
     };
   }
+  if (props.agent === "performance") {
+    return {
+      name: "Performance Agent",
+      description: "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Creates tasks in your inbox for each issue found.",
+      icon: "⚡",
+    };
+  }
   return null;
 });
 
@@ -128,9 +135,11 @@ async function runNow(): Promise<void> {
           (response.errors ?? []).join("; ") || "unknown write error"
         }`;
       } else if (response.taskCount > 0) {
-        message.value = `Scan complete — ${response.taskCount} tech debt task(s) created from ${response.issuesFound ?? 0} issue(s).`;
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
+        message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;
       } else {
-        message.value = `Scan complete — no tech debt issues found (${response.scannedFiles ?? 0} files scanned).`;
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
+        message.value = `Scan complete — no ${agentType} issues found (${response.scannedFiles ?? 0} files scanned).`;
       }
       await saveState();
     } else {

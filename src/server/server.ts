@@ -12,8 +12,11 @@
  *                                returns { state: "reloading" | "deferred" | "not-stale" }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
  *   GET  /api/tasks/:id        -> Task | 404  (includes `preview` when running)
+ *   GET  /api/tasks/:id/stats  -> { ok, stats } task's historical session stats
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
+ *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
+ *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
  *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
@@ -106,6 +109,8 @@ import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { CTOManager } from "./cto.js";
+import { CTOMonitor } from "./cto-monitor.js";
 import {
   appendScreenshotsSection,
   mimeForExtension,
@@ -121,6 +126,7 @@ import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   Router,
   type RouteContext,
@@ -147,6 +153,9 @@ import {
   patchTask,
   deleteTask,
   getTaskOutput,
+  getTaskStats,
+  getSessionTypeStats,
+  getBoardStats,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
@@ -155,6 +164,8 @@ import {
   getTaskReview,
   reviewAgain,
   reviewMessage,
+  getCTO,
+  ctoMessage,
   pmMessage,
   getScreenshot,
   uploadScreenshot,
@@ -169,6 +180,8 @@ import {
   detectInstalledAgents,
   // Notifications
   testNotification,
+  // Transcription
+  transcribe,
   // UI routes
   serveManifest,
   serveIcon,
@@ -744,6 +757,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
 
+  // Task watchdog: surfaces active tasks whose agent is dead or stalled (0180).
+  // Constructed after the reload manager so it can observe `isReloading()`.
+  let watchdog: TaskWatchdog | null = null;
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   let reviews: ReviewManager; // Assigned after runner creation below
@@ -758,6 +775,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     { getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
+        return;
+      }
+      if (runner.isHandoffInFlight(request.taskId)) {
+        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
         return;
       }
       const task = index.getTask(request.taskId);
@@ -834,6 +855,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner);
+
+  // The CTO agent (0174): always-on board monitor that detects stuck tasks,
+  // stale reviews, and broken builds, then nudges agents or escalates to the human.
+  const cto = new CTOManager(config, emitEvent, runner);
+  const ctoMonitor = new CTOMonitor(config, index, cto);
+  // Start the CTO monitor on a 5-minute cadence when enabled.
+  // Make interval configurable from config if present; default to 5 minutes.
+  const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
+  if (cto.enabled()) {
+    ctoMonitor.start(ctoIntervalMs);
+  }
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
@@ -995,6 +1027,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
+  // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
+  const unsubscribeCTOEvents = index.on((e) => {
+    if (!cto.enabled()) return;
+    if (e.type === "task.updated") {
+      const prev = e.prev.status;
+      if (prev !== undefined && prev !== e.task.status) {
+        ctoMonitor.onEvent(`task #${e.task.id} status change: ${prev} → ${e.task.status}`);
+      }
+    } else if (e.type === "review") {
+      ctoMonitor.onEvent(`review complete for task #${e.id}: ${e.state}`);
+    } else if (e.type === "agent.exited") {
+      ctoMonitor.onEvent(`agent exited: task #${e.id}`);
+    }
+  });
+
   interface SyncResult {
     ok: boolean;
     conflicts: string[];
@@ -1064,6 +1111,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
 
+  // Session stats routes
+  router.register("GET", "/api/stats/board", getBoardStats);
+  router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
   router.register("POST", "/api/tasks", createTask);
@@ -1072,6 +1123,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
@@ -1080,6 +1132,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("GET", "/api/cto", getCTO);
+  router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
@@ -1131,6 +1185,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
+
+  // Transcription routes
+  router.register("POST", "/api/transcribe", transcribe);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
@@ -1213,6 +1270,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       runner,
       previews,
       reviews,
+      cto,
       repoos,
       emitEvent: (e: RepoEvent) => {
         for (const client of clients) {
@@ -1359,6 +1417,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         clearInterval(systemSampleTimer);
         clearInterval(builtInTimer);
+        ctoMonitor.stop();
         runner.dispose();
         throw err;
       }
@@ -1379,12 +1438,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         close: async () => {
           clearInterval(systemSampleTimer);
           clearInterval(builtInTimer);
+          ctoMonitor.stop();
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();
+          unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
+          watchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
@@ -1392,6 +1454,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // agents — a one-shot child must not outlive the server that
           // launched it and wait 15 minutes to write a report nobody reads.
           reviews.cancelAll();
+          cto.cancelAll();
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {
@@ -1460,6 +1523,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Agent supervisor: periodic health checks and safe recovery (0112)
       supervisor = new AgentSupervisor(config, index, emitEvent);
       supervisor.start();
+
+      // Task watchdog: surface active tasks whose agent session is dead or
+      // stalled (0180). Guarded so it never fires while the server is handing
+      // over to a reload replacement.
+      const watchdogConfig = config.watchdog ?? {};
+      watchdog = new TaskWatchdog(
+        config,
+        index,
+        runner,
+        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+        {
+          autoTransition: watchdogConfig.autoTransition !== false,
+          canRun: () => !(reload?.isReloading ?? false),
+        },
+      );
+      if (watchdogConfig.enabled !== false) watchdog.start();
 
       resolve(handle);
     })().catch((e) => reject(e as Error));

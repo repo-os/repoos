@@ -27,6 +27,7 @@ import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
+import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
@@ -120,14 +121,24 @@ interface Session {
   sessionId?: string;
   task?: Task;
   branch?: string;
+  /** Agent name (e.g., "engineer", "reviewer", "Ross"). */
+  agent?: string;
+  /** Model name (e.g., "big pickle", "default"). */
+  model?: string;
   /** Which session engine parses the CLI output into AgentOutputEntry cards. */
   engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "kiro" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
+  /** ISO timestamp when the session was first created (never changes). */
+  createdAt?: string;
   /** ISO timestamp the current turn started, or undefined when no turn is running. */
   turnStartedAt?: string;
   /** ISO timestamp of the most recent output line, or undefined until first output. */
   lastOutputAt?: string;
+  /** Best-effort cumulative input token count reported by the CLI, or undefined if never reported. */
+  inputTokens?: number;
+  /** Best-effort cumulative output token count reported by the CLI, or undefined if never reported. */
+  outputTokens?: number;
   /** Best-effort cumulative token count reported by the CLI, or undefined if never reported. */
   tokens?: number;
   /** Best-effort cumulative cost (USD) reported by the CLI, or undefined if never reported. */
@@ -164,31 +175,47 @@ const OUTPUT_CAP_BYTES = 256 * 1024;
 export const DEFAULT_STALL_TIMEOUT_MS = 90_000;
 
 /**
+ * Estimate cost from token count when the CLI doesn't report it explicitly.
+ * Uses rough pricing for common models: claude 3.5 sonnet $3/M input, $15/M output.
+ * This is a fallback when extractUsage yields no cost; never fabricates when
+ * the CLI provides no data at all.
+ */
+export function estimateCostUsd(tokens?: number): number | undefined {
+  if (!tokens || tokens < 1) return undefined;
+  const avgCostPerToken = (3 + 15) / 2 / 1_000_000;
+  return Math.max(0.001, tokens * avgCostPerToken);
+}
+
+/**
  * Best-effort usage/cost extraction from one raw output line. Tries a JSON
  * parse first (codex `--json` usage events, opencode payloads carrying usage)
  * and falls back to plain-text patterns (the kind of human-readable summary
  * claude/qwen print). Returns only the fields it actually found — this must
  * never fabricate a number for a CLI that reports nothing.
  */
-export function extractUsage(raw: string): { tokens?: number; costUsd?: number } {
-  const out: { tokens?: number; costUsd?: number } = {};
+export function extractUsage(raw: string): { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } {
+  const out: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } = {};
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
       const obj = parsed as Record<string, unknown>;
-      const tokens = tokensFromObject(obj);
-      if (tokens !== undefined) out.tokens = tokens;
+      const inputTokens = inputTokensFromObject(obj);
+      if (inputTokens !== undefined) out.inputTokens = inputTokens;
+      const outputTokens = outputTokensFromObject(obj);
+      if (outputTokens !== undefined) out.outputTokens = outputTokens;
+      const totalTokens = tokensFromObject(obj);
+      if (totalTokens !== undefined) out.totalTokens = totalTokens;
       const cost = costFromObject(obj);
       if (cost !== undefined) out.costUsd = cost;
     }
   } catch {
     /* not JSON — fall through to text patterns below */
   }
-  if (out.tokens === undefined) {
+  if (out.totalTokens === undefined) {
     const m = raw.match(/\btotal[_ ]tokens\b["'\s:=]+([\d,]+)/i) ?? raw.match(/\b([\d,]+)\s+tokens\b/i);
     if (m) {
       const n = Number(m[1].replace(/,/g, ""));
-      if (Number.isFinite(n)) out.tokens = n;
+      if (Number.isFinite(n)) out.totalTokens = n;
     }
   }
   if (out.costUsd === undefined) {
@@ -210,6 +237,20 @@ export function extractUsage(raw: string): { tokens?: number; costUsd?: number }
     }
   }
   return out;
+}
+
+/** Input tokens from a `usage`-shaped JSON object, or undefined if absent. */
+function inputTokensFromObject(obj: Record<string, unknown>): number | undefined {
+  const usage = findUsage(obj);
+  if (usage && typeof usage.input_tokens === "number") return usage.input_tokens;
+  return undefined;
+}
+
+/** Output tokens from a `usage`-shaped JSON object, or undefined if absent. */
+function outputTokensFromObject(obj: Record<string, unknown>): number | undefined {
+  const usage = findUsage(obj);
+  if (usage && typeof usage.output_tokens === "number") return usage.output_tokens;
+  return undefined;
 }
 
 /**
@@ -273,6 +314,7 @@ interface PersistedSession {
   sessionId?: string;
   engine: Session["engine"];
   workdir?: string;
+  createdAt?: string;
   completedAt?: string;
   updatedAt: string;
 }
@@ -916,6 +958,11 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && a.name === "reviewer") ?? null;
 }
 
+export function resolveCto(config: RepoOSConfig): Agent | null {
+  const list = agentsForConfig(config);
+  return list.find((a) => a.enabled && a.name === "cto") ?? null;
+}
+
 /**
  * Resolve the agent for a specific task, honoring per-task overrides.
  *
@@ -1464,6 +1511,7 @@ export class AgentRunner {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
   private readonly sessionsDir: string;
+  private readonly db: RepoOSDb | null;
   private readonly writeDelayMs: number;
   private readonly retentionDays: number;
   private readonly retentionCount: number;
@@ -1484,6 +1532,16 @@ export class AgentRunner {
   private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
   private readonly handoffsInFlight = new Set<string>();
   private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+
+  /**
+   * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
+   * The task stays `active` with no process, so without this the watchdog would
+   * treat a legitimately-paused task as stuck and disturb it (#0180). In-memory
+   * only: a paused task across a server restart loses the marker and reads as a
+   * stopped agent — the watchdog then surfaces it, which is the correct default
+   * (the paused process is, after all, gone).
+   */
+  private readonly pausedTasks = new Set<string>();
 
   /**
    * Preview capabilities minted per clean run (#0121). Superseded when a new
@@ -1511,6 +1569,7 @@ export class AgentRunner {
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
     this.getTask = opts.getTask;
+    this.db = getRepoOSDb(config.root);
     this.sessionsDir = join(config.root, config.cacheDir, "sessions");
     this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
     this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
@@ -1577,6 +1636,20 @@ export class AgentRunner {
   }
 
   /**
+   * Record a deliberate human pause (0070): the task stays `active` but its
+   * agent is intentionally stopped, so the watchdog must not touch it (#0180).
+   * Cleared automatically the moment a new turn starts for the task.
+   */
+  markPaused(taskId: string): void {
+    this.pausedTasks.add(taskId);
+  }
+
+  /** True when the task was explicitly paused and no new turn has started since. */
+  isPaused(taskId: string): boolean {
+    return this.pausedTasks.has(taskId);
+  }
+
+  /**
    * True while the server-side handoff for a task is still finalizing (check,
    * commit, review). The process is already gone, so `isRunning` is false, but
    * the task is not stuck — the close-out pipeline owns it for a few seconds.
@@ -1601,6 +1674,21 @@ export class AgentRunner {
       });
     }
     return out;
+  }
+
+  /** Query historical stats for a task from the database. */
+  taskStats(taskId: string) {
+    return this.db?.getTaskStats(taskId) ?? null;
+  }
+
+  /** Query historical stats grouped by session type from the database. */
+  sessionTypeStats() {
+    return this.db?.getSessionTypeStats() ?? [];
+  }
+
+  /** Query board-level summary stats from the database. */
+  boardStats() {
+    return this.db?.getBoardStats() ?? null;
   }
 
   /**
@@ -1630,6 +1718,8 @@ export class AgentRunner {
     session.engine = engineForCli(agent.cli);
     session.task = task;
     session.branch = branch;
+    session.agent = agent.name;
+    session.model = agent.model;
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
@@ -1656,6 +1746,8 @@ export class AgentRunner {
       bytes: entryBytes(human),
       workdir: this.config.root,
       engine: engineForCli(agent.cli),
+      agent: agent.name,
+      model: agent.model,
       accumulatedMs: 0,
       stalledEmitted: false,
     };
@@ -1757,6 +1849,9 @@ export class AgentRunner {
     branch?: string,
   ): StartResult {
     const runId = randomUUID();
+    // A new turn means the task is active again — a human restarted a paused
+    // task, or sent a follow-up — so the pause marker no longer applies.
+    this.pausedTasks.delete(taskId);
     // A new run supersedes the previous run's preview capability for this task
     // (#0121): a capability minted for an older run is expired the moment a
     // newer turn claims the task.
@@ -2107,8 +2202,22 @@ export class AgentRunner {
   private applyUsage(session: Session, raw: string): boolean {
     const found = extractUsage(raw);
     let changed = false;
-    if (found.tokens !== undefined) {
-      const next = Math.max(session.tokens ?? 0, found.tokens);
+    if (found.inputTokens !== undefined) {
+      const next = Math.max(session.inputTokens ?? 0, found.inputTokens);
+      if (next !== session.inputTokens) {
+        session.inputTokens = next;
+        changed = true;
+      }
+    }
+    if (found.outputTokens !== undefined) {
+      const next = Math.max(session.outputTokens ?? 0, found.outputTokens);
+      if (next !== session.outputTokens) {
+        session.outputTokens = next;
+        changed = true;
+      }
+    }
+    if (found.totalTokens !== undefined) {
+      const next = Math.max(session.tokens ?? 0, found.totalTokens);
       if (next !== session.tokens) {
         session.tokens = next;
         changed = true;
@@ -2198,6 +2307,70 @@ export class AgentRunner {
     return { stopped: true };
   }
 
+  /** Record a session to the database. Best-effort, never fails the server. */
+  private recordSessionToDb(sessionId: string | undefined, session: Session, taskId: string, exitedCleanly: boolean): void {
+    if (!this.db || !session) return;
+    try {
+      // Determine session type from agent name for better aggregations
+      let sessionType = "unknown";
+      const agentName = session.agent?.toLowerCase() ?? "";
+      if (agentName.includes("engineer") || agentName.includes("repoos")) sessionType = "engineer";
+      else if (agentName.includes("review")) sessionType = "reviewer";
+      else if (agentName.includes("pm")) sessionType = "pm";
+      else if (agentName.includes("ross") || agentName.includes("guide")) sessionType = "guide";
+      else if (agentName.includes("cto")) sessionType = "cto";
+      else if (agentName.includes("tech")) sessionType = "tech-debt";
+      else sessionType = taskId ? "task" : "chat";
+
+      // Reuse existing session ID to accumulate multi-turn sessions into one record
+      const finalSessionId = sessionId || `${taskId}-${randomUUID()}`;
+      const endedAt = new Date().toISOString();
+      const elapsedMs = session.accumulatedMs;
+      const agent = session.agent ?? "unknown";
+      const model = session.model ?? "default";
+      const codingAgent = session.engine;
+
+      const inputTokens = session.inputTokens ?? undefined;
+      const outputTokens = session.outputTokens ?? undefined;
+      const totalTokens = session.tokens ?? undefined;
+      let costUsd = session.costUsd ?? undefined;
+      let costSource = "none";
+
+      if (totalTokens && !costUsd) {
+        costUsd = estimateCostUsd(totalTokens);
+        costSource = "estimate";
+      } else if (session.costUsd) {
+        costSource = "extractUsage";
+      }
+
+      const status = exitedCleanly ? "finished" : "errored";
+
+      // Use session creation time (first time this session started), not current time
+      const startedAt = session.createdAt ?? endedAt;
+
+      this.db.upsertSession({
+        sessionId: finalSessionId,
+        sessionType,
+        taskId: taskId || undefined,
+        agent,
+        model,
+        codingAgent,
+        startedAt,
+        endedAt,
+        elapsedMs,
+        inputTokens,
+        outputTokens,
+        totalTokens,
+        costUsd,
+        costSource,
+        status,
+        lastActivityAt: session.lastOutputAt ?? endedAt,
+      });
+    } catch {
+      // Database recording is best-effort and must never crash the server.
+    }
+  }
+
   /** Drop the registry entry for a task (idempotent) and announce it. */
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
@@ -2240,6 +2413,10 @@ export class AgentRunner {
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);
+    // Record session to database (best-effort).
+    if (session) {
+      this.recordSessionToDb(session.sessionId, session, taskId, exitedCleanly);
+    }
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
@@ -2334,7 +2511,7 @@ export class AgentRunner {
   }
 
   private emptySession(): Session {
-    return { lines: [], pending: "", bytes: 0, engine: "plain", accumulatedMs: 0, stalledEmitted: false };
+    return { lines: [], pending: "", bytes: 0, engine: "plain", accumulatedMs: 0, createdAt: now(), stalledEmitted: false };
   }
 
   private sessionFile(taskId: string): string | null {
@@ -2377,6 +2554,7 @@ export class AgentRunner {
       engine: saved.engine,
       sessionId: saved.sessionId,
       workdir: saved.workdir,
+      createdAt: saved.createdAt,
       accumulatedMs: 0,
       stalledEmitted: false,
     };
@@ -2429,6 +2607,7 @@ export class AgentRunner {
         sessionId: session.sessionId,
         engine: session.engine,
         workdir: session.workdir,
+        createdAt: session.createdAt,
         completedAt,
         updatedAt: this.clock().toISOString(),
       };

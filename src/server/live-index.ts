@@ -62,6 +62,13 @@ export type RepoEvent =
       at: string;
       error?: string;
     }
+  /** Lifecycle of the CTO monitoring agent (0174). */
+  | {
+      type: "cto";
+      state: "running" | "ready" | "failed" | "cancelled";
+      at: string;
+      error?: string;
+    }
   /**
    * A newer build landed on disk (typically a close-out merge). It is parked
    * for a user-triggered reload (0143) — the running server keeps serving the

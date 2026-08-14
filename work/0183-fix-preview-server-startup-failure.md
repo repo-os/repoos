@@ -2,14 +2,14 @@
 id: "0183"
 title: Fix preview server startup failure
 type: bug
-status: active
+status: ready
 priority: p1
 area: core
 assigned_to: unassigned
 created_by: ""
 branch: feat/fix-preview-server-startup-failure
 created_at: "2026-08-13T23:57:56Z"
-updated_at: "2026-08-14T03:33:21Z"
+updated_at: "2026-08-14T07:42:24Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Preview links have stopped working. The preview server for task #0182 failed to 
 - 2026-08-13T23:57:56Z · created · unknown
 - 2026-08-13T23:58:25Z · status inbox→ready
 - 2026-08-14T03:33:21Z · status ready→active, branch
+- 2026-08-14T07:42:24Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work

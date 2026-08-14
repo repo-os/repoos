@@ -510,6 +510,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     const stopRes = runner.stop(id);
+    // A human pause is legitimate: the task stays active with no process, so
+    // tell the runner — the task watchdog must never disturb it (#0180).
+    runner.markPaused(id);
     const updated = patchTaskFile(
       config,
       existing.absPath,
@@ -614,6 +617,34 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: gate.reason ?? "could not send to the reviewer" });
   }
   void reviews.send(existing, text);
+  return json(res, 200, { ok: true });
+};
+
+export const getCTO: RouteHandler = (ctx, _req, res) => {
+  const { cto } = ctx;
+  return json(res, 200, {
+    ok: true,
+    running: cto.isRunning(),
+    enabled: cto.enabled(),
+    report: cto.read(),
+    lines: cto.session(),
+  });
+};
+
+export const ctoMessage: RouteHandler = async (ctx, req, res) => {
+  const { cto } = ctx;
+  const body = (await readBody(req)) as { text?: unknown };
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  if (!text) {
+    return json(res, 400, { error: "message text is required" });
+  }
+  if (cto.isRunning()) {
+    return json(res, 409, { error: "a CTO run is already in progress" });
+  }
+  if (!cto.enabled()) {
+    return json(res, 400, { error: "the CTO agent is disabled" });
+  }
+  void cto.send(text);
   return json(res, 200, { ok: true });
 };
 
@@ -727,4 +758,27 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
     })),
     queueLength: allJobs.length,
   });
+};
+
+// Session stats endpoints
+export const getTaskStats: RouteHandler = (ctx, _req, res, params) => {
+  const { runner } = ctx;
+  const taskId = params.param1;
+  const stats = runner.taskStats(taskId);
+  if (!stats) {
+    return json(res, 404, { error: `No stats found for task #${taskId}` });
+  }
+  return json(res, 200, { ok: true, stats });
+};
+
+export const getSessionTypeStats: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  const stats = runner.sessionTypeStats();
+  return json(res, 200, { ok: true, stats });
+};
+
+export const getBoardStats: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  const stats = runner.boardStats();
+  return json(res, 200, { ok: true, stats });
 };
