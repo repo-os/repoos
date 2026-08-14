@@ -1185,6 +1185,21 @@ watch(
   },
 );
 
+/** Diff stats for the active task. */
+const taskDiffStats = computed(() => {
+  return ui.active ? repo.diffStatsFor(ui.active.id) : undefined;
+});
+
+/** Load diff stats when task changes or status changes. */
+watch(
+  () => [ui.active?.id, ui.active?.status, ui.active?.branch],
+  () => {
+    if (!ui.active) return;
+    void repo.loadDiffStats(ui.active.id);
+  },
+  { immediate: true },
+);
+
 async function sendTurn(): Promise<void> {
   if (!ui.active) return;
   const text = draftMsg.value.trim();
@@ -1890,6 +1905,28 @@ function resetFreeformOverrides(): void {
               {{ effectiveBranch || "—" }}
               <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
             </div>
+          </div>
+
+          <div class="field">
+            <label>Code changes</label>
+            <div v-if="taskDiffStats" class="diff-stats">
+              <div class="diff-stat-item">
+                <span class="stat-label">Files:</span>
+                <span class="stat-value">{{ taskDiffStats.filesChanged }}</span>
+              </div>
+              <div class="diff-stat-item">
+                <span class="stat-label">Added:</span>
+                <span class="stat-value" style="color: #4ef0a8;">+{{ taskDiffStats.additions }}</span>
+              </div>
+              <div class="diff-stat-item">
+                <span class="stat-label">Deleted:</span>
+                <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
+              </div>
+              <div v-if="taskDiffStats.filesChanged === 0" class="diff-stat-warning">
+                No code changes yet
+              </div>
+            </div>
+            <div v-else class="diff-stats-loading">Loading diff stats…</div>
           </div>
 
           <div class="field-row" style="margin-top: 16px">
@@ -2734,5 +2771,50 @@ function resetFreeformOverrides(): void {
     transform: translateY(-3px);
     opacity: 1;
   }
+}
+
+.diff-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.diff-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.stat-label {
+  color: var(--txt-faint);
+  font-weight: 500;
+}
+
+.stat-value {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.diff-stat-warning {
+  grid-column: 1 / -1;
+  padding: 4px 8px;
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 4px;
+}
+
+.diff-stats-loading {
+  padding: 8px;
+  color: var(--txt-faint);
+  font-size: 12px;
+  text-align: center;
 }
 </style>
