@@ -2,14 +2,14 @@
 id: "0191"
 title: "Reorder task panel tabs to Task, PM, Engineer, Reviewer"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T08:35:22Z"
-updated_at: "2026-08-14T08:35:22Z"
+updated_at: "2026-08-14T08:35:53Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ The task panel tabs should display in the following order and with these names:
 ## Activity
 
 - 2026-08-14T08:35:22Z · created · unknown
+- 2026-08-14T08:35:53Z · status inbox→ready
