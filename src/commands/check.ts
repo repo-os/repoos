@@ -331,6 +331,30 @@ export async function cmdCheck(): Promise<void> {
     results.push(pass("staleness", stale.message ?? stale.code));
   }
 
+  // ── 1b. Lockfile sync check ─────────────────────────────────────────
+  // A dependency bump in package.json without a regenerated bun.lock passes
+  // every other check here (node_modules is already installed) but breaks
+  // `bun install --frozen-lockfile` for every fresh worktree bootstrap
+  // (bootstrap.ts installDeps) — silently, since bootstrap runs on a
+  // different checkout than the one that merged the drift. Dry-run makes
+  // the frozen install fail loudly instead, before the merge lands.
+  heading("Lockfile sync check");
+  if (!existsSync("bun.lock")) {
+    console.log(c.dim("  · No bun.lock — skipping"));
+    results.push(pass("lockfile-sync", "skipped — no bun.lock"));
+  } else {
+    try {
+      execSync("bun install --frozen-lockfile --dry-run", { stdio: "pipe", timeout: 60_000 });
+      console.log(c.green("  ✔ bun.lock matches package.json"));
+      results.push(pass("lockfile-sync"));
+    } catch {
+      const msg = "bun.lock is out of sync with package.json — run `bun install` and commit the updated lockfile";
+      console.log(c.red("  ✗ " + msg));
+      results.push(fail("lockfile-sync", msg));
+      exitCode = 1;
+    }
+  }
+
   // ── 2. Full build ───────────────────────────────────────────────────
   heading("Full build");
   try {
