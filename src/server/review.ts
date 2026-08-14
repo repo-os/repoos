@@ -36,6 +36,7 @@ import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import { resolveReviewer, reviewCommand, runPrompt, type AgentRunner } from "./agents.js";
 import { patchTaskFile } from "./write.js";
+import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -314,11 +315,14 @@ export class ReviewManager {
   private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
   private readonly runner?: AgentRunner;
+  /** Database for recording review sessions. */
+  private readonly db: RepoOSDb | null;
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void, runner?: AgentRunner) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
+    this.db = getRepoOSDb(config.root);
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -517,9 +521,37 @@ export class ReviewManager {
       }
     }
 
+    // Record the review session to the database
+    this.recordReviewSession(task.id, agent, report.at, state === "ok");
+
     return state === "ok"
       ? { ok: true, report }
       : { ok: false, reason: result.error ?? "the review agent failed", report };
+  }
+
+  /** Record a review session to the database. Best-effort, never fails. */
+  private recordReviewSession(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+    if (!this.db) return;
+    try {
+      const sessionId = `review:${taskId}-${completedAt}`;
+      this.db.upsertSession({
+        sessionId,
+        sessionType: "reviewer",
+        taskId,
+        agent: agent.name,
+        model: agent.model,
+        codingAgent: agent.cli,
+        startedAt: completedAt, // Review sessions are point-in-time, use completion time
+        endedAt: completedAt,
+        elapsedMs: 0, // Not tracked for reviews
+        costUsd: undefined,
+        costSource: "none",
+        status: success ? "finished" : "errored",
+        lastActivityAt: completedAt,
+      });
+    } catch {
+      // Database recording is best-effort and must never crash.
+    }
   }
 
   /**
@@ -576,6 +608,9 @@ export class ReviewManager {
       return { ok: false, skipped: true, reason: "review cancelled" };
     }
 
+    const completedAt = now();
+    const success = result.ok;
+
     if (!result.ok) {
       this.appendMarker(task.id, `✗ the reviewer could not answer: ${result.error ?? "unknown error"}`);
       this.persistSession(task.id);
@@ -583,17 +618,46 @@ export class ReviewManager {
         type: "review",
         id: task.id,
         state: "failed",
-        at: now(),
+        at: completedAt,
         ...(result.error ? { error: result.error } : {}),
       });
       this.enforceStillInReview(task);
+      // Record the failed chat turn
+      this.recordReviewChatTurn(task.id, agent, completedAt, false);
       return { ok: false, reason: result.error ?? "the reviewer failed to answer" };
     }
 
     this.persistSession(task.id);
-    this.emit({ type: "review", id: task.id, state: "ready", at: now() });
+    this.emit({ type: "review", id: task.id, state: "ready", at: completedAt });
     this.enforceStillInReview(task);
+    // Record the successful chat turn
+    this.recordReviewChatTurn(task.id, agent, completedAt, true);
     return { ok: true };
+  }
+
+  /** Record a review chat turn to the database. Best-effort, never fails. */
+  private recordReviewChatTurn(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+    if (!this.db) return;
+    try {
+      const sessionId = `review:${taskId}-chat-${completedAt}`;
+      this.db.upsertSession({
+        sessionId,
+        sessionType: "reviewer",
+        taskId,
+        agent: agent.name,
+        model: agent.model,
+        codingAgent: agent.cli,
+        startedAt: completedAt,
+        endedAt: completedAt,
+        elapsedMs: 0,
+        costUsd: undefined,
+        costSource: "none",
+        status: success ? "finished" : "errored",
+        lastActivityAt: completedAt,
+      });
+    } catch {
+      // Database recording is best-effort and must never crash.
+    }
   }
 
   /** The retained reviewer conversation for a task, or [] when none exists. */
