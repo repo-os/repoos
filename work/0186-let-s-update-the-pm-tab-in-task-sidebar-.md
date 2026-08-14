@@ -2,14 +2,14 @@
 id: "0186"
 title: Update PM tab to match Agent tab layout with agent/model selector
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T04:32:24Z"
-updated_at: "2026-08-14T04:40:19Z"
+updated_at: "2026-08-14T04:40:22Z"
 ---
 ## Summary
 
@@ -54,3 +54,4 @@ Update the PM (Project Management) tab in the task sidebar to match the visual l
 
 - 2026-08-14T04:32:24Z · created · unknown
 - 2026-08-14T04:40:19Z · status draft→inbox
+- 2026-08-14T04:40:22Z · status inbox→ready
