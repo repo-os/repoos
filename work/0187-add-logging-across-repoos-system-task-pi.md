@@ -2,14 +2,14 @@
 id: "0187"
 title: "Add logging across RepoOS — system, task-pipeline, and agent activity"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/add-logging-across-repoos-system-task-pi
 created_at: "2026-08-14T05:15:53Z"
-updated_at: "2026-08-14T05:19:32Z"
+updated_at: "2026-08-14T07:42:25Z"
 ---
 ## Problem
 
@@ -105,3 +105,4 @@ once basic logging exists.
 - 2026-08-14T05:15:53Z · created · unknown
 - 2026-08-14T05:18:38Z · status inbox→ready
 - 2026-08-14T05:19:32Z · status ready→active, branch
+- 2026-08-14T07:42:25Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
