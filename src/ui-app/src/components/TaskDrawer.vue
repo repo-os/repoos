@@ -936,18 +936,25 @@ function schedulePmOverrideSave(): void {
     pmOverrideAutoSaveTimer = undefined;
     if (ui.active?.id !== taskId || !pmOverrideDirty.value) return;
     const base = pmBaseAgent.value;
-    const agentVal = pmOverrideDraft.agent !== (base?.name ?? "") ? pmOverrideDraft.agent : null;
-    const cliVal = pmOverrideDraft.cli !== (base?.cli ?? "") ? pmOverrideDraft.cli : null;
-    const modelVal = pmOverrideDraft.model !== (base?.model ?? "") ? pmOverrideDraft.model : null;
+    // Snapshot the values being sent so the saved-baseline sync never claims a
+    // newer in-flight draft change was persisted (dirty stays true → re-arms).
+    const sent = {
+      agent: pmOverrideDraft.agent,
+      cli: pmOverrideDraft.cli,
+      model: pmOverrideDraft.model,
+    };
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
     try {
       await repo.patchTask(taskId, {
         pmAgentOverride: agentVal,
         pmCliOverride: cliVal,
         pmModelOverride: modelVal,
       });
-      pmOverrideSaved.agent = pmOverrideDraft.agent;
-      pmOverrideSaved.cli = pmOverrideDraft.cli;
-      pmOverrideSaved.model = pmOverrideDraft.model;
+      pmOverrideSaved.agent = sent.agent;
+      pmOverrideSaved.cli = sent.cli;
+      pmOverrideSaved.model = sent.model;
     } catch (err) {
       repo.onError(err);
     }
@@ -1296,20 +1303,27 @@ function scheduleAgentOverrideSave(): void {
     agentOverrideAutoSaveTimer = undefined;
     if (ui.active?.id !== taskId || !overrideDirty.value) return;
     const base = baseAgent.value;
+    // Snapshot the values being sent so the saved-baseline sync never claims a
+    // newer in-flight draft change was persisted (dirty stays true → re-arms).
+    const sent = {
+      agent: overrideDraft.agent,
+      cli: overrideDraft.cli,
+      model: overrideDraft.model,
+    };
     // Send values that differ from the base agent; send null to clear overrides
     // that match the base (so the server knows to remove them from frontmatter).
-    const agentVal = overrideDraft.agent !== (base?.name ?? "") ? overrideDraft.agent : null;
-    const cliVal = overrideDraft.cli !== (base?.cli ?? "") ? overrideDraft.cli : null;
-    const modelVal = overrideDraft.model !== (base?.model ?? "") ? overrideDraft.model : null;
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
     try {
       await repo.patchTask(taskId, {
         agentOverride: agentVal,
         cliOverride: cliVal,
         modelOverride: modelVal,
       });
-      overrideSaved.agent = overrideDraft.agent;
-      overrideSaved.cli = overrideDraft.cli;
-      overrideSaved.model = overrideDraft.model;
+      overrideSaved.agent = sent.agent;
+      overrideSaved.cli = sent.cli;
+      overrideSaved.model = sent.model;
     } catch (err) {
       repo.onError(err);
     }
