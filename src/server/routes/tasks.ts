@@ -17,7 +17,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, worktreePathForBranch, ensureWorktree, resetWorktree } from "../../core/git.js";
+import { commitTaskFile, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
@@ -790,5 +790,24 @@ export const getSessionTypeStats: RouteHandler = (ctx, _req, res) => {
 export const getBoardStats: RouteHandler = (ctx, _req, res) => {
   const { runner } = ctx;
   const stats = runner.boardStats();
+  return json(res, 200, { ok: true, stats });
+};
+
+// Diff stats endpoint
+export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (!task.branch) {
+    return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noBranch: true });
+  }
+  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  if (!worktreePath) {
+    return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
+  }
+  const stats = getDiffStats(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
 };
