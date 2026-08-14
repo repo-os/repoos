@@ -8,8 +8,9 @@ area: ui-app
 assigned_to: unassigned
 created_by: ""
 branch: feat/show-code-changes-diff-stats-in-task-sid
+cli_override: claude code
 created_at: "2026-08-14T08:59:00Z"
-updated_at: "2026-08-14T12:45:22Z"
+updated_at: "2026-08-14T12:48:15Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ This should appear in:
 - 2026-08-14T11:54:58Z · status ready→active
 - 2026-08-14T12:45:12Z · status active→ready
 - 2026-08-14T12:45:22Z · status ready→active
+- 2026-08-14T12:48:15Z · cli_override
