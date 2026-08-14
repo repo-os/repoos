@@ -11,7 +11,7 @@ branch: feat/make-move-to-done-non-blocking-and-cut-d
 cli_override: codex
 model_override: gpt-5.6-sol
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-14T08:36:37Z"
+updated_at: "2026-08-14T08:42:06Z"
 ---
 ## Problem
 
