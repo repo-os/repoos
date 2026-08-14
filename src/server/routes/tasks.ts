@@ -731,3 +731,26 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
     queueLength: allJobs.length,
   });
 };
+
+// Session stats endpoints
+export const getTaskStats: RouteHandler = (ctx, _req, res, params) => {
+  const { runner } = ctx;
+  const taskId = params.param1;
+  const stats = runner.taskStats(taskId);
+  if (!stats) {
+    return json(res, 404, { error: `No stats found for task #${taskId}` });
+  }
+  return json(res, 200, { ok: true, stats });
+};
+
+export const getSessionTypeStats: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  const stats = runner.sessionTypeStats();
+  return json(res, 200, { ok: true, stats });
+};
+
+export const getBoardStats: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  const stats = runner.boardStats();
+  return json(res, 200, { ok: true, stats });
+};

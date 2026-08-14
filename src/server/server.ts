@@ -12,8 +12,11 @@
  *                                returns { state: "reloading" | "deferred" | "not-stale" }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
  *   GET  /api/tasks/:id        -> Task | 404  (includes `preview` when running)
+ *   GET  /api/tasks/:id/stats  -> { ok, stats } task's historical session stats
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
+ *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
+ *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
  *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
@@ -148,6 +151,9 @@ import {
   patchTask,
   deleteTask,
   getTaskOutput,
+  getTaskStats,
+  getSessionTypeStats,
+  getBoardStats,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
@@ -1073,6 +1079,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
 
+  // Session stats routes
+  router.register("GET", "/api/stats/board", getBoardStats);
+  router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
   router.register("POST", "/api/tasks", createTask);
@@ -1081,6 +1091,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);

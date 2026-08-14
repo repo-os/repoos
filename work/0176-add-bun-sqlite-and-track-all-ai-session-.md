@@ -53,4 +53,3 @@ This task puts a real store in the project — `bun:sqlite` — and makes sessio
 - 2026-08-14T00:08:28Z · status ready→active, branch
 - 2026-08-14T08:42:00Z · status active→review
 - 2026-08-14T08:52:00Z · status review→done
-
