@@ -109,6 +109,8 @@ import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { CTOManager } from "./cto.js";
+import { CTOMonitor } from "./cto-monitor.js";
 import {
   appendScreenshotsSection,
   mimeForExtension,
@@ -162,6 +164,8 @@ import {
   getTaskReview,
   reviewAgain,
   reviewMessage,
+  getCTO,
+  ctoMessage,
   pmMessage,
   getScreenshot,
   uploadScreenshot,
@@ -850,6 +854,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner);
 
+  // The CTO agent (0174): always-on board monitor that detects stuck tasks,
+  // stale reviews, and broken builds, then nudges agents or escalates to the human.
+  const cto = new CTOManager(config, emitEvent, runner);
+  const ctoMonitor = new CTOMonitor(config, index, cto);
+  // Start the CTO monitor on a 5-minute cadence when enabled.
+  // Make interval configurable from config if present; default to 5 minutes.
+  const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
+  if (cto.enabled()) {
+    ctoMonitor.start(ctoIntervalMs);
+  }
+
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
   // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
@@ -1010,6 +1025,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
+  // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
+  const unsubscribeCTOEvents = index.on((e) => {
+    if (!cto.enabled()) return;
+    if (e.type === "task.updated") {
+      const prev = e.prev.status;
+      if (prev !== undefined && prev !== e.task.status) {
+        ctoMonitor.onEvent(`task #${e.task.id} status change: ${prev} → ${e.task.status}`);
+      }
+    } else if (e.type === "review") {
+      ctoMonitor.onEvent(`review complete for task #${e.id}: ${e.state}`);
+    } else if (e.type === "agent.exited") {
+      ctoMonitor.onEvent(`agent exited: task #${e.id}`);
+    }
+  });
+
   interface SyncResult {
     ok: boolean;
     conflicts: string[];
@@ -1100,6 +1130,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("GET", "/api/cto", getCTO);
+  router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
@@ -1233,6 +1265,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       runner,
       previews,
       reviews,
+      cto,
       repoos,
       emitEvent: (e: RepoEvent) => {
         for (const client of clients) {
@@ -1379,6 +1412,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         clearInterval(systemSampleTimer);
         clearInterval(builtInTimer);
+        ctoMonitor.stop();
         runner.dispose();
         throw err;
       }
@@ -1399,10 +1433,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         close: async () => {
           clearInterval(systemSampleTimer);
           clearInterval(builtInTimer);
+          ctoMonitor.stop();
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();
+          unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
           watchdog?.stop();
@@ -1413,6 +1449,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // agents — a one-shot child must not outlive the server that
           // launched it and wait 15 minutes to write a report nobody reads.
           reviews.cancelAll();
+          cto.cancelAll();
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {
