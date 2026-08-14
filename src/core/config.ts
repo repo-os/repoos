@@ -56,6 +56,14 @@ export const DEFAULT_AGENTS: Agent[] = [
     instructions:
       "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy.",
   },
+  {
+    name: "cto",
+    cli: "opencode",
+    model: "big pickle",
+    enabled: false,
+    instructions:
+      "You are the CTO: an always-on board monitor and un-sticker. Watch for stuck tasks, stale reviews, zombie processes, and broken builds. Report what you find, escalate when needed, and ask the human before taking action. Never move a task to done, merge branches, delete worktrees, change config, or spend money.",
+  },
 ];
 
 /** Default agent names — these are seeded and cannot be removed. */

@@ -16,6 +16,9 @@ defaultTaskMode = "freeform"
 autoEngineeringMode = true
 maxActiveTasks = 3
 
+# CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
+ctoMonitorIntervalMs = 300000
+
 [tunnel]
 provider = "cloudflare"
 enabled = true
@@ -46,5 +49,11 @@ cli = "claude code"
 model = "haiku"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
+[[agents]]
+name = "CTO"
+cli = "claude code"
+model = "haiku"
+enabled = true
+instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
 
 
