@@ -172,7 +172,7 @@ export async function handoffTask(
       onProgress?.("commit");
       const unstageGenerated = await runGit(
         registered,
-        ["reset", "--quiet", "HEAD", "--", "dist", "screenshots"],
+        ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
         10_000,
       );
       if (unstageGenerated.status !== 0) {
@@ -184,7 +184,7 @@ export async function handoffTask(
       }
       const add = await runGit(
         registered,
-        ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots"],
+        ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", `:(exclude)${task.path}`],
         30_000,
       );
       if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
@@ -192,7 +192,11 @@ export async function handoffTask(
       if (staged.status === 1) {
         const commit = await runGit(registered, ["commit", "-m", `feat(${task.id}): implement ${task.title}`], 30_000);
         if (commit.status !== 0) return { ok: false, step: "commit", detail: `git commit failed: ${concise(commit)}` };
-      } else if (staged.status !== 0) {
+      } else if (staged.status === 0) {
+        if (!worktreeTask.noSourceChange) {
+          return { ok: false, step: "commit", detail: "no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff" };
+        }
+      } else {
         return { ok: false, step: "commit", detail: `could not inspect staged changes: ${concise(staged)}` };
       }
 
