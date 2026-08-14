@@ -121,6 +121,7 @@ import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   Router,
   type RouteContext,
@@ -743,6 +744,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
+
+  // Task watchdog: surfaces active tasks whose agent is dead or stalled (0180).
+  // Constructed after the reload manager so it can observe `isReloading()`.
+  let watchdog: TaskWatchdog | null = null;
 
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
@@ -1385,6 +1390,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeNeedsInput();
           watcher.stop();
           supervisor?.stop();
+          watchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
@@ -1460,6 +1466,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Agent supervisor: periodic health checks and safe recovery (0112)
       supervisor = new AgentSupervisor(config, index, emitEvent);
       supervisor.start();
+
+      // Task watchdog: surface active tasks whose agent session is dead or
+      // stalled (0180). Guarded so it never fires while the server is handing
+      // over to a reload replacement.
+      const watchdogConfig = config.watchdog ?? {};
+      watchdog = new TaskWatchdog(
+        config,
+        index,
+        runner,
+        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+        {
+          autoTransition: watchdogConfig.autoTransition !== false,
+          canRun: () => !(reload?.isReloading ?? false),
+        },
+      );
+      if (watchdogConfig.enabled !== false) watchdog.start();
 
       resolve(handle);
     })().catch((e) => reject(e as Error));

@@ -510,6 +510,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     const stopRes = runner.stop(id);
+    // A human pause is legitimate: the task stays active with no process, so
+    // tell the runner — the task watchdog must never disturb it (#0180).
+    runner.markPaused(id);
     const updated = patchTaskFile(
       config,
       existing.absPath,

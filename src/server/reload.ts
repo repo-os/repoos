@@ -222,6 +222,7 @@ export class ReloadManager {
       : { hash: this.buildAvailableHash, buildAt: this.buildAvailableAt };
   }
 
+
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
   start(): void {
     if (!this.enabled) return;
