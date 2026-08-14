@@ -8,13 +8,13 @@ cacheDir = ".repoos"
 
 theme = "light"
 strictBuild = false
-uiTheme = "clear"
+uiTheme = "gen z"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
 
 autoEngineeringMode = true
-maxActiveTasks = 3
+maxActiveTasks = "5"
 
 # CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
 ctoMonitorIntervalMs = 300000

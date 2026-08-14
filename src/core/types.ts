@@ -256,6 +256,14 @@ export interface RepoOSConfig {
   supervisor?: SupervisorConfig;
   /** Task watchdog configuration (#0180). */
   watchdog?: WatchdogConfig;
+  /** Voice transcription configuration for vibe-coding feature. */
+  whisper?: WhisperConfig;
+}
+
+/** Whisper voice transcription configuration. */
+export interface WhisperConfig {
+  provider?: "groq" | "openai" | "none";
+  apiKey?: string;
 }
 
 /** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */
