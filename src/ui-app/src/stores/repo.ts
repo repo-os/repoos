@@ -406,6 +406,16 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } else if (e.type === "task.progress") {
       doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+      // Background close-out failure (0199): the /done POST only enqueues the
+      // job, so a later failure arrives here as an SSE event. Surface it as the
+      // inline done error the card/drawer already render.
+      if (e.step === "failed" && e.detail) {
+        setDoneError(e.id, {
+          message: e.detail,
+          conflicts: extractConflicts(e.detail),
+          step: "check",
+        });
+      }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed
       // state because the agent's fail-safe checklist silently failed — worth
