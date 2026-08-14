@@ -2,14 +2,14 @@
 id: "0193"
 title: Reset model selector when changing coding agent
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T10:03:13Z"
-updated_at: "2026-08-14T10:03:13Z"
+updated_at: "2026-08-14T10:06:40Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ When a user changes the coding agent, the model selector should automatically re
 ## Activity
 
 - 2026-08-14T10:03:13Z · created · unknown
+- 2026-08-14T10:06:40Z · status inbox→ready
