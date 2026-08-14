@@ -2,14 +2,14 @@
 id: "0189"
 title: Build Architect agent for architecture reviews and recommendations
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/build-architect-agent-for-architecture-r
 created_at: "2026-08-14T07:13:09Z"
-updated_at: "2026-08-14T07:25:35Z"
+updated_at: "2026-08-14T07:42:28Z"
 ---
 ```markdown
 ---
@@ -64,3 +64,4 @@ This task covers designing and building the Architect agent and its reporting sy
 - 2026-08-14T07:13:57Z · title, branch
 - 2026-08-14T07:16:18Z · status inbox→ready
 - 2026-08-14T07:25:35Z · status ready→active
+- 2026-08-14T07:42:28Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
