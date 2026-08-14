@@ -10,6 +10,7 @@ import TaskDrawer from "./components/TaskDrawer.vue";
 import TunnelDrawer from "./components/TunnelDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
 import RepoGuideChat from "./components/RepoGuideChat.vue";
+import CTOPanel from "./components/CTOPanel.vue";
 
 const repo = useRepoStore();
 const docs = useDocsStore();
@@ -46,5 +47,6 @@ onMounted(async () => {
     <TunnelDrawer />
     <ToastPanel />
     <RepoGuideChat />
+    <CTOPanel />
   </div>
 </template>

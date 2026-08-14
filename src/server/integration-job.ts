@@ -16,6 +16,8 @@ export type JobPhase = "queued" | "syncing" | "validating" | "publishing" | "cle
 export interface IntegrationJob {
   /** Unique ID: task ID */
   taskId: string;
+  /** Feature branch to integrate (the task's `branch` field). */
+  branch?: string;
   /** Current phase */
   phase: JobPhase;
   /** When the job was enqueued (ISO string) */
@@ -95,6 +97,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
     if (stored.version !== VERSION) return null;
     return {
       taskId: stored.taskId,
+      branch: stored.branch,
       phase: stored.phase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
@@ -124,10 +127,15 @@ export function createJobCoordinator(root: string): JobCoordinator {
       if (!task.branch) return null;
 
       const existing = readJob(root, task.id);
-      if (existing) return existing;
+      // A job that already completed or is in flight is left alone; a FAILED
+      // job is stale (the earlier attempt ended without publishing), so it is
+      // re-enqueued as a fresh queued job — this is how a "Move to done" retry
+      // unblocks a task stuck behind an old failure.
+      if (existing && existing.phase !== "failed") return existing;
 
       const job: IntegrationJob = {
         taskId: task.id,
+        branch: task.branch,
         phase: "queued",
         enqueuedAt: new Date().toISOString(),
         startedAt: null,

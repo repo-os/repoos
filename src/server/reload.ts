@@ -204,6 +204,11 @@ export class ReloadManager {
     return this.options.enabled !== false;
   }
 
+  /** True while the manager is actively handing over to a replacement process. */
+  get isReloading(): boolean {
+    return this.reloading;
+  }
+
   /**
    * The build parked by a close-out (0143), if any — hash plus its on-disk
    * build timestamp (dist/.build-info.json generatedAt). Exposed so /api/health
@@ -216,6 +221,7 @@ export class ReloadManager {
       ? null
       : { hash: this.buildAvailableHash, buildAt: this.buildAvailableAt };
   }
+
 
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
   start(): void {

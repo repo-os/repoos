@@ -8,8 +8,8 @@
  * Phases track recovery: if interrupted mid-flight, retry resumes from the current phase.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, existsSync, symlinkSync } from "node:fs";
+import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
@@ -23,11 +23,15 @@ import {
   deleteBranch,
   isGitRepo,
   commitTaskFile,
+  mergeBranch,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
 
-const CANDIDATE_BRANCH_PREFIX = ".repoos/integrate/";
+// Candidate branch prefix. Must be a valid git refname: a leading dot is
+// rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
+// silently failed every close-out job at worktree creation.
+const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
 
 /** Shared literal for the failed job phase so recovery paths stay consistent. */
 const PHASE_FAILED = "failed";
@@ -67,6 +71,17 @@ async function resolveDefaultBranch(root: string): Promise<string> {
 
   // Final fallback
   return "main";
+}
+
+/**
+ * The useful part of a failed command's combined output: the LAST meaningful
+ * line, since errors print at the tail (shell/bun preambles like
+ * `$ bun src/cli/index.ts check` print first and are useless as a failure
+ * reason on their own).
+ */
+function tailLine(stdout: string, stderr: string): string {
+  const lines = `${stdout}\n${stderr}`.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines[lines.length - 1] ?? "unknown error";
 }
 
 interface ProcessRunResult {
@@ -236,6 +251,22 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: `could not create candidate worktree: ${wtRes.reason}` };
     }
 
+    // A fresh candidate worktree has no dependencies, and the gate below runs a
+    // full `bun run build` + check. Reuse the main checkout's node_modules via
+    // a symlink instead of a slow cold install; fail-soft so a missing install
+    // surfaces as a build/check error rather than a misleading sync failure.
+    const candidateNodeModules = join(wtRes.path, "node_modules");
+    if (!existsSync(candidateNodeModules)) {
+      const rootNodeModules = join(root, "node_modules");
+      if (existsSync(rootNodeModules)) {
+        try {
+          symlinkSync(rootNodeModules, candidateNodeModules, "dir");
+        } catch {
+          /* fail-soft: the build step will report the real error */
+        }
+      }
+    }
+
     // Reset candidate to main so it's a clean base for the merge.
     const resetRes = await runGit(wtRes.path, ["reset", "--hard", mainBranch], 30_000);
     if (resetRes.status !== 0) {
@@ -243,7 +274,7 @@ export class CloseOutOrchestrator {
     }
 
     // Validate and record the feature branch SHA.
-    const taskBranch = job.taskId;
+    const taskBranch = job.branch ?? job.taskId;
     // Check if the feature branch exists (critical: avoid merging unrelated history)
     const taskWtPath = worktreePathForBranch(root, taskBranch);
     if (!taskWtPath) {
@@ -270,7 +301,7 @@ export class CloseOutOrchestrator {
 
     // Check for main SHA changes. If main advanced, discard candidate and rebuild.
     const mainBranch = await resolveDefaultBranch(root);
-    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (currentMainRes.status !== 0) {
       return { ok: false, reason: "could not get current main SHA" };
     }
@@ -288,7 +319,7 @@ export class CloseOutOrchestrator {
     }
 
     // Merge feature branch into candidate.
-    const featureBranch = job.taskId;
+    const featureBranch = job.branch ?? job.taskId;
 
     // Verify feature branch still exists before attempting merge
     const branchListRes = await runGit(root, ["branch", "--list", featureBranch], 4000);
@@ -297,21 +328,24 @@ export class CloseOutOrchestrator {
     }
 
     // In the candidate worktree, merge the feature branch from its location.
-    const mergeRes = await runGit(wtPath, ["merge", "--no-edit", featureBranch], 60_000);
-    if (mergeRes.status !== 0) {
-      const conflicts = await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 5000);
-      if (conflicts.status === 0 && conflicts.stdout.trim()) {
-        await runGit(wtPath, ["merge", "--abort"], 4000);
-        return { ok: false, reason: `merge conflict in ${conflicts.stdout.trim().split("\n")[0]}` };
-      }
-      await runGit(wtPath, ["merge", "--abort"], 4000);
-      return { ok: false, reason: `merge failed: ${mergeRes.stderr.split("\n")[0]}` };
-    }
-
-    // Check for unmerged index entries (should not exist after successful merge, but catch edge cases).
-    const unmergedRes = await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 5000);
-    if (unmergedRes.status === 0 && unmergedRes.stdout.trim()) {
-      return { ok: false, reason: `unmerged index entries: ${unmergedRes.stdout.trim().split("\n")[0]}` };
+    // dist/ and screenshots/ are generated output — the build step right
+    // after this merge (below) regenerates them from source regardless of
+    // what the merge produced, so a conflict there must never block the
+    // merge. The task's own doc file routinely differs between main and the
+    // branch (status/review_rounds bookkeeping on either side), so its
+    // branch version is taken as authoritative, same as the legacy done.ts
+    // close-out path. Reuses the existing, tested autoResolve semantics in
+    // core/git.ts rather than reimplementing conflict resolution here.
+    const task = this.getTask?.(job.taskId);
+    const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
+    if (!merge.merged) {
+      return {
+        ok: false,
+        reason: merge.conflicts.length
+          ? `merge conflict in ${merge.conflicts.join(", ")}`
+          : merge.reason ?? "merge failed",
+      };
     }
 
     // Check for merge conflict markers in text files (unresolved conflicts in content).
@@ -341,16 +375,28 @@ export class CloseOutOrchestrator {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
-      return { ok: false, reason: `build failed: ${buildRes.stderr.split("\n")[0] || "unknown error"}` };
+      return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
     }
 
     this.onProgress?.("check");
-    let checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000 });
+    // The candidate's OWN freshly-built CLI comes first, same as the legacy
+    // done.ts close-out gate (#0130): a globally linked `repoos` resolves
+    // build freshness and gate code against its own install snapshot, which
+    // can disagree with the checkout actually being validated here. Running
+    // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
+    // evaluates the exact code that was just merged and built above.
+    const localCli = join(wtPath, "dist", "cli", "index.js");
+    let checkRes = existsSync(localCli)
+      ? await runProcess(process.execPath, [localCli, "check"], { cwd: wtPath, timeout: 600_000 })
+      : { status: 1, stdout: "", stderr: "candidate dist/cli/index.js missing" };
+    if (checkRes.status !== 0) {
+      checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000 });
+    }
     if (checkRes.status !== 0) {
       checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
     }
     if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${checkRes.stderr.split("\n")[0] || "unknown error"}` };
+      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
     }
 
     // Candidate is green. Capture its SHA.
@@ -386,7 +432,7 @@ export class CloseOutOrchestrator {
 
     try {
       // Final SHA check: ensure candidate is still based on current main (holding the lock).
-      const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+      const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
       if (currentMainRes.status !== 0) {
         return { ok: false, reason: "could not verify main before publish" };
       }
@@ -434,10 +480,10 @@ export class CloseOutOrchestrator {
     deleteBranch(root, branch);
 
     // Remove task's feature worktree (if it still exists).
-    removeWorktree(root, job.taskId);
+    removeWorktree(root, job.branch ?? job.taskId);
 
     // Delete task's feature branch.
-    deleteBranch(root, job.taskId);
+    deleteBranch(root, job.branch ?? job.taskId);
 
     // Mark the task as done in the main checkout.
     try {
