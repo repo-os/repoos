@@ -1,16 +1,16 @@
 ---
-review_rounds: 1
 id: "0192"
 title: Show code changes (diff stats) in task sidebar to diagnose implementation status
 type: feature
-status: review
+status: done
 priority: p2
 area: ui-app
 assigned_to: unassigned
 created_by: ""
 branch: feat/show-code-changes-diff-stats-in-task-sid
 created_at: "2026-08-14T08:59:00Z"
-updated_at: "2026-08-14T15:31:43Z"
+updated_at: "2026-08-14T16:51:30Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -70,4 +70,4 @@ This should appear in:
 - 2026-08-14T15:11:07Z · model_override
 - 2026-08-14T15:11:20Z · status ready→active
 - 2026-08-14T15:31:43Z · status active→review
-
+- 2026-08-14T16:51:30Z · status review→done
