@@ -222,7 +222,7 @@ export class CloseOutOrchestrator {
     const mainBranch = await resolveDefaultBranch(root);
 
     // Record main SHA at validation start.
-    const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+    const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (mainShaRes.status !== 0) {
       return { ok: false, reason: "could not get main SHA" };
     }
