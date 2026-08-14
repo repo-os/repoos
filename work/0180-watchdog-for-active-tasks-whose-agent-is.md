@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/watchdog-for-active-tasks-whose-agent-is
 created_at: "2026-08-13T16:53:53Z"
-updated_at: "2026-08-13T23:34:46Z"
+updated_at: "2026-08-14T03:31:07Z"
 ---
 ## Problem
 
