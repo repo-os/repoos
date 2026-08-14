@@ -1680,29 +1680,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'details' }"
             @click="ui.activeTab = 'details'"
           >
-            Details
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'agent' }"
-            @click="ui.activeTab = 'agent'"
-          >
-            Agent
-          </button>
-          <button
-            v-if="ui.active.status === 'review'"
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'review' }"
-            @click="ui.activeTab = 'review'"
-          >
-            Agent Review
-            <ActivityIndicator
-              v-if="ui.activeTab !== 'review' && review?.running"
-              variant="reviewing"
-              label="Reviewing…"
-            />
+            Task
           </button>
           <button
             type="button"
@@ -1711,6 +1689,28 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'pm'"
           >
             PM
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'agent' }"
+            @click="ui.activeTab = 'agent'"
+          >
+            Engineer
+          </button>
+          <button
+            v-if="ui.active.status === 'review'"
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'review' }"
+            @click="ui.activeTab = 'review'"
+          >
+            Reviewer
+            <ActivityIndicator
+              v-if="ui.activeTab !== 'review' && review?.running"
+              variant="reviewing"
+              label="Reviewing…"
+            />
           </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
