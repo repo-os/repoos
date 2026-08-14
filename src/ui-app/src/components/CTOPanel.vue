@@ -5,8 +5,10 @@ import { renderMarkdown } from "../lib/markdown";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 
+defineProps<{ open: boolean }>();
+const emit = defineEmits<{ close: [] }>();
+
 const repo = useRepoStore();
-const open = ref(false);
 const draft = ref("");
 const submitting = ref(false);
 const log = ref<HTMLElement | null>(null);
@@ -46,26 +48,16 @@ function scrollToLatest(): void {
   });
 }
 
-function toggle(): void {
-  open.value = !open.value;
-  if (open.value) scrollToLatest();
-}
-
 async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
   submitting.value = true;
-  // No optimistic append here: the server emits the human turn back over SSE
-  // (session `cto:board`) and loadCTO() below pulls the authoritative
-  // transcript, so an optimistic copy would double the line.
   draft.value = "";
-
   try {
     await api("/api/cto/message", {
       method: "POST",
-      body: JSON.stringify({ text }, undefined)
+      body: JSON.stringify({ text }),
     });
-    // Pull the authoritative transcript (the server persists the human turn).
     await repo.loadCTO();
   } catch (error) {
     repo.onError(error);
@@ -80,185 +72,93 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="cto-panel" :class="{ open }">
-    <button class="toggle-btn" @click="toggle" :title="open ? 'Close CTO panel' : 'Open CTO panel'">
-      CTO <span v-if="running" class="live-dot">🔴</span>
-    </button>
+  <aside
+    v-if="open"
+    class="cto-panel"
+    aria-label="CTO Board Monitor"
+  >
+    <header class="cto-header">
+      <div class="cto-avatar" aria-hidden="true">
+        <img src="/assets/repoos-cto-square.webp" alt="CTO" />
+      </div>
+      <div class="cto-identity">
+        <strong>CTO Board Monitor</strong>
+        <span><i :class="{ off: !enabled }"></i>{{ enabled ? "CTO agent is active" : "Disabled on Agents page" }}</span>
+      </div>
+      <button class="cto-minimize" type="button" aria-label="Minimize CTO" title="Minimize" @click="emit('close')">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+      </button>
+    </header>
 
-    <div v-if="open" class="panel-content">
-      <div class="header">
-        <h2>CTO Board Monitor</h2>
-        <button class="close-btn" @click="toggle">×</button>
+    <div class="cto-log" ref="log">
+      <div v-if="!enabled" class="cto-disabled">
+        <p>CTO agent is disabled. Enable it from the Agents page.</p>
       </div>
 
-      <div class="report" v-if="report">
-        <div class="report-meta">Latest report at {{ new Date(report.at).toLocaleTimeString() }}</div>
-        <div class="report-content" v-html="renderMarkdown(report.markdown)"></div>
+      <div v-else-if="report" class="cto-report">
+        <div class="cto-report-meta">Latest report at {{ new Date(report.at).toLocaleTimeString() }}</div>
+        <div class="cto-report-content" v-html="renderMarkdown(report.markdown)"></div>
       </div>
 
-      <div v-if="!enabled" class="disabled-notice">
-        CTO agent is disabled. Enable it from the Agents page.
+      <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
+        {{ lineText(entry) }}
       </div>
 
-      <div class="log" ref="log">
-        <div v-for="(entry, i) of lines" :key="i" :class="`line ${lineKind(entry)}`">
-          {{ lineText(entry) }}
-        </div>
-      </div>
-
-      <div class="input-area">
-        <input
-          v-model="draft"
-          type="text"
-          placeholder="Ask the CTO about board health..."
-          :disabled="busy || !enabled"
-          @keydown.enter="send"
-        />
-        <button @click="send" :disabled="busy || !enabled || !draft.trim()">Send</button>
+      <div v-if="busy" class="cto-thinking" aria-label="CTO is thinking">
+        <span></span><span></span><span></span>
       </div>
     </div>
-  </div>
+
+    <form class="cto-compose" @submit.prevent="send">
+      <input
+        v-model="draft"
+        type="text"
+        placeholder="Ask the CTO about board health..."
+        :disabled="busy || !enabled"
+        @keydown.enter="send"
+      />
+      <button type="submit" :disabled="busy || !enabled || !draft.trim()">Send</button>
+    </form>
+  </aside>
 </template>
 
 <style scoped>
-.cto-panel {
-  position: fixed;
-  right: 0;
-  top: 60px;
-  width: 0;
-  height: calc(100vh - 60px);
-  overflow: hidden;
-  transition: width 0.3s ease;
-  border-left: 1px solid var(--color-border);
-  background: var(--color-bg);
-  display: flex;
-  flex-direction: column;
-}
-
-.cto-panel.open {
-  width: 400px;
-}
-
-.toggle-btn {
-  position: fixed;
-  right: 16px;
-  top: 70px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 1000;
-}
-
-.toggle-btn:hover {
-  opacity: 0.8;
-}
-
-.panel-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.header h2 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.disabled-notice {
-  padding: 16px;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.report {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
-  overflow-y: auto;
-}
-
-.report-meta {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-bottom: 8px;
-}
-
-.report-content {
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.log {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
-  font-family: monospace;
-  font-size: 12px;
-}
-
-.line {
-  margin: 4px 0;
-}
-
-.line.human {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.line.assistant {
-  color: var(--color-text);
-}
-
-.line.status {
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
-.input-area {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--color-border);
-}
-
-.input-area input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.input-area button {
-  padding: 8px 16px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.input-area button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.cto-panel{position:fixed;right:90px;bottom:18px;width:min(390px,calc(100vw - 130px));height:min(610px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border-bright);border-radius:18px;background:var(--panel-gradient);box-shadow:0 24px 70px rgba(0,0,0,.38);backdrop-filter:blur(18px);animation:cto-open .18s ease-out;pointer-events:auto;z-index:71}
+.cto-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
+.cto-avatar{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
+.cto-avatar img{width:100%;height:100%;object-fit:cover}
+.cto-identity{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.cto-identity strong{font-size:13.5px;letter-spacing:-.01em}
+.cto-identity span{display:flex;align-items:center;gap:6px;font:500 10px 'JetBrains Mono',monospace;color:var(--txt-dim)}
+.cto-identity i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.cto-identity i.off{background:var(--txt-faint);box-shadow:none}
+.cto-minimize{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:var(--txt-dim);cursor:pointer}
+.cto-minimize:hover{background:var(--nav-hover-bg);color:var(--txt)}
+.cto-minimize svg{width:19px;height:19px}
+.cto-log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px 14px;overscroll-behavior:contain}
+.cto-disabled{padding:16px;color:var(--txt-dim);font-size:13px;text-align:center;margin:auto 0}
+.cto-report{padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel);margin-bottom:8px}
+.cto-report-meta{font-size:10.5px;color:var(--txt-faint);margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.cto-report-content{font-size:12.5px;line-height:1.55}
+.cto-report-content :deep(p){margin:0 0 7px}
+.cto-report-content :deep(p:last-child){margin-bottom:0}
+.cto-report-content :deep(ul),.cto-report-content :deep(ol){padding-left:17px;margin:5px 0}
+.cto-report-content :deep(code){font:10.5px 'JetBrains Mono',monospace;background:var(--md-body-bg);border-radius:4px;padding:1px 4px}
+.cto-report-content :deep(a){color:var(--cyan)}
+.cto-line{padding:6px 8px;font-size:12px;line-height:1.5;border-radius:8px}
+.cto-line.human{color:var(--txt);font-weight:500;background:var(--btn-primary-bg);align-self:flex-end;border-bottom-right-radius:3px}
+.cto-line.assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:3px}
+.cto-line.status{color:var(--txt-faint);font-style:italic;font-size:11px;text-align:center}
+.cto-thinking{display:flex;gap:4px;align-self:flex-start;padding:9px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
+.cto-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:cto-bounce 1.2s infinite}
+.cto-thinking span:nth-child(2){animation-delay:.15s}.cto-thinking span:nth-child(3){animation-delay:.3s}
+.cto-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
+.cto-compose input{flex:1;min-height:24px;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
+.cto-compose input::placeholder{color:var(--txt-faint)}
+.cto-compose button{width:auto;padding:0 12px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
+.cto-compose button:disabled{opacity:.4;cursor:default}
+@keyframes cto-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes cto-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
+@media(max-width:760px){.cto-panel{right:12px;left:12px;width:auto;height:min(560px,calc(100dvh - 150px))}}
+@media(prefers-reduced-motion:reduce){.cto-panel,.cto-thinking span{animation:none;transition:none}}
 </style>
