@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0169"
 title: "Server-side handoff finalization must fail loudly and durably, never wedge silently"
 type: bug
@@ -40,3 +41,4 @@ A finalization that cannot complete must leave a durable, visible, actionable re
 - 2026-08-13T14:00:19Z · status inbox→ready
 - 2026-08-13T23:53:52Z · status ready→active, branch
 - 2026-08-14T00:03:09Z · status active→review
+

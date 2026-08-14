@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0176"
 title: "Add bun:sqlite and track ALL AI session stats (engineer, reviewer, PM, Ross, CTO, tech-debt, ...)"
 type: feature
@@ -51,3 +52,4 @@ This task puts a real store in the project — `bun:sqlite` — and makes sessio
 - 2026-08-13T15:26:25Z · created · unknown
 - 2026-08-14T00:08:28Z · status ready→active, branch
 - 2026-08-14T08:42:00Z · status active→review
+
