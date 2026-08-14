@@ -3,7 +3,7 @@
  * These agents are triggered on-demand or on a schedule.
  */
 
-import { readdirSync, readFileSync, statSync, accessSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, accessSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
@@ -91,6 +91,42 @@ export interface PerformanceRunResult extends CreatePerformanceResult {
 
 /** Raised when the Performance Agent cannot do its job at all (e.g. missing work dir). */
 export class PerformanceError extends Error {}
+
+export type ArchitectureIssueType =
+  | "layer-violation"
+  | "tight-coupling"
+  | "missing-abstraction"
+  | "over-engineering"
+  | "scalability-risk";
+
+export interface ArchitectureIssue {
+  type: ArchitectureIssueType;
+  file?: string;
+  line?: number;
+  description: string;
+  severity: "high" | "medium" | "low";
+  recommendation?: string;
+}
+
+export interface ArchitectureScanResult {
+  issues: ArchitectureIssue[];
+  scannedFiles: number;
+  taskCount: number;
+  insights: string[];
+}
+
+export interface ArchitectRunResult {
+  reportPath: string;
+  fileName: string;
+  issuesFound: number;
+  scannedFiles: number;
+  taskCount: number;
+  created: number;
+  failed: number;
+  errors: string[];
+}
+
+export class ArchitectureError extends Error {}
 
 const SOURCE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".vue"]);
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".next", ".nuxt", ".repoos"]);
@@ -858,16 +894,231 @@ export async function runPerformanceAgent(
   };
 }
 
+/**
+ * Scan the repository for architectural issues and opportunities.
+ */
+export async function scanForArchitectureIssues(
+  config: RepoOSConfig,
+): Promise<ArchitectureScanResult> {
+  const issues: ArchitectureIssue[] = [];
+  const insights: string[] = [];
+
+  const files = collectSourceFiles(config.root);
+  const scanned = readScannedFiles(config.root, files);
+
+  const dirCounts = new Map<string, number>();
+  for (const file of scanned) {
+    const parts = file.rel.split("/");
+    if (parts.length > 1) {
+      const dir = parts[0];
+      dirCounts.set(dir, (dirCounts.get(dir) ?? 0) + 1);
+    }
+  }
+
+  const smallDirs = Array.from(dirCounts.entries()).filter(([, count]) => count > 20);
+  if (smallDirs.length > 0) {
+    insights.push(
+      `Found ${smallDirs.length} directories with >20 files each. Consider consolidating or restructuring for better maintainability.`,
+    );
+  }
+
+  const importPattern = /(?:import|from)\s+['"](\.\.?\/[^'"]+)['"]/g;
+  let maxDependencies = 0;
+  let maxDepFile = "";
+  for (const file of scanned) {
+    const cleaned = stripCommentsAndStrings(file.content);
+    const fileImports = new Set<string>();
+    let m: RegExpExecArray | null;
+    while ((m = importPattern.exec(cleaned)) !== null) {
+      fileImports.add(m[1]);
+    }
+    if (fileImports.size > maxDependencies) {
+      maxDependencies = fileImports.size;
+      maxDepFile = file.rel;
+    }
+  }
+  if (maxDependencies > 8) {
+    issues.push({
+      type: "tight-coupling",
+      file: maxDepFile,
+      description: `File has ${maxDependencies} internal dependencies — consider refactoring to reduce coupling`,
+      severity: "medium",
+      recommendation: "Extract common functionality into shared utilities and use dependency injection.",
+    });
+  }
+
+  const patternSignatures = [/\binterface\s+\w+/g, /\btype\s+\w+\s*=/g, /\bclass\s+\w+/g];
+  const patterns = new Map<string, { pattern: string; files: string[] }>();
+  for (const file of scanned) {
+    const cleaned = stripCommentsAndStrings(file.content);
+    for (const re of patternSignatures) {
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(cleaned)) !== null) {
+        const sig = m[0];
+        if (!patterns.has(sig)) patterns.set(sig, { pattern: sig, files: [] });
+        patterns.get(sig)!.files.push(file.rel);
+      }
+    }
+  }
+  for (const [, match] of patterns) {
+    if (match.files.length >= 5 && match.files.length <= 10) {
+      issues.push({
+        type: "missing-abstraction",
+        description: `Pattern "${match.pattern}" repeated across ${match.files.length} files — consider extracting into a shared abstraction`,
+        severity: "low",
+        recommendation: "Review the pattern and create a reusable base type or utility.",
+      });
+      break;
+    }
+  }
+
+  const complexCount = scanned.filter((f) => f.content.includes("abstract") || f.content.includes("decorator")).length;
+  if (complexCount > 5) {
+    issues.push({
+      type: "over-engineering",
+      description: `Repository uses advanced patterns in ${complexCount} files — ensure they justify the complexity`,
+      severity: "low",
+      recommendation: "Review whether all abstractions add value or could be simplified.",
+    });
+  }
+
+  const largeFiles = scanned.filter((f) => f.lineCount > 1000);
+  if (largeFiles.length > 3) {
+    issues.push({
+      type: "scalability-risk",
+      description: `${largeFiles.length} files exceed 1000 lines — these may be bottlenecks as the system scales`,
+      severity: "medium",
+      recommendation: "Consider breaking large files into smaller modules with clear responsibilities.",
+    });
+  }
+
+  if (scanned.length > 0) {
+    insights.push(`Analyzed ${scanned.length} source files across ${dirCounts.size} directories.`);
+  }
+
+  const workDir = join(config.root, config.workDir);
+  let taskCount = 0;
+  let activeArchTasks = 0;
+  try {
+    const taskFiles = readdirSync(workDir);
+    taskCount = taskFiles.filter((f) => f.endsWith(".md")).length;
+    for (const taskFile of taskFiles) {
+      if (!taskFile.endsWith(".md")) continue;
+      try {
+        const content = readFileSync(join(workDir, taskFile), "utf8");
+        if (content.includes("architecture") || content.includes("design") || content.includes("refactor")) {
+          activeArchTasks++;
+        }
+      } catch { /* skip unreadable files */ }
+    }
+  } catch { /* work directory might not exist */ }
+
+  if (activeArchTasks > 0) {
+    insights.push(`Found ${activeArchTasks} active tasks related to architecture and design decisions.`);
+  }
+
+  return { issues, scannedFiles: scanned.length, taskCount, insights };
+}
+
+/**
+ * Generate a markdown architecture report and save it with a timestamp.
+ */
+export async function generateArchitectureReport(
+  config: RepoOSConfig,
+  scan: ArchitectureScanResult,
+): Promise<{ reportPath: string; fileName: string }> {
+  const reportDir = join(config.root, "docs", "agents", "Architect");
+  mkdirSync(reportDir, { recursive: true });
+
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  const fileName = `Architect_report_${ts}.md`;
+  const reportPath = join(reportDir, fileName);
+
+  let report = `# Architecture Review Report\n\n`;
+  report += `**Generated**: ${now.toISOString()}\n\n`;
+  report += `## Executive Summary\n\n`;
+  report += `- **Files Scanned**: ${scan.scannedFiles}\n`;
+  report += `- **Tasks in Backlog**: ${scan.taskCount}\n`;
+  report += `- **Issues Identified**: ${scan.issues.length}\n\n`;
+
+  if (scan.insights.length > 0) {
+    report += `## Key Insights\n\n`;
+    for (const insight of scan.insights) report += `- ${insight}\n`;
+    report += `\n`;
+  }
+
+  if (scan.issues.length > 0) {
+    report += `## Architecture Issues & Risks\n\n`;
+    for (const sev of ["high", "medium", "low"] as const) {
+      const filtered = scan.issues.filter((i) => i.severity === sev);
+      if (filtered.length === 0) continue;
+      report += `### ${sev.charAt(0).toUpperCase() + sev.slice(1)} Severity\n\n`;
+      for (const issue of filtered) {
+        report += `**${issue.type}**: ${issue.description}\n`;
+        if (issue.file) report += `- File: \`${issue.file}\`\n`;
+        if (issue.line) report += `- Line: ${issue.line}\n`;
+        if (issue.recommendation) report += `- **Recommendation**: ${issue.recommendation}\n`;
+        report += `\n`;
+      }
+    }
+  } else {
+    report += `## Architecture Assessment\n\n`;
+    report += `No significant architectural issues detected.\n\n`;
+  }
+
+  report += `## Recommendations\n\n`;
+  report += `1. Schedule periodic architecture reviews (quarterly) to track progress.\n`;
+  report += `2. Maintain an up-to-date architecture document reflecting actual system design.\n`;
+  if (scan.issues.some((i) => i.severity === "high")) report += `3. Address high-severity issues first.\n`;
+  if (scan.issues.some((i) => i.type === "tight-coupling")) report += `4. Implement dependency injection and clear module boundaries to reduce tight coupling.\n`;
+  if (scan.issues.some((i) => i.type === "scalability-risk")) report += `5. Plan refactoring for large modules that may become bottlenecks.\n`;
+  report += `\n## Next Steps\n\n`;
+  report += `- Review this report with the team\n`;
+  report += `- Create tasks for addressing identified issues\n`;
+  report += `- Track progress through subsequent reports\n`;
+
+  await writeFile(reportPath, report, "utf8");
+  return { reportPath, fileName };
+}
+
+/**
+ * Run the Architect Agent end to end: scan, generate report, record lastRunAt.
+ */
+export async function runArchitectAgent(config: RepoOSConfig): Promise<ArchitectRunResult> {
+  const scan = await scanForArchitectureIssues(config);
+  const report = await generateArchitectureReport(config, scan);
+
+  const agents = { ...(config.builtInAgents ?? {}) };
+  agents["architect"] = { ...(agents["architect"] ?? {}), lastRunAt: new Date().toISOString() };
+  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
+  config.builtInAgents = agents;
+
+  return {
+    reportPath: report.reportPath,
+    fileName: report.fileName,
+    issuesFound: scan.issues.length,
+    scannedFiles: scan.scannedFiles,
+    taskCount: scan.taskCount,
+    created: 0,
+    failed: 0,
+    errors: [],
+  };
+}
+
 /** Dispatch to the appropriate built-in agent by name. */
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
-): Promise<TechDebtRunResult | PerformanceRunResult | null> {
+): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | null> {
   if (name === "tech-debt") {
     return runTechDebtAgent(config);
   }
   if (name === "performance") {
     return runPerformanceAgent(config);
+  }
+  if (name === "architect") {
+    return runArchitectAgent(config);
   }
   return null;
 }
