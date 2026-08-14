@@ -2,14 +2,14 @@
 id: "0198"
 title: Auto-launch preview servers for tasks in review state
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/auto-launch-preview-servers-for-tasks-in
 created_at: "2026-08-14T12:52:34Z"
-updated_at: "2026-08-14T12:58:17Z"
+updated_at: "2026-08-14T16:38:46Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Preview servers automatically launch when tasks transition to review state and a
 
 - 2026-08-14T12:52:34Z · created · unknown
 - 2026-08-14T12:58:17Z · status inbox→ready
+- 2026-08-14T16:38:46Z · status ready→active, branch
