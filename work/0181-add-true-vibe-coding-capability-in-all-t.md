@@ -1,4 +1,5 @@
 ---
+review_rounds: 2
 id: "0181"
 title: Add true vibe-coding capability in all text areas like th…
 type: feature
@@ -91,3 +92,4 @@ If `provider`/`apiKey` resolve to nothing, voice is disabled (mic hidden). The k
 - 2026-08-14T00:21:46Z · body
 - 2026-08-14T00:27:09Z · status ready→active
 - 2026-08-14T00:35:42Z · status active→review
+
