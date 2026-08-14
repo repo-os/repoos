@@ -2,7 +2,7 @@
 id: "0189"
 title: Build Architect agent for architecture reviews and recommendations
 type: feature
-status: review
+status: done
 priority: p2
 area: general
 assigned_to: ai
