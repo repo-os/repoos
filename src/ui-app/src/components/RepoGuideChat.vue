@@ -5,6 +5,7 @@ import { renderMarkdown } from "../lib/markdown";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
+import VoiceDictate from "./VoiceDictate.vue";
 
 const CHAT_ID = "repoos-guide";
 const repo = useRepoStore();
@@ -182,6 +183,7 @@ onMounted(() => void hydrate());
           aria-label="Message Ross"
           @keydown="onKeydown"
         ></textarea>
+        <VoiceDictate :disabled="!enabled" />
         <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
           <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
         </button>

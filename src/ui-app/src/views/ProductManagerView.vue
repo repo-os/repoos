@@ -13,6 +13,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
+import VoiceDictate from "../components/VoiceDictate.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -297,6 +298,7 @@ onMounted(() => {
             aria-label="Message PM"
             @keydown="onKeydown"
           ></textarea>
+          <VoiceDictate :disabled="!enabled" />
           <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
             <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
           </button>

@@ -622,3 +622,10 @@ function findNextTaskId(workDir: string): string {
     return "0001";
   }
 }
+
+export async function runBuiltInAgent(name: string, config: RepoOSConfig): Promise<TechDebtRunResult> {
+  if (name === "tech-debt") {
+    return runTechDebtAgent(config);
+  }
+  throw new Error(`Unknown built-in agent: ${name}`);
+}

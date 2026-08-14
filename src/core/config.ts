@@ -14,6 +14,7 @@ import type {
   Assignee,
   Theme,
   UiTheme,
+  WhisperConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
 
@@ -112,6 +113,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   autoEngineeringMode: false,
   maxActiveTasks: 3,
+  whisper: {
+    provider: "none",
+    apiKey: "",
+  },
 };
 
 /**
@@ -289,6 +294,19 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    const whisperProvider = get("whisper.provider");
+    const whisperApiKey = get("whisper.apiKey");
+    cfg.whisper = {
+      provider: typeof whisperProvider === "string" ? whisperProvider : "none",
+      apiKey: typeof whisperApiKey === "string" ? whisperApiKey : "",
+    };
+  }
+
+  // Check for env var overrides
+  const envWhisperKey = process.env.REPOOS_WHISPER_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+  if (envWhisperKey) {
+    cfg.whisper ??= {};
+    cfg.whisper.apiKey = envWhisperKey;
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);

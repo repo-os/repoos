@@ -17,6 +17,8 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
+import VoiceDictate from "../components/VoiceDictate.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -146,6 +148,14 @@ function removeCustom(a: Agent): void {
 
 function setInstr(a: Agent, e: Event): void {
   a.instructions = (e.target as HTMLTextAreaElement).value;
+}
+
+function onInstrTranscribed(a: Agent, textarea: HTMLTextAreaElement, text: string): void {
+  const start = textarea.selectionStart;
+  const current = a.instructions ?? "";
+  const before = current.substring(0, start);
+  const after = current.substring(textarea.selectionEnd);
+  a.instructions = before + text + after;
 }
 
 function validatedAgents(): Agent[] | undefined {
@@ -385,7 +395,10 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate />
+              </div>
               <textarea
                 :value="a.instructions ?? ''"
                 class="agent-instr"
@@ -479,7 +492,10 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate />
+              </div>
               <textarea
                 :value="a.instructions ?? ''"
                 class="agent-instr"
