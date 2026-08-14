@@ -25,10 +25,10 @@ The task panel tabs should display in the following order and with these names:
 
 ## Acceptance criteria
 
-- [ ] Task panel tabs are reordered to: Task, PM, Engineer, Reviewer
-- [ ] Tab names match the specified labels exactly
-- [ ] Tab ordering persists across page reloads
-- [ ] No functionality or data is lost in the reorganization
+- [x] Task panel tabs are reordered to: Task, PM, Engineer, Reviewer
+- [x] Tab names match the specified labels exactly
+- [x] Tab ordering persists across page reloads
+- [x] No functionality or data is lost in the reorganization
 
 ## Notes for AI
 
@@ -45,3 +45,4 @@ The task panel tabs should display in the following order and with these names:
 - 2026-08-14T08:42:58Z · status active→review
 - 2026-08-14T09:02:00Z · status review→done
 - 2026-08-14T08:42:58Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-14T10:15:00Z · implementation completed · reordered tabs in TaskDrawer.vue (Task, PM, Engineer, Reviewer) and committed to main
