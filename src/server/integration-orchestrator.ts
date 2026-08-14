@@ -27,7 +27,10 @@ import {
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
 
-const CANDIDATE_BRANCH_PREFIX = ".repoos/integrate/";
+// Candidate branch prefix. Must be a valid git refname: a leading dot is
+// rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
+// silently failed every close-out job at worktree creation.
+const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
 
 /** Shared literal for the failed job phase so recovery paths stay consistent. */
 const PHASE_FAILED = "failed";
@@ -243,7 +246,7 @@ export class CloseOutOrchestrator {
     }
 
     // Validate and record the feature branch SHA.
-    const taskBranch = job.taskId;
+    const taskBranch = job.branch ?? job.taskId;
     // Check if the feature branch exists (critical: avoid merging unrelated history)
     const taskWtPath = worktreePathForBranch(root, taskBranch);
     if (!taskWtPath) {
@@ -288,7 +291,7 @@ export class CloseOutOrchestrator {
     }
 
     // Merge feature branch into candidate.
-    const featureBranch = job.taskId;
+    const featureBranch = job.branch ?? job.taskId;
 
     // Verify feature branch still exists before attempting merge
     const branchListRes = await runGit(root, ["branch", "--list", featureBranch], 4000);
@@ -434,10 +437,10 @@ export class CloseOutOrchestrator {
     deleteBranch(root, branch);
 
     // Remove task's feature worktree (if it still exists).
-    removeWorktree(root, job.taskId);
+    removeWorktree(root, job.branch ?? job.taskId);
 
     // Delete task's feature branch.
-    deleteBranch(root, job.taskId);
+    deleteBranch(root, job.branch ?? job.taskId);
 
     // Mark the task as done in the main checkout.
     try {
