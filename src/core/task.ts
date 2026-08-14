@@ -17,6 +17,7 @@ const KEY_ORDER = [
   "status",
   "needs_input",
   "needs_merge",
+  "no_source_change",
   "priority",
   "area",
   "assigned_to",
@@ -168,6 +169,7 @@ export function parseTask(args: ParseTaskArgs): Task {
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,
     needsMerge: data.needs_merge === true,
+    noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
     area: String(data.area ?? "general"),
     assignee,
@@ -207,6 +209,7 @@ export function serializeTask(task: Task): string {
   // default and is never persisted, so clearing the flag removes the key.
   if (task.needsInput) data.needs_input = true;
   if (task.needsMerge) data.needs_merge = true;
+  if (task.noSourceChange) data.no_source_change = true;
   if (task.agentOverride) data.agent_override = task.agentOverride;
   if (task.cliOverride) data.cli_override = task.cliOverride;
   if (task.modelOverride) data.model_override = task.modelOverride;

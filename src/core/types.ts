@@ -42,6 +42,8 @@ export interface TaskFrontmatter {
   needs_input?: boolean;
   /** True when the task branch has drifted from main and needs a manual merge. */
   needs_merge?: boolean;
+  /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
+  no_source_change?: boolean;
   area?: string;
   assigned_to?: string;
   created_by?: string;
@@ -73,6 +75,8 @@ export interface Task {
   needsInput: boolean;
   /** True when the task branch has drifted from main. Layered on `review`, never a status. */
   needsMerge: boolean;
+  /** True when a no-op task opts out of the vacuous-handoff rejection. */
+  noSourceChange: boolean;
   priority: Priority | string;
   area: string;
   assignee: Assignee;

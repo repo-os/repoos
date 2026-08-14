@@ -97,6 +97,7 @@ const task = (root: string): Task => ({
   tags: [],
   needsInput: false,
   needsMerge: false,
+  noSourceChange: false,
   created_at: null,
   updated_at: null,
   path: "work/0068-tunnel.md",

@@ -68,6 +68,7 @@ if (process.env.REPOOS_SESSION_TEST_HOLD === "1") setTimeout(() => {}, 800);
     tags: [],
     needsInput: false,
     needsMerge: false,
+  noSourceChange: false,
     created_at: null,
     updated_at: null,
     path: "work/0001-session.md",

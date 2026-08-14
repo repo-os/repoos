@@ -59,6 +59,7 @@ function makeTask(
     status: "ready",
     needsInput: false,
     needsMerge: false,
+    noSourceChange: false,
     priority: "p1",
     area: "agent",
     assignee: "ai",

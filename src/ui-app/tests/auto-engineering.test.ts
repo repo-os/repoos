@@ -25,6 +25,7 @@ function mockTask(id: string, status: "active" | "ready" | "inbox" | "review" = 
     status,
     needsInput: false,
     needsMerge: false,
+  noSourceChange: false,
     priority: "p2",
     area: "test",
     assignee: "ai",
