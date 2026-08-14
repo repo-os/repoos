@@ -68,6 +68,13 @@ const agentMeta = computed(() => {
       icon: "⚡",
     };
   }
+  if (props.agent === "architect") {
+    return {
+      name: "Architect Agent",
+      description: "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Generates a detailed markdown report saved to docs/agents/Architect/ with recommendations.",
+      icon: "🏛",
+    };
+  }
   return null;
 });
 
@@ -135,10 +142,10 @@ async function runNow(): Promise<void> {
           (response.errors ?? []).join("; ") || "unknown write error"
         }`;
       } else if (response.taskCount > 0) {
-        const agentType = props.agent === "performance" ? "performance" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
         message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;
       } else {
-        const agentType = props.agent === "performance" ? "performance" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
         message.value = `Scan complete — no ${agentType} issues found (${response.scannedFiles ?? 0} files scanned).`;
       }
       await saveState();
