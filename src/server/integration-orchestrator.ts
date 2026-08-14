@@ -73,6 +73,17 @@ async function resolveDefaultBranch(root: string): Promise<string> {
   return "main";
 }
 
+/**
+ * The useful part of a failed command's combined output: the LAST meaningful
+ * line, since errors print at the tail (shell/bun preambles like
+ * `$ bun src/cli/index.ts check` print first and are useless as a failure
+ * reason on their own).
+ */
+function tailLine(stdout: string, stderr: string): string {
+  const lines = `${stdout}\n${stderr}`.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines[lines.length - 1] ?? "unknown error";
+}
+
 interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -364,16 +375,28 @@ export class CloseOutOrchestrator {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
-      return { ok: false, reason: `build failed: ${buildRes.stderr.split("\n")[0] || "unknown error"}` };
+      return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
     }
 
     this.onProgress?.("check");
-    let checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000 });
+    // The candidate's OWN freshly-built CLI comes first, same as the legacy
+    // done.ts close-out gate (#0130): a globally linked `repoos` resolves
+    // build freshness and gate code against its own install snapshot, which
+    // can disagree with the checkout actually being validated here. Running
+    // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
+    // evaluates the exact code that was just merged and built above.
+    const localCli = join(wtPath, "dist", "cli", "index.js");
+    let checkRes = existsSync(localCli)
+      ? await runProcess(process.execPath, [localCli, "check"], { cwd: wtPath, timeout: 600_000 })
+      : { status: 1, stdout: "", stderr: "candidate dist/cli/index.js missing" };
+    if (checkRes.status !== 0) {
+      checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000 });
+    }
     if (checkRes.status !== 0) {
       checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
     }
     if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${checkRes.stderr.split("\n")[0] || "unknown error"}` };
+      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
     }
 
     // Candidate is green. Capture its SHA.
