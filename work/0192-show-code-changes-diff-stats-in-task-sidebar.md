@@ -2,14 +2,14 @@
 id: "0192"
 title: Show code changes (diff stats) in task sidebar to diagnose implementation status
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui-app
 assigned_to: unassigned
 created_by: ""
 branch: feat/show-code-changes-diff-stats-in-task-sid
 created_at: "2026-08-14T08:59:00Z"
-updated_at: "2026-08-14T15:11:07Z"
+updated_at: "2026-08-14T15:11:20Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ This should appear in:
 - 2026-08-14T15:10:18Z · status active→ready
 - 2026-08-14T15:10:46Z · cli_override
 - 2026-08-14T15:11:07Z · model_override
+- 2026-08-14T15:11:20Z · status ready→active
