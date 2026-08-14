@@ -40,7 +40,7 @@ export type RepoEvent =
     }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
-  | { type: "task.progress"; id: string; step: string; at: string }
+  | { type: "task.progress"; id: string; step: string; at: string; detail?: string }
   | {
       type: "task.corrected";
       id: string;

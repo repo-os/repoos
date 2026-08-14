@@ -699,7 +699,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           },
         );
-        await orchestrator.processNext();
+        const jobBefore = jobCoordinator.peekNext();
+        const result = await orchestrator.processNext();
+        // Surface close-out failures (0199): the /done action returns as soon
+        // as the job is enqueued, so the UI never learns of a background
+        // failure. Only emit for a terminal `failed` phase — "main advanced,
+        // revalidating" is a retry, not a failure.
+        if (
+          jobBefore &&
+          result &&
+          result.ok === false &&
+          result.reason &&
+          jobCoordinator.getJob(jobBefore.taskId)?.phase === "failed"
+        ) {
+          emitEvent({
+            type: "task.progress",
+            id: jobBefore.taskId,
+            step: "failed",
+            detail: result.reason,
+            at: new Date().toISOString(),
+          });
+        }
         // Keep the live index in sync: the orchestrator writes the task file
         // (markTaskReleased) and merges the branch directly, bypassing the
         // done-action's usual index.applyFileChange/refreshBranches.
