@@ -2,14 +2,14 @@
 id: "0196"
 title: "Fix broken CTO panel and monitor (CTO false button, agent never resolves, no SSE)"
 type: bug
-status: active
+status: review
 priority: p1
 area: server + ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/fix-broken-cto-panel-and-monitor-cto-fal
 created_at: "2026-08-14T12:24:13Z"
-updated_at: "2026-08-14T12:28:12Z"
+updated_at: "2026-08-14T12:33:24Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ The CTO agent (0174) was merged to main but is non-functional. Confirmed on main
 
 - 2026-08-14T12:27:46Z · body
 - 2026-08-14T12:28:12Z · status inbox→active, branch
+- 2026-08-14T12:33:24Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
