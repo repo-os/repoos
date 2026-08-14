@@ -78,18 +78,8 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
 } from "../core/git.js";
-import { runTechDebtAgent, isDueForScheduledRun, type TechDebtRunResult } from "./built-in-agents.js";
+import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
-
-async function runBuiltInAgent(
-  name: string,
-  config: RepoOSConfig,
-): Promise<TechDebtRunResult | null> {
-  if (name === "tech-debt") {
-    return await runTechDebtAgent(config);
-  }
-  return null;
-}
 import { WorkWatcher } from "./watcher.js";
 import {
   patchTaskFile,
