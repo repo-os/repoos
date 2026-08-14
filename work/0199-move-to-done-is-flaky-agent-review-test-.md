@@ -2,7 +2,7 @@
 id: "0199"
 title: "Move-to-done is flaky: agent-review test race fails repoos check ~2/3 of runs and the async close-out failure never surfaces in the UI"
 type: bug
-status: review
+status: done
 needs_merge: true
 priority: p1
 area: core
@@ -44,3 +44,5 @@ Two compounding issues:
 - 2026-08-14T13:11:01Z · body
 - 2026-08-14T13:11:04Z · status ready→review
 - 2026-08-14T13:11:04Z · needs_merge
+- 2026-08-14T22:46:00Z · status review→done
+- 2026-08-14T22:46:00Z · merged to main
