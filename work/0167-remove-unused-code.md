@@ -1,14 +1,15 @@
 ---
 id: "0167"
-title: "Remove unused code"
+title: Remove unused code
 type: chore
-status: inbox
+status: active
 priority: p2
 area: tech-debt
 assigned_to: unassigned
 created_by: tech-debt-agent
+branch: feat/remove-unused-code
 created_at: "2026-08-13T13:45:29.814Z"
-updated_at: "2026-08-13T13:45:29.814Z"
+updated_at: "2026-08-14T04:18:37Z"
 ---
 ## Issues Identified
 
@@ -68,3 +69,8 @@ updated_at: "2026-08-13T13:45:29.814Z"
 2. Make the suggested improvements
 3. Test the changes thoroughly
 4. Move this task to done when complete
+
+## Activity
+
+- 2026-08-13T17:59:49Z · status inbox→ready
+- 2026-08-14T03:33:52Z · status ready→active, branch

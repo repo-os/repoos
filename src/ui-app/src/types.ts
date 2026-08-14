@@ -86,6 +86,10 @@ export interface Health {
   buildAt: string | null;
   /** Build hash the running server loaded, or null in dev mode. */
   buildHash: string | null;
+  /** A newer build parked by a close-out (0143), or null when none is parked. */
+  buildAvailableHash: string | null;
+  /** On-disk build timestamp of the parked build, or null when none is parked. */
+  buildAvailableAt: string | null;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
 }

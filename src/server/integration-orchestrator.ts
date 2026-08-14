@@ -8,7 +8,7 @@
  * Phases track recovery: if interrupted mid-flight, retry resumes from the current phase.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -27,7 +27,10 @@ import {
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
 
-const CANDIDATE_BRANCH_PREFIX = ".repoos/integrate/";
+// Candidate branch prefix. Must be a valid git refname: a leading dot is
+// rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
+// silently failed every close-out job at worktree creation.
+const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
 
 /** Shared literal for the failed job phase so recovery paths stay consistent. */
 const PHASE_FAILED = "failed";
@@ -222,7 +225,7 @@ export class CloseOutOrchestrator {
     const mainBranch = await resolveDefaultBranch(root);
 
     // Record main SHA at validation start.
-    const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+    const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (mainShaRes.status !== 0) {
       return { ok: false, reason: "could not get main SHA" };
     }
@@ -236,6 +239,22 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: `could not create candidate worktree: ${wtRes.reason}` };
     }
 
+    // A fresh candidate worktree has no dependencies, and the gate below runs a
+    // full `bun run build` + check. Reuse the main checkout's node_modules via
+    // a symlink instead of a slow cold install; fail-soft so a missing install
+    // surfaces as a build/check error rather than a misleading sync failure.
+    const candidateNodeModules = join(wtRes.path, "node_modules");
+    if (!existsSync(candidateNodeModules)) {
+      const rootNodeModules = join(root, "node_modules");
+      if (existsSync(rootNodeModules)) {
+        try {
+          symlinkSync(rootNodeModules, candidateNodeModules, "dir");
+        } catch {
+          /* fail-soft: the build step will report the real error */
+        }
+      }
+    }
+
     // Reset candidate to main so it's a clean base for the merge.
     const resetRes = await runGit(wtRes.path, ["reset", "--hard", mainBranch], 30_000);
     if (resetRes.status !== 0) {
@@ -243,7 +262,7 @@ export class CloseOutOrchestrator {
     }
 
     // Validate and record the feature branch SHA.
-    const taskBranch = job.taskId;
+    const taskBranch = job.branch ?? job.taskId;
     // Check if the feature branch exists (critical: avoid merging unrelated history)
     const taskWtPath = worktreePathForBranch(root, taskBranch);
     if (!taskWtPath) {
@@ -270,7 +289,7 @@ export class CloseOutOrchestrator {
 
     // Check for main SHA changes. If main advanced, discard candidate and rebuild.
     const mainBranch = await resolveDefaultBranch(root);
-    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (currentMainRes.status !== 0) {
       return { ok: false, reason: "could not get current main SHA" };
     }
@@ -288,7 +307,7 @@ export class CloseOutOrchestrator {
     }
 
     // Merge feature branch into candidate.
-    const featureBranch = job.taskId;
+    const featureBranch = job.branch ?? job.taskId;
 
     // Verify feature branch still exists before attempting merge
     const branchListRes = await runGit(root, ["branch", "--list", featureBranch], 4000);
@@ -386,7 +405,7 @@ export class CloseOutOrchestrator {
 
     try {
       // Final SHA check: ensure candidate is still based on current main (holding the lock).
-      const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}:^{commit}`], 4000);
+      const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
       if (currentMainRes.status !== 0) {
         return { ok: false, reason: "could not verify main before publish" };
       }
@@ -434,10 +453,10 @@ export class CloseOutOrchestrator {
     deleteBranch(root, branch);
 
     // Remove task's feature worktree (if it still exists).
-    removeWorktree(root, job.taskId);
+    removeWorktree(root, job.branch ?? job.taskId);
 
     // Delete task's feature branch.
-    deleteBranch(root, job.taskId);
+    deleteBranch(root, job.branch ?? job.taskId);
 
     // Mark the task as done in the main checkout.
     try {

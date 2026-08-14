@@ -563,6 +563,17 @@ export async function runTechDebtAgent(
   };
 }
 
+/** Dispatch to the appropriate built-in agent by name. */
+export async function runBuiltInAgent(
+  name: string,
+  config: RepoOSConfig,
+): Promise<TechDebtRunResult | null> {
+  if (name === "tech-debt") {
+    return runTechDebtAgent(config);
+  }
+  return null;
+}
+
 function getTitleForIssueType(type: TechDebtIssueType): string {
   switch (type) {
     case "outdated-dependency":

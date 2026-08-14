@@ -433,6 +433,33 @@ describe("ReloadManager", () => {
     }
   });
 
+  it("0179: exposes a parked build via the buildAvailable getter (hash + buildAt)", async () => {
+    const fx = await makeFixture();
+    let available: string | null = null;
+    const { manager } = makeManager(fx, {
+      closingOut: () => true,
+      onBuildAvailable: (hash) => {
+        available = hash;
+      },
+    });
+    try {
+      expect(manager.buildAvailable).toBeNull();
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-closeout", generatedAt: "2026-08-13T12:00:00.000Z" }),
+      );
+      manager.requestReload("manual restart");
+      expect(available).toBe("hash-closeout");
+      expect(manager.buildAvailable).toEqual({
+        hash: "hash-closeout",
+        buildAt: "2026-08-13T12:00:00.000Z",
+      });
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
   it("#0096: a replacement that flashes healthy then dies is NOT confirmed (no listenerless handover)", async () => {
     const fx = await makeFixture();
     process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;

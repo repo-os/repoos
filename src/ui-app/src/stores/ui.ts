@@ -37,8 +37,8 @@ export const useUiStore = defineStore("ui", () => {
   const drawerWidth = ref(680);
   /** Cloudflare setup drawer is independent of the task drawer. */
   const tunnelOpen = ref(false);
-  /** Active drawer tab: task details, the agent session, or agent review. */
-  const activeTab = ref<"details" | "agent" | "review">("details");
+  /** Active drawer tab: task details, the agent session, agent review, or PM. */
+  const activeTab = ref<"details" | "agent" | "review" | "pm">("details");
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
 
@@ -105,7 +105,7 @@ export const useUiStore = defineStore("ui", () => {
   }
 
   /** Tasks the agent has already started on default straight to the live action. */
-  function defaultTabFor(t: Task): "details" | "agent" | "review" {
+  function defaultTabFor(t: Task): "details" | "agent" | "review" | "pm" {
     if (t.status === "review") return "review";
     return t.status === "active" ? "agent" : "details";
   }

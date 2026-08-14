@@ -41,6 +41,7 @@ function task(title = "Fix the widget"): Task {
     status: "active",
     needsInput: false,
     needsMerge: false,
+  noSourceChange: false,
     priority: "p2",
     area: "ui",
     assignee: "ai",
