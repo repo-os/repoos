@@ -2,14 +2,14 @@
 id: "0187"
 title: "Add logging across RepoOS — system, task-pipeline, and agent activity"
 type: feature
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-logging-across-repoos-system-task-pi
 created_at: "2026-08-14T05:15:53Z"
-updated_at: "2026-08-14T05:18:38Z"
+updated_at: "2026-08-14T05:19:32Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ once basic logging exists.
 
 - 2026-08-14T05:15:53Z · created · unknown
 - 2026-08-14T05:18:38Z · status inbox→ready
+- 2026-08-14T05:19:32Z · status ready→active, branch
