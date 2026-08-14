@@ -539,6 +539,7 @@ onUnmounted(() => {
 
         <BuiltInAgentCard agent="tech-debt" />
         <BuiltInAgentCard agent="performance" />
+        <BuiltInAgentCard agent="architect" />
       </Card>
 
       <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
