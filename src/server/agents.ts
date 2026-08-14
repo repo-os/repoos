@@ -1486,6 +1486,16 @@ export class AgentRunner {
   private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
 
   /**
+   * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
+   * The task stays `active` with no process, so without this the watchdog would
+   * treat a legitimately-paused task as stuck and disturb it (#0180). In-memory
+   * only: a paused task across a server restart loses the marker and reads as a
+   * stopped agent — the watchdog then surfaces it, which is the correct default
+   * (the paused process is, after all, gone).
+   */
+  private readonly pausedTasks = new Set<string>();
+
+  /**
    * Preview capabilities minted per clean run (#0121). Superseded when a new
    * run starts for the same task, so a stale request can never start a preview
    * against a different worktree.
@@ -1574,6 +1584,20 @@ export class AgentRunner {
 
   isRunning(taskId: string): boolean {
     return this.entries.has(taskId);
+  }
+
+  /**
+   * Record a deliberate human pause (0070): the task stays `active` but its
+   * agent is intentionally stopped, so the watchdog must not touch it (#0180).
+   * Cleared automatically the moment a new turn starts for the task.
+   */
+  markPaused(taskId: string): void {
+    this.pausedTasks.add(taskId);
+  }
+
+  /** True when the task was explicitly paused and no new turn has started since. */
+  isPaused(taskId: string): boolean {
+    return this.pausedTasks.has(taskId);
   }
 
   /**
@@ -1757,6 +1781,9 @@ export class AgentRunner {
     branch?: string,
   ): StartResult {
     const runId = randomUUID();
+    // A new turn means the task is active again — a human restarted a paused
+    // task, or sent a follow-up — so the pause marker no longer applies.
+    this.pausedTasks.delete(taskId);
     // A new run supersedes the previous run's preview capability for this task
     // (#0121): a capability minted for an older run is expired the moment a
     // newer turn claims the task.

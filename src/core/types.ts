@@ -250,6 +250,8 @@ export interface RepoOSConfig {
   builtInAgents?: Record<string, BuiltInAgentConfig>;
   /** Agent supervisor configuration. */
   supervisor?: SupervisorConfig;
+  /** Task watchdog configuration (#0180). */
+  watchdog?: WatchdogConfig;
 }
 
 /** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */
@@ -261,6 +263,23 @@ export interface BuiltInAgentConfig {
   schedule?: BuiltInAgentSchedule;
   /** ISO timestamp of the last completed run, set by the server. */
   lastRunAt?: string;
+}
+
+/** Task watchdog configuration (#0180). */
+export interface WatchdogConfig {
+  /** Whether the watchdog runs. Default true. */
+  enabled?: boolean;
+  /**
+   * Milliseconds of silence (no running agent, no task-file activity) before an
+   * `active` task is candidate-stuck. Default 5 minutes.
+   */
+  stalenessMs?: number;
+  /**
+   * Whether a stuck task auto-transitions out of `active` — to `review` when
+   * its worktree holds work, else back to `ready` — instead of only setting
+   * `needsInput`. Default true.
+   */
+  autoTransition?: boolean;
 }
 
 /** Agent supervisor configuration. */

@@ -191,6 +191,15 @@ export class ReloadManager {
     return this.options.enabled !== false;
   }
 
+  /**
+   * True while the manager is actively handing over to a replacement process.
+   * Background workers (e.g. the task watchdog) must not fire during this
+   * window — the server is mid-flight, and their writes could race the handover.
+   */
+  isReloading(): boolean {
+    return this.reloading;
+  }
+
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
   start(): void {
     if (!this.enabled) return;

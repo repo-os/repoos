@@ -78,7 +78,7 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
 } from "../core/git.js";
-import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
+import { runTechDebtAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import {
@@ -121,6 +121,7 @@ import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   Router,
   type RouteContext,
@@ -744,6 +745,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
 
+  // Task watchdog: surfaces active tasks whose agent is dead or stalled (0180).
+  // Constructed after the reload manager so it can observe `isReloading()`.
+  let watchdog: TaskWatchdog | null = null;
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   let reviews: ReviewManager; // Assigned after runner creation below
@@ -880,7 +885,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     for (const name of Object.keys(agents)) {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
-      void runBuiltInAgent(name, repoos.config)
+      void runTechDebtAgent(repoos.config)
         .then((result) => {
           if (result && result.failed > 0) {
             console.error(
@@ -1097,6 +1102,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
+    if (agentName !== "tech-debt") {
+      return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+    }
     const cfg = ctx.repoos.config;
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
@@ -1107,19 +1115,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     builtInRun.inFlight = true;
     try {
-      const result = await runBuiltInAgent(agentName, cfg);
-      if (!result) {
-        return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
-      }
+      const result = await runTechDebtAgent(cfg);
       ctx.index.refreshAll();
       return json(res, 200, {
         ok: true,
         taskCount: result.created,
-        skipped: "skipped" in result ? result.skipped : 0,
         failed: result.failed,
         errors: result.errors,
-        issuesFound: "issuesFound" in result ? result.issuesFound : 0,
-        scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+        issuesFound: result.issuesFound,
+        scannedFiles: result.scannedFiles,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to run built-in agent";
@@ -1385,6 +1389,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeNeedsInput();
           watcher.stop();
           supervisor?.stop();
+          watchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
@@ -1460,6 +1465,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Agent supervisor: periodic health checks and safe recovery (0112)
       supervisor = new AgentSupervisor(config, index, emitEvent);
       supervisor.start();
+
+      // Task watchdog: surface active tasks whose agent session is dead or
+      // stalled (0180). Guarded so it never fires while the server is handing
+      // over to a reload replacement.
+      const watchdogConfig = config.watchdog ?? {};
+      watchdog = new TaskWatchdog(
+        config,
+        index,
+        runner,
+        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+        {
+          autoTransition: watchdogConfig.autoTransition !== false,
+          canRun: () => !(reload?.isReloading() ?? false),
+        },
+      );
+      if (watchdogConfig.enabled !== false) watchdog.start();
 
       resolve(handle);
     })().catch((e) => reject(e as Error));
