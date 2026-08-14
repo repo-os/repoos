@@ -257,10 +257,9 @@ describe("trusted server-side handoff", () => {
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       writeFileSync(join(fx.worktree, "source.txt"), "base\n");
-      writeFileSync(
-        fx.taskPath,
-        taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true"),
-      );
+      const taskWithFlag = taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true");
+      writeFileSync(fx.taskPath, taskWithFlag);
+      writeFileSync(join(fx.worktree, "work", "0001-handoff.md"), taskWithFlag);
 
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
