@@ -6,9 +6,9 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
-uiTheme = "gen z"
+uiTheme = "clear"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
@@ -27,8 +27,8 @@ domain = "dev"
 tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 [[agents]]
 name = "engineer"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status."
 [[agents]]
@@ -39,21 +39,23 @@ enabled = true
 instructions = "Reviews task diffs on the feature branch; requests changes by updating the task status; approves only on a green `repoos check`."
 [[agents]]
 name = "pm"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
 name = "Ross"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "deepinfra/openai/gpt-oss-120b"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
 name = "CTO"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
+
+
 
 
