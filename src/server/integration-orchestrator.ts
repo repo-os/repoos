@@ -73,15 +73,22 @@ async function resolveDefaultBranch(root: string): Promise<string> {
   return "main";
 }
 
+// How much of a failed command's output to keep as the failure reason.
+const TAIL_LINES = 15;
+const TAIL_MAX_CHARS = 800;
+
 /**
- * The useful part of a failed command's combined output: the LAST meaningful
- * line, since errors print at the tail (shell/bun preambles like
- * `$ bun src/cli/index.ts check` print first and are useless as a failure
- * reason on their own).
+ * The useful part of a failed command's combined output. bun/npm wrap a child
+ * failure with a generic trailing line (`error: script "repoos" exited with
+ * code 1`) that is useless as a reason on its own, so keep the last several
+ * meaningful lines — the real cause (a failing test, a compiler error) sits
+ * just above the wrapper.
  */
 function tailLine(stdout: string, stderr: string): string {
   const lines = `${stdout}\n${stderr}`.split("\n").map((l) => l.trim()).filter(Boolean);
-  return lines[lines.length - 1] ?? "unknown error";
+  if (lines.length === 0) return "unknown error";
+  const tail = lines.slice(-TAIL_LINES).join("\n");
+  return tail.length > TAIL_MAX_CHARS ? `…${tail.slice(-TAIL_MAX_CHARS)}` : tail;
 }
 
 interface ProcessRunResult {
