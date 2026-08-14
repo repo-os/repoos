@@ -52,13 +52,14 @@ watch(
   { immediate: true },
 );
 
-const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name));
-const defaultAgents = computed(() =>
-  localAgents.value.filter((a) => defaultNames.value.includes(a.name)),
-);
-const customAgents = computed(() =>
-  localAgents.value.filter((a) => !defaultNames.value.includes(a.name)),
-);
+// Default-vs-custom matching is case-insensitive: agent names are stored
+// verbatim (e.g. a user or an older agent may have written `CTO`), so a
+// capitalized default like `CTO` must still land in the "Default agents"
+// section instead of masquerading as a custom role (0174/0196).
+const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name.toLowerCase()));
+const isDefaultName = (name: string): boolean => defaultNames.value.includes(name.toLowerCase());
+const defaultAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name)));
+const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
 
 const CLI_LABELS: Record<string, string> = {
   "claude code": "Claude Code",
