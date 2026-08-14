@@ -2,14 +2,14 @@
 id: "0181"
 title: Add true vibe-coding capability in all text areas like th…
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/add-true-vibe-coding-capability-in-all-t
 created_at: "2026-08-13T17:57:26Z"
-updated_at: "2026-08-14T00:27:09Z"
+updated_at: "2026-08-14T00:35:42Z"
 ---
 ## Context
 
@@ -90,3 +90,4 @@ If `provider`/`apiKey` resolve to nothing, voice is disabled (mic hidden). The k
 - 2026-08-13T23:34:14Z · status active→ready
 - 2026-08-14T00:21:46Z · body
 - 2026-08-14T00:27:09Z · status ready→active
+- 2026-08-14T00:35:42Z · status active→review
