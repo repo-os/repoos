@@ -39,6 +39,12 @@ export interface TaskPatch {
   cliOverride?: string | null;
   /** Per-task model override, or null to clear. */
   modelOverride?: string | null;
+  /** Per-task PM agent name override, or null to clear. */
+  pmAgentOverride?: string | null;
+  /** Per-task PM CLI override, or null to clear. */
+  pmCliOverride?: string | null;
+  /** Per-task PM model override, or null to clear. */
+  pmModelOverride?: string | null;
 }
 
 export interface PatchTaskOptions {
@@ -141,6 +147,18 @@ export function patchTaskFile(
   if (patch.modelOverride !== undefined) {
     if (patch.modelOverride !== current.modelOverride) changes.push("model_override");
     current.modelOverride = patch.modelOverride;
+  }
+  if (patch.pmAgentOverride !== undefined) {
+    if (patch.pmAgentOverride !== current.pmAgentOverride) changes.push("pm_agent_override");
+    current.pmAgentOverride = patch.pmAgentOverride;
+  }
+  if (patch.pmCliOverride !== undefined) {
+    if (patch.pmCliOverride !== current.pmCliOverride) changes.push("pm_cli_override");
+    current.pmCliOverride = patch.pmCliOverride;
+  }
+  if (patch.pmModelOverride !== undefined) {
+    if (patch.pmModelOverride !== current.pmModelOverride) changes.push("pm_model_override");
+    current.pmModelOverride = patch.pmModelOverride;
   }
 
   if (changes.length) {

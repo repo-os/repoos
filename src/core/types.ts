@@ -104,6 +104,12 @@ export interface Task {
   cliOverride: string | null;
   /** Per-task model override, or null when using the agent's default. */
   modelOverride: string | null;
+  /** Per-task PM agent name override, or null when using the default. */
+  pmAgentOverride?: string | null;
+  /** Per-task PM CLI override, or null when using the agent's default. */
+  pmCliOverride?: string | null;
+  /** Per-task PM model override, or null when using the agent's default. */
+  pmModelOverride?: string | null;
 
   /** Live git facts, populated by the git layer (best-effort). */
   git: TaskGitInfo;
