@@ -331,6 +331,9 @@ function diff(a: Task, b: Task): Partial<Task> {
     "agentOverride",
     "cliOverride",
     "modelOverride",
+    "pmAgentOverride",
+    "pmCliOverride",
+    "pmModelOverride",
     "created_at",
     "updated_at",
   ];

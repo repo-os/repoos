@@ -663,11 +663,21 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: "message text is required" });
   }
 
-  // Build a one-shot agent override for this PM request
+  // Build a one-shot agent override for this PM request. Falls back to the
+  // task's persisted PM overrides (set via the PM tab's selector) when the
+  // client doesn't pass explicit values.
   const pmAgentName =
-    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
-  const pmCli = typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
-  const pmModel = typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+    typeof body?.agentOverride === "string" && body.agentOverride
+      ? body.agentOverride
+      : existing.pmAgentOverride || undefined;
+  const pmCli =
+    typeof body?.cliOverride === "string" && body.cliOverride
+      ? body.cliOverride
+      : existing.pmCliOverride || undefined;
+  const pmModel =
+    typeof body?.modelOverride === "string" && body.modelOverride
+      ? body.modelOverride
+      : existing.pmModelOverride || undefined;
   const hasPmOverride = pmAgentName || pmCli || pmModel;
 
   // Resolve the PM agent, applying any one-shot override

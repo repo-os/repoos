@@ -822,7 +822,12 @@ async function pmSend(): Promise<void> {
   try {
     await api(
       `/api/tasks/${ui.active.id}/pm/message`,
-      JSON_OPTS("POST", { text })
+      JSON_OPTS("POST", {
+        text,
+        agentOverride: pmOverrideDraft.agent || undefined,
+        cliOverride: pmOverrideDraft.cli || undefined,
+        modelOverride: pmOverrideDraft.model || undefined,
+      })
     );
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
@@ -853,6 +858,123 @@ watch(
     }
   },
 );
+
+// ---- PM agent override (task detail) ----
+
+/** The base PM agent from the Agents page. */
+const pmBaseAgent = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name === "pm") ?? null;
+});
+
+/** Whether the current task has any persisted PM override set. */
+const hasPmOverride = computed(() => {
+  const t = ui.active;
+  return !!(t && (t.pmAgentOverride || t.pmCliOverride || t.pmModelOverride));
+});
+
+/** Draft overrides for the PM tab, initialized from the task's persisted values. */
+const pmOverrideDraft = reactive({ agent: "", cli: "", model: "" });
+
+/** Snapshot of the last-saved PM override values. */
+const pmOverrideSaved = reactive({ agent: "", cli: "", model: "" });
+
+/** Initialize the PM override draft from the current task. */
+function initPmOverrideDraft(t: Task | null): void {
+  const base = pmBaseAgent.value;
+  pmOverrideDraft.agent = t?.pmAgentOverride || base?.name || "";
+  pmOverrideDraft.cli = t?.pmCliOverride || base?.cli || "";
+  pmOverrideDraft.model = t?.pmModelOverride || base?.model || "";
+  pmOverrideSaved.agent = pmOverrideDraft.agent;
+  pmOverrideSaved.cli = pmOverrideDraft.cli;
+  pmOverrideSaved.model = pmOverrideDraft.model;
+}
+
+/** True when the PM override draft differs from the saved values. */
+const pmOverrideDirty = computed(
+  () =>
+    pmOverrideDraft.agent !== pmOverrideSaved.agent ||
+    pmOverrideDraft.cli !== pmOverrideSaved.cli ||
+    pmOverrideDraft.model !== pmOverrideSaved.model,
+);
+
+/** True when the PM overrides differ from the base PM agent defaults. */
+const pmIsCustom = computed(() => {
+  const base = pmBaseAgent.value;
+  if (!base) return false;
+  return (
+    pmOverrideDraft.agent !== base.name ||
+    pmOverrideDraft.cli !== base.cli ||
+    pmOverrideDraft.model !== base.model
+  );
+});
+
+/** Model options for the PM tab's model select. */
+const pmModelOptions = computed(() =>
+  config.modelsFor(pmOverrideDraft.cli, pmOverrideDraft.model || undefined),
+);
+
+/** Initialize PM overrides when opening the PM tab, unless a draft is dirty. */
+watch(
+  () => [ui.active, ui.activeTab],
+  () => {
+    if (ui.activeTab !== "pm") return;
+    if (!pmOverrideDirty.value) initPmOverrideDraft(ui.active);
+  },
+);
+
+/** Debounced auto-save of PM overrides, mirroring the Agent tab. */
+let pmOverrideAutoSaveTimer: number | undefined;
+
+function schedulePmOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (pmOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(pmOverrideAutoSaveTimer);
+  }
+  pmOverrideAutoSaveTimer = window.setTimeout(async () => {
+    pmOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !pmOverrideDirty.value) return;
+    const base = pmBaseAgent.value;
+    const agentVal = pmOverrideDraft.agent !== (base?.name ?? "") ? pmOverrideDraft.agent : null;
+    const cliVal = pmOverrideDraft.cli !== (base?.cli ?? "") ? pmOverrideDraft.cli : null;
+    const modelVal = pmOverrideDraft.model !== (base?.model ?? "") ? pmOverrideDraft.model : null;
+    try {
+      await repo.patchTask(taskId, {
+        pmAgentOverride: agentVal,
+        pmCliOverride: cliVal,
+        pmModelOverride: modelVal,
+      });
+      pmOverrideSaved.agent = pmOverrideDraft.agent;
+      pmOverrideSaved.cli = pmOverrideDraft.cli;
+      pmOverrideSaved.model = pmOverrideDraft.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
+}
+
+watch(
+  () => [pmOverrideDraft.agent, pmOverrideDraft.cli, pmOverrideDraft.model],
+  () => {
+    schedulePmOverrideSave();
+  },
+);
+
+/** Reset PM overrides to the base PM agent defaults (persisted). */
+async function resetPmOverrides(): Promise<void> {
+  if (!ui.active) return;
+  try {
+    await repo.patchTask(ui.active.id, {
+      pmAgentOverride: null,
+      pmCliOverride: null,
+      pmModelOverride: null,
+    });
+    initPmOverrideDraft(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  }
+}
 
 // ---- agent session tab ----
 
@@ -1157,36 +1279,58 @@ const isCustom = computed(() => {
 
 watch(
   () => ui.active,
-  (t) => { if (t) initOverrideDraft(t); },
+  (t) => { if (t && !overrideDirty.value) initOverrideDraft(t); },
   { immediate: true },
 );
 
-/** Save the override draft to the task's frontmatter. */
-async function saveOverrides(): Promise<void> {
-  if (!ui.active) return;
-  ui.saving = true;
-  try {
+/** Debounced auto-save of the agent override draft (no explicit Save button). */
+let agentOverrideAutoSaveTimer: number | undefined;
+
+function scheduleAgentOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (agentOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(agentOverrideAutoSaveTimer);
+  }
+  agentOverrideAutoSaveTimer = window.setTimeout(async () => {
+    agentOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !overrideDirty.value) return;
     const base = baseAgent.value;
     // Send values that differ from the base agent; send null to clear overrides
     // that match the base (so the server knows to remove them from frontmatter).
     const agentVal = overrideDraft.agent !== (base?.name ?? "") ? overrideDraft.agent : null;
     const cliVal = overrideDraft.cli !== (base?.cli ?? "") ? overrideDraft.cli : null;
     const modelVal = overrideDraft.model !== (base?.model ?? "") ? overrideDraft.model : null;
-    await repo.patchTask(ui.active.id, {
-      agentOverride: agentVal,
-      cliOverride: cliVal,
-      modelOverride: modelVal,
-    });
-    // Re-init from the task's new state after patch (SSE task.updated will sync too).
-    overrideSaved.agent = overrideDraft.agent;
-    overrideSaved.cli = overrideDraft.cli;
-    overrideSaved.model = overrideDraft.model;
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
+    try {
+      await repo.patchTask(taskId, {
+        agentOverride: agentVal,
+        cliOverride: cliVal,
+        modelOverride: modelVal,
+      });
+      overrideSaved.agent = overrideDraft.agent;
+      overrideSaved.cli = overrideDraft.cli;
+      overrideSaved.model = overrideDraft.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
 }
+
+watch(
+  () => [overrideDraft.agent, overrideDraft.cli, overrideDraft.model],
+  () => {
+    scheduleAgentOverrideSave();
+  },
+);
+
+onUnmounted(() => {
+  if (agentOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(agentOverrideAutoSaveTimer);
+  }
+  if (pmOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(pmOverrideAutoSaveTimer);
+  }
+});
 
 /** Reset overrides to the base agent defaults. */
 async function resetOverrides(): Promise<void> {
@@ -1941,10 +2085,7 @@ function resetFreeformOverrides(): void {
             </div>
             <div v-if="isCustom || overrideDirty" class="agent-override-actions">
               <span v-if="isCustom" class="agent-custom-badge">custom</span>
-              <template v-if="overrideDirty">
-                <Button variant="outline" size="sm" :disabled="ui.saving" @click="saveOverrides">Save</Button>
-                <Button variant="ghost" size="sm" :disabled="ui.saving" @click="initOverrideDraft(ui.active)">Cancel</Button>
-              </template>
+              <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
               <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
                 <RotateCcw class="size-3" />
               </Button>
@@ -2232,6 +2373,58 @@ function resetFreeformOverrides(): void {
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body">
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field">
+                <label>Role</label>
+                <Select v-model="pmOverrideDraft.agent" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="agent" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Coding agent</label>
+                <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="CLI" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Model</label>
+                <Select v-model="pmOverrideDraft.model" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="model" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectSearchGroup :options="pmModelOptions" #default="{ options }">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                      </SelectViewport>
+                    </SelectSearchGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
+              <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
+              <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
+              <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
+                <RotateCcw class="size-3" />
+              </Button>
+            </div>
+          </div>
           <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">
             <div v-if="!pmHasConversation" class="agent-empty pm-empty">
               <div class="pm-welcome-icon">PM</div>

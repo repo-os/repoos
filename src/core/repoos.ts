@@ -205,6 +205,9 @@ export function createRepoOS(root?: string): RepoOS {
         agentOverride: null,
         cliOverride: null,
         modelOverride: null,
+        pmAgentOverride: null,
+        pmCliOverride: null,
+        pmModelOverride: null,
         git: emptyGitInfo(),
       };
 
