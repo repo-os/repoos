@@ -2,14 +2,14 @@
 id: "0177"
 title: Add Performance Agent to Build Your Team
 type: feature
-status: done
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/add-performance-agent-to-build-your-team
 created_at: "2026-08-13T15:43:27Z"
-updated_at: "2026-08-13T18:09:14Z"
+updated_at: "2026-08-14T00:03:08Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ alongside the Tech Debt Agent, with:
 - 2026-08-13T17:26:35Z · status ready→active, branch
 - 2026-08-13T17:51:49Z · status active→review
 - 2026-08-13T18:09:14Z · status review→done, release:success
+- 2026-08-14T00:03:08Z · status done→ready
