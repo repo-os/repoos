@@ -26,7 +26,6 @@ export interface TechDebtIssue {
 
 export type PerformanceIssueType =
   | "slow-function"
-  | "large-bundle"
   | "blocking-operation"
   | "unbounded-growth"
   | "duplicated-computation";
@@ -622,9 +621,10 @@ export async function scanForPerformanceIssues(
     let lineNum = 1;
     let maxDepthLine = 1;
 
-    for (const char of cleaned) {
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i];
       if (char === "\n") lineNum++;
-      if (char === "{" && cleaned.substring(Math.max(0, cleaned.indexOf(char) - 20), cleaned.indexOf(char)).match(/for\s*\(|while\s*\(|forEach/)) {
+      if (char === "{" && cleaned.substring(Math.max(0, i - 50), i).match(/\b(?:for|while|forEach)\s*[\(\{]/)) {
         currentDepth++;
         if (currentDepth > maxDepth) {
           maxDepth = currentDepth;
@@ -672,8 +672,8 @@ export async function scanForPerformanceIssues(
 
     // 4. Detect potential unbounded growth (array/object accumulation without cleanup).
     const unboundedPatterns = [
-      { pattern: /\w+\.push\s*\(/, label: "array push" },
-      { pattern: /Map\s*\(/, label: "Map construction" },
+      { pattern: /\w+\.push\s*\(/g, label: "array push" },
+      { pattern: /Map\s*\(/g, label: "Map construction" },
     ];
 
     for (const { pattern, label } of unboundedPatterns) {
@@ -697,7 +697,9 @@ export async function scanForPerformanceIssues(
     for (let i = 0; i < lines_trimmed.length - 2; i++) {
       if (perfIssuesCount >= MAX_PERF_ISSUES) break;
       const line = lines_trimmed[i];
-      if ((line.includes("for ") || line.includes("while ")) && !line.includes("const ")) {
+      // Match loop constructs: for(...), while(...), do...while
+      const loopMatch = /^\s*(for|while|do)\s*[\(\{]/.test(line);
+      if (loopMatch) {
         // Look for expensive operations in the next few lines
         const loopBody = lines_trimmed.slice(i + 1, Math.min(i + 5)).join(" ");
         if (
@@ -707,10 +709,21 @@ export async function scanForPerformanceIssues(
           loopBody.includes("database") ||
           loopBody.includes("query")
         ) {
+          // Find the actual line number by searching for the loop start from position i
+          // Count lines up to this point
+          let lineNum = 1;
+          let charIndex = 0;
+          for (let j = 0; j < lines.length; j++) {
+            const currentLine = lines[j].trim();
+            if (currentLine === line) {
+              lineNum = j + 1;
+              break;
+            }
+          }
           issues.push({
             type: "duplicated-computation",
             file: file.rel,
-            line: findLineAt(file.content, file.content.indexOf(line)),
+            line: lineNum,
             description: `Potentially expensive operation detected inside loop — move it outside the loop if possible`,
             severity: "medium",
           });
@@ -880,8 +893,6 @@ function getTitleForPerformanceIssueType(type: PerformanceIssueType): string {
   switch (type) {
     case "slow-function":
       return "Optimize function performance";
-    case "large-bundle":
-      return "Reduce bundle size";
     case "blocking-operation":
       return "Fix blocking operations";
     case "unbounded-growth":
