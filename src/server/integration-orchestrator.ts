@@ -9,7 +9,7 @@
  */
 
 import { readFileSync, existsSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
@@ -23,6 +23,7 @@ import {
   deleteBranch,
   isGitRepo,
   commitTaskFile,
+  mergeBranch,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
@@ -316,21 +317,24 @@ export class CloseOutOrchestrator {
     }
 
     // In the candidate worktree, merge the feature branch from its location.
-    const mergeRes = await runGit(wtPath, ["merge", "--no-edit", featureBranch], 60_000);
-    if (mergeRes.status !== 0) {
-      const conflicts = await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 5000);
-      if (conflicts.status === 0 && conflicts.stdout.trim()) {
-        await runGit(wtPath, ["merge", "--abort"], 4000);
-        return { ok: false, reason: `merge conflict in ${conflicts.stdout.trim().split("\n")[0]}` };
-      }
-      await runGit(wtPath, ["merge", "--abort"], 4000);
-      return { ok: false, reason: `merge failed: ${mergeRes.stderr.split("\n")[0]}` };
-    }
-
-    // Check for unmerged index entries (should not exist after successful merge, but catch edge cases).
-    const unmergedRes = await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 5000);
-    if (unmergedRes.status === 0 && unmergedRes.stdout.trim()) {
-      return { ok: false, reason: `unmerged index entries: ${unmergedRes.stdout.trim().split("\n")[0]}` };
+    // dist/ and screenshots/ are generated output — the build step right
+    // after this merge (below) regenerates them from source regardless of
+    // what the merge produced, so a conflict there must never block the
+    // merge. The task's own doc file routinely differs between main and the
+    // branch (status/review_rounds bookkeeping on either side), so its
+    // branch version is taken as authoritative, same as the legacy done.ts
+    // close-out path. Reuses the existing, tested autoResolve semantics in
+    // core/git.ts rather than reimplementing conflict resolution here.
+    const task = this.getTask?.(job.taskId);
+    const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
+    if (!merge.merged) {
+      return {
+        ok: false,
+        reason: merge.conflicts.length
+          ? `merge conflict in ${merge.conflicts.join(", ")}`
+          : merge.reason ?? "merge failed",
+      };
     }
 
     // Check for merge conflict markers in text files (unresolved conflicts in content).
