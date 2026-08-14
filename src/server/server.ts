@@ -843,9 +843,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoMonitor = new CTOMonitor(config, index, cto);
-  // Start the CTO monitor on a 5-minute cadence when enabled
+  // Start the CTO monitor on a 5-minute cadence when enabled.
+  // Make interval configurable from config if present; default to 5 minutes.
+  const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
   if (cto.enabled()) {
-    ctoMonitor.start(5 * 60 * 1000);
+    ctoMonitor.start(ctoIntervalMs);
   }
 
   // Review activity is transient server state, not task-file frontmatter. Add
@@ -1008,6 +1010,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const nextNeedsInput = e.task.needsInput;
     if (!prevNeedsInput && nextNeedsInput) {
       notifyNeedsInput(config, e.task);
+    }
+  });
+
+  // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
+  const unsubscribeCTOEvents = index.on((e) => {
+    if (!cto.enabled()) return;
+    if (e.type === "task.updated") {
+      const prev = e.prev.status;
+      if (prev !== undefined && prev !== e.task.status) {
+        ctoMonitor.onEvent(`task #${e.task.id} status change: ${prev} → ${e.task.status}`);
+      }
+    } else if (e.type === "review") {
+      ctoMonitor.onEvent(`review complete for task #${e.id}: ${e.state}`);
+    } else if (e.type === "agent.exited") {
+      ctoMonitor.onEvent(`agent exited: task #${e.id}`);
     }
   });
 
@@ -1404,6 +1421,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();
+          unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
           reload?.stop();

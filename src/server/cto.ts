@@ -11,11 +11,13 @@
  * Zero runtime deps — node:fs / node:path only.
  */
 import type { ChildProcess } from "node:child_process";
+import { execSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
   readFileSync,
   renameSync,
+  readdirSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -23,7 +25,7 @@ import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
-import { parseTask } from "../core/task.js";
+import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import { resolveCto, runPrompt, reviewCommand, type AgentRunner } from "./agents.js";
 import { patchTaskFile } from "./write.js";
@@ -303,6 +305,144 @@ export class CTOManager {
 
   cancelAll(): void {
     this.cancel();
+  }
+
+  // ---- Guard-railed actions ----
+
+  /**
+   * Send a message to a task's agent session (nudge or escalation).
+   * The message is visible to the human in the task activity feed.
+   */
+  sendTaskMessage(taskId: string, message: string, agent: Agent | null): boolean {
+    if (!this.runner || !agent) return false;
+    try {
+      this.runner.send(taskId, message, agent);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Run repoos check on a task's worktree to verify it passes before
+   * taking automatic actions. Returns true if check passes, false otherwise.
+   */
+  runRepoosCheck(workdir: string): boolean {
+    try {
+      execSync("repoos check", { cwd: workdir, stdio: "pipe" });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Move a task from review to active (or mark needs_input) when genuinely stuck.
+   * Only call this after human confirmation or verification that the task is
+   * actually stuck (not just slow). The action is logged to task activity.
+   */
+  moveTaskStatus(taskAbsPath: string, fromStatus: string, toStatus: string, reason: string): boolean {
+    try {
+      const content = readFileSync(taskAbsPath, "utf8");
+      const task = parseTask({
+        content,
+        absPath: taskAbsPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+
+      if (task.status !== fromStatus) {
+        return false; // Status changed since check
+      }
+
+      // Guard: never move to 'done'
+      if (toStatus === "done") {
+        return false;
+      }
+
+      // Record the change and update
+      recordChange(task, `CTO action: ${reason}`);
+      task.status = toStatus as any;
+      writeFileSync(taskAbsPath, serializeTask(task));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Set needs_input flag on a task to escalate to human review.
+   * This surfaces the task in the UI and fires notifications.
+   */
+  setNeedsInput(taskAbsPath: string, reason: string): boolean {
+    try {
+      const content = readFileSync(taskAbsPath, "utf8");
+      const task = parseTask({
+        content,
+        absPath: taskAbsPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+
+      if (task.needsInput) {
+        return true; // Already set
+      }
+
+      recordChange(task, `CTO action: ${reason}`);
+      task.needsInput = true;
+      writeFileSync(taskAbsPath, serializeTask(task));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Create a follow-up bug task for systemic issues detected by the CTO.
+   * Returns the new task id on success, null on failure.
+   */
+  createFollowUpBug(title: string, body: string, area: string): string | null {
+    try {
+      const workDir = join(this.config.root, this.config.workDir);
+      let maxId = 0;
+      const files = readdirSync(workDir);
+      for (const file of files) {
+        const m = file.match(/^(\d+)/);
+        if (m) maxId = Math.max(maxId, parseInt(m[1], 10));
+      }
+
+      const nextId = String(maxId + 1).padStart(4, "0");
+      const filename = `${nextId}-${title.toLowerCase().replace(/\s+/g, "-")}.md`;
+      const filePath = join(workDir, filename);
+
+      const now = new Date().toISOString();
+      const content = `---
+id: "${nextId}"
+title: "${title}"
+type: "bug"
+status: "inbox"
+priority: "p2"
+area: "${area}"
+assigned_to: "unassigned"
+created_at: "${now}"
+updated_at: "${now}"
+---
+## Problem
+Created by CTO monitoring (0174): ${title}
+
+## Context
+${body}
+
+## Activity
+- ${now} · created · CTO`;
+
+      writeFileSync(filePath, content, "utf8");
+      return nextId;
+    } catch {
+      return null;
+    }
   }
 
   // ---- private methods ----
