@@ -36,16 +36,6 @@ function toggleTheme(): void {
       <span class="mono">{{ repoName }}</span>
     </div>
     <div class="spacer"></div>
-    <button
-      class="theme-toggle"
-      type="button"
-      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-      :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-      @click="toggleTheme"
-    >
-      <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
-      <Sun v-else :size="15" :stroke-width="1.8" />
-    </button>
     <SearchBar />
     <button
       v-if="newVersion"
@@ -57,6 +47,17 @@ function toggleTheme(): void {
       <RefreshCw v-if="restarting" class="size-[13px] icon-spin" />
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
+    </button>
+    <div class="spacer"></div>
+    <button
+      class="theme-toggle"
+      type="button"
+      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      @click="toggleTheme"
+    >
+      <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
+      <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
     <div
       class="conn"
