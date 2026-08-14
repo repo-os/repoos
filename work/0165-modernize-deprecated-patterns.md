@@ -2,14 +2,14 @@
 id: "0165"
 title: Modernize deprecated patterns
 type: chore
-status: ready
+status: active
 priority: p2
 area: tech-debt
 assigned_to: unassigned
 created_by: tech-debt-agent
 branch: feat/modernize-deprecated-patterns
 created_at: "2026-08-13T13:45:29.814Z"
-updated_at: "2026-08-14T07:42:25Z"
+updated_at: "2026-08-14T16:40:48Z"
 ---
 ## Issues Identified
 
@@ -45,3 +45,4 @@ updated_at: "2026-08-14T07:42:25Z"
 - 2026-08-14T04:20:10Z · status inbox→ready
 - 2026-08-14T04:20:16Z · status ready→active, branch
 - 2026-08-14T07:42:25Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-14T16:40:48Z · status ready→active
