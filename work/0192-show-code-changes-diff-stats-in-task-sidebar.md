@@ -8,9 +8,8 @@ area: ui-app
 assigned_to: unassigned
 created_by: ""
 branch: feat/show-code-changes-diff-stats-in-task-sid
-model_override: haiku
 created_at: "2026-08-14T08:59:00Z"
-updated_at: "2026-08-14T15:10:46Z"
+updated_at: "2026-08-14T15:11:07Z"
 ---
 ## Problem
 
@@ -67,3 +66,4 @@ This should appear in:
 - 2026-08-14T12:48:20Z · model_override
 - 2026-08-14T15:10:18Z · status active→ready
 - 2026-08-14T15:10:46Z · cli_override
+- 2026-08-14T15:11:07Z · model_override
