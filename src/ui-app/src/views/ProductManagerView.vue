@@ -14,6 +14,7 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -22,6 +23,7 @@ const selectedTaskId = ref<string | null>(null);
 const draft = ref("");
 const submitting = ref(false);
 const log = ref<HTMLElement | null>(null);
+const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmAgentOverride = ref<string | null>(null);
 const pmCliOverride = ref<string | null>(null);
 const pmModelOverride = ref<string | null>(null);
@@ -154,6 +156,12 @@ function onKeydown(event: KeyboardEvent): void {
   if (event.key !== "Enter" || event.shiftKey) return;
   event.preventDefault();
   void send();
+}
+
+function onDraftTranscribed(text: string): void {
+  if (draftTextarea.value) {
+    insertTextAtCursor(draftTextarea.value, text);
+  }
 }
 
 watch(selectedTaskId, () => {
@@ -291,6 +299,7 @@ onMounted(() => {
 
         <form class="pm-compose" @submit.prevent="send">
           <textarea
+            ref="draftTextarea"
             v-model="draft"
             rows="1"
             :disabled="!enabled"
@@ -298,7 +307,7 @@ onMounted(() => {
             aria-label="Message PM"
             @keydown="onKeydown"
           ></textarea>
-          <VoiceDictate :disabled="!enabled" />
+          <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
           <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
             <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
           </button>
