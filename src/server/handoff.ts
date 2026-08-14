@@ -90,7 +90,14 @@ async function runCheck(worktree: string): Promise<RunResult> {
   return last;
 }
 
-/** Finalize one capability issued by an active runner turn. */
+/**
+ * Finalize one capability issued by an active runner turn.
+ *
+ * Enforces a hard deadline (600s) on the entire finalization process. If any
+ * step (validate, check, commit, review, main) exceeds the deadline, the
+ * finalization is abandoned and returned as failed. This ensures the handoff
+ * promise never hangs indefinitely.
+ */
 export async function handoffTask(
   config: RepoOSConfig,
   task: Task,
@@ -98,114 +105,131 @@ export async function handoffTask(
   onProgress?: (step: HandoffStep) => void,
   onStatusChange?: (task: Task, prev: Status, next: Status) => void,
 ): Promise<HandoffResult> {
-  onProgress?.("validate");
-  if (!request.runId || request.taskId !== task.id) {
-    return { ok: false, step: "validate", detail: "handoff does not match the active runner session" };
-  }
-  if (task.status !== "active" && task.status !== "review") {
-    return { ok: false, step: "validate", detail: `task must be active or review, but is ${task.status}` };
-  }
-  if (!task.branch || request.branch !== task.branch) {
-    return { ok: false, step: "validate", detail: "handoff branch does not match the task branch" };
-  }
-  const registered = worktreePathForBranch(config.root, task.branch);
-  if (!registered || !samePath(registered, request.workdir) || !existsSync(registered)) {
-    return { ok: false, step: "validate", detail: "handoff worktree does not match the registered task worktree" };
-  }
-  const branch = await runGit(registered, ["branch", "--show-current"], 10_000);
-  if (branch.status !== 0 || branch.stdout.trim() !== task.branch) {
-    return { ok: false, step: "validate", detail: "registered worktree is not on the expected branch" };
-  }
-  const worktreeTaskPath = join(registered, task.path);
-  if (!existsSync(worktreeTaskPath)) {
-    return { ok: false, step: "validate", detail: "task file is missing from the registered worktree" };
-  }
-  let worktreeTask: Task;
-  try {
-    worktreeTask = parseTask({
-      content: readFileSync(worktreeTaskPath, "utf8"),
-      absPath: worktreeTaskPath,
-      root: registered,
-      defaultStatus: config.defaultStatus,
-      defaultAssignee: config.defaultAssignee,
-    });
-  } catch (error) {
-    return { ok: false, step: "validate", detail: `could not parse the worktree task: ${(error as Error).message}` };
-  }
-  // On a first launch the linked worktree is created immediately before the
-  // canonical task receives its derived branch, so its task copy may still
-  // have an empty branch. A different non-empty branch is never acceptable.
-  if (worktreeTask.id !== task.id || (worktreeTask.branch && worktreeTask.branch !== task.branch)) {
-    return { ok: false, step: "validate", detail: "worktree task identity does not match the active task" };
-  }
+  const HANDOFF_DEADLINE_MS = 600_000; // 10 minutes hard deadline
+  let settled = false;
 
-  // A completed retry still validates identity before returning success.
-  if (task.status === "review" && worktreeTask.status === "review") {
-    return { ok: true, step: "done", detail: "handoff was already finalized" };
-  }
+  // Race the entire handoff against a hard deadline. If the deadline fires,
+  // return a failure result immediately without awaiting inner cleanup.
+  const timeoutPromise = new Promise<HandoffResult>((resolve) => {
+    setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve({ ok: false, step: "check", detail: "server-side finalization timed out (deadline exceeded)" });
+      }
+    }, HANDOFF_DEADLINE_MS);
+  });
 
-  onProgress?.("check");
-  const check = await runCheck(registered);
-  if (check.status !== 0) {
-    return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
-  }
-
-  onProgress?.("commit");
-  // `repoos check` intentionally rebuilds these tracked artifacts in the
-  // feature worktree. Keep them available for local verification, but never
-  // let them enter a feature-branch commit: main regenerates and commits both
-  // directories after the branch is merged in the done flow.
-  const unstageGenerated = await runGit(
-    registered,
-    ["reset", "--quiet", "HEAD", "--", "dist", "screenshots"],
-    10_000,
-  );
-  if (unstageGenerated.status !== 0) {
-    return {
-      ok: false,
-      step: "commit",
-      detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
-    };
-  }
-  const add = await runGit(
-    registered,
-    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots"],
-    30_000,
-  );
-  if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
-  const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
-  if (staged.status === 1) {
-    const commit = await runGit(registered, ["commit", "-m", `feat(${task.id}): implement ${task.title}`], 30_000);
-    if (commit.status !== 0) return { ok: false, step: "commit", detail: `git commit failed: ${concise(commit)}` };
-  } else if (staged.status !== 0) {
-    return { ok: false, step: "commit", detail: `could not inspect staged changes: ${concise(staged)}` };
-  }
-
-  onProgress?.("review");
-  if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
+  const resultPromise = (async (): Promise<HandoffResult> => {
     try {
-      patchTaskFile(
-        { ...config, root: registered },
-        worktreeTaskPath,
-        { status: "review", branch: task.branch },
+      onProgress?.("validate");
+      if (!request.runId || request.taskId !== task.id) {
+        return { ok: false, step: "validate", detail: "handoff does not match the active runner session" };
+      }
+      if (task.status !== "active" && task.status !== "review") {
+        return { ok: false, step: "validate", detail: `task must be active or review, but is ${task.status}` };
+      }
+      if (!task.branch || request.branch !== task.branch) {
+        return { ok: false, step: "validate", detail: "handoff branch does not match the task branch" };
+      }
+      const registered = worktreePathForBranch(config.root, task.branch);
+      if (!registered || !samePath(registered, request.workdir) || !existsSync(registered)) {
+        return { ok: false, step: "validate", detail: "handoff worktree does not match the registered task worktree" };
+      }
+      const branch = await runGit(registered, ["branch", "--show-current"], 10_000);
+      if (branch.status !== 0 || branch.stdout.trim() !== task.branch) {
+        return { ok: false, step: "validate", detail: "registered worktree is not on the expected branch" };
+      }
+      const worktreeTaskPath = join(registered, task.path);
+      if (!existsSync(worktreeTaskPath)) {
+        return { ok: false, step: "validate", detail: "task file is missing from the registered worktree" };
+      }
+      let worktreeTask: Task;
+      try {
+        worktreeTask = parseTask({
+          content: readFileSync(worktreeTaskPath, "utf8"),
+          absPath: worktreeTaskPath,
+          root: registered,
+          defaultStatus: config.defaultStatus,
+          defaultAssignee: config.defaultAssignee,
+        });
+      } catch (error) {
+        return { ok: false, step: "validate", detail: `could not parse the worktree task: ${(error as Error).message}` };
+      }
+      if (worktreeTask.id !== task.id || (worktreeTask.branch && worktreeTask.branch !== task.branch)) {
+        return { ok: false, step: "validate", detail: "worktree task identity does not match the active task" };
+      }
+
+      if (task.status === "review" && worktreeTask.status === "review") {
+        return { ok: true, step: "done", detail: "handoff was already finalized" };
+      }
+
+      onProgress?.("check");
+      const check = await runCheck(registered);
+      if (check.status !== 0) {
+        return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
+      }
+
+      onProgress?.("commit");
+      const unstageGenerated = await runGit(
+        registered,
+        ["reset", "--quiet", "HEAD", "--", "dist", "screenshots"],
+        10_000,
       );
-    } catch (error) {
-      return { ok: false, step: "review", detail: `could not update the worktree task: ${(error as Error).message}` };
-    }
-  }
+      if (unstageGenerated.status !== 0) {
+        return {
+          ok: false,
+          step: "commit",
+          detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
+        };
+      }
+      const add = await runGit(
+        registered,
+        ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots"],
+        30_000,
+      );
+      if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
+      const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
+      if (staged.status === 1) {
+        const commit = await runGit(registered, ["commit", "-m", `feat(${task.id}): implement ${task.title}`], 30_000);
+        if (commit.status !== 0) return { ok: false, step: "commit", detail: `git commit failed: ${concise(commit)}` };
+      } else if (staged.status !== 0) {
+        return { ok: false, step: "commit", detail: `could not inspect staged changes: ${concise(staged)}` };
+      }
 
-  onProgress?.("main");
-  if (task.status !== "review") {
-    try {
-      patchTaskFile(config, task.absPath, { status: "review" }, {
-        onStatusChange: onStatusChange
-          ? (updated, prev, next) => onStatusChange(updated, prev, next)
-          : undefined,
-      });
-    } catch (error) {
-      return { ok: false, step: "main", detail: `could not update the canonical task: ${(error as Error).message}` };
+      onProgress?.("review");
+      if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
+        try {
+          patchTaskFile(
+            { ...config, root: registered },
+            worktreeTaskPath,
+            { status: "review", branch: task.branch },
+          );
+        } catch (error) {
+          return { ok: false, step: "review", detail: `could not update the worktree task: ${(error as Error).message}` };
+        }
+      }
+
+      onProgress?.("main");
+      if (task.status !== "review") {
+        try {
+          patchTaskFile(config, task.absPath, { status: "review" }, {
+            onStatusChange: onStatusChange
+              ? (updated, prev, next) => onStatusChange(updated, prev, next)
+              : undefined,
+          });
+        } catch (error) {
+          return { ok: false, step: "main", detail: `could not update the canonical task: ${(error as Error).message}` };
+        }
+      }
+      onProgress?.("done");
+      settled = true;
+      return { ok: true, step: "done" };
+    } catch (err) {
+      settled = true;
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, step: "validate", detail: `unexpected error: ${message}` };
     }
-  }
-  onProgress?.("done");
-  return { ok: true, step: "done" };
+  })();
+
+  return Promise.race([resultPromise, timeoutPromise]);
 }

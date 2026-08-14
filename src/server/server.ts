@@ -760,6 +760,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }
+      if (runner.isHandoffInFlight(request.taskId)) {
+        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
+        return;
+      }
       const task = index.getTask(request.taskId);
       if (!task) {
         runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
@@ -881,14 +885,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
       void runBuiltInAgent(name, repoos.config)
-        .then((result) => {
+        .then((result: any) => {
           if (result && result.failed > 0) {
             console.error(
               `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
             );
           }
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
         })
         .finally(() => {
