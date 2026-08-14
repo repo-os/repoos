@@ -2,14 +2,14 @@
 id: "0075"
 title: Make move-to-done non-blocking and cut duplicate build/browser launches
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/make-move-to-done-non-blocking-and-cut-d
 created_at: "2026-08-11T05:10:50Z"
-updated_at: "2026-08-14T09:03:04Z"
+updated_at: "2026-08-14T09:03:00Z"
 ---
 ## Problem
 
@@ -136,3 +136,4 @@ things follow from that:
 - 2026-08-13T14:08:59Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-14T08:36:37Z · needs_input
 - 2026-08-14T09:03:04Z · cli_override, model_override
+- 2026-08-14T09:03:00Z · status active→review
