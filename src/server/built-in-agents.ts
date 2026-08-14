@@ -24,6 +24,20 @@ export interface TechDebtIssue {
   severity: "high" | "medium" | "low";
 }
 
+export type PerformanceIssueType =
+  | "slow-function"
+  | "blocking-operation"
+  | "unbounded-growth"
+  | "duplicated-computation";
+
+export interface PerformanceIssue {
+  type: PerformanceIssueType;
+  file: string;
+  line?: number;
+  description: string;
+  severity: "high" | "medium" | "low";
+}
+
 /** Options that let tests drive the scan deterministically (no network). */
 export interface TechDebtScanOptions {
   /** Registry fetcher, defaults to the global fetch. Tests stub this. */
@@ -55,6 +69,29 @@ export interface TechDebtRunResult extends CreateTechDebtResult {
 /** Raised when the Tech Debt Agent cannot do its job at all (e.g. missing work dir). */
 export class TechDebtError extends Error {}
 
+export interface PerformanceScanResult {
+  issues: PerformanceIssue[];
+  /** Number of files actually read (bounded by the scan cap). */
+  scannedFiles: number;
+}
+
+export interface CreatePerformanceResult {
+  /** Tasks successfully written to the inbox. */
+  created: number;
+  /** Individual writes that failed (after the work dir was confirmed usable). */
+  failed: number;
+  /** Human-readable messages for every failed write. */
+  errors: string[];
+}
+
+export interface PerformanceRunResult extends CreatePerformanceResult {
+  issuesFound: number;
+  scannedFiles: number;
+}
+
+/** Raised when the Performance Agent cannot do its job at all (e.g. missing work dir). */
+export class PerformanceError extends Error {}
+
 const SOURCE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".vue"]);
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".next", ".nuxt", ".repoos"]);
 /** Scan is bounded so a huge repo can never stall the server. */
@@ -69,6 +106,11 @@ const MIN_EXPORT_NAME_LENGTH = 3;
 const MAX_REGISTRY_PROBES = 12;
 const REGISTRY_CONCURRENCY = 4;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+/** Performance thresholds */
+const SLOW_FUNCTION_LINES = 300;
+const NESTED_LOOP_DEPTH = 3;
+const MAX_PERF_SCAN_FILES = 500;
+const MAX_PERF_ISSUES = 30;
 
 /** Walk the repo for scannable source files, bounded in count and size. */
 function collectSourceFiles(root: string): string[] {
@@ -541,6 +583,237 @@ export function isDueForScheduledRun(
 }
 
 /**
+ * Scan the repository for performance issues.
+ * Returns the identified issues plus scan bounds, so callers can tell a
+ * successful-but-empty scan apart from a failed one.
+ */
+export async function scanForPerformanceIssues(
+  config: RepoOSConfig,
+): Promise<PerformanceScanResult> {
+  const issues: PerformanceIssue[] = [];
+
+  const files = collectSourceFiles(config.root);
+  const scanned = readScannedFiles(config.root, files);
+
+  let perfIssuesCount = 0;
+
+  for (const file of scanned) {
+    if (perfIssuesCount >= MAX_PERF_ISSUES) break;
+
+    const lines = file.content.split("\n");
+
+    // 1. Functions that are too long (likely doing too much).
+    if (file.lineCount > SLOW_FUNCTION_LINES) {
+      issues.push({
+        type: "slow-function",
+        file: file.rel,
+        line: 1,
+        description: `Function/file is ${file.lineCount} lines long — consider breaking it into smaller functions for better performance and readability`,
+        severity: "medium",
+      });
+      perfIssuesCount++;
+    }
+
+    // 2. Detect deeply nested loops (N² or worse performance).
+    const cleaned = stripCommentsAndStrings(file.content);
+    let maxDepth = 0;
+    let currentDepth = 0;
+    let lineNum = 1;
+    let maxDepthLine = 1;
+
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i];
+      if (char === "\n") lineNum++;
+      if (char === "{" && cleaned.substring(Math.max(0, i - 50), i).match(/\b(?:for|while|forEach)\s*[\(\{]/)) {
+        currentDepth++;
+        if (currentDepth > maxDepth) {
+          maxDepth = currentDepth;
+          maxDepthLine = lineNum;
+        }
+      }
+      if (char === "}") currentDepth = Math.max(0, currentDepth - 1);
+    }
+
+    if (maxDepth >= NESTED_LOOP_DEPTH) {
+      issues.push({
+        type: "blocking-operation",
+        file: file.rel,
+        line: maxDepthLine,
+        description: `Nested loops detected (depth ${maxDepth}) — this could cause O(n²) or worse performance; consider refactoring`,
+        severity: maxDepth > 4 ? "high" : "medium",
+      });
+      perfIssuesCount++;
+    }
+
+    // 3. Look for synchronous operations that should be async.
+    const syncPatterns = [
+      { pattern: /\bfs\.readFileSync\b/, desc: "Synchronous file read blocks the event loop" },
+      { pattern: /\bfs\.writeFileSync\b/, desc: "Synchronous file write blocks the event loop" },
+      { pattern: /\bJSON\.stringify\(.*\)\s*;/, desc: "Large object serialization could block; consider streaming" },
+    ];
+
+    for (const { pattern, desc } of syncPatterns) {
+      if (pattern.test(cleaned)) {
+        let m: RegExpExecArray | null;
+        const globalPattern = new RegExp(pattern.source, "g");
+        while ((m = globalPattern.exec(cleaned)) !== null) {
+          if (perfIssuesCount >= MAX_PERF_ISSUES) break;
+          issues.push({
+            type: "blocking-operation",
+            file: file.rel,
+            line: findLineAt(file.content, m.index),
+            description: `${desc}`,
+            severity: "high",
+          });
+          perfIssuesCount++;
+        }
+      }
+    }
+
+    // 4. Detect potential unbounded growth (array/object accumulation without cleanup).
+    const unboundedPatterns = [
+      { pattern: /\w+\.push\s*\(/g, label: "array push" },
+      { pattern: /Map\s*\(/g, label: "Map construction" },
+    ];
+
+    for (const { pattern, label } of unboundedPatterns) {
+      if (perfIssuesCount >= MAX_PERF_ISSUES) break;
+      const matches = (cleaned.match(pattern) || []).length;
+      if (matches > 10) {
+        issues.push({
+          type: "unbounded-growth",
+          file: file.rel,
+          line: 1,
+          description: `File uses "${label}" frequently (${matches} times) — ensure proper cleanup to prevent memory leaks`,
+          severity: "low",
+        });
+        perfIssuesCount++;
+        break;
+      }
+    }
+
+    // 5. Detect duplicate computations (expensive operations inside loops).
+    const lines_trimmed = lines.map((l) => l.trim()).filter((l) => l);
+    for (let i = 0; i < lines_trimmed.length - 2; i++) {
+      if (perfIssuesCount >= MAX_PERF_ISSUES) break;
+      const line = lines_trimmed[i];
+      // Match loop constructs: for(...), while(...), do...while
+      const loopMatch = /^\s*(for|while|do)\s*[\(\{]/.test(line);
+      if (loopMatch) {
+        // Look for expensive operations in the next few lines
+        const loopBody = lines_trimmed.slice(i + 1, Math.min(i + 5)).join(" ");
+        if (
+          loopBody.includes("JSON.parse") ||
+          loopBody.includes("JSON.stringify") ||
+          loopBody.includes("fetch") ||
+          loopBody.includes("database") ||
+          loopBody.includes("query")
+        ) {
+          // Find the actual line number by searching for the loop start from position i
+          // Count lines up to this point
+          let lineNum = 1;
+          let charIndex = 0;
+          for (let j = 0; j < lines.length; j++) {
+            const currentLine = lines[j].trim();
+            if (currentLine === line) {
+              lineNum = j + 1;
+              break;
+            }
+          }
+          issues.push({
+            type: "duplicated-computation",
+            file: file.rel,
+            line: lineNum,
+            description: `Potentially expensive operation detected inside loop — move it outside the loop if possible`,
+            severity: "medium",
+          });
+          perfIssuesCount++;
+        }
+      }
+    }
+  }
+
+  return { issues, scannedFiles: scanned.length };
+}
+
+/**
+ * Create tasks in the inbox for performance issues.
+ * Returns counts for created and failed writes, so callers never see a
+ * silently-truncated task list. Throws PerformanceError when the work dir itself
+ * is unusable (missing or read-only).
+ */
+export async function createPerformanceTasks(
+  config: RepoOSConfig,
+  issues: PerformanceIssue[],
+): Promise<CreatePerformanceResult> {
+  const workDir = join(config.root, config.workDir);
+  let workDirStats;
+  try {
+    workDirStats = statSync(workDir);
+  } catch {
+    throw new PerformanceError(
+      `Task directory "${config.workDir}" does not exist — create it (or fix workDir) before running the Performance Agent`,
+    );
+  }
+  if (!workDirStats.isDirectory()) {
+    throw new PerformanceError(`Task directory "${config.workDir}" is not a directory`);
+  }
+  try {
+    accessSync(workDir, 0o2 /* W_OK */);
+  } catch {
+    throw new PerformanceError(`Task directory "${config.workDir}" is not writable`);
+  }
+
+  const result: CreatePerformanceResult = { created: 0, failed: 0, errors: [] };
+
+  if (issues.length === 0) return result;
+
+  // Group issues by type for cleaner task creation.
+  const grouped = new Map<PerformanceIssueType, PerformanceIssue[]>();
+  for (const issue of issues) {
+    if (!grouped.has(issue.type)) grouped.set(issue.type, []);
+    grouped.get(issue.type)!.push(issue);
+  }
+
+  const now = new Date().toISOString();
+
+  for (const [type, typeIssues] of grouped) {
+    const title = getTitleForPerformanceIssueType(type);
+    const body = formatPerformanceIssuesForTask(typeIssues);
+
+    const taskId = findNextTaskId(workDir);
+    const taskPath = join(workDir, `${taskId}-${slugify(title)}.md`);
+
+    const frontmatter = `---
+id: "${taskId}"
+title: ${JSON.stringify(title)}
+type: chore
+status: inbox
+priority: p2
+area: performance
+assigned_to: unassigned
+created_by: performance-agent
+created_at: "${now}"
+updated_at: "${now}"
+---`;
+
+    const taskContent = `${frontmatter}\n${body}`;
+
+    try {
+      await writeFile(taskPath, taskContent, "utf8");
+      result.created++;
+    } catch (err) {
+      result.failed++;
+      result.errors.push(
+        `${taskPath}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
  * Run the Tech Debt Agent end to end: scan, create tasks, record lastRunAt.
  * The caller owns overlap protection (a single in-flight guard in server.ts).
  */
@@ -563,13 +836,38 @@ export async function runTechDebtAgent(
   };
 }
 
+/**
+ * Run the Performance Agent end to end: scan, create tasks, record lastRunAt.
+ * The caller owns overlap protection (a single in-flight guard in server.ts).
+ */
+export async function runPerformanceAgent(
+  config: RepoOSConfig,
+): Promise<PerformanceRunResult> {
+  const scan = await scanForPerformanceIssues(config);
+  const created = await createPerformanceTasks(config, scan.issues);
+
+  const agents = { ...(config.builtInAgents ?? {}) };
+  agents["performance"] = { ...(agents["performance"] ?? {}), lastRunAt: new Date().toISOString() };
+  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
+  config.builtInAgents = agents;
+
+  return {
+    issuesFound: scan.issues.length,
+    scannedFiles: scan.scannedFiles,
+    ...created,
+  };
+}
+
 /** Dispatch to the appropriate built-in agent by name. */
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
-): Promise<TechDebtRunResult | null> {
+): Promise<TechDebtRunResult | PerformanceRunResult | null> {
   if (name === "tech-debt") {
     return runTechDebtAgent(config);
+  }
+  if (name === "performance") {
+    return runPerformanceAgent(config);
   }
   return null;
 }
@@ -591,6 +889,21 @@ function getTitleForIssueType(type: TechDebtIssueType): string {
   }
 }
 
+function getTitleForPerformanceIssueType(type: PerformanceIssueType): string {
+  switch (type) {
+    case "slow-function":
+      return "Optimize function performance";
+    case "blocking-operation":
+      return "Fix blocking operations";
+    case "unbounded-growth":
+      return "Prevent unbounded memory growth";
+    case "duplicated-computation":
+      return "Eliminate duplicate computations";
+    default:
+      return "Improve performance";
+  }
+}
+
 function formatIssuesForTask(issues: TechDebtIssue[]): string {
   let body = "## Issues Identified\n\n";
 
@@ -606,6 +919,27 @@ function formatIssuesForTask(issues: TechDebtIssue[]): string {
   body += "2. Make the suggested improvements\n";
   body += "3. Test the changes thoroughly\n";
   body += "4. Move this task to done when complete\n";
+
+  return body;
+}
+
+function formatPerformanceIssuesForTask(issues: PerformanceIssue[]): string {
+  let body = "## Performance Issues Identified\n\n";
+
+  for (const issue of issues) {
+    body += `### ${issue.description}\n`;
+    body += `- **File**: \`${issue.file}\`\n`;
+    if (issue.line) body += `- **Line**: ${issue.line}\n`;
+    body += `- **Severity**: ${issue.severity}\n`;
+    body += `- **Type**: ${issue.type}\n\n`;
+  }
+
+  body += "## Next Steps\n\n";
+  body += "1. Profile the identified performance issues with real-world data\n";
+  body += "2. Optimize the code using appropriate techniques (async, streaming, caching, etc.)\n";
+  body += "3. Measure the improvement with benchmarks\n";
+  body += "4. Test thoroughly to ensure no regressions\n";
+  body += "5. Move this task to done when optimized\n";
 
   return body;
 }

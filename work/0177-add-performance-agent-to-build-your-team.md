@@ -74,6 +74,3 @@ alongside the Tech Debt Agent, with:
 - 2026-08-13T18:09:14Z · status review→done, release:success
 - 2026-08-14T08:42:00Z · status active→review (fix applied)
 - 2026-08-14T09:00:00Z · status review→done
-- 2026-08-14T00:03:08Z · status done→ready
-- 2026-08-14T00:03:31Z · status ready→active
-- 2026-08-14T00:08:52Z · status active→review
