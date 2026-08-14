@@ -110,6 +110,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     interval: 300,
     mode: "observe",
   },
+  watchdog: {
+    enabled: true,
+    stalenessMs: 5 * 60 * 1000,
+    autoTransition: true,
+  },
   autoEngineeringMode: false,
   maxActiveTasks: 3,
 };
@@ -289,6 +294,20 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+
+    // [watchdog] section (0180) — the task watchdog over active tasks.
+    const watchdogEnabled = parsed["watchdog.enabled"];
+    if (typeof watchdogEnabled === "boolean") {
+      cfg.watchdog = { ...cfg.watchdog, enabled: watchdogEnabled };
+    }
+    const watchdogStaleness = parsed["watchdog.stalenessMs"];
+    if (typeof watchdogStaleness === "number" && watchdogStaleness >= 60_000) {
+      cfg.watchdog = { ...cfg.watchdog, stalenessMs: watchdogStaleness };
+    }
+    const watchdogAutoTransition = parsed["watchdog.autoTransition"];
+    if (typeof watchdogAutoTransition === "boolean") {
+      cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
+    }
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
