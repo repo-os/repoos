@@ -11,8 +11,10 @@ import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -85,6 +87,35 @@ const pmAgentReady = computed(() => {
 const freeformRunning = ref(false);
 /** The client-generated id that tags this run's streamed `agent.output` events. */
 const freeformRunId = ref<string | null>(null);
+
+const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
+const specTextareaEl = ref<HTMLTextAreaElement | null>(null);
+const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
+const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
+
+function onFreeformTranscribed(text: string): void {
+  if (freeformTextarea.value) {
+    insertTextAtCursor(freeformTextarea.value, text);
+  }
+}
+
+function onSpecTranscribed(text: string): void {
+  if (specTextareaEl.value) {
+    insertTextAtCursor(specTextareaEl.value, text);
+  }
+}
+
+function onDraftMsgTranscribed(text: string): void {
+  if (draftMsgTextarea.value) {
+    insertTextAtCursor(draftMsgTextarea.value, text);
+  }
+}
+
+function onReviewDraftMsgTranscribed(text: string): void {
+  if (reviewDraftMsgTextarea.value) {
+    insertTextAtCursor(reviewDraftMsgTextarea.value, text);
+  }
+}
 
 watch(
   () => ui.isNew,
@@ -1309,9 +1340,13 @@ function resetFreeformOverrides(): void {
           </div>
           <template v-if="newMode === 'freeform'">
             <div class="field">
-              <label for="nt-freeform">Describe the task</label>
+              <div class="field-header">
+                <label for="nt-freeform">Describe the task</label>
+                <VoiceDictate @transcribed="onFreeformTranscribed" />
+              </div>
               <textarea
                 id="nt-freeform"
+                ref="freeformTextarea"
                 v-model="freeformText"
                 class="ff-textarea"
                 rows="10"
@@ -1783,14 +1818,17 @@ function resetFreeformOverrides(): void {
               <div v-else class="md-card-body">No spec yet — click to add.</div>
             </div>
             <template v-else>
-              <textarea
-                ref="specTextarea"
-                class="md-edit"
-                v-model="draft.body"
-                rows="12"
-                placeholder="Markdown body"
-                @input="autoGrowSpec"
-              ></textarea>
+              <div class="spec-textarea-wrapper">
+                <textarea
+                  ref="specTextareaEl"
+                  class="md-edit"
+                  v-model="draft.body"
+                  rows="12"
+                  placeholder="Markdown body"
+                  @input="autoGrowSpec"
+                ></textarea>
+                <VoiceDictate @transcribed="onSpecTranscribed" />
+              </div>
               <div class="spec-hint">Click Save to apply the spec.</div>
             </template>
           </div>
@@ -2013,14 +2051,21 @@ function resetFreeformOverrides(): void {
             </button>
           </div>
           <div class="agent-input-row">
-            <textarea
-              v-model="draftMsg"
-              class="agent-input"
-              rows="2"
-              placeholder="Send a follow-up to the task's agent session…"
-              :disabled="agentBusy || ui.saving"
-              @keydown.enter.exact.prevent="sendTurn"
-            ></textarea>
+            <div class="agent-input-wrapper">
+              <textarea
+                ref="draftMsgTextarea"
+                v-model="draftMsg"
+                class="agent-input"
+                rows="2"
+                placeholder="Send a follow-up to the task's agent session…"
+                :disabled="agentBusy || ui.saving"
+                @keydown.enter.exact.prevent="sendTurn"
+              ></textarea>
+              <VoiceDictate
+                :disabled="agentBusy || ui.saving"
+                @transcribed="onDraftMsgTranscribed"
+              />
+            </div>
             <Button
               variant="accent"
               size="sm"
@@ -2157,14 +2202,21 @@ function resetFreeformOverrides(): void {
           </div>
 
           <div class="agent-input-row">
-            <textarea
-              v-model="reviewDraftMsg"
-              class="agent-input"
-              rows="2"
-              placeholder="Ask the reviewer a follow-up question…"
-              :disabled="review?.running || reviewBusy || ui.saving"
-              @keydown.enter.exact.prevent="sendReviewTurn"
-            ></textarea>
+            <div class="agent-input-wrapper">
+              <textarea
+                ref="reviewDraftMsgTextarea"
+                v-model="reviewDraftMsg"
+                class="agent-input"
+                rows="2"
+                placeholder="Ask the reviewer a follow-up question…"
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @keydown.enter.exact.prevent="sendReviewTurn"
+              ></textarea>
+              <VoiceDictate
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @transcribed="onReviewDraftMsgTranscribed"
+              />
+            </div>
             <Button
               variant="accent"
               size="sm"

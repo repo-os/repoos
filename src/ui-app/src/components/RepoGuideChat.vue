@@ -5,6 +5,8 @@ import { renderMarkdown } from "../lib/markdown";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
+import VoiceDictate from "./VoiceDictate.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 
 const CHAT_ID = "repoos-guide";
 const repo = useRepoStore();
@@ -15,6 +17,7 @@ const submitting = ref(false);
 const hydratedEnabled = ref(true);
 const hydratedAgent = ref<Agent | null>(null);
 const log = ref<HTMLElement | null>(null);
+const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 
 interface ChatResponse {
   ok: boolean;
@@ -124,6 +127,12 @@ function onKeydown(event: KeyboardEvent): void {
   void send();
 }
 
+function onDraftTranscribed(text: string): void {
+  if (draftTextarea.value) {
+    insertTextAtCursor(draftTextarea.value, text);
+  }
+}
+
 watch(() => lines.value.length, () => {
   if (open.value) scrollToLatest();
 });
@@ -175,6 +184,7 @@ onMounted(() => void hydrate());
 
       <form class="guide-compose" @submit.prevent="send">
         <textarea
+          ref="draftTextarea"
           v-model="draft"
           rows="1"
           :disabled="!enabled"
@@ -182,6 +192,7 @@ onMounted(() => void hydrate());
           aria-label="Message Ross"
           @keydown="onKeydown"
         ></textarea>
+        <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
         <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
           <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
         </button>

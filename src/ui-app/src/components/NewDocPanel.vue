@@ -5,9 +5,11 @@ import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
+import { insertTextAtCursor } from "../utils/text-insertion";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import VoiceDictate from "./VoiceDictate.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -165,6 +167,21 @@ watch(freeformLines, () => {
     if (el) el.scrollTop = el.scrollHeight;
   });
 });
+
+const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
+const docBodyTextarea = ref<HTMLTextAreaElement | null>(null);
+
+function onFreeformTranscribed(text: string): void {
+  if (freeformTextarea.value) {
+    insertTextAtCursor(freeformTextarea.value, text);
+  }
+}
+
+function onDocBodyTranscribed(text: string): void {
+  if (docBodyTextarea.value) {
+    insertTextAtCursor(docBodyTextarea.value, text);
+  }
+}
 </script>
 
 <template>
@@ -206,9 +223,13 @@ watch(freeformLines, () => {
       <div class="drawer-body">
         <template v-if="newMode === 'freeform'">
           <div class="field">
-            <label for="nd-freeform">Describe the document</label>
+            <div class="field-header">
+              <label for="nd-freeform">Describe the document</label>
+              <VoiceDictate @transcribed="onFreeformTranscribed" />
+            </div>
             <textarea
               id="nd-freeform"
+              ref="freeformTextarea"
               v-model="freeformText"
               class="ff-textarea"
               rows="10"
@@ -323,9 +344,13 @@ watch(freeformLines, () => {
             />
           </div>
           <div class="field">
-            <label for="nd-content">Content</label>
+            <div class="field-header">
+              <label for="nd-content">Content</label>
+              <VoiceDictate @transcribed="onDocBodyTranscribed" />
+            </div>
             <textarea
               id="nd-content"
+              ref="docBodyTextarea"
               v-model="ui.nd.content"
               class="doc-textarea"
               rows="15"
@@ -469,6 +494,13 @@ watch(freeformLines, () => {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
+}
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .field label {

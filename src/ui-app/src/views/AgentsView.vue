@@ -17,6 +17,8 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
+import VoiceDictate from "../components/VoiceDictate.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -64,6 +66,23 @@ const CLI_LABELS: Record<string, string> = {
   "qwen code": "qwen code",
   codex: "codex",
 };
+
+const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();
+const customInstrRefs = new Map<string, HTMLTextAreaElement | null>();
+
+function onDefaultInstrTranscribed(agentName: string, text: string): void {
+  const textarea = defaultInstrRefs.get(agentName);
+  if (textarea) {
+    insertTextAtCursor(textarea, text);
+  }
+}
+
+function onCustomInstrTranscribed(agentName: string, text: string): void {
+  const textarea = customInstrRefs.get(agentName);
+  if (textarea) {
+    insertTextAtCursor(textarea, text);
+  }
+}
 
 const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
@@ -146,6 +165,13 @@ function removeCustom(a: Agent): void {
 
 function setInstr(a: Agent, e: Event): void {
   a.instructions = (e.target as HTMLTextAreaElement).value;
+}
+
+function updateAgentInstr(a: Agent): void {
+  const focused = document.activeElement;
+  if (focused instanceof HTMLTextAreaElement && focused.value !== a.instructions) {
+    a.instructions = focused.value;
+  }
 }
 
 function validatedAgents(): Agent[] | undefined {
@@ -385,13 +411,18 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+              </div>
               <textarea
+                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
                 :value="a.instructions ?? ''"
                 class="agent-instr"
                 rows="2"
                 placeholder="Optional — how this agent should behave"
                 @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
               ></textarea>
             </div>
           </div>
@@ -479,13 +510,18 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onCustomInstrTranscribed(a.name, $event)" />
+              </div>
               <textarea
+                :ref="(el: any) => customInstrRefs.set(a.name, el)"
                 :value="a.instructions ?? ''"
                 class="agent-instr"
                 rows="2"
                 placeholder="Optional — how this agent should behave"
                 @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
               ></textarea>
             </div>
           </div>

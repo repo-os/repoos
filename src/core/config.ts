@@ -14,6 +14,7 @@ import type {
   Assignee,
   Theme,
   UiTheme,
+  WhisperConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
 
@@ -125,6 +126,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   autoEngineeringMode: false,
   maxActiveTasks: 3,
+  whisper: {
+    provider: "none",
+    apiKey: "",
+  },
 };
 
 /**

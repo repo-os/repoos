@@ -180,6 +180,8 @@ import {
   detectInstalledAgents,
   // Notifications
   testNotification,
+  // Transcription
+  transcribe,
   // UI routes
   serveManifest,
   serveIcon,
@@ -1183,6 +1185,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
+
+  // Transcription routes
+  router.register("POST", "/api/transcribe", transcribe);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
