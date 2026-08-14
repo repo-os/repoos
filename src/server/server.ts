@@ -765,6 +765,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }
+      if (runner.isHandoffInFlight(request.taskId)) {
+        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
+        return;
+      }
       const task = index.getTask(request.taskId);
       if (!task) {
         runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
