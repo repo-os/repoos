@@ -2,14 +2,14 @@
 id: "0176"
 title: "Add bun:sqlite and track ALL AI session stats (engineer, reviewer, PM, Ross, CTO, tech-debt, ...)"
 type: feature
-status: active
+status: review
 priority: p1
 area: core + server + ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/add-bun-sqlite-and-track-all-ai-session-
 created_at: "2026-08-13T15:26:25Z"
-updated_at: "2026-08-14T00:08:28Z"
+updated_at: "2026-08-14T08:42:00Z"
 ---
 ## Problem
 Every AI conversation in RepoOS currently keeps its stats (time, tokens, cost) only in memory — per session, live in a panel, never durably stored, never aggregated. And task sessions are the only ones with any usage extraction at all. Ross chat, the PM/tech-debt agents, reviewer runs, and (soon) the CTO chat have no tracking at all. #0118's 4+ review rounds cost real money with zero visibility.
@@ -50,3 +50,4 @@ This task puts a real store in the project — `bun:sqlite` — and makes sessio
 
 - 2026-08-13T15:26:25Z · created · unknown
 - 2026-08-14T00:08:28Z · status ready→active, branch
+- 2026-08-14T08:42:00Z · status active→review
