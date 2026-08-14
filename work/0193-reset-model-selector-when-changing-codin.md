@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/reset-model-selector-when-changing-codin
+cli_override: claude code
 created_at: "2026-08-14T10:03:13Z"
-updated_at: "2026-08-14T11:06:34Z"
+updated_at: "2026-08-14T12:00:02Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ When a user changes the coding agent, the model selector should automatically re
 - 2026-08-14T10:06:40Z · status inbox→ready
 - 2026-08-14T10:57:34Z · status ready→active, branch
 - 2026-08-14T11:06:34Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-14T12:00:02Z · cli_override
