@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -16,6 +16,16 @@ const repo = useRepoStore();
 
 const busy = ref(false);
 const dragging = ref(false);
+
+/** Diff stats for this task. */
+const diffStats = computed(() => {
+  return repo.diffStatsFor(props.task.id);
+});
+
+/** Load diff stats when card is rendered. */
+onMounted(() => {
+  void repo.loadDiffStats(props.task.id);
+});
 
 function onDragStart(e: DragEvent): void {
   if (!props.dragEnabled) return;
@@ -195,6 +205,12 @@ async function openAgent(): Promise<void> {
       <span class="chip">{{ task.area }}</span>
       <span v-if="task.assignee !== 'ai'" class="chip">
         {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
+      </span>
+      <span v-if="diffStats && diffStats.filesChanged > 0" class="chip diff-stats-chip" :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`">
+        {{ diffStats.filesChanged }}f {{diffStats.additions}}+
+      </span>
+      <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="chip diff-stats-empty" title="No code changes">
+        0 changes
       </span>
     </div>
     <div class="tc-foot">

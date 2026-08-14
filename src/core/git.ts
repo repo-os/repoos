@@ -369,6 +369,51 @@ export function branchChangesSinceBase(
   return { base, paths: [...new Set([...committed, ...uncommitted])] };
 }
 
+export interface DiffStats {
+  filesChanged: number;
+  additions: number;
+  deletions: number;
+}
+
+/**
+ * Get diff statistics comparing a branch to main.
+ * Returns file count and line additions/deletions.
+ */
+export function getDiffStats(
+  worktree: string,
+  baseBranch: string,
+): DiffStats {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
+
+  const statOutput = git(worktree, ["diff", "--stat", baseFull, "HEAD"]);
+  if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+
+  let filesChanged = 0;
+  let additions = 0;
+  let deletions = 0;
+
+  // Parse output like: "src/file.ts | 10 ++++--"
+  for (const line of statOutput.split("\n")) {
+    const match = line.match(/\s+\|\s+(\d+)\s+([\+\-]*)/);
+    if (match) {
+      filesChanged++;
+      const changeLine = match[2];
+      const numChanges = parseInt(match[1], 10);
+      const plusCount = (changeLine.match(/\+/g) || []).length;
+      const minusCount = (changeLine.match(/\-/g) || []).length;
+
+      // Distribute changes proportionally
+      if (plusCount + minusCount > 0) {
+        additions += Math.floor(numChanges * (plusCount / (plusCount + minusCount)));
+        deletions += Math.floor(numChanges * (minusCount / (plusCount + minusCount)));
+      }
+    }
+  }
+
+  return { filesChanged, additions, deletions };
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;

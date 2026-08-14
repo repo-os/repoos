@@ -199,6 +199,8 @@ export const useRepoStore = defineStore("repo", () => {
   const reviews = ref<Record<string, ReviewState>>({});
   /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
   const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
+  /** Diff statistics per task: files changed, additions, deletions. */
+  const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
@@ -820,6 +822,29 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Load diff statistics for a task. Best-effort. */
+  async function loadDiffStats(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        stats: { filesChanged: number; additions: number; deletions: number };
+        noBranch?: boolean;
+        noWorktree?: boolean;
+      }>(`/api/tasks/${id}/diff-stats`);
+      if (r.ok) {
+        diffStats.value = {
+          ...diffStats.value,
+          [id]: r.stats,
+        };
+      }
+    } catch {
+      /* endpoint unavailable — diff stats are nice-to-have */
+    }
+  }
+
+  /** Get diff stats for a task, or undefined if not yet fetched. */
+  const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
+
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
     if (!outputs.value[id]) return;
@@ -1078,6 +1103,8 @@ export const useRepoStore = defineStore("repo", () => {
     reviewFor,
     cto,
     loadCTO,
+    loadDiffStats,
+    diffStatsFor,
     sendMessage,
     reviewAgain,
     sendReviewMessage,
