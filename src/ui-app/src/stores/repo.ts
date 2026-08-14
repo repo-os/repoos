@@ -7,6 +7,7 @@ import type {
   AgentSessionStats,
   AutoEngineeringState,
   Counts,
+  CtoState,
   Health,
   RepoEvent,
   RepoIndex,
@@ -99,6 +100,13 @@ const OUTPUT_MAX_LINES = 2000;
  */
 const REVIEW_SESSION_PREFIX = "review:";
 
+/**
+ * SSE id of the CTO board-monitor conversation (0174). Its `agent.output`
+ * events stream under this id so they never mix with task transcripts; the
+ * panel renders them from the store's `cto.lines` buffer.
+ */
+const CTO_SESSION_ID = "cto:board";
+
 export const STATUS_COLORS: Record<string, string> = {
   draft: "#3a4055",
   inbox: "#566081",
@@ -189,6 +197,8 @@ export const useRepoStore = defineStore("repo", () => {
   const doneErrors = ref<Record<string, DoneError>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
+  /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
+  const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
@@ -372,6 +382,15 @@ export const useRepoStore = defineStore("repo", () => {
       }
       pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
+      if (e.id === CTO_SESSION_ID) {
+        // CTO board-monitor conversation output — routed to the CTO panel's
+        // lines buffer, never into a task transcript.
+        cto.value = {
+          ...cto.value,
+          lines: [...cto.value.lines, e.entry].slice(-OUTPUT_MAX_LINES),
+        };
+        return;
+      }
       if (e.id.startsWith(REVIEW_SESSION_PREFIX)) {
         // Reviewer conversation output — routed to the review lines buffer,
         // never into the engineer transcript.
@@ -453,6 +472,14 @@ export const useRepoStore = defineStore("repo", () => {
           "review",
         );
       }
+    } else if (e.type === "cto") {
+      // The CTO monitor started or finished a pass. Track it live; when a run
+      // ends (ready/failed/cancelled) pull the authoritative report, which is
+      // written only once the run completes.
+      cto.value = { ...cto.value, running: e.state === "running" };
+      if (e.state !== "running") {
+        void loadCTO();
+      }
     } else if (e.type === "index.rebuilt") {
       void refresh();
     } else if (e.type === "system.stats") {
@@ -486,11 +513,14 @@ export const useRepoStore = defineStore("repo", () => {
       void refreshAutoEng().catch(() => {
         /* non-fatal hydration */
       });
+      void loadCTO().catch(() => {
+        /* non-fatal hydration */
+      });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -754,6 +784,32 @@ export const useRepoStore = defineStore("repo", () => {
   /** The review state for a task, or null when it has not been fetched. */
   const reviewFor = (id: string): ReviewState | null => reviews.value[id] ?? null;
 
+  /**
+   * Fetch the CTO board monitor's state (0174): enabled/running flags, the
+   * latest report, and the persisted conversation. Best-effort — a disabled or
+   * never-run CTO simply yields its empty state.
+   */
+  async function loadCTO(): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        enabled: boolean;
+        running: boolean;
+        report: { markdown: string; at: string } | null;
+        lines?: AgentOutputEntry[];
+      }>("/api/cto");
+      if (!r.ok) return;
+      cto.value = {
+        running: r.running,
+        enabled: r.enabled,
+        report: r.report,
+        lines: r.lines ?? [],
+      };
+    } catch {
+      /* endpoint unavailable — the panel falls back to its empty state */
+    }
+  }
+
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
     if (!outputs.value[id]) return;
@@ -1010,6 +1066,8 @@ export const useRepoStore = defineStore("repo", () => {
     clearOutput,
     loadReview,
     reviewFor,
+    cto,
+    loadCTO,
     sendMessage,
     reviewAgain,
     sendReviewMessage,
