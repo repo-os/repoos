@@ -2,14 +2,14 @@
 id: "0185"
 title: Always-on service management (launchd/systemd) with settings toggle and onboarding prompt
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T04:16:57Z"
-updated_at: "2026-08-14T04:16:57Z"
+updated_at: "2026-08-14T04:18:54Z"
 ---
 ## Activity
 
@@ -105,3 +105,7 @@ without OS-level crash supervision — not an edge case.
 - Consider whether the "watchdog" should itself be a tiny standalone
   script/binary repoos ships, versus asking users to trust a second
   always-running thing — simplicity here matters more than cleverness.
+
+## Activity
+
+- 2026-08-14T04:18:54Z · status inbox→ready
