@@ -2,14 +2,14 @@
 id: "0167"
 title: Remove unused code
 type: chore
-status: ready
+status: active
 priority: p2
 area: tech-debt
 assigned_to: unassigned
 created_by: tech-debt-agent
-branch: ""
+branch: feat/remove-unused-code
 created_at: "2026-08-13T13:45:29.814Z"
-updated_at: "2026-08-13T17:59:49Z"
+updated_at: "2026-08-14T03:33:52Z"
 ---
 ## Issues Identified
 
@@ -73,3 +73,4 @@ updated_at: "2026-08-13T17:59:49Z"
 ## Activity
 
 - 2026-08-13T17:59:49Z · status inbox→ready
+- 2026-08-14T03:33:52Z · status ready→active, branch
