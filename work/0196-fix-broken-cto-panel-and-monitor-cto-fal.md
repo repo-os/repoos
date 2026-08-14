@@ -2,14 +2,14 @@
 id: "0196"
 title: "Fix broken CTO panel and monitor (CTO false button, agent never resolves, no SSE)"
 type: bug
-status: review
+status: done
 priority: p1
 area: server + ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/fix-broken-cto-panel-and-monitor-cto-fal
 created_at: "2026-08-14T12:24:13Z"
-updated_at: "2026-08-14T12:44:13Z"
+updated_at: "2026-08-14T14:46:15Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Fixes applied on branch `feat/fix-broken-cto-panel-and-monitor-cto-fal` (commit 
 
 `repoos check` passes (build, css-layers, theme-contrast, 44 tests). UI smoke skipped: webkit binary not installed. New store test covers /api/cto hydration, cto:board output routing, and the ready -> reload path.
 - 2026-08-14T12:44:12Z · status active→review, body
+- 2026-08-14T14:46:15Z · status review→done, release:success
