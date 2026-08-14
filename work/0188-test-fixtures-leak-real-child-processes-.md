@@ -2,14 +2,14 @@
 id: "0188"
 title: Test fixtures leak real child processes on interrupt across the suite (vitest worker-thread signal gap)
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T06:34:37Z"
-updated_at: "2026-08-14T06:34:37Z"
+updated_at: "2026-08-14T10:32:36Z"
 ---
 ## Activity
 
@@ -83,3 +83,7 @@ archaeology needed to notice or fix a leak.
   actually solve the problem either (forked child processes might still be
   killed abruptly rather than signaled cleanly by vitest's own interrupt
   handling — untested).
+
+## Activity
+
+- 2026-08-14T10:32:36Z · status inbox→ready
