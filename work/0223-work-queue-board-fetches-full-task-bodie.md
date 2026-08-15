@@ -11,7 +11,7 @@ branch: feat/work-queue-board-fetches-full-task-bodie
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T10:04:18Z"
-updated_at: "2026-08-15T16:55:03Z"
+updated_at: "2026-08-15T16:55:07Z"
 ---
 ## Problem
 
