@@ -2,14 +2,14 @@
 id: "0215"
 title: Close-out failure UI shows merge-conflict advice for non-conflict failures
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T07:05:46Z"
-updated_at: "2026-08-15T07:05:46Z"
+updated_at: "2026-08-15T11:05:53Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ The failure message should match the phase that failed:
 ## Activity
 
 - 2026-08-15T07:05:46Z · created · unknown
+- 2026-08-15T11:05:53Z · status inbox→ready
