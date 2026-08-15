@@ -162,6 +162,7 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
     pendingReview: new Set<string>(),
     uiDir: null,
     reload: null,
+    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as unknown as RouteContext["logger"],
     onServerStatusChange: () => {},
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
