@@ -2,14 +2,15 @@
 id: "0216"
 title: Orphaned serve processes starve the close-out gate and cause false failures
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/orphaned-serve-processes-starve-the-clos
+pm_model_override: default
 created_at: "2026-08-15T07:06:54Z"
-updated_at: "2026-08-15T09:06:18Z"
+updated_at: "2026-08-15T10:32:42Z"
 ---
 ## Problem
 
@@ -88,3 +89,5 @@ The user-visible effect: "Move to done" fails repeatedly with a different unrela
 - 2026-08-15T08:18:45Z · status ready→active, branch
 - 2026-08-15T08:26:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T09:06:18Z · body
+- 2026-08-15T10:31:56Z · status ready→active
+- 2026-08-15T10:32:42Z · pm_model_override
