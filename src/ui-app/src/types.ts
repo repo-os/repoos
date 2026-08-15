@@ -118,7 +118,8 @@ export interface RepoIndex {
   counts: Counts;
 }
 
-/** Lightweight task view for board cards — no body, extra, or agent overrides. */
+/** Lightweight task view for board cards — no full body, extra, or agent overrides.
+ * Includes a body preview for search and releasedAt for the release timeline. */
 export interface BoardTask {
   id: string;
   title: string;
@@ -135,6 +136,10 @@ export interface BoardTask {
   tags: string[];
   created_at: string | null;
   updated_at: string | null;
+  /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
+  releasedAt: string | null;
+  /** Truncated body preview for search (first 500 chars). */
+  bodyPreview: string;
   path: string;
   absPath: string;
   git: {

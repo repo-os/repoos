@@ -379,8 +379,9 @@ export interface RepoIndex {
 
 /**
  * Lightweight task view for the board — everything TaskCard.vue renders,
- * without the body, extra, agent overrides, or activity (saved ~4-5 KB per
- * task at current task counts).
+ * without the full body, extra, agent overrides, or activity (saved ~4-5 KB per
+ * task at current task counts). Includes a body preview for search and
+ * releasedAt for the release timeline.
  */
 export interface BoardTask {
   id: string;
@@ -398,6 +399,10 @@ export interface BoardTask {
   tags: string[];
   created_at: string | null;
   updated_at: string | null;
+  /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
+  releasedAt: string | null;
+  /** Truncated body preview for search (first 500 chars). */
+  bodyPreview: string;
   path: string;
   absPath: string;
   git: TaskGitInfo;
