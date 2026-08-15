@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
+cli_override: claude code
+model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:51:42Z"
+updated_at: "2026-08-15T07:53:42Z"
 ---
 ## Problem
 
@@ -65,3 +67,4 @@ actions appear as they do today.
 - 2026-08-15T05:56:19Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T07:44:44Z · status review→ready
 - 2026-08-15T07:44:58Z · status ready→active
+- 2026-08-15T07:53:42Z · cli_override, model_override
