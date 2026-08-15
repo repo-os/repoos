@@ -2,7 +2,7 @@
 id: "0200"
 title: Re-enable the disabled headless UI smoke test
 type: bug
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: ui
@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/re-enable-the-disabled-headless-ui-smoke
 model_override: default
 created_at: "2026-08-14T15:19:46Z"
-updated_at: "2026-08-15T16:50:04Z"
+updated_at: "2026-08-15T16:59:48Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ message (preserving the existing behavior).
 - 2026-08-15T13:13:12Z · model_override
 - 2026-08-15T16:50:01Z · status active→review
 - 2026-08-15T16:50:04Z · needs_merge
+- 2026-08-15T16:59:48Z · status review→done, release:success
