@@ -3,6 +3,7 @@ id: "0195"
 title: Add tab navigation to agents page
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
@@ -53,3 +54,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T03:53:41Z · status ready→active
 - 2026-08-15T05:42:21Z · model_override
 - 2026-08-15T05:42:39Z · status active→review
+- 2026-08-15T05:42:39Z · needs_merge
