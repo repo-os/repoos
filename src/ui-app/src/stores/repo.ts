@@ -6,6 +6,7 @@ import type {
   AgentOutputEntry,
   AgentSessionStats,
   AutoEngineeringState,
+  BoardIndex,
   Counts,
   CtoState,
   Health,
@@ -633,13 +634,24 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function refresh(): Promise<void> {
-    const idx = await api<RepoIndex>("/api/index");
-    // /api/index has no preview state; keep any live previews across rebuilds.
+    const idx = await api<BoardIndex>("/api/board");
+    // /api/board has no preview state; keep any live previews across rebuilds.
     const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
     tasks.value = idx.tasks.map((t) => ({
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
-    }));
+      // The board response omits body, extra, and agent overrides. Set them
+      // to empty defaults so task lookups never blow up with undefined fields.
+      body: "",
+      extra: {},
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+      pmAgentOverride: null,
+      pmCliOverride: null,
+      pmModelOverride: null,
+      releasedAt: null,
+    })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
     // was running. Reports remain lazy-loaded by the drawer, but cards get
     // their live activity state immediately.
