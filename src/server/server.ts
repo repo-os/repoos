@@ -142,6 +142,8 @@ import {
   getChat,
   sendChatMessage,
   initInfoHandlers,
+  getDebugger,
+  sendDebuggerMessage,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -1159,6 +1161,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("GET", "/api/debugger", getDebugger);
+  router.register("POST", "/api/debugger/message", sendDebuggerMessage);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
