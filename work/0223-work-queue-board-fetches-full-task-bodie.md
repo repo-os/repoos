@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
+pm_model_override: default
 created_at: "2026-08-15T10:04:18Z"
-updated_at: "2026-08-15T10:06:31Z"
+updated_at: "2026-08-15T12:20:51Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ The work-queue board loads quickly regardless of task count, and does not visibl
 
 - 2026-08-15T10:04:18Z · created · unknown
 - 2026-08-15T10:06:31Z · model_override
+- 2026-08-15T12:20:51Z · pm_model_override
