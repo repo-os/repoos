@@ -991,6 +991,16 @@ function schedulePmOverrideSave(): void {
   }, 500);
 }
 
+/** Same CLI→model reset for the PM tab. */
+watch(
+  () => pmOverrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    pmOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
 watch(
   () => [pmOverrideDraft.agent, pmOverrideDraft.cli, pmOverrideDraft.model],
   () => {
@@ -1375,6 +1385,21 @@ function scheduleAgentOverrideSave(): void {
   }, 500);
 }
 
+/**
+ * When the CLI changes, reset the model to the new CLI's default.
+ * This must happen synchronously during the same microtask as the v-model
+ * update so the auto-save (which fires via a separate watch) captures the
+ * correct model value — no flicker, no stale-model-then-fix cycle.
+ */
+watch(
+  () => overrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    overrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
 watch(
   () => [overrideDraft.agent, overrideDraft.cli, overrideDraft.model],
   () => {
@@ -1448,6 +1473,16 @@ const freeformIsCustom = computed(() => {
     freeformOverride.model !== base.model
   );
 });
+
+/** Same CLI→model reset for the freeform pane. */
+watch(
+  () => freeformOverride.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
 
 /** Reset freeform overrides to the PM agent defaults. */
 function resetFreeformOverrides(): void {
