@@ -182,14 +182,32 @@ export class CloseOutOrchestrator {
       }
 
       // Validating phase: run the full gate (build, check) on the candidate.
+      //
+      // The gate is retried once before the job is failed (#0216). A false
+      // failure here is expensive — the branch is green, but the task is
+      // stranded in review and the user cannot tell contention from a real
+      // regression. The retry also classifies the failure, which is the part
+      // that actually helps: a genuine defect reproduces with the SAME reason
+      // (Node-version-dependent breakage did exactly this on #0205, failing
+      // identically twice), whereas load-induced failures land on a different
+      // test each run (#0211 failed on two unrelated tests). Two attempts is
+      // the cap — this must never loop.
       if (job.phase === "validating") {
-        const validateRes = await this.validateCandidate(job);
+        let validateRes = await this.validateCandidate(job);
         if (!validateRes.ok) {
-          this.coordinator.updateJob(job.taskId, {
-            phase: PHASE_FAILED,
-            reason: validateRes.reason,
-          });
-          return validateRes;
+          const firstReason = validateRes.reason ?? "unknown";
+          validateRes = await this.validateCandidate(job);
+          if (!validateRes.ok) {
+            const secondReason = validateRes.reason ?? "unknown";
+            const reason = firstReason === secondReason
+              ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
+              : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
+            this.coordinator.updateJob(job.taskId, {
+              phase: PHASE_FAILED,
+              reason,
+            });
+            return { ok: false, reason };
+          }
         }
         job = this.coordinator.updateJob(job.taskId, {
           phase: "publishing",
