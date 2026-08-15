@@ -26,6 +26,8 @@ export interface GitRun {
   status: number | null;
   stdout: string;
   stderr: string;
+  /** True when the child was SIGKILLed because it exceeded the timeout. */
+  timedOut?: boolean;
 }
 
 /**
@@ -45,11 +47,12 @@ export function runGit(
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
+    let timedOut = false;
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      resolve({ status, stdout, stderr });
+      resolve({ status, stdout, stderr, timedOut });
     };
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
@@ -58,7 +61,10 @@ export function runGit(
       finish(null);
     });
     child.on("close", (code: number | null) => finish(code));
-    timer = setTimeout(() => child.kill("SIGKILL"), timeout);
+    timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeout);
   });
 }
 
@@ -615,25 +621,55 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
  * including tracked modifications and untracked files, in repo-relative form.
  * Used by the close-out flow to check `main` before merging: a dirty tree
  * aborts `git merge`, so the UI surfaces these so it can offer to commit them.
- * Returns an empty array when the tree is clean or git is unavailable.
+ *
+ * FAILS CLOSED: returns `[]` only for a genuinely clean tree (git exit 0 with
+ * empty output). Any git failure — a non-zero exit, a timeout, or git being
+ * unavailable — throws `GitDirtyCheckError` instead, so a caller cannot
+ * mistake an unknown state for a clean tree and silently proceed into a merge
+ * that git will abort. This is the fix for #0211, where the old fail-open
+ * behaved that way under load.
  */
+export class GitDirtyCheckError extends Error {
+  readonly causeKind: "timeout" | "git-error" | "no-repo";
+  constructor(causeKind: "timeout" | "git-error" | "no-repo", detail?: string) {
+    super(
+      `could not determine the dirty state of the checkout${detail ? `: ${detail}` : ""}`,
+    );
+    this.name = "GitDirtyCheckError";
+    this.causeKind = causeKind;
+  }
+}
+
 export async function dirtyFiles(root: string): Promise<string[]> {
   const out = await runGit(root, ["status", "--porcelain"], 4000);
-  if (out.status !== 0 || !out.stdout || out.stdout.trim() === "") return [];
-  return out.stdout
-    .split("\n")
-    .map((l) => l.replace(/\r$/, ""))
-    .map((l) => {
-      // Porcelain v1 short format is two status columns, a separator space,
-      // then the repo-relative path (`XY path`). We read the raw stdout here
-      // (not the shared `git()` helper, whose `.trim()` eats the first line's
-      // leading status column) so the fixed-width parse stays column-accurate.
-      const stripped = l.slice(3).trim();
-      // Renames/renames-with-changes encode the old path before the new one.
-      const arrow = stripped.indexOf(" -> ");
-      return arrow === -1 ? stripped : stripped.slice(arrow + 4);
-    })
-    .filter(Boolean);
+  // A genuinely clean tree is git exit 0 with empty output.
+  if (out.status === 0 && (!out.stdout || out.stdout.trim() === "")) return [];
+  // Fail closed: a timeout, a spawn failure (status null), or a non-zero exit
+  // all mean "unknown", not "clean". Surface which so the caller can explain.
+  if (out.timedOut) {
+    throw new GitDirtyCheckError("timeout", "git status exceeded its time budget");
+  }
+  if (out.status === 0) {
+    // Exit 0 with non-empty output: genuinely dirty files to list.
+    return out.stdout
+      .split("\n")
+      .map((l) => l.replace(/\r$/, ""))
+      .map((l) => {
+        // Porcelain v1 short format is two status columns, a separator space,
+        // then the repo-relative path (`XY path`). We read the raw stdout here
+        // (not the shared `git()` helper, whose `.trim()` eats the first line's
+        // leading status column) so the fixed-width parse stays column-accurate.
+        const stripped = l.slice(3).trim();
+        // Renames/renames-with-changes encode the old path before the new one.
+        const arrow = stripped.indexOf(" -> ");
+        return arrow === -1 ? stripped : stripped.slice(arrow + 4);
+      })
+      .filter(Boolean);
+  }
+  const detail =
+    out.stderr.split("\n").filter(Boolean).slice(0, 2).join(" ").trim() ||
+    (out.status === null ? "git did not run" : `git exited ${out.status}`);
+  throw new GitDirtyCheckError(out.status === null ? "no-repo" : "git-error", detail);
 }
 
 /**

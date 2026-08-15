@@ -249,7 +249,8 @@ export type RepoEvent =
         decision: AutoEngineeringDecision | null;
       };
       at: string;
-    };
+    }
+  | { type: "integration"; pipeline: IntegrationPipelineSnapshot };
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */
 export interface AutoEngineeringDecision {
@@ -263,6 +264,26 @@ export interface AutoEngineeringDecision {
   selectedIds: string[];
   rationale?: string;
   error?: string;
+}
+
+/** The five discrete stages of the integration pipeline, in order (0207). */
+export const INTEGRATION_STAGES = ["sync", "merge", "build", "check", "done"] as const;
+export type IntegrationStage = (typeof INTEGRATION_STAGES)[number];
+
+/** Live read-model of the integration pipeline for the pinned status bar (0207). */
+export interface IntegrationPipelineSnapshot {
+  /** True when nothing is queued or in progress — the idle empty state. */
+  empty: boolean;
+  /** The task currently being integrated, or null when none is in flight. */
+  active: {
+    taskId: string;
+    stage: IntegrationStage | null;
+    failed: boolean;
+    error?: string;
+  } | null;
+  /** Task ids queued behind the active job, in FIFO order. */
+  queue: string[];
+  at: string;
 }
 
 /** Auto-engineering mode state shown on the Control page. */
@@ -372,6 +393,25 @@ export interface ProcessInfo {
   unverified: boolean;
 }
 
+export interface ServeProcessInfo {
+  pid: number;
+  ppid: number;
+  port: number | null;
+  root: string | null;
+  rootExists: boolean;
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
+}
+
+/** Machine-wide `repoos serve` census — see #0216. */
+export interface ServeScan {
+  total: number;
+  strays: number;
+  inFlight: number;
+  deadRoot: number;
+  level: "ok" | "notice" | "warn";
+  processes: ServeProcessInfo[];
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -380,6 +420,7 @@ export interface SystemStats {
     memPercent: number;
   };
   processes: ProcessInfo[];
+  serve: ServeScan | null;
   serverPid: number;
   at: string;
 }

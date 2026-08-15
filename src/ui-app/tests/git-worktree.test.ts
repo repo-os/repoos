@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureWorktree, worktreeStatus, resetWorktree, dirtyFiles, commitDirtyFiles } from "../../core/git.js";
+import { ensureWorktree, worktreeStatus, resetWorktree, dirtyFiles, commitDirtyFiles, GitDirtyCheckError } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
 function git(root: string, args: string[]): string {
@@ -349,6 +349,40 @@ describe("dirtyFiles / commitDirtyFiles (0204)", () => {
     const { root, clean } = makeRepo();
     try {
       expect(await commitDirtyFiles(root, "checkpoint")).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("dirtyFiles fails closed (#0211)", () => {
+  it("throws GitDirtyCheckError on a directory that is not a git repo, not []", async () => {
+    const notARepo = mkdtempSync(join(tmpdir(), "repoos-not-repo-"));
+    try {
+      await expect(dirtyFiles(notARepo)).rejects.toBeInstanceOf(GitDirtyCheckError);
+    } finally {
+      rmSync(notARepo, { recursive: true, force: true });
+    }
+  });
+
+  it("throws GitDirtyCheckError on a corrupted git repo, not []", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // Corrupt the git dir so `git status` fails with a non-zero exit.
+      writeFileSync(join(root, ".git", "HEAD"), "garbage\n");
+      await expect(dirtyFiles(root)).rejects.toBeInstanceOf(GitDirtyCheckError);
+    } finally {
+      clean();
+    }
+  });
+
+  it("returns [] only for a genuinely clean tracked tree", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "a.txt"), "v1\n");
+      git(root, ["add", "a.txt"]);
+      git(root, ["commit", "-m", "add a"]);
+      expect(await dirtyFiles(root)).toEqual([]);
     } finally {
       clean();
     }

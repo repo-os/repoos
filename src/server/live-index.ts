@@ -13,6 +13,7 @@ import { join, relative, extname } from "node:path";
 import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
+import type { IntegrationSnapshot } from "./integration-status.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -99,7 +100,9 @@ export type RepoEvent =
       at: string;
     }
   | { type: "hello"; taskCount: number; at: string }
-  | { type: "system.stats"; stats: SystemStats };
+  | { type: "system.stats"; stats: SystemStats }
+  /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
+  | { type: "integration"; pipeline: IntegrationSnapshot };
 
 type Listener = (e: RepoEvent) => void;
 

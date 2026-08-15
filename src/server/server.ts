@@ -60,6 +60,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
+import { readBuildStamp } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
@@ -105,6 +106,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
@@ -161,6 +163,8 @@ import {
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
+  getIntegrationPipeline,
+  retryIntegration,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -499,7 +503,7 @@ const RELOAD_BIND_RETRY_MS = 300;
 
 /**
  * Build metadata served to the UI: the package version and the timestamp of
- * the last build (dist/.build-info.json, written by scripts/copy-assets.mjs).
+ * the last build (dist/.build-stamp.json, written by scripts/copy-assets.mjs).
  * Both are best-effort — null when unavailable so the UI can fall back.
  */
 function loadBuildInfo(): { version: string | null; buildAt: string | null } {
@@ -512,14 +516,10 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
   } catch {
     /* package.json unreadable */
   }
-  let buildAt: string | null = null;
-  try {
-    const info = JSON.parse(readFileSync(join(root, "dist", ".build-info.json"), "utf8"));
-    if (typeof info?.generatedAt === "string") buildAt = info.generatedAt;
-  } catch {
-    /* build marker missing or corrupt */
-  }
-  return { version, buildAt };
+  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
+  // marker stays deterministic; readBuildStamp falls back to the legacy
+  // inline field for installs built before the split.
+  return { version, buildAt: readBuildStamp(root) };
 }
 
 /**
@@ -678,12 +678,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Last integration-pipeline stage progress reported per task id (0207). The
+  // orchestrator's DoneStep callbacks drive the pinned status bar's stage
+  // indicator; recorded here so the live `integration` snapshot is accurate.
+  const reportedStages: Record<string, DoneStep> = {};
+
+  /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
+  const emitIntegration = (): void => {
+    emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, reportedStages) });
+  };
+
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
     if (processingJob) return;
     processingJob = true;
     setImmediate(async () => {
       try {
+        // A fresh enqueue (or recovered job) can now be seen by the status bar.
+        emitIntegration();
         const orchestrator = new CloseOutOrchestrator(
           config,
           jobCoordinator,
@@ -692,12 +704,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           (step) => {
             const job = jobCoordinator.peekNext();
             if (job) {
+              reportedStages[job.taskId] = step;
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
                 step,
                 at: new Date().toISOString(),
               });
+              emitIntegration();
             }
           },
         );
@@ -731,6 +745,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
         index.refreshBranches();
+        // Reflect the post-job pipeline state (job now done/failed, or the next
+        // queued job becoming active) in the pinned status bar (0207).
+        emitIntegration();
         // Continue processing if there are more jobs or recovered jobs
         const next = jobCoordinator.peekNext();
         if (next && next.phase !== "done" && next.phase !== "failed") {
@@ -914,6 +931,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         serverPid: process.pid,
         cacheDir: join(config.root, config.cacheDir),
         runningAgents: runner.running(),
+        knownServePids: previews.knownPids(),
       });
       emitEvent({ type: "system.stats", stats });
     } catch {
@@ -1198,6 +1216,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
+  router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
+  router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
