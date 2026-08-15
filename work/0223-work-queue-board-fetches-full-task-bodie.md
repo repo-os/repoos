@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/work-queue-board-fetches-full-task-bodie
 model_override: default
+pm_model_override: default
 created_at: "2026-08-15T10:04:18Z"
-updated_at: "2026-08-15T19:15:28Z"
+updated_at: "2026-08-15T19:15:57Z"
 ---
 ## Problem
 
@@ -52,3 +53,4 @@ The work-queue board loads quickly regardless of task count, and does not visibl
 - 2026-08-15T16:55:03Z · status active→review
 - 2026-08-15T19:15:28Z · pm_cli_override
 - 2026-08-15T19:15:28Z · pm_cli_override, pm_model_override
+- 2026-08-15T19:15:57Z · pm_model_override
