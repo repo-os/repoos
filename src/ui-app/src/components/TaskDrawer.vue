@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -11,8 +11,11 @@ import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import DirtyMainDialog from "./DirtyMainDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -85,6 +88,35 @@ const pmAgentReady = computed(() => {
 const freeformRunning = ref(false);
 /** The client-generated id that tags this run's streamed `agent.output` events. */
 const freeformRunId = ref<string | null>(null);
+
+const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
+const specTextareaEl = ref<HTMLTextAreaElement | null>(null);
+const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
+const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
+
+function onFreeformTranscribed(text: string): void {
+  if (freeformTextarea.value) {
+    insertTextAtCursor(freeformTextarea.value, text);
+  }
+}
+
+function onSpecTranscribed(text: string): void {
+  if (specTextareaEl.value) {
+    insertTextAtCursor(specTextareaEl.value, text);
+  }
+}
+
+function onDraftMsgTranscribed(text: string): void {
+  if (draftMsgTextarea.value) {
+    insertTextAtCursor(draftMsgTextarea.value, text);
+  }
+}
+
+function onReviewDraftMsgTranscribed(text: string): void {
+  if (reviewDraftMsgTextarea.value) {
+    insertTextAtCursor(reviewDraftMsgTextarea.value, text);
+  }
+}
 
 watch(
   () => ui.isNew,
@@ -335,8 +367,6 @@ const doneLabel = computed(() => {
       return "Merging branch…";
     case "build":
       return "Building…";
-    case "screenshots":
-      return "Regenerating screenshots…";
     case "check":
       return "Running repoos check…";
     case "done":
@@ -360,6 +390,12 @@ async function moveToDone(): Promise<void> {
   try {
     await repo.completeTask(ui.active);
   } catch (err) {
+    // Dirty-main guard (0204): pause and show the confirmation modal instead
+    // of an inline failure — the task stays in review until the user decides.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = ui.active;
+      return;
+    }
     // The failure is rendered inline below the button via the store's
     // per-task doneErrorFor; no global toast for this action.
     repo.onError(err);
@@ -368,6 +404,43 @@ async function moveToDone(): Promise<void> {
     stopDoneTimer();
     ui.saving = false;
   }
+}
+
+/** Dirty-main confirmation (0204): the task whose close-out is paused on
+ *  `main` having uncommitted files. `null` hides the modal. */
+const dirtyTask = ref<Task | null>(null);
+
+const dirtyFiles = computed(() =>
+  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
+);
+
+async function confirmCommitDirty(): Promise<void> {
+  const t = dirtyTask.value;
+  const files = dirtyFiles.value;
+  dirtyTask.value = null;
+  if (!t) return;
+  ui.saving = true;
+  doingDone.value = true;
+  startDoneTimer();
+  try {
+    await repo.completeTask(t, { commitDirty: true });
+  } catch (err) {
+    // Still dirty after commiting (e.g. a new file appeared) — keep asking.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = t;
+      return;
+    }
+    repo.onError(err);
+  } finally {
+    doingDone.value = false;
+    stopDoneTimer();
+    ui.saving = false;
+  }
+}
+
+function cancelDirty(): void {
+  if (ui.active) repo.clearDirtyMain(ui.active.id);
+  dirtyTask.value = null;
 }
 
 interface TaskDraft {
@@ -511,32 +584,6 @@ function cancelDraft(): void {
 /** True while a preview start/stop request is in flight. */
 const previewBusy = ref(false);
 
-/**
- * A preview is available only for active/review tasks with a branch that has a
- * git worktree checked out — the thing the preview server actually serves.
- */
-const previewable = computed(() => {
-  const t = ui.active;
-  if (!t) return false;
-  return (
-    (t.status === "active" || t.status === "review") &&
-    !!t.branch &&
-    !!t.git?.worktreeExists
-  );
-});
-
-async function startPreview(): Promise<void> {
-  if (!ui.active || previewBusy.value) return;
-  previewBusy.value = true;
-  try {
-    await repo.startPreview(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    previewBusy.value = false;
-  }
-}
-
 async function stopPreview(): Promise<void> {
   if (!ui.active || previewBusy.value) return;
   previewBusy.value = true;
@@ -559,6 +606,18 @@ async function stopPreview(): Promise<void> {
 const review = computed<ReviewState | null>(() =>
   ui.active ? repo.reviews[ui.active.id] ?? null : null,
 );
+
+/**
+ * The current review substate for a task sitting in `review`:
+ * `reviewing` (auto review in progress), `coding` (engineer making changes),
+ * or `waiting for human` (review passed, human must approve/merge).
+ */
+const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
+  if (!ui.active || ui.active.status !== "review") return null;
+  if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
+  if (repo.isRunning(ui.active.id)) return { label: "coding", cls: "rs-coding" };
+  return { label: "waiting for human", cls: "rs-human" };
+});
 
 /** Rendered (safe) Markdown of the report body. */
 const reviewHtml = computed(() =>
@@ -791,7 +850,12 @@ async function pmSend(): Promise<void> {
   try {
     await api(
       `/api/tasks/${ui.active.id}/pm/message`,
-      JSON_OPTS("POST", { text })
+      JSON_OPTS("POST", {
+        text,
+        agentOverride: pmOverrideDraft.agent || undefined,
+        cliOverride: pmOverrideDraft.cli || undefined,
+        modelOverride: pmOverrideDraft.model || undefined,
+      })
     );
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
@@ -822,6 +886,140 @@ watch(
     }
   },
 );
+
+// ---- PM agent override (task detail) ----
+
+/** The base PM agent from the Agents page. */
+const pmBaseAgent = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name === "pm") ?? null;
+});
+
+/** Whether the current task has any persisted PM override set. */
+const hasPmOverride = computed(() => {
+  const t = ui.active;
+  return !!(t && (t.pmAgentOverride || t.pmCliOverride || t.pmModelOverride));
+});
+
+/** Draft overrides for the PM tab, initialized from the task's persisted values. */
+const pmOverrideDraft = reactive({ agent: "", cli: "", model: "" });
+
+/** Snapshot of the last-saved PM override values. */
+const pmOverrideSaved = reactive({ agent: "", cli: "", model: "" });
+
+/** Initialize the PM override draft from the current task. */
+function initPmOverrideDraft(t: Task | null): void {
+  const base = pmBaseAgent.value;
+  pmOverrideDraft.agent = t?.pmAgentOverride || base?.name || "";
+  pmOverrideDraft.cli = t?.pmCliOverride || base?.cli || "";
+  pmOverrideDraft.model = t?.pmModelOverride || base?.model || "";
+  pmOverrideSaved.agent = pmOverrideDraft.agent;
+  pmOverrideSaved.cli = pmOverrideDraft.cli;
+  pmOverrideSaved.model = pmOverrideDraft.model;
+}
+
+/** True when the PM override draft differs from the saved values. */
+const pmOverrideDirty = computed(
+  () =>
+    pmOverrideDraft.agent !== pmOverrideSaved.agent ||
+    pmOverrideDraft.cli !== pmOverrideSaved.cli ||
+    pmOverrideDraft.model !== pmOverrideSaved.model,
+);
+
+/** True when the PM overrides differ from the base PM agent defaults. */
+const pmIsCustom = computed(() => {
+  const base = pmBaseAgent.value;
+  if (!base) return false;
+  return (
+    pmOverrideDraft.agent !== base.name ||
+    pmOverrideDraft.cli !== base.cli ||
+    pmOverrideDraft.model !== base.model
+  );
+});
+
+/** Model options for the PM tab's model select. */
+const pmModelOptions = computed(() =>
+  config.modelsFor(pmOverrideDraft.cli, pmOverrideDraft.model || undefined),
+);
+
+/** Initialize PM overrides when opening the PM tab, unless a draft is dirty. */
+watch(
+  () => [ui.active, ui.activeTab],
+  () => {
+    if (ui.activeTab !== "pm") return;
+    if (!pmOverrideDirty.value) initPmOverrideDraft(ui.active);
+  },
+);
+
+/** Debounced auto-save of PM overrides, mirroring the Agent tab. */
+let pmOverrideAutoSaveTimer: number | undefined;
+
+function schedulePmOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (pmOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(pmOverrideAutoSaveTimer);
+  }
+  pmOverrideAutoSaveTimer = window.setTimeout(async () => {
+    pmOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !pmOverrideDirty.value) return;
+    const base = pmBaseAgent.value;
+    // Snapshot the values being sent so the saved-baseline sync never claims a
+    // newer in-flight draft change was persisted (dirty stays true → re-arms).
+    const sent = {
+      agent: pmOverrideDraft.agent,
+      cli: pmOverrideDraft.cli,
+      model: pmOverrideDraft.model,
+    };
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
+    try {
+      await repo.patchTask(taskId, {
+        pmAgentOverride: agentVal,
+        pmCliOverride: cliVal,
+        pmModelOverride: modelVal,
+      });
+      pmOverrideSaved.agent = sent.agent;
+      pmOverrideSaved.cli = sent.cli;
+      pmOverrideSaved.model = sent.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
+}
+
+/** Same CLI→model reset for the PM tab. */
+watch(
+  () => pmOverrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    pmOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
+watch(
+  () => [pmOverrideDraft.agent, pmOverrideDraft.cli, pmOverrideDraft.model],
+  () => {
+    schedulePmOverrideSave();
+  },
+);
+
+/** Reset PM overrides to the base PM agent defaults (persisted). */
+async function resetPmOverrides(): Promise<void> {
+  if (!ui.active) return;
+  try {
+    await repo.patchTask(ui.active.id, {
+      pmAgentOverride: null,
+      pmCliOverride: null,
+      pmModelOverride: null,
+    });
+    initPmOverrideDraft(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  }
+}
 
 // ---- agent session tab ----
 
@@ -1025,6 +1223,21 @@ watch(
   },
 );
 
+/** Diff stats for the active task. */
+const taskDiffStats = computed(() => {
+  return ui.active ? repo.diffStatsFor(ui.active.id) : undefined;
+});
+
+/** Load diff stats when task changes or status changes. */
+watch(
+  () => [ui.active?.id, ui.active?.status, ui.active?.branch],
+  () => {
+    if (!ui.active) return;
+    void repo.loadDiffStats(ui.active.id);
+  },
+  { immediate: true },
+);
+
 async function sendTurn(): Promise<void> {
   if (!ui.active) return;
   const text = draftMsg.value.trim();
@@ -1126,36 +1339,80 @@ const isCustom = computed(() => {
 
 watch(
   () => ui.active,
-  (t) => { if (t) initOverrideDraft(t); },
+  (t) => { if (t && !overrideDirty.value) initOverrideDraft(t); },
   { immediate: true },
 );
 
-/** Save the override draft to the task's frontmatter. */
-async function saveOverrides(): Promise<void> {
-  if (!ui.active) return;
-  ui.saving = true;
-  try {
+/** Debounced auto-save of the agent override draft (no explicit Save button). */
+let agentOverrideAutoSaveTimer: number | undefined;
+
+function scheduleAgentOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (agentOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(agentOverrideAutoSaveTimer);
+  }
+  agentOverrideAutoSaveTimer = window.setTimeout(async () => {
+    agentOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !overrideDirty.value) return;
     const base = baseAgent.value;
+    // Snapshot the values being sent so the saved-baseline sync never claims a
+    // newer in-flight draft change was persisted (dirty stays true → re-arms).
+    const sent = {
+      agent: overrideDraft.agent,
+      cli: overrideDraft.cli,
+      model: overrideDraft.model,
+    };
     // Send values that differ from the base agent; send null to clear overrides
     // that match the base (so the server knows to remove them from frontmatter).
-    const agentVal = overrideDraft.agent !== (base?.name ?? "") ? overrideDraft.agent : null;
-    const cliVal = overrideDraft.cli !== (base?.cli ?? "") ? overrideDraft.cli : null;
-    const modelVal = overrideDraft.model !== (base?.model ?? "") ? overrideDraft.model : null;
-    await repo.patchTask(ui.active.id, {
-      agentOverride: agentVal,
-      cliOverride: cliVal,
-      modelOverride: modelVal,
-    });
-    // Re-init from the task's new state after patch (SSE task.updated will sync too).
-    overrideSaved.agent = overrideDraft.agent;
-    overrideSaved.cli = overrideDraft.cli;
-    overrideSaved.model = overrideDraft.model;
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
+    try {
+      await repo.patchTask(taskId, {
+        agentOverride: agentVal,
+        cliOverride: cliVal,
+        modelOverride: modelVal,
+      });
+      overrideSaved.agent = sent.agent;
+      overrideSaved.cli = sent.cli;
+      overrideSaved.model = sent.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
 }
+
+/**
+ * When the CLI changes, reset the model to the new CLI's default.
+ * This must happen synchronously during the same microtask as the v-model
+ * update so the auto-save (which fires via a separate watch) captures the
+ * correct model value — no flicker, no stale-model-then-fix cycle.
+ */
+watch(
+  () => overrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    overrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
+watch(
+  () => [overrideDraft.agent, overrideDraft.cli, overrideDraft.model],
+  () => {
+    scheduleAgentOverrideSave();
+  },
+);
+
+onUnmounted(() => {
+  if (agentOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(agentOverrideAutoSaveTimer);
+  }
+  if (pmOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(pmOverrideAutoSaveTimer);
+  }
+});
 
 /** Reset overrides to the base agent defaults. */
 async function resetOverrides(): Promise<void> {
@@ -1214,6 +1471,16 @@ const freeformIsCustom = computed(() => {
     freeformOverride.model !== base.model
   );
 });
+
+/** Same CLI→model reset for the freeform pane. */
+watch(
+  () => freeformOverride.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
 
 /** Reset freeform overrides to the PM agent defaults. */
 function resetFreeformOverrides(): void {
@@ -1309,9 +1576,13 @@ function resetFreeformOverrides(): void {
           </div>
           <template v-if="newMode === 'freeform'">
             <div class="field">
-              <label for="nt-freeform">Describe the task</label>
+              <div class="field-header">
+                <label for="nt-freeform">Describe the task</label>
+                <VoiceDictate @transcribed="onFreeformTranscribed" />
+              </div>
               <textarea
                 id="nt-freeform"
+                ref="freeformTextarea"
                 v-model="freeformText"
                 class="ff-textarea"
                 rows="10"
@@ -1518,6 +1789,12 @@ function resetFreeformOverrides(): void {
                 {{ ui.active.status }}
               </span>
               <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
+              <span
+                v-if="reviewSubstate"
+                class="rs-chip"
+                :class="reviewSubstate.cls"
+                :title="reviewSubstate.label"
+              >{{ reviewSubstate.label }}</span>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
@@ -1587,7 +1864,7 @@ function resetFreeformOverrides(): void {
           </div>
           <p v-if="review?.running" class="review-hint">Waiting for automatic review to finish.</p>
           <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
-            <ActivityIndicator /> agent running
+            <ActivityIndicator /> agent coding
           </span>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -1596,32 +1873,26 @@ function resetFreeformOverrides(): void {
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
           />
-          <div v-if="ui.active.status === 'active' || ui.active.status === 'review'" class="quickbar-row">
-            <template v-if="ui.active.preview">
-              <div class="preview-live">
-                <span class="preview-dot"></span>
-                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
-                  <ExternalLink class="size-3.5" />
-                  {{ ui.active.preview.url }}
-                </a>
-              </div>
-              <Button
-                variant="outline"
-                :disabled="ui.saving || previewBusy"
-                @click="stopPreview"
-              >
-                <Square class="size-3.5" />
-                Stop preview
-              </Button>
-            </template>
+          <div
+            v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
+            class="quickbar-row"
+          >
+            <!-- Previews are auto-launched when a task lands in review (#0198);
+                 no manual start button — the live URL simply appears when ready. -->
+            <div class="preview-live">
+              <span class="preview-dot"></span>
+              <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                <ExternalLink class="size-3.5" />
+                {{ ui.active.preview.url }}
+              </a>
+            </div>
             <Button
-              v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy || !previewable"
-              @click="startPreview"
+              :disabled="ui.saving || previewBusy"
+              @click="stopPreview"
             >
-              <Eye class="size-3.5" />
-              {{ previewBusy ? "Starting…" : "Preview" }}
+              <Square class="size-3.5" />
+              Stop preview
             </Button>
           </div>
           <p
@@ -1645,29 +1916,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'details' }"
             @click="ui.activeTab = 'details'"
           >
-            Details
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'agent' }"
-            @click="ui.activeTab = 'agent'"
-          >
-            Agent
-          </button>
-          <button
-            v-if="ui.active.status === 'review'"
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'review' }"
-            @click="ui.activeTab = 'review'"
-          >
-            Agent Review
-            <ActivityIndicator
-              v-if="ui.activeTab !== 'review' && review?.running"
-              variant="reviewing"
-              label="Reviewing…"
-            />
+            Task
           </button>
           <button
             type="button"
@@ -1676,6 +1925,28 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'pm'"
           >
             PM
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'agent' }"
+            @click="ui.activeTab = 'agent'"
+          >
+            Engineer
+          </button>
+          <button
+            v-if="ui.active.status === 'review'"
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'review' }"
+            @click="ui.activeTab = 'review'"
+          >
+            Reviewer
+            <ActivityIndicator
+              v-if="ui.activeTab !== 'review' && review?.running"
+              variant="reviewing"
+              label="Reviewing…"
+            />
           </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
@@ -1697,6 +1968,28 @@ function resetFreeformOverrides(): void {
               {{ effectiveBranch || "—" }}
               <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
             </div>
+          </div>
+
+          <div class="field">
+            <label>Code changes</label>
+            <div v-if="taskDiffStats" class="diff-stats">
+              <div class="diff-stat-item">
+                <span class="stat-label">Files:</span>
+                <span class="stat-value">{{ taskDiffStats.filesChanged }}</span>
+              </div>
+              <div class="diff-stat-item">
+                <span class="stat-label">Added:</span>
+                <span class="stat-value" style="color: #4ef0a8;">+{{ taskDiffStats.additions }}</span>
+              </div>
+              <div class="diff-stat-item">
+                <span class="stat-label">Deleted:</span>
+                <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
+              </div>
+              <div v-if="taskDiffStats.filesChanged === 0" class="diff-stat-warning">
+                No code changes yet
+              </div>
+            </div>
+            <div v-else class="diff-stats-loading">Loading diff stats…</div>
           </div>
 
           <div class="field-row" style="margin-top: 16px">
@@ -1783,14 +2076,17 @@ function resetFreeformOverrides(): void {
               <div v-else class="md-card-body">No spec yet — click to add.</div>
             </div>
             <template v-else>
-              <textarea
-                ref="specTextarea"
-                class="md-edit"
-                v-model="draft.body"
-                rows="12"
-                placeholder="Markdown body"
-                @input="autoGrowSpec"
-              ></textarea>
+              <div class="spec-textarea-wrapper">
+                <textarea
+                  ref="specTextareaEl"
+                  class="md-edit"
+                  v-model="draft.body"
+                  rows="12"
+                  placeholder="Markdown body"
+                  @input="autoGrowSpec"
+                ></textarea>
+                <VoiceDictate @transcribed="onSpecTranscribed" />
+              </div>
               <div class="spec-hint">Click Save to apply the spec.</div>
             </template>
           </div>
@@ -1903,10 +2199,7 @@ function resetFreeformOverrides(): void {
             </div>
             <div v-if="isCustom || overrideDirty" class="agent-override-actions">
               <span v-if="isCustom" class="agent-custom-badge">custom</span>
-              <template v-if="overrideDirty">
-                <Button variant="outline" size="sm" :disabled="ui.saving" @click="saveOverrides">Save</Button>
-                <Button variant="ghost" size="sm" :disabled="ui.saving" @click="initOverrideDraft(ui.active)">Cancel</Button>
-              </template>
+              <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
               <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
                 <RotateCcw class="size-3" />
               </Button>
@@ -2013,14 +2306,21 @@ function resetFreeformOverrides(): void {
             </button>
           </div>
           <div class="agent-input-row">
-            <textarea
-              v-model="draftMsg"
-              class="agent-input"
-              rows="2"
-              placeholder="Send a follow-up to the task's agent session…"
-              :disabled="agentBusy || ui.saving"
-              @keydown.enter.exact.prevent="sendTurn"
-            ></textarea>
+            <div class="agent-input-wrapper">
+              <textarea
+                ref="draftMsgTextarea"
+                v-model="draftMsg"
+                class="agent-input"
+                rows="2"
+                placeholder="Send a follow-up to the task's agent session…"
+                :disabled="agentBusy || ui.saving"
+                @keydown.enter.exact.prevent="sendTurn"
+              ></textarea>
+              <VoiceDictate
+                :disabled="agentBusy || ui.saving"
+                @transcribed="onDraftMsgTranscribed"
+              />
+            </div>
             <Button
               variant="accent"
               size="sm"
@@ -2157,14 +2457,21 @@ function resetFreeformOverrides(): void {
           </div>
 
           <div class="agent-input-row">
-            <textarea
-              v-model="reviewDraftMsg"
-              class="agent-input"
-              rows="2"
-              placeholder="Ask the reviewer a follow-up question…"
-              :disabled="review?.running || reviewBusy || ui.saving"
-              @keydown.enter.exact.prevent="sendReviewTurn"
-            ></textarea>
+            <div class="agent-input-wrapper">
+              <textarea
+                ref="reviewDraftMsgTextarea"
+                v-model="reviewDraftMsg"
+                class="agent-input"
+                rows="2"
+                placeholder="Ask the reviewer a follow-up question…"
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @keydown.enter.exact.prevent="sendReviewTurn"
+              ></textarea>
+              <VoiceDictate
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @transcribed="onReviewDraftMsgTranscribed"
+              />
+            </div>
             <Button
               variant="accent"
               size="sm"
@@ -2180,6 +2487,58 @@ function resetFreeformOverrides(): void {
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body">
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field">
+                <label>Role</label>
+                <Select v-model="pmOverrideDraft.agent" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="agent" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Coding agent</label>
+                <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="CLI" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="agent-field">
+                <label>Model</label>
+                <Select v-model="pmOverrideDraft.model" :disabled="ui.saving">
+                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                    <SelectValue placeholder="model" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectSearchGroup :options="pmModelOptions" #default="{ options }">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
+                      </SelectViewport>
+                    </SelectSearchGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
+              <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
+              <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
+              <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
+                <RotateCcw class="size-3" />
+              </Button>
+            </div>
+          </div>
           <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">
             <div v-if="!pmHasConversation" class="agent-empty pm-empty">
               <div class="pm-welcome-icon">PM</div>
@@ -2241,6 +2600,13 @@ function resetFreeformOverrides(): void {
     :task="restartTask"
     @close="restartTask = null"
     @started="ui.activeTab = 'agent'"
+  />
+
+  <DirtyMainDialog
+    :task="dirtyTask"
+    :files="dirtyFiles"
+    @commit="confirmCommitDirty"
+    @cancel="cancelDirty"
   />
 </template>
 
@@ -2475,5 +2841,50 @@ function resetFreeformOverrides(): void {
     transform: translateY(-3px);
     opacity: 1;
   }
+}
+
+.diff-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.diff-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.stat-label {
+  color: var(--txt-faint);
+  font-weight: 500;
+}
+
+.stat-value {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.diff-stat-warning {
+  grid-column: 1 / -1;
+  padding: 4px 8px;
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 4px;
+}
+
+.diff-stats-loading {
+  padding: 8px;
+  color: var(--txt-faint);
+  font-size: 12px;
+  text-align: center;
 }
 </style>

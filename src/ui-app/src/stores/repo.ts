@@ -7,7 +7,9 @@ import type {
   AgentSessionStats,
   AutoEngineeringState,
   Counts,
+  CtoState,
   Health,
+  IntegrationPipelineSnapshot,
   RepoEvent,
   RepoIndex,
   ReviewReport,
@@ -50,6 +52,25 @@ export interface DoneResult {
   };
   error?: string;
   task?: Task;
+}
+
+/**
+ * Marker rethrown by `completeTask` when the server reports dirty files on
+ * `main` blocking the close-out (0204). The caller renders a confirmation
+ * modal offering "Commit & continue" / "Cancel"; until the user chooses, the
+ * task stays in review. Carries the dirty file list so the modal can show it.
+ */
+export class DirtyMainError extends Error {
+  readonly taskId: string;
+  readonly dirtyFiles: string[];
+  constructor(taskId: string, dirtyFiles: string[]) {
+    super(
+      `main has ${dirtyFiles.length} uncommitted file${dirtyFiles.length === 1 ? "" : "s"} blocking close-out`,
+    );
+    this.name = "DirtyMainError";
+    this.taskId = taskId;
+    this.dirtyFiles = dirtyFiles;
+  }
 }
 
 /**
@@ -98,6 +119,13 @@ const OUTPUT_MAX_LINES = 2000;
  * under `review:<taskId>` so the two conversations never mix (0110).
  */
 const REVIEW_SESSION_PREFIX = "review:";
+
+/**
+ * SSE id of the CTO board-monitor conversation (0174). Its `agent.output`
+ * events stream under this id so they never mix with task transcripts; the
+ * panel renders them from the store's `cto.lines` buffer.
+ */
+const CTO_SESSION_ID = "cto:board";
 
 export const STATUS_COLORS: Record<string, string> = {
   draft: "#3a4055",
@@ -187,10 +215,21 @@ export const useRepoStore = defineStore("repo", () => {
   const doneSteps = ref<Record<string, string>>({});
   /** Last failed review→done close-out per task id (inline error card). */
   const doneErrors = ref<Record<string, DoneError>>({});
+  /** Dirty files on `main` blocking a move-to-done per task id (0204). Empty
+   * when no confirmation is pending. The modal reads this and the caller
+   * clears it via `clearDirtyMain` on Cancel (or it is overwritten by the
+   * next run). */
+  const dirtyMain = ref<Record<string, string[]>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
+  /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
+  const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
+  /** Diff statistics per task: files changed, additions, deletions. */
+  const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live integration-pipeline snapshot for the pinned status bar (0207). */
+  const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
@@ -208,6 +247,21 @@ export const useRepoStore = defineStore("repo", () => {
   let feedKey = 0;
   let toastId = 0;
   let es: EventSource | null = null;
+  /**
+   * When init()'s own index fetch completed, or 0 once consumed. Lets the FIRST
+   * SSE open skip its refresh: init() fetched the index moments earlier and the
+   * payload is ~1 MB at 200 tasks, so refetching it doubled the largest transfer
+   * of a page load for data that could not have changed.
+   *
+   * Time-bounded rather than a plain flag, because the skip is only sound while
+   * the two are genuinely adjacent. If the connection took a while to open,
+   * events emitted in that window were never delivered and never replayed, so
+   * the refresh has to happen. Reconnects always refresh — the stamp is cleared
+   * after the first open.
+   */
+  let initRefreshAt = 0;
+  /** Longest gap between init()'s fetch and the first SSE open that can be treated as "nothing happened". */
+  const INIT_REFRESH_REUSE_MS = 2000;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -299,6 +353,16 @@ export const useRepoStore = defineStore("repo", () => {
   /** The inline move-to-done error for a task, or null when none is pending. */
   const doneErrorFor = (id: string): DoneError | null => doneErrors.value[id] ?? null;
 
+  /** Dirty files on `main` pending a move-to-done decision (0204), or [] when the modal is not needed. */
+  const dirtyMainFor = (id: string): string[] => dirtyMain.value[id] ?? [];
+
+  /** Clear the pending dirty-main confirmation for a task (user chose Cancel). */
+  function clearDirtyMain(id: string): void {
+    const next = { ...dirtyMain.value };
+    delete next[id];
+    dirtyMain.value = next;
+  }
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") {
@@ -370,8 +434,17 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
-      pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
+      pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
+      if (e.id === CTO_SESSION_ID) {
+        // CTO board-monitor conversation output — routed to the CTO panel's
+        // lines buffer, never into a task transcript.
+        cto.value = {
+          ...cto.value,
+          lines: [...cto.value.lines, e.entry].slice(-OUTPUT_MAX_LINES),
+        };
+        return;
+      }
       if (e.id.startsWith(REVIEW_SESSION_PREFIX)) {
         // Reviewer conversation output — routed to the review lines buffer,
         // never into the engineer transcript.
@@ -406,6 +479,16 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } else if (e.type === "task.progress") {
       doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+      // Background close-out failure (0199): the /done POST only enqueues the
+      // job, so a later failure arrives here as an SSE event. Surface it as the
+      // inline done error the card/drawer already render.
+      if (e.step === "failed" && e.detail) {
+        setDoneError(e.id, {
+          message: e.detail,
+          conflicts: extractConflicts(e.detail),
+          step: "check",
+        });
+      }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed
       // state because the agent's fail-safe checklist silently failed — worth
@@ -453,12 +536,22 @@ export const useRepoStore = defineStore("repo", () => {
           "review",
         );
       }
+    } else if (e.type === "cto") {
+      // The CTO monitor started or finished a pass. Track it live; when a run
+      // ends (ready/failed/cancelled) pull the authoritative report, which is
+      // written only once the run completes.
+      cto.value = { ...cto.value, running: e.state === "running" };
+      if (e.state !== "running") {
+        void loadCTO();
+      }
     } else if (e.type === "index.rebuilt") {
       void refresh();
     } else if (e.type === "system.stats") {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
+    } else if (e.type === "integration") {
+      integration.value = e.pipeline;
     }
   }
 
@@ -471,6 +564,25 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Hydrate the integration-pipeline snapshot after a refresh/SSE gap (0207). */
+  async function refreshIntegration(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>("/api/integration/pipeline");
+      if (r.pipeline) integration.value = r.pipeline;
+    } catch {
+      /* non-fatal — the bar falls back to its idle state */
+    }
+  }
+
+  /**
+   * Retry a failed integration job (0207). Reuses the server's existing retry
+   * path (re-enqueue as a fresh queued job). Best-effort: non-fatal errors are
+   * surfaced as a toast for the caller to catch.
+   */
+  async function retryIntegration(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
+  }
+
   function connectSSE(): void {
     if (es) es.close();
     es = new EventSource(origin + "/api/events");
@@ -480,17 +592,35 @@ export const useRepoStore = defineStore("repo", () => {
       // the server-authoritative index on every open so a reviewer that
       // started, finished, or failed during that gap cannot leave a stale card
       // or disabled/enabled done action behind.
-      void refresh().catch(() => {
-        /* connection state already reflects the successful SSE open */
-      });
+      //
+      // The one exception is the very first open of a page load, when init()
+      // fetched the index moments earlier and no gap existed to miss events in.
+      // Refetching there doubled the largest payload the app transfers. If
+      // init()'s refresh failed, or the connection was slow enough that events
+      // could have been missed, the stamp does not qualify and this still runs.
+      const reusable = initRefreshAt > 0 && Date.now() - initRefreshAt < INIT_REFRESH_REUSE_MS;
+      initRefreshAt = 0;
+      if (reusable) {
+        /* init() just fetched it and no gap existed to miss events in */
+      } else {
+        void refresh().catch(() => {
+          /* connection state already reflects the successful SSE open */
+        });
+      }
       void refreshAutoEng().catch(() => {
+        /* non-fatal hydration */
+      });
+      void loadCTO().catch(() => {
+        /* non-fatal hydration */
+      });
+      void refreshIntegration().catch(() => {
         /* non-fatal hydration */
       });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -685,17 +815,49 @@ export const useRepoStore = defineStore("repo", () => {
    * Review→done close-out. On failure the error is kept on the task (the
    * caller renders it inline below the button) and no global toast is shown;
    * on success any previous inline error is cleared.
+   *
+   * Dirty-main guard (0204): when the server reports uncommitted files on
+   * `main` blocking the merge (and the caller has not opted in via
+   * `commitDirty`), the dirty file list is stored per task and a
+   * `DirtyMainError` is thrown so the caller can show the confirmation modal.
    */
-  async function completeTask(t: Task): Promise<DoneResult> {
+  async function completeTask(
+    t: Task,
+    opts: { commitDirty?: boolean } = {},
+  ): Promise<DoneResult> {
+    const raw = await fetch(`/api/tasks/${t.id}/done`, {
+      method: "POST",
+      ...(opts.commitDirty
+        ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commitDirty: true }) }
+        : {}),
+    });
+    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean } = {};
     try {
-      const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
-        method: "POST",
-      });
-      if (!r.ok) throw new Error(r.error ?? "could not complete task");
-      setDoneError(t.id, null);
-      return r;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean };
+    } catch {
+      body = {};
+    }
+    // Dirty-main guard (0204): the server returns 409 + needsCommit when main
+    // has uncommitted files and the user has not opted in via commitDirty.
+    if (raw.status === 409 && body.needsCommit && Array.isArray(body.dirtyFiles)) {
+      // #0211: when the dirty check itself failed (error/timeout) the file list
+      // is unknown, so "Commit & continue" would be guessing. Surface the plain
+      // actionable error instead of the commit modal.
+      if (body.dirtyCheckFailed) {
+        const message = body.error ?? "could not verify main is clean before close-out";
+        setDoneError(t.id, {
+          message,
+          conflicts: extractConflicts(message),
+          step: doneSteps.value[t.id] ?? "merge",
+        });
+        throw new MoveToDoneError(t.id, message);
+      }
+      dirtyMain.value = { ...dirtyMain.value, [t.id]: body.dirtyFiles };
+      throw new DirtyMainError(t.id, body.dirtyFiles);
+    }
+    const r = body as DoneResult;
+    if (!raw.ok || !r.ok) {
+      const message = r.error ?? raw.statusText ?? "could not complete task";
       setDoneError(t.id, {
         message,
         conflicts: extractConflicts(message),
@@ -703,6 +865,9 @@ export const useRepoStore = defineStore("repo", () => {
       });
       throw new MoveToDoneError(t.id, message);
     }
+    setDoneError(t.id, null);
+    dirtyMain.value = { ...dirtyMain.value, [t.id]: [] };
+    return r;
   }
 
   /**
@@ -753,6 +918,55 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** The review state for a task, or null when it has not been fetched. */
   const reviewFor = (id: string): ReviewState | null => reviews.value[id] ?? null;
+
+  /**
+   * Fetch the CTO board monitor's state (0174): enabled/running flags, the
+   * latest report, and the persisted conversation. Best-effort — a disabled or
+   * never-run CTO simply yields its empty state.
+   */
+  async function loadCTO(): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        enabled: boolean;
+        running: boolean;
+        report: { markdown: string; at: string } | null;
+        lines?: AgentOutputEntry[];
+      }>("/api/cto");
+      if (!r.ok) return;
+      cto.value = {
+        running: r.running,
+        enabled: r.enabled,
+        report: r.report,
+        lines: r.lines ?? [],
+      };
+    } catch {
+      /* endpoint unavailable — the panel falls back to its empty state */
+    }
+  }
+
+  /** Load diff statistics for a task. Best-effort. */
+  async function loadDiffStats(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        stats: { filesChanged: number; additions: number; deletions: number };
+        noBranch?: boolean;
+        noWorktree?: boolean;
+      }>(`/api/tasks/${id}/diff-stats`);
+      if (r.ok) {
+        diffStats.value = {
+          ...diffStats.value,
+          [id]: r.stats,
+        };
+      }
+    } catch {
+      /* endpoint unavailable — diff stats are nice-to-have */
+    }
+  }
+
+  /** Get diff stats for a task, or undefined if not yet fetched. */
+  const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
 
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
@@ -932,14 +1146,17 @@ export const useRepoStore = defineStore("repo", () => {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
     // A failed move-to-done is surfaced inline on the task; a toast for it
-    // would duplicate the visible error and detach it from the action.
-    if (!(err instanceof MoveToDoneError)) pushToast(message, "error");
+    // would duplicate the visible error and detach it from the action. A
+    // dirty-main guard (0204) is surfaced by the confirmation modal instead.
+    if (err instanceof MoveToDoneError || err instanceof DirtyMainError) return;
+    pushToast(message, "error");
   }
 
   async function init(): Promise<void> {
     try {
       health.value = await api<Health>("/api/health");
       await refresh();
+      initRefreshAt = Date.now();
       await fetchRunning();
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
@@ -970,12 +1187,18 @@ export const useRepoStore = defineStore("repo", () => {
     doneSteps,
     doneErrors,
     doneErrorFor,
+    dirtyMain,
+    dirtyMainFor,
+    clearDirtyMain,
     reviews,
     sortOrder,
     toasts,
     systemStats,
     autoEng,
     refreshAutoEng,
+    integration,
+    refreshIntegration,
+    retryIntegration,
     newVersion,
     restarting,
     pushToast,
@@ -1010,6 +1233,10 @@ export const useRepoStore = defineStore("repo", () => {
     clearOutput,
     loadReview,
     reviewFor,
+    cto,
+    loadCTO,
+    loadDiffStats,
+    diffStatsFor,
     sendMessage,
     reviewAgain,
     sendReviewMessage,

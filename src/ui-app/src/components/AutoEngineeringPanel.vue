@@ -140,6 +140,10 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
 </template>
 
 <style scoped>
+.ae-panel {
+  padding: 16px;
+}
+
 .panel-title {
   display: flex;
   align-items: center;

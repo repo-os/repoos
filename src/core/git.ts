@@ -26,6 +26,8 @@ export interface GitRun {
   status: number | null;
   stdout: string;
   stderr: string;
+  /** True when the child was SIGKILLed because it exceeded the timeout. */
+  timedOut?: boolean;
 }
 
 /**
@@ -45,11 +47,12 @@ export function runGit(
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
+    let timedOut = false;
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      resolve({ status, stdout, stderr });
+      resolve({ status, stdout, stderr, timedOut });
     };
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
@@ -58,7 +61,10 @@ export function runGit(
       finish(null);
     });
     child.on("close", (code: number | null) => finish(code));
-    timer = setTimeout(() => child.kill("SIGKILL"), timeout);
+    timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeout);
   });
 }
 
@@ -369,6 +375,51 @@ export function branchChangesSinceBase(
   return { base, paths: [...new Set([...committed, ...uncommitted])] };
 }
 
+export interface DiffStats {
+  filesChanged: number;
+  additions: number;
+  deletions: number;
+}
+
+/**
+ * Get diff statistics comparing a branch to main.
+ * Returns file count and line additions/deletions.
+ */
+export function getDiffStats(
+  worktree: string,
+  baseBranch: string,
+): DiffStats {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
+
+  const statOutput = git(worktree, ["diff", "--stat", baseFull, "HEAD"]);
+  if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+
+  let filesChanged = 0;
+  let additions = 0;
+  let deletions = 0;
+
+  // Parse output like: "src/file.ts | 10 ++++--"
+  for (const line of statOutput.split("\n")) {
+    const match = line.match(/\s+\|\s+(\d+)\s+([\+\-]*)/);
+    if (match) {
+      filesChanged++;
+      const changeLine = match[2];
+      const numChanges = parseInt(match[1], 10);
+      const plusCount = (changeLine.match(/\+/g) || []).length;
+      const minusCount = (changeLine.match(/\-/g) || []).length;
+
+      // Distribute changes proportionally
+      if (plusCount + minusCount > 0) {
+        additions += Math.floor(numChanges * (plusCount / (plusCount + minusCount)));
+        deletions += Math.floor(numChanges * (minusCount / (plusCount + minusCount)));
+      }
+    }
+  }
+
+  return { filesChanged, additions, deletions };
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;
@@ -563,6 +614,78 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
   if (status.trim() === "") return true;
   if (git(root, ["add", "--", rel]) === null) return false;
   return git(root, ["commit", "-m", message]) !== null;
+}
+
+/**
+ * The dirty/uncommitted file paths in a checkout (`git status --porcelain`),
+ * including tracked modifications and untracked files, in repo-relative form.
+ * Used by the close-out flow to check `main` before merging: a dirty tree
+ * aborts `git merge`, so the UI surfaces these so it can offer to commit them.
+ *
+ * FAILS CLOSED: returns `[]` only for a genuinely clean tree (git exit 0 with
+ * empty output). Any git failure — a non-zero exit, a timeout, or git being
+ * unavailable — throws `GitDirtyCheckError` instead, so a caller cannot
+ * mistake an unknown state for a clean tree and silently proceed into a merge
+ * that git will abort. This is the fix for #0211, where the old fail-open
+ * behaved that way under load.
+ */
+export class GitDirtyCheckError extends Error {
+  readonly causeKind: "timeout" | "git-error" | "no-repo";
+  constructor(causeKind: "timeout" | "git-error" | "no-repo", detail?: string) {
+    super(
+      `could not determine the dirty state of the checkout${detail ? `: ${detail}` : ""}`,
+    );
+    this.name = "GitDirtyCheckError";
+    this.causeKind = causeKind;
+  }
+}
+
+export async function dirtyFiles(root: string): Promise<string[]> {
+  const out = await runGit(root, ["status", "--porcelain"], 4000);
+  // A genuinely clean tree is git exit 0 with empty output.
+  if (out.status === 0 && (!out.stdout || out.stdout.trim() === "")) return [];
+  // Fail closed: a timeout, a spawn failure (status null), or a non-zero exit
+  // all mean "unknown", not "clean". Surface which so the caller can explain.
+  if (out.timedOut) {
+    throw new GitDirtyCheckError("timeout", "git status exceeded its time budget");
+  }
+  if (out.status === 0) {
+    // Exit 0 with non-empty output: genuinely dirty files to list.
+    return out.stdout
+      .split("\n")
+      .map((l) => l.replace(/\r$/, ""))
+      .map((l) => {
+        // Porcelain v1 short format is two status columns, a separator space,
+        // then the repo-relative path (`XY path`). We read the raw stdout here
+        // (not the shared `git()` helper, whose `.trim()` eats the first line's
+        // leading status column) so the fixed-width parse stays column-accurate.
+        const stripped = l.slice(3).trim();
+        // Renames/renames-with-changes encode the old path before the new one.
+        const arrow = stripped.indexOf(" -> ");
+        return arrow === -1 ? stripped : stripped.slice(arrow + 4);
+      })
+      .filter(Boolean);
+  }
+  const detail =
+    out.stderr.split("\n").filter(Boolean).slice(0, 2).join(" ").trim() ||
+    (out.status === null ? "git did not run" : `git exited ${out.status}`);
+  throw new GitDirtyCheckError(out.status === null ? "no-repo" : "git-error", detail);
+}
+
+/**
+ * Stage and commit every dirty/uncommitted file in a checkout with a single
+ * checkpoint commit so the tree is left clean and mergeable. Used before a
+ * close-out merge when the user opts in ("Commit & continue"). Returns the
+ * list of committed dirty files on success (matching `dirtyFiles`), or an
+ * empty array when the tree was clean or the commit failed.
+ */
+export async function commitDirtyFiles(root: string, message: string): Promise<string[]> {
+  const files = await dirtyFiles(root);
+  if (files.length === 0) return [];
+  const add = await runGit(root, ["add", "-A"], 15_000);
+  if (add.status !== 0) return [];
+  const commit = await runGit(root, ["commit", "-m", message], 15_000);
+  return commit.status === 0 ? files : [];
 }
 
 /**

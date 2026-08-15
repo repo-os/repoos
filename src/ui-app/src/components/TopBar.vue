@@ -8,11 +8,20 @@ import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const { health, connected, newVersion, restarting } = storeToRefs(repo);
+const { health, connected, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
 const isDark = computed(() => config.effectiveTheme === "dark");
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
+
+// Connection indicator: while the app is still starting up (initial bundle +
+// first health/SSE handshake) we don't yet know whether we're online, so show
+// a "loading" state instead of a premature "offline" (0205). "offline" is only
+// shown once startup has completed and the connection was actually lost.
+const connState = computed<"loading" | "live" | "offline">(() => {
+  if (loading.value) return "loading";
+  return connected.value ? "live" : "offline";
+});
 
 function toggleTheme(): void {
   void config.setTheme(isDark.value ? "light" : "dark");
@@ -36,16 +45,6 @@ function toggleTheme(): void {
       <span class="mono">{{ repoName }}</span>
     </div>
     <div class="spacer"></div>
-    <button
-      class="theme-toggle"
-      type="button"
-      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-      :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-      @click="toggleTheme"
-    >
-      <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
-      <Sun v-else :size="15" :stroke-width="1.8" />
-    </button>
     <SearchBar />
     <button
       v-if="newVersion"
@@ -58,13 +57,24 @@ function toggleTheme(): void {
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
     </button>
+    <div class="spacer"></div>
+    <button
+      class="theme-toggle"
+      type="button"
+      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+      @click="toggleTheme"
+    >
+      <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
+      <Sun v-else :size="15" :stroke-width="1.8" />
+    </button>
     <div
       class="conn"
-      :class="connected ? 'live' : 'down'"
-      :aria-label="connected ? 'Server connection: live' : 'Server connection: offline'"
-      :title="connected ? 'Server connection: live' : 'Server connection: offline'"
+      :class="connState"
+      :aria-label="`Server connection: ${connState}`"
+      :title="`Server connection: ${connState}`"
     >
-      <span class="dot"></span><span class="conn-text">{{ connected ? "live" : "offline" }}</span>
+      <span class="dot"></span><span class="conn-text">{{ connState }}</span>
     </div>
   </div>
 </template>

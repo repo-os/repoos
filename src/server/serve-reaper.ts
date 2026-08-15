@@ -99,6 +99,13 @@ export class ServeReaper {
       return;
     }
 
+    // If the lockfile claims our own PID, it's stale from a prior launchd run
+    // that recycled this PID — don't kill ourselves.
+    if (old.pid === this.pid) {
+      this.removeLock();
+      return;
+    }
+
     // If there's a stale process, try to reap it
     if (!this.isProcessAlive(old.pid, old.port)) {
       this.removeLock();

@@ -46,6 +46,7 @@ import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBuildStamp } from "../core/build.js";
 
 /** The answer POST /api/server/restart and the reload triggers report. */
 export type ReloadState =
@@ -125,15 +126,13 @@ export function readBuildHash(root: string): string | null {
   }
 }
 
-/** Read the build timestamp (generatedAt) from dist/.build-info.json, or null. */
+/**
+ * Read the build timestamp from dist/.build-stamp.json, or null. Kept separate
+ * from the hash marker so `.build-info.json` stays byte-identical across
+ * rebuilds of identical source — see readBuildStamp in core/build.ts.
+ */
 export function readBuildAt(root: string): string | null {
-  const file = join(root, "dist", ".build-info.json");
-  try {
-    const info = JSON.parse(readFileSync(file, "utf8")) as { generatedAt?: unknown };
-    return typeof info.generatedAt === "string" && info.generatedAt ? info.generatedAt : null;
-  } catch {
-    return null;
-  }
+  return readBuildStamp(root);
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -204,6 +203,11 @@ export class ReloadManager {
     return this.options.enabled !== false;
   }
 
+  /** True while the manager is actively handing over to a replacement process. */
+  get isReloading(): boolean {
+    return this.reloading;
+  }
+
   /**
    * The build parked by a close-out (0143), if any — hash plus its on-disk
    * build timestamp (dist/.build-info.json generatedAt). Exposed so /api/health
@@ -216,6 +220,7 @@ export class ReloadManager {
       ? null
       : { hash: this.buildAvailableHash, buildAt: this.buildAvailableAt };
   }
+
 
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
   start(): void {

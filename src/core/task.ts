@@ -27,6 +27,9 @@ const KEY_ORDER = [
   "agent_override",
   "cli_override",
   "model_override",
+  "pm_agent_override",
+  "pm_cli_override",
+  "pm_model_override",
   "created_at",
   "updated_at",
 ];
@@ -149,6 +152,18 @@ export function parseTask(args: ParseTaskArgs): Task {
   const modelOverride =
     typeof data.model_override === "string" && data.model_override ? data.model_override : null;
 
+  // Per-task PM agent override fields
+  const pmAgentOverride =
+    typeof data.pm_agent_override === "string" && data.pm_agent_override
+      ? data.pm_agent_override
+      : null;
+  const pmCliOverride =
+    typeof data.pm_cli_override === "string" && data.pm_cli_override ? data.pm_cli_override : null;
+  const pmModelOverride =
+    typeof data.pm_model_override === "string" && data.pm_model_override
+      ? data.pm_model_override
+      : null;
+
   // read created_at with fallback to deprecated created
   const created_at = data.created_at
     ? String(data.created_at)
@@ -187,6 +202,9 @@ export function parseTask(args: ParseTaskArgs): Task {
     agentOverride,
     cliOverride,
     modelOverride,
+    pmAgentOverride,
+    pmCliOverride,
+    pmModelOverride,
     git: args.git ?? emptyGitInfo(),
   };
 }
@@ -213,6 +231,9 @@ export function serializeTask(task: Task): string {
   if (task.agentOverride) data.agent_override = task.agentOverride;
   if (task.cliOverride) data.cli_override = task.cliOverride;
   if (task.modelOverride) data.model_override = task.modelOverride;
+  if (task.pmAgentOverride) data.pm_agent_override = task.pmAgentOverride;
+  if (task.pmCliOverride) data.pm_cli_override = task.pmCliOverride;
+  if (task.pmModelOverride) data.pm_model_override = task.pmModelOverride;
   if (task.created_at) data.created_at = normalizeTimestamp(task.created_at);
   if (task.updated_at) data.updated_at = normalizeTimestamp(task.updated_at);
   // re-attach preserved unknown keys

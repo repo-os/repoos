@@ -85,13 +85,12 @@ async function mountChat(fetchMock: typeof fetch): Promise<HTMLElement> {
   vi.stubGlobal("fetch", fetchMock);
   const host = document.createElement("div");
   document.body.append(host);
-  mountedApp = createApp(RepoGuideChat);
+  const appRoot = { template: '<RepoGuideChat :open="true" />', components: { RepoGuideChat } };
+  mountedApp = createApp(appRoot);
   mountedApp.use(createPinia());
   mountedApp.mount(host);
   await nextTick();
   await Promise.resolve();
-  await nextTick();
-  (host.querySelector(".guide-launcher") as HTMLButtonElement).click();
   await nextTick();
   return host;
 }

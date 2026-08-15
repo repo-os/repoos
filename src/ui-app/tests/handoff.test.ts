@@ -257,10 +257,9 @@ describe("trusted server-side handoff", () => {
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       writeFileSync(join(fx.worktree, "source.txt"), "base\n");
-      writeFileSync(
-        fx.taskPath,
-        taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true"),
-      );
+      const taskWithFlag = taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true");
+      writeFileSync(fx.taskPath, taskWithFlag);
+      writeFileSync(join(fx.worktree, "work", "0001-handoff.md"), taskWithFlag);
 
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
@@ -293,6 +292,28 @@ describe("trusted server-side handoff", () => {
       expect(result).toMatchObject({ ok: false, step: "validate" });
       expect(git(fx.worktree, ["rev-parse", "HEAD"])).toBe(oldHead);
     } finally {
+      fx.clean();
+    }
+  });
+
+  it("records the check failure in transcript and leaves task active for retry", async () => {
+    const fx = makeFixture(1);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      // With a failing repoos check, the handoff should fail at the check step
+      // and leave the task in active status (not moved to review)
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({
+        ok: false,
+        step: "check",
+        detail: expect.stringContaining("repoos check failed"),
+      });
+      expect(readTask(fx).status).toBe("active");
+      expect(git(fx.worktree, ["status", "--porcelain"])).toContain("source.txt");
+    } finally {
+      process.env.PATH = oldPath;
       fx.clean();
     }
   });
