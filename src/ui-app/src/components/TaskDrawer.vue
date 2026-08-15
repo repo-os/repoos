@@ -761,6 +761,35 @@ async function reviewAgain(): Promise<void> {
   }
 }
 
+/** Return a reviewed task to its existing engineer session with the review as
+ * the first instruction of the resumed turn. */
+const sendingToEngineer = ref(false);
+async function sendToEngineer(): Promise<void> {
+  const task = ui.active;
+  const report = review.value?.report;
+  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+
+  const instruction = [
+    "This task was returned from review for fixes. Resume work in the existing worktree; do not reset or discard the current changes.",
+    "Read the reviewer report below, fix every concrete applicable finding, add or update regression coverage where appropriate, then run repoos check before returning the task to review.",
+    "Reviewer report:",
+    report.markdown,
+  ].join("\n\n");
+
+  ui.saving = true;
+  sendingToEngineer.value = true;
+  try {
+    await repo.setStatus(task, "active");
+    await repo.startWork(task, "resume", instruction);
+    ui.activeTab = "agent";
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    sendingToEngineer.value = false;
+    ui.saving = false;
+  }
+}
+
 /** Hydrate the report whenever the drawer shows a task in review. */
 watch(
   () => [ui.active?.id, ui.active?.status],
@@ -1607,32 +1636,21 @@ function resetFreeformOverrides(): void {
             <div class="field">
               <div class="field-header">
                 <label for="nt-freeform">Describe the task</label>
-                <VoiceDictate @transcribed="onFreeformTranscribed" />
               </div>
-              <textarea
-                id="nt-freeform"
-                ref="freeformTextarea"
-                v-model="freeformText"
-                class="ff-textarea"
-                rows="10"
-                placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
-              ></textarea>
+              <div class="agent-input-wrapper">
+                <textarea
+                    id="nt-freeform"
+                    ref="freeformTextarea"
+                    v-model="freeformText"
+                    class="ff-textarea"
+                    rows="10"
+                    placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
+                ></textarea>
+                <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom:14px" />
+              </div>
             </div>
             <div class="ff-agent-bar">
               <div class="agent-pick-grid">
-                <div class="agent-field">
-                  <label>Role</label>
-                  <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="agent" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div class="agent-field">
                   <label>Coding agent</label>
                   <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
@@ -1661,18 +1679,20 @@ function resetFreeformOverrides(): void {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div v-if="freeformIsCustom" class="agent-override-actions">
-                <span class="agent-custom-badge">custom</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  :disabled="freeformRunning"
-                  @click="resetFreeformOverrides"
-                  title="Reset to PM defaults"
-                >
-                  <RotateCcw class="size-3" />
-                </Button>
+                   <div class="agent-field">
+                       <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
+                         <span class="agent-custom-badge">custom</span>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           :disabled="freeformRunning"
+                           @click="resetFreeformOverrides"
+                           title="Reset to PM defaults"
+                         >
+                           <RotateCcw class="size-3" />
+                         </Button>
+                       </div>
+                   </div>
               </div>
             </div>
             <div v-if="!pmAgentReady" class="ff-notice">
@@ -2189,22 +2209,9 @@ function resetFreeformOverrides(): void {
             </template>
           </div>
         </div>
-        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body" :class="{ 'transition-success': transitioned }">
+        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Role</label>
-                <Select v-model="overrideDraft.agent" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="agent" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
               <div class="agent-field">
                 <label>Coding agent</label>
                 <Select v-model="overrideDraft.cli" :disabled="ui.saving">
@@ -2233,13 +2240,15 @@ function resetFreeformOverrides(): void {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div v-if="isCustom || overrideDirty" class="agent-override-actions">
-              <span v-if="isCustom" class="agent-custom-badge">custom</span>
-              <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
-              <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
-                <RotateCcw class="size-3" />
-              </Button>
+              <div class="agent-field">
+                  <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
+                    <span v-if="isCustom" class="agent-custom-badge">custom</span>
+                    <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
+                    <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
+                      <RotateCcw class="size-3" />
+                    </Button>
+                  </div>
+              </div>
             </div>
           </div>
           <div v-if="showStats" class="agent-stats">
@@ -2380,7 +2389,7 @@ function resetFreeformOverrides(): void {
             Task is {{ ui.active.status }} — start work to run an agent turn.
           </div>
         </div>
-        <div v-else-if="ui.activeTab === 'review'" class="drawer-body">
+        <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <div class="review-toolbar">
             <span class="review-toolbar-title">
               Agent review
@@ -2395,6 +2404,17 @@ function resetFreeformOverrides(): void {
               <RotateCcw v-if="!reviewBusy" class="size-3.5" />
               <ActivityIndicator v-else />
               {{ reviewBusy ? "Starting…" : "Review again" }}
+            </Button>
+            <Button
+              variant="accent"
+              size="sm"
+              :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
+              :title="!review?.report ? 'Wait for a completed review before sending this task back to the engineer.' : 'Return this task to active and resume the engineer with the reviewer findings'"
+              @click="sendToEngineer"
+            >
+              <Send v-if="!sendingToEngineer" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ sendingToEngineer ? "Sending…" : "Send to engineer" }}
             </Button>
           </div>
 
@@ -2553,19 +2573,6 @@ function resetFreeformOverrides(): void {
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field">
-                <label>Role</label>
-                <Select v-model="pmOverrideDraft.agent" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="agent" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field">
                 <label>Coding agent</label>
                 <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
                   <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
@@ -2593,13 +2600,15 @@ function resetFreeformOverrides(): void {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
-              <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
-              <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
-              <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
-                <RotateCcw class="size-3" />
-              </Button>
+              <div class="agent-field" style="padding-top:20px">
+                  <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
+                    <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
+                    <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
+                    <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
+                      <RotateCcw class="size-3" />
+                    </Button>
+                  </div>
+              </div>
             </div>
           </div>
           <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">

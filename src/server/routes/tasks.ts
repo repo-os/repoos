@@ -344,8 +344,12 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { mode?: unknown };
+    const body = (await readBody(req)) as { mode?: unknown; instruction?: unknown };
     const clean = body?.mode === "clean";
+    // A task returned from review needs its repair brief in the initial
+    // resumed turn. Sending it as a follow-up would race the agent's start
+    // and commonly be rejected while the new turn is already running.
+    const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
     const branch = existing.branch || deriveBranch(existing.title);
     if (clean) {
       if (!existing.branch) {
@@ -389,10 +393,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
 
     const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
-    const preamble =
+    const resumeContext =
       clean || !existing.branch
         ? undefined
         : resumePreamble(config, taskForLaunch, branch, cwd);
+    const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
       cwd,
