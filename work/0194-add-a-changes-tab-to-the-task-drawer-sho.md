@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-changes-tab-to-the-task-drawer-sho
 model_override: default
+pm_model_override: default
 created_at: "2026-08-14T12:06:16Z"
-updated_at: "2026-08-15T15:30:55Z"
+updated_at: "2026-08-15T16:12:01Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ The tab must:
 - 2026-08-15T12:24:59Z · model_override
 - 2026-08-15T14:38:31Z · model_override
 - 2026-08-15T15:30:55Z · status active→review
+- 2026-08-15T16:12:01Z · pm_model_override
