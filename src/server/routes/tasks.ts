@@ -20,6 +20,7 @@ import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, en
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
@@ -401,11 +402,35 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   }
 
   if (action === "done") {
+    // Branch-less release (2026-08-15): a task fixed by a direct commit on
+    // main (a hotfix — see #0212, not yet a first-class flow) has nothing to
+    // merge. Routing it through the branch-merge close-out pipeline below
+    // just dead-ends on "no branch to merge" — that's not a rejection of the
+    // task, it's the wrong pipeline for it. This is a separate, self-contained
+    // path: verify main is currently green, then release directly. It never
+    // touches the job queue or the repo lock, since there is no merge to
+    // serialize against other close-outs.
+    if (isBranchlessReleaseEligible(existing)) {
+      if (runner.isRunning(id)) {
+        return json(res, 409, { error: `Task #${id} has an agent turn in progress` });
+      }
+      const result = await releaseBranchless(config, existing);
+      if (!result.ok) {
+        return json(res, 400, { error: result.reason });
+      }
+      index.applyFileChange(result.task!.absPath);
+      return json(res, 200, index.getTask(id));
+    }
+
     if (existing.status !== "review") {
       return json(res, 400, {
         error: `Only review tasks can be completed (#${id} is ${existing.status})`,
       });
     }
+    // A branch-less task in review is unreachable in practice (nothing sets
+    // status: review without a branch), but keep the guard as defense in
+    // depth — the branch-less release path above only handles non-review
+    // statuses, by design, so it must not silently fall through here.
     if (!existing.branch) {
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
