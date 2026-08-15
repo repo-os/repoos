@@ -105,11 +105,31 @@ function findTaskFileById(root: string, workDir: string, taskId: string): string
  * meaningful lines — the real cause (a failing test, a compiler error) sits
  * just above the wrapper.
  */
-function tailLine(stdout: string, stderr: string): string {
-  const lines = `${stdout}\n${stderr}`.split("\n").map((l) => l.trim()).filter(Boolean);
+/** Remove terminal control sequences before persisting a diagnostic to JSON/UI. */
+const ANSI_ESCAPE_RE = /\u001b\[[0-?]*[ -/]*[@-~]/g;
+
+/**
+ * Format command output for a close-out failure. Keep complete, readable tail
+ * lines so a JSON-backed UI never receives terminal colours or a diagnostic
+ * truncated in the middle of an ANSI escape sequence.
+ */
+export function summarizeCommandFailure(stdout: string, stderr: string): string {
+  const lines = `${stdout}\n${stderr}`
+    .replace(ANSI_ESCAPE_RE, "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   if (lines.length === 0) return "unknown error";
-  const tail = lines.slice(-TAIL_LINES).join("\n");
-  return tail.length > TAIL_MAX_CHARS ? `…${tail.slice(-TAIL_MAX_CHARS)}` : tail;
+  const tail: string[] = [];
+  let length = 0;
+  for (const line of lines.slice(-TAIL_LINES).reverse()) {
+    const nextLength = length + (tail.length > 0 ? 1 : 0) + line.length;
+    if (nextLength > TAIL_MAX_CHARS && tail.length > 0) break;
+    tail.unshift(nextLength > TAIL_MAX_CHARS ? `…${line.slice(-(TAIL_MAX_CHARS - 1))}` : line);
+    length = tail.join("\n").length;
+  }
+  return tail.join("\n");
 }
 
 interface ProcessRunResult {
@@ -468,7 +488,7 @@ export class CloseOutOrchestrator {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
-      return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
+      return { ok: false, reason: `build failed: ${summarizeCommandFailure(buildRes.stdout, buildRes.stderr)}` };
     }
 
     this.onProgress?.("check");
@@ -489,7 +509,7 @@ export class CloseOutOrchestrator {
       checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
     }
     if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
+      return { ok: false, reason: `check failed: ${summarizeCommandFailure(checkRes.stdout, checkRes.stderr)}` };
     }
 
     // Candidate is green. Capture its SHA.

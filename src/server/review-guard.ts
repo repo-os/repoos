@@ -77,7 +77,7 @@ export async function guardReviewTransition(
     };
   }
 
-  const unstageGenerated = await runGit(
+  const clearIndex = await runGit(
     registered,
     // The guard owns the index for this commit. Clear any stale staging (for
     // example a prior accidental `git add -f node_modules`) before selectively
@@ -86,21 +86,34 @@ export async function guardReviewTransition(
     ["reset", "--quiet", "HEAD", "--", "."],
     10_000,
   );
+  if (clearIndex.status !== 0) {
+    return {
+      ok: false,
+      detail: `could not clear the staging index: ${concise(clearIndex)}`,
+    };
+  }
+  const add = await runGit(
+    registered,
+    // `git add` honors .gitignore. Do not name ignored paths as exclusions:
+    // Git rejects those pathspecs even though they are exclusions.
+    ["add", "-A", "--", "."],
+    30_000,
+  );
+  if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
+  // Remove generated and task metadata paths after staging. Unlike pathspec
+  // exclusions, `git reset` is safe whether these paths are ignored, tracked,
+  // or absent, and it preserves their working-tree contents.
+  const unstageGenerated = await runGit(
+    registered,
+    ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
+    10_000,
+  );
   if (unstageGenerated.status !== 0) {
     return {
       ok: false,
       detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
     };
   }
-  const add = await runGit(
-    registered,
-    // `git add` already honors .gitignore; explicitly naming an ignored path,
-    // even as an exclusion, makes Git reject the whole command. Keep only
-    // tracked/generated paths that must be excluded deliberately.
-    ["add", "-A", "--", ".", ":(exclude)screenshots", `:(exclude)${task.path}`],
-    30_000,
-  );
-  if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
     const commit = await runGit(
