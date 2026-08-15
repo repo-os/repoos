@@ -3,7 +3,7 @@
  * and orphan-detection logic are pure functions tested against fixture strings.
  */
 import { describe, expect, it } from "vitest";
-import { parsePsOutput, sampleSystem } from "../../server/system";
+import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem } from "../../server/system";
 import type { RunningAgentInfo } from "../../server/agents";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -145,5 +145,61 @@ describe("sampleSystem", () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
+  });
+});
+
+/**
+ * 0216 — `repoos serve` census. Preview and fixture servers that outlive their
+ * owning task accumulate silently and starve the close-out gate, so the panel
+ * counts them and flags an abnormal number.
+ */
+describe("parseServeScan", () => {
+  const REAL = "/Users/x/repo";
+  const GONE = "/private/var/folders/tmp/repoos-release-abc";
+  const line = (pid: number, root: string, port: number) =>
+    `${pid} /opt/node ${root}/dist/cli/index.js serve --port ${port} --host 127.0.0.1`;
+  const exists = (root: string | null) => root === REAL;
+
+  it("classifies the control plane, known previews and strays", () => {
+    const out = [
+      line(100, REAL, 7171),
+      line(200, REAL, 5001),
+      line(300, GONE, 5002),
+      "999 /opt/node /some/other/thing.js --port 8080",
+    ].join("\n");
+    const scan = parseServeScan(out, 100, new Set([200]), exists);
+    expect(scan.total).toBe(3); // the non-serve process is ignored
+    expect(scan.processes.map((p) => p.kind)).toEqual(["control-plane", "known-preview", "stray"]);
+    expect(scan.strays).toBe(1);
+    expect(scan.deadRoot).toBe(1);
+    expect(scan.level).toBe("notice");
+  });
+
+  it("is ok when only the control plane and known previews are running", () => {
+    const scan = parseServeScan([line(100, REAL, 7171), line(200, REAL, 5001)].join("\n"), 100, new Set([200]), exists);
+    expect(scan.strays).toBe(0);
+    expect(scan.level).toBe("ok");
+  });
+
+  it("warns once strays reach the gate-starving threshold", () => {
+    const out = [line(100, REAL, 7171), ...[201, 202, 203, 204].map((p, i) => line(p, GONE, 5000 + i))].join("\n");
+    const scan = parseServeScan(out, 100, new Set(), exists);
+    expect(scan.strays).toBe(4);
+    expect(scan.deadRoot).toBe(4);
+    expect(scan.level).toBe("warn");
+  });
+
+  it("recognises a dev-mode serve running from src/", () => {
+    const out = `100 /opt/bun ${REAL}/src/cli/index.ts serve --port 7171`;
+    const scan = parseServeScan(out, 100, new Set(), exists);
+    expect(scan.total).toBe(1);
+    expect(scan.processes[0].kind).toBe("control-plane");
+  });
+
+  it("extracts the root and port from a serve command line", () => {
+    const cmd = `/opt/node ${REAL}/dist/cli/index.js serve --port 7171 --host 127.0.0.1`;
+    expect(parseServeRoot(cmd)).toBe(REAL);
+    expect(parseServePort(cmd)).toBe(7171);
+    expect(parseServePort("/opt/node x/dist/cli/index.js serve")).toBeNull();
   });
 });
