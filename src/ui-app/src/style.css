@@ -688,7 +688,8 @@
   .quickbar-row button{white-space:nowrap}
 
   .drawer-tabs{display:flex;gap:4px;padding:8px 22px 0;border-bottom:1px solid var(--border);background:var(--panel-solid)}
-  .tab-btn{padding:8px 14px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:.15s}
+  .tab-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:.15s}
+  .tab-icon{width:13px;height:13px;flex:none}
   .tab-btn:hover{color:var(--txt)}
   .tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan)}
   .agent-tabs{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin:0 0 16px;padding:0 18px;border-bottom:1px solid var(--border);scrollbar-width:none;-ms-overflow-style:none}
@@ -746,9 +747,9 @@
   .agent-tool-out{padding:8px 10px;border-top:1px solid var(--border);white-space:pre-wrap;word-break:break-word;color:var(--txt-dim);font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.5;max-height:320px;overflow-y:auto;background:var(--md-body-bg)}
   .agent-empty{color:var(--txt-faint);text-align:center;padding:36px 20px;line-height:1.7;font-size:12px}
   .agent-input-row{display:flex;gap:10px;align-items:flex-end;flex-shrink:0}
-  .agent-input-wrapper{position:relative;flex:1;min-width:0}
+  .agent-reply-input-wrapper{position:relative;flex:1;min-width:0}
   .agent-input{display:block;box-sizing:border-box;width:100%;padding:10px 46px 10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;resize:none}
-  .agent-input-wrapper .voice-dictate{position:absolute;right:8px;bottom:8px}
+  .agent-reply-input-wrapper .voice-dictate{position:absolute;right:8px;bottom:8px}
   .agent-input:focus{outline:none;border-color:var(--border-bright)}
   .agent-input:disabled{opacity:.6}
   .agent-hint{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}

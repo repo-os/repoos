@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -1965,6 +1965,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'details' }"
             @click="ui.activeTab = 'details'"
           >
+            <FileText class="tab-icon" />
             Task
           </button>
           <button
@@ -1973,6 +1974,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'pm' }"
             @click="ui.activeTab = 'pm'"
           >
+            <MessageSquare class="tab-icon" />
             PM
           </button>
           <button
@@ -1981,6 +1983,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'agent' }"
             @click="ui.activeTab = 'agent'"
           >
+            <Bot class="tab-icon" />
             Engineer
           </button>
           <button
@@ -1989,6 +1992,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'changes' }"
             @click="ui.activeTab = 'changes'"
           >
+            <Diff class="tab-icon" />
             Changes
           </button>
           <button
@@ -1998,6 +2002,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
+            <ShieldCheck class="tab-icon" />
             Reviewer
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
@@ -2352,7 +2357,7 @@ function resetFreeformOverrides(): void {
             </button>
           </div>
           <div class="agent-input-row">
-            <div class="agent-input-wrapper">
+            <div class="agent-reply-input-wrapper">
               <textarea
                 ref="draftMsgTextarea"
                 v-model="draftMsg"
@@ -2513,7 +2518,7 @@ function resetFreeformOverrides(): void {
           </div>
 
           <div class="agent-input-row">
-            <div class="agent-input-wrapper">
+            <div class="agent-reply-input-wrapper">
               <textarea
                 ref="reviewDraftMsgTextarea"
                 v-model="reviewDraftMsg"
