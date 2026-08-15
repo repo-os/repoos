@@ -8,10 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
-cli_override: codex
-model_override: gpt-5.4-mini
+model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:54:02Z"
+updated_at: "2026-08-15T07:54:05Z"
 ---
 ## Problem
 
@@ -74,3 +73,4 @@ actions appear as they do today.
 - 2026-08-15T07:53:55Z · cli_override
 - 2026-08-15T07:53:59Z · cli_override
 - 2026-08-15T07:54:02Z · model_override
+- 2026-08-15T07:54:05Z · cli_override, model_override
