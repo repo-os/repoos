@@ -31,6 +31,35 @@ export interface ProcessInfo {
   unverified: boolean;
 }
 
+/** A live `repoos serve` process found on the machine. */
+export interface ServeProcessInfo {
+  pid: number;
+  port: number | null;
+  /** Repo root the process is serving, parsed from its argv. */
+  root: string | null;
+  /** False when the root directory is gone — the process is definitively garbage. */
+  rootExists: boolean;
+  kind: "control-plane" | "known-preview" | "stray";
+}
+
+/**
+ * Machine-wide census of `repoos serve` processes (#0216). Preview and fixture
+ * servers that outlive their owning task or test accumulate silently, and the
+ * load they generate makes the close-out gate fail on timing-sensitive tests
+ * that pass fine in isolation — a false failure that is indistinguishable from
+ * a real regression. Surfacing the count makes the accumulation visible before
+ * it starts costing close-outs.
+ */
+export interface ServeScan {
+  total: number;
+  /** Neither the control plane nor a preview RepoOS knows it started. */
+  strays: number;
+  /** Strays whose root directory no longer exists. */
+  deadRoot: number;
+  level: "ok" | "notice" | "warn";
+  processes: ServeProcessInfo[];
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -39,6 +68,7 @@ export interface SystemStats {
     memPercent: number;
   };
   processes: ProcessInfo[];
+  serve: ServeScan | null;
   serverPid: number;
   at: string;
 }
@@ -179,10 +209,93 @@ function syncOwnership(
   return out;
 }
 
+/**
+ * A stray count at or above this is a real problem, not untidiness: it is the
+ * regime where #0211 failed its close-out gate twice on unrelated flaky tests.
+ */
+const SERVE_WARN_THRESHOLD = 4;
+
+/** Matches both a compiled (`dist/cli/index.js`) and a dev (`src/cli/index.ts`) serve. */
+const SERVE_CMD_RE = /[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/;
+
+/** Extract the repo root a serve process is running from, or null. */
+export function parseServeRoot(command: string): string | null {
+  const m = command.match(/(\S+?)[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/);
+  return m ? m[1] : null;
+}
+
+/** Extract `--port N` from a serve command line, or null. */
+export function parseServePort(command: string): number | null {
+  const m = command.match(/--port[= ](\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Parse `ps ax -o pid=,command=` output into serve-process records. Exported
+ * for testing so the classification can be exercised without spawning servers.
+ */
+export function parseServeScan(
+  output: string,
+  serverPid: number,
+  knownPids: Set<number>,
+  rootExists: (root: string | null) => boolean,
+): ServeScan {
+  const processes: ServeProcessInfo[] = [];
+  for (const line of output.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const sp = trimmed.indexOf(" ");
+    if (sp === -1) continue;
+    const pid = Number(trimmed.slice(0, sp));
+    const command = trimmed.slice(sp + 1);
+    if (isNaN(pid) || !SERVE_CMD_RE.test(command)) continue;
+    const root = parseServeRoot(command);
+    const kind: ServeProcessInfo["kind"] = pid === serverPid
+      ? "control-plane"
+      : knownPids.has(pid)
+        ? "known-preview"
+        : "stray";
+    processes.push({ pid, port: parseServePort(command), root, rootExists: rootExists(root), kind });
+  }
+  const strays = processes.filter((p) => p.kind === "stray");
+  const deadRoot = strays.filter((p) => !p.rootExists).length;
+  const level: ServeScan["level"] = strays.length === 0
+    ? "ok"
+    : strays.length >= SERVE_WARN_THRESHOLD
+      ? "warn"
+      : "notice";
+  return { total: processes.length, strays: strays.length, deadRoot, level, processes };
+}
+
+let serveScanCache: { at: number; scan: ServeScan } | null = null;
+/** The census walks every process on the machine, so it runs far less often than the 5s sample. */
+const SERVE_SCAN_TTL_MS = 20_000;
+
+/**
+ * Census live `repoos serve` processes. Cached — `ps ax` lists every process on
+ * the machine, which is much heavier than the targeted per-PID sample.
+ */
+export function scanServeProcesses(serverPid: number, knownPids: Set<number>): ServeScan | null {
+  const now = Date.now();
+  if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
+  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,command="]);
+  if (output === null) return serveScanCache?.scan ?? null;
+  const scan = parseServeScan(output, serverPid, knownPids, (root) => root !== null && existsSync(root));
+  serveScanCache = { at: now, scan };
+  return scan;
+}
+
+/** Drop the cached census. Exported for tests. */
+export function resetServeScanCache(): void {
+  serveScanCache = null;
+}
+
 export interface SampleSystemOptions {
   serverPid: number;
   cacheDir: string;
   runningAgents: RunningAgentInfo[];
+  /** PIDs of preview servers RepoOS knows it started — never counted as strays. */
+  knownServePids?: number[];
 }
 
 /**
@@ -272,6 +385,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
       memPercent: Math.round(totalMemPercent * 10) / 10,
     },
     processes,
+    serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? [])),
     serverPid,
     at: new Date().toISOString(),
   };

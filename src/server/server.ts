@@ -910,6 +910,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         serverPid: process.pid,
         cacheDir: join(config.root, config.cacheDir),
         runningAgents: runner.running(),
+        knownServePids: previews.knownPids(),
       });
       emitEvent({ type: "system.stats", stats });
     } catch {

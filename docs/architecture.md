@@ -50,7 +50,10 @@ Pure logic, no transport. Everything else calls into this.
 - `models.ts` — per-CLI model list adapters (e.g. sources `opencode models`
   live for the Agents page dropdown). Copilot model discovery is not stable, so
   it offers its default and supports per-model compatibility probes.
-- `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`).
+- `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`,
+  which holds `{ hash, version }` and is deterministic across rebuilds) plus
+  `readBuildStamp()`, the single reader for the build timestamp in the
+  gitignored `dist/.build-stamp.json`.
 
 ### src/cli + src/commands — one-shot commands
 
