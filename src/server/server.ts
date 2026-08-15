@@ -125,7 +125,7 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
@@ -939,6 +939,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
+  // Stray serve-process reaping (#0216): orphaned repoos serve processes
+  // (their spawning parent confirmed dead) accumulate from failed
+  // reload-replacement attempts and interrupted test/close-out runs. Left
+  // alone they starve the close-out gate and, at volume, strain the whole
+  // machine — not just this server. Runs independent of SSE client presence
+  // (unlike the stats sampler above) since strays keep accumulating whether
+  // or not anyone is watching the UI. `psAvailable()` gate matches the
+  // sampler's own platform guard.
+  const REAP_INTERVAL_MS = 30_000;
+  const reapTimer = setInterval(() => {
+    if (!psAvailable()) return;
+    try {
+      const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+      if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+    } catch {
+      /* reaping is best-effort — never crash the server over it */
+    }
+  }, REAP_INTERVAL_MS);
+
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
   // schedule is due runs exactly one scan per tick; scheduled and manual runs
@@ -1508,6 +1527,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(reapTimer);
         clearInterval(builtInTimer);
         ctoMonitor.stop();
         runner.dispose();
@@ -1529,6 +1549,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(reapTimer);
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();
