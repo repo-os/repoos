@@ -4,3 +4,7 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Build timestamp — changes on every build by design, so it is not tracked.
+# The deterministic marker (dist/.build-info.json) is what git sees.
+dist/.build-stamp.json
