@@ -161,19 +161,23 @@
   .spacer{flex:1}
   .conn{display:flex;align-items:center;gap:7px;font-size:11px;padding:6px 11px;border-radius:20px;font-weight:600;font-family:'JetBrains Mono',monospace}
   .conn.live{color:var(--green);background:var(--green-tint);border:1px solid var(--green-border-tint)}
-  .conn.down{color:var(--red);background:var(--red-tint);border:1px solid var(--red-border-tint)}
+  .conn.offline{color:var(--red);background:var(--red-tint);border:1px solid var(--red-border-tint)}
+  .conn.loading{color:var(--amber);background:var(--amber-tint);border:1px solid var(--amber-border-tint)}
   .conn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:var(--dot-glow)}
   .conn.live .dot{animation:pulse 2s infinite}
+  .conn.loading .dot{animation:conn-loading 1.4s ease-in-out infinite}
   @media(max-width:760px){
     .conn{padding:0;background:none;border:none;gap:0}
-    .conn.live,.conn.down{background:none;border:none;color:inherit}
+    .conn.live,.conn.offline,.conn.loading{background:none;border:none;color:inherit}
     .conn-text{display:none}
     .conn .dot{width:8px;height:8px}
   }
   @media(prefers-reduced-motion:reduce){
-    .conn.live .dot{animation:none}
+    .conn.live .dot,.conn.loading .dot{animation:none}
+    .conn.loading .dot{opacity:.6}
   }
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes conn-loading{0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
   .version-notice{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;
     font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;
     color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(57,224,255,0.3);
