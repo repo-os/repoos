@@ -8,10 +8,10 @@ area: general
 assigned_to: ai
 created_by: ""
 branch: feat/let-s-add-a-new-agent-to-build-your-team
-pm_cli_override: qwen code
+pm_cli_override: kiro
 pm_model_override: default
 created_at: "2026-08-14T15:46:05Z"
-updated_at: "2026-08-15T04:42:37Z"
+updated_at: "2026-08-15T04:42:43Z"
 ---
 Let's add a new agent to "build your team" called the "Debugger Agent". If there's ever a bug you can copy-paste it to him and ask what's up — he diagnoses the root cause and suggests a fix.
 
@@ -50,3 +50,4 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 - 2026-08-15T04:16:05Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-08-15T04:42:31Z · pm_cli_override, pm_model_override
 - 2026-08-15T04:42:37Z · pm_cli_override
+- 2026-08-15T04:42:43Z · pm_cli_override
