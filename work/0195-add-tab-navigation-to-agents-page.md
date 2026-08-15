@@ -1,5 +1,4 @@
 ---
-review_rounds: 1
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
@@ -11,8 +10,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-tab-navigation-to-agents-page
 model_override: default
+pm_model_override: default
 created_at: "2026-08-14T12:23:17Z"
-updated_at: "2026-08-15T05:42:39Z"
+updated_at: "2026-08-15T10:53:23Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -56,4 +57,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T05:42:21Z · model_override
 - 2026-08-15T05:42:39Z · status active→review
 - 2026-08-15T05:42:39Z · needs_merge
-
+- 2026-08-15T10:53:23Z · pm_model_override
