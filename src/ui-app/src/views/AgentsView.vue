@@ -58,7 +58,13 @@ watch(
 // section instead of masquerading as a custom role (0174/0196).
 const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name.toLowerCase()));
 const isDefaultName = (name: string): boolean => defaultNames.value.includes(name.toLowerCase());
-const defaultAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name)));
+// The talk/team agents (Ross, CTO, …) get their own cards under "Build your
+// team", distinct from the headless task-engine defaults (engineer, reviewer,
+// pm) shown in the "Default agents" section. Grouped by lowercase name.
+const TEAM_AGENT_NAMES = ["ross", "cto"];
+const isTeamAgent = (name: string): boolean => TEAM_AGENT_NAMES.includes(name.toLowerCase());
+const headlessAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)));
+const teamAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)));
 const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
 
 const CLI_LABELS: Record<string, string> = {
@@ -357,9 +363,9 @@ onUnmounted(() => {
           </Button>
         </div>
         <div class="agent-desc">
-          Built-in roles. Toggle them on or off and pick their coding agent and model.
+          Headless task-engine roles that run the roadmap. Toggle them on or off and pick their coding agent and model.
         </div>
-        <div v-for="a in defaultAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
+        <div v-for="a in headlessAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
           <div class="agent-head">
             <div class="agent-title">
               <span class="agent-dot"></span>
@@ -534,9 +540,80 @@ onUnmounted(() => {
           <span class="live-dot" style="background: var(--green)"></span>Build your team
         </div>
         <div class="agent-desc">
-          Pre-built optional agents that extend RepoOS. Enable them to add new capabilities.
+          The agents that talk back or extend RepoOS. Enable them to add new capabilities.
         </div>
 
+        <div v-for="a in teamAgents" :key="'team-' + a.name" class="agent-card" :class="{ off: !a.enabled }">
+          <div class="agent-head">
+            <div class="agent-title">
+              <span class="agent-dot"></span>
+              <span class="agent-name">{{ a.name }}</span>
+              <span class="agent-badge">team</span>
+            </div>
+            <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
+          </div>
+          <div class="agent-body">
+            <div class="agent-field">
+              <label>Coding agent</label>
+              <Select :model-value="a.cli" @update:model-value="(v) => (a.cli = v ?? a.cli)">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="c in clis" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="agent-field">
+              <label>Model</label>
+              <Select :model-value="a.model" @update:model-value="(v) => (a.model = v ?? a.model)">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
+                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectSearchGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="agent-field agent-test-result">
+              <label>Compatibility</label>
+              <div class="agent-test-actions">
+                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                </Button>
+                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                  {{ resultFor(a)!.status.replace('_', ' ') }}
+                </span>
+              </div>
+            </div>
+            <div class="agent-field agent-instr-field">
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+              </div>
+              <textarea
+                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
+                :value="a.instructions ?? ''"
+                class="agent-instr"
+                rows="2"
+                placeholder="Optional — how this agent should behave"
+                @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <BuiltInAgentCard agent="debugger" interactive />
         <BuiltInAgentCard agent="tech-debt" />
         <BuiltInAgentCard agent="performance" />
         <BuiltInAgentCard agent="architect" />

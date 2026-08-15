@@ -1268,6 +1268,48 @@ User question:
 ${question}`;
 }
 
+/** Persistent session id for the Debugger's bug-paste conversation. */
+export const debuggerSessionId = "__repoos-debugger__";
+
+/** The Debugger agent's role name, used to route its chat prompt. */
+export const DEBUGGER_NAME = "debugger";
+
+/** The Debugger agent: a chat-first bug diagnostician (no background scan). */
+export function debuggerAgent(): Agent {
+  const base = { cli: "opencode", model: "big pickle" } as const;
+  return {
+    name: DEBUGGER_NAME,
+    cli: base.cli,
+    model: base.model,
+    enabled: true,
+    instructions:
+      "You are the Debugger, a bug diagnostician. When you're handed a pasted bug report, stack trace, or error message, identify the root cause and suggest a concrete, actionable fix. Ask for more context only when the report is too ambiguous to diagnose. Ground your diagnosis in the repository when the pasted text references code you can inspect.",
+  };
+}
+
+export function debuggerPrompt(
+  question: string,
+  repositoryContext: string,
+  agent: Agent,
+): string {
+  return `You are the Debugger, the agent you copy a failing report to for a clear diagnosis.
+
+${agent.instructions ?? "Diagnose the root cause and suggest a fix."}
+
+Rules:
+- Identify the root cause, not just the symptom, and explain your reasoning briefly.
+- Give a concrete, actionable suggested fix (code or config where appropriate).
+- You may read repository files and run read-only discovery commands to verify.
+- Never edit files, change task status, commit, launch servers, or start agents.
+- If you cannot determine the cause with confidence, say exactly what is missing.
+
+The pasted bug / error / question is below. Current repository context:
+${repositoryContext}
+
+Bug report:
+${question}`;
+}
+
 /** The mission handed to the coding agent: instructions + task pointer. */
 function missionFor(
   task: Task,
@@ -1764,7 +1806,10 @@ export class AgentRunner {
       stalledEmitted: false,
     };
     this.sessions.set(sessionId, session);
-    const mission = repoGuidePrompt(text, repositoryContext, agent);
+    const mission =
+      agent.name === DEBUGGER_NAME
+        ? debuggerPrompt(text, repositoryContext, agent)
+        : repoGuidePrompt(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
     return this.spawnTurn(sessionId, cmd, args, this.config.root);
   }

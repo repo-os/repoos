@@ -6,6 +6,7 @@ export * from "./tasks.js";
 export * from "./ui.js";
 export * from "./utils.js";
 export * from "./info.js";
+export * from "./debugger.js";
 export * from "./notify.js";
 export * from "./transcribe.js";
 export { type RouteContext, type RouteHandler, type Route, type SyncResult } from "./types.js";
