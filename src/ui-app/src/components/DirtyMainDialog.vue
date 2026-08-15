@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRepoStore } from "../stores/repo";
+import { onBeforeUnmount, onMounted } from "vue";
 import Button from "./ui/button.vue";
 
-defineProps<{
+const props = defineProps<{
   task: { id: string } | null;
   files: string[];
 }>();
@@ -12,7 +11,12 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const repo = useRepoStore();
+/** Escape closes the dialog, matching every other modal in the app. */
+function onKey(e: KeyboardEvent): void {
+  if (e.key === "Escape" && props.task) emit("cancel");
+}
+onMounted(() => window.addEventListener("keydown", onKey));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <template>

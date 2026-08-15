@@ -349,6 +349,13 @@ describe("automatic review state", () => {
     const repo = useRepoStore();
     await repo.init();
     expect(repo.reviewFor("0001")).toMatchObject({ running: false });
+    // The FIRST open is the initial connection — init() fetched the index
+    // moments earlier, so it deliberately does not refetch (see repo.ts).
+    // A reconnect is the SECOND open, and that is what must rehydrate:
+    // events emitted while the stream was down are never replayed.
+    FakeEventSource.instances[0].onopen?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(repo.reviewFor("0001")).toMatchObject({ running: false });
     FakeEventSource.instances[0].onopen?.();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(repo.reviewFor("0001")).toMatchObject({ running: true, enabled: true });

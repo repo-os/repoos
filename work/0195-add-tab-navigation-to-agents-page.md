@@ -2,15 +2,18 @@
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
-status: ready
+status: review
 needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-tab-navigation-to-agents-page
+model_override: default
+pm_model_override: default
 created_at: "2026-08-14T12:23:17Z"
-updated_at: "2026-08-15T05:42:39Z"
+updated_at: "2026-08-15T10:53:23Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -50,4 +53,8 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T02:42:47Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T03:34:32Z · status review→done, release:success
 - 2026-08-15T03:53:39Z · status done→ready
+- 2026-08-15T03:53:41Z · status ready→active
+- 2026-08-15T05:42:21Z · model_override
+- 2026-08-15T05:42:39Z · status active→review
 - 2026-08-15T05:42:39Z · needs_merge
+- 2026-08-15T10:53:23Z · pm_model_override

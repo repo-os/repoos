@@ -59,12 +59,21 @@ here, silently, for the pipeline's entire lifetime until 2026-08-14. If you ever
 Merges the task's feature branch into the candidate worktree.
 
 **Known-fixed bug (commit `e34485c7`):** this merge used to have zero conflict
-auto-resolution. `dist/.build-info.json` carries a unique hash+timestamp on *every*
-independent build, so it conflicts on essentially every single merge — this alone
-failed nearly every job. The task's own doc file also routinely conflicts (status/
+auto-resolution. `dist/.build-info.json` used to carry a unique hash+timestamp on
+*every* independent build, so it conflicted on essentially every single merge — this
+alone failed nearly every job. The task's own doc file also routinely conflicts (status/
 review_rounds bookkeeping differs between the branch's copy and main's copy). Both are
 now auto-resolved via `mergeBranch()`'s `autoResolve` list (`dist/`, `screenshots/`, the
 task's own file — same mechanism the legacy `done.ts` path already used).
+
+**Root cause removed (2026-08-15):** the timestamp moved out of the tracked marker into
+a gitignored `dist/.build-stamp.json`, so `dist/.build-info.json` is now
+`{ hash, version }` and a rebuild of unchanged source produces a byte-identical tree.
+`dist/` conflicts should now be RARE (only when the branch and main genuinely built
+different source), not universal. **Keep `autoResolve` anyway** — it is the general
+mechanism for generated-file conflicts, and every repo has some. If you see `dist/`
+conflicting on every job again, determinism has regressed: check that
+`scripts/copy-assets.mjs` has not put a timestamp back into the marker.
 
 **If you see `merge conflict in <path>` for anything OTHER than `dist/`, `screenshots/`,
 or the task's own `work/<id>-*.md`: that is a REAL source conflict.** Do not force-resolve
@@ -110,8 +119,11 @@ lock guarantees that. Safe to just retry.
 
 ## The reload-churn interaction (NOT YET FIXED — read this before troubleshooting flakiness)
 
-Every `validating` phase's `bun run build` rewrites `dist/.build-info.json` on the
-**candidate** worktree, which is harmless. But if a job is running close together with
+Every `validating` phase's `bun run build` rewrites `dist/` on the **candidate**
+worktree, which is harmless. (Since 2026-08-15 a rebuild of unchanged source rewrites
+the marker with identical content, so a no-op rebuild no longer trips the auto-reload
+hash watcher at all — one input to the churn below is gone, but the interaction
+itself is not fixed.) But if a job is running close together with
 other repo activity (another agent's build landing on `main`, or you running `bun run
 build`/`repoos check` on `main` directly), the MAIN server process's own auto-reload
 (`src/server/reload.ts`) may attempt a handoff at the same time. As of 2026-08-14 this
@@ -184,6 +196,7 @@ routes, or the CLI) **so the change is tracked, logged, and synced correctly.**
 | `could not create candidate worktree` | Candidate branch prefix regressed to a dot-prefix | Check `CANDIDATE_BRANCH_PREFIX` in `integration-orchestrator.ts` |
 | `could not get main SHA` | Stale job from before the prefix fix, or genuinely broken git state | Retry `POST .../done` — jobs re-enqueue cleanly now (commit `d66c7877`) |
 | `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/`, `screenshots/`, and the task's own path |
+| `dist/` dirty on `main` after a plain `bun run build` | Build determinism regressed — a timestamp/random value is back in `dist/.build-info.json` | Check `scripts/copy-assets.mjs`: the marker holds `{ hash, version }` only; `generatedAt` belongs in the gitignored `dist/.build-stamp.json` |
 | `merge conflict in <any other file>` | Real source conflict between the feature branch and main | Fix it in the feature branch's own worktree, not the candidate |
 | `check failed: <unhelpful shell preamble>` | Should not happen post-`3fbbd707` — if it does, the tail-line diagnostic or local-CLI-first ordering regressed | Reproduce manually: `cd` into the candidate worktree, run `node dist/cli/index.js check` directly |
 | `check failed: <real reason>`, and it reproduces manually in the candidate worktree | The task's actual code has a real bug | Fix it on the feature branch, not the candidate (the candidate is discarded and rebuilt from the branch every retry) |

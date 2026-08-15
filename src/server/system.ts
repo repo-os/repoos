@@ -31,6 +31,44 @@ export interface ProcessInfo {
   unverified: boolean;
 }
 
+/** A live `repoos serve` process found on the machine. */
+export interface ServeProcessInfo {
+  pid: number;
+  ppid: number;
+  port: number | null;
+  /** Repo root the process is serving, parsed from its argv. */
+  root: string | null;
+  /** False when the root directory is gone — the process is definitively garbage. */
+  rootExists: boolean;
+  /**
+   * `in-flight` is the one that stops this from crying wolf: the close-out
+   * gate's own test suite spawns fixture servers constantly, and while their
+   * spawning process is still alive they are doing legitimate work. Only a
+   * process whose parent has died (reparented to PID 1) is abandoned.
+   */
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
+}
+
+/**
+ * Machine-wide census of `repoos serve` processes (#0216). Preview and fixture
+ * servers that outlive their owning task or test accumulate silently, and the
+ * load they generate makes the close-out gate fail on timing-sensitive tests
+ * that pass fine in isolation — a false failure that is indistinguishable from
+ * a real regression. Surfacing the count makes the accumulation visible before
+ * it starts costing close-outs.
+ */
+export interface ServeScan {
+  total: number;
+  /** Abandoned: unattributable AND the spawning process is gone. */
+  strays: number;
+  /** Unattributable but still supervised by a live parent — a running test or gate. */
+  inFlight: number;
+  /** Strays whose root directory no longer exists. */
+  deadRoot: number;
+  level: "ok" | "notice" | "warn";
+  processes: ServeProcessInfo[];
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -39,6 +77,7 @@ export interface SystemStats {
     memPercent: number;
   };
   processes: ProcessInfo[];
+  serve: ServeScan | null;
   serverPid: number;
   at: string;
 }
@@ -179,10 +218,116 @@ function syncOwnership(
   return out;
 }
 
+/**
+ * A stray count at or above this is a real problem, not untidiness: it is the
+ * regime where #0211 failed its close-out gate twice on unrelated flaky tests.
+ */
+const SERVE_WARN_THRESHOLD = 4;
+
+/** Matches both a compiled (`dist/cli/index.js`) and a dev (`src/cli/index.ts`) serve. */
+const SERVE_CMD_RE = /[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/;
+
+/** Extract the repo root a serve process is running from, or null. */
+export function parseServeRoot(command: string): string | null {
+  const m = command.match(/(\S+?)[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/);
+  return m ? m[1] : null;
+}
+
+/** Extract `--port N` from a serve command line, or null. */
+export function parseServePort(command: string): number | null {
+  const m = command.match(/--port[= ](\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Parse `ps ax -o pid=,ppid=,command=` output into serve-process records.
+ *
+ * Classification order matters. The control plane is checked first because the
+ * reload handoff deliberately detaches it, so it also runs with `ppid` 1 and
+ * would otherwise look abandoned. Everything else that RepoOS did not start is
+ * abandoned only if its parent is gone — a fixture server with a live vitest
+ * worker above it is the gate doing its job, not a leak.
+ *
+ * Exported for testing so classification can be exercised without spawning servers.
+ */
+export function parseServeScan(
+  output: string,
+  serverPid: number,
+  knownPids: Set<number>,
+  rootExists: (root: string | null) => boolean,
+): ServeScan {
+  const rows: { pid: number; ppid: number; command: string }[] = [];
+  const livePids = new Set<number>();
+  for (const line of output.split("\n")) {
+    const m = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+    if (!m) continue;
+    const pid = Number(m[1]);
+    livePids.add(pid);
+    rows.push({ pid, ppid: Number(m[2]), command: m[3] });
+  }
+
+  const processes: ServeProcessInfo[] = [];
+  for (const { pid, ppid, command } of rows) {
+    if (!SERVE_CMD_RE.test(command)) continue;
+    const root = parseServeRoot(command);
+    // A parent of 1 means the process was reparented after its spawner died.
+    const supervised = ppid !== 1 && livePids.has(ppid);
+    const kind: ServeProcessInfo["kind"] = pid === serverPid
+      ? "control-plane"
+      : knownPids.has(pid)
+        ? "known-preview"
+        : supervised
+          ? "in-flight"
+          : "stray";
+    processes.push({ pid, ppid, port: parseServePort(command), root, rootExists: rootExists(root), kind });
+  }
+
+  const strays = processes.filter((p) => p.kind === "stray");
+  const deadRoot = strays.filter((p) => !p.rootExists).length;
+  const level: ServeScan["level"] = strays.length === 0
+    ? "ok"
+    : strays.length >= SERVE_WARN_THRESHOLD
+      ? "warn"
+      : "notice";
+  return {
+    total: processes.length,
+    strays: strays.length,
+    inFlight: processes.filter((p) => p.kind === "in-flight").length,
+    deadRoot,
+    level,
+    processes,
+  };
+}
+
+let serveScanCache: { at: number; scan: ServeScan } | null = null;
+/** The census walks every process on the machine, so it runs far less often than the 5s sample. */
+const SERVE_SCAN_TTL_MS = 20_000;
+
+/**
+ * Census live `repoos serve` processes. Cached — `ps ax` lists every process on
+ * the machine, which is much heavier than the targeted per-PID sample.
+ */
+export function scanServeProcesses(serverPid: number, knownPids: Set<number>): ServeScan | null {
+  const now = Date.now();
+  if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
+  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,command="]);
+  if (output === null) return serveScanCache?.scan ?? null;
+  const scan = parseServeScan(output, serverPid, knownPids, (root) => root !== null && existsSync(root));
+  serveScanCache = { at: now, scan };
+  return scan;
+}
+
+/** Drop the cached census. Exported for tests. */
+export function resetServeScanCache(): void {
+  serveScanCache = null;
+}
+
 export interface SampleSystemOptions {
   serverPid: number;
   cacheDir: string;
   runningAgents: RunningAgentInfo[];
+  /** PIDs of preview servers RepoOS knows it started — never counted as strays. */
+  knownServePids?: number[];
 }
 
 /**
@@ -272,6 +417,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
       memPercent: Math.round(totalMemPercent * 10) / 10,
     },
     processes,
+    serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? [])),
     serverPid,
     at: new Date().toISOString(),
   };

@@ -9,6 +9,7 @@ import type {
   Counts,
   CtoState,
   Health,
+  IntegrationPipelineSnapshot,
   RepoEvent,
   RepoIndex,
   ReviewReport,
@@ -227,6 +228,8 @@ export const useRepoStore = defineStore("repo", () => {
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live integration-pipeline snapshot for the pinned status bar (0207). */
+  const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
@@ -244,6 +247,21 @@ export const useRepoStore = defineStore("repo", () => {
   let feedKey = 0;
   let toastId = 0;
   let es: EventSource | null = null;
+  /**
+   * When init()'s own index fetch completed, or 0 once consumed. Lets the FIRST
+   * SSE open skip its refresh: init() fetched the index moments earlier and the
+   * payload is ~1 MB at 200 tasks, so refetching it doubled the largest transfer
+   * of a page load for data that could not have changed.
+   *
+   * Time-bounded rather than a plain flag, because the skip is only sound while
+   * the two are genuinely adjacent. If the connection took a while to open,
+   * events emitted in that window were never delivered and never replayed, so
+   * the refresh has to happen. Reconnects always refresh — the stamp is cleared
+   * after the first open.
+   */
+  let initRefreshAt = 0;
+  /** Longest gap between init()'s fetch and the first SSE open that can be treated as "nothing happened". */
+  const INIT_REFRESH_REUSE_MS = 2000;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -532,6 +550,8 @@ export const useRepoStore = defineStore("repo", () => {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
+    } else if (e.type === "integration") {
+      integration.value = e.pipeline;
     }
   }
 
@@ -544,6 +564,25 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Hydrate the integration-pipeline snapshot after a refresh/SSE gap (0207). */
+  async function refreshIntegration(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>("/api/integration/pipeline");
+      if (r.pipeline) integration.value = r.pipeline;
+    } catch {
+      /* non-fatal — the bar falls back to its idle state */
+    }
+  }
+
+  /**
+   * Retry a failed integration job (0207). Reuses the server's existing retry
+   * path (re-enqueue as a fresh queued job). Best-effort: non-fatal errors are
+   * surfaced as a toast for the caller to catch.
+   */
+  async function retryIntegration(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
+  }
+
   function connectSSE(): void {
     if (es) es.close();
     es = new EventSource(origin + "/api/events");
@@ -553,20 +592,35 @@ export const useRepoStore = defineStore("repo", () => {
       // the server-authoritative index on every open so a reviewer that
       // started, finished, or failed during that gap cannot leave a stale card
       // or disabled/enabled done action behind.
-      void refresh().catch(() => {
-        /* connection state already reflects the successful SSE open */
-      });
+      //
+      // The one exception is the very first open of a page load, when init()
+      // fetched the index moments earlier and no gap existed to miss events in.
+      // Refetching there doubled the largest payload the app transfers. If
+      // init()'s refresh failed, or the connection was slow enough that events
+      // could have been missed, the stamp does not qualify and this still runs.
+      const reusable = initRefreshAt > 0 && Date.now() - initRefreshAt < INIT_REFRESH_REUSE_MS;
+      initRefreshAt = 0;
+      if (reusable) {
+        /* init() just fetched it and no gap existed to miss events in */
+      } else {
+        void refresh().catch(() => {
+          /* connection state already reflects the successful SSE open */
+        });
+      }
       void refreshAutoEng().catch(() => {
         /* non-fatal hydration */
       });
       void loadCTO().catch(() => {
         /* non-fatal hydration */
       });
+      void refreshIntegration().catch(() => {
+        /* non-fatal hydration */
+      });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -777,15 +831,27 @@ export const useRepoStore = defineStore("repo", () => {
         ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commitDirty: true }) }
         : {}),
     });
-    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] } = {};
+    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean } = {};
     try {
-      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] };
+      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean };
     } catch {
       body = {};
     }
     // Dirty-main guard (0204): the server returns 409 + needsCommit when main
     // has uncommitted files and the user has not opted in via commitDirty.
     if (raw.status === 409 && body.needsCommit && Array.isArray(body.dirtyFiles)) {
+      // #0211: when the dirty check itself failed (error/timeout) the file list
+      // is unknown, so "Commit & continue" would be guessing. Surface the plain
+      // actionable error instead of the commit modal.
+      if (body.dirtyCheckFailed) {
+        const message = body.error ?? "could not verify main is clean before close-out";
+        setDoneError(t.id, {
+          message,
+          conflicts: extractConflicts(message),
+          step: doneSteps.value[t.id] ?? "merge",
+        });
+        throw new MoveToDoneError(t.id, message);
+      }
       dirtyMain.value = { ...dirtyMain.value, [t.id]: body.dirtyFiles };
       throw new DirtyMainError(t.id, body.dirtyFiles);
     }
@@ -1090,6 +1156,7 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       health.value = await api<Health>("/api/health");
       await refresh();
+      initRefreshAt = Date.now();
       await fetchRunning();
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
@@ -1129,6 +1196,9 @@ export const useRepoStore = defineStore("repo", () => {
     systemStats,
     autoEng,
     refreshAutoEng,
+    integration,
+    refreshIntegration,
+    retryIntegration,
     newVersion,
     restarting,
     pushToast,

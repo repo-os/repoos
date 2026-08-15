@@ -142,6 +142,11 @@ export function reviewMission(
     "- You may run read-only commands (git, reading files). The implementer already",
     "  ran `repoos check` green to enter review, so do NOT re-run the full build or",
     "  test suite — it is slow and adds nothing you cannot see from the code.",
+    "- Before judging the diff itself, check whether the task is still worth having.",
+    "  Look at what has landed on the base branch and skim nearby recent tasks in",
+    "  `work/` for signs the same problem was already solved elsewhere, requirements",
+    "  shifted, or the task's premise no longer holds. A diff can be flawless and the",
+    "  task still not worth merging as scoped — say so; don't just grade the code.",
     "",
     "## Hard boundaries",
     "",
@@ -155,7 +160,8 @@ export function reviewMission(
     "",
     "Output ONLY the report, as markdown, with no preamble and no closing chatter.",
     "Keep it under 400 words — a reviewer reads this next to the diff. Use exactly",
-    "these sections, and write `None found` under any that is genuinely empty:",
+    "these sections. Verdict and Relevance each require one of their labels; write",
+    "`None found` under Bugs, Edge cases, or Suggestions when genuinely empty:",
     "",
     "## Verdict",
     "Open the report with EXACTLY one of these three verdict labels, then one or two",
@@ -164,6 +170,17 @@ export function reviewMission(
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
     "`back to the drawing board` — the change is off the mark.",
+    "",
+    "## Relevance",
+    "Open with EXACTLY one of these three labels, then one sentence explaining why.",
+    "This is independent of code quality — a correct diff can still fail this check:",
+    "",
+    "`still relevant` — the task's premise holds; this is still worth landing.",
+    "`no longer needed` — the problem is already solved (elsewhere, or superseded by",
+    "other work since this task was written); recommend discarding instead of merging.",
+    "`needs rescoping` — the premise partly holds, but the task description or",
+    "acceptance criteria are stale given what's shipped since; a human should update",
+    "the task before this is merged as-is.",
     "",
     "## Bugs",
     "Concrete defects, each with the file and what goes wrong.",
@@ -259,8 +276,25 @@ function parseVerdict(markdown: string): "good to go" | "needs some work" | "bac
   return null;
 }
 
-/** Extract Bugs, Edge cases, and Suggestions sections from the report markdown. */
+/**
+ * Parse the relevance label from the review report markdown (whether the task
+ * is still worth having, independent of the diff's code quality). Absent on
+ * reports written before this section existed — callers must treat `null` as
+ * "unknown", not as "still relevant".
+ */
+function parseRelevance(markdown: string): "still relevant" | "no longer needed" | "needs rescoping" | null {
+  const lines = markdown.split("\n");
+  for (const line of lines) {
+    if (line.includes("`still relevant`")) return "still relevant";
+    if (line.includes("`no longer needed`")) return "no longer needed";
+    if (line.includes("`needs rescoping`")) return "needs rescoping";
+  }
+  return null;
+}
+
+/** Extract Relevance, Bugs, Edge cases, and Suggestions sections from the report markdown. */
 function extractReportSections(markdown: string): {
+  relevance?: string;
   bugs?: string;
   edgeCases?: string;
   suggestions?: string;
@@ -272,7 +306,10 @@ function extractReportSections(markdown: string): {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed === "## Bugs") {
+    if (trimmed === "## Relevance") {
+      currentSection = "relevance";
+      sectionLines.relevance = [];
+    } else if (trimmed === "## Bugs") {
       currentSection = "bugs";
       sectionLines.bugs = [];
     } else if (trimmed === "## Edge cases") {
@@ -296,6 +333,7 @@ function extractReportSections(markdown: string): {
   }
 
   return {
+    relevance: sections.relevance,
     bugs: sections.bugs,
     edgeCases: sections.edgeCases,
     suggestions: sections.suggestions,
@@ -703,6 +741,23 @@ export class ReviewManager {
       return;
     }
     if (verdict !== "needs some work" && verdict !== "back to the drawing board") {
+      return;
+    }
+
+    // A relevance flag means the task itself is the problem, not the diff —
+    // bouncing back to the engineer to "fix" an obsolete task just burns a
+    // review round on nothing. Escalate to a human instead.
+    const relevance = parseRelevance(report.markdown);
+    if (relevance && relevance !== "still relevant") {
+      const note = `Reviewer flagged this task's relevance as "${relevance}" — needs a human scoping decision, not further engineering. See the review report.`;
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note,
+        at: now(),
+      });
+      console.log(`[repoos] auto-bounce skipped for #${task.id}: relevance=${relevance}`);
       return;
     }
 
