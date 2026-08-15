@@ -39,7 +39,7 @@ describe("close-out gate retry (0216)", () => {
   });
 
   /** An orchestrator whose sync/validate/publish steps are stubbed. */
-  function orchestrator(validateResults: { ok: boolean; reason?: string; candidateSha?: string }[]) {
+  function orchestrator(validateResults: { ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }[]) {
     const coordinator = createJobCoordinator(repo);
     coordinator.enqueue({ id: "0001", branch: "feat/x" } as never);
     coordinator.updateJob("0001", { phase: "validating" });
@@ -95,6 +95,19 @@ describe("close-out gate retry (0216)", () => {
     const reason = coordinator.getJob("0001")?.reason ?? "";
     expect(reason).toContain("first attempt failed differently");
     expect(reason).toContain("machine load");
+    expect(reason).not.toContain("reproduced identically");
+  });
+
+  it("does not retry a merge conflict — it is the same conflict every time", async () => {
+    const { orch, coordinator, calls } = orchestrator([
+      { ok: false, retryable: false, reason: "merge conflict in src/server/done.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry" },
+    ]);
+    const res = await orch.processNext();
+    expect(res.ok).toBe(false);
+    expect(calls).toHaveLength(1); // no second gate cycle spent proving the point
+    const reason = coordinator.getJob("0001")?.reason ?? "";
+    expect(reason).toContain("merge conflict");
+    expect(reason).toContain("feature branch's own worktree");
     expect(reason).not.toContain("reproduced identically");
   });
 
