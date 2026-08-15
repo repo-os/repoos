@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 
@@ -16,6 +17,16 @@ const repo = useRepoStore();
 
 const busy = ref(false);
 const dragging = ref(false);
+
+/** Diff stats for this task. */
+const diffStats = computed(() => {
+  return repo.diffStatsFor(props.task.id);
+});
+
+/** Load diff stats when card is rendered. */
+onMounted(() => {
+  void repo.loadDiffStats(props.task.id);
+});
 
 function onDragStart(e: DragEvent): void {
   if (!props.dragEnabled) return;
@@ -88,16 +99,22 @@ interface CardHint {
   cls: string;
 }
 
+/** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
-  if (t.status === "review" && repo.reviewFor(t.id)?.running) {
-    return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
-  }
-  if (t.status === "active" || t.status === "review") {
-    if (repo.isRunning(t.id)) {
-      return { label: "running", title: "agent running — click to watch the session", cls: "tc-run" };
+  if (t.status === "review") {
+    if (repo.reviewFor(t.id)?.running) {
+      return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
-    if (t.status === "review") return null;
+    if (repo.isRunning(t.id)) {
+      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+    }
+    return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
+  }
+  if (t.status === "active") {
+    if (repo.isRunning(t.id)) {
+      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+    }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
@@ -149,10 +166,48 @@ async function runAction(): Promise<void> {
         break;
     }
   } catch (err) {
+    // A dirty-main guard (0204) pauses here: the confirmation modal is shown
+    // (files live in the store) and `busy` is reset so the card is usable.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = props.task;
+      return;
+    }
     repo.onError(err);
   } finally {
     busy.value = false;
   }
+}
+
+/** Dirty-main confirmation (0204): the task whose close-out needs the user to
+ *  decide whether to commit `main`'s dirty files before merging. */
+const dirtyTask = ref<Task | null>(null);
+
+const dirtyFiles = computed(() =>
+  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
+);
+
+async function confirmCommitDirty(): Promise<void> {
+  const t = dirtyTask.value;
+  const files = dirtyFiles.value;
+  dirtyTask.value = null;
+  if (!t) return;
+  busy.value = true;
+  try {
+    await repo.completeTask(t, { commitDirty: true });
+  } catch (err) {
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = t;
+      return;
+    }
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
+
+function cancelDirty(): void {
+  if (dirtyTask.value) repo.clearDirtyMain(dirtyTask.value.id);
+  dirtyTask.value = null;
 }
 
 /** Open the drawer on the Agent tab to watch the live session. */
@@ -168,8 +223,9 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
-      running: repo.isRunning(task.id),
+      coding: repo.isRunning(task.id),
       reviewing: task.status === 'review' && repo.reviewFor(task.id)?.running,
+      'waiting-for-human': task.status === 'review' && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
       'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
@@ -196,6 +252,12 @@ async function openAgent(): Promise<void> {
       <span v-if="task.assignee !== 'ai'" class="chip">
         {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
       </span>
+      <span v-if="diffStats && diffStats.filesChanged > 0" class="chip diff-stats-chip" :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`">
+        {{ diffStats.filesChanged }}f {{diffStats.additions}}+
+      </span>
+      <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="chip diff-stats-empty" title="No code changes">
+        0 changes
+      </span>
     </div>
     <div class="tc-foot">
       <span
@@ -203,9 +265,9 @@ async function openAgent(): Promise<void> {
         class="tc-hint"
         :class="hint.cls"
         :title="hint.title"
-        @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
+        @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined"
       >
-        <ActivityIndicator v-if="hint.cls === 'tc-run'" />
+        <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
         <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
         {{ hint.label }}
       </span>
@@ -252,4 +314,10 @@ async function openAgent(): Promise<void> {
   </div>
 
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
+  <DirtyMainDialog
+    :task="dirtyTask"
+    :files="dirtyFiles"
+    @commit="confirmCommitDirty"
+    @cancel="cancelDirty"
+  />
 </template>

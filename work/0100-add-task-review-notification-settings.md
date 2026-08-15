@@ -1,6 +1,6 @@
 ---
 id: "0100"
-title: Add task review notification settings
+title: Add task notification settings for state transitions requiring attention
 type: feature
 status: ready
 priority: p2
@@ -9,43 +9,49 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-11T19:14:59Z"
+updated_at: "2026-08-14T00:00:00Z"
 ---
 ## Problem
 
-Users are not alerted when a task moves from `active` to `review`, so they may miss that the task is ready for review.
+Users are not alerted when tasks encounter state changes that require attention—such as moving to review, being paused, getting stuck, or needing human intervention. This means users may miss important transitions that demand their action.
 
 ## Desired UX
 
-When a task transitions from `active` to `review`, RepoOS can play a bell sound on the user's computer. Users can easily enable or disable the sound from the settings page.
+When a task transitions to a state requiring attention, RepoOS plays a bell sound on the user's computer and/or sends a push notification. Users can easily enable or disable notifications for each event type from the settings page.
 
-The settings page also provides an option to enable or disable push notifications for the same transition.
+Notification triggers include:
+- Task transitions from `active` to `review`
+- Task is paused (manually or due to an issue)
+- Task becomes stuck (no progress detected)
+- Task explicitly marked as needing human attention
 
 ## Acceptance criteria
 
-- [ ] A bell sound plays when a task transitions directly from `active` to `review` and sound notifications are enabled.
+- [ ] A bell sound plays when a task transitions to any monitored state and sound notifications are enabled.
 - [ ] No bell sound plays when sound notifications are disabled.
-- [ ] The settings page includes a clearly labeled toggle for the bell sound.
-- [ ] The settings page includes a clearly labeled toggle for push notifications.
-- [ ] A push notification is sent when a task transitions directly from `active` to `review` and push notifications are enabled.
-- [ ] No push notification is sent when push notifications are disabled.
+- [ ] The settings page includes clearly labeled toggles for each notification type (review ready, paused, stuck, needs attention).
+- [ ] The settings page includes a master toggle for sound notifications.
+- [ ] The settings page includes a master toggle for push notifications.
+- [ ] Push notifications are sent for monitored state transitions when push notifications are enabled.
+- [ ] No push notifications are sent when push notifications are disabled.
+- [ ] Individual notification types can be toggled independently.
 - [ ] Notification settings persist across page reloads.
 - [ ] Enabling push notifications handles the browser or operating system permission flow.
-- [ ] Other task status transitions do not trigger these notifications.
+- [ ] Notifications only trigger on state transitions, not when a task is already in a monitored state.
 
 ## Notes for AI
 
-- Treat “push notification” as a browser notification delivered through the computer's notification system.
-- Assume both notification options are disabled by default.
-- Keep both controls on the existing settings page.
-- Use a bell-like sound for the audible notification.
-- Trigger notifications only for a detected transition from `active` to `review`, not merely because a task is already in `review`.
-- Do not add notifications for other task transitions.
-- Do not add unrelated notification channels or notification customization.
+- Treat "push notification" as a browser notification delivered through the computer's notification system.
+- Assume all notification options are disabled by default.
+- Keep all controls on the existing settings page.
+- Use a bell-like sound for audible notifications.
+- Monitored transitions: `active`→`review`, `active`→`paused`, detection of `stuck` state, and `needs-attention` flag.
+- Trigger notifications only when a state change is detected, not on page load for existing states.
+- Each notification type can be toggled independently (e.g., user may want review alerts but not paused alerts).
 
 ## Scope
 
-This task covers local bell and browser push notifications for the `active`-to-`review` transition, plus their settings controls. Other events, notification channels, and sound customization are deferred.
+This task covers bell sounds and browser push notifications for task state transitions that require user attention (review ready, paused, stuck, needs attention), plus their settings controls. Advanced customization (custom sounds, per-task notification rules) is deferred.
 
 ## Activity
 
@@ -55,3 +61,4 @@ This task covers local bell and browser push notifications for the `active`-to-`
 - 2026-08-11T17:37:43Z · status inbox→ready
 - 2026-08-11T17:37:58Z · status ready→inbox
 - 2026-08-11T19:14:59Z · status inbox→ready
+- 2026-08-14T00:00:00Z · scope expanded to cover paused, stuck, and needs-attention transitions

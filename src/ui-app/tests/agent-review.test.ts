@@ -128,6 +128,10 @@ async function taskWithWorktree(
   const branch = `feat/${id}-review`;
   const worktree = join(fx.worktrees, branch);
   git(fx.root, ["worktree", "add", "-q", "-b", branch, worktree]);
+  // #0210: a transition into `review` auto-commits the worktree's real work
+  // (and rejects empty worktrees). Give it an implementation file so the PATCH
+  // behaves like a trusted handoff and genuinely lands in review.
+  writeFileSync(join(worktree, "implementation.txt"), "implemented\n");
   const patched = await api(server, "PATCH", `/api/tasks/${id}`, { branch });
   expect(patched.status).toBe(200);
   return { id, absPath: created.body.absPath as string, branch, worktree };
@@ -331,7 +335,12 @@ ${printReport}`,
   });
 
   it("rejects move-to-done while automatic review is still running without cancelling it", async () => {
-    const fx = makeFixture(`setTimeout(() => { ${printReport} }, 500);`);
+    // The fake reviewer must outlive the 409 assertions below, and the index
+    // must observe it running, so it may not finish early. This was flaky at
+    // 500ms: under full-suite load the review completed between the
+    // `/review` poll and the `/api/index` read, so `running` flipped to false
+    // and the assertion below failed (0199).
+    const fx = makeFixture(`setTimeout(() => { ${printReport} }, 3000);`);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Wait for reviewer");
       // The review's process itself is the authoritative in-flight signal;
@@ -339,8 +348,19 @@ ${printReport}`,
       await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
       await waitForReviewRunning(server, task.id, true);
 
-      const index = await api(server, "GET", "/api/index");
-      const indexed = (index.body.tasks as Array<Record<string, unknown>>).find((t) => t.id === task.id);
+      // `/api/index` is rebuilt asynchronously after the review starts, so the
+      // running flag may not be visible on the first read. Poll until the
+      // index itself reports the review running instead of asserting once —
+      // the review stays alive for 3s, so the window cannot close early.
+      let indexed: Record<string, unknown> | undefined;
+      const deadline = Date.now() + 10_000;
+      while (true) {
+        const index = await api(server, "GET", "/api/index");
+        indexed = (index.body.tasks as Array<Record<string, unknown>>).find((t) => t.id === task.id);
+        if ((indexed?.automaticReview as { running?: boolean } | undefined)?.running === true) break;
+        if (Date.now() > deadline) throw new Error("timed out waiting for task index to report review running");
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
       expect(indexed?.automaticReview).toEqual({ running: true, enabled: true });
 
       const blocked = await api(server, "POST", `/api/tasks/${task.id}/done`);

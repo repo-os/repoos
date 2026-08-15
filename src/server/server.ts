@@ -12,8 +12,11 @@
  *                                returns { state: "reloading" | "deferred" | "not-stale" }
  *   GET  /api/tasks            -> Task[]            (?status=active to filter)
  *   GET  /api/tasks/:id        -> Task | 404  (includes `preview` when running)
+ *   GET  /api/tasks/:id/stats  -> { ok, stats } task's historical session stats
  *   GET  /api/counts           -> { inbox, ready, ... }
  *   GET  /api/index            -> full RepoIndex snapshot
+ *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
+ *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
  *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
@@ -57,6 +60,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
+import { readBuildStamp } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
@@ -103,10 +107,14 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
+import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { CTOManager } from "./cto.js";
+import { CTOMonitor } from "./cto-monitor.js";
 import {
   appendScreenshotsSection,
   mimeForExtension,
@@ -118,10 +126,11 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
+import { TaskWatchdog } from "./task-watchdog.js";
 import {
   Router,
   type RouteContext,
@@ -150,14 +159,22 @@ import {
   deleteTask,
   getTaskOutput,
   getTaskLogs,
+  getTaskStats,
+  getSessionTypeStats,
+  getBoardStats,
+  getDiffStatsForTask,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
+  getIntegrationPipeline,
+  retryIntegration,
   startPreview,
   stopPreview,
   getTaskReview,
   reviewAgain,
   reviewMessage,
+  getCTO,
+  ctoMessage,
   pmMessage,
   getScreenshot,
   uploadScreenshot,
@@ -173,6 +190,8 @@ import {
   getAgentLogs,
   // Notifications
   testNotification,
+  // Transcription
+  transcribe,
   // UI routes
   serveManifest,
   serveIcon,
@@ -488,7 +507,7 @@ const RELOAD_BIND_RETRY_MS = 300;
 
 /**
  * Build metadata served to the UI: the package version and the timestamp of
- * the last build (dist/.build-info.json, written by scripts/copy-assets.mjs).
+ * the last build (dist/.build-stamp.json, written by scripts/copy-assets.mjs).
  * Both are best-effort — null when unavailable so the UI can fall back.
  */
 function loadBuildInfo(): { version: string | null; buildAt: string | null } {
@@ -501,14 +520,10 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
   } catch {
     /* package.json unreadable */
   }
-  let buildAt: string | null = null;
-  try {
-    const info = JSON.parse(readFileSync(join(root, "dist", ".build-info.json"), "utf8"));
-    if (typeof info?.generatedAt === "string") buildAt = info.generatedAt;
-  } catch {
-    /* build marker missing or corrupt */
-  }
-  return { version, buildAt };
+  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
+  // marker stays deterministic; readBuildStamp falls back to the legacy
+  // inline field for installs built before the split.
+  return { version, buildAt: readBuildStamp(root) };
 }
 
 /**
@@ -699,12 +714,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Last integration-pipeline stage progress reported per task id (0207). The
+  // orchestrator's DoneStep callbacks drive the pinned status bar's stage
+  // indicator; recorded here so the live `integration` snapshot is accurate.
+  const reportedStages: Record<string, DoneStep> = {};
+
+  /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
+  const emitIntegration = (): void => {
+    emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, reportedStages) });
+  };
+
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
     if (processingJob) return;
     processingJob = true;
     setImmediate(async () => {
       try {
+        // A fresh enqueue (or recovered job) can now be seen by the status bar.
+        emitIntegration();
         const orchestrator = new CloseOutOrchestrator(
           config,
           jobCoordinator,
@@ -713,17 +740,39 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           (step) => {
             const job = jobCoordinator.peekNext();
             if (job) {
+              reportedStages[job.taskId] = step;
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
                 step,
                 at: new Date().toISOString(),
               });
+              emitIntegration();
             }
           },
           logger,
         );
-        await orchestrator.processNext();
+        const jobBefore = jobCoordinator.peekNext();
+        const result = await orchestrator.processNext();
+        // Surface close-out failures (0199): the /done action returns as soon
+        // as the job is enqueued, so the UI never learns of a background
+        // failure. Only emit for a terminal `failed` phase — "main advanced,
+        // revalidating" is a retry, not a failure.
+        if (
+          jobBefore &&
+          result &&
+          result.ok === false &&
+          result.reason &&
+          jobCoordinator.getJob(jobBefore.taskId)?.phase === "failed"
+        ) {
+          emitEvent({
+            type: "task.progress",
+            id: jobBefore.taskId,
+            step: "failed",
+            detail: result.reason,
+            at: new Date().toISOString(),
+          });
+        }
         // Keep the live index in sync: the orchestrator writes the task file
         // (markTaskReleased) and merges the branch directly, bypassing the
         // done-action's usual index.applyFileChange/refreshBranches.
@@ -733,6 +782,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
         index.refreshBranches();
+        // Reflect the post-job pipeline state (job now done/failed, or the next
+        // queued job becoming active) in the pinned status bar (0207).
+        emitIntegration();
         // Continue processing if there are more jobs or recovered jobs
         const next = jobCoordinator.peekNext();
         if (next && next.phase !== "done" && next.phase !== "failed") {
@@ -781,6 +833,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
 
+  // Task watchdog: surfaces active tasks whose agent is dead or stalled (0180).
+  // Constructed after the reload manager so it can observe `isReloading()`.
+  let watchdog: TaskWatchdog | null = null;
+
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   let reviews: ReviewManager; // Assigned after runner creation below
@@ -795,6 +851,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
+        return;
+      }
+      if (runner.isHandoffInFlight(request.taskId)) {
+        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
         return;
       }
       const task = index.getTask(request.taskId);
@@ -816,7 +876,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         onServerStatusChange,
       );
       if (result.ok) {
-        index.applyFileChange(task.absPath);
+        index.applyFileChange(task.absPath, { guarded: true });
         runner.system(task.id, "✓ Server finalization complete — task moved to review");
       } else {
         runner.system(
@@ -872,6 +932,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner);
 
+  // The CTO agent (0174): always-on board monitor that detects stuck tasks,
+  // stale reviews, and broken builds, then nudges agents or escalates to the human.
+  const cto = new CTOManager(config, emitEvent, runner);
+  const ctoMonitor = new CTOMonitor(config, index, cto);
+  // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
+  // agent is disabled, so enabling it from the Agents page takes effect on the
+  // next tick without a restart, and disabling it stops runs immediately.
+  // Interval configurable from config if present; default to 5 minutes.
+  const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
+  ctoMonitor.start(ctoIntervalMs);
+
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
   // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
@@ -897,12 +968,32 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         serverPid: process.pid,
         cacheDir: join(config.root, config.cacheDir),
         runningAgents: runner.running(),
+        knownServePids: previews.knownPids(),
       });
       emitEvent({ type: "system.stats", stats });
     } catch {
       /* sampling is best-effort — never crash the poll loop */
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
+
+  // Stray serve-process reaping (#0216): orphaned repoos serve processes
+  // (their spawning parent confirmed dead) accumulate from failed
+  // reload-replacement attempts and interrupted test/close-out runs. Left
+  // alone they starve the close-out gate and, at volume, strain the whole
+  // machine — not just this server. Runs independent of SSE client presence
+  // (unlike the stats sampler above) since strays keep accumulating whether
+  // or not anyone is watching the UI. `psAvailable()` gate matches the
+  // sampler's own platform guard.
+  const REAP_INTERVAL_MS = 30_000;
+  const reapTimer = setInterval(() => {
+    if (!psAvailable()) return;
+    try {
+      const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+      if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+    } catch {
+      /* reaping is best-effort — never crash the server over it */
+    }
+  }, REAP_INTERVAL_MS);
 
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
@@ -980,6 +1071,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
 
+  // #0210: every transition INTO `review` that bypasses the trusted PATCH and
+  // handoff routes — a direct task-file edit picked up by the watcher — must
+  // still pass the commit/vacuity gate. The index defers such transitions to
+  // this guard; returning false reverts the file to its previous status.
+  index.setReviewGuard(async (task: Task, prev: Task): Promise<boolean> => {
+    const gate = await guardReviewTransition(config, task);
+    if (gate.ok) return true;
+    try {
+      emitEvent({
+        type: "task.progress",
+        id: task.id,
+        step: "review-rejected",
+        detail: `Direct edit to review rejected: ${gate.detail}. The task was reverted to ${prev.status}.`,
+        at: new Date().toISOString(),
+      });
+    } catch {
+      /* best-effort signalling */
+    }
+    return false;
+  });
+
   /**
    * Kick off the agent review for a task that just landed in `review`. A no-op
    * when the review agent is disabled on the Agents page (`reviews.run` skips
@@ -996,6 +1108,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     pendingReview.delete(task.id);
     void reviews.run(task);
+  };
+
+  /**
+   * Auto-launch a read-only preview the moment a task lands in `review` (#0198).
+   * The whole point of automation is that no one clicks a button: the preview
+   * is up before the reviewer looks. `PreviewManager.start` enforces the
+   * concurrency cap (FIFO eviction of the oldest) and returns a structured
+   * result, so a failed launch is logged and never crashes the server. The
+   * preview closes automatically when the task leaves review (see
+   * `stopPreviewIfLeft`).
+   */
+  const autoLaunchPreview = async (task: Task): Promise<void> => {
+    try {
+      const result = await previews.start(task);
+      if (!result.ok) {
+        console.error(
+          `[preview] ${new Date().toISOString()} #${task.id} auto-launch failed — ${result.error ?? "unknown error"}`,
+        );
+      }
+    } catch (err) {
+      // Never let a failed launch take the server down.
+      console.error(
+        `[preview] ${new Date().toISOString()} #${task.id} auto-launch threw — ${(err as Error)?.message ?? err}`,
+      );
+    }
   };
 
   // The file-watcher path (a direct task-file edit on disk) bypasses
@@ -1020,7 +1157,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off.
-    if (e.task.status === "review") startReview(e.task);
+    if (e.task.status === "review") {
+      startReview(e.task);
+      void autoLaunchPreview(e.task);
+    }
   });
 
   // Handle needsInput changes separately (fires alongside status change when both occur).
@@ -1030,6 +1170,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const nextNeedsInput = e.task.needsInput;
     if (!prevNeedsInput && nextNeedsInput) {
       notifyNeedsInput(config, e.task);
+    }
+  });
+
+  // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
+  const unsubscribeCTOEvents = index.on((e) => {
+    if (!cto.enabled()) return;
+    if (e.type === "task.updated") {
+      const prev = e.prev.status;
+      if (prev !== undefined && prev !== e.task.status) {
+        ctoMonitor.onEvent(`task #${e.task.id} status change: ${prev} → ${e.task.status}`);
+      }
+    } else if (e.type === "review") {
+      ctoMonitor.onEvent(`review complete for task #${e.id}: ${e.state}`);
+    } else if (e.type === "agent.exited") {
+      ctoMonitor.onEvent(`agent exited: task #${e.id}`);
     }
   });
 
@@ -1103,6 +1258,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
 
+  // Session stats routes
+  router.register("GET", "/api/stats/board", getBoardStats);
+  router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
   router.register("POST", "/api/tasks", createTask);
@@ -1112,14 +1271,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
+  router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
+  router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
+  router.register("GET", "/api/cto", getCTO);
+  router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
@@ -1173,6 +1338,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
+
+  // Transcription routes
+  router.register("POST", "/api/transcribe", transcribe);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
@@ -1255,6 +1423,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       runner,
       previews,
       reviews,
+      cto,
       repoos,
       logger,
       emitEvent: (e: RepoEvent) => {
@@ -1409,7 +1578,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(reapTimer);
         clearInterval(builtInTimer);
+        ctoMonitor.stop();
         runner.dispose();
         throw err;
       }
@@ -1429,13 +1600,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(reapTimer);
           clearInterval(builtInTimer);
+          ctoMonitor.stop();
           runner.dispose();
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();
+          unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
+          watchdog?.stop();
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
@@ -1443,6 +1618,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // agents — a one-shot child must not outlive the server that
           // launched it and wait 15 minutes to write a report nobody reads.
           reviews.cancelAll();
+          cto.cancelAll();
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {
@@ -1511,6 +1687,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Agent supervisor: periodic health checks and safe recovery (0112)
       supervisor = new AgentSupervisor(config, index, emitEvent);
       supervisor.start();
+
+      // Task watchdog: surface active tasks whose agent session is dead or
+      // stalled (0180). Guarded so it never fires while the server is handing
+      // over to a reload replacement.
+      const watchdogConfig = config.watchdog ?? {};
+      watchdog = new TaskWatchdog(
+        config,
+        index,
+        runner,
+        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+        {
+          autoTransition: watchdogConfig.autoTransition !== false,
+          canRun: () => !(reload?.isReloading ?? false),
+        },
+      );
+      if (watchdogConfig.enabled !== false) watchdog.start();
 
       resolve(handle);
     })().catch((e) => reject(e as Error));

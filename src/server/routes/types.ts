@@ -5,6 +5,7 @@ import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { AgentRunner } from "../agents.js";
 import type { PreviewManager } from "../preview.js";
 import type { ReviewManager } from "../review.js";
+import type { CTOManager } from "../cto.js";
 import type { CloseOutLock } from "../done.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
@@ -22,6 +23,7 @@ export interface RouteContext {
   runner: AgentRunner;
   previews: PreviewManager;
   reviews: ReviewManager;
+  cto: CTOManager;
   repoos: RepoOS;
   logger: Logger;
   emitEvent: (e: RepoEvent) => void;

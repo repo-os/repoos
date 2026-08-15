@@ -16,6 +16,8 @@ export type JobPhase = "queued" | "syncing" | "validating" | "publishing" | "cle
 export interface IntegrationJob {
   /** Unique ID: task ID */
   taskId: string;
+  /** Feature branch to integrate (the task's `branch` field). */
+  branch?: string;
   /** Current phase */
   phase: JobPhase;
   /** When the job was enqueued (ISO string) */
@@ -95,6 +97,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
     if (stored.version !== VERSION) return null;
     return {
       taskId: stored.taskId,
+      branch: stored.branch,
       phase: stored.phase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
@@ -124,10 +127,25 @@ export function createJobCoordinator(root: string): JobCoordinator {
       if (!task.branch) return null;
 
       const existing = readJob(root, task.id);
-      if (existing) return existing;
+      // A job that already completed or is in flight is left alone; a FAILED
+      // job is stale (the earlier attempt ended without publishing), so it is
+      // re-enqueued as a fresh queued job — this is how a "Move to done" retry
+      // unblocks a task stuck behind an old failure.
+      //
+      // A DONE job is stale too, in exactly one case: the task itself is no
+      // longer `done` (#0195, 2026-08-15 — nothing blocks a task leaving
+      // `done` via a plain PATCH, and once it does, the old job record never
+      // gets cleared. Without this check, `enqueue()` hands back the same
+      // finished job forever and "Move to done" silently does nothing —
+      // `ok: true` with a job whose phase is already terminal). The task's
+      // own current status is the authority here, same principle as #0210:
+      // a job record must never outrank observable task state.
+      const staleDoneJob = existing?.phase === "done" && task.status !== "done";
+      if (existing && existing.phase !== "failed" && !staleDoneJob) return existing;
 
       const job: IntegrationJob = {
         taskId: task.id,
+        branch: task.branch,
         phase: "queued",
         enqueuedAt: new Date().toISOString(),
         startedAt: null,

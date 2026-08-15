@@ -39,6 +39,12 @@ export interface TaskPatch {
   cliOverride?: string | null;
   /** Per-task model override, or null to clear. */
   modelOverride?: string | null;
+  /** Per-task PM agent name override, or null to clear. */
+  pmAgentOverride?: string | null;
+  /** Per-task PM CLI override, or null to clear. */
+  pmCliOverride?: string | null;
+  /** Per-task PM model override, or null to clear. */
+  pmModelOverride?: string | null;
 }
 
 export interface PatchTaskOptions {
@@ -142,6 +148,18 @@ export function patchTaskFile(
     if (patch.modelOverride !== current.modelOverride) changes.push("model_override");
     current.modelOverride = patch.modelOverride;
   }
+  if (patch.pmAgentOverride !== undefined) {
+    if (patch.pmAgentOverride !== current.pmAgentOverride) changes.push("pm_agent_override");
+    current.pmAgentOverride = patch.pmAgentOverride;
+  }
+  if (patch.pmCliOverride !== undefined) {
+    if (patch.pmCliOverride !== current.pmCliOverride) changes.push("pm_cli_override");
+    current.pmCliOverride = patch.pmCliOverride;
+  }
+  if (patch.pmModelOverride !== undefined) {
+    if (patch.pmModelOverride !== current.pmModelOverride) changes.push("pm_model_override");
+    current.pmModelOverride = patch.pmModelOverride;
+  }
 
   if (changes.length) {
     recordChange(current, changes.join(", "));
@@ -181,8 +199,17 @@ export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
     defaultAssignee: config.defaultAssignee,
   });
   // A close-out retry after the successful marker was written must not create a
-  // second release or move the timeline entry.
-  if (task.releasedAt) return task;
+  // second release or move the timeline entry. Checked against the task's
+  // CURRENT status, not `task.releasedAt` — that field is derived from the
+  // most recent "release:success" entry anywhere in the append-only Activity
+  // log (releasedAtFromActivity), which never clears once written. A task
+  // reopened after release (done→ready, a legitimate action — e.g. "went done
+  // with no real work, moved back to active to redo it properly") still shows
+  // a truthy releasedAt from its FIRST release forever, so the old check here
+  // silently no-op'd every subsequent close-out (#0195, 2026-08-15): main got
+  // the merge, but the task sat published-and-still-review indefinitely.
+  // `status === "done"` is only true for an actually-current release.
+  if (task.status === "done") return task;
 
   const previousStatus = task.status;
   task.status = "done";

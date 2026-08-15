@@ -46,11 +46,71 @@ function firstMatch<T extends string>(value: unknown, allowed: readonly T[], fal
 }
 
 /**
+ * The control-token names a leaked tool call is built from. Kept as bare names
+ * so every dialect below is matched by one pattern.
+ */
+const TOOL_TOKEN_NAMES = "tool_calls?|tool\u2581calls?|function_calls|function_results|invoke|parameter";
+
+/**
+ * A line that is nothing but a tool-call control token. Models that render
+ * tool calls as inline markup can emit these into plain prose when a turn is
+ * cut short, in several dialects: bare (`<parameter>`), namespaced
+ * (`<ns:invoke>`), and special-token wrapped, where the delimiter is either an
+ * ASCII or a fullwidth vertical bar.
+ *
+ * Deliberately anchored to the whole line: a task body legitimately discusses
+ * markup inline (`the <input> element`), and only a lone control token on its
+ * own line is unambiguous leakage.
+ */
+const TOOL_TOKEN_LINE = new RegExp(
+  `^<\\/?[\uff5c|]?\\s*(?:[\\w.-]+[:\u2581\uff5c|])?(?:${TOOL_TOKEN_NAMES})(?:[_\u2581](?:begin|end))?\\b[^>]*[\uff5c|]?\\s*\\/?>$`,
+);
+
+/** True for a fenced-code-block delimiter line (``` or ~~~). */
+function isFence(line: string): boolean {
+  return /^(?:```|~~~)/.test(line);
+}
+
+/**
+ * Drop leaked tool-call markup from an agent's answer.
+ *
+ * Only whole lines are removed, and only outside fenced code blocks, so a task
+ * that legitimately quotes markup in a code block keeps it. When a removal
+ * strands a second consecutive blank line, one is dropped so cutting a block
+ * out of the middle of a body doesn't leave a gap. A body with no leaked
+ * tokens is returned unchanged.
+ */
+export function stripToolCallMarkup(output: string): string {
+  const kept: string[] = [];
+  let inFence = false;
+  let removed = false;
+  for (const line of output.split("\n")) {
+    const trimmed = line.trim();
+    if (isFence(trimmed)) inFence = !inFence;
+    if (!inFence && TOOL_TOKEN_LINE.test(trimmed)) {
+      removed = true;
+      continue;
+    }
+    const previous = kept[kept.length - 1];
+    if (removed && !inFence && trimmed === "" && previous !== undefined && previous.trim() === "") {
+      continue;
+    }
+    kept.push(line);
+  }
+  return removed ? kept.join("\n").trim() : output;
+}
+
+/**
  * Parse the PM agent's generated markdown into createTask input. Never throws:
  * anything unparsable falls back to treating the whole output as the body with
  * a derived title, so input survives a bad agent response.
+ *
+ * The agent's answer is the task file verbatim, so any tool-call markup it
+ * leaked would be persisted as body text — it is stripped before parsing so a
+ * leaked token can never become the title either.
  */
-export function parseGeneratedTask(output: string): GeneratedTaskInput {
+export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
+  const output = stripToolCallMarkup(rawOutput);
   const { data, body, hadFrontmatter } = parseDocument(output.trim());
   const rawTitle =
     typeof data.title === "string" && data.title.trim()

@@ -56,6 +56,20 @@ Costs we accept:
   editing `src/` without rebuilding means testing old code. This is the single
   most common time-waster in this repo. Mitigation: stated as a first-read rule
   in AGENTS.md; `tsc --watch` during focused sessions.
+- **Committed build output (resolved 2026-08-15).** `dist/` was tracked, so
+  every close-out merged generated files. The build marker's timestamp field
+  was fixed first (split into a gitignored `dist/.build-stamp.json`, removing
+  the per-build churn), and `dist/` itself was then untracked and gitignored
+  entirely once an audit confirmed nothing in the live pipeline assumed a
+  fresh worktree already had one. See `docs/dogfooding-vs-general.md` for the
+  full history and what was checked before making the change. `autoResolve`
+  keeps `dist/` in its list for branches cut before this change.
+- **A distorted bug backlog.** Self-hosting generates failure modes that exist
+  only because the tool is orchestrating work on its own source, and it cannot
+  surface the ones a customer repo would hit first (non-JS worktree bootstrap,
+  arbitrary gate commands, PR/CI close-out). Sort issues into those buckets
+  before spending on them — `docs/dogfooding-vs-general.md` is the triage
+  guide.
 - **Self-modification hazard.** Changing the task-file format or parser alters
   how this repo's own `work/*.md` files are read — including the task being
   worked on. Mitigation: format changes ship with a migration in the same

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { labelForModel, useConfigStore } from "../stores/config";
+import { useRoute, useRouter } from "vue-router";
+import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
@@ -17,10 +17,48 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SelectSearchGroup from "../components/SelectSearchGroup.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
+import VoiceDictate from "../components/VoiceDictate.vue";
+import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
 const router = useRouter();
+const route = useRoute();
 const docs = useDocsStore();
+
+type AgentTab = "default" | "custom" | "team" | "detected";
+
+const AGENT_TAB_LABELS: Record<AgentTab, string> = {
+  default: "Default Agents",
+  custom: "Custom Agents",
+  team: "Build Your Team",
+  detected: "Detected Coding Agents",
+};
+
+const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected"];
+
+const activeTab = ref<AgentTab>("default");
+
+// Deep-linking: the active tab is reflected in the URL as ?tab=<id> so users
+// can link straight to a section. Falls back to "default" on page load.
+const tabFromQuery = (): AgentTab => {
+  const q = route.query.tab;
+  return typeof q === "string" && (AGENT_TABS as readonly string[]).includes(q) ? (q as AgentTab) : "default";
+};
+
+watch(
+  () => route.query.tab,
+  () => {
+    const next = tabFromQuery();
+    if (next !== activeTab.value) activeTab.value = next;
+  },
+  { immediate: true },
+);
+
+watch(activeTab, (tab) => {
+  if (tabFromQuery() !== tab) {
+    void router.replace({ query: { ...route.query, tab } });
+  }
+});
 
 const RECOMMENDATIONS_DOC = "docs/agent-model-recommendations.md";
 
@@ -50,13 +88,14 @@ watch(
   { immediate: true },
 );
 
-const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name));
-const defaultAgents = computed(() =>
-  localAgents.value.filter((a) => defaultNames.value.includes(a.name)),
-);
-const customAgents = computed(() =>
-  localAgents.value.filter((a) => !defaultNames.value.includes(a.name)),
-);
+// Default-vs-custom matching is case-insensitive: agent names are stored
+// verbatim (e.g. a user or an older agent may have written `CTO`), so a
+// capitalized default like `CTO` must still land in the "Default agents"
+// section instead of masquerading as a custom role (0174/0196).
+const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name.toLowerCase()));
+const isDefaultName = (name: string): boolean => defaultNames.value.includes(name.toLowerCase());
+const defaultAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name)));
+const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
 
 const CLI_LABELS: Record<string, string> = {
   "claude code": "Claude Code",
@@ -64,6 +103,23 @@ const CLI_LABELS: Record<string, string> = {
   "qwen code": "qwen code",
   codex: "codex",
 };
+
+const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();
+const customInstrRefs = new Map<string, HTMLTextAreaElement | null>();
+
+function onDefaultInstrTranscribed(agentName: string, text: string): void {
+  const textarea = defaultInstrRefs.get(agentName);
+  if (textarea) {
+    insertTextAtCursor(textarea, text);
+  }
+}
+
+function onCustomInstrTranscribed(agentName: string, text: string): void {
+  const textarea = customInstrRefs.get(agentName);
+  if (textarea) {
+    insertTextAtCursor(textarea, text);
+  }
+}
 
 const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
@@ -146,6 +202,13 @@ function removeCustom(a: Agent): void {
 
 function setInstr(a: Agent, e: Event): void {
   a.instructions = (e.target as HTMLTextAreaElement).value;
+}
+
+function updateAgentInstr(a: Agent): void {
+  const focused = document.activeElement;
+  if (focused instanceof HTMLTextAreaElement && focused.value !== a.instructions) {
+    a.instructions = focused.value;
+  }
 }
 
 function validatedAgents(): Agent[] | undefined {
@@ -308,7 +371,20 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <div class="agent-tabs">
+        <button
+          v-for="t in AGENT_TABS"
+          :key="t"
+          type="button"
+          class="tab-btn"
+          :class="{ active: activeTab === t }"
+          @click="activeTab = t"
+        >
+          {{ AGENT_TAB_LABELS[t] }}
+        </button>
+      </div>
+
+      <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
           <a
@@ -385,20 +461,25 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+              </div>
               <textarea
+                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
                 :value="a.instructions ?? ''"
                 class="agent-instr"
                 rows="2"
                 placeholder="Optional — how this agent should behave"
                 @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
               ></textarea>
             </div>
           </div>
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom agents
         </div>
@@ -479,20 +560,25 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="agent-field agent-instr-field">
-              <label>Instructions</label>
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onCustomInstrTranscribed(a.name, $event)" />
+              </div>
               <textarea
+                :ref="(el: any) => customInstrRefs.set(a.name, el)"
                 :value="a.instructions ?? ''"
                 class="agent-instr"
                 rows="2"
                 placeholder="Optional — how this agent should behave"
                 @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
               ></textarea>
             </div>
           </div>
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--green)"></span>Build your team
         </div>
@@ -501,9 +587,11 @@ onUnmounted(() => {
         </div>
 
         <BuiltInAgentCard agent="tech-debt" />
+        <BuiltInAgentCard agent="performance" />
+        <BuiltInAgentCard agent="architect" />
       </Card>
 
-      <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-if="!detectError" v-show="activeTab === 'detected'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
           Detected coding agents

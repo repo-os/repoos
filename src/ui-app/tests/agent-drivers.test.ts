@@ -765,16 +765,16 @@ describe("extractUsage (0080)", () => {
   it("reads token/cost fields from a JSON usage payload", () => {
     expect(
       extractUsage(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.0021 })),
-    ).toEqual({ tokens: 15, costUsd: 0.0021 });
+    ).toEqual({ inputTokens: 10, outputTokens: 5, totalTokens: 15, costUsd: 0.0021 });
   });
 
   it("reads a JSON total_tokens field directly", () => {
-    expect(extractUsage(JSON.stringify({ total_tokens: 42 }))).toEqual({ tokens: 42 });
+    expect(extractUsage(JSON.stringify({ total_tokens: 42 }))).toEqual({ totalTokens: 42 });
   });
 
   it("falls back to plain-text cost/token summaries", () => {
     expect(extractUsage("Total cost: $0.1234")).toEqual({ costUsd: 0.1234 });
-    expect(extractUsage("used 1,234 tokens this turn")).toEqual({ tokens: 1234 });
+    expect(extractUsage("used 1,234 tokens this turn")).toEqual({ totalTokens: 1234 });
   });
 
   it("reads claude's nested message.usage and authoritative result totals (0109)", () => {
@@ -785,7 +785,7 @@ describe("extractUsage (0080)", () => {
           message: { content: [], usage: { input_tokens: 4, output_tokens: 91 } },
         }),
       ),
-    ).toEqual({ tokens: 95 });
+    ).toEqual({ inputTokens: 4, outputTokens: 91, totalTokens: 95 });
     // The terminal `result` reports the turn's authoritative numbers; the cache
     // fields bill at different rates and must NOT be summed into the headline.
     expect(
@@ -804,7 +804,7 @@ describe("extractUsage (0080)", () => {
           },
         }),
       ),
-    ).toEqual({ tokens: 95, costUsd: 0.0731223 });
+    ).toEqual({ inputTokens: 4, outputTokens: 91, totalTokens: 95, costUsd: 0.0731223 });
   });
 
   it("returns an empty object when nothing usage-shaped is present", () => {
