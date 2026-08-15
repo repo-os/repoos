@@ -927,6 +927,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } },
   );
 
+  // Adopt any agent children that survived a server restart (0214).
+  // Reads the durable registry, checks PID aliveness, and re-attaches
+  // to still-running children so isRunning() reports true immediately.
+  runner.adoptRunningAgents();
+
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
