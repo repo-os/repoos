@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-15T11:25:20Z"
-updated_at: "2026-08-15T11:25:20Z"
+updated_at: "2026-08-15T11:25:50Z"
 ---
 ## Activity
 
@@ -31,3 +32,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-08-15T11:25:50Z · model_override
