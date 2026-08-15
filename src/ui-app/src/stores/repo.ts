@@ -642,9 +642,9 @@ export const useRepoStore = defineStore("repo", () => {
     tasks.value = idx.tasks.map((t) => ({
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
-      // The board response omits body, extra, and agent overrides. Set them
-      // to empty defaults so task lookups never blow up with undefined fields.
-      body: "",
+      // The board response provides releasedAt and bodyPreview. Use them.
+      // Map bodyPreview -> body so search (which reads t.body) works on the preview.
+      body: t.bodyPreview ?? "",
       extra: {},
       agentOverride: null,
       cliOverride: null,
@@ -652,7 +652,7 @@ export const useRepoStore = defineStore("repo", () => {
       pmAgentOverride: null,
       pmCliOverride: null,
       pmModelOverride: null,
-      releasedAt: null,
+      releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
     // was running. Reports remain lazy-loaded by the drawer, but cards get

@@ -429,6 +429,8 @@ function toBoardTask(t: Task): BoardTask {
     tags: t.tags,
     created_at: t.created_at,
     updated_at: t.updated_at,
+    releasedAt: t.releasedAt ?? null,
+    bodyPreview: t.body?.slice(0, 500) ?? "",
     path: t.path,
     absPath: t.absPath,
     git: t.git,
