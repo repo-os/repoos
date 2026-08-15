@@ -155,6 +155,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "syncing") {
         const syncRes = await this.syncCandidate(job);
         if (!syncRes.ok) {
+          this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             reason: syncRes.reason,
@@ -168,6 +169,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "validating") {
         const validateRes = await this.validateCandidate(job);
         if (!validateRes.ok) {
+          this.logger?.integration(job.taskId, "error", "validation failed", { reason: validateRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             reason: validateRes.reason,
@@ -189,8 +191,12 @@ export class CloseOutOrchestrator {
           const currentJob = this.coordinator.getJob(job.taskId);
           if (currentJob && currentJob.phase === "syncing") {
             // Drift detected and handled - will retry on next processNext() call
+            this.logger?.integration(job.taskId, "info", "main drifted during publish — resyncing", {
+              reason: pubRes.reason,
+            });
             return pubRes;
           }
+          this.logger?.integration(job.taskId, "error", "publish failed", { reason: pubRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             reason: pubRes.reason,
@@ -205,14 +211,17 @@ export class CloseOutOrchestrator {
         const cleanRes = await this.cleanup(job);
         if (!cleanRes.ok) {
           // Log but don't fail: the merge succeeded, so task is done even if cleanup is messy.
+          this.logger?.integration(job.taskId, "warn", "cleanup warning", { reason: cleanRes.reason });
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "done" })!;
+        this.logger?.integration(job.taskId, "info", "close-out complete — published to main");
       }
 
       return { ok: true };
     } catch (err) {
       const reason = err instanceof Error ? err.message : "unknown error";
+      this.logger?.integration(job.taskId, "error", "orchestrator error", { reason });
       this.coordinator.updateJob(job.taskId, {
         phase: PHASE_FAILED,
         reason: `orchestrator error: ${reason}`,
