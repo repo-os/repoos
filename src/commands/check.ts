@@ -11,6 +11,7 @@
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
@@ -434,9 +435,26 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 4. UI smoke test ────────────────────────────────────────────────
   heading("UI smoke test");
-  // TODO: Fix playwright webkit setup issue — skipping for now
-  console.log(c.dim("  · UI smoke test skipped (webkit setup issue)"));
-  results.push(pass("ui-smoke", "skipped — webkit setup issue"));
+  try {
+    await runUISmokeTest();
+    results.push(pass("ui-smoke"));
+    console.log(c.green("  ✔ UI smoke test passed"));
+  } catch (e: unknown) {
+    const msg = (e as Error).message;
+    const notInstalled =
+      msg.includes("Cannot find module") ||
+      msg.includes("not installed") ||
+      msg.includes("Executable doesn't exist");
+    if (notInstalled) {
+      console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
+      console.log(c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"));
+      results.push(pass("ui-smoke", "skipped — playwright/browser not available"));
+    } else {
+      console.log(c.red("  ✗ UI smoke test failed: " + msg.split("\n")[0]));
+      results.push(fail("ui-smoke", msg));
+      exitCode = 1;
+    }
+  }
 
   // ── Summary ─────────────────────────────────────────────────────────
   const failed = results.filter((r) => !r.ok);
@@ -454,6 +472,30 @@ export async function cmdCheck(): Promise<void> {
   process.exit(exitCode);
 }
 
+/** Structural subset of the Playwright WebKit API used by the smoke test. */
+interface SmokeConsoleMessage {
+  type(): string;
+  text(): string;
+}
+interface SmokePage {
+  on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
+  on(event: "pageerror", handler: (err: Error) => void): void;
+  goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
+  title(): Promise<string>;
+  evaluate<R>(fn: () => R): Promise<R>;
+  $(selector: string): Promise<unknown>;
+  waitForTimeout(ms: number): Promise<void>;
+}
+interface SmokeBrowser {
+  newPage(): Promise<SmokePage>;
+  close(): Promise<void>;
+}
+interface SmokePlaywright {
+  webkit: {
+    launch(options: { headless: boolean }): Promise<SmokeBrowser>;
+  };
+}
+
 /**
  * Start the dev server, run Playwright WebKit smoke tests, then stop.
  * Exports failures as thrown errors.
@@ -461,10 +503,17 @@ export async function cmdCheck(): Promise<void> {
 async function runUISmokeTest(): Promise<void> {
   let server: { close: () => void; url: string };
 
-  // Dynamic import — playwright may not be installed.
-  let playwright: { webkit: typeof import("@playwright/test")["webkit"] };
+  // @playwright/test is a CJS package. Bun's ESM `import()` of it resolves the
+  // named browser exports to `undefined` (root cause of #0200), so load it via
+  // createRequire, which handles the CJS interop under both Bun and Node.
+  // Playwright may not be installed — treat that as a graceful skip upstream.
+  // Types are structural (Smoke*) rather than `typeof import("@playwright/test")`
+  // so `tsc` compiles even when the package is absent — the build must not fail
+  // before the "not installed" skip can run.
+  const require = createRequire(import.meta.url);
+  let playwright: SmokePlaywright;
   try {
-    playwright = await import("@playwright/test");
+    playwright = require("@playwright/test");
   } catch {
     throw new Error("Cannot find module @playwright/test (not installed)");
   }
