@@ -11,7 +11,7 @@ branch: feat/float-the-integration-status-bar-as-a-co
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T11:25:20Z"
-updated_at: "2026-08-15T12:14:06Z"
+updated_at: "2026-08-15T12:19:51Z"
 ---
 ## Problem
 
