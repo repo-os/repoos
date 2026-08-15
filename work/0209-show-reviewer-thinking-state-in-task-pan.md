@@ -11,7 +11,7 @@ branch: feat/show-reviewer-thinking-state-in-task-pan
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T16:42:22Z"
+updated_at: "2026-08-15T16:51:31Z"
 ---
 ## Problem
 
