@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/close-the-direct-patch-bypass-around-han
 created_at: "2026-08-15T05:29:35Z"
-updated_at: "2026-08-15T05:45:54Z"
+updated_at: "2026-08-15T06:29:47Z"
 ---
 ## Problem
 
