@@ -777,15 +777,27 @@ export const useRepoStore = defineStore("repo", () => {
         ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commitDirty: true }) }
         : {}),
     });
-    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] } = {};
+    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean } = {};
     try {
-      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] };
+      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean };
     } catch {
       body = {};
     }
     // Dirty-main guard (0204): the server returns 409 + needsCommit when main
     // has uncommitted files and the user has not opted in via commitDirty.
     if (raw.status === 409 && body.needsCommit && Array.isArray(body.dirtyFiles)) {
+      // #0211: when the dirty check itself failed (error/timeout) the file list
+      // is unknown, so "Commit & continue" would be guessing. Surface the plain
+      // actionable error instead of the commit modal.
+      if (body.dirtyCheckFailed) {
+        const message = body.error ?? "could not verify main is clean before close-out";
+        setDoneError(t.id, {
+          message,
+          conflicts: extractConflicts(message),
+          step: doneSteps.value[t.id] ?? "merge",
+        });
+        throw new MoveToDoneError(t.id, message);
+      }
       dirtyMain.value = { ...dirtyMain.value, [t.id]: body.dirtyFiles };
       throw new DirtyMainError(t.id, body.dirtyFiles);
     }
