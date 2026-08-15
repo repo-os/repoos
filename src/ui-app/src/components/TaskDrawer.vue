@@ -13,6 +13,7 @@ import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import DirtyMainDialog from "./DirtyMainDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -391,6 +392,12 @@ async function moveToDone(): Promise<void> {
   try {
     await repo.completeTask(ui.active);
   } catch (err) {
+    // Dirty-main guard (0204): pause and show the confirmation modal instead
+    // of an inline failure — the task stays in review until the user decides.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = ui.active;
+      return;
+    }
     // The failure is rendered inline below the button via the store's
     // per-task doneErrorFor; no global toast for this action.
     repo.onError(err);
@@ -399,6 +406,43 @@ async function moveToDone(): Promise<void> {
     stopDoneTimer();
     ui.saving = false;
   }
+}
+
+/** Dirty-main confirmation (0204): the task whose close-out is paused on
+ *  `main` having uncommitted files. `null` hides the modal. */
+const dirtyTask = ref<Task | null>(null);
+
+const dirtyFiles = computed(() =>
+  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
+);
+
+async function confirmCommitDirty(): Promise<void> {
+  const t = dirtyTask.value;
+  const files = dirtyFiles.value;
+  dirtyTask.value = null;
+  if (!t) return;
+  ui.saving = true;
+  doingDone.value = true;
+  startDoneTimer();
+  try {
+    await repo.completeTask(t, { commitDirty: true });
+  } catch (err) {
+    // Still dirty after commiting (e.g. a new file appeared) — keep asking.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = t;
+      return;
+    }
+    repo.onError(err);
+  } finally {
+    doingDone.value = false;
+    stopDoneTimer();
+    ui.saving = false;
+  }
+}
+
+function cancelDirty(): void {
+  if (ui.active) repo.clearDirtyMain(ui.active.id);
+  dirtyTask.value = null;
 }
 
 interface TaskDraft {
@@ -2523,6 +2567,13 @@ function resetFreeformOverrides(): void {
     :task="restartTask"
     @close="restartTask = null"
     @started="ui.activeTab = 'agent'"
+  />
+
+  <DirtyMainDialog
+    :task="dirtyTask"
+    :files="dirtyFiles"
+    @commit="confirmCommitDirty"
+    @cancel="cancelDirty"
   />
 </template>
 

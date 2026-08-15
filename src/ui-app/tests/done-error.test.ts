@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { extractConflicts, MoveToDoneError, useRepoStore } from "../src/stores/repo";
+import { extractConflicts, DirtyMainError, MoveToDoneError, useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
@@ -204,6 +204,101 @@ describe("inline move-to-done errors", () => {
 
     await repo.setStatus(makeTask({ id: "0042" }), "ready");
     expect(repo.doneErrorFor("0042")).toBeNull();
+  });
+});
+
+const jsonNeedsCommit = async () => ({
+  ok: false,
+  status: 409,
+  json: async () => ({
+    ok: false,
+    error: "main has 1 uncommitted file blocking close-out",
+    needsCommit: true,
+    dirtyFiles: ["dist/.build-info.json"],
+  }),
+});
+
+describe("dirty-main guard (0204)", () => {
+  it("stores the dirty files and throws a DirtyMainError when main is dirty", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/done")) return jsonNeedsCommit();
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ id: "0042" });
+
+    await expect(repo.completeTask(task)).rejects.toBeInstanceOf(DirtyMainError);
+    expect(repo.dirtyMainFor("0042")).toEqual(["dist/.build-info.json"]);
+    // No inline move-to-done error: this isn't a failure of the close-out.
+    expect(repo.doneErrorFor("0042")).toBeNull();
+    expect(repo.toasts).toHaveLength(0);
+  });
+
+  it("clears the pending confirmation via clearDirtyMain (Cancel)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/done")) return jsonNeedsCommit();
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ id: "0042" });
+
+    await expect(repo.completeTask(task)).rejects.toThrow();
+    expect(repo.dirtyMainFor("0042").length).toBeGreaterThan(0);
+    repo.clearDirtyMain("0042");
+    expect(repo.dirtyMainFor("0042")).toEqual([]);
+  });
+
+  it("proceeds (no modal) when commitDirty is set and the server accepts", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/done")) {
+          const body = init?.body ? JSON.parse(String(init.body)) : {};
+          if (body.commitDirty) return json({ ok: true, merged: true, conflicts: [], ff: true });
+          return jsonNeedsCommit();
+        }
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ id: "0042" });
+
+    const result = await repo.completeTask(task, { commitDirty: true });
+    expect(result.ok).toBe(true);
+    expect(repo.dirtyMainFor("0042")).toEqual([]);
+  });
+
+  it("does not toast a DirtyMainError via onError", async () => {
+    vi.useFakeTimers();
+    const repo = useRepoStore();
+    await repo.init();
+    repo.onError(new DirtyMainError("0042", ["dist/.build-info.json"]));
+    expect(repo.toasts).toHaveLength(0);
+    expect(repo.feed.some((f) => f.kind === "error")).toBe(true);
   });
 });
 
