@@ -238,6 +238,34 @@ describe("repo store SSE ingestion", () => {
     expect(repo.feed[0].msg).toContain("#0001");
   });
 
+  it("keeps an SSE-hydrated full body when a reconnect refreshes the board", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const fullTask = makeTask({ body: "Full task body that must remain searchable after reconnect." });
+    const boardTask = { ...fullTask, bodyPreview: "Board preview" };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/board"))
+        return json({ tasks: [boardTask], counts: { ...EMPTY_COUNTS, inbox: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.tasks[0].body).toBe("Board preview");
+
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", { type: "task.updated", task: fullTask, prev: {}, at: "2026-08-16T00:00:00Z" });
+    expect(repo.tasks[0].body).toBe(fullTask.body);
+
+    // The first open is the initial connection; the second is a reconnect and
+    // triggers the lightweight board refresh.
+    es.onopen?.();
+    es.onopen?.();
+    await vi.waitFor(() => expect(repo.tasks[0].body).toBe(fullTask.body));
+  });
+
   it("updates the board counts when a task moves status", async () => {
     const repo = useRepoStore();
     await repo.init();
