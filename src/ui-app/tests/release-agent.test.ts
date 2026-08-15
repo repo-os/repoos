@@ -225,6 +225,15 @@ describe("release agent when a task leaves active (#0087)", () => {
       expect(info.pid).toBeGreaterThan(0);
       expect(alive(info.pid)).toBe(true);
 
+      // #0210: a transition into `review` now auto-commits the worktree's
+      // implementation work. Give the agent's worktree a real source change so
+      // the PATCH behaves like the trusted handoff and genuinely arrives in
+      // review (rather than being rejected as a vacuous transition).
+      const branch = started.body.branch as string;
+      const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
+      mkdirSync(worktreeDir, { recursive: true });
+      writeFileSync(join(worktreeDir, "release-agent.txt"), "implemented\n");
+
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
         status: "review",
       });
@@ -269,6 +278,14 @@ describe("release agent when a task leaves active (#0087)", () => {
       const info = (await running(server)).find((r) => r.id === id)!;
       expect(alive(info.pid)).toBe(true);
 
+      // Give the agent's worktree real source work, so the #0210 review gate
+      // (which the watcher applies to a direct edit) commits and lets the
+      // transition through instead of reverting it as vacuous.
+      const branch = started.body.branch as string;
+      const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
+      mkdirSync(worktreeDir, { recursive: true });
+      writeFileSync(join(worktreeDir, "release-by-edit.txt"), "implemented\n");
+
       // The agent's own self-transition edits the MAIN copy on disk directly
       // (never via the API) — the watcher is the only thing that sees it.
       writeFileSync(
@@ -306,11 +323,14 @@ describe("release agent when a task leaves active (#0087)", () => {
       expect(created.status).toBe(201);
       const id = created.body.id as string;
 
+      // #0210: a task with no branch/worktree (never started, nothing to
+      // finalize) cannot be transitioned into `review` — it is rejected with a
+      // clean error and no agent is released, never a crash.
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
         status: "review",
       });
-      expect(patched.status).toBe(200);
-      expect(patched.body.status).toBe("review");
+      expect(patched.status).toBe(400);
+      expect((patched.body.error as string) ?? "").toMatch(/review/);
       expect(await running(server)).toEqual([]);
     } finally {
       killSpawns(fx);
