@@ -24,3 +24,23 @@ kill:
 
 # restart: kill then serve
 restart: kill serve
+
+# tail system logs
+log:
+    tail -f .repoos/logs/system.log
+
+# tail a task's logs `just log-task 0187`
+log-task id:
+    tail -f .repoos/logs/tasks/{{id}}.log
+
+# tail an agent's logs `just log-agent tech-debt`
+log-agent id:
+    tail -f .repoos/logs/agents/{{id}}.log
+
+# curl the system logs API endpoint
+api-log:
+    curl -s http://127.0.0.1:7171/api/system/logs | jq '.logs[:20]'
+
+# curl logs for a task `just api-log-task 0187`
+api-log-task id:
+    curl -s http://127.0.0.1:7171/api/tasks/{{id}}/logs | jq '.logs[:20]'
