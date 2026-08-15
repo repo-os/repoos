@@ -3,7 +3,7 @@
  * and orphan-detection logic are pure functions tested against fixture strings.
  */
 import { describe, expect, it } from "vitest";
-import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem } from "../../server/system";
+import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, reapStrayServeProcesses } from "../../server/system";
 import type { RunningAgentInfo } from "../../server/agents";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -227,5 +227,77 @@ describe("parseServeScan", () => {
     expect(parseServeRoot(cmd)).toBe(REAL);
     expect(parseServePort(cmd)).toBe(7171);
     expect(parseServePort("/opt/node x/dist/cli/index.js serve")).toBeNull();
+  });
+});
+
+/**
+ * 0216 — the actual reap step, kill logic isolated from the real ps-based
+ * scan (already covered by parseServeScan's own tests above) via injection,
+ * matching #0210's release-branchless pattern.
+ */
+describe("reapStrayServeProcesses", () => {
+  it("kills every stray and only strays — never control-plane, known-preview, or in-flight", () => {
+    const killed: number[] = [];
+    const fakeKill = (pid: number) => {
+      killed.push(pid);
+    };
+    const fakeScan = () => ({
+      total: 4,
+      strays: 2,
+      inFlight: 1,
+      deadRoot: 0,
+      level: "warn" as const,
+      processes: [
+        { pid: 100, ppid: 1, port: 7171, root: "/r", rootExists: true, kind: "control-plane" as const },
+        { pid: 200, ppid: 100, port: 5001, root: "/r", rootExists: true, kind: "known-preview" as const },
+        { pid: 300, ppid: 5000, port: 5002, root: "/r", rootExists: true, kind: "in-flight" as const },
+        { pid: 400, ppid: 1, port: 5003, root: "/r", rootExists: false, kind: "stray" as const },
+        { pid: 401, ppid: 1, port: 5004, root: "/r", rootExists: true, kind: "stray" as const },
+      ],
+    });
+
+    const reaped = reapStrayServeProcesses(100, new Set([200]), fakeKill, fakeScan);
+
+    expect(reaped).toBe(2);
+    expect(killed.sort()).toEqual([400, 401]);
+  });
+
+  it("counts a process that's already gone by the time of the kill attempt as not reaped", () => {
+    const fakeKill = () => {
+      throw new Error("ESRCH");
+    };
+    const fakeScan = () => ({
+      total: 1,
+      strays: 1,
+      inFlight: 0,
+      deadRoot: 0,
+      level: "notice" as const,
+      processes: [{ pid: 500, ppid: 1, port: 5005, root: null, rootExists: false, kind: "stray" as const }],
+    });
+
+    const reaped = reapStrayServeProcesses(100, new Set(), fakeKill, fakeScan);
+    expect(reaped).toBe(0); // never throws — a lost race is not an error
+  });
+
+  it("returns 0 without calling kill when the underlying scan is unavailable (ps missing)", () => {
+    let killCalled = false;
+    const reaped = reapStrayServeProcesses(100, new Set(), () => { killCalled = true; }, () => null);
+    expect(reaped).toBe(0);
+    expect(killCalled).toBe(false);
+  });
+
+  it("returns 0 without calling kill when nothing is stray", () => {
+    let killCalled = false;
+    const fakeScan = () => ({
+      total: 1,
+      strays: 0,
+      inFlight: 0,
+      deadRoot: 0,
+      level: "ok" as const,
+      processes: [{ pid: 100, ppid: 1, port: 7171, root: "/r", rootExists: true, kind: "control-plane" as const }],
+    });
+    const reaped = reapStrayServeProcesses(100, new Set(), () => { killCalled = true; }, fakeScan);
+    expect(reaped).toBe(0);
+    expect(killCalled).toBe(false);
   });
 });
