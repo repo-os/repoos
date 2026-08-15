@@ -16,7 +16,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -1007,4 +1007,23 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
   }
   const stats = getDiffStats(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
+};
+
+// Diff endpoint — full patch
+export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (!task.branch) {
+    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noBranch: true });
+  }
+  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  if (!worktreePath) {
+    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noWorktree: true });
+  }
+  const diff = await getDiff(worktreePath, "main");
+  return json(res, 200, { ok: true, diff });
 };

@@ -163,6 +163,7 @@ import {
   getSessionTypeStats,
   getBoardStats,
   getDiffStatsForTask,
+  getDiffForTask,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
@@ -1273,6 +1274,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
