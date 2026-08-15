@@ -8,8 +8,9 @@ area: core
 assigned_to: unassigned
 created_by: ""
 branch: feat/fix-preview-server-startup-failure
+model_override: default
 created_at: "2026-08-13T23:57:56Z"
-updated_at: "2026-08-15T14:38:01Z"
+updated_at: "2026-08-15T15:31:14Z"
 ---
 ## Problem
 
@@ -49,3 +50,4 @@ Preview links have stopped working. The preview server for task #0182 failed to 
 - 2026-08-15T04:15:24Z · status ready→active
 - 2026-08-15T04:57:15Z · status active→ready
 - 2026-08-15T04:57:17Z · status ready→active
+- 2026-08-15T15:31:14Z · model_override
