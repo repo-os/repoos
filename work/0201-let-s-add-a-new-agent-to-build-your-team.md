@@ -10,10 +10,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/let-s-add-a-new-agent-to-build-your-team
 cli_override: kiro
-model_override: default
+model_override: qwen3-coder-next
 pm_model_override: default
 created_at: "2026-08-14T15:46:05Z"
-updated_at: "2026-08-15T18:48:20Z"
+updated_at: "2026-08-15T18:48:23Z"
 ---
 Let's add a new agent to "build your team" called the "Debugger Agent". If there's ever a bug you can copy-paste it to him and ask what's up — he diagnoses the root cause and suggests a fix.
 
@@ -56,3 +56,4 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 - 2026-08-15T16:45:41Z · status active→review
 - 2026-08-15T16:45:42Z · needs_merge
 - 2026-08-15T18:48:20Z · cli_override
+- 2026-08-15T18:48:23Z · model_override
