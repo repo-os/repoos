@@ -3,6 +3,7 @@ id: "0193"
 title: Reset model selector when changing coding agent
 type: bug
 status: ready
+needs_merge: true
 priority: p1
 area: ui
 assigned_to: ai
@@ -10,7 +11,7 @@ created_by: ""
 branch: feat/reset-model-selector-when-changing-codin
 cli_override: codex
 created_at: "2026-08-14T10:03:13Z"
-updated_at: "2026-08-15T02:47:02Z"
+updated_at: "2026-08-15T04:14:57Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ When a user changes the coding agent, the model selector should automatically re
 - 2026-08-14T12:00:13Z · cli_override
 - 2026-08-14T12:00:18Z · cli_override
 - 2026-08-15T02:47:02Z · status review→ready
+- 2026-08-15T04:14:57Z · needs_merge
