@@ -2,14 +2,14 @@
 id: "0205"
 title: Show loading state instead of premature offline in web UI
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T03:38:05Z"
-updated_at: "2026-08-15T03:38:05Z"
+updated_at: "2026-08-15T04:16:13Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ While the UI is starting up or loading, the top-right corner should show a loadi
 ## Activity
 
 - 2026-08-15T03:38:05Z · created · unknown
+- 2026-08-15T04:16:13Z · status inbox→ready
