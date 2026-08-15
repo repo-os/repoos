@@ -384,6 +384,19 @@ export interface CloseOutLock {
   release: () => void;
 }
 
+/**
+ * Not the live close-out path (0187 review — flagged as unlogged; noting why
+ * it stays that way rather than adding logging nothing will ever read).
+ * `server.ts` imports this but never calls it — since #0118 the merge-queue
+ * (`JobCoordinator` + `CloseOutOrchestrator` in integration-orchestrator.ts,
+ * which now carries the phase/failure logging) is what actually runs a
+ * review->done close-out. This single-shot, run-against-main-directly version
+ * predates that and is exercised only by `src/ui-app/tests/done-*.test.ts`.
+ * Kept for its helpers (`mergeTaskBranchWithAutoSync`, `runDoneStep`,
+ * `redactSecrets`, `stripAnsi` — the last used live by `agents.ts`); consider
+ * deleting `completeTask`/`completeTaskLocked` themselves in a follow-up if
+ * nothing comes to depend on them.
+ */
 export async function completeTask(
   config: RepoOSConfig,
   task: Task,
