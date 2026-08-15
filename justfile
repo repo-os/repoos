@@ -6,7 +6,7 @@ default:
 serve:
     nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > /dev/null 2>&1 &
 
-# full build
+# full build `bun run build`
 build:
     bun run build
 
@@ -14,7 +14,7 @@ build:
 check:
     repoos check
 
-# list tasks
+# list tasks `repoos list`
 list:
     repoos list
 
