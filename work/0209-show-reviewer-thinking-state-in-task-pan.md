@@ -8,9 +8,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
+cli_override: github copilot
 model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:54:05Z"
+updated_at: "2026-08-15T07:54:09Z"
 ---
 ## Problem
 
@@ -74,3 +75,4 @@ actions appear as they do today.
 - 2026-08-15T07:53:59Z · cli_override
 - 2026-08-15T07:54:02Z · model_override
 - 2026-08-15T07:54:05Z · cli_override, model_override
+- 2026-08-15T07:54:09Z · cli_override
