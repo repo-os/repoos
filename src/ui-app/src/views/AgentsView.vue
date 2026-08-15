@@ -67,6 +67,13 @@ function openRecommendations(): void {
   void router.push({ name: "repo" });
 }
 
+const MODEL_PRICING_DOC = "docs/opencode-models.md";
+
+function openModelPricing(): void {
+  void docs.loadDoc(MODEL_PRICING_DOC);
+  void router.push({ name: "repo" })
+}
+
 const localAgents = ref<Agent[]>([]);
 const newName = ref("");
 let syncing = false;
@@ -340,7 +347,7 @@ onUnmounted(() => {
     <div class="page-title agents-page-title">Agents</div>
     <div class="page-desc">
       The AI agents that work this repo ·
-      <button class="rec-link" @click="openRecommendations">
+      <button class="model-pricing-link" @click="openRecommendations">
         View the full agent &amp; model selection guide →
       </button>
       <span v-if="config.saving"> · Saving…</span>
@@ -369,13 +376,16 @@ onUnmounted(() => {
       <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
-          <a
+          <!-- <a
             class="model-pricing-link"
             href="/repo?doc=docs/opencode-models.md"
             target="_blank"
             rel="noopener noreferrer"
             title="Open model pricing & use cases in the Repo Context docs"
-          >Model pricing &amp; use cases</a>
+          >Model pricing &amp; use cases</a> -->
+          <button class="model-pricing-link" @click="openModelPricing">
+              Model pricing &amp; use cases →
+          </button>
           <Button
             variant="outline"
             size="sm"

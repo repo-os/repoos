@@ -2384,7 +2384,6 @@ function resetFreeformOverrides(): void {
           <div class="review-toolbar">
             <span class="review-toolbar-title">
               Agent review
-              <span v-if="ui.active && review" class="review-toolbar-sub">· {{ ui.active.path }}</span>
             </span>
             <Button
               variant="outline"
