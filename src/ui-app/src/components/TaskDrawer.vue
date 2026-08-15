@@ -942,6 +942,15 @@ watch(
   },
 );
 
+// Same reset as the Engineer tab: switching the PM coding agent (CLI) resets
+// the model to that CLI's default so an invalid model never carries over.
+watch(
+  () => pmOverrideDraft.cli,
+  (cli, prevCli) => {
+    if (prevCli && cli !== prevCli) pmOverrideDraft.model = "default";
+  },
+);
+
 /** Reset PM overrides to the base PM agent defaults (persisted). */
 async function resetPmOverrides(): Promise<void> {
   if (!ui.active) return;
@@ -1323,6 +1332,18 @@ watch(
   () => [overrideDraft.agent, overrideDraft.cli, overrideDraft.model],
   () => {
     scheduleAgentOverrideSave();
+  },
+);
+
+// Changing the coding agent (CLI) invalidates the previously chosen model: a
+// model valid under one CLI (e.g. codex) is not necessarily offered by another
+// (e.g. claude code). Reset to the new CLI's default ("default") so the
+// selector never carries an invalid model over between coding agents. `prevCli`
+// is empty on first render, so initializing the draft never wipes the model.
+watch(
+  () => overrideDraft.cli,
+  (cli, prevCli) => {
+    if (prevCli && cli !== prevCli) overrideDraft.model = "default";
   },
 );
 
