@@ -611,6 +611,48 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
 }
 
 /**
+ * The dirty/uncommitted file paths in a checkout (`git status --porcelain`),
+ * including tracked modifications and untracked files, in repo-relative form.
+ * Used by the close-out flow to check `main` before merging: a dirty tree
+ * aborts `git merge`, so the UI surfaces these so it can offer to commit them.
+ * Returns an empty array when the tree is clean or git is unavailable.
+ */
+export async function dirtyFiles(root: string): Promise<string[]> {
+  const out = await runGit(root, ["status", "--porcelain"], 4000);
+  if (out.status !== 0 || !out.stdout || out.stdout.trim() === "") return [];
+  return out.stdout
+    .split("\n")
+    .map((l) => l.replace(/\r$/, ""))
+    .map((l) => {
+      // Porcelain v1 short format is two status columns, a separator space,
+      // then the repo-relative path (`XY path`). We read the raw stdout here
+      // (not the shared `git()` helper, whose `.trim()` eats the first line's
+      // leading status column) so the fixed-width parse stays column-accurate.
+      const stripped = l.slice(3).trim();
+      // Renames/renames-with-changes encode the old path before the new one.
+      const arrow = stripped.indexOf(" -> ");
+      return arrow === -1 ? stripped : stripped.slice(arrow + 4);
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Stage and commit every dirty/uncommitted file in a checkout with a single
+ * checkpoint commit so the tree is left clean and mergeable. Used before a
+ * close-out merge when the user opts in ("Commit & continue"). Returns the
+ * list of committed dirty files on success (matching `dirtyFiles`), or an
+ * empty array when the tree was clean or the commit failed.
+ */
+export async function commitDirtyFiles(root: string, message: string): Promise<string[]> {
+  const files = await dirtyFiles(root);
+  if (files.length === 0) return [];
+  const add = await runGit(root, ["add", "-A"], 15_000);
+  if (add.status !== 0) return [];
+  const commit = await runGit(root, ["commit", "-m", message], 15_000);
+  return commit.status === 0 ? files : [];
+}
+
+/**
  * The tab-indented paths git lists when a merge aborts because a dirty or
  * untracked working-tree file would be overwritten, e.g.:
  *

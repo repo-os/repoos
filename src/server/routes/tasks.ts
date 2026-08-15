@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import type { Status, Agent } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -17,7 +16,9 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
+import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
@@ -415,6 +416,51 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 400, {
         error: `Task #${id} was deleted or lost its branch before close-out could start`,
       });
+    }
+
+    // Stale-lock guard (0204): a stale repository lock blocks all close-outs.
+    // Check before enqueueing; if stale, clear it automatically so the user
+    // doesn't hit a cryptic "could not acquire publication lock" failure.
+    const lockPath = join(config.root, ".repoos/close-out.lock");
+    if (existsSync(lockPath)) {
+      try {
+        const lockStat = statSync(lockPath);
+        const age = Date.now() - lockStat.mtime.getTime();
+        if (age > 60_000) {
+          unlinkSync(lockPath);
+        }
+      } catch {
+        // Best-effort
+      }
+    }
+
+    // Dirty-main guard (0204): a dirty working tree on `main` aborts the
+    // close-out merge. Check before enqueueing; if dirty files exist and the
+    // user has not opted in via "Commit & continue", hand the list back so the
+    // UI can show a confirmation modal and pause the close-out. The task stays
+    // in review until the user decides.
+    const dirty = await dirtyFiles(config.root);
+    const doneBody = (await readBody(req)) as { commitDirty?: unknown };
+    const commitDirty = doneBody?.commitDirty === true;
+    if (dirty.length > 0 && !commitDirty) {
+      return json(res, 409, {
+        error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} blocking close-out`,
+        needsCommit: true,
+        dirtyFiles: dirty,
+      });
+    }
+    if (dirty.length > 0 && commitDirty) {
+      const committed = await commitDirtyFiles(
+        config.root,
+        `chore: checkpoint before close-out (#${id})`,
+      );
+      if (committed.length !== dirty.length) {
+        return json(res, 500, {
+          error: `auto-commit of ${dirty.length} dirty file${dirty.length === 1 ? "" : "s"} failed on main`,
+          needsCommit: true,
+          dirtyFiles: dirty,
+        });
+      }
     }
 
     // Enqueue the close-out job (idempotent per task).

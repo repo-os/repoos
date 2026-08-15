@@ -4,6 +4,7 @@ import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 
@@ -165,10 +166,48 @@ async function runAction(): Promise<void> {
         break;
     }
   } catch (err) {
+    // A dirty-main guard (0204) pauses here: the confirmation modal is shown
+    // (files live in the store) and `busy` is reset so the card is usable.
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = props.task;
+      return;
+    }
     repo.onError(err);
   } finally {
     busy.value = false;
   }
+}
+
+/** Dirty-main confirmation (0204): the task whose close-out needs the user to
+ *  decide whether to commit `main`'s dirty files before merging. */
+const dirtyTask = ref<Task | null>(null);
+
+const dirtyFiles = computed(() =>
+  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
+);
+
+async function confirmCommitDirty(): Promise<void> {
+  const t = dirtyTask.value;
+  const files = dirtyFiles.value;
+  dirtyTask.value = null;
+  if (!t) return;
+  busy.value = true;
+  try {
+    await repo.completeTask(t, { commitDirty: true });
+  } catch (err) {
+    if (err instanceof Error && err.name === "DirtyMainError") {
+      dirtyTask.value = t;
+      return;
+    }
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
+
+function cancelDirty(): void {
+  if (dirtyTask.value) repo.clearDirtyMain(dirtyTask.value.id);
+  dirtyTask.value = null;
 }
 
 /** Open the drawer on the Agent tab to watch the live session. */
@@ -275,4 +314,10 @@ async function openAgent(): Promise<void> {
   </div>
 
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
+  <DirtyMainDialog
+    :task="dirtyTask"
+    :files="dirtyFiles"
+    @commit="confirmCommitDirty"
+    @cancel="cancelDirty"
+  />
 </template>
