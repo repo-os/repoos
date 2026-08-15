@@ -90,7 +90,7 @@ export async function guardReviewTransition(
   }
   const add = await runGit(
     registered,
-    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", "(exclude)node_modules", `:(exclude)${task.path}`],
+    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", ":(exclude)node_modules", `:(exclude)${task.path}`],
     30_000,
   );
   if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
