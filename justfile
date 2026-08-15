@@ -4,7 +4,7 @@ default:
 
 # serve on nohup `just serve`
 serve:
-    nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > /dev/null 2>&1 &
+    nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
 # full build `bun run build`
 build:
