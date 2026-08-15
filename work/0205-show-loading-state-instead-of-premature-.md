@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-loading-state-instead-of-premature-
+model_override: default
 created_at: "2026-08-15T03:38:05Z"
-updated_at: "2026-08-15T04:43:02Z"
+updated_at: "2026-08-15T05:26:26Z"
 ---
 ## Problem
 
@@ -36,9 +37,6 @@ While the UI is starting up or loading, the top-right corner should show a loadi
 ## Related
 
 - `src/ui-app` web UI components
-</｜DSML｜parameter>
-</｜DSML｜invoke>
-</｜DSML｜tool_calls>
 
 ## Activity
 
@@ -46,3 +44,4 @@ While the UI is starting up or loading, the top-right corner should show a loadi
 - 2026-08-15T04:16:13Z · status inbox→ready
 - 2026-08-15T04:16:18Z · status ready→active, branch
 - 2026-08-15T04:43:02Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T05:26:26Z · model_override
