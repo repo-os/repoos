@@ -1,0 +1,44 @@
+<script setup lang="ts">
+import { ref } from "vue";
+import { useRepoStore } from "../stores/repo";
+import Button from "./ui/button.vue";
+
+defineProps<{
+  task: { id: string } | null;
+  files: string[];
+}>();
+const emit = defineEmits<{
+  (e: "commit"): void;
+  (e: "cancel"): void;
+}>();
+
+const repo = useRepoStore();
+</script>
+
+<template>
+  <div
+    v-if="task"
+    class="dirty-overlay"
+    role="dialog"
+    aria-modal="true"
+    @click.self="emit('cancel')"
+  >
+    <div class="dirty-card">
+      <h3 class="dirty-title">main has uncommitted changes</h3>
+      <p class="dirty-body">
+        <b>{{ files.length }} file{{ files.length === 1 ? "" : "s" }}</b>
+        on <code class="mono">main</code> would block the merge for task
+        #{{ task.id }}. Commit them and continue, or cancel to stay in review.
+      </p>
+      <div class="dirty-list">
+        <div v-for="f in files" :key="f" class="dirty-file mono">{{ f }}</div>
+      </div>
+      <div class="dirty-actions">
+        <Button variant="outline" size="sm" @click="emit('cancel')">Cancel</Button>
+        <Button variant="accent" size="sm" @click="emit('commit')">
+          Commit &amp; continue
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>
