@@ -2,14 +2,14 @@
 id: "0204"
 title: Show dirty main files on move-to-done and offer to auto-commit
 type: feature
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/show-dirty-main-files-on-move-to-done-an
 created_at: "2026-08-15T02:15:27Z"
-updated_at: "2026-08-15T02:51:18Z"
+updated_at: "2026-08-15T03:22:56Z"
 ---
 ## Activity
 
@@ -55,3 +55,4 @@ This keeps the close-out flow from hitting merge failures due to dirty main, whi
 - 2026-08-15T02:18:26Z · status inbox→ready
 - 2026-08-15T02:18:35Z · status ready→active, branch
 - 2026-08-15T02:51:18Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T03:22:56Z · status review→done, release:success
