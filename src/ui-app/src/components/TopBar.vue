@@ -8,11 +8,20 @@ import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const { health, connected, newVersion, restarting } = storeToRefs(repo);
+const { health, connected, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
 const isDark = computed(() => config.effectiveTheme === "dark");
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
+
+// Connection indicator: while the app is still starting up (initial bundle +
+// first health/SSE handshake) we don't yet know whether we're online, so show
+// a "loading" state instead of a premature "offline" (0205). "offline" is only
+// shown once startup has completed and the connection was actually lost.
+const connState = computed<"loading" | "live" | "offline">(() => {
+  if (loading.value) return "loading";
+  return connected.value ? "live" : "offline";
+});
 
 function toggleTheme(): void {
   void config.setTheme(isDark.value ? "light" : "dark");
@@ -61,11 +70,11 @@ function toggleTheme(): void {
     </button>
     <div
       class="conn"
-      :class="connected ? 'live' : 'down'"
-      :aria-label="connected ? 'Server connection: live' : 'Server connection: offline'"
-      :title="connected ? 'Server connection: live' : 'Server connection: offline'"
+      :class="connState"
+      :aria-label="`Server connection: ${connState}`"
+      :title="`Server connection: ${connState}`"
     >
-      <span class="dot"></span><span class="conn-text">{{ connected ? "live" : "offline" }}</span>
+      <span class="dot"></span><span class="conn-text">{{ connState }}</span>
     </div>
   </div>
 </template>
