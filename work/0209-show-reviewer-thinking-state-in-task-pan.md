@@ -2,14 +2,14 @@
 id: "0209"
 title: Show reviewer thinking state in task panel
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/show-reviewer-thinking-state-in-task-pan
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T05:46:04Z"
+updated_at: "2026-08-15T05:46:05Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ actions appear as they do today.
 
 - 2026-08-15T04:35:11Z · created · unknown
 - 2026-08-15T05:46:04Z · status inbox→ready
+- 2026-08-15T05:46:05Z · status ready→active, branch
