@@ -157,7 +157,7 @@ export type SortOrder = "recent" | "current";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
-  { value: "current", label: "Current order" },
+  { value: "current", label: "Priority level" },
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
