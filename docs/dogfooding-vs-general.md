@@ -103,11 +103,41 @@ now byte-identical across rebuilds of identical source. Readers go through
 back to a legacy inline `generatedAt` for installs built before the split.
 Verified: two consecutive builds produce zero tree change.
 
-**Still open.** `dist/` remains tracked. It is not needed for distribution —
-`files: ["dist"]` plus `prepublishOnly` means npm builds the tarball at publish
-time — so gitignoring it is the real fix, gated on a tag-triggered release
-workflow and on making the preview path build a fresh worktree on demand rather
-than erroring with `no-build`.
+**Resolved (2026-08-15).** `dist/` is now gitignored entirely — not just the
+timestamp. It cost a blocked merge and a real conflict on #0207's close-out
+the same day: the worktree had 17 uncommitted `dist/` files (all generated,
+zero source) blocking the merge outright, and separately `src/server/done.ts`
+conflicted where main and a feature branch both edited `DoneStep` in ways that
+happened to touch a line `dist/`-adjacent churn had been masking.
+
+It was never needed for distribution — `files: ["dist"]` plus
+`prepublishOnly: npm run build` means npm builds the tarball at publish time
+regardless of what git tracks. Before untracking it, three places were audited
+for a hidden assumption that a fresh worktree already has a `dist/`:
+
+- `checkOrchestrationBuild` (bootstrap.ts) reads the **main checkout's**
+  `dist/`, not the new worktree's — main's `dist/` persists on disk
+  regardless of git tracking, so this was never at risk.
+- The candidate worktree (`integration-orchestrator.ts`) already runs
+  `bun run build` unconditionally before invoking its own CLI.
+- The preview path (`preview.ts`'s `ensureFreshBuild`) already builds on
+  demand when `checkBuildForRoot` reports `no-build` — this was flagged as a
+  gap in an earlier draft of this doc; it turned out to already be handled.
+
+So nothing in the live pipeline assumed a fresh worktree's `dist/` pre-exists.
+`git rm -r --cached dist/`, verified `repoos check` still green and a rebuild
+produces zero `git status` output — a change is now visible only when source
+actually changed.
+
+Branches cut before this change may still have `dist/` tracked and modified;
+`mergeBranch`'s `autoResolve` list keeps `dist/` for exactly that transition
+case (see the comment at its call site in `integration-orchestrator.ts`) —
+safe to drop once no such branch remains.
+
+**Not done, and lower priority now that the recurring pain is gone:** a
+tag-triggered release workflow. `npm publish` still works from any checkout —
+`prepublishOnly` builds fresh regardless of git state — so this is about CI
+hygiene, not correctness.
 
 **The lesson worth keeping.** Do not delete `autoResolve` or the dirty-main guard
 when `dist/` goes away. Real repos have their own generated-file conflicts. Keep
