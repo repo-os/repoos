@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/re-enable-the-disabled-headless-ui-smoke
 model_override: default
 created_at: "2026-08-14T15:19:46Z"
-updated_at: "2026-08-15T14:37:47Z"
+updated_at: "2026-08-15T16:07:48Z"
 ---
 ## Problem
 
