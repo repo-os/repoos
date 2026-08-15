@@ -9,6 +9,7 @@ import type { CTOManager } from "../cto.js";
 import type { CloseOutLock } from "../done.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
+import type { Logger } from "../../core/logger.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -24,6 +25,7 @@ export interface RouteContext {
   reviews: ReviewManager;
   cto: CTOManager;
   repoos: RepoOS;
+  logger: Logger;
   emitEvent: (e: RepoEvent) => void;
   closeOutLock: CloseOutLock;
   jobCoordinator: JobCoordinator;

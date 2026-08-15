@@ -27,6 +27,7 @@ import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
+import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -1522,6 +1523,7 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  private readonly logger?: Logger;
   private readonly sessionsDir: string;
   private readonly db: RepoOSDb | null;
   private readonly writeDelayMs: number;
@@ -1574,10 +1576,11 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void> } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.emit = emit;
+    this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
     this.getTask = opts.getTask;
@@ -1898,8 +1901,9 @@ export class AgentRunner {
         env: agentEnv,
       });
     } catch (err) {
-      this.emit({ type: "agent.exited", id: taskId, at: now() });
       const reason = err instanceof Error ? err.message : String(err);
+      this.logger?.agent(taskId, "error", `Failed to spawn agent: ${reason}`, { cmd, args });
+      this.emit({ type: "agent.exited", id: taskId, at: now() });
       return { ok: false, reason };
     }
     proc.stdout?.on("data", (chunk: Buffer) => this.onData(taskId, "out", chunk));
@@ -1931,6 +1935,8 @@ export class AgentRunner {
     // no final newline is still in `pending` when cleanup flushes it.
     proc.on("close", (code) => this.cleanup(taskId, code === 0));
     proc.on("error", () => this.cleanup(taskId, false));
+
+    this.logger?.agent(taskId, "info", "Agent started", { pid: proc.pid, cwd, cmd });
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
     this.emitStats(taskId);
@@ -2387,6 +2393,14 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+
+    this.logger?.agent(
+      taskId,
+      exitedCleanly ? "info" : "error",
+      `Agent exited ${exitedCleanly ? "cleanly" : "with error"}`,
+      { runId: entry.runId },
+    );
+
     const session = this.sessions.get(taskId);
     if (session && session.pending.trim()) {
       // Flush a trailing line with no final newline through the same parse

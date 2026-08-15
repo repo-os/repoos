@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/improve-global-search-with-doc-contents-
+model_override: default
 created_at: "2026-08-04T09:17:40Z"
-updated_at: "2026-08-13T10:04:30Z"
+updated_at: "2026-08-15T12:11:22Z"
 ---
 ## Activity
 
@@ -107,3 +108,4 @@ folded into this task rather than retaining a second search-polish task.
 - 2026-08-13T09:58:24Z · needs_merge
 - 2026-08-13T10:01:42Z · status review→done, release:success
 - 2026-08-13T10:04:30Z · needs_merge
+- 2026-08-15T12:11:22Z · model_override

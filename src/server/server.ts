@@ -64,6 +64,7 @@ import { readBuildStamp } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
+import { createLogger, type Logger } from "../core/logger.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -125,7 +126,7 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
@@ -141,6 +142,7 @@ import {
   getDocs,
   getSkills,
   getSystem,
+  getSystemLogs,
   getTunnelStatus,
   getChat,
   sendChatMessage,
@@ -156,6 +158,7 @@ import {
   patchTask,
   deleteTask,
   getTaskOutput,
+  getTaskLogs,
   getTaskStats,
   getSessionTypeStats,
   getBoardStats,
@@ -184,6 +187,7 @@ import {
   // Agents routes
   runningAgents,
   detectInstalledAgents,
+  getAgentLogs,
   // Notifications
   testNotification,
   // Transcription
@@ -614,11 +618,43 @@ function safeRepoFile(root: string, urlPath: string): string | null {
   return abs;
 }
 
+/**
+ * Fatal/crash-level capture (0187): by default Node terminates the process on
+ * both of these events with nothing recorded anywhere. Registered once per
+ * process (not once per `startServer` call — the test suite starts many
+ * short-lived servers in the same process, and stacking a listener per call
+ * would both spam MaxListenersExceededWarning and risk one test's error
+ * exiting the whole worker) and always logs to whichever server is currently
+ * active. Only exits the process outside the test runner: many independent
+ * test servers share this process, so exiting here on an unrelated test's
+ * error would take the whole suite down with it.
+ */
+let activeLogger: Logger | null = null;
+let fatalHandlersRegistered = false;
+function registerFatalHandlersOnce(): void {
+  if (fatalHandlersRegistered) return;
+  fatalHandlersRegistered = true;
+  const logFatal = (message: string, err: unknown) => {
+    activeLogger?.system("fatal", message, {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    if (process.env.VITEST !== "true") process.exit(1);
+  };
+  process.on("uncaughtException", (err) => logFatal("Uncaught exception", err));
+  process.on("unhandledRejection", (reason) => logFatal("Unhandled promise rejection", reason));
+}
+
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
+  const logger = createLogger(config.root);
   const index = new LiveIndex(config);
   index.refreshAll();
+
+  logger.system("info", "RepoOS server starting", { root: config.root });
+  activeLogger = logger;
+  registerFatalHandlersOnce();
 
   const uiDir = findUiDir(repoos.config.root);
 
@@ -714,6 +750,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               emitIntegration();
             }
           },
+          logger,
         );
         const jobBefore = jobCoordinator.peekNext();
         const result = await orchestrator.processNext();
@@ -811,7 +848,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const task = index.getTask(e.id);
       if (task?.status === "review") void reviews.run(task);
     },
-    { getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
+    { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
@@ -939,6 +976,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
+  // Stray serve-process reaping (#0216): orphaned repoos serve processes
+  // (their spawning parent confirmed dead) accumulate from failed
+  // reload-replacement attempts and interrupted test/close-out runs. Left
+  // alone they starve the close-out gate and, at volume, strain the whole
+  // machine — not just this server. Runs independent of SSE client presence
+  // (unlike the stats sampler above) since strays keep accumulating whether
+  // or not anyone is watching the UI. `psAvailable()` gate matches the
+  // sampler's own platform guard.
+  const REAP_INTERVAL_MS = 30_000;
+  const reapTimer = setInterval(() => {
+    if (!psAvailable()) return;
+    try {
+      const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+      if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+    } catch {
+      /* reaping is best-effort — never crash the server over it */
+    }
+  }, REAP_INTERVAL_MS);
+
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
   // schedule is due runs exactly one scan per tick; scheduled and manual runs
@@ -952,7 +1008,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     for (const name of Object.keys(agents)) {
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
-      void runBuiltInAgent(name, repoos.config)
+      void runBuiltInAgent(name, repoos.config, logger)
         .then((result: any) => {
           if (result && result.failed > 0) {
             console.error(
@@ -962,6 +1018,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         })
         .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
+          logger.agent(name, "error", `Built-in agent run failed`, { error: String(err) });
         })
         .finally(() => {
           builtInRun.inFlight = false;
@@ -1196,6 +1253,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/skills", getSkills);
   router.register("GET", "/api/system", getSystem);
+  router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
@@ -1212,6 +1270,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
@@ -1241,6 +1300,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
+  router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
     const cfg = ctx.repoos.config;
@@ -1253,7 +1313,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     builtInRun.inFlight = true;
     try {
-      const result = await runBuiltInAgent(agentName, cfg);
+      const result = await runBuiltInAgent(agentName, cfg, logger);
       if (!result) {
         return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
       }
@@ -1269,6 +1329,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to run built-in agent";
+      logger.agent(agentName, "error", `Manual run of built-in agent failed`, { error: message });
       return json(res, 500, { error: message });
     } finally {
       builtInRun.inFlight = false;
@@ -1364,6 +1425,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews,
       cto,
       repoos,
+      logger,
       emitEvent: (e: RepoEvent) => {
         for (const client of clients) {
           try {
@@ -1423,6 +1485,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const code = err instanceof WriteError ? 400 : 500;
+      if (code === 500) {
+        logger.system("error", "Request handler error", {
+          method,
+          path,
+          error: msg,
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      }
       return json(res, code, { error: msg });
     }
   });
@@ -1508,6 +1578,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        clearInterval(reapTimer);
         clearInterval(builtInTimer);
         ctoMonitor.stop();
         runner.dispose();
@@ -1529,6 +1600,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          clearInterval(reapTimer);
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();

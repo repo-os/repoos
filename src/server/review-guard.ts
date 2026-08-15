@@ -77,6 +77,32 @@ export async function guardReviewTransition(
     };
   }
 
+  const clearIndex = await runGit(
+    registered,
+    // The guard owns the index for this commit. Clear any stale staging (for
+    // example a prior accidental `git add -f node_modules`) before selectively
+    // staging implementation changes below. This leaves working-tree edits
+    // untouched.
+    ["reset", "--quiet", "HEAD", "--", "."],
+    10_000,
+  );
+  if (clearIndex.status !== 0) {
+    return {
+      ok: false,
+      detail: `could not clear the staging index: ${concise(clearIndex)}`,
+    };
+  }
+  const add = await runGit(
+    registered,
+    // `git add` honors .gitignore. Do not name ignored paths as exclusions:
+    // Git rejects those pathspecs even though they are exclusions.
+    ["add", "-A", "--", "."],
+    30_000,
+  );
+  if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
+  // Remove generated and task metadata paths after staging. Unlike pathspec
+  // exclusions, `git reset` is safe whether these paths are ignored, tracked,
+  // or absent, and it preserves their working-tree contents.
   const unstageGenerated = await runGit(
     registered,
     ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
@@ -88,12 +114,6 @@ export async function guardReviewTransition(
       detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
     };
   }
-  const add = await runGit(
-    registered,
-    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", `:(exclude)${task.path}`],
-    30_000,
-  );
-  if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
     const commit = await runGit(
