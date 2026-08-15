@@ -336,10 +336,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="page-title">Agents</div>
+  <div class="agents-page">
+    <div class="page-title agents-page-title">Agents</div>
     <div class="page-desc">
-      The AI agents that work this repo · opencode + big pickle by default
+      The AI agents that work this repo ·
+      <button class="rec-link" @click="openRecommendations">
+        View the full agent &amp; model selection guide →
+      </button>
       <span v-if="config.saving"> · Saving…</span>
       <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
       <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
@@ -348,28 +351,6 @@ onUnmounted(() => {
     <div v-if="!config.loaded" class="spin"></div>
 
     <template v-else>
-      <Card style="padding: 0 18px 12px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot" style="background: var(--green)"></span>Choosing an agent
-        </div>
-        <div class="agent-desc rec-desc">
-          <p>
-            <strong>opencode</strong> is the most mature driver (structured output, model discovery, session resume).
-            Nearly all completed RepoOS tasks used it with <strong>big pickle</strong>, though evidence is provisional
-            — no other CLI has been tested on a real task.
-          </p>
-          <p>
-            Use live model discovery ("Refresh models") to find what's available on your machine.
-            Compatibility testing (the "Test" button) proves a CLI/model responds, not that it performs well on real tasks.
-          </p>
-          <p>
-            <button class="rec-link" @click="openRecommendations">
-              View the full agent &amp; model selection guide →
-            </button>
-            <span class="rec-freshness">Last verified 2026-08-12 · refreshed manually until #0093</span>
-          </p>
-        </div>
-      </Card>
 
       <div class="agent-tabs">
         <button
@@ -384,6 +365,7 @@ onUnmounted(() => {
         </button>
       </div>
 
+      <div class="agents-tab-content">
       <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
@@ -649,6 +631,7 @@ onUnmounted(() => {
           </div>
         </template>
       </Card>
+      </div>
 
     </template>
   </div>
