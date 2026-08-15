@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import {
+  createWriteStream,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -18,6 +19,7 @@ import {
   statSync,
   unlinkSync,
   writeFileSync,
+  type WriteStream,
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
@@ -111,6 +113,33 @@ interface Entry {
   handoffRequested: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
+  /** Write stream for the per-task log file (0214: durable output across server restarts). */
+  logStream?: WriteStream;
+  /**
+   * For adopted entries (0214): the PID to poll for liveness. When non-null
+   * the stall checker periodically verifies the PID is still alive and cleans
+   * up if it died.
+   */
+  adoptedPid?: number;
+  /** For adopted entries: the tail-poll interval timer. */
+  tailTimer?: ReturnType<typeof setInterval>;
+}
+
+/**
+ * Durable agent registry entry persisted to .repoos/agents.json (0214).
+ * Survives a server restart so the new process can re-attach to in-flight agent
+ * children by PID and resume streaming from their log files.
+ */
+interface DurableRegistryEntry {
+  taskId: string;
+  pid: number;
+  workdir: string;
+  branch: string;
+  runId: string;
+}
+
+interface DurableRegistry {
+  entries: DurableRegistryEntry[];
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -165,6 +194,42 @@ const now = (): string => new Date().toISOString();
 
 /** Hard cap on a session transcript (drop oldest lines beyond this). */
 const OUTPUT_CAP_BYTES = 256 * 1024;
+
+/** Path to the durable agent registry (0214). */
+function registryPath(cacheDir: string): string {
+  return join(cacheDir, "agents.json");
+}
+
+/** Read the durable registry; returns empty when missing or corrupted. */
+function readRegistry(cacheDir: string): DurableRegistry {
+  try {
+    const raw = readFileSync(registryPath(cacheDir), "utf8");
+    const parsed = JSON.parse(raw) as Partial<DurableRegistry>;
+    if (Array.isArray(parsed.entries)) {
+      return { entries: parsed.entries.filter((e) => typeof e.taskId === "string" && typeof e.pid === "number" && typeof e.workdir === "string") };
+    }
+  } catch {
+    /* missing or corrupt — start fresh */
+  }
+  return { entries: [] };
+}
+
+/** Persist the durable registry atomically (best-effort). */
+function writeRegistry(cacheDir: string, registry: DurableRegistry): void {
+  try {
+    mkdirSync(cacheDir, { recursive: true });
+    const file = registryPath(cacheDir);
+    const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+    try {
+      writeFileSync(temp, JSON.stringify(registry, null, 2), "utf8");
+      renameSync(temp, file);
+    } finally {
+      if (existsSync(temp)) unlinkSync(temp);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
 
 /**
  * Default silence window before a still-running turn is flagged as possibly
@@ -1525,6 +1590,8 @@ export class AgentRunner {
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
+  private readonly cacheDir: string;
+  private readonly logDir: string;
   private readonly db: RepoOSDb | null;
   private readonly writeDelayMs: number;
   private readonly retentionDays: number;
@@ -1585,7 +1652,9 @@ export class AgentRunner {
     this.onPreviewRequest = opts.onPreviewRequest;
     this.getTask = opts.getTask;
     this.db = getRepoOSDb(config.root);
-    this.sessionsDir = join(config.root, config.cacheDir, "sessions");
+    this.cacheDir = join(config.root, config.cacheDir);
+    this.sessionsDir = join(this.cacheDir, "sessions");
+    this.logDir = join(this.cacheDir, "agent-logs");
     this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
     this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
     this.retentionCount = opts.retentionCount ?? SESSION_RETENTION_COUNT;
@@ -1602,6 +1671,144 @@ export class AgentRunner {
   /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
   dispose(): void {
     clearInterval(this.stallTimer);
+  }
+
+  /**
+   * Re-attach to agent children that survived a server restart (0214).
+   * Reads the durable registry, checks PID aliveness, and for each still-live
+   * child tail-catches the log file and restores the in-memory entry/session
+   * so `isRunning()` reports true and SSE streaming resumes from this point.
+   * Stale entries (PID dead) are dropped — this must not resurrect dead sessions.
+   */
+  adoptRunningAgents(): void {
+    const registry = readRegistry(this.cacheDir);
+    const live: DurableRegistryEntry[] = [];
+    for (const rec of registry.entries) {
+      if (this.entries.has(rec.taskId)) continue;
+      let alive = false;
+      try {
+        process.kill(rec.pid, 0);
+        alive = true;
+      } catch {
+        /* PID is dead — drop it */
+      }
+      if (!alive) continue;
+      live.push(rec);
+      const logFile = join(this.logDir, `${rec.taskId}.log`);
+      // Restore the session so the transcript is pre-loaded for the task.
+      let session = this.sessions.get(rec.taskId) ?? this.loadSession(rec.taskId);
+      if (!session) {
+        session = this.emptySession();
+        session.workdir = rec.workdir;
+        session.engine = "plain";
+      }
+      session.turnStartedAt = session.turnStartedAt ?? now();
+      session.lastOutputAt = session.lastOutputAt ?? now();
+      this.sessions.set(rec.taskId, session);
+      // Tail-catch: read any log output written during the handoff gap and
+      // replay it into the session so the transcript isn't missing a chunk.
+      try {
+        if (existsSync(logFile)) {
+          const gapData = readFileSync(logFile, "utf8");
+          if (gapData) {
+            const lines = gapData.split("\n");
+            for (const line of lines) {
+              if (line.length === 0) continue;
+              this.appendLine(rec.taskId, "out", line);
+            }
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
+      // Start tailing the log file for live output, and register a fake Entry
+      // so isRunning() is true and the task reads as in-flight. The real ChildProcess
+      // is referenced by PID, not held directly — we poll for aliveness instead.
+      const tailTimer = this.tailLog(rec.taskId, logFile);
+      this.entries.set(rec.taskId, {
+        proc: null as unknown as ChildProcess,
+        startedAt: now(),
+        workdir: rec.workdir,
+        task: undefined,
+        branch: rec.branch,
+        runId: rec.runId,
+        handoffRequested: false,
+        previewRequested: false,
+        adoptedPid: rec.pid,
+        tailTimer,
+      });
+    }
+    if (live.length > 0) {
+      writeRegistry(this.cacheDir, { entries: live });
+    } else {
+      this.clearRegistry();
+    }
+  }
+
+  /** Tail a log file by watching it for appended content (0214). Returns the interval timer. */
+  private tailLog(taskId: string, logFile: string): ReturnType<typeof setInterval> {
+    let lastSize = 0;
+    try {
+      if (existsSync(logFile)) lastSize = statSync(logFile).size;
+    } catch {
+      /* best-effort */
+    }
+    const interval = setInterval(() => {
+      if (!this.entries.has(taskId)) {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const currentSize = statSync(logFile).size;
+        if (currentSize > lastSize) {
+          const data = readFileSync(logFile, "utf8");
+          const delta = data.slice(lastSize);
+          lastSize = currentSize;
+          const lines = delta.split("\n");
+          for (const line of lines) {
+            if (line.length === 0) continue;
+            this.appendLine(taskId, "out", line);
+          }
+        }
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+          clearInterval(interval);
+        }
+        /* best-effort on any other error */
+      }
+    }, 200);
+    interval.unref();
+    return interval;
+  }
+
+  /** Persist a registry entry for one running task (0214). */
+  private writeRegistryEntry(taskId: string, pid: number, workdir: string, branch: string, runId: string): void {
+    const registry = readRegistry(this.cacheDir);
+    const existing = registry.entries.findIndex((e) => e.taskId === taskId);
+    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId };
+    if (existing >= 0) {
+      registry.entries[existing] = entry;
+    } else {
+      registry.entries.push(entry);
+    }
+    writeRegistry(this.cacheDir, registry);
+  }
+
+  /** Remove a registry entry for a task (0214). */
+  private removeRegistryEntry(taskId: string): void {
+    const registry = readRegistry(this.cacheDir);
+    registry.entries = registry.entries.filter((e) => e.taskId !== taskId);
+    writeRegistry(this.cacheDir, registry);
+  }
+
+  /** Clear the entire durable registry (0214). */
+  private clearRegistry(): void {
+    try {
+      const file = registryPath(this.cacheDir);
+      if (existsSync(file)) unlinkSync(file);
+    } catch {
+      /* best-effort */
+    }
   }
 
   /** Append trusted server orchestration progress to the retained transcript. */
@@ -1906,8 +2113,23 @@ export class AgentRunner {
       this.emit({ type: "agent.exited", id: taskId, at: now() });
       return { ok: false, reason };
     }
-    proc.stdout?.on("data", (chunk: Buffer) => this.onData(taskId, "out", chunk));
-    proc.stderr?.on("data", (chunk: Buffer) => this.onData(taskId, "err", chunk));
+    // Open a per-task log file so child output is durable across server restarts (0214).
+    mkdirSync(this.logDir, { recursive: true });
+    const logFile = join(this.logDir, `${taskId}.log`);
+    let logStream: WriteStream | undefined;
+    try {
+      logStream = createWriteStream(logFile, { flags: "a" });
+    } catch {
+      /* fail-soft: log file is best-effort */
+    }
+    proc.stdout?.on("data", (chunk: Buffer) => {
+      logStream?.write(chunk);
+      this.onData(taskId, "out", chunk);
+    });
+    proc.stderr?.on("data", (chunk: Buffer) => {
+      logStream?.write(chunk);
+      this.onData(taskId, "err", chunk);
+    });
     this.entries.set(taskId, {
       proc,
       startedAt: now(),
@@ -1917,6 +2139,7 @@ export class AgentRunner {
       runId,
       handoffRequested: false,
       previewRequested: false,
+      logStream,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
     // clock resets here too, not just on output, so a follow-up turn on a
@@ -1928,6 +2151,10 @@ export class AgentRunner {
       session.turnStartedAt = now();
       session.lastOutputAt = now();
       session.stalledEmitted = false;
+    }
+    // Persist the durable registry entry so a restart can re-attach (0214).
+    if (proc.pid) {
+      this.writeRegistryEntry(taskId, proc.pid, cwd, branch ?? task?.branch ?? "", runId);
     }
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
@@ -2278,9 +2505,21 @@ export class AgentRunner {
    * raises the stall flag the moment silence crosses the threshold. Recovery
    * (new output, or the turn exiting) is handled inline where it happens, so
    * this only ever needs to turn the warning ON, never off.
+   * Also polls adopted entries (0214) for PID liveness: if the adopted PID
+   * died, clean up the entry so the task doesn't read as running forever.
    */
   private checkStalls(): void {
-    for (const taskId of this.entries.keys()) {
+    for (const [taskId, entry] of this.entries) {
+      if (entry.adoptedPid) {
+        try {
+          process.kill(entry.adoptedPid, 0);
+        } catch {
+          // PID died during adoption — clean up
+          entry.tailTimer && clearInterval(entry.tailTimer);
+          this.cleanup(taskId, false);
+          continue;
+        }
+      }
       const session = this.sessions.get(taskId);
       if (!session || session.stalledEmitted) continue;
       if (this.snapshotStats(taskId).stalled) {
@@ -2308,7 +2547,26 @@ export class AgentRunner {
   stop(taskId: string): StopResult {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
-    if (!entry.killTimer) {
+    if (entry.tailTimer) {
+      clearInterval(entry.tailTimer);
+      entry.tailTimer = undefined;
+    }
+    if (entry.adoptedPid) {
+      // For adopted entries (0214): kill by PID directly since proc is null.
+      try {
+        process.kill(entry.adoptedPid, "SIGTERM");
+      } catch {
+        /* already gone */
+      }
+      const adoptedPid = entry.adoptedPid;
+      entry.killTimer = setTimeout(() => {
+        try {
+          process.kill(adoptedPid, "SIGKILL");
+        } catch {
+          /* already gone */
+        }
+      }, 3000);
+    } else if (!entry.killTimer) {
       try {
         entry.proc.kill("SIGTERM");
       } catch {
@@ -2393,6 +2651,10 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+
+    // Close the durable log stream and remove the registry entry (0214).
+    entry.logStream?.end();
+    this.removeRegistryEntry(taskId);
 
     this.logger?.agent(
       taskId,
