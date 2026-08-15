@@ -2,7 +2,7 @@
 id: "0224"
 title: Float the integration status bar as a compact panel on desktop
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/float-the-integration-status-bar-as-a-co
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T11:25:20Z"
-updated_at: "2026-08-15T16:18:14Z"
+updated_at: "2026-08-15T16:36:15Z"
 ---
 ## Problem
 
@@ -94,3 +94,4 @@ tappable whenever the integration bar is shown.
 - 2026-08-15T12:11:11Z · status ready→active
 - 2026-08-15T12:14:06Z · pm_model_override
 - 2026-08-15T16:18:12Z · status active→review
+- 2026-08-15T16:36:15Z · status review→done, release:success
