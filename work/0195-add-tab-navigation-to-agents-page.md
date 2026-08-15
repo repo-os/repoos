@@ -2,14 +2,14 @@
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
-status: done
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-tab-navigation-to-agents-page
 created_at: "2026-08-14T12:23:17Z"
-updated_at: "2026-08-15T03:34:32Z"
+updated_at: "2026-08-15T03:53:39Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T02:23:47Z · status ready→active, branch
 - 2026-08-15T02:42:47Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T03:34:32Z · status review→done, release:success
+- 2026-08-15T03:53:39Z · status done→ready
