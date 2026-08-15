@@ -188,6 +188,36 @@ function readNewVersion(): { hash: string; buildAt: string | null } | null {
   return null;
 }
 
+/**
+ * The stages shown in the integration pipeline bar, in the spec's display
+ * order: sync → merge → build → check → done (0206). The server's internal
+ * execution order is sync → build → check → merge → done, so the component maps
+ * each named stage to its execution position via the `stage` field on the
+ * active job rather than assuming display order equals execution order.
+ */
+export const INTEGRATION_STAGES = ["sync", "merge", "build", "check", "done"] as const;
+export type IntegrationStageName = (typeof INTEGRATION_STAGES)[number];
+
+/** The active integration job as broadcast by `integration.progress` (0206). */
+export interface ActiveIntegration {
+  taskId: string;
+  phase: string;
+  stage: string;
+  reason?: string;
+}
+
+/** A task queued behind the active integration job (0206). */
+export interface QueuedIntegration {
+  taskId: string;
+  phase: string;
+}
+
+/** The integration pipeline snapshot the Work Queue bar renders. */
+export interface IntegrationState {
+  active: ActiveIntegration | null;
+  queue: QueuedIntegration[];
+}
+
 export const useRepoStore = defineStore("repo", () => {
   const origin = window.location.origin;
   const loading = ref(true);
@@ -229,6 +259,8 @@ export const useRepoStore = defineStore("repo", () => {
   const systemStats = ref<SystemStats | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
+  /** Integration pipeline snapshot for the Work Queue bar (0206). */
+  const integration = ref<IntegrationState>({ active: null, queue: [] });
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
@@ -532,6 +564,8 @@ export const useRepoStore = defineStore("repo", () => {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
+    } else if (e.type === "integration.progress") {
+      integration.value = { active: e.active, queue: e.queue };
     }
   }
 
@@ -541,6 +575,75 @@ export const useRepoStore = defineStore("repo", () => {
       autoEng.value = await api<AutoEngineeringState>("/api/auto-engineering/state");
     } catch {
       /* non-fatal — the panel falls back to its empty state */
+    }
+  }
+
+  /**
+   * Hydrate the integration pipeline snapshot (0206) after an SSE gap. The
+   * server persists integration jobs, so this recovers any state missed while
+   * disconnected. Builds the same shape as `integration.progress`.
+   */
+  async function refreshIntegration(): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        jobs: {
+          taskId: string;
+          phase: string;
+          reason?: string;
+        }[];
+      }>("/api/integration-jobs");
+      if (!r.ok || !Array.isArray(r.jobs)) return;
+      const jobs = r.jobs;
+      // A FAILED front job stays active so its error/Retry stays visible.
+      const active = jobs.find((j) => j.phase !== "done") ?? null;
+      const queue = jobs
+        .filter((j) => j.taskId !== active?.taskId && j.phase !== "done" && j.phase !== "failed")
+        .slice(0, 10)
+        .map((j) => ({ taskId: j.taskId, phase: j.phase }));
+      integration.value = {
+        active: active
+          ? {
+              taskId: active.taskId,
+              phase: active.phase,
+              stage: defaultIntegrationStage(active.phase),
+              reason: active.reason,
+            }
+          : null,
+        queue,
+      };
+    } catch {
+      /* non-fatal — the bar falls back to its idle state */
+    }
+  }
+
+  /** Best-effort stage label derived from a phase when the stage is unknown. */
+  function defaultIntegrationStage(phase: string): string {
+    switch (phase) {
+      case "syncing":
+        return "sync";
+      case "validating":
+        return "build";
+      case "publishing":
+        return "merge";
+      case "cleanup":
+      case "done":
+        return "done";
+      default:
+        return "sync";
+    }
+  }
+
+  /** Retry a failed integration job for a task (0206). */
+  async function retryIntegration(taskId: string): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${taskId}/integration-retry`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.reason ?? "could not retry integration";
+      pushToast(message, "error");
+      throw new Error(message);
     }
   }
 
@@ -562,11 +665,14 @@ export const useRepoStore = defineStore("repo", () => {
       void loadCTO().catch(() => {
         /* non-fatal hydration */
       });
+      void refreshIntegration().catch(() => {
+        /* non-fatal hydration */
+      });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "auto-engineering.state", "integration.progress", "build.available", "reload.failed"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1094,6 +1200,7 @@ export const useRepoStore = defineStore("repo", () => {
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
       void reconcileVersion();
+      await refreshIntegration();
     } catch {
       /* server not reachable — UI still renders */
     } finally {
@@ -1129,6 +1236,9 @@ export const useRepoStore = defineStore("repo", () => {
     systemStats,
     autoEng,
     refreshAutoEng,
+    integration,
+    refreshIntegration,
+    retryIntegration,
     newVersion,
     restarting,
     pushToast,

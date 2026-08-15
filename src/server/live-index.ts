@@ -82,6 +82,22 @@ export type RepoEvent =
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
   | { type: "reload.failed"; reason: string; at: string }
+  /**
+   * A point-in-time snapshot of the integration pipeline (0206). Emitted on
+   * every enqueue, stage transition, completion, or failure so the Work Queue
+   * bar can stay live without polling.
+   */
+  | {
+      type: "integration.progress";
+      active: {
+        taskId: string;
+        phase: string;
+        stage: string;
+        reason?: string;
+      } | null;
+      queue: { taskId: string; phase: string }[];
+      at: string;
+    }
   /** Supervisor heartbeat report (0112). */
   | { type: "supervisor.heartbeat"; heartbeat: SupervisorHeartbeat; at: string }
   /** Auto-engineering mode state change (0124). */

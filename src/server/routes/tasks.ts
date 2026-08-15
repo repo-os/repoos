@@ -23,6 +23,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
+import { integrationSnapshot } from "../integration-job.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -472,6 +473,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // Trigger job processing to start the pipeline.
     ctx.triggerJobProcessing();
 
+    // Reflect the newly enqueued job in the pipeline bar (0206).
+    ctx.emitEvent({ type: "integration.progress", ...integrationSnapshot(ctx.jobCoordinator), at: new Date().toISOString() });
+
     // Return the job status to the client.
     return json(res, 200, {
       ok: true,
@@ -856,4 +860,40 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
   }
   const stats = getDiffStats(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
+};
+
+/**
+ * Retry a failed integration job for a task (0206). The coordinator's `enqueue`
+ * rebuilds a `failed` job as a fresh `queued` one, so this is the "Retry"
+ * action behind the pipeline bar — most useful for a merge-conflict or build
+ * error the user has since addressed. Idempotent: re-enqueuing an in-flight or
+ * queued job is a no-op.
+ */
+export const retryIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
+  const id = params.param1;
+  const { jobCoordinator, index } = ctx;
+  const existing = index.getTask(id);
+  if (!existing || !existing.branch) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  const job = jobCoordinator.enqueue(existing);
+  if (!job) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  ctx.triggerJobProcessing();
+  ctx.emitEvent({
+    type: "integration.progress",
+    ...integrationSnapshot(jobCoordinator),
+    at: new Date().toISOString(),
+  });
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: job.taskId,
+      phase: job.phase,
+      enqueuedAt: job.enqueuedAt,
+      startedAt: job.startedAt,
+      queuePosition: jobCoordinator.allJobs().findIndex((j) => j.taskId === job.taskId),
+    },
+  });
 };

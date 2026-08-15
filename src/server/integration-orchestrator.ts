@@ -160,6 +160,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "queued") {
         const updated = this.coordinator.updateJob(job.taskId, {
           phase: "syncing",
+          stage: "sync",
           startedAt: new Date().toISOString(),
         });
         if (!updated) return { ok: false, reason: "job disappeared" };
@@ -172,11 +173,12 @@ export class CloseOutOrchestrator {
         if (!syncRes.ok) {
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            stage: "sync",
             reason: syncRes.reason,
           });
           return syncRes;
         }
-        job = this.coordinator.updateJob(job.taskId, { phase: "validating" })!;
+        job = this.coordinator.updateJob(job.taskId, { phase: "validating", stage: "build" })!;
       }
 
       // Validating phase: run the full gate (build, check) on the candidate.
@@ -191,6 +193,7 @@ export class CloseOutOrchestrator {
         }
         job = this.coordinator.updateJob(job.taskId, {
           phase: "publishing",
+          stage: "merge",
           candidateSha: validateRes.candidateSha,
         })!;
       }
@@ -208,11 +211,12 @@ export class CloseOutOrchestrator {
           }
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            stage: "merge",
             reason: pubRes.reason,
           });
           return pubRes;
         }
-        job = this.coordinator.updateJob(job.taskId, { phase: "cleanup" })!;
+        job = this.coordinator.updateJob(job.taskId, { phase: "cleanup", stage: "done" })!;
       }
 
       // Cleanup phase: remove candidate worktree, delete candidate branch, remove task worktree.
@@ -384,6 +388,9 @@ export class CloseOutOrchestrator {
     if (buildRes.status !== 0) {
       return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
     }
+
+    // Build passed — the active stage advances to check so the UI can show it.
+    this.coordinator.updateJob(job.taskId, { stage: "check" });
 
     this.onProgress?.("check");
     // The candidate's OWN freshly-built CLI comes first, same as the legacy

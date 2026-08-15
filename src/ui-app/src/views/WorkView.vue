@@ -13,6 +13,7 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
+import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 
 const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
@@ -106,5 +107,7 @@ const filterCol = computed<Column | null>(() => {
         <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
       </template>
     </div>
+
+    <IntegrationStatusBar />
   </div>
 </template>

@@ -103,7 +103,7 @@ import {
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
-import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
+import { createJobCoordinator, type JobCoordinator, integrationSnapshot } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
@@ -160,6 +160,7 @@ import {
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
+  retryIntegrationJob,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -677,6 +678,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Publish the integration pipeline snapshot (0206) so the Work Queue bar
+  // stays live. Called on every enqueue/stage-transition/completion/failure.
+  const emitIntegrationProgress = () => {
+    const snap = integrationSnapshot(jobCoordinator);
+    emitEvent({ type: "integration.progress", ...snap, at: new Date().toISOString() });
+  };
+
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
     if (processingJob) return;
@@ -730,6 +738,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
         index.refreshBranches();
+        // Reflect the just-finished/advanced job in the pipeline bar (0206).
+        emitIntegrationProgress();
         // Continue processing if there are more jobs or recovered jobs
         const next = jobCoordinator.peekNext();
         if (next && next.phase !== "done" && next.phase !== "failed") {
@@ -1175,6 +1185,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/integration-retry$/, retryIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);

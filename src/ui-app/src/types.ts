@@ -239,6 +239,17 @@ export type RepoEvent =
     }
   | { type: "reload.failed"; reason: string; at: string }
   | {
+      type: "integration.progress";
+      active: {
+        taskId: string;
+        phase: string;
+        stage: string;
+        reason?: string;
+      } | null;
+      queue: { taskId: string; phase: string }[];
+      at: string;
+    }
+  | {
       type: "auto-engineering.state";
       state: {
         enabled: boolean;

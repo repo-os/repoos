@@ -13,6 +13,17 @@ import type { Task } from "../core/types.js";
 
 export type JobPhase = "queued" | "syncing" | "validating" | "publishing" | "cleanup" | "done" | "failed";
 
+/**
+ * The fine-grained integration stage surfaced to the UI, in execution order:
+ * sync → build → check → merge → done. Tracked separately from `phase` because
+ * the `validating` phase spans both the build and check stages. Always
+ * `undefined` for a fresh `queued` job (nothing started yet).
+ */
+export type IntegrationStage = "sync" | "build" | "check" | "merge" | "done";
+
+/** The stages the Work Queue bar renders, in the spec's display order. */
+export const INTEGRATION_STAGES: IntegrationStage[] = ["sync", "merge", "build", "check", "done"];
+
 export interface IntegrationJob {
   /** Unique ID: task ID */
   taskId: string;
@@ -20,6 +31,8 @@ export interface IntegrationJob {
   branch?: string;
   /** Current phase */
   phase: JobPhase;
+  /** Fine-grained stage progressed so far (may be undefined for queued jobs). */
+  stage?: IntegrationStage;
   /** When the job was enqueued (ISO string) */
   enqueuedAt: string;
   /** When job processing started (ISO string, null if not yet started) */
@@ -99,6 +112,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       taskId: stored.taskId,
       branch: stored.branch,
       phase: stored.phase,
+      stage: stored.stage,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
       baseMainSha: stored.baseMainSha,
@@ -202,4 +216,77 @@ export function createJobCoordinator(root: string): JobCoordinator {
       });
     },
   };
+}
+
+/** The active integration job as rendered by the Work Queue status bar. */
+export interface ActiveIntegrationView {
+  taskId: string;
+  phase: JobPhase;
+  /** Fine-grained stage progressed so far. */
+  stage: IntegrationStage;
+  /** Failure reason when the active job has failed. */
+  reason?: string;
+}
+
+/** A task in the queue still waiting to integrate, behind the active job. */
+export interface QueuedIntegrationView {
+  taskId: string;
+  phase: JobPhase;
+}
+
+/**
+ * A point-in-time snapshot of the whole integration pipeline, derived from the
+ * durable job coordinator. Used to build the `integration.progress` SSE event
+ * the Work Queue bar subscribes to, and to hydrate it over HTTP.
+ *
+ * - `active` is the job at the front of the queue that has not finished — a
+ *   FAILED job stays active so the bar keeps showing its error and a Retry
+ *   button until the user re-enqueues it (see below). null when idle.
+ * - `queue` is everything behind the active job that is still waiting (never
+ *   the active or a finished job).
+ */
+export function integrationSnapshot(coordinator: JobCoordinator): {
+  active: ActiveIntegrationView | null;
+  queue: QueuedIntegrationView[];
+} {
+  const jobs = coordinator.allJobs();
+  // The active job is the front of the FIFO that is not finished — a FAILED
+  // job stays active so the bar keeps showing its error and Retry until the
+  // user re-enqueues it (unlike peekNext, which skips failed jobs for
+  // processing). A queued-but-unstarted job is merely waiting.
+  const active = jobs.find((j) => j.phase !== "done") ?? null;
+  const activeId = active?.taskId;
+  const queue = jobs
+    .filter((j) => j.taskId !== activeId && j.phase !== "done" && j.phase !== "failed")
+    .slice(0, 10)
+    .map((j) => ({ taskId: j.taskId, phase: j.phase }));
+  const activeView = active
+    ? {
+        taskId: active.taskId,
+        phase: active.phase,
+        stage: defaultStage(active),
+        reason: active.reason,
+      }
+    : null;
+  return { active: activeView, queue };
+}
+
+/** Derive the fine-grained stage for a job, defaulting from its phase. */
+function defaultStage(job: IntegrationJob): IntegrationStage {
+  if (job.stage) return job.stage;
+  switch (job.phase) {
+    case "syncing":
+    case "failed":
+      // Without a persisted stage, assume the job stopped in its first stage.
+      return "sync";
+    case "validating":
+      return "build";
+    case "publishing":
+      return "merge";
+    case "cleanup":
+    case "done":
+      return "done";
+    default:
+      return "sync";
+  }
 }
