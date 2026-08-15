@@ -393,6 +393,25 @@ export interface ProcessInfo {
   unverified: boolean;
 }
 
+export interface ServeProcessInfo {
+  pid: number;
+  ppid: number;
+  port: number | null;
+  root: string | null;
+  rootExists: boolean;
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
+}
+
+/** Machine-wide `repoos serve` census — see #0216. */
+export interface ServeScan {
+  total: number;
+  strays: number;
+  inFlight: number;
+  deadRoot: number;
+  level: "ok" | "notice" | "warn";
+  processes: ServeProcessInfo[];
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -401,6 +420,7 @@ export interface SystemStats {
     memPercent: number;
   };
   processes: ProcessInfo[];
+  serve: ServeScan | null;
   serverPid: number;
   at: string;
 }

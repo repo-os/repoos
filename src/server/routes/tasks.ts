@@ -16,7 +16,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError } from "../../core/git.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { bootstrap } from "../../core/bootstrap.js";
@@ -440,7 +440,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // user has not opted in via "Commit & continue", hand the list back so the
     // UI can show a confirmation modal and pause the close-out. The task stays
     // in review until the user decides.
-    const dirty = await dirtyFiles(config.root);
+    //
+    // Fails closed (#0211): if the dirty check itself errors or times out we
+    // cannot assert the tree is clean, so the close-out is refused rather than
+    // enqueued against a tree that git may abort at publish time. An unknown
+    // state must never silently look clean.
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before close-out (${err.message}). Retry, or commit/stash main's working tree and try again.`,
+          needsCommit: true,
+          dirtyFiles: [],
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
     const doneBody = (await readBody(req)) as { commitDirty?: unknown };
     const commitDirty = doneBody?.commitDirty === true;
     if (dirty.length > 0 && !commitDirty) {
@@ -451,10 +470,23 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     if (dirty.length > 0 && commitDirty) {
-      const committed = await commitDirtyFiles(
-        config.root,
-        `chore: checkpoint before close-out (#${id})`,
-      );
+      let committed: string[];
+      try {
+        committed = await commitDirtyFiles(
+          config.root,
+          `chore: checkpoint before close-out (#${id})`,
+        );
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return json(res, 500, {
+            error: `could not re-verify main while committing dirty files (${err.message}). Close-out aborted; nothing was merged.`,
+            needsCommit: true,
+            dirtyFiles: dirty,
+            dirtyCheckFailed: true,
+          });
+        }
+        throw err;
+      }
       if (committed.length !== dirty.length) {
         return json(res, 500, {
           error: `auto-commit of ${dirty.length} dirty file${dirty.length === 1 ? "" : "s"} failed on main`,

@@ -1,15 +1,15 @@
 ---
-id: “0100”
+id: "0100"
 title: Add task notification settings for state transitions requiring attention
 type: feature
 status: ready
 priority: p2
 area: ui
 assigned_to: ai
-created_by: “”
-branch: “”
-created_at: “2026-08-11T16:18:32Z”
-updated_at: “2026-08-14T00:00:00Z”
+created_by: ""
+branch: ""
+created_at: "2026-08-11T16:18:32Z"
+updated_at: "2026-08-14T00:00:00Z"
 ---
 ## Problem
 
@@ -41,7 +41,7 @@ Notification triggers include:
 
 ## Notes for AI
 
-- Treat “push notification” as a browser notification delivered through the computer's notification system.
+- Treat "push notification" as a browser notification delivered through the computer's notification system.
 - Assume all notification options are disabled by default.
 - Keep all controls on the existing settings page.
 - Use a bell-like sound for audible notifications.
