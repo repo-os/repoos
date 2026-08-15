@@ -77,7 +77,7 @@ export interface CompleteResult {
 }
 
 /** The progress steps reported to the UI while the flow runs. */
-export type DoneStep = "merge" | "build" | "screenshots" | "check" | "done";
+export type DoneStep = "sync" | "merge" | "build" | "screenshots" | "check" | "done";
 
 export interface MergeAttempt {
   /** Whether the branch was merged into the main checkout. */

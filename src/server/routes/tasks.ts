@@ -23,6 +23,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
+import { buildIntegrationSnapshot } from "../integration-status.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -469,6 +470,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
 
+    // Reflect the new queue entry in the pinned status bar immediately (0207),
+    // even before job processing's own snapshot emission picks it up.
+    ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}) });
+
     // Trigger job processing to start the pipeline.
     ctx.triggerJobProcessing();
 
@@ -813,6 +818,55 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       queuePosition: idx,
     })),
     queueLength: allJobs.length,
+  });
+};
+
+/**
+ * Full integration-pipeline snapshot for the pinned status bar (0207).
+ * `reported` stages are empty for a cold hydration; the live `integration`
+ * SSE event keeps the bar accurate from the moment it connects.
+ */
+export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
+  return json(res, 200, {
+    ok: true,
+    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+  });
+};
+
+/**
+ * Retry a failed integration job (0207). Reuses the coordinator's existing
+ * retry path: `enqueue` re-enqueues a `failed` job as a fresh queued job
+ * (see integration-job.ts), then processing resumes from the queue.
+ */
+export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
+  const { jobCoordinator } = ctx;
+  const id = params.param1;
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `No integration job for task #${id}` });
+  }
+  if (job.phase !== "failed") {
+    return json(res, 409, {
+      error: `Task #${id} is not in a failed integration state (it is ${job.phase})`,
+    });
+  }
+  const task = ctx.index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const reenqueued = jobCoordinator.enqueue(task);
+  if (!reenqueued) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, {}) });
+  ctx.triggerJobProcessing();
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: reenqueued.taskId,
+      phase: reenqueued.phase,
+      enqueuedAt: reenqueued.enqueuedAt,
+    },
   });
 };
 
