@@ -2,14 +2,14 @@
 id: "0206"
 title: "Title: Add integration pipeline status bar pinned to work…"
 type: feature
-status: ready
+status: active
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/title-add-integration-pipeline-status-ba
 created_at: "2026-08-15T03:45:30Z"
-updated_at: "2026-08-15T04:08:10Z"
+updated_at: "2026-08-15T04:15:09Z"
 ---
 Title: Add integration pipeline status bar pinned to work queue
 
@@ -34,3 +34,4 @@ The UI needs a new pinned Vue component on the Work page that subscribes to inte
 - 2026-08-15T03:45:30Z · created · unknown
 - 2026-08-15T04:08:08Z · status draft→inbox
 - 2026-08-15T04:08:10Z · status inbox→ready
+- 2026-08-15T04:15:09Z · status ready→active, branch
