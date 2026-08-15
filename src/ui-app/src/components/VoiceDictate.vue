@@ -17,12 +17,13 @@ const config = useConfigStore();
 const state = ref<"idle" | "recording" | "transcribing">("idle");
 const mediaRecorder = ref<MediaRecorder | null>(null);
 const audioChunks = ref<Blob[]>([]);
+const audioMimeType = ref<string>("audio/webm");
 const elapsedTime = ref(0);
 let timerInterval: NodeJS.Timeout | null = null;
 
 const isEnabled = computed(() => {
   const whisper = (config.form as Record<string, unknown>).whisper as Record<string, unknown> | undefined;
-  return whisper?.provider && whisper.provider !== "none";
+  return whisper?.enabled === true;
 });
 
 async function startRecording(): Promise<void> {
@@ -34,7 +35,8 @@ async function startRecording(): Promise<void> {
     elapsedTime.value = 0;
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+    const recorder = new MediaRecorder(stream, { mimeType });
 
     recorder.addEventListener("dataavailable", (e) => {
       audioChunks.value.push(e.data);
@@ -42,6 +44,7 @@ async function startRecording(): Promise<void> {
 
     recorder.addEventListener("stop", async () => {
       stream.getTracks().forEach((track) => track.stop());
+      audioMimeType.value = recorder.mimeType || mimeType;
       await transcribeAudio();
     });
 
@@ -85,9 +88,10 @@ async function transcribeAudio(): Promise<void> {
 
   state.value = "transcribing";
   try {
-    const blob = new Blob(audioChunks.value, { type: "audio/webm" });
+    const blob = new Blob(audioChunks.value, { type: audioMimeType.value });
     const formData = new FormData();
-    formData.append("audio", blob, "audio.webm");
+    const extension = audioMimeType.value.split("/")[1] || "webm";
+    formData.append("audio", blob, `audio.${extension}`);
 
     const response = await fetch("/api/transcribe", {
       method: "POST",

@@ -308,6 +308,22 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
 
+    // [whisper] section — voice transcription for vibe-coding.
+    const whisperProvider = parsed["whisper.provider"];
+    if (typeof whisperProvider === "string" && ["groq", "openai", "none"].includes(whisperProvider)) {
+      cfg.whisper = { ...cfg.whisper, provider: whisperProvider as "groq" | "openai" | "none" };
+    }
+    const whisperApiKey = parsed["whisper.apiKey"];
+    if (typeof whisperApiKey === "string") {
+      cfg.whisper = { ...cfg.whisper, apiKey: whisperApiKey };
+    } else {
+      // Env var fallbacks: REPOOS_WHISPER_KEY (generic), GROQ_API_KEY, OPENAI_API_KEY
+      const envKey = process.env.REPOOS_WHISPER_KEY ?? process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;
+      if (envKey) {
+        cfg.whisper = { ...cfg.whisper, apiKey: envKey };
+      }
+    }
+
     // [watchdog] section (0180) — the task watchdog over active tasks.
     const watchdogEnabled = parsed["watchdog.enabled"];
     if (typeof watchdogEnabled === "boolean") {
@@ -518,6 +534,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       }),
       description:
         "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
+    {
+      key: "whisper.provider",
+      label: "Voice transcription provider",
+      type: "select",
+      tier: "guarded",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.whisper?.provider ?? "none",
+      options: [
+        { value: "none", label: "Disabled" },
+        { value: "groq", label: "Groq (whisper-large-v3)" },
+        { value: "openai", label: "OpenAI (whisper-1)" },
+      ],
+      description: "Provider for voice-to-text transcription in text areas",
+    },
+    {
+      key: "whisper.apiKey",
+      label: "Voice transcription API key",
+      type: "string",
+      tier: "guarded",
+      restartRequired: false,
+      default: "",
+      description: "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
     },
   ];
 }

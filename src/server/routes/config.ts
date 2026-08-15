@@ -15,8 +15,11 @@ import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 export const readConfig: RouteHandler = (ctx, _req, res) => {
   const { repoos } = ctx;
   const agents = agentsForConfig(repoos.config);
+  const whisperEnabled = repoos.config.whisper?.provider !== "none" && !!repoos.config.whisper?.apiKey;
+  // Strip the apiKey from the config sent to the browser — never expose secrets
+  const safeConfig = { ...repoos.config, whisper: { provider: repoos.config.whisper?.provider ?? "none", enabled: whisperEnabled } };
   return json(res, 200, {
-    config: { ...repoos.config, agents },
+    config: { ...safeConfig, agents },
     schema: getConfigSchema(),
     agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
   });
