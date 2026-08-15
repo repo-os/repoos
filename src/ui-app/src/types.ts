@@ -374,16 +374,18 @@ export interface ProcessInfo {
 
 export interface ServeProcessInfo {
   pid: number;
+  ppid: number;
   port: number | null;
   root: string | null;
   rootExists: boolean;
-  kind: "control-plane" | "known-preview" | "stray";
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
 }
 
 /** Machine-wide `repoos serve` census — see #0216. */
 export interface ServeScan {
   total: number;
   strays: number;
+  inFlight: number;
   deadRoot: number;
   level: "ok" | "notice" | "warn";
   processes: ServeProcessInfo[];
