@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import type { Status, Agent } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -18,7 +17,7 @@ import {
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
-import { existsSync, readFileSync, statSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
