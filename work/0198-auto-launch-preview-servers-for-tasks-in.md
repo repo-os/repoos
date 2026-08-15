@@ -2,14 +2,14 @@
 id: "0198"
 title: Auto-launch preview servers for tasks in review state
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/auto-launch-preview-servers-for-tasks-in
 created_at: "2026-08-14T12:52:34Z"
-updated_at: "2026-08-15T00:53:09Z"
+updated_at: "2026-08-15T02:23:01Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Preview servers automatically launch when tasks transition to review state and a
 - 2026-08-14T16:43:51Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T00:47:30Z · status ready→active
 - 2026-08-15T00:53:09Z · status active→review
+- 2026-08-15T02:23:01Z · status review→done, release:success
