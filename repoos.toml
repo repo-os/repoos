@@ -30,7 +30,7 @@ name = "engineer"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
-instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status."
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 [[agents]]
 name = "reviewer"
 cli = "claude code"
