@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:44:58Z"
+updated_at: "2026-08-15T07:47:24Z"
 ---
 ## Problem
 
