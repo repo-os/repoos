@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/title-add-integration-pipeline-status-ba
 created_at: "2026-08-15T03:45:30Z"
-updated_at: "2026-08-15T04:15:09Z"
+updated_at: "2026-08-15T05:18:08Z"
 ---
 Title: Add integration pipeline status bar pinned to work queue
 
