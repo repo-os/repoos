@@ -60,6 +60,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
+import { readBuildStamp } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
@@ -498,7 +499,7 @@ const RELOAD_BIND_RETRY_MS = 300;
 
 /**
  * Build metadata served to the UI: the package version and the timestamp of
- * the last build (dist/.build-info.json, written by scripts/copy-assets.mjs).
+ * the last build (dist/.build-stamp.json, written by scripts/copy-assets.mjs).
  * Both are best-effort — null when unavailable so the UI can fall back.
  */
 function loadBuildInfo(): { version: string | null; buildAt: string | null } {
@@ -511,14 +512,10 @@ function loadBuildInfo(): { version: string | null; buildAt: string | null } {
   } catch {
     /* package.json unreadable */
   }
-  let buildAt: string | null = null;
-  try {
-    const info = JSON.parse(readFileSync(join(root, "dist", ".build-info.json"), "utf8"));
-    if (typeof info?.generatedAt === "string") buildAt = info.generatedAt;
-  } catch {
-    /* build marker missing or corrupt */
-  }
-  return { version, buildAt };
+  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
+  // marker stays deterministic; readBuildStamp falls back to the legacy
+  // inline field for installs built before the split.
+  return { version, buildAt: readBuildStamp(root) };
 }
 
 /**

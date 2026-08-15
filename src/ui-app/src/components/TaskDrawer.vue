@@ -367,8 +367,6 @@ const doneLabel = computed(() => {
       return "Merging branch…";
     case "build":
       return "Building…";
-    case "screenshots":
-      return "Regenerating screenshots…";
     case "check":
       return "Running repoos check…";
     case "done":
