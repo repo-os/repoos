@@ -5,11 +5,12 @@ type: bug
 status: ready
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-15T10:04:18Z"
-updated_at: "2026-08-15T10:04:18Z"
+updated_at: "2026-08-15T10:06:31Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ The work-queue board loads quickly regardless of task count, and does not visibl
 ## Activity
 
 - 2026-08-15T10:04:18Z · created · unknown
+- 2026-08-15T10:06:31Z · model_override
