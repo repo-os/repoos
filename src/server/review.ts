@@ -36,6 +36,7 @@ import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import { resolveReviewer, reviewCommand, runPrompt, type AgentRunner } from "./agents.js";
 import { patchTaskFile } from "./write.js";
+import { createLogger, type Logger } from "../core/logger.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -314,11 +315,19 @@ export class ReviewManager {
   private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
   private readonly runner?: AgentRunner;
+  /**
+   * Own logger rather than a constructor param (0187 review): the only call
+   * site is `startServer`, and every review event is a task-lifecycle event —
+   * it belongs on the same per-task log stream `logger.task()` already
+   * writes to elsewhere, keyed by the same `config.root`.
+   */
+  private readonly logger: Logger;
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void, runner?: AgentRunner) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
+    this.logger = createLogger(config.root);
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -431,12 +440,14 @@ export class ReviewManager {
     }
     const agent = resolveReviewer(this.config);
     if (!agent) {
+      this.logger.task(task.id, "info", "review skipped — agent disabled");
       return { ok: false, skipped: true, reason: "the review agent is disabled" };
     }
     const workdir = task.branch
       ? worktreePathForBranch(this.config.root, task.branch)
       : null;
     if (!workdir) {
+      this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
       return { ok: false, skipped: true, reason: "the task has no worktree to review" };
     }
     const baseBranch = currentBranch(this.config.root) ?? "main";
@@ -449,6 +460,7 @@ export class ReviewManager {
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
+    this.logger.task(task.id, "info", "review started", { agent: agent.name, cli: agent.cli, model: agent.model });
 
     const mission = reviewMission(task, agent, workdir, baseBranch);
     let result;
@@ -472,6 +484,7 @@ export class ReviewManager {
     // the report would describe a state nobody is signing off on any more, and
     // the status guard below must not fight the human who moved it.
     if (run.cancelled) {
+      this.logger.task(task.id, "info", "review cancelled — task left review");
       this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
       return { ok: false, skipped: true, reason: "review cancelled" };
     }
@@ -496,6 +509,11 @@ export class ReviewManager {
       task.id,
       state === "ok" ? "✓ review complete" : `✗ review failed: ${result.error ?? "no report"}`,
     );
+    if (state === "ok") {
+      this.logger.task(task.id, "info", "review completed");
+    } else {
+      this.logger.task(task.id, "error", "review failed", { error: result.error ?? "no report" });
+    }
     this.persistSession(task.id);
     this.emit({
       type: "review",
