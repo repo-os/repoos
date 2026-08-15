@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/orphaned-serve-processes-starve-the-clos
 created_at: "2026-08-15T07:06:54Z"
-updated_at: "2026-08-15T08:26:27Z"
+updated_at: "2026-08-15T09:06:18Z"
 ---
 ## Problem
 
@@ -18,9 +18,38 @@ updated_at: "2026-08-15T08:26:27Z"
 The load they generate makes the close-out gate fail on timing-sensitive tests that pass perfectly well on their own. #0211 failed its gate twice in a row, on a DIFFERENT test each time:
 
 1. `tests/watcher.test.ts:147` — `waitFor` timed out on "deletion detected by reconciliation poll"
-2. `tests/repo-store.test.ts:805` — `TypeError: Cannot read properties of undefined (reading 'removeItem')` (localStorage absent)
+2. ~~`tests/repo-store.test.ts:805` — `TypeError: Cannot read properties of undefined (reading 'removeItem')` (localStorage absent)~~ **— NOT THIS TASK. See the correction below.**
 
-Both pass in isolation in the candidate worktree, and the FULL suite on the exact candidate merge passes 53 files / 622 tests. So the code was green both times and the gate rejected it anyway. Earlier the same day, `agent-review` and `auto-preview` failed the same way and passed on re-run.
+Item 1 pass in isolation in the candidate worktree, and the FULL suite on the exact candidate merge passes. Earlier the same day, `agent-review` and `auto-preview` failed the same way and passed on re-run.
+
+## CORRECTION (2026-08-15): item 2 was misattributed — do not chase it here
+
+The `repo-store.test.ts:805` localStorage failure is **not** contention. It is
+100% deterministic and runtime-dependent, and it was fixed on main in commit
+`086496be`.
+
+Node >= 25 ships the Web Storage API and defines `localStorage` as an accessor
+on `globalThis` that resolves to `undefined` unless `--localstorage-file` is
+passed. vitest's jsdom environment only installs jsdom globals for keys not
+already present, so it skips `localStorage` entirely and every storage test
+crashes. It only ever hit the pipeline because the close-out gate runs
+`repoos check` via `process.execPath` — the serving process's runtime, Homebrew
+Node 26.7.0 under launchd — whereas a developer running `bun run test` by hand
+gets Node 24, where the key is absent and jsdom installs its own Storage.
+
+Measured on an idle machine, same code, seconds apart:
+`Node 26.7.0 → 3 failed | 41 passed`, `Node 24.19.0 → 44 passed`. 668ms. Zero
+load. Fixed with a vitest setup shim (`src/ui-app/tests/setup/web-storage.ts`).
+
+**The lesson for whoever picks this task up:** a failure that reproduces
+*identically* is a real defect, not contention — contention lands on a different
+test each run. Verify that distinction before assuming load is the cause, and
+reproduce under the exact runtime the gate uses (`/opt/homebrew/bin/node`), not
+whatever `node` resolves to in your shell. See the "search the error, then check
+the versions" section of AGENTS.md.
+
+Item 1 (`watcher.test.ts` timeout) is still believed to be genuine contention
+and remains in scope.
 
 The user-visible effect: "Move to done" fails repeatedly with a different unrelated test each time, and there is no way to tell a real regression from contention noise.
 
@@ -35,9 +64,9 @@ The user-visible effect: "Move to done" fails repeatedly with a different unrela
 - [ ] A serve process whose root directory is gone exits on its own rather than running indefinitely
 - [ ] Existing reaper logic (`src/server/serve-reaper.ts`) is audited against this case and extended or fixed to cover it
 - [ ] Tests clean up any servers they spawn, including on failure paths
-- [ ] The close-out gate distinguishes an infrastructure/timeout failure from a genuine test failure, and does not permanently fail the job on the former
+- [x] The close-out gate distinguishes an infrastructure/timeout failure from a genuine test failure, and does not permanently fail the job on the former — done in `c56cde72`: the validating phase retries once, and classifies the result (identical reason → real failure; differing reasons → machine load)
 - [ ] Timing-sensitive tests (`watcher`, `repo-store`, `agent-review`, `auto-preview`) are made robust to load, or given deadlines that scale with contention
-- [ ] A way to see and clear orphaned serve processes (CLI subcommand or startup sweep)
+- [ ] A way to see and clear orphaned serve processes (CLI subcommand or startup sweep) — partially done in `48d5f06c`/`f7fb670f`: the Control page now shows a live census and warns above a threshold. Classification uses ppid, so a fixture server with a live parent counts as in-flight, not abandoned. Reaping is still manual.
 
 ## Notes for AI
 
@@ -58,3 +87,4 @@ The user-visible effect: "Move to done" fails repeatedly with a different unrela
 - 2026-08-15T08:18:34Z · status inbox→ready
 - 2026-08-15T08:18:45Z · status ready→active, branch
 - 2026-08-15T08:26:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T09:06:18Z · body
