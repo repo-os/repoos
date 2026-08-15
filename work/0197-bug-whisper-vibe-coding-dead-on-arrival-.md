@@ -8,8 +8,9 @@ area: server + ui-app
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-14T12:41:38Z"
-updated_at: "2026-08-14T13:02:51Z"
+updated_at: "2026-08-15T17:58:01Z"
 ---
 ## Context
 
@@ -54,3 +55,4 @@ Reported by the human after merge: "I see microphone icon buttons on main, but I
 
 - 2026-08-14T12:41:38Z · created · unknown
 - 2026-08-14T13:02:51Z · status inbox→ready
+- 2026-08-15T17:58:01Z · model_override
