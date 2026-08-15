@@ -56,15 +56,14 @@ Costs we accept:
   editing `src/` without rebuilding means testing old code. This is the single
   most common time-waster in this repo. Mitigation: stated as a first-read rule
   in AGENTS.md; `tsc --watch` during focused sessions.
-- **Committed build output.** `dist/` is tracked, so every close-out merges
-  generated files. Until 2026-08-15 the build marker carried a timestamp, which
-  dirtied the tree on every build and conflicted on essentially every merge —
-  the trigger behind the `autoResolve` list and the dirty-main guard. The build
-  is now deterministic (timestamp split into a gitignored
-  `dist/.build-stamp.json`), which removes the churn but not the underlying
-  choice to track `dist/`. Gitignoring it entirely is the real fix and is
-  gated on a tag-triggered release workflow; see
-  `docs/dogfooding-vs-general.md`.
+- **Committed build output (resolved 2026-08-15).** `dist/` was tracked, so
+  every close-out merged generated files. The build marker's timestamp field
+  was fixed first (split into a gitignored `dist/.build-stamp.json`, removing
+  the per-build churn), and `dist/` itself was then untracked and gitignored
+  entirely once an audit confirmed nothing in the live pipeline assumed a
+  fresh worktree already had one. See `docs/dogfooding-vs-general.md` for the
+  full history and what was checked before making the change. `autoResolve`
+  keeps `dist/` in its list for branches cut before this change.
 - **A distorted bug backlog.** Self-hosting generates failure modes that exist
   only because the tool is orchestrating work on its own source, and it cannot
   surface the ones a customer repo would hit first (non-JS worktree bootstrap,

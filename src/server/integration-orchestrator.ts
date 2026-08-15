@@ -382,6 +382,14 @@ export class CloseOutOrchestrator {
     // branch version is taken as authoritative, same as the legacy done.ts
     // close-out path. Reuses the existing, tested autoResolve semantics in
     // core/git.ts rather than reimplementing conflict resolution here.
+    //
+    // dist/ is gitignored on main as of 2026-08-15 (see docs/dogfooding-vs-
+    // general.md), so most new merges won't touch this entry at all — a
+    // branch that never modified dist/ resolves as a clean deletion. It stays
+    // in the list because a branch cut BEFORE that change can still have
+    // dist/ tracked and modified; mergeBranch's `-X theirs` fallback already
+    // handles that as a modify/delete conflict. Safe to drop once no such
+    // branch remains, but harmless to leave indefinitely.
     const task = this.getTask?.(job.taskId);
     const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
     this.onProgress?.("merge");

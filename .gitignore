@@ -5,6 +5,17 @@ node_modules/
 # macOS
 .DS_Store
 
-# Build timestamp — changes on every build by design, so it is not tracked.
-# The deterministic marker (dist/.build-info.json) is what git sees.
-dist/.build-stamp.json
+# Build output. Not needed for distribution — npm builds it fresh at publish
+# time via `files: ["dist"]` + `prepublishOnly`. Tracking it in git only ever
+# manufactured merge conflicts: `dist/.build-info.json` used to carry a
+# timestamp that dirtied the tree on every rebuild (fixed by making it
+# deterministic — see docs/dogfooding-vs-general.md — but the tracked-file
+# problem was the tracking itself, not just that one field).
+#
+# New task worktrees never had this directory checked out from git in the
+# first place: `checkOrchestrationBuild` (bootstrap.ts) reads the MAIN
+# checkout's dist/, not the worktree's; `repoos check` always builds fresh
+# regardless; and the preview path (preview.ts's `ensureFreshBuild`) already
+# builds on demand when a worktree has none. Nothing in the live pipeline
+# assumed dist/ pre-existed in a fresh worktree.
+dist/
