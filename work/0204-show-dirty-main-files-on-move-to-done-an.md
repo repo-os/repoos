@@ -2,14 +2,14 @@
 id: "0204"
 title: Show dirty main files on move-to-done and offer to auto-commit
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/show-dirty-main-files-on-move-to-done-an
 created_at: "2026-08-15T02:15:27Z"
-updated_at: "2026-08-15T02:18:26Z"
+updated_at: "2026-08-15T02:18:35Z"
 ---
 ## Activity
 
@@ -50,3 +50,4 @@ This keeps the close-out flow from hitting merge failures due to dirty main, whi
 ## Activity
 
 - 2026-08-15T02:18:26Z · status inbox→ready
+- 2026-08-15T02:18:35Z · status ready→active, branch
