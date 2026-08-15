@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro
 created_at: "2026-08-15T06:28:51Z"
-updated_at: "2026-08-15T12:53:31Z"
+updated_at: "2026-08-15T17:02:20Z"
 ---
 ## Problem
 
@@ -54,3 +55,4 @@ Make a restart safe to force at any time by giving in-flight turns something dur
 
 - 2026-08-15T06:28:51Z · created · unknown
 - 2026-08-15T12:53:31Z · status inbox→ready
+- 2026-08-15T17:02:20Z · model_override
