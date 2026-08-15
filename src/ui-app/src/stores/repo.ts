@@ -639,12 +639,14 @@ export const useRepoStore = defineStore("repo", () => {
     const idx = await api<BoardIndex>("/api/board");
     // /api/board has no preview state; keep any live previews across rebuilds.
     const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
+    // Preserve full bodies already in the store (from SSE task.updated events).
+    // Only fall back to bodyPreview for tasks we haven't seen before.
+    const existingBodies = new Map(tasks.value.map((t) => [t.id, t.body] as const));
     tasks.value = idx.tasks.map((t) => ({
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
-      // The board response provides releasedAt and bodyPreview. Use them.
-      // Map bodyPreview -> body so search (which reads t.body) works on the preview.
-      body: t.bodyPreview ?? "",
+      // Use existing full body if we have it; otherwise use the preview from the board response.
+      body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
       extra: {},
       agentOverride: null,
       cliOverride: null,
