@@ -33,6 +33,18 @@ export class ServeReaper {
   private readonly lockPath: string;
   private readonly pid = process.pid;
 
+  /**
+   * A preview child (`repoos serve --port <ephemeral>` rooted at a task
+   * worktree) is NOT the control-plane server, so the single-per-repo serve
+   * lockfile and its stale-reaping/conflict logic don't apply to it. If it ran
+   * `cleanupStale`, it would reap whatever sibling preview happens to be in the
+   * worktree's lockfile (killing a booting preview mid-health-check → "did not
+   * become ready"), and because ephemeral ports can be reused, `detectConflict`
+   * could even refuse to bind a port that is already stale in the lockfile.
+   * Disable the reaper entirely for preview children (#0183).
+   */
+  private readonly previewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
+
   constructor(repoRoot: string, cacheDir: string = ".repoos") {
     this.lockPath = join(repoRoot, cacheDir, "serve.lock");
   }
@@ -78,6 +90,8 @@ export class ServeReaper {
    * This is safe to call multiple times and always succeeds (best-effort).
    */
   cleanupStale(): void {
+    // A preview child must never reap other processes (see `previewChild`).
+    if (this.previewChild) return;
     // Skip cleanup when spawned as a reload replacement — the parent process
     // is still running and will shut down gracefully. Killing it here would
     // bypass previews.stopAll() and runner.flushAll(), orphaning children.
@@ -122,6 +136,10 @@ export class ServeReaper {
    * Returns a human-readable error message if there's a conflict, null otherwise.
    */
   detectConflict(port: number, host: string): string | null {
+    // Preview children bind distinct ephemeral ports; the control-plane
+    // conflict check (which reads the shared per-worktree lockfile) does not
+    // apply and can false-positive on a reused port (see `previewChild`).
+    if (this.previewChild) return null;
     if (!existsSync(this.lockPath)) return null;
 
     let info: ServeLockInfo | null = null;
@@ -150,6 +168,9 @@ export class ServeReaper {
    * Call this after successful bind. Idempotent.
    */
   register(port: number, host: string): void {
+    // Preview children don't own the control-plane lockfile; writing it would
+    // collide with the worktree's other preview cycles (see `previewChild`).
+    if (this.previewChild) return;
     try {
       mkdirSync(dirname(this.lockPath), { recursive: true });
       const info: ServeLockInfo = {

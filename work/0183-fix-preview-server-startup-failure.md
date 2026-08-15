@@ -2,7 +2,7 @@
 id: "0183"
 title: Fix preview server startup failure
 type: bug
-status: review
+status: active
 needs_merge: true
 priority: p1
 area: core
@@ -51,6 +51,4 @@ Preview links have stopped working. The preview server for task #0182 failed to 
 - 2026-08-15T04:15:24Z · status ready→active
 - 2026-08-15T04:57:15Z · status active→ready
 - 2026-08-15T04:57:17Z · status ready→active
-- 2026-08-15T15:31:14Z · model_override
-- 2026-08-15T15:31:37Z · status active→review
 - 2026-08-15T15:31:38Z · needs_merge
