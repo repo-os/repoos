@@ -2,14 +2,14 @@
 id: "0207"
 title: Add integration pipeline status bar pinned to work queue
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-integration-pipeline-status-bar-pinn
 created_at: "2026-08-15T03:48:14Z"
-updated_at: "2026-08-15T03:48:38Z"
+updated_at: "2026-08-15T05:14:16Z"
 ---
 ## Problem
 
@@ -70,3 +70,4 @@ The bar has a small expand/collapse toggle so it can fold to a thin strip when n
 - 2026-08-15T03:48:14Z · created · unknown
 - 2026-08-15T03:48:36Z · status inbox→ready
 - 2026-08-15T03:48:38Z · status ready→active, branch
+- 2026-08-15T05:14:16Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
