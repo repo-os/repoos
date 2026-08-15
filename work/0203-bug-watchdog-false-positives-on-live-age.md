@@ -2,14 +2,14 @@
 id: "0203"
 title: "bug: watchdog false-positives on live agents and dumps uncommitted work back to ready"
 type: bug
-status: ready
+status: draft
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T17:06:20Z"
-updated_at: "2026-08-15T11:59:08Z"
+updated_at: "2026-08-15T16:16:06Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The remaining two unchecked acceptance criteria (needs_input escalation reason, 
 - 2026-08-14T17:06:20Z · created · unknown
 - 2026-08-15T05:59:33Z · status inbox→ready
 - 2026-08-15T11:59:08Z · body
+- 2026-08-15T16:16:06Z · status ready→draft
