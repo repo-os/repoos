@@ -9,6 +9,7 @@ import type {
   Counts,
   CtoState,
   Health,
+  IntegrationPipelineSnapshot,
   RepoEvent,
   RepoIndex,
   ReviewReport,
@@ -227,6 +228,8 @@ export const useRepoStore = defineStore("repo", () => {
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live integration-pipeline snapshot for the pinned status bar (0207). */
+  const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
@@ -532,6 +535,8 @@ export const useRepoStore = defineStore("repo", () => {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
+    } else if (e.type === "integration") {
+      integration.value = e.pipeline;
     }
   }
 
@@ -542,6 +547,25 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* non-fatal — the panel falls back to its empty state */
     }
+  }
+
+  /** Hydrate the integration-pipeline snapshot after a refresh/SSE gap (0207). */
+  async function refreshIntegration(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>("/api/integration/pipeline");
+      if (r.pipeline) integration.value = r.pipeline;
+    } catch {
+      /* non-fatal — the bar falls back to its idle state */
+    }
+  }
+
+  /**
+   * Retry a failed integration job (0207). Reuses the server's existing retry
+   * path (re-enqueue as a fresh queued job). Best-effort: non-fatal errors are
+   * surfaced as a toast for the caller to catch.
+   */
+  async function retryIntegration(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
   }
 
   function connectSSE(): void {
@@ -562,11 +586,14 @@ export const useRepoStore = defineStore("repo", () => {
       void loadCTO().catch(() => {
         /* non-fatal hydration */
       });
+      void refreshIntegration().catch(() => {
+        /* non-fatal hydration */
+      });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1129,6 +1156,9 @@ export const useRepoStore = defineStore("repo", () => {
     systemStats,
     autoEng,
     refreshAutoEng,
+    integration,
+    refreshIntegration,
+    retryIntegration,
     newVersion,
     restarting,
     pushToast,

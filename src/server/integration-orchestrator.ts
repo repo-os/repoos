@@ -237,6 +237,7 @@ export class CloseOutOrchestrator {
   }
 
   private async syncCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+    this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
 
@@ -345,6 +346,7 @@ export class CloseOutOrchestrator {
     // core/git.ts rather than reimplementing conflict resolution here.
     const task = this.getTask?.(job.taskId);
     const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
     if (!merge.merged) {
       return {
