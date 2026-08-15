@@ -60,7 +60,7 @@ import { STATUSES } from "../core/types.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
-import { createLogger } from "../core/logger.js";
+import { createLogger, type Logger } from "../core/logger.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -603,6 +603,33 @@ function safeRepoFile(root: string, urlPath: string): string | null {
   return abs;
 }
 
+/**
+ * Fatal/crash-level capture (0187): by default Node terminates the process on
+ * both of these events with nothing recorded anywhere. Registered once per
+ * process (not once per `startServer` call — the test suite starts many
+ * short-lived servers in the same process, and stacking a listener per call
+ * would both spam MaxListenersExceededWarning and risk one test's error
+ * exiting the whole worker) and always logs to whichever server is currently
+ * active. Only exits the process outside the test runner: many independent
+ * test servers share this process, so exiting here on an unrelated test's
+ * error would take the whole suite down with it.
+ */
+let activeLogger: Logger | null = null;
+let fatalHandlersRegistered = false;
+function registerFatalHandlersOnce(): void {
+  if (fatalHandlersRegistered) return;
+  fatalHandlersRegistered = true;
+  const logFatal = (message: string, err: unknown) => {
+    activeLogger?.system("fatal", message, {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    if (process.env.VITEST !== "true") process.exit(1);
+  };
+  process.on("uncaughtException", (err) => logFatal("Uncaught exception", err));
+  process.on("unhandledRejection", (reason) => logFatal("Unhandled promise rejection", reason));
+}
+
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
@@ -611,6 +638,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   index.refreshAll();
 
   logger.system("info", "RepoOS server starting", { root: config.root });
+  activeLogger = logger;
+  registerFatalHandlersOnce();
 
   const uiDir = findUiDir(repoos.config.root);
 

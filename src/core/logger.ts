@@ -94,8 +94,9 @@ export class Logger {
   }
 
   /**
-   * Read all log entries for a specific task or agent.
-   * Returns the most recent entries first.
+   * Read up to `limit` log entries for a specific task or agent, in
+   * chronological order (oldest first). Callers that want most-recent-first
+   * (`getTaskLogs`, `getAgentLogs`, `getSystemLogs`) reverse the result.
    */
   readLogs(logPath: string, limit: number = 1000): LogEntry[] {
     const fullPath = join(this.logsDir, logPath);
