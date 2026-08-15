@@ -8,8 +8,9 @@ area: server + ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/bug-whisper-vibe-coding-dead-on-arrival-
+model_override: default
 created_at: "2026-08-14T12:41:38Z"
-updated_at: "2026-08-15T19:46:02Z"
+updated_at: "2026-08-15T19:50:41Z"
 ---
 ## Context
 
@@ -57,3 +58,4 @@ Reported by the human after merge: "I see microphone icon buttons on main, but I
 - 2026-08-15T17:58:01Z · model_override
 - 2026-08-15T19:45:21Z · model_override
 - 2026-08-15T19:46:02Z · status ready→active, branch
+- 2026-08-15T19:50:41Z · model_override
