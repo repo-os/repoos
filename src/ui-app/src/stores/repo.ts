@@ -382,7 +382,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
-      pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
+      pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
         // CTO board-monitor conversation output — routed to the CTO panel's
