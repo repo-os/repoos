@@ -8,7 +8,7 @@
  * Phases track recovery: if interrupted mid-flight, retry resumes from the current phase.
  */
 
-import { readFileSync, existsSync, symlinkSync } from "node:fs";
+import { readFileSync, existsSync, symlinkSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -78,6 +78,24 @@ async function resolveDefaultBranch(root: string): Promise<string> {
 // How much of a failed command's output to keep as the failure reason.
 const TAIL_LINES = 15;
 const TAIL_MAX_CHARS = 800;
+
+/**
+ * Locate a task's file directly on disk by id, independent of the live
+ * index's freshness. Used only as a fallback when `getTask` misses — the
+ * normal, common path is the index lookup, which is far cheaper than a
+ * directory scan. Task ids are unique by filename convention (`<id>-*.md`).
+ */
+function findTaskFileById(root: string, workDir: string, taskId: string): string | null {
+  const dir = join(root, workDir);
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const match = entries.find((f) => f.startsWith(`${taskId}-`) && f.endsWith(".md"));
+  return match ? join(dir, match) : null;
+}
 
 /**
  * The useful part of a failed command's combined output. bun/npm wrap a child
@@ -587,10 +605,21 @@ export class CloseOutOrchestrator {
     deleteBranch(root, job.branch ?? job.taskId);
 
     // Mark the task as done in the main checkout.
+    //
+    // The live index can miss a lookup right after a reload (its in-memory
+    // rebuild is not instant, and this cleanup step can land in that window —
+    // observed live, 2026-08-15, #0195: publish succeeded, main fast-forwarded
+    // to the candidate, but this step silently no-op'd — `task` was undefined,
+    // the `if (task)` guard skipped markTaskReleased with no error, and the
+    // task sat published-but-not-released until a manual retry). Falling back
+    // to a direct on-disk lookup by id makes this step independent of index
+    // freshness — the file is exactly what markTaskReleased writes to anyway.
     try {
-      const task = this.getTask?.(job.taskId);
-      if (task) {
-        markTaskReleased(this.config, task.absPath);
+      const absPath = this.getTask?.(job.taskId)?.absPath ?? findTaskFileById(root, this.config.workDir, job.taskId);
+      if (absPath) {
+        markTaskReleased(this.config, absPath);
+      } else {
+        console.error(`Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`);
       }
     } catch (err) {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);
