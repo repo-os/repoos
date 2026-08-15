@@ -8,10 +8,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
-cli_override: kiro
+cli_override: codex
 model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:53:55Z"
+updated_at: "2026-08-15T07:53:59Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ actions appear as they do today.
 - 2026-08-15T07:53:49Z · cli_override, model_override
 - 2026-08-15T07:53:52Z · cli_override
 - 2026-08-15T07:53:55Z · cli_override
+- 2026-08-15T07:53:59Z · cli_override
