@@ -3,7 +3,7 @@
  * close-out publication to main so only one job merges at a time.
  */
 
-import { existsSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
+import { existsSync, writeFileSync, unlinkSync, mkdirSync, statSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 
 const LOCK_FILE = ".repoos/close-out.lock";
@@ -31,7 +31,7 @@ export function createRepositoryLock(root: string): RepositoryLock {
         // 60-second window balances crash recovery against long builds/checks.
         // Builds typically complete in 5-10s; if a job crashes, 60s gives retry window.
         try {
-          const stat = require("fs").statSync(lockPath);
+          const stat = statSync(lockPath);
           const age = Date.now() - stat.mtime.getTime();
           if (age > 60_000) {
             // Stale lock, remove it
@@ -56,7 +56,7 @@ export function createRepositoryLock(root: string): RepositoryLock {
       const lockPath = join(root, LOCK_FILE);
       try {
         if (existsSync(lockPath)) {
-          const content = require("fs").readFileSync(lockPath, "utf8");
+          const content = readFileSync(lockPath, "utf8");
           const lock = JSON.parse(content);
           if (lock.taskId === taskId) {
             unlinkSync(lockPath);
@@ -78,7 +78,7 @@ export function createRepositoryLock(root: string): RepositoryLock {
       const lockPath = join(root, LOCK_FILE);
       try {
         if (existsSync(lockPath)) {
-          const content = require("fs").readFileSync(lockPath, "utf8");
+          const content = readFileSync(lockPath, "utf8");
           const lock = JSON.parse(content);
           return lock.taskId || null;
         }

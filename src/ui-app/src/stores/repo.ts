@@ -54,6 +54,25 @@ export interface DoneResult {
 }
 
 /**
+ * Marker rethrown by `completeTask` when the server reports dirty files on
+ * `main` blocking the close-out (0204). The caller renders a confirmation
+ * modal offering "Commit & continue" / "Cancel"; until the user chooses, the
+ * task stays in review. Carries the dirty file list so the modal can show it.
+ */
+export class DirtyMainError extends Error {
+  readonly taskId: string;
+  readonly dirtyFiles: string[];
+  constructor(taskId: string, dirtyFiles: string[]) {
+    super(
+      `main has ${dirtyFiles.length} uncommitted file${dirtyFiles.length === 1 ? "" : "s"} blocking close-out`,
+    );
+    this.name = "DirtyMainError";
+    this.taskId = taskId;
+    this.dirtyFiles = dirtyFiles;
+  }
+}
+
+/**
  * A failed review→done close-out, kept scoped to the task that produced it so
  * both the board card and the task panel render the same inline error directly
  * below the button the user pressed — never under a different task.
@@ -195,6 +214,11 @@ export const useRepoStore = defineStore("repo", () => {
   const doneSteps = ref<Record<string, string>>({});
   /** Last failed review→done close-out per task id (inline error card). */
   const doneErrors = ref<Record<string, DoneError>>({});
+  /** Dirty files on `main` blocking a move-to-done per task id (0204). Empty
+   * when no confirmation is pending. The modal reads this and the caller
+   * clears it via `clearDirtyMain` on Cancel (or it is overwritten by the
+   * next run). */
+  const dirtyMain = ref<Record<string, string[]>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
   /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
@@ -310,6 +334,16 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** The inline move-to-done error for a task, or null when none is pending. */
   const doneErrorFor = (id: string): DoneError | null => doneErrors.value[id] ?? null;
+
+  /** Dirty files on `main` pending a move-to-done decision (0204), or [] when the modal is not needed. */
+  const dirtyMainFor = (id: string): string[] => dirtyMain.value[id] ?? [];
+
+  /** Clear the pending dirty-main confirmation for a task (user chose Cancel). */
+  function clearDirtyMain(id: string): void {
+    const next = { ...dirtyMain.value };
+    delete next[id];
+    dirtyMain.value = next;
+  }
 
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
@@ -727,17 +761,37 @@ export const useRepoStore = defineStore("repo", () => {
    * Review→done close-out. On failure the error is kept on the task (the
    * caller renders it inline below the button) and no global toast is shown;
    * on success any previous inline error is cleared.
+   *
+   * Dirty-main guard (0204): when the server reports uncommitted files on
+   * `main` blocking the merge (and the caller has not opted in via
+   * `commitDirty`), the dirty file list is stored per task and a
+   * `DirtyMainError` is thrown so the caller can show the confirmation modal.
    */
-  async function completeTask(t: Task): Promise<DoneResult> {
+  async function completeTask(
+    t: Task,
+    opts: { commitDirty?: boolean } = {},
+  ): Promise<DoneResult> {
+    const raw = await fetch(`/api/tasks/${t.id}/done`, {
+      method: "POST",
+      ...(opts.commitDirty
+        ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commitDirty: true }) }
+        : {}),
+    });
+    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] } = {};
     try {
-      const r = await api<DoneResult>(`/api/tasks/${t.id}/done`, {
-        method: "POST",
-      });
-      if (!r.ok) throw new Error(r.error ?? "could not complete task");
-      setDoneError(t.id, null);
-      return r;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[] };
+    } catch {
+      body = {};
+    }
+    // Dirty-main guard (0204): the server returns 409 + needsCommit when main
+    // has uncommitted files and the user has not opted in via commitDirty.
+    if (raw.status === 409 && body.needsCommit && Array.isArray(body.dirtyFiles)) {
+      dirtyMain.value = { ...dirtyMain.value, [t.id]: body.dirtyFiles };
+      throw new DirtyMainError(t.id, body.dirtyFiles);
+    }
+    const r = body as DoneResult;
+    if (!raw.ok || !r.ok) {
+      const message = r.error ?? raw.statusText ?? "could not complete task";
       setDoneError(t.id, {
         message,
         conflicts: extractConflicts(message),
@@ -745,6 +799,9 @@ export const useRepoStore = defineStore("repo", () => {
       });
       throw new MoveToDoneError(t.id, message);
     }
+    setDoneError(t.id, null);
+    dirtyMain.value = { ...dirtyMain.value, [t.id]: [] };
+    return r;
   }
 
   /**
@@ -1023,8 +1080,10 @@ export const useRepoStore = defineStore("repo", () => {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
     // A failed move-to-done is surfaced inline on the task; a toast for it
-    // would duplicate the visible error and detach it from the action.
-    if (!(err instanceof MoveToDoneError)) pushToast(message, "error");
+    // would duplicate the visible error and detach it from the action. A
+    // dirty-main guard (0204) is surfaced by the confirmation modal instead.
+    if (err instanceof MoveToDoneError || err instanceof DirtyMainError) return;
+    pushToast(message, "error");
   }
 
   async function init(): Promise<void> {
@@ -1061,6 +1120,9 @@ export const useRepoStore = defineStore("repo", () => {
     doneSteps,
     doneErrors,
     doneErrorFor,
+    dirtyMain,
+    dirtyMainFor,
+    clearDirtyMain,
     reviews,
     sortOrder,
     toasts,
