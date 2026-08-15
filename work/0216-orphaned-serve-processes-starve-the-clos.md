@@ -2,14 +2,14 @@
 id: "0216"
 title: Orphaned serve processes starve the close-out gate and cause false failures
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/orphaned-serve-processes-starve-the-clos
 created_at: "2026-08-15T07:06:54Z"
-updated_at: "2026-08-15T08:18:34Z"
+updated_at: "2026-08-15T08:18:45Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The user-visible effect: "Move to done" fails repeatedly with a different unrela
 
 - 2026-08-15T07:06:54Z · created · unknown
 - 2026-08-15T08:18:34Z · status inbox→ready
+- 2026-08-15T08:18:45Z · status ready→active, branch
