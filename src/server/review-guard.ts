@@ -94,7 +94,10 @@ export async function guardReviewTransition(
   }
   const add = await runGit(
     registered,
-    ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", ":(exclude)node_modules", `:(exclude)${task.path}`],
+    // `git add` already honors .gitignore; explicitly naming an ignored path,
+    // even as an exclusion, makes Git reject the whole command. Keep only
+    // tracked/generated paths that must be excluded deliberately.
+    ["add", "-A", "--", ".", ":(exclude)screenshots", `:(exclude)${task.path}`],
     30_000,
   );
   if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
