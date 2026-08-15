@@ -381,6 +381,13 @@ export interface DiffStats {
   deletions: number;
 }
 
+export interface DiffResult {
+  patch: string;
+  truncated: boolean;
+}
+
+const MAX_DIFF_BYTES = 256_000;
+
 /**
  * Get diff statistics comparing a branch to main.
  * Returns file count and line additions/deletions.
@@ -418,6 +425,31 @@ export function getDiffStats(
   }
 
   return { filesChanged, additions, deletions };
+}
+
+/**
+ * Get the full patch diff comparing a branch to main.
+ * Bounded at MAX_DIFF_BYTES to avoid sending giant payloads.
+ */
+export async function getDiff(
+  worktree: string,
+  baseBranch: string,
+): Promise<DiffResult> {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { patch: "", truncated: false };
+
+  const run = await runGit(worktree, ["diff", "--patch", baseFull, "HEAD"], 15000);
+  if (run.status !== 0 && run.stdout === "") return { patch: "", truncated: false };
+
+  const buf = Buffer.from(run.stdout, "utf8");
+  if (buf.byteLength <= MAX_DIFF_BYTES) return { patch: run.stdout, truncated: false };
+
+  let truncated = run.stdout;
+  while (Buffer.from(truncated, "utf8").byteLength > MAX_DIFF_BYTES) {
+    truncated = truncated.slice(0, -1024);
+  }
+  truncated += `\n\n--- diff truncated (${(buf.byteLength / 1024).toFixed(0)} kB total) ---`;
+  return { patch: truncated, truncated: true };
 }
 
 /** Whether git is installed at all (independent of being inside a repo). */
