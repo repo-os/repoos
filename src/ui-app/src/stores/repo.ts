@@ -370,7 +370,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
-      pushFeed(`<b>agent running</b> on #${e.id}`, "#9d7bff", "agent.running");
+      pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
       if (e.id.startsWith(REVIEW_SESSION_PREFIX)) {
         // Reviewer conversation output — routed to the review lines buffer,

@@ -591,6 +591,18 @@ const review = computed<ReviewState | null>(() =>
   ui.active ? repo.reviews[ui.active.id] ?? null : null,
 );
 
+/**
+ * The current review substate for a task sitting in `review`:
+ * `reviewing` (auto review in progress), `coding` (engineer making changes),
+ * or `waiting for human` (review passed, human must approve/merge).
+ */
+const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
+  if (!ui.active || ui.active.status !== "review") return null;
+  if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
+  if (repo.isRunning(ui.active.id)) return { label: "coding", cls: "rs-coding" };
+  return { label: "waiting for human", cls: "rs-human" };
+});
+
 /** Rendered (safe) Markdown of the report body. */
 const reviewHtml = computed(() =>
   review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
@@ -1711,6 +1723,12 @@ function resetFreeformOverrides(): void {
                 {{ ui.active.status }}
               </span>
               <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
+              <span
+                v-if="reviewSubstate"
+                class="rs-chip"
+                :class="reviewSubstate.cls"
+                :title="reviewSubstate.label"
+              >{{ reviewSubstate.label }}</span>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
@@ -1780,7 +1798,7 @@ function resetFreeformOverrides(): void {
           </div>
           <p v-if="review?.running" class="review-hint">Waiting for automatic review to finish.</p>
           <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
-            <ActivityIndicator /> agent running
+            <ActivityIndicator /> agent coding
           </span>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
