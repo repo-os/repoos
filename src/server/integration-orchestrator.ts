@@ -194,6 +194,15 @@ export class CloseOutOrchestrator {
       // the cap — this must never loop.
       if (job.phase === "validating") {
         let validateRes = await this.validateCandidate(job);
+        if (!validateRes.ok && validateRes.retryable === false) {
+          // Deterministic by construction — a second run proves nothing and
+          // costs the user another full gate cycle.
+          this.coordinator.updateJob(job.taskId, {
+            phase: PHASE_FAILED,
+            reason: validateRes.reason,
+          });
+          return validateRes;
+        }
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
           validateRes = await this.validateCandidate(job);
@@ -319,7 +328,16 @@ export class CloseOutOrchestrator {
     return { ok: true, candidateSha: baseMainSha };
   }
 
-  private async validateCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+  /**
+   * Merge the feature branch into the candidate, then run the gate on it.
+   *
+   * `retryable: false` marks a failure that cannot possibly resolve on a second
+   * identical run — a merge conflict is the same conflict every time — so the
+   * caller can skip its retry instead of spending another few minutes proving
+   * the point. Everything else defaults to retryable: build and check failures
+   * are where genuine flakiness lives.
+   */
+  private async validateCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
     const wtPath = worktreePathForBranch(root, branch);
@@ -369,10 +387,14 @@ export class CloseOutOrchestrator {
     this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
     if (!merge.merged) {
+      // A conflict is a property of the two trees, not of the machine. Retrying
+      // re-derives the identical conflict; the fix is always to merge main into
+      // the feature branch and resolve it there (see docs/close-out-pipeline.md).
       return {
         ok: false,
+        retryable: false,
         reason: merge.conflicts.length
-          ? `merge conflict in ${merge.conflicts.join(", ")}`
+          ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
           : merge.reason ?? "merge failed",
       };
     }
