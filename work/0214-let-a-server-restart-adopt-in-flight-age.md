@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0214"
 title: Let a server restart adopt in-flight agent turns instead of deferring or killing them
 type: feature
@@ -58,3 +59,4 @@ Make a restart safe to force at any time by giving in-flight turns something dur
 - 2026-08-15T17:02:20Z · model_override
 - 2026-08-15T17:02:23Z · status ready→active, branch
 - 2026-08-15T17:19:03Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+
