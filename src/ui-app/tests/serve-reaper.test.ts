@@ -141,4 +141,41 @@ describe("ServeReaper", () => {
       }
     }
   });
+
+  it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", () => {
+    const lockPath = join(tmpDir, ".repoos", "serve.lock");
+    mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
+
+    const oldEnv = process.env.REPOOS_PREVIEW_CHILD;
+    try {
+      process.env.REPOOS_PREVIEW_CHILD = "1";
+      const preview = new ServeReaper(tmpDir, ".repoos");
+
+      // A preview child must never reap whatever the worktree's lockfile holds.
+      require("node:fs").writeFileSync(
+        lockPath,
+        JSON.stringify({
+          pid: 999999999,
+          port: 12345,
+          host: "127.0.0.1",
+          startedAt: new Date().toISOString(),
+        }),
+      );
+      preview.cleanupStale();
+      expect(existsSync(lockPath)).toBe(true); // not reaped
+
+      // detectConflict never refuses to bind (no false positive on reused ports)
+      expect(preview.detectConflict(12345, "127.0.0.1")).toBeNull();
+
+      // register never writes the lockfile (no cross-preview collision)
+      preview.register(54321, "127.0.0.1");
+      expect(JSON.parse(require("node:fs").readFileSync(lockPath, "utf8")).port).toBe(12345);
+    } finally {
+      if (oldEnv === undefined) {
+        delete process.env.REPOOS_PREVIEW_CHILD;
+      } else {
+        process.env.REPOOS_PREVIEW_CHILD = oldEnv;
+      }
+    }
+  });
 });
