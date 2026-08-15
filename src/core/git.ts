@@ -387,9 +387,13 @@ export interface DiffResult {
 }
 
 const MAX_DIFF_BYTES = 256_000;
+const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
 
 /**
- * Get diff statistics comparing a branch to main.
+ * Get diff statistics comparing a branch point to the current worktree.
+ * This deliberately includes committed, staged, and unstaged source edits so
+ * the task drawer can show an agent's work before its handoff commit.
+ * Generated build output is excluded because it is not task source.
  * Returns file count and line additions/deletions.
  */
 export function getDiffStats(
@@ -399,7 +403,7 @@ export function getDiffStats(
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  const statOutput = git(worktree, ["diff", "--stat", baseFull, "HEAD"]);
+  const statOutput = git(worktree, ["diff", "--stat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
 
   let filesChanged = 0;
@@ -428,7 +432,9 @@ export function getDiffStats(
 }
 
 /**
- * Get the full patch diff comparing a branch to main.
+ * Get the full patch diff from a branch point to the current worktree.
+ * This includes committed, staged, and unstaged source edits, while leaving
+ * generated build output out of the task-facing code review view.
  * Bounded at MAX_DIFF_BYTES to avoid sending giant payloads.
  */
 export async function getDiff(
@@ -438,7 +444,7 @@ export async function getDiff(
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { patch: "", truncated: false };
 
-  const run = await runGit(worktree, ["diff", "--patch", baseFull, "HEAD"], 15000);
+  const run = await runGit(worktree, ["diff", "--patch", baseFull, ...DIFF_SOURCE_PATHS], 15000);
   if (run.status !== 0 && run.stdout === "") return { patch: "", truncated: false };
 
   const buf = Buffer.from(run.stdout, "utf8");
