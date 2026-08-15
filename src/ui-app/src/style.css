@@ -828,6 +828,12 @@
   .save-msg.err{color:var(--red)}
 
   /* ---------- agents page ---------- */
+  /* Keep the page chrome stable on desktop; long agent forms scroll within
+     the active tab rather than moving the title and tab strip. */
+  .agents-page{height:100%;min-height:0;display:flex;flex-direction:column}
+  .agents-page-title,.agents-page>.page-desc,.agents-page>.agent-tabs{flex-shrink:0}
+  .agents-tab-content{flex:1;min-height:0;overflow-y:auto;padding-right:3px;scrollbar-width:none}
+  .agents-tab-content::-webkit-scrollbar{display:none}
   .agent-card{border-top:1px solid var(--border);padding:14px 0}
   .agent-card.off{opacity:0.55}
   .agent-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -861,6 +867,8 @@
   .rec-freshness{font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
 
   @media(max-width:760px){
+    .agents-page{height:auto;min-height:initial;display:block}
+    .agents-tab-content{overflow:visible;min-height:initial;padding-right:0}
     .agent-body{grid-template-columns:1fr}
     .agent-field,.agent-field.agent-instr-field{grid-column:auto;width:100%;min-width:0}
   }
