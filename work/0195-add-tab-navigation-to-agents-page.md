@@ -2,14 +2,14 @@
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-tab-navigation-to-agents-page
 created_at: "2026-08-14T12:23:17Z"
-updated_at: "2026-08-14T12:24:26Z"
+updated_at: "2026-08-15T02:23:47Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 
 - 2026-08-14T12:23:17Z · created · unknown
 - 2026-08-14T12:24:26Z · status inbox→ready
+- 2026-08-15T02:23:47Z · status ready→active, branch
