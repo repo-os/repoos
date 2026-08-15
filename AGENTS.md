@@ -134,6 +134,47 @@ cannot tell from the code alone:
   ships to every future `repoos init`, so change it deliberately and don't confuse
   it with this repo's own AGENTS.md.
 
+## Debugging: search the error, then check the versions
+
+When an error is *weird* — it makes no sense given the code, or the same code
+behaves differently in two places — stop reasoning from first principles and do
+two cheap things first:
+
+1. **Search the exact error text on the web.** Someone has almost certainly hit
+   it. This costs 30 seconds and routinely saves an hour of theorising.
+2. **If anything smells like a dependency or environment problem, check the
+   versions** — of the runtime, not just the packages. `node --version`,
+   `bun --version`, and *which binary is actually running* (`process.execPath`,
+   `which node`). "Works here, fails there" is a version difference until
+   proven otherwise.
+
+**Worked example (2026-08-15).** Task #0205's close-out failed the gate twice
+with `TypeError: Cannot read properties of undefined (reading 'removeItem')` at
+`tests/repo-store.test.ts:805` — `localStorage` was undefined. The same suite
+passed every time when run by hand. It was initially misdiagnosed as load-
+induced flakiness (see `docs/dogfooding-vs-general.md`) and nearly written off
+as contention noise from #0216, which would have been wrong.
+
+A web search surfaced a known Vitest issue about Node's Web Storage API. Checking
+versions closed it immediately:
+
+- `bun run test` by hand → Node 24 → `localStorage` absent from `globalThis` →
+  jsdom installs its own Storage → **passes**
+- The close-out gate → `process.execPath` → the serving process's runtime,
+  Homebrew Node 26 under launchd → Node defines `localStorage` as an accessor
+  returning `undefined` (no `--localstorage-file`) → vitest's jsdom environment
+  sees the key already present and skips installing jsdom's Storage → **fails**
+
+100% deterministic, 668ms, on a completely idle machine. Not flaky at all. Fixed
+with a setup shim (`src/ui-app/tests/setup/web-storage.ts`).
+
+**The general lesson:** "it passes for me but fails in the pipeline" is a
+version/environment difference far more often than it is flakiness. Reproduce
+under the *exact* runtime the failing system uses before concluding anything —
+here that meant `/opt/homebrew/bin/node`, not whatever `node` resolves to in
+your shell. And be suspicious of any diagnosis that requires the failure to be
+random when it reproduces identically twice.
+
 ## Git setup: don't let a failed command skip branch creation
 
 A past agent ran `git pull --ff-only && git checkout -b <branch>`. The pull
