@@ -53,7 +53,7 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
 };
 
 export const createTask: RouteHandler = async (ctx, req, res) => {
-  const { config, repoos, index } = ctx;
+  const { config, repoos, index, logger } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
   if (!body.title || typeof body.title !== "string") {
     return json(res, 400, { error: "title is required" });
@@ -67,13 +67,18 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     status: body.status as Status | undefined,
     body: typeof body.body === "string" ? body.body : undefined,
   });
+  logger.task(created.id, "info", "Task created", {
+    title: created.title,
+    type: created.type,
+    area: created.area,
+  });
   index.applyFileChange(created.absPath);
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
   return json(res, 201, index.getTask(created.id));
 };
 
 export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
-  const { config, repoos, index, emitEvent } = ctx;
+  const { config, repoos, index, logger, emitEvent } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
   const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
   if (!explanation) {
@@ -86,6 +91,10 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       title: explanationTitle(explanation),
       body: explanation,
       status: "draft",
+    });
+    logger.task(created.id, "warn", `Task created as fallback (${fallbackReason})`, {
+      fallbackReason,
+      reason: detail,
     });
     index.applyFileChange(created.absPath);
     commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
@@ -176,7 +185,7 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
 };
 
 export const patchTask: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, reviews, runner, onServerStatusChange, syncTaskBranch } = ctx;
+  const { config, index, reviews, runner, logger, onServerStatusChange, syncTaskBranch } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -209,6 +218,14 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   const updated = patchTaskFile(config, existing.absPath, body, {
     onStatusChange: onServerStatusChange,
   });
+
+  if (body.status && body.status !== prevStatus) {
+    logger.task(id, "info", `Task status changed`, {
+      from: prevStatus,
+      to: body.status,
+    });
+  }
+
   // Guarded: the #0210 gate already ran above for transitions into review.
   index.applyFileChange(updated.absPath, { guarded: true });
 
@@ -225,7 +242,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
 };
 
 export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
-  const { config, index, previews } = ctx;
+  const { config, index, logger, previews } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -240,6 +257,7 @@ export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
     }
     return json(res, 404, { error: `Task #${id} not found` });
   }
+  logger.task(id, "info", "Task deleted", { title: existing.title });
   index.applyFileDelete(existing.absPath);
   return json(res, 200, { ok: true });
 };
@@ -278,6 +296,15 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   });
   index.applyFileChange(updated.absPath);
   return json(res, 201, { ok: true, attachment: result });
+};
+
+// Task logs
+export const getTaskLogs: RouteHandler = (ctx, _req, res, params) => {
+  const { logger } = ctx;
+  const id = params.param1;
+  const limit = 1000;
+  const logs = logger.getTaskLogs(id, limit);
+  return json(res, 200, { ok: true, logs });
 };
 
 // Task output

@@ -8,6 +8,7 @@ import { writeFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
+import type { Logger } from "../core/logger.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -856,14 +857,39 @@ updated_at: "${now}"
 export async function runTechDebtAgent(
   config: RepoOSConfig,
   options: TechDebtScanOptions = {},
+  logger?: Logger,
 ): Promise<TechDebtRunResult> {
+  logger?.agent("tech-debt", "info", "Tech Debt Agent scan started");
   const scan = await scanForTechDebt(config, options);
+  logger?.agent(
+    "tech-debt",
+    "info",
+    `Tech Debt scan completed`,
+    { issuesFound: scan.issues.length, scannedFiles: scan.scannedFiles },
+  );
+
   const created = await createTechDebtTasks(config, scan.issues);
+  if (created.failed > 0) {
+    logger?.agent(
+      "tech-debt",
+      "error",
+      `Failed to create ${created.failed} tech debt tasks`,
+      { errors: created.errors },
+    );
+  }
+  if (created.created > 0) {
+    logger?.agent("tech-debt", "info", `Created ${created.created} tech debt tasks`);
+  }
 
   const agents = { ...(config.builtInAgents ?? {}) };
   agents["tech-debt"] = { ...(agents["tech-debt"] ?? {}), lastRunAt: new Date().toISOString() };
   saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
   config.builtInAgents = agents;
+
+  logger?.agent("tech-debt", "info", "Tech Debt Agent run completed", {
+    created: created.created,
+    failed: created.failed,
+  });
 
   return {
     issuesFound: scan.issues.length,
@@ -1110,9 +1136,10 @@ export async function runArchitectAgent(config: RepoOSConfig): Promise<Architect
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
+  logger?: Logger,
 ): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | null> {
   if (name === "tech-debt") {
-    return runTechDebtAgent(config);
+    return runTechDebtAgent(config, {}, logger);
   }
   if (name === "performance") {
     return runPerformanceAgent(config);
