@@ -1013,6 +1013,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     void reviews.run(task);
   };
 
+  /**
+   * Auto-launch a read-only preview the moment a task lands in `review` (#0198).
+   * The whole point of automation is that no one clicks a button: the preview
+   * is up before the reviewer looks. `PreviewManager.start` enforces the
+   * concurrency cap (FIFO eviction of the oldest) and returns a structured
+   * result, so a failed launch is logged and never crashes the server. The
+   * preview closes automatically when the task leaves review (see
+   * `stopPreviewIfLeft`).
+   */
+  const autoLaunchPreview = async (task: Task): Promise<void> => {
+    try {
+      const result = await previews.start(task);
+      if (!result.ok) {
+        console.error(
+          `[preview] ${new Date().toISOString()} #${task.id} auto-launch failed — ${result.error ?? "unknown error"}`,
+        );
+      }
+    } catch (err) {
+      // Never let a failed launch take the server down.
+      console.error(
+        `[preview] ${new Date().toISOString()} #${task.id} auto-launch threw — ${(err as Error)?.message ?? err}`,
+      );
+    }
+  };
+
   // The file-watcher path (a direct task-file edit on disk) bypasses
   // patchTaskFile, so it never fires `onStatusChange`. The index's own event
   // stream sees EVERY status change from every route (HTTP PATCH, /done,
@@ -1035,7 +1060,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off.
-    if (e.task.status === "review") startReview(e.task);
+    if (e.task.status === "review") {
+      startReview(e.task);
+      void autoLaunchPreview(e.task);
+    }
   });
 
   // Handle needsInput changes separately (fires alongside status change when both occur).
