@@ -3,6 +3,7 @@ id: "0183"
 title: Fix preview server startup failure
 type: bug
 status: review
+needs_merge: true
 priority: p1
 area: core
 assigned_to: unassigned
@@ -10,7 +11,7 @@ created_by: ""
 branch: feat/fix-preview-server-startup-failure
 model_override: default
 created_at: "2026-08-13T23:57:56Z"
-updated_at: "2026-08-15T15:31:37Z"
+updated_at: "2026-08-15T15:31:38Z"
 ---
 ## Problem
 
@@ -52,3 +53,4 @@ Preview links have stopped working. The preview server for task #0182 failed to 
 - 2026-08-15T04:57:17Z · status ready→active
 - 2026-08-15T15:31:14Z · model_override
 - 2026-08-15T15:31:37Z · status active→review
+- 2026-08-15T15:31:38Z · needs_merge
