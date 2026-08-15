@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/re-enable-the-disabled-headless-ui-smoke
 created_at: "2026-08-14T15:19:46Z"
-updated_at: "2026-08-15T10:38:57Z"
+updated_at: "2026-08-15T12:20:25Z"
 ---
 ## Problem
 
