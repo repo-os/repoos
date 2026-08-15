@@ -44,3 +44,7 @@ api-log:
 # curl logs for a task `just api-log-task 0187`
 api-log-task id:
     curl -s http://127.0.0.1:7171/api/tasks/{{id}}/logs | jq '.logs[:20]'
+
+# dev HMR UI
+dev:
+    bunx vite --config src/ui-app/vite.config.ts
