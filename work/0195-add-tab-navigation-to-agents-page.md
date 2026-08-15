@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
@@ -55,3 +56,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T05:42:21Z · model_override
 - 2026-08-15T05:42:39Z · status active→review
 - 2026-08-15T05:42:39Z · needs_merge
+

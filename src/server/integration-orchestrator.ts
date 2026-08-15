@@ -24,6 +24,8 @@ import {
   isGitRepo,
   commitTaskFile,
   mergeBranch,
+  dirtyFiles,
+  GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
@@ -180,14 +182,41 @@ export class CloseOutOrchestrator {
       }
 
       // Validating phase: run the full gate (build, check) on the candidate.
+      //
+      // The gate is retried once before the job is failed (#0216). A false
+      // failure here is expensive — the branch is green, but the task is
+      // stranded in review and the user cannot tell contention from a real
+      // regression. The retry also classifies the failure, which is the part
+      // that actually helps: a genuine defect reproduces with the SAME reason
+      // (Node-version-dependent breakage did exactly this on #0205, failing
+      // identically twice), whereas load-induced failures land on a different
+      // test each run (#0211 failed on two unrelated tests). Two attempts is
+      // the cap — this must never loop.
       if (job.phase === "validating") {
-        const validateRes = await this.validateCandidate(job);
-        if (!validateRes.ok) {
+        let validateRes = await this.validateCandidate(job);
+        if (!validateRes.ok && validateRes.retryable === false) {
+          // Deterministic by construction — a second run proves nothing and
+          // costs the user another full gate cycle.
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             reason: validateRes.reason,
           });
           return validateRes;
+        }
+        if (!validateRes.ok) {
+          const firstReason = validateRes.reason ?? "unknown";
+          validateRes = await this.validateCandidate(job);
+          if (!validateRes.ok) {
+            const secondReason = validateRes.reason ?? "unknown";
+            const reason = firstReason === secondReason
+              ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
+              : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
+            this.coordinator.updateJob(job.taskId, {
+              phase: PHASE_FAILED,
+              reason,
+            });
+            return { ok: false, reason };
+          }
         }
         job = this.coordinator.updateJob(job.taskId, {
           phase: "publishing",
@@ -237,6 +266,7 @@ export class CloseOutOrchestrator {
   }
 
   private async syncCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+    this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
 
@@ -298,7 +328,16 @@ export class CloseOutOrchestrator {
     return { ok: true, candidateSha: baseMainSha };
   }
 
-  private async validateCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+  /**
+   * Merge the feature branch into the candidate, then run the gate on it.
+   *
+   * `retryable: false` marks a failure that cannot possibly resolve on a second
+   * identical run — a merge conflict is the same conflict every time — so the
+   * caller can skip its retry instead of spending another few minutes proving
+   * the point. Everything else defaults to retryable: build and check failures
+   * are where genuine flakiness lives.
+   */
+  private async validateCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
     const wtPath = worktreePathForBranch(root, branch);
@@ -343,14 +382,27 @@ export class CloseOutOrchestrator {
     // branch version is taken as authoritative, same as the legacy done.ts
     // close-out path. Reuses the existing, tested autoResolve semantics in
     // core/git.ts rather than reimplementing conflict resolution here.
+    //
+    // dist/ is gitignored on main as of 2026-08-15 (see docs/dogfooding-vs-
+    // general.md), so most new merges won't touch this entry at all — a
+    // branch that never modified dist/ resolves as a clean deletion. It stays
+    // in the list because a branch cut BEFORE that change can still have
+    // dist/ tracked and modified; mergeBranch's `-X theirs` fallback already
+    // handles that as a modify/delete conflict. Safe to drop once no such
+    // branch remains, but harmless to leave indefinitely.
     const task = this.getTask?.(job.taskId);
     const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
     if (!merge.merged) {
+      // A conflict is a property of the two trees, not of the machine. Retrying
+      // re-derives the identical conflict; the fix is always to merge main into
+      // the feature branch and resolve it there (see docs/close-out-pipeline.md).
       return {
         ok: false,
+        retryable: false,
         reason: merge.conflicts.length
-          ? `merge conflict in ${merge.conflicts.join(", ")}`
+          ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
           : merge.reason ?? "merge failed",
       };
     }
@@ -456,12 +508,54 @@ export class CloseOutOrchestrator {
         return { ok: false, reason: "main advanced, revalidating" };
       }
 
+      // Publish-time dirty-main guard (#0211): the main working tree can be
+      // dirtied between enqueue and publish (validation runs minutes-long
+      // builds in the candidate worktree while `repoos check` regenerates a
+      // dirty `dist/` on main). Re-check right before the merge so a dirty
+      // main is surfaced as an actionable message instead of git's raw
+      // "your local changes would be overwritten" at the tail of a long job.
+      // Fails closed: an error/timeout in the check is "unknown", never
+      // "clean", so we never merge blindly.
+      let dirtyOnMain: string[];
+      try {
+        dirtyOnMain = await dirtyFiles(root);
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return {
+            ok: false,
+            reason: `could not verify main is clean at publish time (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
+          };
+        }
+        throw err;
+      }
+      if (dirtyOnMain.length > 0) {
+        return {
+          ok: false,
+          reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+        };
+      }
+
       // Merge candidate to live main using FF when possible.
       const mergeRes = await runGit(root, ["merge", "--ff-only", branch], 30_000);
       if (mergeRes.status !== 0) {
         // Try a regular merge if FF is not possible.
         const regularMerge = await runGit(root, ["merge", "--no-edit", branch], 30_000);
         if (regularMerge.status !== 0) {
+          // A dirty main that slipped in between the check and the merge (or a
+          // conflict) aborts with git's raw "would be overwritten" message.
+          // Re-frame a dirty-main outcome as an actionable instruction rather
+          // than dumping that raw stderr.
+          if (/would be overwritten by merge/i.test(regularMerge.stderr)) {
+            const blocking = regularMerge.stderr
+              .split("\n")
+              .filter((l) => l.startsWith("\t"))
+              .map((l) => l.trim())
+              .filter(Boolean);
+            return {
+              ok: false,
+              reason: `main has uncommitted files blocking the merge${blocking.length ? `: ${blocking.slice(0, 8).join(", ")}${blocking.length > 8 ? ", …" : ""}` : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+            };
+          }
           return { ok: false, reason: `could not merge to main: ${regularMerge.stderr}` };
         }
       }

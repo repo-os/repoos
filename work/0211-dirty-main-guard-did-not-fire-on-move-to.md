@@ -2,14 +2,15 @@
 id: "0211"
 title: "Dirty-main guard did not fire on move-to-done, merge failed instead"
 type: bug
-status: inbox
+status: done
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/dirty-main-guard-did-not-fire-on-move-to
+model_override: default
 created_at: "2026-08-15T05:40:46Z"
-updated_at: "2026-08-15T05:40:46Z"
+updated_at: "2026-08-15T07:33:48Z"
 ---
 ## Problem
 
@@ -61,3 +62,8 @@ So: guard present, guard functional in isolation, tree dirty, yet the request re
 ## Activity
 
 - 2026-08-15T05:40:46Z · created · unknown
+- 2026-08-15T05:45:58Z · status inbox→ready
+- 2026-08-15T05:46:00Z · status ready→active, branch
+- 2026-08-15T06:07:24Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T06:30:50Z · model_override
+- 2026-08-15T07:33:48Z · status review→done, merged manually (integration gate could not be reproduced; `repoos check` green)

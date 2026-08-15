@@ -16,7 +16,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -24,6 +24,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
+import { buildIntegrationSnapshot } from "../integration-status.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -452,7 +453,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // user has not opted in via "Commit & continue", hand the list back so the
     // UI can show a confirmation modal and pause the close-out. The task stays
     // in review until the user decides.
-    const dirty = await dirtyFiles(config.root);
+    //
+    // Fails closed (#0211): if the dirty check itself errors or times out we
+    // cannot assert the tree is clean, so the close-out is refused rather than
+    // enqueued against a tree that git may abort at publish time. An unknown
+    // state must never silently look clean.
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before close-out (${err.message}). Retry, or commit/stash main's working tree and try again.`,
+          needsCommit: true,
+          dirtyFiles: [],
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
     const doneBody = (await readBody(req)) as { commitDirty?: unknown };
     const commitDirty = doneBody?.commitDirty === true;
     if (dirty.length > 0 && !commitDirty) {
@@ -463,10 +483,23 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     if (dirty.length > 0 && commitDirty) {
-      const committed = await commitDirtyFiles(
-        config.root,
-        `chore: checkpoint before close-out (#${id})`,
-      );
+      let committed: string[];
+      try {
+        committed = await commitDirtyFiles(
+          config.root,
+          `chore: checkpoint before close-out (#${id})`,
+        );
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return json(res, 500, {
+            error: `could not re-verify main while committing dirty files (${err.message}). Close-out aborted; nothing was merged.`,
+            needsCommit: true,
+            dirtyFiles: dirty,
+            dirtyCheckFailed: true,
+          });
+        }
+        throw err;
+      }
       if (committed.length !== dirty.length) {
         return json(res, 500, {
           error: `auto-commit of ${dirty.length} dirty file${dirty.length === 1 ? "" : "s"} failed on main`,
@@ -481,6 +514,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (!job) {
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
+
+    // Reflect the new queue entry in the pinned status bar immediately (0207),
+    // even before job processing's own snapshot emission picks it up.
+    ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}) });
 
     // Trigger job processing to start the pipeline.
     ctx.triggerJobProcessing();
@@ -826,6 +863,55 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       queuePosition: idx,
     })),
     queueLength: allJobs.length,
+  });
+};
+
+/**
+ * Full integration-pipeline snapshot for the pinned status bar (0207).
+ * `reported` stages are empty for a cold hydration; the live `integration`
+ * SSE event keeps the bar accurate from the moment it connects.
+ */
+export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
+  return json(res, 200, {
+    ok: true,
+    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+  });
+};
+
+/**
+ * Retry a failed integration job (0207). Reuses the coordinator's existing
+ * retry path: `enqueue` re-enqueues a `failed` job as a fresh queued job
+ * (see integration-job.ts), then processing resumes from the queue.
+ */
+export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
+  const { jobCoordinator } = ctx;
+  const id = params.param1;
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `No integration job for task #${id}` });
+  }
+  if (job.phase !== "failed") {
+    return json(res, 409, {
+      error: `Task #${id} is not in a failed integration state (it is ${job.phase})`,
+    });
+  }
+  const task = ctx.index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const reenqueued = jobCoordinator.enqueue(task);
+  if (!reenqueued) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, {}) });
+  ctx.triggerJobProcessing();
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: reenqueued.taskId,
+      phase: reenqueued.phase,
+      enqueuedAt: reenqueued.enqueuedAt,
+    },
   });
 };
 

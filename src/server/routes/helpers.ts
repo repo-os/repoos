@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { connect } from "node:net";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { STATUSES } from "../../core/types.js";
+import { readBuildStamp } from "../../core/build.js";
 
 export const UI_MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -79,14 +80,10 @@ export function loadBuildInfo(): { version: string | null; buildAt: string | nul
   } catch {
     /* ignore */
   }
-  let buildAt: string | null = null;
-  try {
-    const info = JSON.parse(readFileSync(join(root, "dist", ".build-info.json"), "utf8"));
-    if (typeof info?.generatedAt === "string") buildAt = info.generatedAt;
-  } catch {
-    /* ignore */
-  }
-  return { version, buildAt };
+  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
+  // marker stays deterministic; readBuildStamp falls back to the legacy
+  // inline field for installs built before the split.
+  return { version, buildAt: readBuildStamp(root) };
 }
 
 export function skillField(text: string, field: string): string | null {
