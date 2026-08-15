@@ -227,6 +227,8 @@ export const useRepoStore = defineStore("repo", () => {
   const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
   /** Diff statistics per task: files changed, additions, deletions. */
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
+  /** Full patch diffs per task. */
+  const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -980,6 +982,29 @@ export const useRepoStore = defineStore("repo", () => {
   /** Get diff stats for a task, or undefined if not yet fetched. */
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
 
+  /** Load the full patch diff for a task. Best-effort. */
+  async function loadDiff(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        diff: { patch: string; truncated: boolean };
+        noBranch?: boolean;
+        noWorktree?: boolean;
+      }>(`/api/tasks/${id}/diff`);
+      if (r.ok) {
+        diffs.value = {
+          ...diffs.value,
+          [id]: r.diff,
+        };
+      }
+    } catch {
+      /* endpoint unavailable — diff is nice-to-have */
+    }
+  }
+
+  /** Get the full diff for a task, or undefined if not yet fetched. */
+  const diffFor = (id: string) => diffs.value[id] ?? undefined;
+
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
     if (!outputs.value[id]) return;
@@ -1249,6 +1274,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    loadDiff,
+    diffFor,
     sendMessage,
     reviewAgain,
     sendReviewMessage,

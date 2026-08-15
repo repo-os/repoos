@@ -165,3 +165,10 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
   }
   return json(res, 200, { ok: true });
 };
+
+export const getSystemLogs: RouteHandler = (ctx, _req, res) => {
+  const { logger } = ctx;
+  const limit = 1000;
+  const logs = logger.getSystemLogs(limit);
+  return json(res, 200, { ok: true, logs });
+};

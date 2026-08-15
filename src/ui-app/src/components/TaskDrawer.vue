@@ -1238,6 +1238,35 @@ watch(
   { immediate: true },
 );
 
+/** Full diff patch for the active task. */
+const taskDiff = computed(() => {
+  return ui.active ? repo.diffFor(ui.active.id) : undefined;
+});
+
+/** Load the full diff when the Changes tab opens. */
+watch(
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    if (!ui.active || ui.activeTab !== "changes") return;
+    void repo.loadDiff(ui.active.id);
+  },
+);
+
+/** Split the diff patch into individual lines for rendering. */
+const diffLines = computed(() => {
+  if (!taskDiff.value || !taskDiff.value.patch) return [] as string[];
+  return taskDiff.value.patch.split("\n");
+});
+
+/** Classify a single diff line for syntax highlighting. */
+function diffLineClass(line: string): string {
+  if (line.startsWith("@@")) return "diff-hunk";
+  if (line.startsWith("+")) return "diff-add";
+  if (line.startsWith("-")) return "diff-rem";
+  if (line.startsWith("diff ") || line.startsWith("index ") || line.startsWith("--- ") || line.startsWith("+++ ")) return "diff-header";
+  return "diff-ctx";
+}
+
 async function sendTurn(): Promise<void> {
   if (!ui.active) return;
   const text = draftMsg.value.trim();
@@ -1935,6 +1964,14 @@ function resetFreeformOverrides(): void {
             Engineer
           </button>
           <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'changes' }"
+            @click="ui.activeTab = 'changes'"
+          >
+            Changes
+          </button>
+          <button
             v-if="ui.active.status === 'review'"
             type="button"
             class="tab-btn"
@@ -2486,6 +2523,33 @@ function resetFreeformOverrides(): void {
             <ActivityIndicator /> reviewer is working — wait for this turn to finish
           </div>
         </div>
+        <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
+          <template v-if="!ui.active">
+            <p class="changes-empty">Select a task to view changes.</p>
+          </template>
+          <template v-else-if="!ui.active.branch">
+            <p class="changes-empty">No branch yet — start work to create the worktree.</p>
+          </template>
+          <template v-else-if="!ui.active.git?.worktreeExists">
+            <p class="changes-empty">
+              No git worktree is checked out for
+              <span class="mono">{{ ui.active.branch }}</span>.
+            </p>
+          </template>
+          <template v-else-if="taskDiff === undefined">
+            <p class="changes-empty">Loading diff…</p>
+          </template>
+          <template v-else-if="taskDiff && taskDiff.patch === ''">
+            <p class="changes-empty">No code changes yet</p>
+          </template>
+          <template v-else-if="taskDiff">
+            <div v-if="taskDiff.truncated" class="diff-truncated">
+              Diff output was truncated — showing the first ~250 kB.
+            </div>
+            <pre class="diff-output"><code><template v-for="(line, i) in diffLines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+</template></code></pre>
+          </template>
+        </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
@@ -2886,5 +2950,60 @@ function resetFreeformOverrides(): void {
   color: var(--txt-faint);
   font-size: 12px;
   text-align: center;
+}
+
+/* Changes tab — full diff output */
+.changes-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--txt-faint);
+  font-size: 13px;
+}
+
+.diff-truncated {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  border-radius: 6px;
+  color: #ffc107;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.diff-output {
+  margin: 0;
+  padding: 12px;
+  background: #0d1117;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+  color: #c9d1d9;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.diff-header {
+  color: #8b949e;
+}
+
+.diff-hunk {
+  color: #79c0ff;
+}
+
+.diff-add {
+  color: #7ee787;
+}
+
+.diff-rem {
+  color: #ff7b72;
+}
+
+.diff-ctx {
+  color: #c9d1d9;
 }
 </style>
