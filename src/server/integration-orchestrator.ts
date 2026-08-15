@@ -24,6 +24,8 @@ import {
   isGitRepo,
   commitTaskFile,
   mergeBranch,
+  dirtyFiles,
+  GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
@@ -456,12 +458,54 @@ export class CloseOutOrchestrator {
         return { ok: false, reason: "main advanced, revalidating" };
       }
 
+      // Publish-time dirty-main guard (#0211): the main working tree can be
+      // dirtied between enqueue and publish (validation runs minutes-long
+      // builds in the candidate worktree while `repoos check` regenerates a
+      // dirty `dist/` on main). Re-check right before the merge so a dirty
+      // main is surfaced as an actionable message instead of git's raw
+      // "your local changes would be overwritten" at the tail of a long job.
+      // Fails closed: an error/timeout in the check is "unknown", never
+      // "clean", so we never merge blindly.
+      let dirtyOnMain: string[];
+      try {
+        dirtyOnMain = await dirtyFiles(root);
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return {
+            ok: false,
+            reason: `could not verify main is clean at publish time (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
+          };
+        }
+        throw err;
+      }
+      if (dirtyOnMain.length > 0) {
+        return {
+          ok: false,
+          reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+        };
+      }
+
       // Merge candidate to live main using FF when possible.
       const mergeRes = await runGit(root, ["merge", "--ff-only", branch], 30_000);
       if (mergeRes.status !== 0) {
         // Try a regular merge if FF is not possible.
         const regularMerge = await runGit(root, ["merge", "--no-edit", branch], 30_000);
         if (regularMerge.status !== 0) {
+          // A dirty main that slipped in between the check and the merge (or a
+          // conflict) aborts with git's raw "would be overwritten" message.
+          // Re-frame a dirty-main outcome as an actionable instruction rather
+          // than dumping that raw stderr.
+          if (/would be overwritten by merge/i.test(regularMerge.stderr)) {
+            const blocking = regularMerge.stderr
+              .split("\n")
+              .filter((l) => l.startsWith("\t"))
+              .map((l) => l.trim())
+              .filter(Boolean);
+            return {
+              ok: false,
+              reason: `main has uncommitted files blocking the merge${blocking.length ? `: ${blocking.slice(0, 8).join(", ")}${blocking.length > 8 ? ", …" : ""}` : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+            };
+          }
           return { ok: false, reason: `could not merge to main: ${regularMerge.stderr}` };
         }
       }

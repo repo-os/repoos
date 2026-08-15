@@ -36,6 +36,8 @@ import {
   isAncestor,
   localBranches,
   runGit,
+  dirtyFiles,
+  GitDirtyCheckError,
   worktreePathForBranch,
 } from "../core/git.js";
 import { markTaskReleased } from "./write.js";
@@ -72,6 +74,10 @@ export interface CompleteResult {
   check?: CheckSummary;
   /** The updated task, present when the task reached `done`. */
   task?: Task;
+  /** True when the failure is a dirty main that must be committed/stashed first. */
+  needsCommit?: boolean;
+  /** The uncommitted files on main that blocked the merge, when known. */
+  dirtyFiles?: string[];
   /** Human-readable reason (not ok). */
   reason?: string;
 }
@@ -436,6 +442,44 @@ async function completeTaskLocked(
     }
   }
   const autoResolve = [rel, "dist/", "screenshots/"];
+
+  // Publish-time dirty-main guard (#0211): the main tree can be dirtied
+  // between the enqueue-time check and this publish step (validation takes
+  // minutes and `repoos check`/builds regenerate `dist/`). Re-check right
+  // before the merge so a dirty main is surfaced as an actionable error
+  // instead of git's raw "your local changes would be overwritten" message at
+  // the tail of a long job. Fails closed: an error/timeout in the check is
+  // "unknown", not "clean", and aborts the close-out rather than risking a
+  // merge git will refuse.
+  let publishDirty: string[];
+  try {
+    publishDirty = await dirtyFiles(root);
+  } catch (err) {
+    if (err instanceof GitDirtyCheckError) {
+      return {
+        ok: false,
+        merged: false,
+        conflicts: [],
+        ff: false,
+        drifted: false,
+        needsCommit: true,
+        reason: `could not verify main is clean at publish time (${err.message}). The close-out was NOT merged; retry, or commit/stash main's working tree first.`,
+      };
+    }
+    throw err;
+  }
+  if (publishDirty.length > 0) {
+    return {
+      ok: false,
+      merged: false,
+      conflicts: [],
+      ff: false,
+      drifted: false,
+      needsCommit: true,
+      dirtyFiles: publishDirty,
+      reason: `main has ${publishDirty.length} uncommitted file${publishDirty.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${publishDirty.slice(0, 8).join(", ")}${publishDirty.length > 8 ? ", …" : ""}. The close-out was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+    };
+  }
 
   // Cheap pre-flight: detect source-file conflicts before the expensive
   // build/screenshots/check steps run. Never leaves a half-applied merge.
