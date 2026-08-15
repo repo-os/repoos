@@ -57,6 +57,8 @@ const PREVIEW_STATES: readonly Status[] = ["active", "review"];
 const HOST = "127.0.0.1";
 const HEALTH_TIMEOUT_MS = 10_000;
 const BUILD_TIMEOUT_MS = 240_000;
+/** Hard cap on concurrently running preview servers (#0198). */
+const MAX_PREVIEWS = 4;
 /** Marks a spawned child so it skips its own boot-time orphan cleanup. */
 const CHILD_ENV = "REPOOS_PREVIEW_CHILD";
 
@@ -214,6 +216,8 @@ export class PreviewManager {
   private readonly emit: (e: RepoEvent) => void;
   /** Last stderr lines from a still-booting preview, for diagnostics. */
   private bootErrors = new Map<string, string>();
+  /** Starts still in flight per task, so concurrent calls never double-spawn. */
+  private inflight = new Map<string, Promise<PreviewResult>>();
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
     this.config = config;
@@ -249,6 +253,19 @@ export class PreviewManager {
     }
     const existing = this.registry.get(task.id);
     if (existing) return { ok: true, port: existing.port, url: existing.url };
+    // Concurrent starts for the same task (e.g. duplicate transition events)
+    // must share one spawn — never double-spawn a process and leak one.
+    const inflight = this.inflight.get(task.id);
+    if (inflight) return inflight;
+    const p = this.doStart(task);
+    this.inflight.set(task.id, p);
+    p.finally(() => this.inflight.delete(task.id)).catch(() => {
+      /* handled by caller */
+    });
+    return p;
+  }
+
+  private async doStart(task: Task): Promise<PreviewResult> {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
     }
@@ -258,27 +275,38 @@ export class PreviewManager {
     }
 
     const build = ensureFreshBuild(root);
-    if (!build.ok) return { ok: false, error: build.error };
+    if (!build.ok) {
+      this.logLifecycle("start-failed", task.id, build.error);
+      return { ok: false, error: build.error };
+    }
+
+    // Enforce the concurrent-preview cap (#0198): before launching a new
+    // preview, free a slot if at capacity by terminating the oldest running
+    // preview (FIFO). A task that already has a preview is a no-op elsewhere.
+    await this.evictIfAtCapacity(task.id);
 
     let port: number;
     try {
       port = await reservePort();
     } catch {
+      this.logLifecycle("start-failed", task.id, "could not allocate an ephemeral port for the preview");
       return { ok: false, error: "could not allocate an ephemeral port for the preview" };
     }
 
     const spawned = this.spawnPreview(root, port, task.id);
-    if (!spawned.ok) return { ok: false, error: spawned.error };
+    if (!spawned.ok) {
+      this.logLifecycle("start-failed", task.id, spawned.error);
+      return { ok: false, error: spawned.error };
+    }
     const { pid } = spawned;
 
     if (!(await waitForHealth(`http://${HOST}:${port}`, HEALTH_TIMEOUT_MS))) {
       void this.kill(pid);
       const diag = this.bootErrors.get(task.id);
       this.bootErrors.delete(task.id);
-      return {
-        ok: false,
-        error: `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`,
-      };
+      const error = `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`;
+      this.logLifecycle("start-failed", task.id, error);
+      return { ok: false, error };
     }
 
     const info: PreviewInfo = {
@@ -289,6 +317,7 @@ export class PreviewManager {
     };
     this.registry.set(task.id, info);
     this.persist();
+    this.logLifecycle("started", task.id, `url=${info.url} pid=${info.pid} port=${info.port}`);
     this.emit({
       type: "preview",
       id: task.id,
@@ -304,6 +333,7 @@ export class PreviewManager {
     if (!info) return;
     this.registry.delete(taskId);
     this.persist();
+    this.logLifecycle("stopped", taskId, `url=${info.url} pid=${info.pid}`);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
     await this.kill(info.pid);
   }
@@ -348,6 +378,40 @@ export class PreviewManager {
 
   // ---- internals ----
 
+  /**
+   * Enforce the concurrent cap (#0198): when at `MAX_PREVIEWS` and the task
+   * being started isn't already running, terminate the OLDEST running preview
+   * (FIFO) before a new one spawns. Logs the eviction with task id + timestamp.
+   */
+  private async evictIfAtCapacity(startingTaskId: string): Promise<void> {
+    if (this.registry.size < MAX_PREVIEWS) return;
+    if (this.registry.has(startingTaskId)) return;
+    const oldest = [...this.registry.entries()].sort((a, b) =>
+      a[1].startedAt < b[1].startedAt ? -1 : a[1].startedAt > b[1].startedAt ? 1 : 0,
+    )[0];
+    if (!oldest) return;
+    const [taskId, info] = oldest;
+    this.logLifecycle(
+      "evicted",
+      taskId,
+      `terminated to keep concurrent previews at ${MAX_PREVIEWS} (oldest running; started ${info.startedAt})`,
+    );
+    await this.stop(taskId);
+  }
+
+  /** Best-effort lifecycle log — task id and an ISO-8601 timestamp (#0198). */
+  private logLifecycle(action: string, taskId: string, detail?: string): void {
+    try {
+      const line = `[preview] ${now()} #${taskId} ${action}${detail ? ` — ${detail}` : ""}`;
+      if (process.env[CHILD_ENV] === "1") return;
+      // Previews are server-owned long-lived children; always mirror to the
+      // main server's stderr so lifecycle lands in the server log.
+      console.error(line);
+    } catch {
+      /* logging is best-effort and must never crash the system (#0198) */
+    }
+  }
+
   private spawnPreview(
     root: string,
     port: number,
@@ -391,6 +455,7 @@ export class PreviewManager {
       if (info && info.pid === pid) {
         this.registry.delete(taskId);
         this.persist();
+        this.logLifecycle("exited", taskId, `preview process ${pid} exited on its own`);
         this.emit({ type: "preview", id: taskId, preview: null, at: now() });
       }
     });
