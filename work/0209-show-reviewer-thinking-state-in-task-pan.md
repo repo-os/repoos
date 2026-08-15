@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
 model_override: default
+pm_model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T14:37:14Z"
+updated_at: "2026-08-15T16:42:22Z"
 ---
 ## Problem
 
@@ -76,3 +77,4 @@ actions appear as they do today.
 - 2026-08-15T07:54:05Z · cli_override, model_override
 - 2026-08-15T07:54:09Z · cli_override
 - 2026-08-15T07:54:13Z · cli_override
+- 2026-08-15T16:42:22Z · pm_model_override
