@@ -8,9 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/let-a-server-restart-adopt-in-flight-age
-model_override: default
 created_at: "2026-08-15T06:28:51Z"
-updated_at: "2026-08-15T20:28:31Z"
+updated_at: "2026-08-15T20:43:35Z"
 review_rounds: 1
 ---
 ## Problem
@@ -60,3 +59,4 @@ Make a restart safe to force at any time by giving in-flight turns something dur
 - 2026-08-15T17:02:23Z · status ready→active, branch
 - 2026-08-15T17:19:03Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T20:28:31Z · model_override
+- 2026-08-15T20:43:35Z · model_override
