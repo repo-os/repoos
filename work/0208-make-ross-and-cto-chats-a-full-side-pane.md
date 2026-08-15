@@ -55,9 +55,6 @@ and feel like first-class panels rather than secondary, undersized views.
   the task panel.
 - Deferred: any changes to chat behavior, features, or the task panel itself.
   Also deferred are any other panels or new panel types not mentioned.
-</parameter>
-</invoke>
-</｜DSML｜tool_calls>
 
 ## Activity
 
