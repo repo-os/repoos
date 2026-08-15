@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, Eye, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -541,32 +541,6 @@ function cancelDraft(): void {
 
 /** True while a preview start/stop request is in flight. */
 const previewBusy = ref(false);
-
-/**
- * A preview is available only for active/review tasks with a branch that has a
- * git worktree checked out — the thing the preview server actually serves.
- */
-const previewable = computed(() => {
-  const t = ui.active;
-  if (!t) return false;
-  return (
-    (t.status === "active" || t.status === "review") &&
-    !!t.branch &&
-    !!t.git?.worktreeExists
-  );
-});
-
-async function startPreview(): Promise<void> {
-  if (!ui.active || previewBusy.value) return;
-  previewBusy.value = true;
-  try {
-    await repo.startPreview(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    previewBusy.value = false;
-  }
-}
 
 async function stopPreview(): Promise<void> {
   if (!ui.active || previewBusy.value) return;
@@ -1804,32 +1778,26 @@ function resetFreeformOverrides(): void {
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
           />
-          <div v-if="ui.active.status === 'active' || ui.active.status === 'review'" class="quickbar-row">
-            <template v-if="ui.active.preview">
-              <div class="preview-live">
-                <span class="preview-dot"></span>
-                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
-                  <ExternalLink class="size-3.5" />
-                  {{ ui.active.preview.url }}
-                </a>
-              </div>
-              <Button
-                variant="outline"
-                :disabled="ui.saving || previewBusy"
-                @click="stopPreview"
-              >
-                <Square class="size-3.5" />
-                Stop preview
-              </Button>
-            </template>
+          <div
+            v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
+            class="quickbar-row"
+          >
+            <!-- Previews are auto-launched when a task lands in review (#0198);
+                 no manual start button — the live URL simply appears when ready. -->
+            <div class="preview-live">
+              <span class="preview-dot"></span>
+              <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                <ExternalLink class="size-3.5" />
+                {{ ui.active.preview.url }}
+              </a>
+            </div>
             <Button
-              v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy || !previewable"
-              @click="startPreview"
+              :disabled="ui.saving || previewBusy"
+              @click="stopPreview"
             >
-              <Eye class="size-3.5" />
-              {{ previewBusy ? "Starting…" : "Preview" }}
+              <Square class="size-3.5" />
+              Stop preview
             </Button>
           </div>
           <p
