@@ -295,6 +295,14 @@
   .feed-empty{padding:40px 17px;text-align:center;color:var(--txt-faint);font-size:12px;font-family:'JetBrains Mono',monospace}
 
   /* board */
+  /* The work queue is a fixed desktop surface: the board consumes the
+     available page height and each status column owns its own scroll area.
+     This keeps the page header and controls in place while scanning tasks. */
+  .work-page{height:100%;min-height:0;display:flex;flex-direction:column}
+  .work-header,.work-page .filter-bar{flex-shrink:0}
+  .work-page .board{flex:1;min-height:0}
+  .work-page .board-col{height:auto;min-height:0}
+  .work-page .ibar-spacer{display:none}
   .filter-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
   .filter-chip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--txt);background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:6px 13px}
   .filter-chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -335,6 +343,10 @@
     .board-col.collapsed{flex:0 0 38px;width:38px}
   }
   @media(max-width:760px){
+    .work-page{height:auto;min-height:initial;display:block}
+    .work-page .board{display:flex;min-height:initial}
+    .work-page .board-col{height:auto;min-height:initial}
+    .work-page .ibar-spacer{display:block}
     .board-col{flex:1 1 100%;height:auto}
     .board-col.collapsed{flex:0 0 auto;width:100%;-webkit-mask-image:none;mask-image:none}
     .col-body{overflow:visible;min-height:40px}
