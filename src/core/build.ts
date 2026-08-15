@@ -153,5 +153,25 @@ export function checkBuild(): BuildCheckResult {
   return checkBuildForRoot(root);
 }
 
+/**
+ * Read the build timestamp for a checkout. The timestamp lives in
+ * `dist/.build-stamp.json` (gitignored) rather than `dist/.build-info.json`,
+ * so the marker that staleness and reload compare stays byte-identical across
+ * rebuilds of identical source. Falls back to a legacy inline `generatedAt` in
+ * the marker so installs built before the split still report a build age.
+ * Best-effort: null when neither file is readable.
+ */
+export function readBuildStamp(root: string): string | null {
+  const read = (file: string): string | null => {
+    try {
+      const info = JSON.parse(readFileSync(file, "utf8")) as { generatedAt?: unknown };
+      return typeof info.generatedAt === "string" && info.generatedAt ? info.generatedAt : null;
+    } catch {
+      return null;
+    }
+  };
+  return read(join(root, "dist", ".build-stamp.json")) ?? read(join(root, "dist", ".build-info.json"));
+}
+
 /** Platform path separator pattern for import.meta.url detection. */
 const pathSep = process.platform === "win32" ? "\\\\" : "/";

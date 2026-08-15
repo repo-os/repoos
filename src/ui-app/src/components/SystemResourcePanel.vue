@@ -65,6 +65,24 @@ function svgPath(data: number[], width: number, height: number, maxVal: number):
 }
 
 const hasData = computed(() => systemStats.value !== null);
+
+const serve = computed(() => systemStats.value?.serve ?? null);
+
+/** Strays worth naming individually, newest-looking first. Capped so the panel never grows unbounded. */
+const strayList = computed(() =>
+  (serve.value?.processes ?? []).filter((p) => p.kind === "stray").slice(0, 6),
+);
+
+const serveMessage = computed(() => {
+  const s = serve.value;
+  if (!s || s.level === "ok") return "";
+  const noun = s.strays === 1 ? "process" : "processes";
+  const dead = s.deadRoot > 0 ? ` ${s.deadRoot} of them are serving a directory that no longer exists.` : "";
+  const busy = s.inFlight > 0 ? ` (${s.inFlight} more are in-flight under a live parent and not counted.)` : "";
+  return s.level === "warn"
+    ? `${s.strays} abandoned repoos serve ${noun} — enough to starve the close-out gate and fail it on unrelated flaky tests.${dead}${busy}`
+    : `${s.strays} abandoned repoos serve ${noun} left over from a task or test run.${dead}${busy}`;
+});
 </script>
 
 <template>
@@ -120,7 +138,27 @@ const hasData = computed(() => systemStats.value !== null);
           <div class="metric-extra">
             <span>Free: {{ fmtBytes(systemStats!.machine.freeMem) }}</span>
             <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
+            <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
+              Serve: {{ serve.total }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template><template
+                v-else-if="serve.inFlight"
+              > ({{ serve.inFlight }} busy)</template>
+            </span>
           </div>
+        </div>
+      </div>
+
+      <div v-if="serve && serve.level !== 'ok'" class="serve-alert" :class="serve.level">
+        <div class="serve-alert-head">
+          <span class="serve-alert-icon">{{ serve.level === "warn" ? "!" : "i" }}</span>
+          <span>{{ serveMessage }}</span>
+        </div>
+        <div class="serve-alert-list">
+          <span v-for="p in strayList" :key="p.pid" class="serve-chip" :class="{ dead: !p.rootExists }">
+            {{ p.pid }}<template v-if="p.port">:{{ p.port }}</template>
+          </span>
+          <span v-if="serve.strays > strayList.length" class="serve-more">
+            +{{ serve.strays - strayList.length }} more
+          </span>
         </div>
       </div>
 
@@ -196,6 +234,89 @@ const hasData = computed(() => systemStats.value !== null);
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.serve-bad {
+  color: var(--amber, #f5a524);
+  font-weight: 600;
+}
+
+.serve-alert {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.serve-alert.notice {
+  border-color: color-mix(in srgb, var(--amber, #f5a524) 40%, transparent);
+  background: color-mix(in srgb, var(--amber, #f5a524) 8%, transparent);
+  color: var(--txt);
+}
+
+.serve-alert.warn {
+  border-color: color-mix(in srgb, var(--red, #f31260) 45%, transparent);
+  background: color-mix(in srgb, var(--red, #f31260) 10%, transparent);
+  color: var(--txt);
+}
+
+.serve-alert-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.serve-alert-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.serve-alert.notice .serve-alert-icon {
+  background: color-mix(in srgb, var(--amber, #f5a524) 25%, transparent);
+  color: var(--amber, #f5a524);
+}
+
+.serve-alert.warn .serve-alert-icon {
+  background: color-mix(in srgb, var(--red, #f31260) 25%, transparent);
+  color: var(--red, #f31260);
+}
+
+.serve-alert-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+  padding-left: 24px;
+}
+
+.serve-chip {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--chip-bg, rgba(255, 255, 255, 0.06));
+  color: var(--txt-dim);
+}
+
+.serve-chip.dead {
+  color: var(--red, #f31260);
+  background: color-mix(in srgb, var(--red, #f31260) 12%, transparent);
+}
+
+.serve-more {
+  font-size: 11px;
+  color: var(--txt-dim);
+  align-self: center;
 }
 
 .metric-label {
