@@ -2,14 +2,14 @@
 id: "0206"
 title: "Title: Add integration pipeline status bar pinned to work…"
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/title-add-integration-pipeline-status-ba
 created_at: "2026-08-15T03:45:30Z"
-updated_at: "2026-08-15T05:18:32Z"
+updated_at: "2026-08-15T05:23:21Z"
 ---
 Title: Add integration pipeline status bar pinned to work queue
 
@@ -35,3 +35,4 @@ The UI needs a new pinned Vue component on the Work page that subscribes to inte
 - 2026-08-15T04:08:08Z · status draft→inbox
 - 2026-08-15T04:08:10Z · status inbox→ready
 - 2026-08-15T04:15:09Z · status ready→active, branch
+- 2026-08-15T05:23:21Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
