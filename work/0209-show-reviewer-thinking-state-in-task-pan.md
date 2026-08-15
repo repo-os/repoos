@@ -2,14 +2,14 @@
 id: "0209"
 title: Show reviewer thinking state in task panel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T04:35:11Z"
+updated_at: "2026-08-15T05:46:04Z"
 ---
 ## Problem
 
@@ -56,10 +56,8 @@ actions appear as they do today.
 ## Related
 
 - AGENTS.md "Review and sign-off" section (reviewer that runs automatically when a task lands in `review`).
-</parameter>
-</invoke>
-</｜DSML｜tool_calls>
 
 ## Activity
 
 - 2026-08-15T04:35:11Z · created · unknown
+- 2026-08-15T05:46:04Z · status inbox→ready
