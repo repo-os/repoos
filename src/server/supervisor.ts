@@ -16,6 +16,7 @@ import { join } from "node:path";
 import type { RepoOSConfig, SupervisorConfig, SupervisorHeartbeat, TaskHealthStatus, Task } from "../core/types.js";
 import type { RepoEvent } from "./live-index.js";
 import type { LiveIndex } from "./live-index.js";
+import { createLogger, type Logger } from "../core/logger.js";
 
 /** Default supervisor configuration. */
 export const DEFAULT_SUPERVISOR_CONFIG: SupervisorConfig = {
@@ -88,6 +89,10 @@ export class AgentSupervisor {
   private running = false;
   private lastCycleId = 0;
   private auditLog: SupervisorCycleResult[] = [];
+  /** Own logger, same pattern as ReviewManager (0187): the supervisor was the
+   *  one agent in the system with no logging at all — its JSON audit log in
+   *  the cache dir is a separate, UI-facing thing, not the NDJSON pipeline. */
+  private readonly logger: Logger;
 
   constructor(
     cfg: RepoOSConfig,
@@ -98,6 +103,7 @@ export class AgentSupervisor {
     this.config = new SupervisorConfig_(cfg.supervisor);
     this.index = index;
     this.emitEvent = emitEvent;
+    this.logger = createLogger(cfg.root);
     this.loadAuditLog();
   }
 
@@ -159,6 +165,15 @@ export class AgentSupervisor {
     this.auditLog.push(result);
     this.trimAuditLog();
     this.saveAuditLog();
+
+    this.logger.agent("supervisor", warnings > 0 ? "warn" : "info", "supervision cycle complete", {
+      cycleId,
+      mode: result.mode,
+      totalActive: result.totalActive,
+      healthy,
+      warnings,
+      flagged: reports.filter((r) => r.warning || r.action).map((r) => ({ id: r.id, status: r.status, warning: r.warning, action: r.action })),
+    });
 
     this.emitHeartbeat(result);
 

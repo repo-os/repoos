@@ -322,6 +322,47 @@ export function resetServeScanCache(): void {
   serveScanCache = null;
 }
 
+/**
+ * Reap every `stray` process the census finds — a process whose spawning
+ * parent is confirmed dead (reparented to PID 1). This is safe by
+ * construction: `in-flight` processes (a live parent still supervising them,
+ * e.g. the close-out gate's own test suite mid-run) are never included, and
+ * neither is the control plane or a known preview. Killing a stray destroys
+ * no live work — nothing will ever come back to claim it.
+ *
+ * Root cause this offsets (#0216): a failed reload-replacement handoff kills
+ * only the direct child process (`ReloadManager.killChild`, plain SIGTERM,
+ * not a process-group kill), so anything that child spawned before failing
+ * its readiness check survives as an orphan. Under repeated failed reload
+ * attempts this accumulates fast enough to strain the whole machine, not just
+ * starve the close-out gate. This periodic sweep is the general safety net;
+ * the process-group fix in reload.ts is the more targeted root-cause fix,
+ * tracked separately.
+ */
+export function reapStrayServeProcesses(
+  serverPid: number,
+  knownPids: Set<number>,
+  kill: (pid: number, signal: string) => void = process.kill.bind(process),
+  scan: (serverPid: number, knownPids: Set<number>) => ServeScan | null = (p, k) => {
+    resetServeScanCache();
+    return scanServeProcesses(p, k);
+  },
+): number {
+  const result = scan(serverPid, knownPids);
+  if (!result) return 0;
+  let reaped = 0;
+  for (const p of result.processes) {
+    if (p.kind !== "stray") continue;
+    try {
+      kill(p.pid, "SIGTERM");
+      reaped++;
+    } catch {
+      /* already gone */
+    }
+  }
+  return reaped;
+}
+
 export interface SampleSystemOptions {
   serverPid: number;
   cacheDir: string;
