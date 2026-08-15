@@ -2,14 +2,14 @@
 id: "0201"
 title: "Let's add a new agent to \"build your team\"  called the \"D…"
 type: feature
-status: ready
+status: active
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/let-s-add-a-new-agent-to-build-your-team
 created_at: "2026-08-14T15:46:05Z"
-updated_at: "2026-08-15T02:51:18Z"
+updated_at: "2026-08-15T03:13:18Z"
 ---
 Let's add a new agent to "build your team" called the "Debugger Agent". If there's ever a bug you can copy-paste it to him and ask what's up — he diagnoses the root cause and suggests a fix.
 
@@ -46,3 +46,4 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 - 2026-08-15T02:44:11Z · status inbox→ready
 - 2026-08-15T02:44:18Z · status ready→active, branch
 - 2026-08-15T02:51:18Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T03:13:18Z · status ready→active
