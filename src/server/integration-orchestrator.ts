@@ -14,6 +14,7 @@ import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
 import type { RepositoryLock } from "./repo-lock.js";
+import type { Logger } from "../core/logger.js";
 import {
   currentBranch,
   runGit,
@@ -112,6 +113,7 @@ export class CloseOutOrchestrator {
     private repoLock?: RepositoryLock,
     private getTask?: (taskId: string) => Task | null,
     private onProgress?: (step: DoneStep) => void,
+    private logger?: Logger,
   ) {}
 
   /**
@@ -128,6 +130,11 @@ export class CloseOutOrchestrator {
 
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
+
+    this.logger?.integration(job.taskId, "info", `Processing job phase: ${job.phase}`, {
+      taskId: job.taskId,
+      phase: job.phase,
+    });
 
     try {
       if (!isGitRepo(root)) {

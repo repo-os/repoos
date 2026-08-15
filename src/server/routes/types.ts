@@ -8,6 +8,7 @@ import type { ReviewManager } from "../review.js";
 import type { CloseOutLock } from "../done.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
+import type { Logger } from "../../core/logger.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -22,6 +23,7 @@ export interface RouteContext {
   previews: PreviewManager;
   reviews: ReviewManager;
   repoos: RepoOS;
+  logger: Logger;
   emitEvent: (e: RepoEvent) => void;
   closeOutLock: CloseOutLock;
   jobCoordinator: JobCoordinator;
