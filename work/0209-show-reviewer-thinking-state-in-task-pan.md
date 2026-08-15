@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
 cli_override: claude code
-model_override: default
+model_override: haiku
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:53:42Z"
+updated_at: "2026-08-15T07:53:47Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ actions appear as they do today.
 - 2026-08-15T07:44:44Z · status review→ready
 - 2026-08-15T07:44:58Z · status ready→active
 - 2026-08-15T07:53:42Z · cli_override, model_override
+- 2026-08-15T07:53:47Z · model_override
