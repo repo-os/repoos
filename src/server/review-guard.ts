@@ -79,7 +79,11 @@ export async function guardReviewTransition(
 
   const unstageGenerated = await runGit(
     registered,
-    ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
+    // The guard owns the index for this commit. Clear any stale staging (for
+    // example a prior accidental `git add -f node_modules`) before selectively
+    // staging implementation changes below. This leaves working-tree edits
+    // untouched.
+    ["reset", "--quiet", "HEAD", "--", "."],
     10_000,
   );
   if (unstageGenerated.status !== 0) {
