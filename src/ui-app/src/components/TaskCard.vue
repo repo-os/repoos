@@ -98,16 +98,22 @@ interface CardHint {
   cls: string;
 }
 
+/** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
-  if (t.status === "review" && repo.reviewFor(t.id)?.running) {
-    return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
-  }
-  if (t.status === "active" || t.status === "review") {
-    if (repo.isRunning(t.id)) {
-      return { label: "running", title: "agent running — click to watch the session", cls: "tc-run" };
+  if (t.status === "review") {
+    if (repo.reviewFor(t.id)?.running) {
+      return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
-    if (t.status === "review") return null;
+    if (repo.isRunning(t.id)) {
+      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+    }
+    return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
+  }
+  if (t.status === "active") {
+    if (repo.isRunning(t.id)) {
+      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+    }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
@@ -178,8 +184,9 @@ async function openAgent(): Promise<void> {
     :class="{
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
-      running: repo.isRunning(task.id),
+      coding: repo.isRunning(task.id),
       reviewing: task.status === 'review' && repo.reviewFor(task.id)?.running,
+      'waiting-for-human': task.status === 'review' && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
       'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
@@ -219,9 +226,9 @@ async function openAgent(): Promise<void> {
         class="tc-hint"
         :class="hint.cls"
         :title="hint.title"
-        @click.stop="hint.cls === 'tc-run' ? openAgent() : undefined"
+        @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined"
       >
-        <ActivityIndicator v-if="hint.cls === 'tc-run'" />
+        <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
         <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
         {{ hint.label }}
       </span>
