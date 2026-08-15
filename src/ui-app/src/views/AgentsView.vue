@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { labelForModel, useConfigStore } from "../stores/config";
+import { useRoute, useRouter } from "vue-router";
+import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
@@ -22,7 +22,43 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
 const router = useRouter();
+const route = useRoute();
 const docs = useDocsStore();
+
+type AgentTab = "default" | "custom" | "team" | "detected";
+
+const AGENT_TAB_LABELS: Record<AgentTab, string> = {
+  default: "Default Agents",
+  custom: "Custom Agents",
+  team: "Build Your Team",
+  detected: "Detected Coding Agents",
+};
+
+const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected"];
+
+const activeTab = ref<AgentTab>("default");
+
+// Deep-linking: the active tab is reflected in the URL as ?tab=<id> so users
+// can link straight to a section. Falls back to "default" on page load.
+const tabFromQuery = (): AgentTab => {
+  const q = route.query.tab;
+  return typeof q === "string" && (AGENT_TABS as readonly string[]).includes(q) ? (q as AgentTab) : "default";
+};
+
+watch(
+  () => route.query.tab,
+  () => {
+    const next = tabFromQuery();
+    if (next !== activeTab.value) activeTab.value = next;
+  },
+  { immediate: true },
+);
+
+watch(activeTab, (tab) => {
+  if (tabFromQuery() !== tab) {
+    void router.replace({ query: { ...route.query, tab } });
+  }
+});
 
 const RECOMMENDATIONS_DOC = "docs/agent-model-recommendations.md";
 
@@ -335,7 +371,20 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <div class="agent-tabs">
+        <button
+          v-for="t in AGENT_TABS"
+          :key="t"
+          type="button"
+          class="tab-btn"
+          :class="{ active: activeTab === t }"
+          @click="activeTab = t"
+        >
+          {{ AGENT_TAB_LABELS[t] }}
+        </button>
+      </div>
+
+      <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
           <a
@@ -430,7 +479,7 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom agents
         </div>
@@ -529,7 +578,7 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--green)"></span>Build your team
         </div>
@@ -542,7 +591,7 @@ onUnmounted(() => {
         <BuiltInAgentCard agent="architect" />
       </Card>
 
-      <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-if="!detectError" v-show="activeTab === 'detected'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
           Detected coding agents
