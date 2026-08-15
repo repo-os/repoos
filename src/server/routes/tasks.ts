@@ -17,6 +17,7 @@ import {
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError } from "../../core/git.js";
+import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { bootstrap } from "../../core/bootstrap.js";
@@ -193,10 +194,22 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  if (body.status === "review" && prevStatus !== "review") {
+    // #0210: any transition into `review` must pass the same commit+validate
+    // gate the trusted handoff path enforces — never silently leave an
+    // uncommitted worktree, and never allow a vacuous (zero source changes)
+    // transition unless the task opts out via no_source_change.
+    const gate = await guardReviewTransition(config, existing);
+    if (!gate.ok) {
+      return json(res, 400, { error: `Cannot move task #${existing.id} to review: ${gate.detail}` });
+    }
+  }
+
   const updated = patchTaskFile(config, existing.absPath, body, {
     onStatusChange: onServerStatusChange,
   });
-  index.applyFileChange(updated.absPath);
+  // Guarded: the #0210 gate already ran above for transitions into review.
+  index.applyFileChange(updated.absPath, { guarded: true });
 
   if (
     prevStatus !== "review" &&
