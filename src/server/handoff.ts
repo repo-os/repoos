@@ -14,6 +14,7 @@ import { runGit, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { AgentHandoffRequest } from "./agents.js";
 import { patchTaskFile } from "./write.js";
+import { guardReviewTransition } from "./review-guard.js";
 
 export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
 
@@ -170,34 +171,9 @@ export async function handoffTask(
       }
 
       onProgress?.("commit");
-      const unstageGenerated = await runGit(
-        registered,
-        ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
-        10_000,
-      );
-      if (unstageGenerated.status !== 0) {
-        return {
-          ok: false,
-          step: "commit",
-          detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
-        };
-      }
-      const add = await runGit(
-        registered,
-        ["add", "-A", "--", ".", ":(exclude)dist", ":(exclude)screenshots", `:(exclude)${task.path}`],
-        30_000,
-      );
-      if (add.status !== 0) return { ok: false, step: "commit", detail: `git add failed: ${concise(add)}` };
-      const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
-      if (staged.status === 1) {
-        const commit = await runGit(registered, ["commit", "-m", `feat(${task.id}): implement ${task.title}`], 30_000);
-        if (commit.status !== 0) return { ok: false, step: "commit", detail: `git commit failed: ${concise(commit)}` };
-      } else if (staged.status === 0) {
-        if (!worktreeTask.noSourceChange) {
-          return { ok: false, step: "commit", detail: "no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff" };
-        }
-      } else {
-        return { ok: false, step: "commit", detail: `could not inspect staged changes: ${concise(staged)}` };
+      const gate = await guardReviewTransition(config, worktreeTask);
+      if (!gate.ok) {
+        return { ok: false, step: "commit", detail: gate.detail };
       }
 
       onProgress?.("review");

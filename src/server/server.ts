@@ -109,6 +109,7 @@ import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
+import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { CTOManager } from "./cto.js";
@@ -838,7 +839,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         onServerStatusChange,
       );
       if (result.ok) {
-        index.applyFileChange(task.absPath);
+        index.applyFileChange(task.absPath, { guarded: true });
         runner.system(task.id, "✓ Server finalization complete — task moved to review");
       } else {
         runner.system(
@@ -1012,6 +1013,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews.cancel(task.id);
     }
   };
+
+  // #0210: every transition INTO `review` that bypasses the trusted PATCH and
+  // handoff routes — a direct task-file edit picked up by the watcher — must
+  // still pass the commit/vacuity gate. The index defers such transitions to
+  // this guard; returning false reverts the file to its previous status.
+  index.setReviewGuard(async (task: Task, prev: Task): Promise<boolean> => {
+    const gate = await guardReviewTransition(config, task);
+    if (gate.ok) return true;
+    try {
+      emitEvent({
+        type: "task.progress",
+        id: task.id,
+        step: "review-rejected",
+        detail: `Direct edit to review rejected: ${gate.detail}. The task was reverted to ${prev.status}.`,
+        at: new Date().toISOString(),
+      });
+    } catch {
+      /* best-effort signalling */
+    }
+    return false;
+  });
 
   /**
    * Kick off the agent review for a task that just landed in `review`. A no-op
