@@ -78,9 +78,10 @@ const serveMessage = computed(() => {
   if (!s || s.level === "ok") return "";
   const noun = s.strays === 1 ? "process" : "processes";
   const dead = s.deadRoot > 0 ? ` ${s.deadRoot} of them are serving a directory that no longer exists.` : "";
+  const busy = s.inFlight > 0 ? ` (${s.inFlight} more are in-flight under a live parent and not counted.)` : "";
   return s.level === "warn"
-    ? `${s.strays} stray repoos serve ${noun} — enough to starve the close-out gate and fail it on unrelated flaky tests.${dead}`
-    : `${s.strays} stray repoos serve ${noun} left over from a task or test run.${dead}`;
+    ? `${s.strays} abandoned repoos serve ${noun} — enough to starve the close-out gate and fail it on unrelated flaky tests.${dead}${busy}`
+    : `${s.strays} abandoned repoos serve ${noun} left over from a task or test run.${dead}${busy}`;
 });
 </script>
 
@@ -138,7 +139,9 @@ const serveMessage = computed(() => {
             <span>Free: {{ fmtBytes(systemStats!.machine.freeMem) }}</span>
             <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
             <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
-              Serve: {{ serve.total }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template>
+              Serve: {{ serve.total }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template><template
+                v-else-if="serve.inFlight"
+              > ({{ serve.inFlight }} busy)</template>
             </span>
           </div>
         </div>

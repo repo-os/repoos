@@ -34,12 +34,19 @@ export interface ProcessInfo {
 /** A live `repoos serve` process found on the machine. */
 export interface ServeProcessInfo {
   pid: number;
+  ppid: number;
   port: number | null;
   /** Repo root the process is serving, parsed from its argv. */
   root: string | null;
   /** False when the root directory is gone — the process is definitively garbage. */
   rootExists: boolean;
-  kind: "control-plane" | "known-preview" | "stray";
+  /**
+   * `in-flight` is the one that stops this from crying wolf: the close-out
+   * gate's own test suite spawns fixture servers constantly, and while their
+   * spawning process is still alive they are doing legitimate work. Only a
+   * process whose parent has died (reparented to PID 1) is abandoned.
+   */
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
 }
 
 /**
@@ -52,8 +59,10 @@ export interface ServeProcessInfo {
  */
 export interface ServeScan {
   total: number;
-  /** Neither the control plane nor a preview RepoOS knows it started. */
+  /** Abandoned: unattributable AND the spawning process is gone. */
   strays: number;
+  /** Unattributable but still supervised by a live parent — a running test or gate. */
+  inFlight: number;
   /** Strays whose root directory no longer exists. */
   deadRoot: number;
   level: "ok" | "notice" | "warn";
@@ -231,8 +240,15 @@ export function parseServePort(command: string): number | null {
 }
 
 /**
- * Parse `ps ax -o pid=,command=` output into serve-process records. Exported
- * for testing so the classification can be exercised without spawning servers.
+ * Parse `ps ax -o pid=,ppid=,command=` output into serve-process records.
+ *
+ * Classification order matters. The control plane is checked first because the
+ * reload handoff deliberately detaches it, so it also runs with `ppid` 1 and
+ * would otherwise look abandoned. Everything else that RepoOS did not start is
+ * abandoned only if its parent is gone — a fixture server with a live vitest
+ * worker above it is the gate doing its job, not a leak.
+ *
+ * Exported for testing so classification can be exercised without spawning servers.
  */
 export function parseServeScan(
   output: string,
@@ -240,23 +256,32 @@ export function parseServeScan(
   knownPids: Set<number>,
   rootExists: (root: string | null) => boolean,
 ): ServeScan {
-  const processes: ServeProcessInfo[] = [];
+  const rows: { pid: number; ppid: number; command: string }[] = [];
+  const livePids = new Set<number>();
   for (const line of output.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const sp = trimmed.indexOf(" ");
-    if (sp === -1) continue;
-    const pid = Number(trimmed.slice(0, sp));
-    const command = trimmed.slice(sp + 1);
-    if (isNaN(pid) || !SERVE_CMD_RE.test(command)) continue;
+    const m = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+    if (!m) continue;
+    const pid = Number(m[1]);
+    livePids.add(pid);
+    rows.push({ pid, ppid: Number(m[2]), command: m[3] });
+  }
+
+  const processes: ServeProcessInfo[] = [];
+  for (const { pid, ppid, command } of rows) {
+    if (!SERVE_CMD_RE.test(command)) continue;
     const root = parseServeRoot(command);
+    // A parent of 1 means the process was reparented after its spawner died.
+    const supervised = ppid !== 1 && livePids.has(ppid);
     const kind: ServeProcessInfo["kind"] = pid === serverPid
       ? "control-plane"
       : knownPids.has(pid)
         ? "known-preview"
-        : "stray";
-    processes.push({ pid, port: parseServePort(command), root, rootExists: rootExists(root), kind });
+        : supervised
+          ? "in-flight"
+          : "stray";
+    processes.push({ pid, ppid, port: parseServePort(command), root, rootExists: rootExists(root), kind });
   }
+
   const strays = processes.filter((p) => p.kind === "stray");
   const deadRoot = strays.filter((p) => !p.rootExists).length;
   const level: ServeScan["level"] = strays.length === 0
@@ -264,7 +289,14 @@ export function parseServeScan(
     : strays.length >= SERVE_WARN_THRESHOLD
       ? "warn"
       : "notice";
-  return { total: processes.length, strays: strays.length, deadRoot, level, processes };
+  return {
+    total: processes.length,
+    strays: strays.length,
+    inFlight: processes.filter((p) => p.kind === "in-flight").length,
+    deadRoot,
+    level,
+    processes,
+  };
 }
 
 let serveScanCache: { at: number; scan: ServeScan } | null = null;
@@ -278,7 +310,7 @@ const SERVE_SCAN_TTL_MS = 20_000;
 export function scanServeProcesses(serverPid: number, knownPids: Set<number>): ServeScan | null {
   const now = Date.now();
   if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
-  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,command="]);
+  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,command="]);
   if (output === null) return serveScanCache?.scan ?? null;
   const scan = parseServeScan(output, serverPid, knownPids, (root) => root !== null && existsSync(root));
   serveScanCache = { at: now, scan };
