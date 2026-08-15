@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
 model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-15T07:54:13Z"
+updated_at: "2026-08-15T13:00:01Z"
 ---
 ## Problem
 
