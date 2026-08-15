@@ -2,14 +2,14 @@
 id: "0208"
 title: Make Ross and CTO chats a full side panel
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-ross-and-cto-chats-a-full-side-pane
 created_at: "2026-08-15T04:12:14Z"
-updated_at: "2026-08-15T04:12:32Z"
+updated_at: "2026-08-15T04:12:34Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ and feel like first-class panels rather than secondary, undersized views.
 
 - 2026-08-15T04:12:14Z · created · unknown
 - 2026-08-15T04:12:32Z · status inbox→ready
+- 2026-08-15T04:12:34Z · status ready→active, branch
