@@ -8,9 +8,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-integration-pipeline-status-bar-pinn
+model_override: default
 pm_model_override: default
 created_at: "2026-08-15T03:48:14Z"
-updated_at: "2026-08-15T09:27:11Z"
+updated_at: "2026-08-15T09:27:12Z"
 ---
 ## Problem
 
@@ -73,3 +74,4 @@ The bar has a small expand/collapse toggle so it can fold to a thin strip when n
 - 2026-08-15T03:48:38Z · status ready→active, branch
 - 2026-08-15T05:14:16Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T09:27:11Z · pm_model_override
+- 2026-08-15T09:27:12Z · model_override
