@@ -2,14 +2,14 @@
 id: "0210"
 title: Close the direct-PATCH bypass around handoff commit validation
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T05:29:35Z"
-updated_at: "2026-08-15T05:29:35Z"
+updated_at: "2026-08-15T05:45:52Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Any transition into `review` — regardless of whether it arrives via `PATCH /ap
 ## Activity
 
 - 2026-08-15T05:29:35Z · created · unknown
+- 2026-08-15T05:45:52Z · status inbox→ready
