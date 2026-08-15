@@ -2,7 +2,7 @@
 id: "0210"
 title: Close the direct-PATCH bypass around handoff commit validation
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/close-the-direct-patch-bypass-around-han
 model_override: default
 created_at: "2026-08-15T05:29:35Z"
-updated_at: "2026-08-15T10:19:28Z"
+updated_at: "2026-08-15T10:52:55Z"
 review_rounds: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Any transition into `review` — regardless of whether it arrives via `PATCH /ap
 - 2026-08-15T05:45:54Z · status ready→active, branch
 - 2026-08-15T06:31:32Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T10:19:28Z · model_override
+- 2026-08-15T10:52:55Z · status review→done · merge conflict resolved and branch merged
