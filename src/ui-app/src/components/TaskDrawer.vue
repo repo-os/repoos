@@ -323,6 +323,7 @@ async function pauseWork(): Promise<void> {
 }
 
 const confirmDelete = ref(false);
+const confirmHotfix = ref(false);
 
 async function deleteTask(): Promise<void> {
   if (!ui.active) return;
@@ -333,6 +334,19 @@ async function deleteTask(): Promise<void> {
   } catch (err) {
     repo.onError(err);
     confirmDelete.value = false;
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function startHotfix(target: "branch" | "main"): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.activateHotfix(ui.active, target);
+    confirmHotfix.value = false;
+  } catch (err) {
+    repo.onError(err);
   } finally {
     ui.saving = false;
   }
@@ -2201,6 +2215,15 @@ function resetFreeformOverrides(): void {
               >
                 Delete task
               </Button>
+              <Button
+                v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
+                variant="outline"
+                size="sm"
+                :disabled="ui.saving"
+                @click="confirmHotfix = true"
+              >
+                Hotfix
+              </Button>
             </template>
             <template v-else>
               <p class="delete-prompt">
@@ -2216,6 +2239,34 @@ function resetFreeformOverrides(): void {
                 </Button>
               </div>
             </template>
+          </div>
+          <div v-if="confirmHotfix" class="hotfix-confirm">
+            <p>
+              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
+              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
+              Previews and diff-based review are skipped.
+            </p>
+            <div class="delete-actions">
+              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                :disabled="ui.saving"
+                @click="startHotfix('branch')"
+              >
+                Hotfix on branch
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                :disabled="ui.saving"
+                @click="startHotfix('main')"
+              >
+                Hotfix on main
+              </Button>
+            </div>
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">

@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { createRepositoryLock } from "../../server/repo-lock.js";
+import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -35,6 +35,33 @@ function makeRepo(): { root: string; clean: () => void } {
 }
 
 describe("publish-time dirty-main guard (#0211)", () => {
+  it("refuses publication while a hotfix owns the main checkout", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T2";
+      expect(ensureWorktree(root, branch).ok).toBe(true);
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T2", branch } as any);
+      coordinator.updateJob("T2", { phase: "publishing" });
+      const rootLock = createRootLock(root);
+      expect(rootLock.acquire("H1", "hotfix")).toBe(true);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        rootLock,
+      );
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(false);
+      expect(result.reason).toMatch(/held by hotfix.*#H1/i);
+      expect(rootLock.getHolder()).toEqual({ taskId: "H1", kind: "hotfix" });
+    } finally {
+      clean();
+    }
+  });
+
   it("refuses to publish into a dirty main with an actionable reason and does not merge", async () => {
     const { root, clean } = makeRepo();
     try {
@@ -71,6 +98,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
         { root } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
+        createRootLock(root),
       );
 
       const front = coordinator.peekNext();

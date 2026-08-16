@@ -208,6 +208,18 @@ export function classifyDeadAgentReason(
  */
 export function autoTransitionTarget(config: RepoOSConfig, task: Task): "ready" | "review" {
   if (!task.branch) return "ready";
+  if (task.hotfix) {
+    try {
+      const out = require("node:child_process").execFileSync("git", ["status", "--porcelain"], {
+        cwd: config.root,
+        encoding: "utf8",
+        timeout: 4000,
+      });
+      return out.trim() ? "review" : "ready";
+    } catch {
+      return "ready";
+    }
+  }
   const status = worktreeStatus(config.root, task.branch);
   return status.dirty ? "review" : "ready";
 }

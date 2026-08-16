@@ -30,6 +30,8 @@ const KEY_ORDER = [
   "pm_agent_override",
   "pm_cli_override",
   "pm_model_override",
+  "hotfix",
+  "hotfix_target",
   "created_at",
   "updated_at",
 ];
@@ -205,6 +207,10 @@ export function parseTask(args: ParseTaskArgs): Task {
     pmAgentOverride,
     pmCliOverride,
     pmModelOverride,
+    hotfix: data.hotfix === true ? true : undefined,
+    hotfixTarget: data.hotfix === true
+      ? (data.hotfix_target === "main" ? "main" : "branch")
+      : undefined,
     git: args.git ?? emptyGitInfo(),
   };
 }
@@ -234,6 +240,10 @@ export function serializeTask(task: Task): string {
   if (task.pmAgentOverride) data.pm_agent_override = task.pmAgentOverride;
   if (task.pmCliOverride) data.pm_cli_override = task.pmCliOverride;
   if (task.pmModelOverride) data.pm_model_override = task.pmModelOverride;
+  if (task.hotfix) {
+    data.hotfix = true;
+    data.hotfix_target = task.hotfixTarget ?? "branch";
+  }
   if (task.created_at) data.created_at = normalizeTimestamp(task.created_at);
   if (task.updated_at) data.updated_at = normalizeTimestamp(task.updated_at);
   // re-attach preserved unknown keys
