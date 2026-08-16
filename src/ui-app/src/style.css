@@ -294,6 +294,12 @@
   .feed-meta{font-size:10px;color:var(--txt-faint);margin-top:3px;display:flex;gap:9px;font-family:'JetBrains Mono',monospace}
   .feed-empty{padding:40px 17px;text-align:center;color:var(--txt-faint);font-size:12px;font-family:'JetBrains Mono',monospace}
 
+  /* needs-you panel */
+  .needs-reasons{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+  .reason-tag{font-size:10px;line-height:1;padding:3px 7px;border-radius:20px;background:var(--amber-tint);color:var(--amber);font-weight:600;font-family:'JetBrains Mono',monospace}
+  .needs-empty{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .needs-cta{font-family:var(--font-sans)}
+
   /* board */
   /* The work queue is a fixed desktop surface: the board consumes the
      available page height and each status column owns its own scroll area.

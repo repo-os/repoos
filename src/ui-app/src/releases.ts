@@ -1,7 +1,7 @@
 import type { Task } from "./types";
 
 /** Newest successful task-backed releases, bounded for a concise dashboard. */
-export function releaseTimelineTasks(tasks: Task[], limit = 8): Task[] {
+export function releaseTimelineTasks(tasks: Task[], limit = 12): Task[] {
   return tasks
     .filter((task) => task.status === "done" && task.releasedAt)
     .slice()
