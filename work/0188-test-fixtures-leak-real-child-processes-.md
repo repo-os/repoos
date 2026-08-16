@@ -2,15 +2,15 @@
 id: "0188"
 title: Test fixtures leak real child processes on interrupt across the suite (vitest worker-thread signal gap)
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/test-fixtures-leak-real-child-processes-
 model_override: default
 created_at: "2026-08-14T06:34:37Z"
-updated_at: "2026-08-16T11:45:10Z"
+updated_at: "2026-08-16T11:45:14Z"
 ---
 ## Activity
 
@@ -89,3 +89,4 @@ archaeology needed to notice or fix a leak.
 
 - 2026-08-14T10:32:36Z · status inbox→ready
 - 2026-08-16T11:45:10Z · model_override
+- 2026-08-16T11:45:14Z · status ready→active, branch
