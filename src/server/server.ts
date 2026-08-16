@@ -148,6 +148,8 @@ import {
   getChat,
   sendChatMessage,
   initInfoHandlers,
+  getDebugger,
+  sendDebuggerMessage,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -1031,6 +1033,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
     for (const name of Object.keys(agents)) {
+      // Chat-only agents (the Debugger) have no scan to schedule — their
+      // floating-head conversation is the only interaction surface (0201).
+      if (name === "debugger") continue;
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
       void runBuiltInAgent(name, repoos.config, logger)
@@ -1283,6 +1288,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("GET", "/api/debugger", getDebugger);
+  router.register("POST", "/api/debugger/message", sendDebuggerMessage);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
@@ -1331,6 +1338,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
     const cfg = ctx.repoos.config;
+    // The Debugger is chat-only (its floating head / bug-paste panel). It has
+    // no scan to run now, and exposing a dead endpoint invites a 500 when the
+    // dispatch returns null — reject it explicitly before touching the
+    // in-flight guard (0201).
+    if (agentName === "debugger") {
+      return json(res, 400, {
+        error: `"${agentName}" is chat-only — talk to it from its floating head instead of running it`,
+      });
+    }
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
     if (builtInRun.inFlight) {
