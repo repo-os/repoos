@@ -27,7 +27,8 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveCto, runPrompt, reviewCommand, type AgentRunner } from "./agents.js";
+import { resolveCto, runPrompt, reviewCommand, usageCostSource, type AgentRunner, type PromptResult } from "./agents.js";
+import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 import { patchTaskFile } from "./write.js";
 
 export interface CTOReport {
@@ -108,11 +109,14 @@ export class CTOManager {
   private readonly sessions = new Map<string, AgentOutputEntry[]>();
   private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly runner?: AgentRunner;
+  /** Database for recording CTO sessions (0230). */
+  private readonly db: RepoOSDb | null;
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void, runner?: AgentRunner) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
+    this.db = getRepoOSDb(config.root);
   }
 
   enabled(): boolean {
@@ -224,6 +228,7 @@ export class CTOManager {
       state === "ok" ? "✓ CTO monitoring complete" : `✗ CTO run failed: ${result.error ?? "no report"}`,
     );
     this.persistSession();
+    this.recordRun(agent, result, report.at, state === "ok");
     this.emit({
       type: "cto",
       state: state === "ok" ? "ready" : "failed",
@@ -279,12 +284,15 @@ export class CTOManager {
     if (!result.ok) {
       this.appendMarker(`✗ the CTO could not answer: ${result.error ?? "unknown error"}`);
       this.persistSession();
+      this.recordRun(agent, result, now(), false);
       this.emit({ type: "cto", state: "failed", at: now() });
       return { ok: false, reason: result.error ?? "the CTO failed to answer" };
     }
 
+    const completedAt = now();
     this.persistSession();
-    this.emit({ type: "cto", state: "ready", at: now() });
+    this.recordRun(agent, result, completedAt, true);
+    this.emit({ type: "cto", state: "ready", at: completedAt });
     return { ok: true };
   }
 
@@ -479,6 +487,40 @@ ${body}
   }
 
   // ---- private methods ----
+
+  /**
+   * Record a CTO run to the database (0230). Persisted with the cto session
+   * type, real wall-clock elapsed time, and any CLI-reported tokens/cost.
+   * Best-effort — never crashes the monitor.
+   */
+  private recordRun(agent: Agent, result: PromptResult, completedAt: string, success: boolean): void {
+    if (!this.db) return;
+    try {
+      const sessionId = `cto:${completedAt}`;
+      const elapsedMs = result.elapsedMs ?? 0;
+      const costSource = usageCostSource(agent, result);
+      this.db.upsertSession({
+        sessionId,
+        sessionType: "cto",
+        taskId: null, // CTO observes the whole board, not one task
+        agent: agent.name,
+        model: agent.model,
+        codingAgent: agent.cli,
+        startedAt: new Date(Date.parse(completedAt) - elapsedMs).toISOString(),
+        endedAt: completedAt,
+        elapsedMs,
+        inputTokens: result.inputTokens ?? undefined,
+        outputTokens: result.outputTokens ?? undefined,
+        totalTokens: result.totalTokens ?? undefined,
+        costUsd: result.costUsd ?? undefined,
+        costSource,
+        status: success ? "finished" : "errored",
+        lastActivityAt: completedAt,
+      });
+    } catch {
+      // Database recording is best-effort and must never crash.
+    }
+  }
 
   private sessionId(): string {
     return `${CTO_SESSION_ID_PREFIX}board`;
