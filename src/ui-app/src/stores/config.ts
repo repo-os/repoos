@@ -87,7 +87,10 @@ export const useConfigStore = defineStore("config", () => {
   }
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
+  const visibleFields = computed(() =>
+    schema.value.filter((f) => f.tier !== "guarded" && f.group !== "voice"),
+  );
+  const voiceFields = computed(() => schema.value.filter((f) => f.group === "voice"));
   const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
 
   function animateTheme(): void {
@@ -273,6 +276,7 @@ export const useConfigStore = defineStore("config", () => {
     showAdvanced,
     form,
     visibleFields,
+    voiceFields,
     guardedFields,
     load,
     save,
