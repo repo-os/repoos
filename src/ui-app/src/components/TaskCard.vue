@@ -259,7 +259,7 @@ async function openAgent(): Promise<void> {
         <span class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold" :class="task.priority">{{ task.priority }}</span>
       </div>
 
-      <h3 class="mt-[11px] text-[13px] font-semibold leading-[1.4]">{{ task.title }}</h3>
+      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">{{ task.title }}</h3>
 
       <div class="mt-[11px] flex flex-wrap gap-[6px]">
         <span class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">{{ task.area }}</span>
