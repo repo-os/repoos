@@ -30,7 +30,7 @@ const pmModelOverride = ref<string | null>(null);
 const showAgentConfig = ref(false);
 
 function pmSessionId(taskId: string): string {
-  return `pm-task:${taskId}`;
+  return `pm-task-v2:${taskId}`;
 }
 
 const tasks = computed(() => repo.tasks);

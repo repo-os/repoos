@@ -1269,6 +1269,29 @@ User question:
 ${question}`;
 }
 
+/** Build the writable task-management mission used only by the PM chat. */
+export function taskPmPrompt(
+  request: string,
+  taskContext: string,
+  agent: Agent,
+): string {
+  return `You are the Product Manager for RepoOS, working on the task below. You are not Ross or the read-only repository assistant.
+
+${agent.instructions ?? "Own the roadmap and keep task specifications accurate."}
+
+Rules:
+- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands or HTTP API endpoints.
+- Never edit \`work/*.md\` files directly. Never move task files between folders.
+- Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
+- Explain the requested task change briefly after applying it, including the task ID and what changed.
+
+Task context:
+${taskContext}
+
+User request:
+${request}`;
+}
+
 /** The mission handed to the coding agent: instructions + task pointer. */
 function missionFor(
   task: Task,
@@ -1741,12 +1764,13 @@ export class AgentRunner {
     return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
   }
 
-  /** Start the persistent, non-task repository conversation. */
+  /** Start a persistent, non-task conversation with an explicit role mission. */
   startChat(
     sessionId: string,
     text: string,
     agent: Agent,
     repositoryContext: string,
+    promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
     if (this.entries.has(sessionId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
@@ -1767,7 +1791,7 @@ export class AgentRunner {
       stalledEmitted: false,
     };
     this.sessions.set(sessionId, session);
-    const mission = repoGuidePrompt(text, repositoryContext, agent);
+    const mission = promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
     return this.spawnTurn(sessionId, cmd, args, this.config.root);
   }

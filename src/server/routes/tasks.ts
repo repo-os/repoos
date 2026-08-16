@@ -12,6 +12,7 @@ import {
 import {
   resolveAgentForTask,
   resolvePmAgent,
+  taskPmPrompt,
   runPrompt,
   deriveBranch,
 } from "../agents.js";
@@ -901,7 +902,9 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 404, { error: `Task #${id} not found` });
   }
 
-  const pmSessionId = `pm-task:${id}`;
+  // v2 deliberately starts a clean PM conversation: older PM chats were
+  // incorrectly launched with Ross's read-only mission.
+  const pmSessionId = `pm-task-v2:${id}`;
   const body = (await readBody(req)) as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) {
@@ -962,7 +965,7 @@ ${existing.body || "(no description)"}`;
     ? runner.send(pmSessionId, text, pm, {
         resumePreamble: `Task context:\n${taskContext}`,
       })
-    : runner.startChat(pmSessionId, text, pm, taskContext);
+    : runner.startChat(pmSessionId, text, pm, taskContext, taskPmPrompt);
 
   if (!result.ok && result.busy) {
     return json(res, 409, { error: result.reason ?? "PM is busy" });

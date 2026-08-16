@@ -194,8 +194,8 @@ describe("agent session persistence", () => {
 
   it("persists and reloads a PM conversation across a server restart", async () => {
     const fx = fixture("done");
-    const sessionId = "pm-task:0001";
-    const pmFile = join(fx.root, ".repoos", "sessions", "pm-task%3A0001.json");
+    const sessionId = "pm-task-v2:0001";
+    const pmFile = join(fx.root, ".repoos", "sessions", "pm-task-v2%3A0001.json");
     const first = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
 
     expect(first.startChat(sessionId, "Please revise this task", agent, "Task context").ok).toBe(true);
