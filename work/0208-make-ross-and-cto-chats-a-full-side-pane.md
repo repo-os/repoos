@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/make-ross-and-cto-chats-a-full-side-pane
+model_override: default
 created_at: "2026-08-15T04:12:14Z"
-updated_at: "2026-08-16T09:56:14Z"
+updated_at: "2026-08-16T09:56:26Z"
 ---
 ## Problem
 
@@ -67,3 +68,4 @@ and feel like first-class panels rather than secondary, undersized views.
 - 2026-08-15T11:02:06Z · status review→done, release:success
 - 2026-08-16T09:56:13Z · status done→ready
 - 2026-08-16T09:56:14Z · status ready→active
+- 2026-08-16T09:56:26Z · model_override
