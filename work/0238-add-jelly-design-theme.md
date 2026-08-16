@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-jelly-design-theme
+model_override: default
 created_at: "2026-08-16T19:05:22Z"
-updated_at: "2026-08-16T19:06:42Z"
+updated_at: "2026-08-16T19:06:57Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ The user picks **Jelly** from the **Design theme** dropdown in Settings. The who
 - 2026-08-16T19:05:22Z · created · unknown
 - 2026-08-16T19:06:08Z · status inbox→ready
 - 2026-08-16T19:06:42Z · status ready→active, branch
+- 2026-08-16T19:06:57Z · model_override
