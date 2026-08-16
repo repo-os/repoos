@@ -5,14 +5,16 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-12T06:39:43Z"
-updated_at: "2026-08-12T06:39:43Z"
+updated_at: "2026-08-16T02:52:56Z"
 ---
 Let's remove the "assigned to AI tab" in the control page, since everything is pretty much assigned to ai, what we should probably replace it with is actions needed by human (i.e. assigned to human)
 
 ## Activity
 
 - 2026-08-12T06:39:43Z · created · unknown
+- 2026-08-16T02:52:56Z · model_override
