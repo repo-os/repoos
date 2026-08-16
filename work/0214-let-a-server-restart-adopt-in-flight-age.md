@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/let-a-server-restart-adopt-in-flight-age
+model_override: default
 created_at: "2026-08-15T06:28:51Z"
-updated_at: "2026-08-15T20:43:48Z"
+updated_at: "2026-08-16T00:18:44Z"
 review_rounds: 1
 ---
 ## Problem
@@ -61,3 +62,4 @@ Make a restart safe to force at any time by giving in-flight turns something dur
 - 2026-08-15T20:28:31Z · model_override
 - 2026-08-15T20:43:35Z · model_override
 - 2026-08-15T20:43:46Z · status review→active
+- 2026-08-16T00:18:44Z · model_override
