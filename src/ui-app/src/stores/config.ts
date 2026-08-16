@@ -191,6 +191,12 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
+  /** Mirror the server-side `whisperEnabled` flag onto the form so UI
+   * components (mic buttons) can gate on it without seeing the apiKey. */
+  function syncWhisperFlag(res: ConfigResponse): void {
+    form.whisperEnabled = res.config.whisperEnabled === true;
+  }
+
   async function load(): Promise<void> {
     loaded.value = false;
     error.value = "";
@@ -200,6 +206,7 @@ export const useConfigStore = defineStore("config", () => {
       data.value = res.config;
       schema.value = res.schema;
       fillForm(res);
+      syncWhisperFlag(res);
       agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
       if (res.agentsMeta) agentsMeta.value = res.agentsMeta;
       applyTheme(String(res.config.theme ?? "system"));
@@ -245,6 +252,7 @@ export const useConfigStore = defineStore("config", () => {
       const res = await api<ConfigResponse>("/api/config");
       data.value = res.config;
       fillForm(res);
+      syncWhisperFlag(res);
       applyTheme(String(res.config.theme ?? "system"));
       applyUiTheme(String(res.config.uiTheme ?? "classic"));
     } catch (err) {
