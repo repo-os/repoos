@@ -633,6 +633,22 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   return { label: "waiting for human", cls: "rs-human" };
 });
 
+/** Compact lifecycle counts: initial engineering is round one; each completed
+ * review bounce starts the next engineering pass. A task presently in review
+ * is also in its next review pass unless the engineer is actively fixing it. */
+const taskRounds = computed(() => {
+  const task = ui.active;
+  if (!task || (!task.branch && task.status === "inbox")) return { engineering: 0, review: 0 };
+  const bounced = task.extra?.review_rounds;
+  const completedReviews = typeof bounced === "number" && Number.isFinite(bounced)
+    ? Math.max(0, Math.floor(bounced))
+    : 0;
+  return {
+    engineering: completedReviews + 1,
+    review: completedReviews + (task.status === "review" && !repo.isRunning(task.id) ? 1 : 0),
+  };
+});
+
 /** Rendered (safe) Markdown of the report body. */
 const reviewHtml = computed(() =>
   review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
@@ -1898,6 +1914,13 @@ function resetFreeformOverrides(): void {
                 </SelectViewport>
               </SelectContent>
             </Select>
+            <span
+              v-if="taskRounds.engineering > 0"
+              class="rounds-badge"
+              title="Engineering and review passes for this task"
+            >
+              E{{ taskRounds.engineering }} · R{{ taskRounds.review }}
+            </span>
             <Button
               v-if="ui.active.status === 'inbox'"
               variant="outline"
@@ -1916,6 +1939,16 @@ function resetFreeformOverrides(): void {
               <Play v-if="!startingWork" class="size-3.5" />
               <ActivityIndicator v-else />
               {{ startingWork ? "Starting work…" : ui.active.status === "active" ? "Restart work" : "Start work" }}
+            </Button>
+            <Button
+              v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
+              variant="destructive"
+              :disabled="ui.saving"
+              title="Run the normal commit-and-check guard, then send this paused task to review"
+              @click="setStatus('review')"
+            >
+              <Send class="size-3.5" />
+              Review
             </Button>
             <Button
               v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
@@ -2060,28 +2093,6 @@ function resetFreeformOverrides(): void {
               {{ effectiveBranch || "—" }}
               <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
             </div>
-          </div>
-
-          <div class="field">
-            <label>Code changes</label>
-            <div v-if="taskDiffStats" class="diff-stats">
-              <div class="diff-stat-item">
-                <span class="stat-label">Files:</span>
-                <span class="stat-value">{{ taskDiffStats.filesChanged }}</span>
-              </div>
-              <div class="diff-stat-item">
-                <span class="stat-label">Added:</span>
-                <span class="stat-value" style="color: #4ef0a8;">+{{ taskDiffStats.additions }}</span>
-              </div>
-              <div class="diff-stat-item">
-                <span class="stat-label">Deleted:</span>
-                <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
-              </div>
-              <div v-if="taskDiffStats.filesChanged === 0" class="diff-stat-warning">
-                No code changes yet
-              </div>
-            </div>
-            <div v-else class="diff-stats-loading">Loading diff stats…</div>
           </div>
 
           <div class="field-row" style="margin-top: 16px">
@@ -2658,6 +2669,24 @@ function resetFreeformOverrides(): void {
             <p class="changes-empty">No code changes yet</p>
           </template>
           <template v-else-if="taskDiff">
+            <section class="changes-summary" aria-label="Code changes summary">
+              <div class="changes-summary-title">Code changes</div>
+              <div v-if="taskDiffStats" class="diff-stats">
+                <div class="diff-stat-item">
+                  <span class="stat-label">Files:</span>
+                  <span class="stat-value">{{ taskDiffStats.filesChanged }}</span>
+                </div>
+                <div class="diff-stat-item">
+                  <span class="stat-label">Added:</span>
+                  <span class="stat-value" style="color: #4ef0a8;">+{{ taskDiffStats.additions }}</span>
+                </div>
+                <div class="diff-stat-item">
+                  <span class="stat-label">Deleted:</span>
+                  <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
+                </div>
+              </div>
+              <div v-else class="diff-stats-loading">Loading change summary…</div>
+            </section>
             <div v-if="taskDiff.truncated" class="diff-truncated">
               Diff output was truncated — showing the first ~250 kB.
             </div>
@@ -3058,7 +3087,33 @@ function resetFreeformOverrides(): void {
   text-align: center;
 }
 
+.rounds-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--txt-faint);
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
 /* Changes tab — full diff output */
+.changes-summary {
+  margin-bottom: 12px;
+}
+
+.changes-summary-title {
+  margin: 0 0 7px;
+  color: var(--txt-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
 .changes-empty {
   padding: 24px;
   text-align: center;

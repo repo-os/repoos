@@ -415,8 +415,12 @@ export const useRepoStore = defineStore("repo", () => {
     if (e.type === "hello") {
       // Every SSE (re)connect announces a server. If this server already runs
       // the build the notice points at, a reload landed (or the server was
-      // restarted into it) — clear the notice. Otherwise it persists.
+      // restarted into it) — clear the notice. Otherwise it persists. A
+      // replacement server also loses old SSE `agent.exited` events, so
+      // reconcile the authoritative running set here to avoid phantom
+      // “coding…” indicators after a reload.
       void reconcileVersion();
+      void fetchRunning();
       return;
     }
     if (e.type === "build.available") {
