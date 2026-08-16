@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
+import { debuggerSessionId } from "../../server/agents";
 
 interface Fixture {
   root: string;
@@ -110,5 +111,17 @@ describe("debugger agent integration", () => {
       await server.close();
       fx.clean();
     }
+  });
+
+  it("keeps the chat panel's session id aligned with the server session id", () => {
+    // Regression guard (0201 review): the panel reads SSE agent.output /
+    // agent.running / agent.exited events keyed by the server's session id. If
+    // the two drift apart, live output and busy state silently stop routing to
+    // the panel even though the transcript still hydrates on mount.
+    const source = readFileSync(
+      resolve(__dirname, "../src/components/DebuggerChat.vue"),
+      "utf8",
+    );
+    expect(source).toContain(`const CHAT_ID = "${debuggerSessionId}"`);
   });
 });

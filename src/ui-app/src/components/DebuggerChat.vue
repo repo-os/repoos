@@ -11,7 +11,10 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
-const CHAT_ID = "__repoos_debugger";
+// Must equal the server-side debugger session id (agents.ts debuggerSessionId)
+// so SSE agent.output / agent.running / agent.exited events for the conversation
+// route to this panel's lines buffer and busy state.
+const CHAT_ID = "__repoos-debugger__";
 const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
 
 const repo = useRepoStore();
