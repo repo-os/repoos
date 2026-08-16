@@ -3,13 +3,14 @@ id: "0212"
 title: "Hotfix flow: run a task in the main checkout instead of a worktree"
 type: feature
 status: ready
+needs_merge: true
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T05:46:19Z"
-updated_at: "2026-08-15T05:47:30Z"
+updated_at: "2026-08-16T01:25:41Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ Half the plumbing already exists: `ensureWorktree` returns `config.root` when th
 
 - 2026-08-15T05:46:19Z · created · unknown
 - 2026-08-15T05:47:30Z · status inbox→ready
+- 2026-08-16T01:25:41Z · needs_merge
