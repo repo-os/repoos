@@ -123,6 +123,30 @@ export interface TaskStats {
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  /** Role-level breakdown (engineer/pm/reviewer/cto/guide/…) for this task. */
+  roles: TaskRoleStats[];
+}
+
+/** Aggregation: one role's share of a task's usage. */
+export interface TaskRoleStats {
+  role: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+}
+
+/** Aggregation: one day's totals (server's local time). */
+export interface DailyTotals {
+  day: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
 }
 
 /** Aggregation: per-session-type total stats. */
@@ -144,6 +168,10 @@ export interface BoardStats {
   totalCostUsd: number | null;
   mostExpensiveSession: SessionRecord | null;
   mostExpensiveTask: { taskId: string; costUsd: number } | null;
+  /** Per-role board totals (sessionType breakdown). */
+  roles: SessionTypeStats[];
+  /** Per-day board totals (server's local time). */
+  days: DailyTotals[];
 }
 
 /** Database wrapper providing high-level operations. */
@@ -171,8 +199,12 @@ export class RepoOSDb {
       this.db.exec("PRAGMA journal_mode=WAL");
       this.db.exec("PRAGMA synchronous=NORMAL");
 
-      this.runMigrations();
+      // The DB handle is open and usable before migrations run, so mark it
+      // available first: runMigrations guards on `available` and would otherwise
+      // early-return, silently skipping schema creation (0230 — durable
+      // persistence was never actually working).
       this.available = true;
+      this.runMigrations();
     } catch {
       // Initialization failed — graceful degradation
     }
@@ -183,7 +215,7 @@ export class RepoOSDb {
     try {
       // Get current schema version
       try {
-        const result = this.db.query("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").all();
+        const result = this.db.prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").all();
         const currentVersion = result.length > 0 ? (result[0] as { version: number }).version : 0;
 
         // Apply missing migrations
@@ -279,7 +311,7 @@ export class RepoOSDb {
   getSession(sessionId: string): SessionRecord | null {
     if (!this.available || !this.db) return null;
     try {
-      const result = this.db.query("SELECT * FROM sessions WHERE sessionId = ?").all(sessionId);
+      const result = this.db.prepare("SELECT * FROM sessions WHERE sessionId = ?").all(sessionId);
       return result.length > 0 ? (result[0] as SessionRecord) : null;
     } catch {
       return null;
@@ -290,7 +322,7 @@ export class RepoOSDb {
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];
     try {
-      return this.db.query("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC").all(taskId) as SessionRecord[];
+      return this.db.prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC").all(taskId) as SessionRecord[];
     } catch {
       return [];
     }
@@ -300,7 +332,7 @@ export class RepoOSDb {
   getTaskStats(taskId: string): TaskStats | null {
     if (!this.available || !this.db) return null;
     try {
-      const result = this.db.query(`
+      const result = this.db.prepare(`
         SELECT
           ? as taskId,
           COUNT(*) as totalSessions,
@@ -323,6 +355,7 @@ export class RepoOSDb {
           totalOutputTokens: row.totalOutputTokens || null,
           totalTokens: row.totalTokens || null,
           totalCostUsd: row.totalCostUsd || null,
+          roles: this.getTaskRoleBreakdown(taskId),
         };
       }
       return null;
@@ -331,11 +364,75 @@ export class RepoOSDb {
     }
   }
 
+  /** Role-level usage breakdown for a single task (0230). */
+  getTaskRoleBreakdown(taskId: string): TaskRoleStats[] {
+    if (!this.available || !this.db) return [];
+    try {
+      return this.db.prepare(`
+        SELECT
+          sessionType as role,
+          COUNT(*) as totalSessions,
+          COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
+          SUM(CASE WHEN inputTokens IS NOT NULL THEN inputTokens ELSE 0 END) as totalInputTokens,
+          SUM(CASE WHEN outputTokens IS NOT NULL THEN outputTokens ELSE 0 END) as totalOutputTokens,
+          SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
+          SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
+        FROM sessions
+        WHERE taskId = ?
+        GROUP BY sessionType
+        ORDER BY totalElapsedMs DESC
+      `).all(taskId) as TaskRoleStats[];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Aggregate totals broken down by day, using the server's LOCAL time zone
+   * (the day a session's `endedAt` falls into on this machine). Done in JS so
+   * the grouping genuinely reflects local wall-clock days rather than SQLite's
+   * UTC `date()`.
+   */
+  getDailyTotals(): DailyTotals[] {
+    if (!this.available || !this.db) return [];
+    try {
+      const rows = this.db.prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL").all() as SessionRecord[];
+      const byDay = new Map<string, DailyTotals>();
+      for (const r of rows) {
+        const d = new Date(r.endedAt as string);
+        if (Number.isNaN(d.getTime())) continue;
+        const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        let acc = byDay.get(day);
+        if (!acc) {
+          acc = {
+            day,
+            totalSessions: 0,
+            totalElapsedMs: 0,
+            totalInputTokens: null,
+            totalOutputTokens: null,
+            totalTokens: null,
+            totalCostUsd: null,
+          };
+          byDay.set(day, acc);
+        }
+        acc.totalSessions += 1;
+        acc.totalElapsedMs += r.elapsedMs || 0;
+        if (r.inputTokens != null) acc.totalInputTokens = (acc.totalInputTokens ?? 0) + r.inputTokens;
+        if (r.outputTokens != null) acc.totalOutputTokens = (acc.totalOutputTokens ?? 0) + r.outputTokens;
+        if (r.totalTokens != null) acc.totalTokens = (acc.totalTokens ?? 0) + r.totalTokens;
+        if (r.costUsd != null) acc.totalCostUsd = (acc.totalCostUsd ?? 0) + r.costUsd;
+      }
+      return [...byDay.values()].sort((a, b) => (a.day < b.day ? 1 : -1));
+    } catch {
+      return [];
+    }
+  }
+
   /** Aggregate stats grouped by session type. */
   getSessionTypeStats(): SessionTypeStats[] {
     if (!this.available || !this.db) return [];
     try {
-      return this.db.query(`
+      return this.db.prepare(`
         SELECT
           sessionType,
           COUNT(*) as totalSessions,
@@ -363,11 +460,13 @@ export class RepoOSDb {
         totalCostUsd: null,
         mostExpensiveSession: null,
         mostExpensiveTask: null,
+        roles: [],
+        days: [],
       };
     }
 
     try {
-      const summary = this.db.query(`
+      const summary = this.db.prepare(`
         SELECT
           COUNT(*) as totalSessions,
           COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
@@ -376,7 +475,7 @@ export class RepoOSDb {
         FROM sessions
       `).all()[0] as any;
 
-      const mostExpensive = this.db.query(`
+      const mostExpensive = this.db.prepare(`
         SELECT * FROM sessions
         WHERE costUsd IS NOT NULL
         ORDER BY costUsd DESC
@@ -384,7 +483,7 @@ export class RepoOSDb {
       `).all();
       const mostExpensiveSession = mostExpensive.length > 0 ? (mostExpensive[0] as SessionRecord) : null;
 
-      const mostExpensiveTaskResult = this.db.query(`
+      const mostExpensiveTaskResult = this.db.prepare(`
         SELECT
           taskId,
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as costUsd
@@ -406,6 +505,8 @@ export class RepoOSDb {
         totalCostUsd: summary.totalCostUsd || null,
         mostExpensiveSession,
         mostExpensiveTask,
+        roles: this.getSessionTypeStats(),
+        days: this.getDailyTotals(),
       };
     } catch {
       return {
@@ -415,6 +516,8 @@ export class RepoOSDb {
         totalCostUsd: null,
         mostExpensiveSession: null,
         mostExpensiveTask: null,
+        roles: [],
+        days: [],
       };
     }
   }
@@ -473,5 +576,13 @@ export function getBoardStats(repoRoot: string): BoardStats {
     totalCostUsd: null,
     mostExpensiveSession: null,
     mostExpensiveTask: null,
+    roles: [],
+    days: [],
   };
+}
+
+/** Convenience function to get per-day totals from the singleton database. */
+export function getDailyTotals(repoRoot: string): DailyTotals[] {
+  const db = getRepoOSDb(repoRoot);
+  return db?.getDailyTotals() ?? [];
 }

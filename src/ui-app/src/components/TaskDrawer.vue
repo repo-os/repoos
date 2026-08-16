@@ -1310,6 +1310,19 @@ watch(
   { immediate: true },
 );
 
+/** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
+const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
+
+/** Load the task's durable usage totals when the drawer opens or the task changes. */
+watch(
+  () => ui.active?.id,
+  () => {
+    if (!ui.active) return;
+    void repo.loadTaskUsage(ui.active.id);
+  },
+  { immediate: true },
+);
+
 /** Full diff patch for the active task. */
 const taskDiff = computed(() => {
   return ui.active ? repo.diffFor(ui.active.id) : undefined;
@@ -2348,6 +2361,38 @@ function resetFreeformOverrides(): void {
               <span class="agent-stat-label">cost</span>
               <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
             </span>
+          </div>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
+            <div class="task-usage-title">usage — all roles &amp; sessions</div>
+            <div class="task-usage-grid">
+              <span class="agent-stat">
+                <span class="agent-stat-label">total time</span>
+                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total tokens</span>
+                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total cost</span>
+                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">sessions</span>
+                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+              </span>
+            </div>
+            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
+              <span class="agent-stat-label">by role</span>
+              <div class="task-usage-role-list">
+                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                  <span class="task-usage-role-name">{{ r.role }}</span>
+                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
+                  <span>{{ fmtTokens(r.totalTokens) }}</span>
+                  <span>{{ fmtCost(r.totalCostUsd) }}</span>
+                </span>
+              </div>
+            </div>
           </div>
           <div v-if="sessionStats?.stalled" class="agent-stalled">
             <span class="agent-stalled-dot"></span>
