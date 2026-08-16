@@ -1023,6 +1023,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         try {
           const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
           if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+          // The PPID-based pass above cannot see every deleted-root orphan;
+          // repeat the narrower root sweep so leaks created after boot do not
+          // wait until the next control-plane restart.
+          void reaper.cleanupOrphanedRoots();
         } catch {
           /* reaping is best-effort — never crash the server over it */
         }
@@ -1676,9 +1680,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // still alive (for example when a test aborts before its finally block).
       // Do not let that leave a server with an unreapable lockfile inside the
       // deleted root: close its listener and all owned resources on its own.
-      reaper.watchRoot(() => {
-        void handle.close();
-      });
+      // Only ephemeral test servers and preview children watch their root.
+      // A live control plane can serve a real checkout on a briefly unavailable
+      // network volume; it must not terminate itself in that situation.
+      if (opts.port === 0 || process.env.REPOOS_PREVIEW_CHILD === "1") {
+        reaper.watchRoot(() => {
+          void handle.close();
+        });
+      }
 
       // Auto-reload (0066): watch dist/.build-info.json and hand over to a
       // replacement process on a hash change. Deferred while an agent runs.
