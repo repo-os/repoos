@@ -2,14 +2,14 @@
 id: "0230"
 title: "Unify AI usage telemetry (time, tokens, cost) across all roles"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-16T12:09:54Z"
-updated_at: "2026-08-16T12:09:54Z"
+updated_at: "2026-08-16T12:10:12Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ features.
 ## Activity
 
 - 2026-08-16T12:09:54Z · created · unknown
+- 2026-08-16T12:10:12Z · status inbox→ready
