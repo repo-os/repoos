@@ -498,14 +498,29 @@ export const useRepoStore = defineStore("repo", () => {
       }
       // Attention notifications (0100): only on a genuine transition, never on
       // page load for a task that already sits in a monitored state.
+      //
+      // A "stuck" transition is detected from the watchdog's own activity
+      // marker rather than a status pair. The watchdog surfaces a stuck task
+      // into `review` whenever its worktree holds reviewable work (the common
+      // case) or into `ready` when it has none, and escalates a stuck task to
+      // `needsInput` when auto-transition is off — so no single status change
+      // uniquely identifies "stuck". Its marker, written into the task body on
+      // every surface/escalation, is the authoritative signal. Keying off it
+      // also means a manual `active`->`review` handoff (or an `active`->`ready`
+      // rollback) is never misreported as stuck.
       const prevNeedsInput = e.prev?.needsInput;
-      if (before && statusChanged && prevStatus === "active" && e.task.status === "review") {
-        notifyAttention("review", e.task);
-      } else if (before && statusChanged && prevStatus === "active" && e.task.status === "ready") {
-        // The watchdog surfaces a stuck task back to `ready` (autoTransition);
-        // an `active`->`ready` change is the stuck rollback signal.
+      const watchdogStuck =
+        before &&
+        /watchdog: auto-surfaced stuck task|watchdog: escalated to needs_input/i.test(
+          e.task.body ?? "",
+        );
+      if (watchdogStuck) {
         notifyAttention("stuck", e.task);
+      } else if (before && statusChanged && prevStatus === "active" && e.task.status === "review") {
+        notifyAttention("review", e.task);
       } else if (before && prevNeedsInput === false && e.task.needsInput === true) {
+        // A user-set needs-attention flag (the `needsInput` marker is what the
+        // watchdog escalation does NOT carry).
         notifyAttention("needsInput", e.task);
       }
     } else if (e.type === "task.deleted") {
