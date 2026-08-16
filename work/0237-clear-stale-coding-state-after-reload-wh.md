@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-16T15:04:16Z"
-updated_at: "2026-08-16T15:04:16Z"
+updated_at: "2026-08-16T19:00:58Z"
 ---
 ## Activity
 
@@ -31,3 +32,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-08-16T19:00:58Z · model_override
