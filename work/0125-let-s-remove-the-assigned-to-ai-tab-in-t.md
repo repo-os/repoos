@@ -2,7 +2,7 @@
 id: "0125"
 title: "Redesign Mission Control: drop Assigned-to-AI, add Needs-your-attention, vertical releases"
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/redesign-mission-control-drop-assigned-t
 model_override: default
 pm_model_override: default
 created_at: "2026-08-12T06:39:43Z"
-updated_at: "2026-08-16T09:47:03Z"
+updated_at: "2026-08-16T10:02:58Z"
 ---
 ## Context
 
@@ -84,3 +84,4 @@ to do:
 - 2026-08-16T09:46:57Z · status draft→inbox
 - 2026-08-16T09:47:00Z · status inbox→ready
 - 2026-08-16T09:47:03Z · status ready→active, branch
+- 2026-08-16T10:02:58Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
