@@ -2,7 +2,7 @@
 id: "0100"
 title: Add task notification settings for state transitions requiring attention
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -64,3 +64,4 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-14T00:00:00Z · scope expanded to cover paused, stuck, and needs-attention transitions
 - 2026-08-16T13:56:38Z · status ready→active, branch
 - 2026-08-16T14:18:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-16T14:18:36Z · status review→active
