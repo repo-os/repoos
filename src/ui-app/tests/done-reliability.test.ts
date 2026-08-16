@@ -177,6 +177,47 @@ describe("runDoneStep — diagnosable gate failures", () => {
       expect(result.output).not.toContain("noise line 0");
       expect(result.detail).toContain("exit 1");
       expect(result.detail).toContain("repoos check failed");
+      expect(result.transient).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a timeout as transient infrastructure failure", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "setTimeout(() => {}, 1000)"]],
+        label: "repoos check",
+        stage: "check",
+        timeout: 10,
+      });
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(result.detail).toContain("timed out");
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a test polling deadline as transient but not an assertion", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const timeout = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "console.error('timed out waiting for fixture'); process.exit(1)"]],
+        label: "repoos check",
+        stage: "check",
+      });
+      const assertion = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "console.error('Expected true to be false'); process.exit(1)"]],
+        label: "repoos check",
+        stage: "check",
+      });
+      expect(timeout.transient).toBe(true);
+      expect(assertion.transient).toBe(false);
     } finally {
       clean();
     }

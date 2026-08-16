@@ -141,4 +141,14 @@ describe("ServeReaper", () => {
       }
     }
   });
+
+  it("calls its owner when the served root disappears", async () => {
+    let closed = 0;
+    reaper.watchRoot(() => { closed += 1; }, 5);
+
+    rmSync(tmpDir, { recursive: true, force: true });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(closed).toBe(1);
+  });
 });

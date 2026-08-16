@@ -14,7 +14,7 @@
  */
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 
 export interface ServeLockInfo {
   pid: number;
@@ -32,9 +32,31 @@ export interface ServeLockInfo {
 export class ServeReaper {
   private readonly lockPath: string;
   private readonly pid = process.pid;
+  private readonly repoRoot: string;
+  private rootWatch: ReturnType<typeof setInterval> | null = null;
 
   constructor(repoRoot: string, cacheDir: string = ".repoos") {
+    this.repoRoot = repoRoot;
     this.lockPath = join(repoRoot, cacheDir, "serve.lock");
+  }
+
+  /**
+   * Close this server when the checkout it serves disappears.  Fixture and
+   * preview roots are frequently removed before their child process receives
+   * its normal shutdown signal; a lockfile inside that deleted root can no
+   * longer help a later startup reap it.  The watch is deliberately owned by
+   * the server process, so it also covers standalone fixture `serve` calls.
+   */
+  watchRoot(onMissing: () => void, intervalMs = 1_000): () => void {
+    this.stopWatchingRoot();
+    const check = (): void => {
+      if (existsSync(this.repoRoot)) return;
+      this.stopWatchingRoot();
+      onMissing();
+    };
+    this.rootWatch = setInterval(check, intervalMs);
+    this.rootWatch.unref?.();
+    return () => this.stopWatchingRoot();
   }
 
   /**
@@ -111,6 +133,39 @@ export class ServeReaper {
   }
 
   /**
+   * Reap historical fixture/preview servers whose deleted root also took their
+   * lockfile with it.  This is intentionally narrower than a generic process
+   * sweep: it requires both the RepoOS CLI's `serve` command shape and a cwd
+   * which no longer exists.  A user's live control plane and every healthy
+   * preview therefore remain untouched.
+   */
+  cleanupOrphanedRoots(): number {
+    if (process.platform === "win32") return 0;
+    let rows: string;
+    try {
+      rows = execFileSync("ps", ["-axo", "pid=,command="], {
+        encoding: "utf8",
+        timeout: 4_000,
+      });
+    } catch {
+      return 0;
+    }
+    let reaped = 0;
+    for (const row of rows.split("\n")) {
+      const match = row.trim().match(/^(\d+)\s+(.+)$/);
+      if (!match) continue;
+      const pid = Number(match[1]);
+      const command = match[2];
+      if (pid === this.pid || !/cli[/\\]index\.(?:js|ts)/.test(command) || !/\sserve(?:\s|$)/.test(command)) continue;
+      const cwd = this.processCwd(pid);
+      if (!cwd || existsSync(cwd)) continue;
+      this.killProcess(pid);
+      reaped += 1;
+    }
+    return reaped;
+  }
+
+  /**
    * Detect if a port is already bound by a live serve process.
    * Returns a human-readable error message if there's a conflict, null otherwise.
    */
@@ -162,6 +217,7 @@ export class ServeReaper {
    * Idempotent: unregistering when not registered is a no-op.
    */
   unregister(): void {
+    this.stopWatchingRoot();
     this.removeLock();
   }
 
@@ -172,6 +228,27 @@ export class ServeReaper {
       rmSync(this.lockPath, { force: true });
     } catch {
       /* ignore */
+    }
+  }
+
+  private stopWatchingRoot(): void {
+    if (this.rootWatch === null) return;
+    clearInterval(this.rootWatch);
+    this.rootWatch = null;
+  }
+
+  /** Read a process cwd from lsof's machine-readable output, best-effort. */
+  private processCwd(pid: number): string | null {
+    try {
+      const out = execFileSync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], {
+        encoding: "utf8",
+        timeout: 2_000,
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      const line = out.split("\n").find((entry) => entry.startsWith("n"));
+      return line?.slice(1) || null;
+    } catch {
+      return null;
     }
   }
 

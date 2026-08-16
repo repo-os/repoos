@@ -771,6 +771,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and prevent port binding conflicts.
   const reaper = new ServeReaper(config.root, config.cacheDir);
   reaper.cleanupStale();
+  reaper.cleanupOrphanedRoots();
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
@@ -1517,6 +1518,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           await closeHttp();
         },
       };
+
+      // A fixture or preview can have its checkout deleted while this child is
+      // still alive (for example when a test aborts before its finally block).
+      // Do not let that leave a server with an unreapable lockfile inside the
+      // deleted root: close its listener and all owned resources on its own.
+      reaper.watchRoot(() => {
+        void handle.close();
+      });
 
       // Auto-reload (0066): watch dist/.build-info.json and hand over to a
       // replacement process on a hash change. Deferred while an agent runs.
