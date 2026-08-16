@@ -372,6 +372,30 @@ function checkCandidates(root: string): string[][] {
 }
 
 /**
+ * Report the outcome of a close-out check retry honestly (#0216).  A retry is
+ * only reached when the first run failed with a timeout-shaped signature, but
+ * that heuristic is message-based and a genuine assertion failure could match
+ * it too — so the retry is never assumed to be contention.  The task's own
+ * guidance for telling the two apart: a failure that reproduces IDENTICALLY is
+ * a real defect, because contention lands on a different test each run.  When
+ * the retry produces the same output as the first run, say so instead of
+ * blaming the machine; only a retry that fails differently supports the
+ * contention reading.
+ */
+export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): CheckSummary {
+  if (retry.ok || !retry.transient) return retry;
+  const reproduced = first.output !== undefined && first.output === retry.output;
+  retry.detail = `${retry.detail ?? "repoos check failed"} — ${
+    reproduced
+      ? "the same failure appeared on the retry with identical output. Identical reproduction points at a genuine defect, not machine contention"
+      : first.output === undefined || retry.output === undefined
+        ? "the failure reappeared on the retry, but it could not be compared against the first run"
+        : "the retry failed on different output than the first run; the machine may be too loaded to run the gate reliably"
+  }`;
+  return retry;
+}
+
+/**
  * A timeout means the gate could not obtain enough machine time; it says
  * nothing about the merged branch. Retry that infrastructure failure once,
  * while preserving ordinary non-zero test failures as immediately actionable.
@@ -392,11 +416,7 @@ async function runCloseOutCheck(root: string): Promise<CheckSummary> {
     stage: "check",
     timeout: 600_000,
   });
-  if (retry.ok) return retry;
-  if (retry.transient) {
-    retry.detail = `${retry.detail ?? "repoos check timed out"} (timed out twice; infrastructure may be overloaded)`;
-  }
-  return retry;
+  return describeRetryFailure(first, retry);
 }
 
 /** Post-merge gate runners, overridable in tests to avoid real builds. */

@@ -847,7 +847,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and prevent port binding conflicts.
   const reaper = new ServeReaper(config.root, config.cacheDir);
   reaper.cleanupStale();
-  reaper.cleanupOrphanedRoots();
+  // Boot-time sweep for historical orphans whose deleted root took their
+  // lockfile with it. Deliberately fire-and-forget: the sweep is async and
+  // bounded, so serve startup never blocks on it even with hundreds of
+  // accumulated orphans. It always resolves (never rejects). Gated like the
+  // periodic stray sweep — preview children and ephemeral in-process servers
+  // must not each run a full `ps`+`lsof` census of the machine.
+  if (shouldReapStrayServeProcesses(opts)) {
+    void reaper.cleanupOrphanedRoots();
+  }
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;

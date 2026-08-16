@@ -12,9 +12,10 @@
  *
  * Zero runtime deps: node:fs / node:child_process / node:path only.
  */
-import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { execSync, execFileSync } from "node:child_process";
+import { existsSync, realpathSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { join, dirname, sep } from "node:path";
+import { execFile, execSync, execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
 
 export interface ServeLockInfo {
   pid: number;
@@ -22,6 +23,11 @@ export interface ServeLockInfo {
   host: string;
   startedAt: string;
 }
+
+/** Concurrency cap for the boot-time orphan sweep's per-process cwd lookups. */
+const ORPHAN_SWEEP_CONCURRENCY = 16;
+/** Consecutive missing-root checks before a serve process closes itself. */
+const WATCH_MISSES_REQUIRED = 3;
 
 /**
  * Manages a single lockfile that tracks the live serve process for a repo.
@@ -58,11 +64,28 @@ export class ServeReaper {
    * its normal shutdown signal; a lockfile inside that deleted root can no
    * longer help a later startup reap it.  The watch is deliberately owned by
    * the server process, so it also covers standalone fixture `serve` calls.
+   *
+   * A real repo root can be momentarily invisible (a rename while the dir is
+   * moved, a network-FS blip) without being gone — tearing the server down on
+   * such a transient miss would kill the live control plane.  The root must
+   * be missing for `missesRequired` consecutive checks before `onMissing`
+   * fires; a deleted fixture/preview root stays gone, so this only delays the
+   * self-close by `missesRequired × intervalMs`.
    */
-  watchRoot(onMissing: () => void, intervalMs = 1_000): () => void {
+  watchRoot(
+    onMissing: () => void,
+    intervalMs = 1_000,
+    missesRequired = WATCH_MISSES_REQUIRED,
+  ): () => void {
     this.stopWatchingRoot();
+    let misses = 0;
     const check = (): void => {
-      if (existsSync(this.repoRoot)) return;
+      if (existsSync(this.repoRoot)) {
+        misses = 0;
+        return;
+      }
+      misses += 1;
+      if (misses < missesRequired) return;
       this.stopWatchingRoot();
       onMissing();
     };
@@ -156,33 +179,43 @@ export class ServeReaper {
   /**
    * Reap historical fixture/preview servers whose deleted root also took their
    * lockfile with it.  This is intentionally narrower than a generic process
-   * sweep: it requires both the RepoOS CLI's `serve` command shape and a cwd
-   * which no longer exists.  A user's live control plane and every healthy
-   * preview therefore remain untouched.
+   * sweep: it requires the RepoOS CLI's `serve` command shape AND a cwd under
+   * the system temp dir that no longer exists — the exact shape of every
+   * observed orphan (`/var/folders/.../repoos-release-*`, `.../repoos-autoprev-*`).
+   * A user's live control plane, every healthy preview, and a sibling project
+   * that happens to be briefly unmounted or renamed therefore remain untouched
+   * (a real repo never lives under tmpdir).
+   *
+   * Async and best-effort so a boot full of accumulated orphans can never
+   * block serve startup: the `ps` scan and the per-process `lsof` cwd lookups
+   * run off the event loop, with the lookups capped in flight.  Returns the
+   * number of processes killed.
    */
-  cleanupOrphanedRoots(): number {
+  async cleanupOrphanedRoots(): Promise<number> {
     if (process.platform === "win32") return 0;
     let rows: string;
     try {
-      rows = execFileSync("ps", ["-axo", "pid=,command="], {
-        encoding: "utf8",
-        timeout: 4_000,
-      });
+      rows = await execFileAsync("ps", ["-axo", "pid=,command="], 4_000);
     } catch {
       return 0;
     }
-    let reaped = 0;
+    const candidates: number[] = [];
     for (const row of rows.split("\n")) {
       const match = row.trim().match(/^(\d+)\s+(.+)$/);
       if (!match) continue;
       const pid = Number(match[1]);
       const command = match[2];
-      if (pid === this.pid || !/cli[/\\]index\.(?:js|ts)/.test(command) || !/\sserve(?:\s|$)/.test(command)) continue;
-      const cwd = this.processCwd(pid);
-      if (!cwd || existsSync(cwd)) continue;
+      if (pid === this.pid || !isOrphanServeCommand(command)) continue;
+      candidates.push(pid);
+    }
+    if (candidates.length === 0) return 0;
+    let reaped = 0;
+    await runBounded(candidates, ORPHAN_SWEEP_CONCURRENCY, async (pid) => {
+      const cwd = await this.processCwdAsync(pid);
+      if (!cwd || !isOrphanRoot(cwd)) return;
       this.killProcess(pid);
       reaped += 1;
-    }
+    });
     return reaped;
   }
 
@@ -266,15 +299,14 @@ export class ServeReaper {
   }
 
   /** Read a process cwd from lsof's machine-readable output, best-effort. */
-  private processCwd(pid: number): string | null {
+  private async processCwdAsync(pid: number): Promise<string | null> {
     try {
-      const out = execFileSync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], {
-        encoding: "utf8",
-        timeout: 2_000,
-        stdio: ["ignore", "pipe", "ignore"],
-      });
+      const out = await execFileAsync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], 2_000);
       const line = out.split("\n").find((entry) => entry.startsWith("n"));
-      return line?.slice(1) || null;
+      const cwd = line?.slice(1) || null;
+      // macOS lsof suffixes a deleted cwd with " (deleted)" — exactly the case
+      // the orphan sweep looks for, so strip it before the root checks.
+      return cwd ? cwd.replace(/ \(deleted\)$/, "") : null;
     } catch {
       return null;
     }
@@ -297,4 +329,76 @@ export class ServeReaper {
       /* ignore — process may already be gone */
     }
   }
+}
+
+/**
+ * True when a process command line has the RepoOS CLI `serve` shape — the
+ * compiled `.../cli/index.js serve` or dev `.../src/cli/index.ts serve`.  The
+ * orphan sweep requires this shape in addition to a deleted temp-dir root, so
+ * unrelated processes are never touched.
+ */
+export function isOrphanServeCommand(command: string): boolean {
+  return /cli[/\\]index\.(?:js|ts)/.test(command) && /\sserve(?:\s|$)/.test(command);
+}
+
+let cachedTempDirs: string[] | null = null;
+
+/**
+ * The system temp dir and its real path.  macOS exposes `/var` as a symlink
+ * to `/private/var`, and lsof reports the resolved path, so both forms are
+ * kept and compared.
+ */
+function systemTempDirs(): string[] {
+  if (cachedTempDirs) return cachedTempDirs;
+  const raw = tmpdir();
+  const dirs = new Set([raw]);
+  try {
+    dirs.add(realpathSync(raw));
+  } catch {
+    /* the temp dir always exists */
+  }
+  cachedTempDirs = [...dirs];
+  return cachedTempDirs;
+}
+
+/** True when `cwd` is at or under the system temp dir. */
+function isUnderSystemTempDir(cwd: string): boolean {
+  return systemTempDirs().some((d) => cwd === d || cwd.startsWith(d + sep));
+}
+
+/**
+ * True when `cwd` is a deleted root under the system temp dir — the exact
+ * shape of every observed orphan (fixture/preview temp dirs).  A real repo —
+ * the live control plane, a preview worktree, any sibling project — never
+ * lives under tmpdir, so a briefly-unmounted or renamed repo cannot be
+ * mistaken for an orphan and killed.  Exported for testing.
+ */
+export function isOrphanRoot(cwd: string): boolean {
+  if (existsSync(cwd)) return false;
+  return isUnderSystemTempDir(cwd);
+}
+
+/** `execFile` promisified for the boot-time orphan sweep. */
+function execFileAsync(cmd: string, args: string[], timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(cmd, args, { encoding: "utf8", timeout: timeoutMs }, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout);
+    });
+  });
+}
+
+/** Run `fn` over `items` with at most `concurrency` promises in flight. */
+async function runBounded<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  const queue = [...items];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+      await fn(next);
+    }
+  });
+  await Promise.all(workers);
 }
