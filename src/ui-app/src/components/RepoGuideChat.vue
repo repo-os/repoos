@@ -147,7 +147,7 @@ onMounted(() => void hydrate());
         <strong>{{ agent?.name ?? "Ross" }}</strong>
         <span><i :class="{ off: !enabled }"></i>{{ enabled ? "Repository assistant" : "Disabled on Agents page" }}</span>
       </div>
-      <button class="guide-minimize" type="button" aria-label="Minimize Ross" title="Minimize" @click="emit('close')">
+      <button class="guide-minimize" type="button" aria-label="Close Ross" title="Close" @click="emit('close')">
         <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
       </button>
     </header>
@@ -196,7 +196,7 @@ onMounted(() => void hydrate());
 </template>
 
 <style scoped>
-.guide-panel{position:fixed;right:90px;bottom:18px;width:min(390px,calc(100vw - 130px));height:min(610px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border-bright);border-radius:18px;background:var(--panel-gradient);box-shadow:0 24px 70px rgba(0,0,0,.38);backdrop-filter:blur(18px);animation:guide-open .18s ease-out;pointer-events:auto;z-index:71}
+.guide-panel{position:fixed;top:0;right:0;bottom:0;width:680px;max-width:100vw;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border-bright);background:var(--panel-gradient);box-shadow:var(--drawer-shadow);animation:guide-open .18s ease-out;pointer-events:auto;z-index:92}
 .guide-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .guide-avatar{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
 .guide-avatar img{width:100%;height:100%;object-fit:cover}
@@ -247,6 +247,6 @@ onMounted(() => void hydrate());
 @keyframes guide-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes guide-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
 @keyframes guide-pulse{50%{opacity:.35}}
-@media(max-width:760px){.guide-panel{right:12px;left:12px;width:auto;height:min(560px,calc(100dvh - 150px))}}
+@media(max-width:600px){.guide-panel{left:0;right:0;width:100vw!important}}
 @media(prefers-reduced-motion:reduce){.guide-panel,.guide-thinking span,.guide-running-dot{animation:none;transition:none}}
 </style>
