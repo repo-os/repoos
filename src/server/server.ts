@@ -1207,6 +1207,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
+  // Preview state is process-local. Recreate previews for tasks that were
+  // already in review when this control-plane process started, otherwise a
+  // server restart leaves review tasks without their expected preview URL.
+  for (const task of index.getTasks()) {
+    if (task.status === "review") void autoLaunchPreview(task);
+  }
+
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {
     if (e.type !== "task.updated") return;
