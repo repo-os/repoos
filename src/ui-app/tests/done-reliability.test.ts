@@ -26,6 +26,7 @@ import {
   describeRetryFailure,
   mergeTaskBranchWithAutoSync,
   redactSecrets,
+  runCloseOutCheck,
   runDoneStep,
 } from "../../server/done";
 
@@ -82,6 +83,29 @@ function reviewTask(root: string, id: string, branch: string): { task: Task; cle
   expect(wt.ok).toBe(true);
   commitFile(wt.path, "b.txt", "branch work\n", "branch work");
   return { task, clean: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+/**
+ * Install a fake `dist/cli/index.js` in `root` that logs every invocation to
+ * `log` (an absolute path) and then runs `body`. `checkCandidates` prefers the
+ * merged checkout's own CLI, so `runCloseOutCheck` runs THIS script via
+ * `process.execPath` — which lets a test script the exact failure sequence the
+ * gate should retry (or not).
+ */
+function fakeCheckCli(root: string, body: string): { log: string } {
+  const cliDir = join(root, "dist", "cli");
+  mkdirSync(cliDir, { recursive: true });
+  const log = join(cliDir, "runs.log");
+  const script = `
+    const fs = require("node:fs");
+    let n = 0;
+    try { n = Number(fs.readFileSync(${JSON.stringify(log)}, "utf8")); } catch {}
+    n += 1;
+    fs.writeFileSync(${JSON.stringify(log)}, String(n));
+    ${body}
+  `;
+  writeFileSync(join(cliDir, "index.js"), script);
+  return { log };
 }
 
 describe("mergeTaskBranchWithAutoSync — idempotent retry", () => {
@@ -298,6 +322,78 @@ describe("describeRetryFailure — honest retry classification (#0216)", () => {
   it("says so when the two runs cannot be compared", () => {
     const result = describeRetryFailure({ ...failed("a"), output: undefined }, failed("b"));
     expect(result.detail).toMatch(/could not be compared/);
+  });
+});
+
+describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
+  it("retries a transient timeout once and lets a green retry pass the gate", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-retry-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        if (n === 1) { console.error("timed out waiting for deletion detected by reconciliation poll"); process.exit(1); }
+        process.exit(0);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(true);
+      // Exactly two invocations: the failed first run plus one retry.
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not retry a genuine assertion failure", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-assert-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error("Expected true to be false");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(false);
+      expect(result.detail).toContain("Expected true to be false");
+      // No retry: a real regression is immediately actionable.
+      expect(readFileSync(log, "utf8").trim()).toBe("1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("flags a timeout that reproduces identically as a genuine defect", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-identical-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error("timed out waiting for fixture");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+      expect(result.detail).toMatch(/identical output/);
+      expect(result.detail).toMatch(/genuine defect/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reads a timeout that fails differently on the retry as machine load", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-loaded-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error(n === 1 ? "timed out waiting for deletion" : "timed out waiting for mount");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+      expect(result.detail).toMatch(/different output/);
+      expect(result.detail).toMatch(/too loaded/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

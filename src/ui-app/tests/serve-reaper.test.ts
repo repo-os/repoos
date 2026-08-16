@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { spawn } from "node:child_process";
 import { ServeReaper, isOrphanRoot, isOrphanServeCommand } from "../../server/serve-reaper.js";
 import { shouldReapStrayServeProcesses } from "../../server/server.js";
-import { existsSync, readFileSync, rmSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir, tmpdir } from "node:os";
 
@@ -251,5 +252,33 @@ describe("orphaned-root sweep classification (#0216)", () => {
     // not conclusively an orphan — a sweep must never kill a user's checkout.
     const goneOutsideTmp = join(homedir(), `repoos-missing-${Date.now()}`);
     expect(isOrphanRoot(goneOutsideTmp)).toBe(false);
+  });
+
+  it("reaps a real serve-shaped process whose tmpdir root is deleted (#0216)", async () => {
+    if (process.platform === "win32") return; // sweep is Unix/Mac only
+    const root = join(tmpdir(), `repoos-sweep-live-${Date.now()}`);
+    mkdirSync(join(root, "cli"), { recursive: true });
+    writeFileSync(join(root, "cli", "index.js"), "setInterval(() => {}, 1000);\n");
+    const sweep = new ServeReaper(join(tmpdir(), `repoos-sweep-unused-${Date.now()}`), ".repoos");
+    const child = spawn(process.execPath, [join(root, "cli", "index.js"), "serve"], { cwd: root });
+    try {
+      const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
+        child.once("exit", (code, signal) => resolve({ code, signal })),
+      );
+      // Give the child time to bind its cwd before the root disappears.
+      await new Promise((r) => setTimeout(r, 200));
+      rmSync(root, { recursive: true, force: true });
+
+      const reaped = await sweep.cleanupOrphanedRoots();
+
+      expect(reaped).toBeGreaterThanOrEqual(1);
+      const outcome = await exited;
+      // The sweep's SIGTERM terminated it; the child must not have survived.
+      expect(outcome.code ?? outcome.signal).toBeTruthy();
+    } finally {
+      // The sweep already reaped it; a belt-and-braces kill for failure paths.
+      if (child.exitCode === null) child.kill("SIGKILL");
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
