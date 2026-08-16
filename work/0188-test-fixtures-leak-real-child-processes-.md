@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-14T06:34:37Z"
-updated_at: "2026-08-14T10:32:36Z"
+updated_at: "2026-08-16T11:45:10Z"
 ---
 ## Activity
 
@@ -87,3 +88,4 @@ archaeology needed to notice or fix a leak.
 ## Activity
 
 - 2026-08-14T10:32:36Z · status inbox→ready
+- 2026-08-16T11:45:10Z · model_override
