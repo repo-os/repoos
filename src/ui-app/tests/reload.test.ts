@@ -5,7 +5,7 @@
  * hash-change detection, deferred-while-running, and the replacement
  * readiness handoff without touching a real `repoos serve` process.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createServer as createTcpServer } from "node:net";
 import {
   mkdtempSync,
@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ReloadManager, readBuildHash, type ReloadManagerOptions } from "../../server/reload";
 import { startServer } from "../../server/server";
+import { reapStaleFixtures } from "./helpers";
 
 /** Replacement variant: records the spawn, serves the handshake, stays alive. */
 const FAKEBIN = `#!/usr/bin/env node
@@ -122,8 +123,17 @@ function reservePort(): Promise<number> {
   });
 }
 
+/**
+ * Reap fixtures a PAST run leaked before this suite's own fixtures exist.
+ * The per-test `try/finally` cleanup can't fire if the whole process is torn
+ * down (Ctrl-C, a killed CI job) — vitest's thread pool means signal handlers
+ * registered in a test file never fire either — so the next run self-heals.
+ * Shared logic in tests/helpers.ts; see `reapStaleFixtures` there.
+ */
+const FIXTURE_PREFIX = "repoos-reload-";
+
 async function makeFixture(): Promise<Fixture> {
-  const root = mkdtempSync(join(tmpdir(), "repoos-reload-"));
+  const root = mkdtempSync(join(tmpdir(), FIXTURE_PREFIX));
   const repo = join(root, "repo");
   const bin = join(root, "bin");
   mkdirSync(join(repo, "dist"), { recursive: true });
@@ -238,6 +248,10 @@ function makeManager(
 
 afterEach(() => {
   delete process.env.REPOOS_RELOAD_FAKE_LOG;
+});
+
+beforeAll(() => {
+  reapStaleFixtures(FIXTURE_PREFIX);
 });
 
 describe("ReloadManager", () => {
