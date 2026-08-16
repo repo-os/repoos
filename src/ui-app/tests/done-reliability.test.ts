@@ -23,8 +23,10 @@ import type { RepoOSConfig, Task } from "../../core/types";
 import {
   captureOutput,
   completeTask,
+  describeRetryFailure,
   mergeTaskBranchWithAutoSync,
   redactSecrets,
+  runCloseOutCheck,
   runDoneStep,
 } from "../../server/done";
 
@@ -81,6 +83,29 @@ function reviewTask(root: string, id: string, branch: string): { task: Task; cle
   expect(wt.ok).toBe(true);
   commitFile(wt.path, "b.txt", "branch work\n", "branch work");
   return { task, clean: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+/**
+ * Install a fake `dist/cli/index.js` in `root` that logs every invocation to
+ * `log` (an absolute path) and then runs `body`. `checkCandidates` prefers the
+ * merged checkout's own CLI, so `runCloseOutCheck` runs THIS script via
+ * `process.execPath` — which lets a test script the exact failure sequence the
+ * gate should retry (or not).
+ */
+function fakeCheckCli(root: string, body: string): { log: string } {
+  const cliDir = join(root, "dist", "cli");
+  mkdirSync(cliDir, { recursive: true });
+  const log = join(cliDir, "runs.log");
+  const script = `
+    const fs = require("node:fs");
+    let n = 0;
+    try { n = Number(fs.readFileSync(${JSON.stringify(log)}, "utf8")); } catch {}
+    n += 1;
+    fs.writeFileSync(${JSON.stringify(log)}, String(n));
+    ${body}
+  `;
+  writeFileSync(join(cliDir, "index.js"), script);
+  return { log };
 }
 
 describe("mergeTaskBranchWithAutoSync — idempotent retry", () => {
@@ -177,6 +202,47 @@ describe("runDoneStep — diagnosable gate failures", () => {
       expect(result.output).not.toContain("noise line 0");
       expect(result.detail).toContain("exit 1");
       expect(result.detail).toContain("repoos check failed");
+      expect(result.transient).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a timeout as transient infrastructure failure", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "setTimeout(() => {}, 1000)"]],
+        label: "repoos check",
+        stage: "check",
+        timeout: 10,
+      });
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(result.detail).toContain("timed out");
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a test polling deadline as transient but not an assertion", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const timeout = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "console.error('timed out waiting for fixture'); process.exit(1)"]],
+        label: "repoos check",
+        stage: "check",
+      });
+      const assertion = await runDoneStep({
+        cwd: root,
+        candidates: [[process.execPath, "-e", "console.error('Expected true to be false'); process.exit(1)"]],
+        label: "repoos check",
+        stage: "check",
+      });
+      expect(timeout.transient).toBe(true);
+      expect(assertion.transient).toBe(false);
     } finally {
       clean();
     }
@@ -247,6 +313,126 @@ describe("runDoneStep — diagnosable gate failures", () => {
     }
   });
 });
+
+describe("describeRetryFailure — honest retry classification (#0216)", () => {
+  const failed = (output: string): CheckSummaryLike => ({
+    ok: false,
+    stage: "check",
+    output,
+    detail: "repoos check failed (exit 1)",
+    transient: true,
+  });
+
+  it("passes a successful retry straight through", () => {
+    const retry = { ok: true, stage: "check" as const };
+    expect(describeRetryFailure(failed("boom"), retry)).toBe(retry);
+  });
+
+  it("passes a non-transient retry failure straight through", () => {
+    const retry = { ...failed("boom"), transient: false };
+    expect(describeRetryFailure(failed("boom"), retry)).toBe(retry);
+  });
+
+  it("calls a retry that reproduced the first failure identically a real defect", () => {
+    const out = "✗ watcher: waitFor timed out waiting for deletion\n   at tests/watcher.test.ts:147";
+    const result = describeRetryFailure(failed(out), failed(out));
+    expect(result.detail).toMatch(/identical output/);
+    expect(result.detail).toMatch(/genuine defect/);
+    expect(result.detail).not.toMatch(/machine may be too loaded/);
+  });
+
+  it("reads a retry that failed on different output as contention", () => {
+    const result = describeRetryFailure(failed("a: first"), failed("b: second"));
+    expect(result.detail).toMatch(/different output/);
+    expect(result.detail).toMatch(/too loaded/);
+    expect(result.detail).not.toMatch(/genuine defect/);
+  });
+
+  it("says so when the two runs cannot be compared", () => {
+    const result = describeRetryFailure({ ...failed("a"), output: undefined }, failed("b"));
+    expect(result.detail).toMatch(/could not be compared/);
+  });
+});
+
+describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
+  it("retries a transient timeout once and lets a green retry pass the gate", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-retry-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        if (n === 1) { console.error("timed out waiting for deletion detected by reconciliation poll"); process.exit(1); }
+        process.exit(0);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(true);
+      // Exactly two invocations: the failed first run plus one retry.
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not retry a genuine assertion failure", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-assert-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error("Expected true to be false");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(false);
+      expect(result.detail).toContain("Expected true to be false");
+      // No retry: a real regression is immediately actionable.
+      expect(readFileSync(log, "utf8").trim()).toBe("1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("flags a timeout that reproduces identically as a genuine defect", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-identical-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error("timed out waiting for fixture");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+      expect(result.detail).toMatch(/identical output/);
+      expect(result.detail).toMatch(/genuine defect/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reads a timeout that fails differently on the retry as machine load", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-loaded-"));
+    try {
+      const { log } = fakeCheckCli(root, `
+        console.error(n === 1 ? "timed out waiting for deletion" : "timed out waiting for mount");
+        process.exit(1);
+      `);
+      const result = await runCloseOutCheck(root);
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(readFileSync(log, "utf8").trim()).toBe("2");
+      expect(result.detail).toMatch(/different output/);
+      expect(result.detail).toMatch(/too loaded/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+type CheckSummaryLike = {
+  ok: boolean;
+  stage?: string;
+  output?: string;
+  detail?: string;
+  transient?: boolean;
+};
 
 describe("diagnostic output hygiene", () => {
   it("redacts credential-shaped values", () => {

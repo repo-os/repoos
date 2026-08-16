@@ -362,8 +362,7 @@
     .board-col.collapsed .col-cap-count{font-size:10.5px}
     .board-col.collapsed .col-label{writing-mode:horizontal-tb;transform:none;margin-top:0;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   }
-  .task-card{padding:13px;border-radius:13px;background:var(--panel);border:1px solid var(--border);cursor:pointer;transition:.16s;position:relative}
-  .task-card:hover{transform:translateY(-2px);border-color:var(--border-bright)}
+  .task-card{cursor:pointer;position:relative}
   .task-card.flash{animation:flash 1.2s ease}
   @keyframes flash{0%{box-shadow:0 0 0 2px var(--cyan)}100%{box-shadow:0 0 0 2px transparent}}
   /* Status-change confirmation: a shimmer sweep only. Deliberately strictly
@@ -1036,7 +1035,8 @@
   [data-ui-theme="clear"] .board{gap:16px}
   [data-ui-theme="clear"] .col-head{padding-bottom:14px}
   [data-ui-theme="clear"] .col-body{gap:12px}
-  [data-ui-theme="clear"] .task-card{padding:16px}
+  [data-ui-theme="clear"] .task-card{padding:0}
+  [data-ui-theme="clear"] .task-card > :first-child{padding:16px}
   [data-ui-theme="clear"] .tc-top{margin-bottom:11px}
   [data-ui-theme="clear"] .tc-title{line-height:1.5;margin-bottom:12px}
   [data-ui-theme="clear"] .tc-tags{margin-bottom:12px}

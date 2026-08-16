@@ -9,6 +9,8 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  sanitizeBuiltInAgents,
+  saveBuiltInAgentsConfig,
 } from "../../core/config.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 
@@ -98,6 +100,26 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     patch.agents = list;
   }
 
+  // builtInAgents toggles (e.g. enabling the Debugger or Tech Debt Agent) are
+  // persisted to the sidecar, NOT repoos.toml — mirroring how built-in agent
+  // state is stored and read (see config.ts:saveBuiltInAgentsConfig).
+  let builtInAgentsChanged = false;
+  if (body.builtInAgents !== undefined) {
+    if (
+      typeof body.builtInAgents !== "object" ||
+      body.builtInAgents === null ||
+      Array.isArray(body.builtInAgents)
+    ) {
+      return json(res, 400, { error: "builtInAgents must be an object" });
+    }
+    const state = sanitizeBuiltInAgents(body.builtInAgents);
+    const base = repoos.config.builtInAgents ?? {};
+    const merged = { ...base, ...state };
+    saveBuiltInAgentsConfig(config.root, merged, config.cacheDir);
+    repoos.config.builtInAgents = merged;
+    builtInAgentsChanged = true;
+  }
+
   const schema = getConfigSchema();
   for (const field of schema) {
     if (body[field.key] === undefined) continue;
@@ -156,7 +178,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     bodyKeys[0] === "whisper.apiKey" &&
     (typeof body["whisper.apiKey"] !== "string" || !body["whisper.apiKey"].trim());
 
-  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !onlyEmptyWhisperKey) {
+  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsChanged && !onlyEmptyWhisperKey) {
     return json(res, 400, { error: "No valid fields to update" });
   }
 
