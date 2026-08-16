@@ -122,7 +122,7 @@ interface Entry {
    */
   adoptedPid?: number;
   /** Pollers reading the durable stdout/stderr logs into the live transcript. */
-  tailers?: { timer: ReturnType<typeof setInterval>; drain: () => void }[];
+  tailers?: { timer: ReturnType<typeof setInterval>; drain: () => void; flush: () => void }[];
 }
 
 /**
@@ -1764,7 +1764,7 @@ export class AgentRunner {
     logFile: string,
     stream: "out" | "err",
     startAtEnd = false,
-  ): { timer: ReturnType<typeof setInterval>; drain: () => void } {
+  ): { timer: ReturnType<typeof setInterval>; drain: () => void; flush: () => void } {
     // `stat.size` is a byte offset. Keep it in bytes and decode only the new
     // buffer range; slicing a decoded string with that offset loses output as
     // soon as an agent writes emoji, CJK, or any other multi-byte UTF-8.
@@ -1806,7 +1806,15 @@ export class AgentRunner {
       drain();
     }, 200);
     interval.unref();
-    return { timer: interval, drain };
+    // `pending` is local to this tailer (rather than Session.pending), so a
+    // process that exits without its final newline needs an explicit flush.
+    // Route it through appendLine to preserve structured JSON parsing.
+    const flush = (): void => {
+      const line = pending.trimEnd();
+      pending = "";
+      if (line) this.appendLine(taskId, stream, line);
+    };
+    return { timer: interval, drain, flush };
   }
 
   /** Persist a registry entry for one running task (0214). */
@@ -2187,13 +2195,19 @@ export class AgentRunner {
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
     // (not `exit`) fires only after stdio has drained, so a trailing line with
     // no final newline is still in `pending` when cleanup flushes it.
-    proc.on("close", (code) => {
+    const finishTurn = (code: number | null): void => {
       // The final write can arrive just before close, before the next polling
       // tick. Drain synchronously so no trailing output is lost.
       for (const tailer of this.entries.get(taskId)?.tailers ?? []) tailer.drain();
       this.cleanup(taskId, code === 0);
-    });
+    };
+    proc.on("close", finishTurn);
     proc.on("error", () => this.cleanup(taskId, false));
+    // A very short-lived command can exit between `spawn()` and listener
+    // registration. ChildProcess does not replay a missed `close` event, so
+    // finalize it explicitly instead of leaving its last log line and runner
+    // entry behind forever.
+    if (proc.exitCode !== null) finishTurn(proc.exitCode);
 
     this.logger?.agent(taskId, "info", "Agent started", { pid: proc.pid, cwd, cmd });
 
@@ -2578,7 +2592,11 @@ export class AgentRunner {
   stop(taskId: string): StopResult {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
-    for (const tailer of entry.tailers ?? []) clearInterval(tailer.timer);
+    for (const tailer of entry.tailers ?? []) {
+      tailer.drain();
+      tailer.flush();
+      clearInterval(tailer.timer);
+    }
     entry.tailers = undefined;
     if (entry.adoptedPid) {
       // For adopted entries (0214): kill by PID directly since proc is null.
@@ -2681,8 +2699,14 @@ export class AgentRunner {
     const entry = this.entries.get(taskId);
     if (!entry) return;
 
-    // Stop durable-log pollers and remove the registry entry (0214).
-    for (const tailer of entry.tailers ?? []) clearInterval(tailer.timer);
+    // Drain and flush durable-log pollers before removing the registry entry.
+    // The final output may not carry a newline, so it lives in the tailer's
+    // local pending buffer until this point.
+    for (const tailer of entry.tailers ?? []) {
+      tailer.drain();
+      tailer.flush();
+      clearInterval(tailer.timer);
+    }
     entry.tailers = undefined;
     this.removeRegistryEntry(taskId);
 
