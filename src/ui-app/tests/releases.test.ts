@@ -137,12 +137,12 @@ describe("feature releases", () => {
 
   it("bounds the dashboard history", () => {
     const base = { status: "done" } as UiTask;
-    const tasks = Array.from({ length: 12 }, (_, index) => ({
+    const tasks = Array.from({ length: 14 }, (_, index) => ({
       ...base,
       id: String(index),
       releasedAt: `2026-01-${String(index + 1).padStart(2, "0")}T00:00:00Z`,
     }));
-    expect(releaseTimelineTasks(tasks)).toHaveLength(8);
-    expect(releaseTimelineTasks(tasks)[0].id).toBe("11");
+    expect(releaseTimelineTasks(tasks)).toHaveLength(12);
+    expect(releaseTimelineTasks(tasks)[0].id).toBe("13");
   });
 });

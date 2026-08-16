@@ -5,7 +5,7 @@ import { useUiStore } from "../stores/ui";
 import Button from "../components/ui/button.vue";
 import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
-import AiTasksPanel from "../components/AiTasksPanel.vue";
+import NeedsYouPanel from "../components/NeedsYouPanel.vue";
 import SystemResourcePanel from "../components/SystemResourcePanel.vue";
 import AutoEngineeringPanel from "../components/AutoEngineeringPanel.vue";
 import ReleaseTimeline from "../components/ReleaseTimeline.vue";
@@ -156,7 +156,7 @@ const { counts, repoName } = storeToRefs(repo);
 
     <div class="dash-grid">
       <FeedPanel />
-      <AiTasksPanel />
+      <NeedsYouPanel />
     </div>
   </div>
 </template>
