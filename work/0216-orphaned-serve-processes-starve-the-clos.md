@@ -2,7 +2,7 @@
 id: "0216"
 title: Orphaned serve processes starve the close-out gate and cause false failures
 type: bug
-status: review
+status: active
 needs_merge: true
 priority: p1
 area: core
@@ -12,7 +12,7 @@ branch: feat/orphaned-serve-processes-starve-the-clos
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T07:06:54Z"
-updated_at: "2026-08-16T10:30:42Z"
+updated_at: "2026-08-16T11:31:03Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ The reload-handoff EPIPE failure was fixed separately. Do not change reload hand
 - 2026-08-16T00:22:22Z · model_override
 - 2026-08-16T10:30:41Z · status active→review
 - 2026-08-16T10:30:42Z · needs_merge
+- 2026-08-16T11:31:03Z · status review→active
