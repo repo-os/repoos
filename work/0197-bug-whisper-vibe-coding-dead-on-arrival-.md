@@ -2,14 +2,16 @@
 id: "0197"
 title: "bug: whisper vibe-coding dead on arrival — [whisper] unparsed, no key path, apiKey leaks to browser"
 type: bug
-status: ready
+status: done
+needs_merge: true
 priority: p1
 area: server + ui-app
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/bug-whisper-vibe-coding-dead-on-arrival-
+model_override: default
 created_at: "2026-08-14T12:41:38Z"
-updated_at: "2026-08-14T13:02:51Z"
+updated_at: "2026-08-16T01:54:23Z"
 ---
 ## Context
 
@@ -54,3 +56,7 @@ Reported by the human after merge: "I see microphone icon buttons on main, but I
 
 - 2026-08-14T12:41:38Z · created · unknown
 - 2026-08-14T13:02:51Z · status inbox→ready
+- 2026-08-15T17:58:01Z · model_override
+- 2026-08-15T19:45:21Z · model_override
+- 2026-08-16T01:33:18Z · needs_merge
+- 2026-08-16T01:54:23Z · status ready→done, release:success

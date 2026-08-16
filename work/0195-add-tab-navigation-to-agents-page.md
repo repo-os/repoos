@@ -2,7 +2,7 @@
 id: "0195"
 title: Add tab navigation to agents page
 type: feature
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: web
@@ -12,7 +12,7 @@ branch: feat/add-tab-navigation-to-agents-page
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T12:23:17Z"
-updated_at: "2026-08-15T10:53:23Z"
+updated_at: "2026-08-15T11:53:34Z"
 review_rounds: 1
 ---
 ## Problem
@@ -58,3 +58,4 @@ Users can click tabs to switch between sections, with clear visual indication of
 - 2026-08-15T05:42:39Z · status active→review
 - 2026-08-15T05:42:39Z · needs_merge
 - 2026-08-15T10:53:23Z · pm_model_override
+- 2026-08-15T11:53:34Z · status review→done, release:success

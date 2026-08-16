@@ -115,6 +115,7 @@ function makeCtx(
     pendingReview: new Set(),
     uiDir: null,
     reload: null,
+    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as any,
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
     onServerStatusChange: () => {},
   };
