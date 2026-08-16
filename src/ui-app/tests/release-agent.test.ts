@@ -16,16 +16,15 @@ import { execFileSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import type { RunningAgentInfo } from "../../server/agents";
+import { reapStaleFixtures } from "./helpers";
 
 interface Fixture {
   root: string;
@@ -41,58 +40,12 @@ function git(root: string, args: string[]): void {
 const FIXTURE_PREFIX = "repoos-release-";
 
 /**
- * Reap fixtures a PAST run leaked. A per-test `try/finally` only unwinds when
- * the TEST throws — it never runs if the whole process is torn down (Ctrl-C,
- * a CI job killed mid-suite). Vitest's default pool runs test files in
- * worker threads, and OS signals go to the main vitest process only — it
- * kills workers via `worker.terminate()` on interrupt, so even a
- * `process.on('SIGINT', ...)` registered in this file never fires. That gap
- * is how 900+ of these fixtures (each holding a real, deliberately-infinite
- * fake-agent process) were found leaked in `/tmp` days later (see #0185
- * investigation). Self-healing on the next run is the only mechanism that
- * survives every kill path, so sweep before this suite's own fixtures exist —
- * anything younger than the sweep age is presumed still in use by a
- * concurrently running suite and left alone.
+ * Reap fixtures a PAST run leaked before this suite's own fixtures exist.
+ * The per-test `try/finally` cleanup can't fire if the whole process is torn
+ * down (Ctrl-C, a killed CI job) — vitest's thread pool means signal handlers
+ * registered in a test file never fire either — so the next run self-heals.
+ * Shared logic in tests/helpers.ts; see `reapStaleFixtures` there.
  */
-const STALE_FIXTURE_AGE_MS = 10 * 60 * 1000;
-
-function reapStaleFixtures(): void {
-  let entries: string[];
-  try {
-    entries = readdirSync(tmpdir());
-  } catch {
-    return;
-  }
-  const cutoff = Date.now() - STALE_FIXTURE_AGE_MS;
-  for (const name of entries) {
-    if (!name.startsWith(FIXTURE_PREFIX) || name.endsWith("-worktrees")) continue;
-    const root = join(tmpdir(), name);
-    let mtimeMs: number;
-    try {
-      mtimeMs = statSync(root).mtimeMs;
-    } catch {
-      continue;
-    }
-    if (mtimeMs >= cutoff) continue;
-    try {
-      const log = readFileSync(join(root, "spawns.log"), "utf8");
-      for (const line of log.trim().split("\n")) {
-        if (!line) continue;
-        try {
-          const rec = JSON.parse(line) as { pid?: number };
-          if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
-        } catch {
-          /* already gone */
-        }
-      }
-    } catch {
-      /* no log — nothing to kill */
-    }
-    rmSync(root, { recursive: true, force: true });
-    rmSync(join(tmpdir(), `${name}-worktrees`), { recursive: true, force: true });
-  }
-}
-
 function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), FIXTURE_PREFIX));
   const bin = join(root, "bin");
@@ -193,7 +146,7 @@ function killSpawns(fx: Fixture): void {
 }
 
 beforeAll(() => {
-  reapStaleFixtures();
+  reapStaleFixtures(FIXTURE_PREFIX);
 });
 
 afterEach(() => {
