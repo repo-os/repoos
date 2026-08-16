@@ -25,10 +25,13 @@ function fmtTokens(n: number | null | undefined): string {
   return String(n);
 }
 
-function fmtCost(usd: number | null | undefined): string {
+function fmtCost(usd: number | null | undefined, source?: string): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
-  if (usd < 0.01) return `$${usd.toFixed(4)}`;
-  return `$${usd < 1 ? usd.toFixed(3) : usd.toFixed(2)}`;
+  const n = usd < 0.01 ? usd.toFixed(4) : usd < 1 ? usd.toFixed(3) : usd.toFixed(2);
+  if (source === "kiro-credits") return `${n} credits`;
+  if (source === "estimate") return `~$${n} est`;
+  if (source === "mixed") return `$${n}*`;
+  return `$${n}`;
 }
 
 const hasUsage = computed(() => (stats.value?.totalSessions ?? 0) > 0);
@@ -62,7 +65,7 @@ const days = computed(() => stats.value?.days ?? []);
         </div>
         <div class="usage-cell">
           <span class="usage-label">cost</span>
-          <span class="usage-value">{{ fmtCost(stats.totalCostUsd) }}</span>
+          <span class="usage-value">{{ fmtCost(stats.totalCostUsd, stats.costSource) }}</span>
         </div>
       </div>
 
@@ -73,7 +76,7 @@ const days = computed(() => stats.value?.days ?? []);
             <span class="usage-role-name">{{ r.role }}</span>
             <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
             <span>{{ fmtTokens(r.totalTokens) }}</span>
-            <span>{{ fmtCost(r.totalCostUsd) }}</span>
+            <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
           </div>
         </div>
       </div>
@@ -85,9 +88,10 @@ const days = computed(() => stats.value?.days ?? []);
             <span class="usage-role-name">{{ d.day }}</span>
             <span>{{ fmtElapsed(d.totalElapsedMs) }}</span>
             <span>{{ fmtTokens(d.totalTokens) }}</span>
-            <span>{{ fmtCost(d.totalCostUsd) }}</span>
+            <span>{{ fmtCost(d.totalCostUsd, d.costSource) }}</span>
           </div>
         </div>
+        <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
       </div>
     </template>
     <div v-else class="usage-empty">No AI usage recorded yet.</div>
@@ -172,5 +176,10 @@ const days = computed(() => stats.value?.days ?? []);
 .usage-empty {
   font-size: 11.5px;
   color: var(--txt-dim);
+}
+.usage-legend {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--txt-faint);
 }
 </style>

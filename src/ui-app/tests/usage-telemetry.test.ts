@@ -56,6 +56,11 @@ describe("resolveSessionTaskId — role-to-task attribution (0230)", () => {
     expect(resolveSessionTaskId("pm:0001")).toBe("0001");
   });
 
+  it("maps legacy pm-task keys without mis-parsing the suffix", () => {
+    expect(resolveSessionTaskId("pm-task:0209")).toBe("0209");
+    expect(resolveSessionTaskId("pm-task:0007")).toBe("0007");
+  });
+
   it("passes engineer/review task ids straight through", () => {
     expect(resolveSessionTaskId("0001")).toBe("0001");
     expect(resolveSessionTaskId("0042")).toBe("0042");
@@ -206,6 +211,10 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     const eng = roles.find((r) => r.role === "engineer")!;
     expect(eng.totalElapsedMs).toBe(1000);
     expect(eng.totalTokens).toBe(300);
+    // Roles and aggregate totals carry the representative cost source so the UI
+    // can label estimates/credits honestly (0230 / review).
+    expect(eng.costSource).toBe("extractUsage");
+    expect(stats!.costSource).toBe("extractUsage");
     db.close();
   });
 
@@ -256,6 +265,14 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     expect(board.totalElapsedMs).toBe(3500);
     expect(board.roles.length).toBeGreaterThanOrEqual(2);
     expect(board.days.length).toBeGreaterThanOrEqual(1);
+    // Board roles are role-keyed (not sessionType), so the UI label renders.
+    const engRole = board.roles.find((r) => "role" in r && (r as any).role === "engineer");
+    expect(engRole).toBeDefined();
+    expect((engRole as any).totalElapsedMs).toBe(2000);
+
+    // Board-level totals carry the representative cost source too, so the panel
+    // never labels a credits/estimate/mixed board as firm USD (0230 / review).
+    expect(board.costSource).toBe("extractUsage");
 
     // Per-day totals group by the server's local day.
     const local = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
@@ -264,6 +281,70 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     const day = db.getDailyTotals().find((d) => d.day === local);
     expect(day).toBeDefined();
     expect(day!.totalElapsedMs).toBe(3500);
+    db.close();
+  });
+
+  it("classifies cost source honestly (mixed/estimate/kiro never shown as USD)", () => {
+    const root = tempRoot();
+    const db = new RepoOSDb(root);
+    expect(db.isAvailable()).toBe(true);
+
+    const ended = new Date().toISOString();
+    const session = (opts: {
+      sessionId: string;
+      sessionType: string;
+      costUsd?: number;
+      costSource: string;
+      totalTokens?: number;
+    }) =>
+      db.upsertSession({
+        sessionId: opts.sessionId,
+        sessionType: opts.sessionType,
+        taskId: "0001",
+        agent: opts.sessionType,
+        model: "default",
+        codingAgent: "kiro",
+        startedAt: ended,
+        endedAt: ended,
+        elapsedMs: 100,
+        totalTokens: opts.totalTokens,
+        costUsd: opts.costUsd,
+        costSource: opts.costSource,
+        status: "finished",
+        lastActivityAt: ended,
+      });
+
+    // A single Kiro-credits session → its source is preserved.
+    session({ sessionId: "k1", sessionType: "engineer", costUsd: 0.15, costSource: "kiro-credits", totalTokens: 30 });
+    const one = db.getTaskStats("0001")!;
+    expect(one.costSource).toBe("kiro-credits");
+
+    // Adding an authoritative-USD session mixes the sources.
+    session({ sessionId: "k2", sessionType: "pm", costUsd: 0.05, costSource: "extractUsage", totalTokens: 10 });
+    const mixed = db.getTaskStats("0001")!;
+    expect(mixed.costSource).toBe("mixed");
+    // The board aggregates across tasks/sources and must also say "mixed".
+    expect(db.getBoardStats().costSource).toBe("mixed");
+
+    // An estimate-only group reads as "estimate", never silent USD.
+    db.upsertSession({
+      sessionId: "est1",
+      sessionType: "cto",
+      taskId: "0002",
+      agent: "cto",
+      model: "default",
+      codingAgent: "opencode",
+      startedAt: ended,
+      endedAt: ended,
+      elapsedMs: 50,
+      totalTokens: 20,
+      costUsd: 0.02,
+      costSource: "estimate",
+      status: "finished",
+      lastActivityAt: ended,
+    });
+    const est = db.getTaskStats("0002")!;
+    expect(est.costSource).toBe("estimate");
     db.close();
   });
 
