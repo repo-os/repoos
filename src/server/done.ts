@@ -85,7 +85,7 @@ export interface CompleteResult {
 }
 
 /** The progress steps reported to the UI while the flow runs. */
-export type DoneStep = "merge" | "build" | "check" | "done";
+export type DoneStep = "sync" | "merge" | "build" | "check" | "done";
 
 export interface MergeAttempt {
   /** Whether the branch was merged into the main checkout. */
@@ -418,6 +418,19 @@ export interface CloseOutLock {
   release: () => void;
 }
 
+/**
+ * Not the live close-out path (0187 review — flagged as unlogged; noting why
+ * it stays that way rather than adding logging nothing will ever read).
+ * `server.ts` imports this but never calls it — since #0118 the merge-queue
+ * (`JobCoordinator` + `CloseOutOrchestrator` in integration-orchestrator.ts,
+ * which now carries the phase/failure logging) is what actually runs a
+ * review->done close-out. This single-shot, run-against-main-directly version
+ * predates that and is exercised only by `src/ui-app/tests/done-*.test.ts`.
+ * Kept for its helpers (`mergeTaskBranchWithAutoSync`, `runDoneStep`,
+ * `redactSecrets`, `stripAnsi` — the last used live by `agents.ts`); consider
+ * deleting `completeTask`/`completeTaskLocked` themselves in a follow-up if
+ * nothing comes to depend on them.
+ */
 export async function completeTask(
   config: RepoOSConfig,
   task: Task,
@@ -453,7 +466,7 @@ async function completeTaskLocked(
   // Vite asset filenames and binary PNGs don't cause artificial conflicts.
   // Both are regenerated from source on main right after the merge anyway.
   const wt = worktreePathForBranch(root, task.branch);
-  if (wt !== null) {
+  if (wt !== null && !task.hotfix) {
     const r1 = await runGit(wt, ["ls-files", "dist/", "screenshots/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
       await runGit(wt, ["rm", "-r", "--cached", "--", "dist/", "screenshots/"], 15_000);
@@ -461,6 +474,9 @@ async function completeTaskLocked(
     }
   }
   const autoResolve = [rel, "dist/", "screenshots/"];
+
+  // Direct-to-main hotfix: the work was done on main itself; skip the merge.
+  const isMainHotfix = task.hotfix && task.hotfixTarget === "main";
 
   // Publish-time dirty-main guard (#0211): the main tree can be dirtied
   // between the enqueue-time check and this publish step (validation takes
@@ -500,14 +516,19 @@ async function completeTaskLocked(
     };
   }
 
-  // Cheap pre-flight: detect source-file conflicts before the expensive
-  // build/check steps run. Never leaves a half-applied merge.
-  // When the merge cannot proceed because the branch needs to be synchronized
-  // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
-  // operation and retries, so the close-out completes without a manual step.
-  // A retry where the branch was already integrated is detected up front and
-  // reported as `alreadyMerged`, resuming from the remaining steps.
-  const merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  let merge: MergeAttempt;
+  if (isMainHotfix) {
+    merge = { merged: true, ff: true, drifted: false, conflicts: [] };
+  } else {
+    // Cheap pre-flight: detect source-file conflicts before the expensive
+    // build/check steps run. Never leaves a half-applied merge.
+    // When the merge cannot proceed because the branch needs to be synchronized
+    // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
+    // operation and retries, so the close-out completes without a manual step.
+    // A retry where the branch was already integrated is detected up front and
+    // reported as `alreadyMerged`, resuming from the remaining steps.
+    merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  }
   if (!merge.merged) {
     return {
       ok: false,
@@ -560,8 +581,16 @@ async function completeTaskLocked(
   // Best-effort cleanup; content is preserved in the merged main. The worktree
   // must go first — git refuses to delete a branch checked out in a worktree.
   // Both are fail-soft, so an already-cleaned retry is a no-op here.
-  removeWorktree(root, task.branch);
-  deleteBranch(root, task.branch);
+  // Hotfix tasks: never delete a worktree that doesn't exist, and never delete
+  // main. For branch-mode hotfixes, switch back to main after closing.
+  if (!task.hotfix) {
+    removeWorktree(root, task.branch);
+    deleteBranch(root, task.branch);
+  } else {
+    if (task.hotfixTarget !== "main" && task.branch) {
+      deleteBranch(root, task.branch);
+    }
+  }
 
   return {
     ok: true,

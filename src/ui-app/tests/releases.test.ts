@@ -58,6 +58,53 @@ describe("feature releases", () => {
     }
   });
 
+  it("releases again after a task is legitimately reopened post-release (#0195)", () => {
+    // A task that goes `done` with no real work, then gets manually reopened
+    // (done→ready, a real workflow — see docs/close-out-pipeline.md) and
+    // redone, must release cleanly a second time. The Activity log is
+    // append-only, so the FIRST release marker is still in the body forever —
+    // the guard must key off the task's current status, not that history.
+    const root = mkdtempSync(join(tmpdir(), "repoos-release-reopen-"));
+    try {
+      const work = join(root, "work");
+      mkdirSync(work);
+      const pending = task(root, "0001");
+
+      patchTaskFile(config(root), pending.absPath, { status: "review" });
+      const firstRelease = markTaskReleased(config(root), pending.absPath);
+      expect(firstRelease.status).toBe("done");
+
+      // Reopened: done→ready→active→review, real work happens, close-out runs
+      // again. The old first release marker is still sitting in the log.
+      patchTaskFile(config(root), pending.absPath, { status: "ready" });
+      patchTaskFile(config(root), pending.absPath, { status: "active" });
+      patchTaskFile(config(root), pending.absPath, { status: "review" });
+      const reopened = parseTask({
+        content: readFileSync(pending.absPath, "utf8"),
+        absPath: pending.absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(reopened.status).toBe("review");
+      // The stale historical marker is exactly the trap: releasedAt reads
+      // truthy even though the task is not currently done.
+      expect(reopened.releasedAt).toBeTruthy();
+
+      const secondRelease = markTaskReleased(config(root), pending.absPath);
+      expect(secondRelease.status).toBe("done");
+      // ISO timestamps are second-precision, so same-second releases in a
+      // fast test can collide — assert on the write itself instead: a SECOND
+      // release:success entry actually landed in the append-only log.
+      const releaseCount = (
+        readFileSync(pending.absPath, "utf8").match(/release:success/g) ?? []
+      ).length;
+      expect(releaseCount).toBe(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not mistake release prose for a successful close-out", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-release-"));
     try {
@@ -90,12 +137,12 @@ describe("feature releases", () => {
 
   it("bounds the dashboard history", () => {
     const base = { status: "done" } as UiTask;
-    const tasks = Array.from({ length: 12 }, (_, index) => ({
+    const tasks = Array.from({ length: 14 }, (_, index) => ({
       ...base,
       id: String(index),
       releasedAt: `2026-01-${String(index + 1).padStart(2, "0")}T00:00:00Z`,
     }));
-    expect(releaseTimelineTasks(tasks)).toHaveLength(8);
-    expect(releaseTimelineTasks(tasks)[0].id).toBe("11");
+    expect(releaseTimelineTasks(tasks)).toHaveLength(12);
+    expect(releaseTimelineTasks(tasks)[0].id).toBe("13");
   });
 });

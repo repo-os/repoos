@@ -2,14 +2,16 @@
 id: "0194"
 title: Add a Changes tab to the task drawer showing the full code diff
 type: feature
-status: active
+status: done
 priority: p2
 area: ui-app
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-changes-tab-to-the-task-drawer-sho
+model_override: default
+pm_model_override: default
 created_at: "2026-08-14T12:06:16Z"
-updated_at: "2026-08-15T05:18:20Z"
+updated_at: "2026-08-15T16:35:37Z"
 ---
 ## Problem
 
@@ -58,3 +60,8 @@ The tab must:
 - 2026-08-15T02:49:57Z · status ready→active, branch
 - 2026-08-15T02:55:05Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-08-15T03:13:28Z · status ready→active
+- 2026-08-15T12:24:59Z · model_override
+- 2026-08-15T14:38:31Z · model_override
+- 2026-08-15T15:30:55Z · status active→review
+- 2026-08-15T16:12:01Z · pm_model_override
+- 2026-08-15T16:35:37Z · status review→done, release:success

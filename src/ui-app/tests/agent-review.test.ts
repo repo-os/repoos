@@ -128,6 +128,10 @@ async function taskWithWorktree(
   const branch = `feat/${id}-review`;
   const worktree = join(fx.worktrees, branch);
   git(fx.root, ["worktree", "add", "-q", "-b", branch, worktree]);
+  // #0210: a transition into `review` auto-commits the worktree's real work
+  // (and rejects empty worktrees). Give it an implementation file so the PATCH
+  // behaves like a trusted handoff and genuinely lands in review.
+  writeFileSync(join(worktree, "implementation.txt"), "implemented\n");
   const patched = await api(server, "PATCH", `/api/tasks/${id}`, { branch });
   expect(patched.status).toBe(200);
   return { id, absPath: created.body.absPath as string, branch, worktree };

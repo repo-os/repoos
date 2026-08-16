@@ -3,7 +3,7 @@ import { createApp, nextTick, type App } from "vue";
 import { createPinia } from "pinia";
 import type { Agent, RepoOSConfig } from "../../core/types";
 import { agentsForConfig, DEFAULT_AGENTS } from "../../core/config";
-import { repoGuidePrompt, resolveRepoGuide } from "../../server/agents";
+import { repoGuidePrompt, resolveRepoGuide, taskPmPrompt } from "../../server/agents";
 import RepoGuideChat from "../src/components/RepoGuideChat.vue";
 
 const config = (agents: Agent[]): RepoOSConfig => ({
@@ -60,6 +60,15 @@ describe("Ross (Repository Assistant)", () => {
     expect(prompt).toContain("#0114 [active]");
     expect(prompt).toContain("Never edit files");
     expect(prompt).toContain("Ross");
+  });
+
+  it("gives the PM a distinct task-management mission", () => {
+    const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
+    const prompt = taskPmPrompt("Update the task", "Task #0125: Example", pm);
+
+    expect(prompt).toContain("Product Manager");
+    expect(prompt).toContain("RepoOS CLI commands or HTTP API endpoints");
+    expect(prompt).not.toContain("You are Ross");
   });
 });
 

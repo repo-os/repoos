@@ -192,6 +192,25 @@ describe("agent session persistence", () => {
     );
   });
 
+  it("persists and reloads a PM conversation across a server restart", async () => {
+    const fx = fixture("done");
+    const sessionId = "pm-task-v2:0001";
+    const pmFile = join(fx.root, ".repoos", "sessions", "pm-task-v2%3A0001.json");
+    const first = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+
+    expect(first.startChat(sessionId, "Please revise this task", agent, "Task context").ok).toBe(true);
+    await waitFor(() => !first.isRunning(sessionId), "PM conversation exit");
+    expect(existsSync(pmFile)).toBe(true);
+
+    const rebooted = new AgentRunner(fx.config, () => {});
+    expect(rebooted.output(sessionId)?.lines).toEqual(
+      expect.arrayContaining([
+        { type: "human", text: "Please revise this task" },
+        { s: "out", d: "persisted output" },
+      ]),
+    );
+  });
+
   it.each(["claude", "copilot"] as const)(
     "reloads a persisted %s session with its resumable session id",
     (engine) => {

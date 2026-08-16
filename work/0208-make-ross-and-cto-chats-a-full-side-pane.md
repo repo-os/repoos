@@ -2,14 +2,16 @@
 id: "0208"
 title: Make Ross and CTO chats a full side panel
 type: feature
-status: review
+status: done
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/make-ross-and-cto-chats-a-full-side-pane
+model_override: default
 created_at: "2026-08-15T04:12:14Z"
-updated_at: "2026-08-15T04:35:02Z"
+updated_at: "2026-08-16T10:38:19Z"
 ---
 ## Problem
 
@@ -62,3 +64,9 @@ and feel like first-class panels rather than secondary, undersized views.
 - 2026-08-15T04:12:32Z · status inbox→ready
 - 2026-08-15T04:12:34Z · status ready→active, branch
 - 2026-08-15T04:35:02Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T10:46:42Z · status review→active
+- 2026-08-15T10:47:32Z · status active→review
+- 2026-08-15T11:02:06Z · status review→done, release:success
+- 2026-08-16T09:56:13Z · status done→ready
+- 2026-08-16T10:30:14Z · needs_merge
+- 2026-08-16T10:38:19Z · status ready→done, release:success

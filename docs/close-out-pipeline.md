@@ -13,6 +13,50 @@ and git history, and desyncs the task file from its branch copy (this exact mist
 a real, confirmed merge-conflict failure later in this session — see "Task file drift"
 below).**
 
+## Running the control-plane server: choose one owner
+
+There are two supported ways to run the server on port 7171. **Use exactly one at a
+time.** Running both makes two processes compete for the port and `.repoos/serve.lock`,
+and makes it impossible to tell whether a shutdown was intentional or a supervisor
+restart.
+
+### Option A: launchd plus health watchdog (persistent)
+
+On macOS, `com.repoos.serve` starts the server at login and restarts it after a crash.
+`com.repoos.watchdog` checks `/api/health` every minute and kickstarts the service after
+three consecutive failed checks. Both are needed because RepoOS's reload handoff creates
+a replacement process that launchd no longer directly tracks. This is the intended
+always-on setup described by task #0185.
+
+Use this option when RepoOS should survive reboots and crashes. Do **not** run `just
+serve` while these LaunchAgents are loaded.
+
+### Option B: manual development server (current local development choice)
+
+For development and debugging, unload both LaunchAgents and run the server manually:
+
+```bash
+just serve
+```
+
+After rebuilding, or if it stops, replace it with:
+
+```bash
+just restart
+```
+
+This intentionally gives up automatic crash/reboot recovery in exchange for a single,
+easy-to-observe server process. **This is the current development setup on this machine**
+while we evaluate server/reload efficiency. Do not run the launchd service or watchdog
+alongside it.
+
+To switch back to Option A later:
+
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.serve.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.watchdog.plist
+```
+
 ## The two state machines
 
 There are two separate, nested state machines. Confusing them is the #1 cause of

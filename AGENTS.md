@@ -73,20 +73,19 @@ cannot tell from the code alone:
   against the build marker in `dist/.build-info.json`). If you see a staleness
   warning, run `bun run build` before trusting any `repoos` output or the UI.
   This is the #1 way to waste time in this repo — the guardrail catches it.
-- **`dist/` is committed, and the build is deterministic (2026-08-15).** A
-  rebuild of unchanged source now produces a byte-identical `dist/`, so
-  `bun run build` on its own must NOT leave the tree dirty. Two markers:
-  `dist/.build-info.json` (`{ hash, version }`, tracked, what staleness and
-  auto-reload compare) and `dist/.build-stamp.json` (`{ generatedAt }`,
-  gitignored, only "how old is this build" readers). **If you find yourself
-  reintroducing a timestamp, random value, or absolute path into the tracked
-  marker, stop** — that single field previously dirtied the tree on every
-  build and conflicted on essentially every merge. Read
-  `docs/dogfooding-vs-general.md` before changing it.
-- **If `git status` shows `dist/` dirty after a plain rebuild, something is
-  wrong** — either determinism regressed, or your `src/` genuinely differs
-  from the last committed build. Do not "fix" it by committing the churn
-  without understanding which.
+- **`dist/` is gitignored (as of 2026-08-15) — never `git add` it, and never
+  `commit` it.** It used to be tracked, and that alone was the #1 source of
+  merge conflicts and dirty-`main` failures in this repo — see
+  `docs/dogfooding-vs-general.md` for the full history. If a task, a script, or
+  your own instinct tells you to commit regenerated `dist/`, that instruction
+  is stale; do not follow it. `dist/.build-info.json` (`{ hash, version }`) is
+  deterministic and gitignored along with everything else in `dist/`; a
+  rebuild of unchanged source produces zero `git status` output, not "an
+  unchanged tracked file" — there is nothing there for git to see at all.
+- **A fresh task worktree has no `dist/` until something builds it, and that
+  is correct, not a bug.** `repoos check` always builds fresh regardless; the
+  preview path builds on demand when one is missing. Do not add a step to
+  copy or commit `dist/` into a new worktree "to fix" this.
 - Editing the task file format, frontmatter schema, or the parser is a
   SELF-MODIFYING act: it affects this repo's own `work/*.md` files, including
   the task you are working on. If you change the format, write a migration in
@@ -103,6 +102,9 @@ cannot tell from the code alone:
   manipulation goes through `repoos` commands or HTTP API endpoints
   (`POST /api/tasks`, `PATCH /api/tasks/:id`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
+- **The Product Manager agent is authorized to create and update tasks.** It
+  must use those same RepoOS CLI commands or HTTP API endpoints for task body,
+  metadata, and status changes; it must never edit task Markdown directly.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
@@ -133,6 +135,47 @@ cannot tell from the code alone:
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse
   it with this repo's own AGENTS.md.
+
+## Debugging: search the error, then check the versions
+
+When an error is *weird* — it makes no sense given the code, or the same code
+behaves differently in two places — stop reasoning from first principles and do
+two cheap things first:
+
+1. **Search the exact error text on the web.** Someone has almost certainly hit
+   it. This costs 30 seconds and routinely saves an hour of theorising.
+2. **If anything smells like a dependency or environment problem, check the
+   versions** — of the runtime, not just the packages. `node --version`,
+   `bun --version`, and *which binary is actually running* (`process.execPath`,
+   `which node`). "Works here, fails there" is a version difference until
+   proven otherwise.
+
+**Worked example (2026-08-15).** Task #0205's close-out failed the gate twice
+with `TypeError: Cannot read properties of undefined (reading 'removeItem')` at
+`tests/repo-store.test.ts:805` — `localStorage` was undefined. The same suite
+passed every time when run by hand. It was initially misdiagnosed as load-
+induced flakiness (see `docs/dogfooding-vs-general.md`) and nearly written off
+as contention noise from #0216, which would have been wrong.
+
+A web search surfaced a known Vitest issue about Node's Web Storage API. Checking
+versions closed it immediately:
+
+- `bun run test` by hand → Node 24 → `localStorage` absent from `globalThis` →
+  jsdom installs its own Storage → **passes**
+- The close-out gate → `process.execPath` → the serving process's runtime,
+  Homebrew Node 26 under launchd → Node defines `localStorage` as an accessor
+  returning `undefined` (no `--localstorage-file`) → vitest's jsdom environment
+  sees the key already present and skips installing jsdom's Storage → **fails**
+
+100% deterministic, 668ms, on a completely idle machine. Not flaky at all. Fixed
+with a setup shim (`src/ui-app/tests/setup/web-storage.ts`).
+
+**The general lesson:** "it passes for me but fails in the pipeline" is a
+version/environment difference far more often than it is flakiness. Reproduce
+under the *exact* runtime the failing system uses before concluding anything —
+here that meant `/opt/homebrew/bin/node`, not whatever `node` resolves to in
+your shell. And be suspicious of any diagnosis that requires the failure to be
+random when it reproduces identically twice.
 
 ## Git setup: don't let a failed command skip branch creation
 

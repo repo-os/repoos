@@ -381,8 +381,19 @@ export interface DiffStats {
   deletions: number;
 }
 
+export interface DiffResult {
+  patch: string;
+  truncated: boolean;
+}
+
+const MAX_DIFF_BYTES = 256_000;
+const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
+
 /**
- * Get diff statistics comparing a branch to main.
+ * Get diff statistics comparing a branch point to the current worktree.
+ * This deliberately includes committed, staged, and unstaged source edits so
+ * the task drawer can show an agent's work before its handoff commit.
+ * Generated build output is excluded because it is not task source.
  * Returns file count and line additions/deletions.
  */
 export function getDiffStats(
@@ -392,7 +403,7 @@ export function getDiffStats(
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  const statOutput = git(worktree, ["diff", "--stat", baseFull, "HEAD"]);
+  const statOutput = git(worktree, ["diff", "--stat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
 
   let filesChanged = 0;
@@ -418,6 +429,33 @@ export function getDiffStats(
   }
 
   return { filesChanged, additions, deletions };
+}
+
+/**
+ * Get the full patch diff from a branch point to the current worktree.
+ * This includes committed, staged, and unstaged source edits, while leaving
+ * generated build output out of the task-facing code review view.
+ * Bounded at MAX_DIFF_BYTES to avoid sending giant payloads.
+ */
+export async function getDiff(
+  worktree: string,
+  baseBranch: string,
+): Promise<DiffResult> {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { patch: "", truncated: false };
+
+  const run = await runGit(worktree, ["diff", "--patch", baseFull, ...DIFF_SOURCE_PATHS], 15000);
+  if (run.status !== 0 && run.stdout === "") return { patch: "", truncated: false };
+
+  const buf = Buffer.from(run.stdout, "utf8");
+  if (buf.byteLength <= MAX_DIFF_BYTES) return { patch: run.stdout, truncated: false };
+
+  let truncated = run.stdout;
+  while (Buffer.from(truncated, "utf8").byteLength > MAX_DIFF_BYTES) {
+    truncated = truncated.slice(0, -1024);
+  }
+  truncated += `\n\n--- diff truncated (${(buf.byteLength / 1024).toFixed(0)} kB total) ---`;
+  return { patch: truncated, truncated: true };
 }
 
 /** Whether git is installed at all (independent of being inside a repo). */
@@ -850,4 +888,92 @@ export function removeWorktree(root: string, branch: string): boolean {
   if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
   git(root, ["worktree", "prune"]);
   return git(root, ["worktree", "remove", "--force", path]) !== null;
+}
+
+export interface EnsureHotfixResult {
+  ok: boolean;
+  /** Always config.root — the hotfix runs in the main checkout. */
+  path: string;
+  /** The branch created or reused. */
+  branch: string;
+  /** Human-readable failure reason. */
+  reason?: string;
+}
+
+/**
+ * Prepare the main checkout for a hotfix task.
+ *
+ * 1. Create a `hotfix/<id>-<slug>` branch from main (when hotfixTarget is
+ *    "branch") or stay on main (when target is "main").
+ * 2. Refuse if the main checkout is dirty.
+ * 3. Return config.root as the working directory — the agent runs here.
+ */
+export function ensureHotfix(
+  root: string,
+  branch: string,
+  hotfixTarget: "branch" | "main",
+): EnsureHotfixResult {
+  if (!isGitRepo(root)) {
+    return { ok: false, path: root, branch, reason: "not a git repository" };
+  }
+  const head = currentBranch(root);
+  if (!head) {
+    return { ok: false, path: root, branch, reason: "could not determine current branch" };
+  }
+
+  // For branch-mode hotfixes: create the hotfix branch if it doesn't exist,
+  // then check it out. For main-mode: verify we're already on main.
+  if (hotfixTarget === "branch") {
+    if (head !== branch) {
+      if (!localBranches(root).has(branch)) {
+        if (git(root, ["checkout", "-b", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not create branch ${branch}` };
+        }
+      } else {
+        if (git(root, ["checkout", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not checkout branch ${branch}` };
+        }
+      }
+    }
+  } else {
+    if (head !== "main") {
+      return { ok: false, path: root, branch, reason: "main-mode hotfix requires the main checkout to be on main" };
+    }
+  }
+
+  return { ok: true, path: root, branch };
+}
+
+/**
+ * Reset the main checkout back to `main` after a hotfix, discarding any
+ * in-flight work. Only touches root when it's on a hotfix branch.
+ */
+export function resetHotfix(root: string, branch: string): boolean {
+  // Only safe to reset if we're on the hotfix branch and it's not main.
+  const head = currentBranch(root);
+  if (!head || head === "main") return false;
+  if (head !== branch) return false;
+  return git(root, ["checkout", "main"]) !== null;
+}
+
+/**
+ * Get agent-touched files in the working directory: the union of tracked
+ * worktree-changed files and newly-added files since the last ref, excluding
+ * dist/ and screenshots/. Returns an empty list on git failure.
+ */
+export function agentTouchedFiles(root: string, sinceRef: string): string[] {
+  // Staged + unstaged changes (tracked files)
+  const diff =
+    git(root, ["diff", "--name-only", sinceRef, "--", "."])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  // Untracked files that aren't in dist/ or screenshots/
+  const untracked =
+    git(root, ["ls-files", "--others", "--exclude-standard"])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((p) => !p.startsWith("dist/") && !p.startsWith("screenshots/")) ?? [];
+  return [...new Set([...diff, ...untracked])];
 }

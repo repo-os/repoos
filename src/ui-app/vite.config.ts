@@ -89,6 +89,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["tests/**/*.test.ts"],
+    // Node >= 25 occupies globalThis.localStorage with an accessor that yields
+    // undefined, which makes jsdom skip installing its own Storage. Without
+    // this shim the suite passes under Node 24 and fails under Node 26 — and
+    // the close-out gate runs under whichever Node is serving. See the file.
+    setupFiles: ["./tests/setup/web-storage.ts"],
     // Process-spawning tests boot real child processes (fixture CLI stubs,
     // git) and wait on them with waitFor() polls of up to 10s. Vitest's
     // default 5s per-test timeout flaked the `repoos check` gate under load

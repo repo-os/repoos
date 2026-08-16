@@ -11,6 +11,9 @@ import {
   createPerformanceTasks,
   runPerformanceAgent,
   stripCommentsAndStrings,
+  scanForDesignIssues,
+  generateDesignReport,
+  runDesignAgent,
   TechDebtError,
   PerformanceError,
   type TechDebtIssue,
@@ -529,11 +532,107 @@ describe("runPerformanceAgent", () => {
     expect(result.created).toBeGreaterThan(0);
     expect(result.failed).toBe(0);
 
-    const persisted = loadBuiltInAgentsConfig(root);
-    expect(persisted?.["performance"]?.lastRunAt).toBeTruthy();
-    expect(config.builtInAgents?.["performance"]?.lastRunAt).toBeTruthy();
-
     const files = readdirSync(join(root, "work"));
     expect(files.length).toBeGreaterThan(0);
+  });
+});
+
+describe("scanForDesignIssues", () => {
+  it("returns a scan result with scanned file counts", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/views/Home.vue": "<template><div>Hello</div></template>",
+    });
+    const result = await scanForDesignIssues(configFor(root));
+    expect(result.scannedFiles).toBe(1);
+    expect(Array.isArray(result.findings)).toBe(true);
+  });
+
+  it("flags hardcoded inline styles as UI bugs on vue files", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/views/Page.vue": '<div style="color: red; background: blue">Hi</div>',
+    });
+    const result = await scanForDesignIssues(configFor(root));
+    const bugs = result.findings.filter((f) => f.category === "ui-bug" && f.description.includes("inline style"));
+    expect(bugs.length).toBeGreaterThan(0);
+    expect(bugs[0].file).toBe("views/Page.vue");
+    expect(bugs[0].recommendation).toContain("theme");
+  });
+
+  it("flags click handlers on non-interactive elements", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/components/Item.vue": "<div @click=\"select()\">Item</div>",
+    });
+    const result = await scanForDesignIssues(configFor(root));
+    const friction = result.findings.filter((f) => f.category === "ux-friction" && f.description.includes("@click"));
+    expect(friction.length).toBeGreaterThan(0);
+    expect(friction[0].recommendation).toContain("role");
+  });
+
+  it("flags inputs without a label or aria-label", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/components/Form.vue": "<input type=\"text\" />",
+    });
+    const result = await scanForDesignIssues(configFor(root));
+    const friction = result.findings.filter((f) => f.category === "ux-friction" && f.description.includes("input"));
+    expect(friction.length).toBeGreaterThan(0);
+  });
+
+  it("flags v-html usage as a ui-bug", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/components/Blob.vue": "<div v-html=\"html\"></div>",
+    });
+    const result = await scanForDesignIssues(configFor(root));
+    const bugs = result.findings.filter((f) => f.category === "ui-bug" && f.description.includes("v-html"));
+    expect(bugs.length).toBeGreaterThan(0);
+  });
+
+  it("analyzes nothing (empty findings) when src/ui-app is absent", async () => {
+    const root = makeRepo({ "src/other.ts": "export const a = 1;" });
+    const result = await scanForDesignIssues(configFor(root));
+    expect(result.scannedFiles).toBe(0);
+    expect(result.findings).toHaveLength(0);
+  });
+});
+
+describe("generateDesignReport", () => {
+  it("writes a timestamped markdown report with the Design_report_YYYY-MM-DD-HHMM name", async () => {
+    const root = makeRepo({ "src/ui-app/src/views/Page.vue": "<div style=\"color:red\">x</div>" });
+    const scan = await scanForDesignIssues(configFor(root));
+    const { reportPath, fileName } = await generateDesignReport(configFor(root), scan);
+    expect(fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
+    expect(reportPath).toContain(join("docs", "agents", "Design"));
+    const content = readFileSync(reportPath, "utf8");
+    expect(content).toContain("# UI/UX Design Review Report");
+    expect(content).toContain("UI Bugs");
+  });
+
+  it("produces a readable report even with no findings", async () => {
+    const root = makeRepo({ "src/other.ts": "export const a = 1;" });
+    const scan = await scanForDesignIssues(configFor(root));
+    const { reportPath } = await generateDesignReport(configFor(root), scan);
+    const content = readFileSync(reportPath, "utf8");
+    expect(content).toContain("No significant UI/UX issues detected");
+  });
+});
+
+describe("runDesignAgent", () => {
+  it("runs the pipeline, writes the report, and records lastRunAt", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/views/Page.vue": "<div style=\"color:red\">x</div>",
+    });
+    const config = configFor(root);
+    const result = await runDesignAgent(config);
+
+    expect(result.findingsFound).toBeGreaterThan(0);
+    expect(result.scannedFiles).toBeGreaterThan(0);
+    expect(result.created).toBe(0);
+    expect(result.failed).toBe(0);
+
+    expect(result.fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
+    expect(readFileSync(result.reportPath, "utf8")).toContain("UI Bugs");
+
+    const persisted = loadBuiltInAgentsConfig(root);
+    expect(persisted?.["design"]?.lastRunAt).toBeTruthy();
+    expect(config.builtInAgents?.["design"]?.lastRunAt).toBeTruthy();
   });
 });

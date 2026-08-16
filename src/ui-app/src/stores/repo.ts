@@ -6,9 +6,11 @@ import type {
   AgentOutputEntry,
   AgentSessionStats,
   AutoEngineeringState,
+  BoardIndex,
   Counts,
   CtoState,
   Health,
+  IntegrationPipelineSnapshot,
   RepoEvent,
   RepoIndex,
   ReviewReport,
@@ -137,6 +139,28 @@ export const STATUS_COLORS: Record<string, string> = {
 
 export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
 
+/**
+ * The human-action reasons a task earns on the "Needs your attention" panel,
+ * in display order. Empty when the task needs nothing from a human. Reasons
+ * dedupe upstream: a task is listed once even when it matches several.
+ */
+export function humanNeedsReasons(
+  t: Pick<Task, "assignee" | "status" | "needsInput" | "needsMerge">,
+): string[] {
+  const reasons: string[] = [];
+  if (t.assignee === "human" && t.status !== "done") reasons.push("assigned to you");
+  if (t.needsInput) reasons.push("needs input");
+  if (t.needsMerge) reasons.push("merge needed");
+  if (t.status === "review") reasons.push("awaiting sign-off");
+  return reasons;
+}
+
+/** One row of the "Needs your attention" panel: the task plus its reasons. */
+export interface HumanNeedsItem {
+  task: Task;
+  reasons: string[];
+}
+
 export interface Column {
   id: "draft" | "inbox" | "ready" | "active" | "review" | "done";
   label: string;
@@ -156,7 +180,7 @@ export type SortOrder = "recent" | "current";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
-  { value: "current", label: "Current order" },
+  { value: "current", label: "Priority level" },
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
@@ -225,8 +249,12 @@ export const useRepoStore = defineStore("repo", () => {
   const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
   /** Diff statistics per task: files changed, additions, deletions. */
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
+  /** Full patch diffs per task. */
+  const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
+  /** Live integration-pipeline snapshot for the pinned status bar (0207). */
+  const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
@@ -244,6 +272,21 @@ export const useRepoStore = defineStore("repo", () => {
   let feedKey = 0;
   let toastId = 0;
   let es: EventSource | null = null;
+  /**
+   * When init()'s own index fetch completed, or 0 once consumed. Lets the FIRST
+   * SSE open skip its refresh: init() fetched the index moments earlier and the
+   * payload is ~1 MB at 200 tasks, so refetching it doubled the largest transfer
+   * of a page load for data that could not have changed.
+   *
+   * Time-bounded rather than a plain flag, because the skip is only sound while
+   * the two are genuinely adjacent. If the connection took a while to open,
+   * events emitted in that window were never delivered and never replayed, so
+   * the refresh has to happen. Reconnects always refresh — the stamp is cleared
+   * after the first open.
+   */
+  let initRefreshAt = 0;
+  /** Longest gap between init()'s fetch and the first SSE open that can be treated as "nothing happened". */
+  const INIT_REFRESH_REUSE_MS = 2000;
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -252,6 +295,28 @@ export const useRepoStore = defineStore("repo", () => {
   const total = computed(() => tasks.value.length);
   const backlogCount = computed(() => tasks.value.filter((t) => t.status !== "draft").length);
   const aiTasks = computed(() => tasks.value.filter((t) => t.assignee === "ai" && t.status !== "done"));
+
+  /** Priority rank for the needs-you sort: p0 first, then p1/p2/p3. */
+  const PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
+  /** Tasks a human must act on (0125), deduped, priority-first then newest. */
+  const humanNeeds = computed<HumanNeedsItem[]>(() => {
+    const items: HumanNeedsItem[] = [];
+    const seen = new Set<string>();
+    for (const t of tasks.value) {
+      const reasons = humanNeedsReasons(t);
+      if (!reasons.length || seen.has(t.id)) continue;
+      seen.add(t.id);
+      items.push({ task: t, reasons });
+    }
+    return items.sort((a, b) => {
+      const pa = PRIORITY_RANK[a.task.priority] ?? 99;
+      const pb = PRIORITY_RANK[b.task.priority] ?? 99;
+      if (pa !== pb) return pa - pb;
+      const ua = a.task.updated_at ?? a.task.created_at ?? "";
+      const ub = b.task.updated_at ?? b.task.created_at ?? "";
+      return ub.localeCompare(ua);
+    });
+  });
 
   const fmtDate = (s: string | null): string => (s ? new Date(s).toLocaleString() : "—");
 
@@ -350,8 +415,12 @@ export const useRepoStore = defineStore("repo", () => {
     if (e.type === "hello") {
       // Every SSE (re)connect announces a server. If this server already runs
       // the build the notice points at, a reload landed (or the server was
-      // restarted into it) — clear the notice. Otherwise it persists.
+      // restarted into it) — clear the notice. Otherwise it persists. A
+      // replacement server also loses old SSE `agent.exited` events, so
+      // reconcile the authoritative running set here to avoid phantom
+      // “coding…” indicators after a reload.
       void reconcileVersion();
+      void fetchRunning();
       return;
     }
     if (e.type === "build.available") {
@@ -532,6 +601,8 @@ export const useRepoStore = defineStore("repo", () => {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
+    } else if (e.type === "integration") {
+      integration.value = e.pipeline;
     }
   }
 
@@ -544,6 +615,25 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Hydrate the integration-pipeline snapshot after a refresh/SSE gap (0207). */
+  async function refreshIntegration(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>("/api/integration/pipeline");
+      if (r.pipeline) integration.value = r.pipeline;
+    } catch {
+      /* non-fatal — the bar falls back to its idle state */
+    }
+  }
+
+  /**
+   * Retry a failed integration job (0207). Reuses the server's existing retry
+   * path (re-enqueue as a fresh queued job). Best-effort: non-fatal errors are
+   * surfaced as a toast for the caller to catch.
+   */
+  async function retryIntegration(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
+  }
+
   function connectSSE(): void {
     if (es) es.close();
     es = new EventSource(origin + "/api/events");
@@ -553,20 +643,35 @@ export const useRepoStore = defineStore("repo", () => {
       // the server-authoritative index on every open so a reviewer that
       // started, finished, or failed during that gap cannot leave a stale card
       // or disabled/enabled done action behind.
-      void refresh().catch(() => {
-        /* connection state already reflects the successful SSE open */
-      });
+      //
+      // The one exception is the very first open of a page load, when init()
+      // fetched the index moments earlier and no gap existed to miss events in.
+      // Refetching there doubled the largest payload the app transfers. If
+      // init()'s refresh failed, or the connection was slow enough that events
+      // could have been missed, the stamp does not qualify and this still runs.
+      const reusable = initRefreshAt > 0 && Date.now() - initRefreshAt < INIT_REFRESH_REUSE_MS;
+      initRefreshAt = 0;
+      if (reusable) {
+        /* init() just fetched it and no gap existed to miss events in */
+      } else {
+        void refresh().catch(() => {
+          /* connection state already reflects the successful SSE open */
+        });
+      }
       void refreshAutoEng().catch(() => {
         /* non-fatal hydration */
       });
       void loadCTO().catch(() => {
         /* non-fatal hydration */
       });
+      void refreshIntegration().catch(() => {
+        /* non-fatal hydration */
+      });
     };
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -579,13 +684,26 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function refresh(): Promise<void> {
-    const idx = await api<RepoIndex>("/api/index");
-    // /api/index has no preview state; keep any live previews across rebuilds.
+    const idx = await api<BoardIndex>("/api/board");
+    // /api/board has no preview state; keep any live previews across rebuilds.
     const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
+    // Preserve full bodies already in the store (from SSE task.updated events).
+    // Only fall back to bodyPreview for tasks we haven't seen before.
+    const existingBodies = new Map(tasks.value.map((t) => [t.id, t.body] as const));
     tasks.value = idx.tasks.map((t) => ({
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
-    }));
+      // Use existing full body if we have it; otherwise use the preview from the board response.
+      body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
+      extra: {},
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+      pmAgentOverride: null,
+      pmCliOverride: null,
+      pmModelOverride: null,
+      releasedAt: t.releasedAt ?? null,
+    })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
     // was running. Reports remain lazy-loaded by the drawer, but cards get
     // their live activity state immediately.
@@ -734,10 +852,14 @@ export const useRepoStore = defineStore("repo", () => {
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
-  async function startWork(t: Task, mode: "resume" | "clean" = "resume"): Promise<void> {
+  async function startWork(
+    t: Task,
+    mode: "resume" | "clean" = "resume",
+    instruction?: string,
+  ): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${t.id}/start`,
-      JSON_OPTS("POST", { mode }),
+      JSON_OPTS("POST", { mode, instruction }),
     );
     if (!r.ok) {
       const message = r.reason ?? "could not start work";
@@ -752,6 +874,21 @@ export const useRepoStore = defineStore("repo", () => {
     });
     if (!r.ok) {
       const message = r.reason ?? "could not pause work";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
+  async function activateHotfix(
+    t: Task,
+    hotfixTarget: "branch" | "main" = "branch",
+  ): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${t.id}/hotfix`,
+      JSON_OPTS("POST", { hotfixTarget }),
+    );
+    if (!r.ok) {
+      const message = r.reason ?? "could not activate hotfix";
       pushToast(message, "error");
       throw new Error(message);
     }
@@ -913,6 +1050,29 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Get diff stats for a task, or undefined if not yet fetched. */
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
+
+  /** Load the full patch diff for a task. Best-effort. */
+  async function loadDiff(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        diff: { patch: string; truncated: boolean };
+        noBranch?: boolean;
+        noWorktree?: boolean;
+      }>(`/api/tasks/${id}/diff`);
+      if (r.ok) {
+        diffs.value = {
+          ...diffs.value,
+          [id]: r.diff,
+        };
+      }
+    } catch {
+      /* endpoint unavailable — diff is nice-to-have */
+    }
+  }
+
+  /** Get the full diff for a task, or undefined if not yet fetched. */
+  const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
@@ -1102,6 +1262,7 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       health.value = await api<Health>("/api/health");
       await refresh();
+      initRefreshAt = Date.now();
       await fetchRunning();
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
@@ -1141,6 +1302,9 @@ export const useRepoStore = defineStore("repo", () => {
     systemStats,
     autoEng,
     refreshAutoEng,
+    integration,
+    refreshIntegration,
+    retryIntegration,
     newVersion,
     restarting,
     pushToast,
@@ -1153,6 +1317,7 @@ export const useRepoStore = defineStore("repo", () => {
     total,
     backlogCount,
     aiTasks,
+    humanNeeds,
     fmtDate,
     byStatus,
     statusColor,
@@ -1170,6 +1335,7 @@ export const useRepoStore = defineStore("repo", () => {
     isRunning,
     startWork,
     pauseWork,
+    activateHotfix,
     completeTask,
     loadOutput,
     clearOutput,
@@ -1179,6 +1345,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    loadDiff,
+    diffFor,
     sendMessage,
     reviewAgain,
     sendReviewMessage,
