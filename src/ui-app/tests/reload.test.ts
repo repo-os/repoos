@@ -312,24 +312,23 @@ describe("ReloadManager", () => {
     }
   });
 
-  it("defers a reload while an agent runs and fires it when the runner drains", async () => {
+  it("no longer defers a reload while an agent runs (0214: agents survive a restart)", async () => {
     const fx = await makeFixture();
     process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
     let busy = true;
     const { manager, calls } = makeManager(fx, { isBusy: () => (busy ? 1 : 0) });
     try {
       manager.start();
+      // Write a new build hash so the reload actually fires (not not-stale).
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
       const state = manager.requestReload("test");
-      expect(state.state).toBe("deferred");
-      expect(state).toMatchObject({ running: 1 });
+      // 0214: agent-turn deferral was removed — a reload proceeds immediately
+      // even while an agent is running, because the new server re-attaches to
+      // still-alive children via the durable registry.
+      expect(state.state).toBe("reloading");
 
-      await sleep(200);
-      expect(spawns(fx)).toHaveLength(0); // nothing spawned while busy
-
-      busy = false;
-      manager.onEvent({ type: "agent.exited" });
-      await waitFor(() => calls.confirmed > 0, "deferred reload after drain");
-      expect(spawns(fx)).toHaveLength(1);
+      await waitFor(() => calls.confirmed > 0, "reload confirmed while agent is still running");
+      expect(spawns(fx)).toHaveLength(1); // replacement was spawned
     } finally {
       await killReplacement(fx);
       manager.stop();
@@ -501,9 +500,118 @@ describe("ReloadManager", () => {
   });
 });
 
+describe("Agent adoption across restarts (0214)", () => {
+  // Import AgentRunner for the adoption test
+  it("adopts a still-running agent on boot via the durable registry", async () => {
+    // We test the registry read/write and adoption logic at the AgentRunner level
+    // without spawning a full server. The test writes a registry entry and
+    // verifies that adoptRunningAgents() picks it up when the PID is alive.
+    const { AgentRunner } = await import("../../server/agents");
+    const { resolve } = await import("node:path");
+    const { appendFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-adopt-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(fullCacheDir, { recursive: true });
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+
+      // Write a task file so loadHotSessions doesn't fail
+      const taskFile = join(root, "work", "0001-adopt.md");
+      writeFileSync(taskFile, `---
+id: "0001"
+title: Adoption test
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/adopt-test
+---
+## Test
+`);
+
+      // Write a durable registry entry pointing at our OWN pid (always alive)
+      const registryFile = join(fullCacheDir, "agents.json");
+      writeFileSync(registryFile, JSON.stringify({
+        entries: [
+          { taskId: "0001", pid: process.pid, workdir: root, branch: "feat/adopt-test", runId: "adopt-run-1" },
+          // Also include a stale entry pointing at a PID that can't possibly exist
+          { taskId: "0002", pid: 999999, workdir: root, branch: "feat/dead-test", runId: "adopt-run-2" },
+        ],
+      }));
+
+      // Separate durable stream logs retain the original output classification
+      // while the server process is absent.
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      // Multi-byte text makes the initial file's byte size differ from its
+      // decoded string length. The live tail below must still begin at the
+      // correct byte offset after adoption.
+      const outLog = join(fullCacheDir, "agent-logs", "0001.out.log");
+      writeFileSync(outLog, "hello 🙂 from stdout gap\n");
+      writeFileSync(join(fullCacheDir, "agent-logs", "0001.err.log"), "hello from stderr gap\n");
+
+      // Create a fresh runner — it reads the registry on adoptRunningAgents()
+      const config = {
+        root,
+        workDir: "work",
+        docsDir: "docs",
+        skillsDir: "skills",
+        taskExtensions: [".md"],
+        defaultStatus: "inbox" as const,
+        defaultAssignee: "unassigned" as const,
+        cacheDir,
+      };
+
+      const events: Array<{ type: string; id?: string }> = [];
+      const runner = new AgentRunner(config as any, (e) => events.push(e));
+
+      expect(runner.isRunning("0001")).toBe(false); // not running yet
+      expect(runner.isRunning("0002")).toBe(false);
+
+      runner.adoptRunningAgents();
+
+      // The live entry (our own PID) should be adopted
+      expect(runner.isRunning("0001")).toBe(true);
+      // Listing running agents must also work for an adopted (proc-less) entry.
+      expect(runner.running()).toMatchObject([{ id: "0001", pid: process.pid }]);
+
+      // The stale entry should NOT be adopted (PID doesn't exist)
+      expect(runner.isRunning("0002")).toBe(false);
+
+      // Verify the gap output was caught up
+      const session = runner.output("0001");
+      expect(session).not.toBeNull();
+      expect(session!.lines.some((l: any) => l.d === "hello 🙂 from stdout gap" && l.s === "out")).toBe(true);
+      expect(session!.lines.some((l: any) => l.d === "hello from stderr gap" && l.s === "err")).toBe(true);
+
+      appendFileSync(outLog, "live output ✓ after adoption\n");
+      await waitFor(
+        () => runner.output("0001")?.lines.some((l: any) => l.d === "live output ✓ after adoption" && l.s === "out") === true,
+        "Unicode output tailed after adoption",
+      );
+
+      // The registry should be cleaned of the stale entry
+      const fs = await import("node:fs");
+      if (fs.existsSync(registryFile)) {
+        const updated = JSON.parse(fs.readFileSync(registryFile, "utf8"));
+        expect(updated.entries).toHaveLength(1);
+        expect(updated.entries[0].taskId).toBe("0001");
+      }
+
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("POST /api/server/restart", () => {
-  it.skip(
-    "returns a reload state from the running server",
+  it.skip("returns a reload state from the running server",
     async () => {
       const server = await startServer({ host: "127.0.0.1", port: 0 });
       try {
