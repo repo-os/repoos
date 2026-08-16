@@ -3,13 +3,14 @@ id: "0208"
 title: Make Ross and CTO chats a full side panel
 type: feature
 status: ready
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/make-ross-and-cto-chats-a-full-side-pane
 created_at: "2026-08-15T04:12:14Z"
-updated_at: "2026-08-16T09:56:13Z"
+updated_at: "2026-08-16T10:30:14Z"
 ---
 ## Problem
 
@@ -66,3 +67,4 @@ and feel like first-class panels rather than secondary, undersized views.
 - 2026-08-15T10:47:32Z · status active→review
 - 2026-08-15T11:02:06Z · status review→done, release:success
 - 2026-08-16T09:56:13Z · status done→ready
+- 2026-08-16T10:30:14Z · needs_merge
