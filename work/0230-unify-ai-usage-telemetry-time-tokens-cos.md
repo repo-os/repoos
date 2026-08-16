@@ -2,14 +2,14 @@
 id: "0230"
 title: "Unify AI usage telemetry (time, tokens, cost) across all roles"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/unify-ai-usage-telemetry-time-tokens-cos
 created_at: "2026-08-16T12:09:54Z"
-updated_at: "2026-08-16T12:18:17Z"
+updated_at: "2026-08-16T12:48:21Z"
 ---
 ## Problem
 
@@ -106,3 +106,4 @@ features.
 - 2026-08-16T12:09:54Z · created · unknown
 - 2026-08-16T12:10:12Z · status inbox→ready
 - 2026-08-16T12:18:17Z · status ready→active, branch
+- 2026-08-16T12:48:21Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
