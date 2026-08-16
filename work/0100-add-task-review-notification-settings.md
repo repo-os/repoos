@@ -2,14 +2,14 @@
 id: "0100"
 title: Add task notification settings for state transitions requiring attention
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-task-notification-settings-for-state
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-14T00:00:00Z"
+updated_at: "2026-08-16T13:56:38Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-11T17:37:58Z · status ready→inbox
 - 2026-08-11T19:14:59Z · status inbox→ready
 - 2026-08-14T00:00:00Z · scope expanded to cover paused, stuck, and needs-attention transitions
+- 2026-08-16T13:56:38Z · status ready→active, branch
