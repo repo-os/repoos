@@ -821,7 +821,7 @@ watch(
 
 /** Generate session ID for PM chat on a specific task. */
 function pmSessionId(taskId: string): string {
-  return `pm-task:${taskId}`;
+  return `pm-task-v2:${taskId}`;
 }
 
 const pmDraft = ref("");
