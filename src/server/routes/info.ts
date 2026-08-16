@@ -75,6 +75,23 @@ export const getIndex: RouteHandler = (ctx, _req, res) => {
   });
 };
 
+/** Lightweight board endpoint — returns only the fields TaskCard.vue needs. */
+export const getBoard: RouteHandler = (ctx, _req, res) => {
+  const { index, reviews } = ctx;
+  const snapshot = index.boardSnapshot();
+  const withReviewStatus = (t: any) => ({
+    ...t,
+    automaticReview: {
+      running: reviews.isRunning(t.id),
+      enabled: reviews.enabled(),
+    },
+  });
+  return json(res, 200, {
+    ...snapshot,
+    tasks: snapshot.tasks.map(withReviewStatus),
+  });
+};
+
 export const getDocs: RouteHandler = (ctx, _req, res) => {
   const { config } = ctx;
   return json(res, 200, listDocs(config));
