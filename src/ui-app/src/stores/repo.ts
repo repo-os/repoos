@@ -2,6 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore, type PendingScreenshot } from "./ui";
+import { useNotificationsStore, type NotificationType } from "./notifications";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -410,6 +411,27 @@ export const useRepoStore = defineStore("repo", () => {
     dirtyMain.value = next;
   }
 
+  /**
+   * Fire an attention notification for a monitored state transition (0100):
+   * review-ready, paused, stuck, or needs-attention. Only the user's enabled
+   * channels (bell sound / push) run, gated per event type. Best-effort —
+   * never throws into the SSE pipeline.
+   */
+  function notifyAttention(type: NotificationType, t: Task): void {
+    const notifications = useNotificationsStore();
+    if (!notifications.types[type]) return;
+    const label = `#${t.id} · ${t.title}`;
+    if (type === "review") {
+      void notifications.notify(type, "Task ready for review", label);
+    } else if (type === "paused") {
+      void notifications.notify(type, "Task paused", label);
+    } else if (type === "stuck") {
+      void notifications.notify(type, "Task looks stuck", label);
+    } else {
+      void notifications.notify(type, "Task needs attention", label);
+    }
+  }
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") {
@@ -474,6 +496,18 @@ export const useRepoStore = defineStore("repo", () => {
       if (statusChanged) {
         startTransition(e.task.id, prevStatus!, e.task.status);
       }
+      // Attention notifications (0100): only on a genuine transition, never on
+      // page load for a task that already sits in a monitored state.
+      const prevNeedsInput = e.prev?.needsInput;
+      if (before && statusChanged && prevStatus === "active" && e.task.status === "review") {
+        notifyAttention("review", e.task);
+      } else if (before && statusChanged && prevStatus === "active" && e.task.status === "ready") {
+        // The watchdog surfaces a stuck task back to `ready` (autoTransition);
+        // an `active`->`ready` change is the stuck rollback signal.
+        notifyAttention("stuck", e.task);
+      } else if (before && prevNeedsInput === false && e.task.needsInput === true) {
+        notifyAttention("needsInput", e.task);
+      }
     } else if (e.type === "task.deleted") {
       tasks.value = tasks.value.filter((t) => t.id !== e.id);
       const ui = useUiStore();
@@ -519,8 +553,17 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
+      const wasRunning = runningIds.value.includes(e.id);
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
+      // A deliberate pause (0100): a running agent stops on a task that stays
+      // `active` (and neither needs input nor handed off to review). The
+      // `active` gate excludes a normal handoff, whose status moves off
+      // `active` before the process exits.
+      const exited = tasks.value.find((t) => t.id === e.id);
+      if (wasRunning && exited && exited.status === "active" && !exited.needsInput) {
+        notifyAttention("paused", exited);
+      }
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
       if (outputs.value[e.id]) {
         outputs.value = {
