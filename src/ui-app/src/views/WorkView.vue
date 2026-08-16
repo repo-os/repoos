@@ -38,8 +38,9 @@ const filterCol = computed<Column | null>(() => {
 </script>
 
 <template>
-  <div>
+  <div class="work-page">
     <div
+      class="work-header"
       style="
         display: flex;
         align-items: flex-end;

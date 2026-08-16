@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ServeReaper } from "../../server/serve-reaper.js";
+import { shouldReapStrayServeProcesses } from "../../server/server.js";
 import { existsSync, readFileSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -177,5 +178,19 @@ describe("ServeReaper", () => {
         process.env.REPOOS_PREVIEW_CHILD = oldEnv;
       }
     }
+  });
+});
+
+describe("periodic serve reaper ownership (#0216)", () => {
+  it("is disabled in preview children, which must never reap their control plane", () => {
+    expect(shouldReapStrayServeProcesses({ port: 63096 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(false);
+  });
+
+  it("is disabled for ephemeral in-process test servers", () => {
+    expect(shouldReapStrayServeProcesses({ port: 0 }, {})).toBe(false);
+  });
+
+  it("remains enabled for a normal control-plane server", () => {
+    expect(shouldReapStrayServeProcesses({ port: 7171 }, {})).toBe(true);
   });
 });

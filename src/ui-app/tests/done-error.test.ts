@@ -75,7 +75,7 @@ function stubDone(failures: Record<string, { ok: boolean; error?: string }>): vo
     vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
         return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
-      if (url.includes("/api/index"))
+      if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/done")) {
@@ -187,7 +187,7 @@ describe("inline move-to-done errors", () => {
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
-        if (url.includes("/api/index"))
+        if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         if (url.includes("/done"))
@@ -225,7 +225,7 @@ describe("dirty-main guard (0204)", () => {
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
-        if (url.includes("/api/index"))
+        if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         if (url.includes("/done")) return jsonNeedsCommit();
@@ -249,7 +249,7 @@ describe("dirty-main guard (0204)", () => {
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
-        if (url.includes("/api/index"))
+        if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         if (url.includes("/done")) return jsonNeedsCommit();
@@ -272,7 +272,7 @@ describe("dirty-main guard (0204)", () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
-        if (url.includes("/api/index"))
+        if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         if (url.includes("/done")) {

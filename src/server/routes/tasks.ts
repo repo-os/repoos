@@ -1,4 +1,4 @@
-import type { Status, Agent } from "../../core/types.js";
+import type { Status, Agent, Task } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
@@ -16,7 +16,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -344,8 +344,12 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { mode?: unknown };
-    const clean = body?.mode === "clean";
+    const body = (await readBody(req)) as { mode?: unknown; instruction?: unknown };
+    const clean = body?.mode === "clean" && !existing.hotfix;
+    // A task returned from review needs its repair brief in the initial
+    // resumed turn. Sending it as a follow-up would race the agent's start
+    // and commonly be rejected while the new turn is already running.
+    const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
     const branch = existing.branch || deriveBranch(existing.title);
     if (clean) {
       if (!existing.branch) {
@@ -359,7 +363,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         });
       }
     }
-    const wtRes = ensureWorktree(config.root, branch);
+    const isHotfix = existing.hotfix === true;
+    const wtRes = isHotfix
+      ? { ok: true, path: config.root, created: false }
+      : ensureWorktree(config.root, branch);
     const patch: TaskPatch = { status: "active", needsInput: false };
     if (!existing.branch) patch.branch = branch;
     const updated = patchTaskFile(config, existing.absPath, patch, {
@@ -389,10 +396,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
 
     const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
-    const preamble =
+    const resumeContext =
       clean || !existing.branch
         ? undefined
         : resumePreamble(config, taskForLaunch, branch, cwd);
+    const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
       cwd,
@@ -677,6 +685,95 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       task: index.getTask(updated.id),
       stopped: stopRes.stopped,
       reason: stopRes.reason,
+    });
+  }
+
+  if (action === "hotfix") {
+    if (existing.status !== "ready" && !existing.hotfix) {
+      return json(res, 400, {
+        error: `Only ready tasks can be switched to hotfix (#${id} is ${existing.status})`,
+      });
+    }
+
+    if (existing.hotfix) {
+      return json(res, 400, {
+        error: `Task #${id} is already in hotfix mode`,
+      });
+    }
+
+    const body = (await readBody(req)) as { hotfixTarget?: unknown };
+    const hotfixTarget: "branch" | "main" =
+      body?.hotfixTarget === "main" ? "main" : "branch";
+
+    const branch = `hotfix/${existing.id}-${existing.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40)}`;
+
+    const rootLock = ctx.rootLock;
+    if (!rootLock.acquire(existing.id, "hotfix")) {
+      const holder = rootLock.getHolder();
+      return json(res, 409, {
+        error: `The main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}) — wait for it to finish`,
+      });
+    }
+
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      rootLock.release(existing.id);
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before hotfix (${err.message}). Commit or stash first.`,
+          needsCommit: true,
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
+    if (dirty.length > 0) {
+      rootLock.release(existing.id);
+      return json(res, 409, {
+        error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} — commit or stash before starting a hotfix`,
+        needsCommit: true,
+        dirtyFiles: dirty,
+      });
+    }
+
+    // The lock must precede `ensureHotfix`: checking out the hotfix branch is
+    // itself a mutation of the root checkout and can race a close-out merge.
+    const hotfixRes = ensureHotfix(config.root, branch, hotfixTarget);
+    if (!hotfixRes.ok) {
+      rootLock.release(existing.id);
+      return json(res, 400, {
+        error: `Cannot switch to hotfix: ${hotfixRes.reason ?? "unknown reason"}`,
+      });
+    }
+
+    let updated: Task;
+    try {
+      updated = patchTaskFile(config, existing.absPath, {
+        hotfix: true,
+        hotfixTarget,
+        branch,
+      }, {
+        onStatusChange: onServerStatusChange,
+      });
+    } catch (err) {
+      rootLock.release(existing.id);
+      throw err;
+    }
+    index.applyFileChange(updated.absPath);
+    index.refreshBranches();
+
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      branch,
+      hotfixTarget,
     });
   }
 
