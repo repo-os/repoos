@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0215"
 title: Close-out failure UI shows merge-conflict advice for non-conflict failures
 type: bug
@@ -61,3 +62,4 @@ The failure message should match the phase that failed:
 - 2026-08-16T14:09:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T14:13:44Z · status active→review
 - 2026-08-16T14:18:41Z · pm_model_override
+
