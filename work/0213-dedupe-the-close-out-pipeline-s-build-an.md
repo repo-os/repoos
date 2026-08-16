@@ -3,13 +3,14 @@ id: "0213"
 title: Dedupe the close-out pipeline's build and browser/server launches
 type: feature
 status: ready
+needs_merge: true
 priority: p3
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-15T05:57:16Z"
-updated_at: "2026-08-15T05:59:24Z"
+updated_at: "2026-08-16T12:10:59Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ This is the narrow remainder of #0075 (deleted — that task's other concerns, a
 
 - 2026-08-15T05:57:16Z · created · unknown
 - 2026-08-15T05:59:24Z · status inbox→ready
+- 2026-08-16T12:10:59Z · needs_merge
