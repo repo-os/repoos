@@ -2,14 +2,14 @@
 id: "0238"
 title: Add jelly design theme
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-16T19:05:22Z"
-updated_at: "2026-08-16T19:05:22Z"
+updated_at: "2026-08-16T19:06:08Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ The user picks **Jelly** from the **Design theme** dropdown in Settings. The who
 ## Activity
 
 - 2026-08-16T19:05:22Z · created · unknown
+- 2026-08-16T19:06:08Z · status inbox→ready
