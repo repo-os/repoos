@@ -123,17 +123,47 @@ export interface TaskStats {
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  /** Representative cost source for the task's sessions ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
+  costSource: string;
+  /** Role-level breakdown (engineer/pm/reviewer/cto/guide/…) for this task. */
+  roles: TaskRoleStats[];
 }
 
-/** Aggregation: per-session-type total stats. */
-export interface SessionTypeStats {
-  sessionType: string;
+/** Aggregation: one role's share of a task's usage. */
+export interface TaskRoleStats {
+  role: string;
   totalSessions: number;
   totalElapsedMs: number;
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  costSource: string;
+}
+
+/** Aggregation: one day's totals (server's local time). */
+export interface DailyTotals {
+  day: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  costSource: string;
+}
+
+/** Aggregation: per-session-type total stats. */
+export interface SessionTypeStats {
+  sessionType: string;
+  role: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  costSource: string;
 }
 
 /** Board-level summary stats. */
@@ -142,8 +172,14 @@ export interface BoardStats {
   totalElapsedMs: number;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  /** Representative cost source for the board ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
+  costSource: string;
   mostExpensiveSession: SessionRecord | null;
   mostExpensiveTask: { taskId: string; costUsd: number } | null;
+  /** Per-role board totals (sessionType breakdown). */
+  roles: TaskRoleStats[];
+  /** Per-day board totals (server's local time). */
+  days: DailyTotals[];
 }
 
 /** Database wrapper providing high-level operations. */
@@ -171,37 +207,38 @@ export class RepoOSDb {
       this.db.exec("PRAGMA journal_mode=WAL");
       this.db.exec("PRAGMA synchronous=NORMAL");
 
-      this.runMigrations();
-      this.available = true;
+      // Only consider the store available once the schema is actually in place;
+      // a failed migration must degrade gracefully (available=false) rather than
+      // leave a half-initialized DB that silently no-ops every read (0230).
+      this.available = this.runMigrations();
     } catch {
       // Initialization failed — graceful degradation
     }
   }
 
-  private runMigrations(): void {
-    if (!this.available || !this.db) return;
+  /** Apply pending migrations. Returns true only if the schema is in place. */
+  private runMigrations(): boolean {
+    if (!this.db) return false;
     try {
-      // Get current schema version
+      let currentVersion = 0;
       try {
-        const result = this.db.query("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").all();
-        const currentVersion = result.length > 0 ? (result[0] as { version: number }).version : 0;
-
-        // Apply missing migrations
-        for (const migration of MIGRATIONS) {
-          if (migration.version > currentVersion) {
-            this.db.exec(migration.up);
-            this.db.exec(`INSERT INTO schema_version (version) VALUES (${migration.version})`);
-          }
-        }
+        const result = this.db.prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").all();
+        currentVersion = result.length > 0 ? (result[0] as { version: number }).version : 0;
       } catch {
-        // Table doesn't exist yet, run all migrations
-        for (const migration of MIGRATIONS) {
+        // No schema_version yet — run all migrations below.
+        currentVersion = 0;
+      }
+
+      for (const migration of MIGRATIONS) {
+        if (migration.version > currentVersion) {
           this.db.exec(migration.up);
           this.db.exec(`INSERT INTO schema_version (version) VALUES (${migration.version})`);
         }
       }
+      return true;
     } catch {
-      // Migration failed — log and continue
+      // A migration failed — the schema is incomplete, so report unavailable.
+      return false;
     }
   }
 
@@ -279,7 +316,7 @@ export class RepoOSDb {
   getSession(sessionId: string): SessionRecord | null {
     if (!this.available || !this.db) return null;
     try {
-      const result = this.db.query("SELECT * FROM sessions WHERE sessionId = ?").all(sessionId);
+      const result = this.db.prepare("SELECT * FROM sessions WHERE sessionId = ?").all(sessionId);
       return result.length > 0 ? (result[0] as SessionRecord) : null;
     } catch {
       return null;
@@ -290,7 +327,7 @@ export class RepoOSDb {
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];
     try {
-      return this.db.query("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC").all(taskId) as SessionRecord[];
+      return this.db.prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC").all(taskId) as SessionRecord[];
     } catch {
       return [];
     }
@@ -300,34 +337,63 @@ export class RepoOSDb {
   getTaskStats(taskId: string): TaskStats | null {
     if (!this.available || !this.db) return null;
     try {
-      const result = this.db.query(`
-        SELECT
-          ? as taskId,
-          COUNT(*) as totalSessions,
-          COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
-          SUM(CASE WHEN inputTokens IS NOT NULL THEN inputTokens ELSE 0 END) as totalInputTokens,
-          SUM(CASE WHEN outputTokens IS NOT NULL THEN outputTokens ELSE 0 END) as totalOutputTokens,
-          SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
-          SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
-        FROM sessions
-        WHERE taskId = ?
-      `).all(taskId, taskId);
-
-      if (result.length > 0) {
-        const row = result[0] as any;
-        return {
-          taskId,
-          totalSessions: row.totalSessions || 0,
-          totalElapsedMs: row.totalElapsedMs || 0,
-          totalInputTokens: row.totalInputTokens || null,
-          totalOutputTokens: row.totalOutputTokens || null,
-          totalTokens: row.totalTokens || null,
-          totalCostUsd: row.totalCostUsd || null,
-        };
-      }
-      return null;
+      const rows = this.getTaskSessions(taskId);
+      if (rows.length === 0) return null;
+      const agg = this.aggregateRows(rows);
+      return {
+        taskId,
+        totalSessions: agg.totalSessions,
+        totalElapsedMs: agg.totalElapsedMs,
+        totalInputTokens: agg.totalInputTokens,
+        totalOutputTokens: agg.totalOutputTokens,
+        totalTokens: agg.totalTokens,
+        totalCostUsd: agg.totalCostUsd,
+        costSource: agg.costSource,
+        roles: this.groupRows(rows, (r) => r.sessionType)
+          .map(([role, group]) => this.toRoleStats(role, group))
+          .sort((a, b) => b.totalElapsedMs - a.totalElapsedMs),
+      };
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Aggregate totals broken down by day, using the server's LOCAL time zone
+   * (the day a session's `endedAt` falls into on this machine). Done in JS so
+   * the grouping genuinely reflects local wall-clock days rather than SQLite's
+   * UTC `date()`.
+   */
+  getDailyTotals(): DailyTotals[] {
+    if (!this.available || !this.db) return [];
+    try {
+      const rows = this.db.prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL").all() as SessionRecord[];
+      const byDay = new Map<string, SessionRecord[]>();
+      for (const r of rows) {
+        const d = new Date(r.endedAt as string);
+        if (Number.isNaN(d.getTime())) continue;
+        const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const list = byDay.get(day);
+        if (list) list.push(r);
+        else byDay.set(day, [r]);
+      }
+      return [...byDay.entries()]
+        .map(([day, group]) => {
+          const agg = this.aggregateRows(group);
+          return {
+            day,
+            totalSessions: agg.totalSessions,
+            totalElapsedMs: agg.totalElapsedMs,
+            totalInputTokens: agg.totalInputTokens,
+            totalOutputTokens: agg.totalOutputTokens,
+            totalTokens: agg.totalTokens,
+            totalCostUsd: agg.totalCostUsd,
+            costSource: agg.costSource,
+          };
+        })
+        .sort((a, b) => (a.day < b.day ? 1 : -1));
+    } catch {
+      return [];
     }
   }
 
@@ -335,22 +401,100 @@ export class RepoOSDb {
   getSessionTypeStats(): SessionTypeStats[] {
     if (!this.available || !this.db) return [];
     try {
-      return this.db.query(`
-        SELECT
-          sessionType,
-          COUNT(*) as totalSessions,
-          COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
-          SUM(CASE WHEN inputTokens IS NOT NULL THEN inputTokens ELSE 0 END) as totalInputTokens,
-          SUM(CASE WHEN outputTokens IS NOT NULL THEN outputTokens ELSE 0 END) as totalOutputTokens,
-          SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
-          SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
-        FROM sessions
-        GROUP BY sessionType
-        ORDER BY totalCostUsd DESC NULLS LAST
-      `).all() as SessionTypeStats[];
+      const rows = this.db.prepare("SELECT * FROM sessions").all() as SessionRecord[];
+      return this.groupRows(rows, (r) => r.sessionType)
+        .map(([sessionType, group]) => {
+          const agg = this.aggregateRows(group);
+          return {
+            sessionType,
+            role: sessionType,
+            totalSessions: agg.totalSessions,
+            totalElapsedMs: agg.totalElapsedMs,
+            totalInputTokens: agg.totalInputTokens,
+            totalOutputTokens: agg.totalOutputTokens,
+            totalTokens: agg.totalTokens,
+            totalCostUsd: agg.totalCostUsd,
+            costSource: agg.costSource,
+          };
+        })
+        .sort((a, b) => (b.totalCostUsd ?? 0) - (a.totalCostUsd ?? 0));
     } catch {
       return [];
     }
+  }
+
+  /** Group sessions by a key, preserving insertion order of keys. */
+  private groupRows(rows: SessionRecord[], key: (r: SessionRecord) => string): Array<[string, SessionRecord[]]> {
+    const map = new Map<string, SessionRecord[]>();
+    for (const r of rows) {
+      const k = key(r);
+      const list = map.get(k);
+      if (list) list.push(r);
+      else map.set(k, [r]);
+    }
+    return [...map.entries()];
+  }
+
+  /** Build a single role's totals from a group of sessions. */
+  private toRoleStats(role: string, rows: SessionRecord[]): TaskRoleStats {
+    const agg = this.aggregateRows(rows);
+    return {
+      role,
+      totalSessions: agg.totalSessions,
+      totalElapsedMs: agg.totalElapsedMs,
+      totalInputTokens: agg.totalInputTokens,
+      totalOutputTokens: agg.totalOutputTokens,
+      totalTokens: agg.totalTokens,
+      totalCostUsd: agg.totalCostUsd,
+      costSource: agg.costSource,
+    };
+  }
+
+  /**
+   * Sum usage across a group of sessions. costSource is classified as "mixed"
+   * when the group's spend comes from more than one source, otherwise the
+   * single non-"none" source (or "none"). This drives honest labeling in the UI
+   * (estimates and Kiro credits are never silently shown as firm USD, 0230).
+   */
+  private aggregateRows(rows: SessionRecord[]): {
+    totalSessions: number;
+    totalElapsedMs: number;
+    totalInputTokens: number | null;
+    totalOutputTokens: number | null;
+    totalTokens: number | null;
+    totalCostUsd: number | null;
+    costSource: string;
+  } {
+    let totalSessions = 0;
+    let totalElapsedMs = 0;
+    let totalInputTokens: number | null = null;
+    let totalOutputTokens: number | null = null;
+    let totalTokens: number | null = null;
+    let totalCostUsd: number | null = null;
+    const sources = new Set<string>();
+    for (const r of rows) {
+      totalSessions += 1;
+      totalElapsedMs += r.elapsedMs || 0;
+      if (r.inputTokens != null) totalInputTokens = (totalInputTokens ?? 0) + r.inputTokens;
+      if (r.outputTokens != null) totalOutputTokens = (totalOutputTokens ?? 0) + r.outputTokens;
+      if (r.totalTokens != null) totalTokens = (totalTokens ?? 0) + r.totalTokens;
+      if (r.costUsd != null) {
+        totalCostUsd = (totalCostUsd ?? 0) + r.costUsd;
+        sources.add(r.costSource || "extractUsage");
+      }
+    }
+    let costSource = "none";
+    if (sources.size > 1) costSource = "mixed";
+    else if (sources.size === 1) costSource = [...sources][0];
+    return {
+      totalSessions,
+      totalElapsedMs,
+      totalInputTokens,
+      totalOutputTokens,
+      totalTokens,
+      totalCostUsd,
+      costSource,
+    };
   }
 
   /** Board-level summary: total spend, tokens, time, most expensive session/task. */
@@ -361,13 +505,16 @@ export class RepoOSDb {
         totalElapsedMs: 0,
         totalTokens: null,
         totalCostUsd: null,
+        costSource: "none",
         mostExpensiveSession: null,
         mostExpensiveTask: null,
+        roles: [],
+        days: [],
       };
     }
 
     try {
-      const summary = this.db.query(`
+      const summary = this.db.prepare(`
         SELECT
           COUNT(*) as totalSessions,
           COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
@@ -376,7 +523,7 @@ export class RepoOSDb {
         FROM sessions
       `).all()[0] as any;
 
-      const mostExpensive = this.db.query(`
+      const mostExpensive = this.db.prepare(`
         SELECT * FROM sessions
         WHERE costUsd IS NOT NULL
         ORDER BY costUsd DESC
@@ -384,7 +531,7 @@ export class RepoOSDb {
       `).all();
       const mostExpensiveSession = mostExpensive.length > 0 ? (mostExpensive[0] as SessionRecord) : null;
 
-      const mostExpensiveTaskResult = this.db.query(`
+      const mostExpensiveTaskResult = this.db.prepare(`
         SELECT
           taskId,
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as costUsd
@@ -399,13 +546,27 @@ export class RepoOSDb {
           ? { taskId: (mostExpensiveTaskResult[0] as any).taskId, costUsd: (mostExpensiveTaskResult[0] as any).costUsd }
           : null;
 
+      // Representative cost source across the whole board — mirrors the per-role
+      // / per-day classification in aggregateRows so estimates and Kiro credits
+      // are never silently shown as firm USD at the board level (0230).
+      const sourceRows = this.db
+        .prepare(
+          "SELECT DISTINCT COALESCE(costSource, 'extractUsage') as costSource FROM sessions WHERE costUsd IS NOT NULL",
+        )
+        .all() as { costSource: string }[];
+      const costSource =
+        sourceRows.length > 1 ? "mixed" : sourceRows.length === 1 ? sourceRows[0].costSource : "none";
+
       return {
         totalSessions: summary.totalSessions || 0,
         totalElapsedMs: summary.totalElapsedMs || 0,
         totalTokens: summary.totalTokens || null,
         totalCostUsd: summary.totalCostUsd || null,
+        costSource,
         mostExpensiveSession,
         mostExpensiveTask,
+        roles: this.getSessionTypeStats(),
+        days: this.getDailyTotals(),
       };
     } catch {
       return {
@@ -413,8 +574,11 @@ export class RepoOSDb {
         totalElapsedMs: 0,
         totalTokens: null,
         totalCostUsd: null,
+        costSource: "none",
         mostExpensiveSession: null,
         mostExpensiveTask: null,
+        roles: [],
+        days: [],
       };
     }
   }
@@ -471,7 +635,10 @@ export function getBoardStats(repoRoot: string): BoardStats {
     totalElapsedMs: 0,
     totalTokens: null,
     totalCostUsd: null,
+    costSource: "none",
     mostExpensiveSession: null,
     mostExpensiveTask: null,
+    roles: [],
+    days: [],
   };
 }

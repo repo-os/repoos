@@ -165,6 +165,7 @@ import {
   getTaskStats,
   getSessionTypeStats,
   getBoardStats,
+  getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
   taskAction,
@@ -1307,6 +1308,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
   router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+  router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);

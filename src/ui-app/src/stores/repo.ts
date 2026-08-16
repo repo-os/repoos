@@ -7,6 +7,7 @@ import type {
   AgentSessionStats,
   AutoEngineeringState,
   BoardIndex,
+  BoardUsageStats,
   Counts,
   CtoState,
   Health,
@@ -19,6 +20,7 @@ import type {
   Status,
   SystemStats,
   Task,
+  TaskUsageStats,
 } from "../types";
 
 export interface FeedItem {
@@ -251,6 +253,10 @@ export const useRepoStore = defineStore("repo", () => {
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
+  const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
+  /** Board-level usage totals (overall + per-role + per-day, 0230). */
+  const boardUsage = ref<BoardUsageStats | null>(null);
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -1051,6 +1057,35 @@ export const useRepoStore = defineStore("repo", () => {
   /** Get diff stats for a task, or undefined if not yet fetched. */
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
 
+  /**
+   * Load a task's durable usage totals (time/tokens/cost + role breakdown,
+   * 0230). Best-effort — a task with no recorded sessions just yields no data.
+   */
+  async function loadTaskUsage(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; stats: TaskUsageStats | null }>(`/api/tasks/${id}/stats`);
+      if (r.ok) taskUsage.value = { ...taskUsage.value, [id]: r.stats ?? null };
+    } catch {
+      /* endpoint unavailable — usage is nice-to-have */
+    }
+  }
+
+  /** Usage totals for a task, or null when none have been fetched/recorded. */
+  const taskUsageFor = (id: string) => taskUsage.value[id];
+
+  /**
+   * Load board-level usage totals (overall + per-role + per-day, 0230).
+   * Best-effort — surfaces empty when telemetry is unavailable.
+   */
+  async function loadBoardUsage(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; stats: BoardUsageStats }>("/api/stats/board");
+      if (r.ok) boardUsage.value = r.stats;
+    } catch {
+      /* endpoint unavailable — board totals are nice-to-have */
+    }
+  }
+
   /** Load the full patch diff for a task. Best-effort. */
   async function loadDiff(id: string): Promise<void> {
     try {
@@ -1345,6 +1380,11 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    taskUsage,
+    loadTaskUsage,
+    taskUsageFor,
+    boardUsage,
+    loadBoardUsage,
     loadDiff,
     diffFor,
     sendMessage,
