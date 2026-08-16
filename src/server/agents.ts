@@ -9,8 +9,10 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -20,6 +22,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
@@ -27,6 +30,7 @@ import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
+import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -99,7 +103,8 @@ export interface RunningAgentInfo {
 }
 
 interface Entry {
-  proc: ChildProcess;
+  /** Undefined for an entry adopted after this server process started. */
+  proc?: ChildProcess;
   startedAt: string;
   workdir?: string;
   killTimer?: ReturnType<typeof setTimeout>;
@@ -110,6 +115,31 @@ interface Entry {
   handoffRequested: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
+  /**
+   * For adopted entries (0214): the PID to poll for liveness. When non-null
+   * the stall checker periodically verifies the PID is still alive and cleans
+   * up if it died.
+   */
+  adoptedPid?: number;
+  /** Pollers reading the durable stdout/stderr logs into the live transcript. */
+  tailers?: { timer: ReturnType<typeof setInterval>; drain: () => void; flush: () => void }[];
+}
+
+/**
+ * Durable agent registry entry persisted to .repoos/agents.json (0214).
+ * Survives a server restart so the new process can re-attach to in-flight agent
+ * children by PID and resume streaming from their log files.
+ */
+interface DurableRegistryEntry {
+  taskId: string;
+  pid: number;
+  workdir: string;
+  branch: string;
+  runId: string;
+}
+
+interface DurableRegistry {
+  entries: DurableRegistryEntry[];
 }
 
 /** Line-buffered transcript for one task, retained across turns and pause. */
@@ -164,6 +194,42 @@ const now = (): string => new Date().toISOString();
 
 /** Hard cap on a session transcript (drop oldest lines beyond this). */
 const OUTPUT_CAP_BYTES = 256 * 1024;
+
+/** Path to the durable agent registry (0214). */
+function registryPath(cacheDir: string): string {
+  return join(cacheDir, "agents.json");
+}
+
+/** Read the durable registry; returns empty when missing or corrupted. */
+function readRegistry(cacheDir: string): DurableRegistry {
+  try {
+    const raw = readFileSync(registryPath(cacheDir), "utf8");
+    const parsed = JSON.parse(raw) as Partial<DurableRegistry>;
+    if (Array.isArray(parsed.entries)) {
+      return { entries: parsed.entries.filter((e) => typeof e.taskId === "string" && typeof e.pid === "number" && typeof e.workdir === "string") };
+    }
+  } catch {
+    /* missing or corrupt — start fresh */
+  }
+  return { entries: [] };
+}
+
+/** Persist the durable registry atomically (best-effort). */
+function writeRegistry(cacheDir: string, registry: DurableRegistry): void {
+  try {
+    mkdirSync(cacheDir, { recursive: true });
+    const file = registryPath(cacheDir);
+    const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+    try {
+      writeFileSync(temp, JSON.stringify(registry, null, 2), "utf8");
+      renameSync(temp, file);
+    } finally {
+      if (existsSync(temp)) unlinkSync(temp);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
 
 /**
  * Default silence window before a still-running turn is flagged as possibly
@@ -1268,6 +1334,71 @@ User question:
 ${question}`;
 }
 
+/** Persistent session id for the Debugger's bug-paste conversation. */
+export const debuggerSessionId = "__repoos-debugger__";
+
+/** The Debugger agent's role name, used to route its chat prompt. */
+export const DEBUGGER_NAME = "debugger";
+
+/** The Debugger agent: a chat-first bug diagnostician (no background scan). */
+export function debuggerAgent(): Agent {
+  const base = { cli: "opencode", model: "big pickle" } as const;
+  return {
+    name: DEBUGGER_NAME,
+    cli: base.cli,
+    model: base.model,
+    enabled: true,
+    instructions:
+      "You are the Debugger, a bug diagnostician. When you're handed a pasted bug report, stack trace, or error message, identify the root cause and suggest a concrete, actionable fix. Ask for more context only when the report is too ambiguous to diagnose. Ground your diagnosis in the repository when the pasted text references code you can inspect.",
+  };
+}
+
+export function debuggerPrompt(
+  question: string,
+  repositoryContext: string,
+  agent: Agent,
+): string {
+  return `You are the Debugger, the agent you copy a failing report to for a clear diagnosis.
+
+${agent.instructions ?? "Diagnose the root cause and suggest a fix."}
+
+Rules:
+- Identify the root cause, not just the symptom, and explain your reasoning briefly.
+- Give a concrete, actionable suggested fix (code or config where appropriate).
+- You may read repository files and run read-only discovery commands to verify.
+- Never edit files, change task status, commit, launch servers, or start agents.
+- If you cannot determine the cause with confidence, say exactly what is missing.
+
+The pasted bug / error / question is below. Current repository context:
+${repositoryContext}
+
+Bug report:
+${question}`;
+}
+
+/** Build the writable task-management mission used only by the PM chat. */
+export function taskPmPrompt(
+  request: string,
+  taskContext: string,
+  agent: Agent,
+): string {
+  return `You are the Product Manager for RepoOS, working on the task below. You are not Ross or the read-only repository assistant.
+
+${agent.instructions ?? "Own the roadmap and keep task specifications accurate."}
+
+Rules:
+- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands or HTTP API endpoints.
+- Never edit \`work/*.md\` files directly. Never move task files between folders.
+- Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
+- Explain the requested task change briefly after applying it, including the task ID and what changed.
+
+Task context:
+${taskContext}
+
+User request:
+${request}`;
+}
+
 /** The mission handed to the coding agent: instructions + task pointer. */
 function missionFor(
   task: Task,
@@ -1522,7 +1653,10 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: AgentEvent) => void;
+  private readonly logger?: Logger;
   private readonly sessionsDir: string;
+  private readonly cacheDir: string;
+  private readonly logDir: string;
   private readonly db: RepoOSDb | null;
   private readonly writeDelayMs: number;
   private readonly retentionDays: number;
@@ -1574,15 +1708,18 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void> } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.emit = emit;
+    this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
     this.getTask = opts.getTask;
     this.db = getRepoOSDb(config.root);
-    this.sessionsDir = join(config.root, config.cacheDir, "sessions");
+    this.cacheDir = join(config.root, config.cacheDir);
+    this.sessionsDir = join(this.cacheDir, "sessions");
+    this.logDir = join(this.cacheDir, "agent-logs");
     this.writeDelayMs = opts.writeDelayMs ?? SESSION_WRITE_DELAY_MS;
     this.retentionDays = opts.retentionDays ?? SESSION_RETENTION_DAYS;
     this.retentionCount = opts.retentionCount ?? SESSION_RETENTION_COUNT;
@@ -1599,6 +1736,180 @@ export class AgentRunner {
   /** Stop the stall-check timer (server shutdown / test cleanup). Idempotent. */
   dispose(): void {
     clearInterval(this.stallTimer);
+    for (const entry of this.entries.values()) {
+      for (const tailer of entry.tailers ?? []) clearInterval(tailer.timer);
+    }
+  }
+
+  /**
+   * Re-attach to agent children that survived a server restart (0214).
+   * Reads the durable registry, checks PID aliveness, and for each still-live
+   * child tail-catches the log file and restores the in-memory entry/session
+   * so `isRunning()` reports true and SSE streaming resumes from this point.
+   * Stale entries (PID dead) are dropped — this must not resurrect dead sessions.
+   */
+  adoptRunningAgents(): void {
+    const registry = readRegistry(this.cacheDir);
+    const live: DurableRegistryEntry[] = [];
+    for (const rec of registry.entries) {
+      if (this.entries.has(rec.taskId)) continue;
+      let alive = false;
+      try {
+        process.kill(rec.pid, 0);
+        alive = true;
+      } catch {
+        /* PID is dead — drop it */
+      }
+      if (!alive) continue;
+      live.push(rec);
+      const outLog = join(this.logDir, `${rec.taskId}.out.log`);
+      const errLog = join(this.logDir, `${rec.taskId}.err.log`);
+      // Restore the session so the transcript is pre-loaded for the task.
+      let session = this.sessions.get(rec.taskId) ?? this.loadSession(rec.taskId);
+      if (!session) {
+        session = this.emptySession();
+        session.workdir = rec.workdir;
+        session.engine = "plain";
+      }
+      session.turnStartedAt = session.turnStartedAt ?? now();
+      session.lastOutputAt = session.lastOutputAt ?? now();
+      this.sessions.set(rec.taskId, session);
+      // Tail-catch: read any log output written during the handoff gap and
+      // replay it into the session so the transcript isn't missing a chunk.
+      // Separate logs preserve stdout/stderr type during the handoff gap.
+      try {
+        this.replayLog(rec.taskId, outLog, "out");
+        this.replayLog(rec.taskId, errLog, "err");
+        // Compatibility with an early 0214 build that used one tagged log.
+        this.replayLog(rec.taskId, join(this.logDir, `${rec.taskId}.log`), "out", true);
+      } catch {
+        /* best-effort */
+      }
+      // Start tailing the log file for live output, and register a fake Entry
+      // so isRunning() is true and the task reads as in-flight. The real ChildProcess
+      // is referenced by PID, not held directly — we poll for aliveness instead.
+      const tailers = [
+        this.tailLog(rec.taskId, outLog, "out", true),
+        this.tailLog(rec.taskId, errLog, "err", true),
+      ];
+      this.entries.set(rec.taskId, {
+        startedAt: now(),
+        workdir: rec.workdir,
+        task: undefined,
+        branch: rec.branch,
+        runId: rec.runId,
+        handoffRequested: false,
+        previewRequested: false,
+        adoptedPid: rec.pid,
+        tailers,
+      });
+    }
+    if (live.length > 0) {
+      writeRegistry(this.cacheDir, { entries: live });
+    } else {
+      this.clearRegistry();
+    }
+  }
+
+  /** Replay a durable log into a transcript, optionally decoding the legacy tagged format. */
+  private replayLog(taskId: string, logFile: string, stream: "out" | "err", tagged = false): void {
+    if (!existsSync(logFile)) return;
+    const data = readFileSync(logFile, "utf8");
+    for (const line of data.split("\n")) {
+      if (!line) continue;
+      if (tagged && line.startsWith("O:")) this.appendLine(taskId, "out", line.slice(2));
+      else if (tagged && line.startsWith("E:")) this.appendLine(taskId, "err", line.slice(2));
+      else this.appendLine(taskId, stream, line);
+    }
+  }
+
+  /** Tail one durable stream file into the live transcript. */
+  private tailLog(
+    taskId: string,
+    logFile: string,
+    stream: "out" | "err",
+    startAtEnd = false,
+  ): { timer: ReturnType<typeof setInterval>; drain: () => void; flush: () => void } {
+    // `stat.size` is a byte offset. Keep it in bytes and decode only the new
+    // buffer range; slicing a decoded string with that offset loses output as
+    // soon as an agent writes emoji, CJK, or any other multi-byte UTF-8.
+    let lastSize = 0;
+    let pending = "";
+    let decoder = new StringDecoder("utf8");
+    if (startAtEnd) {
+      try { lastSize = statSync(logFile).size; } catch { /* missing log */ }
+    }
+    const drain = (): void => {
+      try {
+        const currentSize = statSync(logFile).size;
+        // A new turn truncates the same durable log path. Reset both the byte
+        // cursor and decoder rather than treating the truncated file as idle.
+        if (currentSize < lastSize) {
+          lastSize = 0;
+          decoder = new StringDecoder("utf8");
+        }
+        if (currentSize > lastSize) {
+          const data = readFileSync(logFile);
+          const delta = decoder.write(data.subarray(lastSize));
+          lastSize = currentSize;
+          const lines = (pending + delta).replace(/\r/g, "\n").split("\n");
+          pending = lines.pop() ?? "";
+          for (const line of lines) {
+            if (line.length === 0) continue;
+            this.appendLine(taskId, stream, line);
+          }
+        }
+      } catch (err) {
+        /* best-effort on any other error */
+      }
+    };
+    const interval = setInterval(() => {
+      if (!this.entries.has(taskId)) {
+        clearInterval(interval);
+        return;
+      }
+      drain();
+    }, 200);
+    interval.unref();
+    // `pending` is local to this tailer (rather than Session.pending), so a
+    // process that exits without its final newline needs an explicit flush.
+    // Route it through appendLine to preserve structured JSON parsing.
+    const flush = (): void => {
+      const line = pending.trimEnd();
+      pending = "";
+      if (line) this.appendLine(taskId, stream, line);
+    };
+    return { timer: interval, drain, flush };
+  }
+
+  /** Persist a registry entry for one running task (0214). */
+  private writeRegistryEntry(taskId: string, pid: number, workdir: string, branch: string, runId: string): void {
+    const registry = readRegistry(this.cacheDir);
+    const existing = registry.entries.findIndex((e) => e.taskId === taskId);
+    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId };
+    if (existing >= 0) {
+      registry.entries[existing] = entry;
+    } else {
+      registry.entries.push(entry);
+    }
+    writeRegistry(this.cacheDir, registry);
+  }
+
+  /** Remove a registry entry for a task (0214). */
+  private removeRegistryEntry(taskId: string): void {
+    const registry = readRegistry(this.cacheDir);
+    registry.entries = registry.entries.filter((e) => e.taskId !== taskId);
+    writeRegistry(this.cacheDir, registry);
+  }
+
+  /** Clear the entire durable registry (0214). */
+  private clearRegistry(): void {
+    try {
+      const file = registryPath(this.cacheDir);
+      if (existsSync(file)) unlinkSync(file);
+    } catch {
+      /* best-effort */
+    }
   }
 
   /** Append trusted server orchestration progress to the retained transcript. */
@@ -1680,7 +1991,7 @@ export class AgentRunner {
     for (const [id, e] of this.entries) {
       out.push({
         id,
-        pid: e.proc.pid ?? -1,
+        pid: e.adoptedPid ?? e.proc?.pid ?? -1,
         startedAt: e.startedAt,
         workdir: e.workdir,
       });
@@ -1738,12 +2049,13 @@ export class AgentRunner {
     return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
   }
 
-  /** Start the persistent, non-task repository conversation. */
+  /** Start a persistent, non-task conversation with an explicit role mission. */
   startChat(
     sessionId: string,
     text: string,
     agent: Agent,
     repositoryContext: string,
+    promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
     if (this.entries.has(sessionId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
@@ -1764,7 +2076,10 @@ export class AgentRunner {
       stalledEmitted: false,
     };
     this.sessions.set(sessionId, session);
-    const mission = repoGuidePrompt(text, repositoryContext, agent);
+    const mission =
+      agent.name === DEBUGGER_NAME
+        ? debuggerPrompt(text, repositoryContext, agent)
+        : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
     return this.spawnTurn(sessionId, cmd, args, this.config.root);
   }
@@ -1870,8 +2185,18 @@ export class AgentRunner {
     for (const [prevRunId, req] of this.authorizedPreviews) {
       if (req.taskId === taskId) this.authorizedPreviews.delete(prevRunId);
     }
+    const outLog = join(this.logDir, `${taskId}.out.log`);
+    const errLog = join(this.logDir, `${taskId}.err.log`);
+    let outFd: number | undefined;
+    let errFd: number | undefined;
     let proc: ChildProcess;
     try {
+      // Give the child file descriptors, not pipes owned by this server. The
+      // child keeps those descriptors when this process exits during reload,
+      // so subsequent output cannot fail with EPIPE.
+      mkdirSync(this.logDir, { recursive: true });
+      outFd = openSync(outLog, "w");
+      errFd = openSync(errLog, "w");
       // REPOOS_AGENT=1 marks every managed agent process so the CLI's defense
       // in depth can reject an accidental direct `repoos serve` attempt, and
       // REPOOS_TASK_ID/REPOOS_RUN_ID let the runner bind any capability-request
@@ -1894,16 +2219,21 @@ export class AgentRunner {
       if (this.apiUrl) agentEnv.REPOOS_API_URL = this.apiUrl;
       proc = spawn(cmd, args, {
         cwd,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["ignore", outFd, errFd],
         env: agentEnv,
       });
     } catch (err) {
-      this.emit({ type: "agent.exited", id: taskId, at: now() });
       const reason = err instanceof Error ? err.message : String(err);
+      this.logger?.agent(taskId, "error", `Failed to spawn agent: ${reason}`, { cmd, args });
+      this.emit({ type: "agent.exited", id: taskId, at: now() });
       return { ok: false, reason };
+    } finally {
+      // spawn duplicates the descriptors into the child. The parent's copies
+      // are no longer needed and must not keep the files artificially open.
+      if (outFd !== undefined) closeSync(outFd);
+      if (errFd !== undefined) closeSync(errFd);
     }
-    proc.stdout?.on("data", (chunk: Buffer) => this.onData(taskId, "out", chunk));
-    proc.stderr?.on("data", (chunk: Buffer) => this.onData(taskId, "err", chunk));
+    const tailers = [this.tailLog(taskId, outLog, "out"), this.tailLog(taskId, errLog, "err")];
     this.entries.set(taskId, {
       proc,
       startedAt: now(),
@@ -1913,6 +2243,7 @@ export class AgentRunner {
       runId,
       handoffRequested: false,
       previewRequested: false,
+      tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
     // clock resets here too, not just on output, so a follow-up turn on a
@@ -1925,12 +2256,29 @@ export class AgentRunner {
       session.lastOutputAt = now();
       session.stalledEmitted = false;
     }
+    // Persist the durable registry entry so a restart can re-attach (0214).
+    if (proc.pid) {
+      this.writeRegistryEntry(taskId, proc.pid, cwd, branch ?? task?.branch ?? "", runId);
+    }
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
     // (not `exit`) fires only after stdio has drained, so a trailing line with
     // no final newline is still in `pending` when cleanup flushes it.
-    proc.on("close", (code) => this.cleanup(taskId, code === 0));
+    const finishTurn = (code: number | null): void => {
+      // The final write can arrive just before close, before the next polling
+      // tick. Drain synchronously so no trailing output is lost.
+      for (const tailer of this.entries.get(taskId)?.tailers ?? []) tailer.drain();
+      this.cleanup(taskId, code === 0);
+    };
+    proc.on("close", finishTurn);
     proc.on("error", () => this.cleanup(taskId, false));
+    // A very short-lived command can exit between `spawn()` and listener
+    // registration. ChildProcess does not replay a missed `close` event, so
+    // finalize it explicitly instead of leaving its last log line and runner
+    // entry behind forever.
+    if (proc.exitCode !== null) finishTurn(proc.exitCode);
+
+    this.logger?.agent(taskId, "info", "Agent started", { pid: proc.pid, cwd, cmd });
 
     this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
     this.emitStats(taskId);
@@ -2272,9 +2620,20 @@ export class AgentRunner {
    * raises the stall flag the moment silence crosses the threshold. Recovery
    * (new output, or the turn exiting) is handled inline where it happens, so
    * this only ever needs to turn the warning ON, never off.
+   * Also polls adopted entries (0214) for PID liveness: if the adopted PID
+   * died, clean up the entry so the task doesn't read as running forever.
    */
   private checkStalls(): void {
-    for (const taskId of this.entries.keys()) {
+    for (const [taskId, entry] of this.entries) {
+      if (entry.adoptedPid) {
+        try {
+          process.kill(entry.adoptedPid, 0);
+        } catch {
+          // PID died during adoption — clean up
+          this.cleanup(taskId, false);
+          continue;
+        }
+      }
       const session = this.sessions.get(taskId);
       if (!session || session.stalledEmitted) continue;
       if (this.snapshotStats(taskId).stalled) {
@@ -2302,15 +2661,36 @@ export class AgentRunner {
   stop(taskId: string): StopResult {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
-    if (!entry.killTimer) {
+    for (const tailer of entry.tailers ?? []) {
+      tailer.drain();
+      tailer.flush();
+      clearInterval(tailer.timer);
+    }
+    entry.tailers = undefined;
+    if (entry.adoptedPid) {
+      // For adopted entries (0214): kill by PID directly since proc is null.
       try {
-        entry.proc.kill("SIGTERM");
+        process.kill(entry.adoptedPid, "SIGTERM");
+      } catch {
+        /* already gone */
+      }
+      const adoptedPid = entry.adoptedPid;
+      entry.killTimer = setTimeout(() => {
+        try {
+          process.kill(adoptedPid, "SIGKILL");
+        } catch {
+          /* already gone */
+        }
+      }, 3000);
+    } else if (!entry.killTimer) {
+      try {
+        entry.proc?.kill("SIGTERM");
       } catch {
         /* already gone */
       }
       entry.killTimer = setTimeout(() => {
         try {
-          entry.proc.kill("SIGKILL");
+          entry.proc?.kill("SIGKILL");
         } catch {
           /* already gone */
         }
@@ -2387,6 +2767,25 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+
+    // Drain and flush durable-log pollers before removing the registry entry.
+    // The final output may not carry a newline, so it lives in the tailer's
+    // local pending buffer until this point.
+    for (const tailer of entry.tailers ?? []) {
+      tailer.drain();
+      tailer.flush();
+      clearInterval(tailer.timer);
+    }
+    entry.tailers = undefined;
+    this.removeRegistryEntry(taskId);
+
+    this.logger?.agent(
+      taskId,
+      exitedCleanly ? "info" : "error",
+      `Agent exited ${exitedCleanly ? "cleanly" : "with error"}`,
+      { runId: entry.runId },
+    );
+
     const session = this.sessions.get(taskId);
     if (session && session.pending.trim()) {
       // Flush a trailing line with no final newline through the same parse
@@ -2527,10 +2926,11 @@ export class AgentRunner {
   }
 
   private sessionFile(taskId: string): string | null {
-    // Task ids normally contain digits, but keep route input from becoming a
-    // path traversal primitive if a caller asks output for an arbitrary id.
-    if (!/^[A-Za-z0-9._-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
-    return join(this.sessionsDir, `${taskId}.json`);
+    // IDs can name both tasks and durable non-task conversations such as
+    // `pm-task:0209`. Keep the input strictly filename-safe, then escape the
+    // only cross-platform-invalid separator before constructing the path.
+    if (!/^[A-Za-z0-9._:-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
+    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A")}.json`);
   }
 
   /** Read and validate one versioned file. Corruption/version drift fails soft. */

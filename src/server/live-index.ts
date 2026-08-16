@@ -10,7 +10,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
-import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, SupervisorHeartbeat } from "../core/types.js";
+import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, BoardTask, BoardIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import type { IntegrationSnapshot } from "./integration-status.js";
@@ -376,6 +376,19 @@ export class LiveIndex {
     };
   }
 
+  /** Lightweight board snapshot — skips body, extra, agent overrides. */
+  boardSnapshot(): BoardIndex {
+    const tasks = this.getTasks();
+    return {
+      version: 1,
+      generatedAt: now(),
+      root: this.config.root,
+      taskCount: tasks.length,
+      tasks: tasks.map(toBoardTask),
+      counts: this.counts(),
+    };
+  }
+
   // ---- events ----
 
   on(fn: Listener): () => void {
@@ -396,6 +409,33 @@ export class LiveIndex {
 
 function now(): string {
   return new Date().toISOString();
+}
+
+/** Strip a Task down to what the board renders. */
+function toBoardTask(t: Task): BoardTask {
+  return {
+    id: t.id,
+    title: t.title,
+    type: t.type,
+    status: t.status,
+    needsInput: t.needsInput,
+    needsMerge: t.needsMerge,
+    priority: t.priority,
+    area: t.area,
+    assignee: t.assignee,
+    assignedTo: t.assignedTo,
+    createdBy: t.createdBy,
+    branch: t.branch,
+    tags: t.tags,
+    created_at: t.created_at,
+    updated_at: t.updated_at,
+    releasedAt: t.releasedAt ?? null,
+    bodyPreview: t.body?.slice(0, 500) ?? "",
+    path: t.path,
+    absPath: t.absPath,
+    git: t.git,
+    preview: null,
+  };
 }
 
 /** Shallow diff of the fields we care about, for the `prev` payload. */

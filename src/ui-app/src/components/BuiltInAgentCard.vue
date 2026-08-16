@@ -12,6 +12,8 @@ import SelectViewport from "./ui/select/viewport.vue";
 
 interface Props {
   agent: string;
+  /** Chat-style agent: hide the schedule / run-now block; interaction happens via its floating head. */
+  interactive?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -54,6 +56,13 @@ const error = ref("");
 const message = ref("");
 
 const agentMeta = computed(() => {
+  if (props.agent === "debugger") {
+    return {
+      name: "Debugger Agent",
+      description: "Paste a bug, stack trace, or error and get a clear diagnosis — the root cause plus a suggested fix. Chat with him from his floating head next to Ross and the CTO.",
+      icon: "🐞",
+    };
+  }
   if (props.agent === "tech-debt") {
     return {
       name: "Tech Debt Agent",
@@ -73,6 +82,13 @@ const agentMeta = computed(() => {
       name: "Architect Agent",
       description: "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Generates a detailed markdown report saved to docs/agents/Architect/ with recommendations.",
       icon: "🏛",
+    };
+  }
+  if (props.agent === "design") {
+    return {
+      name: "Design Agent",
+      description: "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, saved as a markdown report to docs/agents/Design/.",
+      icon: "🎨",
     };
   }
   return null;
@@ -133,6 +149,7 @@ async function runNow(): Promise<void> {
       failed?: number;
       errors?: string[];
       issuesFound?: number;
+      findingsFound?: number;
       scannedFiles?: number;
     };
     if (response.ok) {
@@ -141,11 +158,15 @@ async function runNow(): Promise<void> {
         error.value = `${response.taskCount} task(s) created, ${response.failed} failed — ${
           (response.errors ?? []).join("; ") || "unknown write error"
         }`;
+      } else if (props.agent === "design") {
+        message.value = `Review complete — ${response.findingsFound ?? 0} design finding(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Design/.`;
+      } else if (props.agent === "architect") {
+        message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Architect/.`;
       } else if (response.taskCount > 0) {
-        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;
       } else {
-        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — no ${agentType} issues found (${response.scannedFiles ?? 0} files scanned).`;
       }
       await saveState();
@@ -189,7 +210,11 @@ async function runNow(): Promise<void> {
     <div class="agent-desc">{{ agentMeta.description }}</div>
 
     <div v-if="state.enabled" class="agent-config">
-      <div class="config-field">
+      <div v-if="interactive" class="interactive-hint">
+        <span class="interactive-dot"></span>
+        Chat with the {{ agentMeta.name }} from his floating head.
+      </div>
+      <template v-else><div class="config-field">
         <label>Run schedule</label>
         <Select :model-value="state.schedule" @update:model-value="updateSchedule">
           <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
@@ -217,7 +242,7 @@ async function runNow(): Promise<void> {
       </div>
 
       <div v-if="message" class="status-message success">{{ message }}</div>
-      <div v-if="error" class="status-message error">{{ error }}</div>
+      <div v-if="error" class="status-message error">{{ error }}</div></template>
     </div>
   </div>
 </template>
@@ -301,6 +326,27 @@ async function runNow(): Promise<void> {
   font-weight: 500;
   margin-bottom: 6px;
   color: var(--text-secondary);
+}
+
+.interactive-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px dashed var(--border-bright);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.interactive-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
 }
 
 .config-actions {

@@ -8,12 +8,13 @@
  * Phases track recovery: if interrupted mid-flight, retry resumes from the current phase.
  */
 
-import { readFileSync, existsSync, symlinkSync } from "node:fs";
+import { readFileSync, existsSync, symlinkSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
-import type { RepositoryLock } from "./repo-lock.js";
+import type { RepositoryLock, RootLock } from "./repo-lock.js";
+import type { Logger } from "../core/logger.js";
 import {
   currentBranch,
   runGit,
@@ -25,11 +26,14 @@ import {
   commitTaskFile,
   mergeBranch,
   dirtyFiles,
+  getDiff,
+  getDiffStats,
   GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { markTaskReleased } from "./write.js";
+import { saveDiffSnapshot } from "./diff-snapshot.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -81,6 +85,24 @@ const TAIL_LINES = 15;
 const TAIL_MAX_CHARS = 800;
 
 /**
+ * Locate a task's file directly on disk by id, independent of the live
+ * index's freshness. Used only as a fallback when `getTask` misses — the
+ * normal, common path is the index lookup, which is far cheaper than a
+ * directory scan. Task ids are unique by filename convention (`<id>-*.md`).
+ */
+function findTaskFileById(root: string, workDir: string, taskId: string): string | null {
+  const dir = join(root, workDir);
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const match = entries.find((f) => f.startsWith(`${taskId}-`) && f.endsWith(".md"));
+  return match ? join(dir, match) : null;
+}
+
+/**
  * The useful part of a failed command's combined output. bun/npm wrap a child
  * failure with a generic trailing line (`error: script "repoos" exited with
  * code 1`) that is useless as a reason on its own, so keep the last several
@@ -103,14 +125,37 @@ export function tailLine(stdout: string, stderr: string): string {
   let tail = lines.slice(-TAIL_LINES).join("\n");
   if (tail.length > TAIL_MAX_CHARS) {
     const cut = tail.length - TAIL_MAX_CHARS;
-    // Back up to the nearest word boundary before the cut so the excerpt
-    // starts on a whole word — cutting straight from the front produced
-    // reasons like `…eletion detected by…` (0215).
     const lastWs = Math.max(tail.lastIndexOf(" ", cut), tail.lastIndexOf("\n", cut));
     const start = lastWs >= 0 ? lastWs + 1 : cut;
     return `…${tail.slice(start)}`;
   }
   return tail;
+}
+
+/** Remove terminal control sequences before persisting a diagnostic to JSON/UI. */
+const ANSI_ESCAPE_RE = /\u001b\[[0-?]*[ -/]*[@-~]/g;
+
+/**
+ * Format command output for a close-out failure. Keep complete, readable tail
+ * lines so a JSON-backed UI never receives terminal colours or a diagnostic
+ * truncated in the middle of an ANSI escape sequence.
+ */
+export function summarizeCommandFailure(stdout: string, stderr: string): string {
+  const lines = `${stdout}\n${stderr}`
+    .replace(ANSI_ESCAPE_RE, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return "unknown error";
+  const tail: string[] = [];
+  let length = 0;
+  for (const line of lines.slice(-TAIL_LINES).reverse()) {
+    const nextLength = length + (tail.length > 0 ? 1 : 0) + line.length;
+    if (nextLength > TAIL_MAX_CHARS && tail.length > 0) break;
+    tail.unshift(nextLength > TAIL_MAX_CHARS ? `…${line.slice(-(TAIL_MAX_CHARS - 1))}` : line);
+    length = tail.join("\n").length;
+  }
+  return tail.join("\n");
 }
 
 interface ProcessRunResult {
@@ -154,8 +199,10 @@ export class CloseOutOrchestrator {
     private config: RepoOSConfig,
     private coordinator: JobCoordinator,
     private repoLock?: RepositoryLock,
+    private rootLock?: RootLock,
     private getTask?: (taskId: string) => Task | null,
     private onProgress?: (step: DoneStep) => void,
+    private logger?: Logger,
   ) {}
 
   /**
@@ -172,6 +219,11 @@ export class CloseOutOrchestrator {
 
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
+
+    this.logger?.integration(job.taskId, "info", `Processing job phase: ${job.phase}`, {
+      taskId: job.taskId,
+      phase: job.phase,
+    });
 
     try {
       if (!isGitRepo(root)) {
@@ -192,6 +244,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "syncing") {
         const syncRes = await this.syncCandidate(job);
         if (!syncRes.ok) {
+          this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             failedPhase: "syncing",
@@ -218,6 +271,7 @@ export class CloseOutOrchestrator {
         if (!validateRes.ok && validateRes.retryable === false) {
           // Deterministic by construction — a second run proves nothing and
           // costs the user another full gate cycle.
+          this.logger?.integration(job.taskId, "error", "validation failed (non-retryable)", { reason: validateRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             failedPhase: "validating",
@@ -256,8 +310,12 @@ export class CloseOutOrchestrator {
           const currentJob = this.coordinator.getJob(job.taskId);
           if (currentJob && currentJob.phase === "syncing") {
             // Drift detected and handled - will retry on next processNext() call
+            this.logger?.integration(job.taskId, "info", "main drifted during publish — resyncing", {
+              reason: pubRes.reason,
+            });
             return pubRes;
           }
+          this.logger?.integration(job.taskId, "error", "publish failed", { reason: pubRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
             failedPhase: "publishing",
@@ -273,14 +331,17 @@ export class CloseOutOrchestrator {
         const cleanRes = await this.cleanup(job);
         if (!cleanRes.ok) {
           // Log but don't fail: the merge succeeded, so task is done even if cleanup is messy.
+          this.logger?.integration(job.taskId, "warn", "cleanup warning", { reason: cleanRes.reason });
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "done" })!;
+        this.logger?.integration(job.taskId, "info", "close-out complete — published to main");
       }
 
       return { ok: true };
     } catch (err) {
       const reason = err instanceof Error ? err.message : "unknown error";
+      this.logger?.integration(job.taskId, "error", "orchestrator error", { reason });
       this.coordinator.updateJob(job.taskId, {
         phase: PHASE_FAILED,
         failedPhase: job.phase ?? "unknown",
@@ -459,7 +520,7 @@ export class CloseOutOrchestrator {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
-      return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
+      return { ok: false, reason: `build failed: ${summarizeCommandFailure(buildRes.stdout, buildRes.stderr)}` };
     }
 
     this.onProgress?.("check");
@@ -480,7 +541,7 @@ export class CloseOutOrchestrator {
       checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
     }
     if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
+      return { ok: false, reason: `check failed: ${summarizeCommandFailure(checkRes.stdout, checkRes.stderr)}` };
     }
 
     // Candidate is green. Capture its SHA.
@@ -488,6 +549,14 @@ export class CloseOutOrchestrator {
     if (candidateShaRes.status !== 0) {
       return { ok: false, reason: "could not get candidate SHA after validation" };
     }
+
+    // Capture the reviewable source diff before publication removes the task
+    // branch/worktree. The candidate is based on the exact main SHA checked
+    // above and contains the validated feature merge, so this records the
+    // precise change that is about to land (not a later, polluted main diff).
+    const snapshotDiff = await getDiff(wtPath, mainBranch);
+    const snapshotStats = getDiffStats(wtPath, mainBranch);
+    saveDiffSnapshot(root, this.config.cacheDir, job.taskId, snapshotStats, snapshotDiff);
 
     return { ok: true, candidateSha: candidateShaRes.stdout.trim() };
   }
@@ -512,6 +581,19 @@ export class CloseOutOrchestrator {
       if (acquireAttempts >= 60) {
         return { ok: false, reason: "could not acquire publication lock (timeout)" };
       }
+    }
+
+    // Publishing mutates the live checkout.  It must therefore mutually
+    // exclude a hotfix, which also owns that checkout for its entire run.
+    // Acquire after the publication lock so concurrent close-outs retain
+    // their existing serialization, but before inspecting or merging main.
+    if (this.rootLock && !this.rootLock.acquire(job.taskId, "close-out")) {
+      const holder = this.rootLock.getHolder();
+      this.repoLock?.release(job.taskId);
+      return {
+        ok: false,
+        reason: `main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}); wait for it to finish before moving this task to done`,
+      };
     }
 
     try {
@@ -588,6 +670,7 @@ export class CloseOutOrchestrator {
       this.onProgress?.("done");
       return { ok: true };
     } finally {
+      this.rootLock?.release(job.taskId);
       // Always release the lock when done publishing.
       if (this.repoLock) {
         this.repoLock.release(job.taskId);
@@ -612,10 +695,21 @@ export class CloseOutOrchestrator {
     deleteBranch(root, job.branch ?? job.taskId);
 
     // Mark the task as done in the main checkout.
+    //
+    // The live index can miss a lookup right after a reload (its in-memory
+    // rebuild is not instant, and this cleanup step can land in that window —
+    // observed live, 2026-08-15, #0195: publish succeeded, main fast-forwarded
+    // to the candidate, but this step silently no-op'd — `task` was undefined,
+    // the `if (task)` guard skipped markTaskReleased with no error, and the
+    // task sat published-but-not-released until a manual retry). Falling back
+    // to a direct on-disk lookup by id makes this step independent of index
+    // freshness — the file is exactly what markTaskReleased writes to anyway.
     try {
-      const task = this.getTask?.(job.taskId);
-      if (task) {
-        markTaskReleased(this.config, task.absPath);
+      const absPath = this.getTask?.(job.taskId)?.absPath ?? findTaskFileById(root, this.config.workDir, job.taskId);
+      if (absPath) {
+        markTaskReleased(this.config, absPath);
+      } else {
+        console.error(`Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`);
       }
     } catch (err) {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);

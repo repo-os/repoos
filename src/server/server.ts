@@ -64,6 +64,7 @@ import { readBuildStamp } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
+import { createLogger, type Logger } from "../core/logger.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -107,7 +108,7 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
-import { createRepositoryLock } from "./repo-lock.js";
+import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
@@ -125,7 +126,7 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
@@ -138,13 +139,17 @@ import {
   restart,
   getCounts,
   getIndex,
+  getBoard,
   getDocs,
   getSkills,
   getSystem,
+  getSystemLogs,
   getTunnelStatus,
   getChat,
   sendChatMessage,
   initInfoHandlers,
+  getDebugger,
+  sendDebuggerMessage,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -156,10 +161,12 @@ import {
   patchTask,
   deleteTask,
   getTaskOutput,
+  getTaskLogs,
   getTaskStats,
   getSessionTypeStats,
   getBoardStats,
   getDiffStatsForTask,
+  getDiffForTask,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
@@ -184,6 +191,7 @@ import {
   // Agents routes
   runningAgents,
   detectInstalledAgents,
+  getAgentLogs,
   // Notifications
   testNotification,
   // Transcription
@@ -358,6 +366,20 @@ export interface ServeOptions {
    * EADDRINUSE until the old process releases the port, instead of failing.
    */
   reloadReplacement?: boolean;
+}
+
+/**
+ * Only a long-lived control-plane server may sweep machine-wide serve
+ * processes. Preview children deliberately run the same CLI on an ephemeral
+ * port, but must never classify their parent control plane (often detached
+ * with PPID 1 after a nohup/reload handoff) as an orphan and terminate it.
+ * Likewise, in-process test servers use port 0 and are never supervisors.
+ */
+export function shouldReapStrayServeProcesses(
+  opts: Pick<ServeOptions, "port">,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
 }
 
 export interface ServerHandle {
@@ -614,11 +636,43 @@ function safeRepoFile(root: string, urlPath: string): string | null {
   return abs;
 }
 
+/**
+ * Fatal/crash-level capture (0187): by default Node terminates the process on
+ * both of these events with nothing recorded anywhere. Registered once per
+ * process (not once per `startServer` call — the test suite starts many
+ * short-lived servers in the same process, and stacking a listener per call
+ * would both spam MaxListenersExceededWarning and risk one test's error
+ * exiting the whole worker) and always logs to whichever server is currently
+ * active. Only exits the process outside the test runner: many independent
+ * test servers share this process, so exiting here on an unrelated test's
+ * error would take the whole suite down with it.
+ */
+let activeLogger: Logger | null = null;
+let fatalHandlersRegistered = false;
+function registerFatalHandlersOnce(): void {
+  if (fatalHandlersRegistered) return;
+  fatalHandlersRegistered = true;
+  const logFatal = (message: string, err: unknown) => {
+    activeLogger?.system("fatal", message, {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    if (process.env.VITEST !== "true") process.exit(1);
+  };
+  process.on("uncaughtException", (err) => logFatal("Uncaught exception", err));
+  process.on("unhandledRejection", (reason) => logFatal("Unhandled promise rejection", reason));
+}
+
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
+  const logger = createLogger(config.root);
   const index = new LiveIndex(config);
   index.refreshAll();
+
+  logger.system("info", "RepoOS server starting", { root: config.root });
+  activeLogger = logger;
+  registerFatalHandlersOnce();
 
   const uiDir = findUiDir(repoos.config.root);
 
@@ -649,6 +703,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Integration job coordinator for serialized close-outs (0118)
   const jobCoordinator = createJobCoordinator(config.root);
   const repoLock = createRepositoryLock(config.root);
+  const rootLock = createRootLock(config.root);
 
   // Recovery on startup: resume interrupted jobs (0118)
   const interruptedJobs = jobCoordinator.findInterruptedJobs();
@@ -700,6 +755,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           config,
           jobCoordinator,
           repoLock,
+          rootLock,
           (taskId) => index.getTask(taskId),
           (step) => {
             const job = jobCoordinator.peekNext();
@@ -714,6 +770,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               emitIntegration();
             }
           },
+          logger,
         );
         const jobBefore = jobCoordinator.peekNext();
         const result = await orchestrator.processNext();
@@ -793,6 +850,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and prevent port binding conflicts.
   const reaper = new ServeReaper(config.root, config.cacheDir);
   reaper.cleanupStale();
+  // Boot-time sweep for historical orphans whose deleted root took their
+  // lockfile with it. Deliberately fire-and-forget: the sweep is async and
+  // bounded, so serve startup never blocks on it even with hundreds of
+  // accumulated orphans. It always resolves (never rejects). Gated like the
+  // periodic stray sweep — preview children and ephemeral in-process servers
+  // must not each run a full `ps`+`lsof` census of the machine.
+  if (shouldReapStrayServeProcesses(opts)) {
+    void reaper.cleanupOrphanedRoots();
+  }
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
@@ -812,7 +878,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const task = index.getTask(e.id);
       if (task?.status === "review") void reviews.run(task);
     },
-    { getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
+    { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
@@ -890,6 +956,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } },
   );
 
+  // Adopt any agent children that survived a server restart (0214).
+  // Reads the durable registry, checks PID aliveness, and re-attaches
+  // to still-running children so isRunning() reports true immediately.
+  runner.adoptRunningAgents();
+
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
@@ -940,6 +1011,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
+  // Stray serve-process reaping (#0216): orphaned repoos serve processes
+  // (their spawning parent confirmed dead) accumulate from failed
+  // reload-replacement attempts and interrupted test/close-out runs. Left
+  // alone they starve the close-out gate and, at volume, strain the whole
+  // machine — not just this server. Runs independent of SSE client presence
+  // (unlike the stats sampler above) since strays keep accumulating whether
+  // or not anyone is watching the UI. `psAvailable()` gate matches the
+  // sampler's own platform guard.
+  const REAP_INTERVAL_MS = 30_000;
+  const reapTimer = shouldReapStrayServeProcesses(opts)
+    ? setInterval(() => {
+        if (!psAvailable()) return;
+        try {
+          const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+          if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+          // The PPID-based pass above cannot see every deleted-root orphan;
+          // repeat the narrower root sweep so leaks created after boot do not
+          // wait until the next control-plane restart.
+          void reaper.cleanupOrphanedRoots();
+        } catch {
+          /* reaping is best-effort — never crash the server over it */
+        }
+      }, REAP_INTERVAL_MS)
+    : null;
+
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
   // schedule is due runs exactly one scan per tick; scheduled and manual runs
@@ -951,9 +1047,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
     for (const name of Object.keys(agents)) {
+      // Chat-only agents (the Debugger) have no scan to schedule — their
+      // floating-head conversation is the only interaction surface (0201).
+      if (name === "debugger") continue;
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
-      void runBuiltInAgent(name, repoos.config)
+      void runBuiltInAgent(name, repoos.config, logger)
         .then((result: any) => {
           if (result && result.failed > 0) {
             console.error(
@@ -963,6 +1062,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         })
         .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
+          logger.agent(name, "error", `Built-in agent run failed`, { error: String(err) });
         })
         .finally(() => {
           builtInRun.inFlight = false;
@@ -1192,14 +1292,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/server/restart", restart);
   router.register("GET", "/api/counts", getCounts);
   router.register("GET", "/api/index", getIndex);
+  router.register("GET", "/api/board", getBoard);
   router.register("GET", "/api/docs", getDocs);
   router.register("POST", "/api/docs/create", createDoc);
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/skills", getSkills);
   router.register("GET", "/api/system", getSystem);
+  router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("GET", "/api/debugger", getDebugger);
+  router.register("POST", "/api/debugger/message", sendDebuggerMessage);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
@@ -1213,8 +1317,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
@@ -1242,9 +1348,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
+  router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
     const cfg = ctx.repoos.config;
+    // The Debugger is chat-only (its floating head / bug-paste panel). It has
+    // no scan to run now, and exposing a dead endpoint invites a 500 when the
+    // dispatch returns null — reject it explicitly before touching the
+    // in-flight guard (0201).
+    if (agentName === "debugger") {
+      return json(res, 400, {
+        error: `"${agentName}" is chat-only — talk to it from its floating head instead of running it`,
+      });
+    }
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
     if (builtInRun.inFlight) {
@@ -1254,7 +1370,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     builtInRun.inFlight = true;
     try {
-      const result = await runBuiltInAgent(agentName, cfg);
+      const result = await runBuiltInAgent(agentName, cfg, logger);
       if (!result) {
         return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
       }
@@ -1266,10 +1382,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         failed: result.failed,
         errors: result.errors,
         issuesFound: "issuesFound" in result ? result.issuesFound : 0,
+        findingsFound: "findingsFound" in result ? result.findingsFound : 0,
         scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to run built-in agent";
+      logger.agent(agentName, "error", `Manual run of built-in agent failed`, { error: message });
       return json(res, 500, { error: message });
     } finally {
       builtInRun.inFlight = false;
@@ -1365,6 +1483,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews,
       cto,
       repoos,
+      logger,
       emitEvent: (e: RepoEvent) => {
         for (const client of clients) {
           try {
@@ -1375,6 +1494,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
       },
       closeOutLock,
+      rootLock,
       jobCoordinator,
       triggerJobProcessing,
       pendingReview,
@@ -1424,6 +1544,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const code = err instanceof WriteError ? 400 : 500;
+      if (code === 500) {
+        logger.system("error", "Request handler error", {
+          method,
+          path,
+          error: msg,
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      }
       return json(res, code, { error: msg });
     }
   });
@@ -1509,6 +1637,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
+        if (reapTimer) clearInterval(reapTimer);
         clearInterval(builtInTimer);
         ctoMonitor.stop();
         runner.dispose();
@@ -1530,6 +1659,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
+          if (reapTimer) clearInterval(reapTimer);
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();
@@ -1562,6 +1692,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           await closeHttp();
         },
       };
+
+      // A fixture or preview can have its checkout deleted while this child is
+      // still alive (for example when a test aborts before its finally block).
+      // Do not let that leave a server with an unreapable lockfile inside the
+      // deleted root: close its listener and all owned resources on its own.
+      // Only ephemeral test servers and preview children watch their root.
+      // A live control plane can serve a real checkout on a briefly unavailable
+      // network volume; it must not terminate itself in that situation.
+      if (opts.port === 0 || process.env.REPOOS_PREVIEW_CHILD === "1") {
+        reaper.watchRoot(() => {
+          void handle.close();
+        });
+      }
 
       // Auto-reload (0066): watch dist/.build-info.json and hand over to a
       // replacement process on a hash change. Deferred while an agent runs.

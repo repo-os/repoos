@@ -56,6 +56,8 @@ export interface CheckSummary {
   output?: string;
   /** Human-readable failure detail (redacted, includes command + status). */
   detail?: string;
+  /** True when a timeout suggests machine contention, not a test assertion. */
+  transient?: boolean;
 }
 
 export interface CompleteResult {
@@ -310,6 +312,14 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
         : `exit ${run.status}`;
     const output = captureOutput(run.stdout, run.stderr);
     const short = output.slice(0, 500).replace(/\s+/g, " ").trim();
+    // Vitest reports a contention-induced polling deadline as a normal
+    // non-zero test result, not as a timeout of this outer subprocess. Treat
+    // that narrow shape like a process deadline: retry once, but do not hide
+    // assertion failures or other real regressions behind a retry.
+    const transient = run.timedOut || (
+      opts.stage === "check" &&
+      /(?:timed out waiting for|test timed out|worker .*?(?:timeout|exited))/i.test(output)
+    );
     return {
       ok: false,
       stage: opts.stage,
@@ -318,6 +328,7 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
       errorCode: run.error?.code,
       output,
       detail: `${opts.label} failed (${statusText}) — ${command}${short ? ` — ${short}` : ""}`,
+      transient,
     };
   }
   return { ok: false, stage: opts.stage, detail: missing || `\`${opts.label}\` could not be run` };
@@ -360,6 +371,55 @@ function checkCandidates(root: string): string[][] {
   return list;
 }
 
+/**
+ * Report the outcome of a close-out check retry honestly (#0216).  A retry is
+ * only reached when the first run failed with a timeout-shaped signature, but
+ * that heuristic is message-based and a genuine assertion failure could match
+ * it too — so the retry is never assumed to be contention.  The task's own
+ * guidance for telling the two apart: a failure that reproduces IDENTICALLY is
+ * a real defect, because contention lands on a different test each run.  When
+ * the retry produces the same output as the first run, say so instead of
+ * blaming the machine; only a retry that fails differently supports the
+ * contention reading.
+ */
+export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): CheckSummary {
+  if (retry.ok || !retry.transient) return retry;
+  const reproduced = first.output !== undefined && first.output === retry.output;
+  retry.detail = `${retry.detail ?? "repoos check failed"} — ${
+    reproduced
+      ? "the same failure appeared on the retry with identical output. Identical reproduction points at a genuine defect, not machine contention"
+      : first.output === undefined || retry.output === undefined
+        ? "the failure reappeared on the retry, but it could not be compared against the first run"
+        : "the retry failed on different output than the first run; the machine may be too loaded to run the gate reliably"
+  }`;
+  return retry;
+}
+
+/**
+ * A timeout means the gate could not obtain enough machine time; it says
+ * nothing about the merged branch. Retry that infrastructure failure once,
+ * while preserving ordinary non-zero test failures as immediately actionable.
+ * Exported for the retry-wiring regression tests.
+ */
+export async function runCloseOutCheck(root: string): Promise<CheckSummary> {
+  const first = await runDoneStep({
+    cwd: root,
+    candidates: checkCandidates(root),
+    label: "repoos check",
+    stage: "check",
+    timeout: 600_000,
+  });
+  if (!first.transient) return first;
+  const retry = await runDoneStep({
+    cwd: root,
+    candidates: checkCandidates(root),
+    label: "repoos check (retry after timeout)",
+    stage: "check",
+    timeout: 600_000,
+  });
+  return describeRetryFailure(first, retry);
+}
+
 /** Post-merge gate runners, overridable in tests to avoid real builds. */
 export interface CompleteTaskSteps {
   build?: (cwd: string) => Promise<CheckSummary>;
@@ -379,6 +439,19 @@ export interface CloseOutLock {
   release: () => void;
 }
 
+/**
+ * Not the live close-out path (0187 review — flagged as unlogged; noting why
+ * it stays that way rather than adding logging nothing will ever read).
+ * `server.ts` imports this but never calls it — since #0118 the merge-queue
+ * (`JobCoordinator` + `CloseOutOrchestrator` in integration-orchestrator.ts,
+ * which now carries the phase/failure logging) is what actually runs a
+ * review->done close-out. This single-shot, run-against-main-directly version
+ * predates that and is exercised only by `src/ui-app/tests/done-*.test.ts`.
+ * Kept for its helpers (`mergeTaskBranchWithAutoSync`, `runDoneStep`,
+ * `redactSecrets`, `stripAnsi` — the last used live by `agents.ts`); consider
+ * deleting `completeTask`/`completeTaskLocked` themselves in a follow-up if
+ * nothing comes to depend on them.
+ */
 export async function completeTask(
   config: RepoOSConfig,
   task: Task,
@@ -414,7 +487,7 @@ async function completeTaskLocked(
   // Vite asset filenames and binary PNGs don't cause artificial conflicts.
   // Both are regenerated from source on main right after the merge anyway.
   const wt = worktreePathForBranch(root, task.branch);
-  if (wt !== null) {
+  if (wt !== null && !task.hotfix) {
     const r1 = await runGit(wt, ["ls-files", "dist/", "screenshots/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
       await runGit(wt, ["rm", "-r", "--cached", "--", "dist/", "screenshots/"], 15_000);
@@ -422,6 +495,9 @@ async function completeTaskLocked(
     }
   }
   const autoResolve = [rel, "dist/", "screenshots/"];
+
+  // Direct-to-main hotfix: the work was done on main itself; skip the merge.
+  const isMainHotfix = task.hotfix && task.hotfixTarget === "main";
 
   // Publish-time dirty-main guard (#0211): the main tree can be dirtied
   // between the enqueue-time check and this publish step (validation takes
@@ -461,14 +537,19 @@ async function completeTaskLocked(
     };
   }
 
-  // Cheap pre-flight: detect source-file conflicts before the expensive
-  // build/check steps run. Never leaves a half-applied merge.
-  // When the merge cannot proceed because the branch needs to be synchronized
-  // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
-  // operation and retries, so the close-out completes without a manual step.
-  // A retry where the branch was already integrated is detected up front and
-  // reported as `alreadyMerged`, resuming from the remaining steps.
-  const merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  let merge: MergeAttempt;
+  if (isMainHotfix) {
+    merge = { merged: true, ff: true, drifted: false, conflicts: [] };
+  } else {
+    // Cheap pre-flight: detect source-file conflicts before the expensive
+    // build/check steps run. Never leaves a half-applied merge.
+    // When the merge cannot proceed because the branch needs to be synchronized
+    // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
+    // operation and retries, so the close-out completes without a manual step.
+    // A retry where the branch was already integrated is detected up front and
+    // reported as `alreadyMerged`, resuming from the remaining steps.
+    merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  }
   if (!merge.merged) {
     return {
       ok: false,
@@ -502,7 +583,7 @@ async function completeTaskLocked(
   onProgress?.("check");
   const check = steps.check
     ? await steps.check(root)
-    : await runDoneStep({ cwd: root, candidates: checkCandidates(root), label: "repoos check", stage: "check", timeout: 600_000 });
+    : await runCloseOutCheck(root);
   if (!check.ok) {
     return {
       ok: false,
@@ -521,8 +602,16 @@ async function completeTaskLocked(
   // Best-effort cleanup; content is preserved in the merged main. The worktree
   // must go first — git refuses to delete a branch checked out in a worktree.
   // Both are fail-soft, so an already-cleaned retry is a no-op here.
-  removeWorktree(root, task.branch);
-  deleteBranch(root, task.branch);
+  // Hotfix tasks: never delete a worktree that doesn't exist, and never delete
+  // main. For branch-mode hotfixes, switch back to main after closing.
+  if (!task.hotfix) {
+    removeWorktree(root, task.branch);
+    deleteBranch(root, task.branch);
+  } else {
+    if (task.hotfixTarget !== "main" && task.branch) {
+      deleteBranch(root, task.branch);
+    }
+  }
 
   return {
     ok: true,

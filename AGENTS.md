@@ -102,6 +102,9 @@ cannot tell from the code alone:
   manipulation goes through `repoos` commands or HTTP API endpoints
   (`POST /api/tasks`, `PATCH /api/tasks/:id`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
+- **The Product Manager agent is authorized to create and update tasks.** It
+  must use those same RepoOS CLI commands or HTTP API endpoints for task body,
+  metadata, and status changes; it must never edit task Markdown directly.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime

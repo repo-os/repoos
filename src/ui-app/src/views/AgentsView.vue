@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { labelForModel, useConfigStore } from "../stores/config";
+import { useRoute, useRouter } from "vue-router";
+import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
@@ -22,13 +22,56 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
 const router = useRouter();
+const route = useRoute();
 const docs = useDocsStore();
+
+type AgentTab = "default" | "custom" | "team" | "detected";
+
+const AGENT_TAB_LABELS: Record<AgentTab, string> = {
+  default: "Default Agents",
+  custom: "Custom Agents",
+  team: "Build Your Team",
+  detected: "Detected Coding Agents",
+};
+
+const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected"];
+
+const activeTab = ref<AgentTab>("default");
+
+// Deep-linking: the active tab is reflected in the URL as ?tab=<id> so users
+// can link straight to a section. Falls back to "default" on page load.
+const tabFromQuery = (): AgentTab => {
+  const q = route.query.tab;
+  return typeof q === "string" && (AGENT_TABS as readonly string[]).includes(q) ? (q as AgentTab) : "default";
+};
+
+watch(
+  () => route.query.tab,
+  () => {
+    const next = tabFromQuery();
+    if (next !== activeTab.value) activeTab.value = next;
+  },
+  { immediate: true },
+);
+
+watch(activeTab, (tab) => {
+  if (tabFromQuery() !== tab) {
+    void router.replace({ query: { ...route.query, tab } });
+  }
+});
 
 const RECOMMENDATIONS_DOC = "docs/agent-model-recommendations.md";
 
 function openRecommendations(): void {
   void docs.loadDoc(RECOMMENDATIONS_DOC);
   void router.push({ name: "repo" });
+}
+
+const MODEL_PRICING_DOC = "docs/opencode-models.md";
+
+function openModelPricing(): void {
+  void docs.loadDoc(MODEL_PRICING_DOC);
+  void router.push({ name: "repo" })
 }
 
 const localAgents = ref<Agent[]>([]);
@@ -58,7 +101,13 @@ watch(
 // section instead of masquerading as a custom role (0174/0196).
 const defaultNames = computed(() => config.agentsMeta.defaults.map((a) => a.name.toLowerCase()));
 const isDefaultName = (name: string): boolean => defaultNames.value.includes(name.toLowerCase());
-const defaultAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name)));
+// The talk/team agents (Ross, CTO, …) get their own cards under "Build your
+// team", distinct from the headless task-engine defaults (engineer, reviewer,
+// pm) shown in the "Default agents" section. Grouped by lowercase name.
+const TEAM_AGENT_NAMES = ["ross", "cto"];
+const isTeamAgent = (name: string): boolean => TEAM_AGENT_NAMES.includes(name.toLowerCase());
+const headlessAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)));
+const teamAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)));
 const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
 
 const CLI_LABELS: Record<string, string> = {
@@ -300,10 +349,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="page-title">Agents</div>
+  <div class="agents-page">
+    <div class="page-title agents-page-title">Agents</div>
     <div class="page-desc">
-      The AI agents that work this repo · opencode + big pickle by default
+      The AI agents that work this repo ·
+      <button class="model-pricing-link" @click="openRecommendations">
+        View the full agent &amp; model selection guide →
+      </button>
       <span v-if="config.saving"> · Saving…</span>
       <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
       <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
@@ -312,39 +364,34 @@ onUnmounted(() => {
     <div v-if="!config.loaded" class="spin"></div>
 
     <template v-else>
-      <Card style="padding: 0 18px 12px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot" style="background: var(--green)"></span>Choosing an agent
-        </div>
-        <div class="agent-desc rec-desc">
-          <p>
-            <strong>opencode</strong> is the most mature driver (structured output, model discovery, session resume).
-            Nearly all completed RepoOS tasks used it with <strong>big pickle</strong>, though evidence is provisional
-            — no other CLI has been tested on a real task.
-          </p>
-          <p>
-            Use live model discovery ("Refresh models") to find what's available on your machine.
-            Compatibility testing (the "Test" button) proves a CLI/model responds, not that it performs well on real tasks.
-          </p>
-          <p>
-            <button class="rec-link" @click="openRecommendations">
-              View the full agent &amp; model selection guide →
-            </button>
-            <span class="rec-freshness">Last verified 2026-08-12 · refreshed manually until #0093</span>
-          </p>
-        </div>
-      </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <div class="agent-tabs">
+        <button
+          v-for="t in AGENT_TABS"
+          :key="t"
+          type="button"
+          class="tab-btn"
+          :class="{ active: activeTab === t }"
+          @click="activeTab = t"
+        >
+          {{ AGENT_TAB_LABELS[t] }}
+        </button>
+      </div>
+
+      <div class="agents-tab-content">
+      <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot"></span>Default agents
-          <a
+          <!-- <a
             class="model-pricing-link"
             href="/repo?doc=docs/opencode-models.md"
             target="_blank"
             rel="noopener noreferrer"
             title="Open model pricing & use cases in the Repo Context docs"
-          >Model pricing &amp; use cases</a>
+          >Model pricing &amp; use cases</a> -->
+          <button class="model-pricing-link" @click="openModelPricing">
+              Model pricing &amp; use cases →
+          </button>
           <Button
             variant="outline"
             size="sm"
@@ -357,9 +404,9 @@ onUnmounted(() => {
           </Button>
         </div>
         <div class="agent-desc">
-          Built-in roles. Toggle them on or off and pick their coding agent and model.
+          Headless task-engine roles that run the roadmap. Toggle them on or off and pick their coding agent and model.
         </div>
-        <div v-for="a in defaultAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
+        <div v-for="a in headlessAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
           <div class="agent-head">
             <div class="agent-title">
               <span class="agent-dot"></span>
@@ -430,7 +477,7 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom agents
         </div>
@@ -529,20 +576,92 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--green)"></span>Build your team
         </div>
         <div class="agent-desc">
-          Pre-built optional agents that extend RepoOS. Enable them to add new capabilities.
+          The agents that talk back or extend RepoOS. Enable them to add new capabilities.
         </div>
 
+        <div v-for="a in teamAgents" :key="'team-' + a.name" class="agent-card" :class="{ off: !a.enabled }">
+          <div class="agent-head">
+            <div class="agent-title">
+              <span class="agent-dot"></span>
+              <span class="agent-name">{{ a.name }}</span>
+              <span class="agent-badge">team</span>
+            </div>
+            <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
+          </div>
+          <div class="agent-body">
+            <div class="agent-field">
+              <label>Coding agent</label>
+              <Select :model-value="a.cli" @update:model-value="(v) => (a.cli = v ?? a.cli)">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="c in clis" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="agent-field">
+              <label>Model</label>
+              <Select :model-value="a.model" @update:model-value="(v) => (a.model = v ?? a.model)">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
+                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectSearchGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="agent-field agent-test-result">
+              <label>Compatibility</label>
+              <div class="agent-test-actions">
+                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
+                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                </Button>
+                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
+                  {{ resultFor(a)!.status.replace('_', ' ') }}
+                </span>
+              </div>
+            </div>
+            <div class="agent-field agent-instr-field">
+              <div class="instr-header">
+                <label>Instructions</label>
+                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+              </div>
+              <textarea
+                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
+                :value="a.instructions ?? ''"
+                class="agent-instr"
+                rows="2"
+                placeholder="Optional — how this agent should behave"
+                @input="setInstr(a, $event)"
+                @blur="updateAgentInstr(a)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <BuiltInAgentCard agent="debugger" interactive />
         <BuiltInAgentCard agent="tech-debt" />
         <BuiltInAgentCard agent="performance" />
         <BuiltInAgentCard agent="architect" />
+        <BuiltInAgentCard agent="design" />
       </Card>
 
-      <Card v-if="!detectError" style="padding: 0 18px 6px; margin-bottom: 16px">
+      <Card v-if="!detectError" v-show="activeTab === 'detected'" style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
           <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
           Detected coding agents
@@ -600,6 +719,7 @@ onUnmounted(() => {
           </div>
         </template>
       </Card>
+      </div>
 
     </template>
   </div>
