@@ -213,6 +213,11 @@ export class ServeReaper {
     await runBounded(candidates, ORPHAN_SWEEP_CONCURRENCY, async (pid) => {
       const cwd = await this.processCwdAsync(pid);
       if (!cwd || !isOrphanRoot(cwd)) return;
+      // PID-recycling guard: the command-shape scan ran at sweep start, so a
+      // PID could have been reused by an unrelated process in the interim.
+      // Never signal a PID that no longer names a serve process at kill time.
+      const command = await this.commandOf(pid);
+      if (!command || !isOrphanServeCommand(command)) return;
       this.killProcess(pid);
       reaped += 1;
     });
@@ -312,22 +317,35 @@ export class ServeReaper {
     }
   }
 
+  /** The command line of `pid`, or null when the process is already gone. */
+  private async commandOf(pid: number): Promise<string | null> {
+    try {
+      const out = await execFileAsync("ps", ["-p", String(pid), "-o", "command="], 2_000);
+      return out.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
   private killProcess(pid: number): void {
     try {
       // Use process.kill() which is portable across Unix/Mac/Windows.
-      // Send SIGTERM first (graceful), then SIGKILL if needed.
+      // Send SIGTERM first (graceful), then SIGKILL only if the process is
+      // still alive at the deadline. Never SIGKILL a PID that exited in the
+      // grace window — an unrelated process may have recycled it (#0216).
       process.kill(pid, "SIGTERM");
-      // Brief grace period for SIGTERM
-      setTimeout(() => {
-        try {
-          process.kill(pid, "SIGKILL");
-        } catch {
-          /* ignore — process already gone */
-        }
-      }, 100);
     } catch {
       /* ignore — process may already be gone */
+      return;
     }
+    setTimeout(() => {
+      try {
+        process.kill(pid, 0); // existence probe — throws ESRCH when gone
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore — already exited; do not SIGKILL a possibly-recycled PID */
+      }
+    }, 100);
   }
 }
 

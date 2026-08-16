@@ -399,8 +399,9 @@ export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): 
  * A timeout means the gate could not obtain enough machine time; it says
  * nothing about the merged branch. Retry that infrastructure failure once,
  * while preserving ordinary non-zero test failures as immediately actionable.
+ * Exported for the retry-wiring regression tests.
  */
-async function runCloseOutCheck(root: string): Promise<CheckSummary> {
+export async function runCloseOutCheck(root: string): Promise<CheckSummary> {
   const first = await runDoneStep({
     cwd: root,
     candidates: checkCandidates(root),
