@@ -849,6 +849,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and prevent port binding conflicts.
   const reaper = new ServeReaper(config.root, config.cacheDir);
   reaper.cleanupStale();
+  // Boot-time sweep for historical orphans whose deleted root took their
+  // lockfile with it. Deliberately fire-and-forget: the sweep is async and
+  // bounded, so serve startup never blocks on it even with hundreds of
+  // accumulated orphans. It always resolves (never rejects). Gated like the
+  // periodic stray sweep — preview children and ephemeral in-process servers
+  // must not each run a full `ps`+`lsof` census of the machine.
+  if (shouldReapStrayServeProcesses(opts)) {
+    void reaper.cleanupOrphanedRoots();
+  }
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
@@ -1016,6 +1025,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         try {
           const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
           if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+          // The PPID-based pass above cannot see every deleted-root orphan;
+          // repeat the narrower root sweep so leaks created after boot do not
+          // wait until the next control-plane restart.
+          void reaper.cleanupOrphanedRoots();
         } catch {
           /* reaping is best-effort — never crash the server over it */
         }
@@ -1678,6 +1691,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           await closeHttp();
         },
       };
+
+      // A fixture or preview can have its checkout deleted while this child is
+      // still alive (for example when a test aborts before its finally block).
+      // Do not let that leave a server with an unreapable lockfile inside the
+      // deleted root: close its listener and all owned resources on its own.
+      // Only ephemeral test servers and preview children watch their root.
+      // A live control plane can serve a real checkout on a briefly unavailable
+      // network volume; it must not terminate itself in that situation.
+      if (opts.port === 0 || process.env.REPOOS_PREVIEW_CHILD === "1") {
+        reaper.watchRoot(() => {
+          void handle.close();
+        });
+      }
 
       // Auto-reload (0066): watch dist/.build-info.json and hand over to a
       // replacement process on a hash change. Deferred while an agent runs.

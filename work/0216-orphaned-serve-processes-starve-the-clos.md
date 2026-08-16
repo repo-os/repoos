@@ -12,7 +12,7 @@ branch: feat/orphaned-serve-processes-starve-the-clos
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T07:06:54Z"
-updated_at: "2026-08-16T13:51:47Z"
+updated_at: "2026-08-16T13:38:40Z"
 ---
 ## Problem
 
@@ -106,7 +106,4 @@ The reload-handoff EPIPE failure was fixed separately. Do not change reload hand
 - 2026-08-16T12:01:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T13:16:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T13:38:39Z · status active→review
-- 2026-08-16T13:38:39Z · needs_merge
-- 2026-08-16T13:43:46Z · status review→active
-- 2026-08-16T13:51:47Z · status active→review
-
+- 2026-08-16T13:38:40Z · needs_merge
