@@ -851,3 +851,91 @@ export function removeWorktree(root: string, branch: string): boolean {
   git(root, ["worktree", "prune"]);
   return git(root, ["worktree", "remove", "--force", path]) !== null;
 }
+
+export interface EnsureHotfixResult {
+  ok: boolean;
+  /** Always config.root — the hotfix runs in the main checkout. */
+  path: string;
+  /** The branch created or reused. */
+  branch: string;
+  /** Human-readable failure reason. */
+  reason?: string;
+}
+
+/**
+ * Prepare the main checkout for a hotfix task.
+ *
+ * 1. Create a `hotfix/<id>-<slug>` branch from main (when hotfixTarget is
+ *    "branch") or stay on main (when target is "main").
+ * 2. Refuse if the main checkout is dirty.
+ * 3. Return config.root as the working directory — the agent runs here.
+ */
+export function ensureHotfix(
+  root: string,
+  branch: string,
+  hotfixTarget: "branch" | "main",
+): EnsureHotfixResult {
+  if (!isGitRepo(root)) {
+    return { ok: false, path: root, branch, reason: "not a git repository" };
+  }
+  const head = currentBranch(root);
+  if (!head) {
+    return { ok: false, path: root, branch, reason: "could not determine current branch" };
+  }
+
+  // For branch-mode hotfixes: create the hotfix branch if it doesn't exist,
+  // then check it out. For main-mode: verify we're already on main.
+  if (hotfixTarget === "branch") {
+    if (head !== branch) {
+      if (!localBranches(root).has(branch)) {
+        if (git(root, ["checkout", "-b", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not create branch ${branch}` };
+        }
+      } else {
+        if (git(root, ["checkout", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not checkout branch ${branch}` };
+        }
+      }
+    }
+  } else {
+    if (head !== "main") {
+      return { ok: false, path: root, branch, reason: "main-mode hotfix requires the main checkout to be on main" };
+    }
+  }
+
+  return { ok: true, path: root, branch };
+}
+
+/**
+ * Reset the main checkout back to `main` after a hotfix, discarding any
+ * in-flight work. Only touches root when it's on a hotfix branch.
+ */
+export function resetHotfix(root: string, branch: string): boolean {
+  // Only safe to reset if we're on the hotfix branch and it's not main.
+  const head = currentBranch(root);
+  if (!head || head === "main") return false;
+  if (head !== branch) return false;
+  return git(root, ["checkout", "main"]) !== null;
+}
+
+/**
+ * Get agent-touched files in the working directory: the union of tracked
+ * worktree-changed files and newly-added files since the last ref, excluding
+ * dist/ and screenshots/. Returns an empty list on git failure.
+ */
+export function agentTouchedFiles(root: string, sinceRef: string): string[] {
+  // Staged + unstaged changes (tracked files)
+  const diff =
+    git(root, ["diff", "--name-only", sinceRef, "--", "."])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  // Untracked files that aren't in dist/ or screenshots/
+  const untracked =
+    git(root, ["ls-files", "--others", "--exclude-standard"])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((p) => !p.startsWith("dist/") && !p.startsWith("screenshots/")) ?? [];
+  return [...new Set([...diff, ...untracked])];
+}
