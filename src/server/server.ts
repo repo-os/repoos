@@ -733,6 +733,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             id: jobBefore.taskId,
             step: "failed",
             detail: result.reason,
+            phase: jobCoordinator.getJob(jobBefore.taskId)?.failedPhase,
             at: new Date().toISOString(),
           });
         }

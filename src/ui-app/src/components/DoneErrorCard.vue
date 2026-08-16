@@ -6,6 +6,10 @@ const props = defineProps<{
   message: string;
   step?: string;
   conflicts?: string[];
+  /** Newline-preserving check/build output excerpt shown in the expanded panel. */
+  detail?: string;
+  /** Guidance paragraph; defaults to the merge-conflict guidance. */
+  hint?: string;
 }>();
 
 /** True when the collapsed message overflows its two-line clamp. */
@@ -80,6 +84,10 @@ defineExpose({ measure, toggle, overflow, expanded });
         Move to done failed
         <span v-if="step" class="done-error-step">at {{ step }}</span>
       </div>
+      <div v-if="detail" class="done-error-output">
+        <div class="done-error-sub">Check output</div>
+        <pre class="done-error-pre mono">{{ detail }}</pre>
+      </div>
       <div v-if="conflicts?.length" class="done-error-files">
         <div class="done-error-sub">Conflicting files</div>
         <ul>
@@ -87,8 +95,10 @@ defineExpose({ measure, toggle, overflow, expanded });
         </ul>
       </div>
       <p class="done-error-hint">
-        RepoOS couldn't sync this branch with main automatically — resolve the conflicting files
-        in the worktree, then retry.
+        {{
+          hint ??
+          "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
+        }}
       </p>
     </div>
   </div>

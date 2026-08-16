@@ -28,6 +28,7 @@ import {
   GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
+import { redactSecrets, stripAnsi } from "./done.js";
 import { markTaskReleased } from "./write.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
@@ -85,12 +86,31 @@ const TAIL_MAX_CHARS = 800;
  * code 1`) that is useless as a reason on its own, so keep the last several
  * meaningful lines — the real cause (a failing test, a compiler error) sits
  * just above the wrapper.
+ *
+ * The reason is persisted to `.repoos/integration-jobs/<id>.json` and shown
+ * verbatim in the UI, so it must be free of ANSI escapes (the gate's test
+ * output is colored) and of anything that looks like a credential. When the
+ * excerpt exceeds the character cap it is cut from the front at a WORD
+ * boundary — cutting mid-word produced reasons like `check failed: …eletion
+ * detected by…` (0215) that read as garbage.
  */
-function tailLine(stdout: string, stderr: string): string {
-  const lines = `${stdout}\n${stderr}`.split("\n").map((l) => l.trim()).filter(Boolean);
+export function tailLine(stdout: string, stderr: string): string {
+  const lines = redactSecrets(stripAnsi(`${stdout}\n${stderr}`))
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   if (lines.length === 0) return "unknown error";
-  const tail = lines.slice(-TAIL_LINES).join("\n");
-  return tail.length > TAIL_MAX_CHARS ? `…${tail.slice(-TAIL_MAX_CHARS)}` : tail;
+  let tail = lines.slice(-TAIL_LINES).join("\n");
+  if (tail.length > TAIL_MAX_CHARS) {
+    const cut = tail.length - TAIL_MAX_CHARS;
+    // Back up to the nearest word boundary before the cut so the excerpt
+    // starts on a whole word — cutting straight from the front produced
+    // reasons like `…eletion detected by…` (0215).
+    const lastWs = Math.max(tail.lastIndexOf(" ", cut), tail.lastIndexOf("\n", cut));
+    const start = lastWs >= 0 ? lastWs + 1 : cut;
+    return `…${tail.slice(start)}`;
+  }
+  return tail;
 }
 
 interface ProcessRunResult {
@@ -174,6 +194,7 @@ export class CloseOutOrchestrator {
         if (!syncRes.ok) {
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "syncing",
             reason: syncRes.reason,
           });
           return syncRes;
@@ -199,6 +220,7 @@ export class CloseOutOrchestrator {
           // costs the user another full gate cycle.
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "validating",
             reason: validateRes.reason,
           });
           return validateRes;
@@ -213,6 +235,7 @@ export class CloseOutOrchestrator {
               : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
             this.coordinator.updateJob(job.taskId, {
               phase: PHASE_FAILED,
+              failedPhase: "validating",
               reason,
             });
             return { ok: false, reason };
@@ -237,6 +260,7 @@ export class CloseOutOrchestrator {
           }
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "publishing",
             reason: pubRes.reason,
           });
           return pubRes;
@@ -259,6 +283,7 @@ export class CloseOutOrchestrator {
       const reason = err instanceof Error ? err.message : "unknown error";
       this.coordinator.updateJob(job.taskId, {
         phase: PHASE_FAILED,
+        failedPhase: job.phase ?? "unknown",
         reason: `orchestrator error: ${reason}`,
       });
       return { ok: false, reason };
