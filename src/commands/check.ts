@@ -331,6 +331,10 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.dim(`  · ${stale.message ?? stale.code}`));
     results.push(pass("staleness", stale.message ?? stale.code));
   }
+  // True when dist matches the current source exactly — the precondition under
+  // which REPOOS_SKIP_BUILD may skip the build below (nothing changed since the
+  // caller built). Never true when dist is missing or stale.
+  const buildFresh = !stale.stale && stale.code === "fresh";
 
   // ── 1b. Lockfile sync check ─────────────────────────────────────────
   // A dependency bump in package.json without a regenerated bun.lock passes
@@ -358,14 +362,31 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 2. Full build ───────────────────────────────────────────────────
   // Skippable via REPOOS_SKIP_BUILD: the close-out pipeline (`completeTask` in
-  // src/server/done.ts) runs `bun run build` itself and then invokes `repoos
-  // check` with this env var set, so its own "Full build" step — which would
-  // rebuild the exact same source with nothing changed in between — is skipped.
-  // Standalone `repoos check` from the CLI never sets it and always builds.
+  // src/server/done.ts, and `validateCandidate` in
+  // src/server/integration-orchestrator.ts) runs `bun run build` itself and
+  // then invokes `repoos check` with this env var set, so its own "Full build"
+  // step — which would rebuild the exact same source with nothing changed in
+  // between — is skipped. The skip only applies when the build is verified
+  // fresh by the staleness check above; if dist is missing or stale the build
+  // still runs, so REPOOS_SKIP_BUILD can never let the UI smoke test probe a
+  // bad build. Standalone `repoos check` from the CLI never sets the var and
+  // always builds.
   heading("Full build");
-  if (process.env.REPOOS_SKIP_BUILD === "1") {
-    console.log(c.dim("  · Skipped — caller already built (REPOOS_SKIP_BUILD=1)"));
-    results.push(pass("build", "skipped — caller already built"));
+  if (process.env.REPOOS_SKIP_BUILD === "1" && buildFresh) {
+    console.log(c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"));
+    results.push(pass("build", "skipped — caller already built, build verified fresh"));
+  } else if (process.env.REPOOS_SKIP_BUILD === "1") {
+    console.log(c.yellow("  · REPOOS_SKIP_BUILD=1 but build is not fresh — building anyway"));
+    try {
+      execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
+      console.log(c.green("  ✔ Build succeeded"));
+      results.push(pass("build"));
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.log(c.red("  ✗ Build failed"));
+      results.push(fail("build", msg));
+      exitCode = 1;
+    }
   } else {
     try {
       execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
@@ -491,7 +512,7 @@ async function runUISmokeTest(): Promise<void> {
   const server = await startPreviewServer();
   let browser: SmokeBrowser | undefined;
   try {
-    ({ browser } = await launchWebkit());
+    browser = await launchWebkit();
   } catch (err) {
     server.close();
     throw err;

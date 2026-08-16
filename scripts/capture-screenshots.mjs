@@ -12,12 +12,11 @@
  *
  * Exits non-zero if any capture produced console/page errors.
  */
-import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { startPreviewServer, launchWebkit } from "../dist/commands/ui-harness.js";
-import { HASH_FILE, SCREENSHOT_NAMES, screenshotsHash } from "../dist/commands/screenshots.js";
+import { HASH_FILE, screenshotsHash } from "../dist/commands/screenshots.js";
 
 const ROOT = process.cwd();
 const SHOTS = resolve(ROOT, "screenshots");
@@ -45,7 +44,7 @@ try {
 
 let browser;
 try {
-  ({ browser } = await launchWebkit());
+  browser = await launchWebkit();
 } catch {
   console.error("Cannot find module @playwright/test (not installed).");
   console.error("Install: bun add -d @playwright/test && npx playwright install webkit");

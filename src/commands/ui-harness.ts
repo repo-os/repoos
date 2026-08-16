@@ -9,13 +9,18 @@
  * of the `@playwright/test` / server wiring — so close-out ended up with two
  * independent browser+server launch cycles to verify the same built UI.
  *
- * They run in separate OS processes, so each still performs its own launch at
- * runtime, but the launch/teardown logic now lives in exactly one place and the
- * two call sites can never drift apart again. (A literal single shared server +
- * single browser across the process boundary is intentionally out of scope —
- * see task #0213's scope-down note.)
+ * They run in separate OS processes that are never alive at the same time —
+ * `repoos check` is a subprocess of the close-out gate, while screenshots are
+ * an on-demand `bun run screenshots` run that, per #0140, is never part of a
+ * close-out — so each still performs its own launch at runtime. A literal
+ * single shared server + single browser *instance* across that boundary is
+ * therefore impossible without folding screenshots into `repoos check` (which
+ * would contradict #0140), so the shared logic itself is the intended AC3
+ * scope-down (task #0213): one launch implementation, zero drift between the
+ * two call sites.
  */
 import { createRequire } from "node:module";
+import type { ServeOptions } from "../server/server.js";
 
 export interface PreviewServer {
   close: () => void;
@@ -55,13 +60,9 @@ export interface SmokePlaywright {
  */
 export async function startPreviewServer(root?: string): Promise<PreviewServer> {
   const { startServer } = await import("../server/server.js");
-  const opts: Record<string, unknown> = { host: "127.0.0.1", port: 0 };
+  const opts: ServeOptions = { host: "127.0.0.1", port: 0 };
   if (root !== undefined) opts.root = root;
-  const server = (await startServer(opts as never)) as unknown as {
-    close: () => void;
-    url: string;
-  };
-  return { close: server.close.bind(server), url: server.url };
+  return startServer(opts);
 }
 
 /**
@@ -69,10 +70,7 @@ export async function startPreviewServer(root?: string): Promise<PreviewServer> 
  * error when the package isn't installed so callers can report it as a
  * graceful skip rather than a gate failure.
  */
-export async function launchWebkit(): Promise<{
-  browser: SmokeBrowser;
-  playwright: SmokePlaywright;
-}> {
+export async function launchWebkit(): Promise<SmokeBrowser> {
   // @playwright/test is a CJS package. Bun's ESM `import()` of it resolves the
   // named browser exports to `undefined` (root cause of #0200), so load it via
   // createRequire, which handles the CJS interop under both Bun and Node.
@@ -86,6 +84,5 @@ export async function launchWebkit(): Promise<{
   } catch {
     throw new Error("Cannot find module @playwright/test (not installed)");
   }
-  const browser = await playwright.webkit.launch({ headless: true });
-  return { browser, playwright };
+  return playwright.webkit.launch({ headless: true });
 }

@@ -142,9 +142,13 @@ interface ProcessRunResult {
   timedOut?: boolean;
 }
 
-function runProcess(cmd: string, args: string[], opts: { cwd: string; timeout: number }): Promise<ProcessRunResult> {
+function runProcess(
+  cmd: string,
+  args: string[],
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
+): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd });
+    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -502,15 +506,19 @@ export class CloseOutOrchestrator {
     // can disagree with the checkout actually being validated here. Running
     // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
     // evaluates the exact code that was just merged and built above.
+    // The build above already ran `bun run build` with nothing changed since,
+    // so `check`'s own "Full build" step is redundant (#0213) — pass
+    // REPOOS_SKIP_BUILD so it skips it. Standalone `repoos check` never sets it.
+    const skipBuildEnv = { ...process.env, REPOOS_SKIP_BUILD: "1" };
     const localCli = join(wtPath, "dist", "cli", "index.js");
     let checkRes = existsSync(localCli)
-      ? await runProcess(process.execPath, [localCli, "check"], { cwd: wtPath, timeout: 600_000 })
+      ? await runProcess(process.execPath, [localCli, "check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv })
       : { status: 1, stdout: "", stderr: "candidate dist/cli/index.js missing" };
     if (checkRes.status !== 0) {
-      checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000 });
+      checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
     }
     if (checkRes.status !== 0) {
-      checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
+      checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
     }
     if (checkRes.status !== 0) {
       return { ok: false, reason: `check failed: ${summarizeCommandFailure(checkRes.stdout, checkRes.stderr)}` };
