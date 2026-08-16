@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-task-notification-settings-for-state
+model_override: default
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-16T14:30:31Z"
+updated_at: "2026-08-16T14:43:41Z"
 ---
 ## Problem
 
@@ -65,3 +66,4 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-16T13:56:38Z · status ready→active, branch
 - 2026-08-16T14:18:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-16T14:18:36Z · status review→active
+- 2026-08-16T14:43:41Z · model_override
