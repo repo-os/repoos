@@ -243,6 +243,9 @@ async function openAgent(): Promise<void> {
       <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — move to done to sync and merge">
         needs merge
       </span>
+      <span v-if="task.hotfix" class="tc-hotfix" :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`">
+        hotfix
+      </span>
       <span class="chip">{{ task.type }}</span>
       <span class="tc-prio" :class="task.priority">{{ task.priority }}</span>
     </div>

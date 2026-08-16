@@ -61,6 +61,10 @@ export interface TaskFrontmatter {
   cli_override?: string;
   /** Per-task model override (e.g. "default", "big pickle"). */
   model_override?: string;
+  /** True when this task runs as a hotfix in the main checkout. */
+  hotfix?: boolean;
+  /** Hotfix merge target: "branch" or "main". */
+  hotfix_target?: "branch" | "main";
   [key: string]: unknown;
 }
 
@@ -110,6 +114,11 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+
+  /** True when this task runs as a hotfix in the main checkout. */
+  hotfix?: boolean;
+  /** Hotfix merge target: "branch" (default) or "main". */
+  hotfixTarget?: "branch" | "main";
 
   /** Live git facts, populated by the git layer (best-effort). */
   git: TaskGitInfo;

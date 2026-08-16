@@ -106,6 +106,7 @@ function makeCtx(
     repoos: {} as any,
     emitEvent: () => {},
     closeOutLock: {} as any,
+    rootLock: {} as any,
     jobCoordinator: {
       enqueue: opts.onEnqueue ?? (() => ({})),
       allJobs: () => [],

@@ -107,7 +107,7 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
-import { createRepositoryLock } from "./repo-lock.js";
+import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { handoffTask } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
@@ -649,6 +649,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Integration job coordinator for serialized close-outs (0118)
   const jobCoordinator = createJobCoordinator(config.root);
   const repoLock = createRepositoryLock(config.root);
+  const rootLock = createRootLock(config.root);
 
   // Recovery on startup: resume interrupted jobs (0118)
   const interruptedJobs = jobCoordinator.findInterruptedJobs();
@@ -1374,6 +1375,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
       },
       closeOutLock,
+      rootLock,
       jobCoordinator,
       triggerJobProcessing,
       pendingReview,

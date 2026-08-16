@@ -16,7 +16,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -317,7 +317,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     const body = (await readBody(req)) as { mode?: unknown };
-    const clean = body?.mode === "clean";
+    const clean = body?.mode === "clean" && !existing.hotfix;
     const branch = existing.branch || deriveBranch(existing.title);
     if (clean) {
       if (!existing.branch) {
@@ -331,7 +331,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         });
       }
     }
-    const wtRes = ensureWorktree(config.root, branch);
+    const isHotfix = existing.hotfix === true;
+    const wtRes = isHotfix
+      ? { ok: true, path: config.root, created: false }
+      : ensureWorktree(config.root, branch);
     const patch: TaskPatch = { status: "active", needsInput: false };
     if (!existing.branch) patch.branch = branch;
     const updated = patchTaskFile(config, existing.absPath, patch, {
@@ -625,6 +628,89 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       task: index.getTask(updated.id),
       stopped: stopRes.stopped,
       reason: stopRes.reason,
+    });
+  }
+
+  if (action === "hotfix") {
+    if (existing.status !== "ready" && !existing.hotfix) {
+      return json(res, 400, {
+        error: `Only ready tasks can be switched to hotfix (#${id} is ${existing.status})`,
+      });
+    }
+
+    if (existing.hotfix) {
+      return json(res, 400, {
+        error: `Task #${id} is already in hotfix mode`,
+      });
+    }
+
+    const body = (await readBody(req)) as { hotfixTarget?: unknown };
+    const hotfixTarget: "branch" | "main" =
+      body?.hotfixTarget === "main" ? "main" : "branch";
+
+    const branch = `hotfix/${existing.id}-${existing.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40)}`;
+
+    const hotfixRes = ensureHotfix(config.root, branch, hotfixTarget);
+    if (!hotfixRes.ok) {
+      return json(res, 400, {
+        error: `Cannot switch to hotfix: ${hotfixRes.reason ?? "unknown reason"}`,
+      });
+    }
+
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before hotfix (${err.message}). Commit or stash first.`,
+          needsCommit: true,
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
+    if (dirty.length > 0) {
+      return json(res, 409, {
+        error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} — commit or stash before starting a hotfix`,
+        needsCommit: true,
+        dirtyFiles: dirty,
+      });
+    }
+
+    const rootLock = ctx.rootLock;
+    if (rootLock.isLocked()) {
+      const holder = rootLock.getHolder();
+      return json(res, 409, {
+        error: `The main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}) — wait for it to finish`,
+      });
+    }
+    if (!rootLock.acquire(existing.id, "hotfix")) {
+      return json(res, 409, {
+        error: "Could not acquire the root lock — another operation is using main",
+      });
+    }
+
+    const updated = patchTaskFile(config, existing.absPath, {
+      hotfix: true,
+      hotfixTarget,
+      branch,
+    }, {
+      onStatusChange: onServerStatusChange,
+    });
+    index.applyFileChange(updated.absPath);
+    index.refreshBranches();
+
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      branch,
+      hotfixTarget,
     });
   }
 

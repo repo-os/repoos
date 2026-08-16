@@ -53,6 +53,10 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+  /** True when this task runs as a hotfix in the main checkout. */
+  hotfix?: boolean;
+  /** Hotfix merge target: "branch" or "main". */
+  hotfixTarget?: "branch" | "main";
   git: {
     branchExists: boolean;
     worktreeExists: boolean;
