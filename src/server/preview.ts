@@ -277,6 +277,9 @@ export class PreviewManager {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
     }
+    if (task.hotfix) {
+      return { ok: false, error: `Hotfix tasks do not support previews` };
+    }
     const root = worktreePathForBranch(this.config.root, task.branch);
     if (!root) {
       return { ok: false, error: `No git worktree exists for branch "${task.branch}"` };

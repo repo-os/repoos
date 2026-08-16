@@ -25,7 +25,10 @@ class CapturedEventSource {
 }
 
 function countIndexFetches(fetchMock: { mock: { calls: unknown[][] } }): number {
-  return fetchMock.mock.calls.filter((c) => String(c[0]).includes("/api/index")).length;
+  return fetchMock.mock.calls.filter((c) => {
+    const url = String(c[0]);
+    return url.includes("/api/board") || url.includes("/api/index");
+  }).length;
 }
 
 describe("index fetch de-duplication", () => {
@@ -39,7 +42,7 @@ describe("index fetch de-duplication", () => {
       ok: true,
       status: 200,
       json: async () => {
-        if (url.includes("/api/index")) return { tasks: [], counts: EMPTY_COUNTS, taskCount: 0 };
+        if (url.includes("/api/board") || url.includes("/api/index")) return { tasks: [], counts: EMPTY_COUNTS, taskCount: 0 };
         if (url.includes("/api/health")) return { ok: true, taskCount: 0, workDir: "work" };
         return { tasks: [] };
       },

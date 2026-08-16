@@ -2,14 +2,17 @@
 id: "0212"
 title: "Hotfix flow: run a task in the main checkout instead of a worktree"
 type: feature
-status: ready
+status: done
+needs_merge: true
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/hotfix-flow-run-a-task-in-the-main-check
+model_override: default
+pm_model_override: default
 created_at: "2026-08-15T05:46:19Z"
-updated_at: "2026-08-15T11:12:28Z"
+updated_at: "2026-08-16T02:15:52Z"
 ---
 ## Problem
 
@@ -70,3 +73,10 @@ Half the plumbing already exists: `ensureWorktree` returns `config.root` when th
 - 2026-08-15T05:47:30Z · status inbox→ready
 - 2026-08-15T11:06:19Z · status ready→active, branch
 - 2026-08-15T11:12:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T17:01:38Z · model_override
+- 2026-08-15T17:01:47Z · status ready→active
+- 2026-08-15T19:29:02Z · model_override
+- 2026-08-15T20:35:24Z · pm_model_override
+- 2026-08-16T01:25:36Z · status active→review
+- 2026-08-16T01:25:41Z · needs_merge
+- 2026-08-16T02:15:52Z · status review→done, release:success
