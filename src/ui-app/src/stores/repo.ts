@@ -139,6 +139,28 @@ export const STATUS_COLORS: Record<string, string> = {
 
 export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
 
+/**
+ * The human-action reasons a task earns on the "Needs your attention" panel,
+ * in display order. Empty when the task needs nothing from a human. Reasons
+ * dedupe upstream: a task is listed once even when it matches several.
+ */
+export function humanNeedsReasons(
+  t: Pick<Task, "assignee" | "status" | "needsInput" | "needsMerge">,
+): string[] {
+  const reasons: string[] = [];
+  if (t.assignee === "human" && t.status !== "done") reasons.push("assigned to you");
+  if (t.needsInput) reasons.push("needs input");
+  if (t.needsMerge) reasons.push("merge needed");
+  if (t.status === "review") reasons.push("awaiting sign-off");
+  return reasons;
+}
+
+/** One row of the "Needs your attention" panel: the task plus its reasons. */
+export interface HumanNeedsItem {
+  task: Task;
+  reasons: string[];
+}
+
 export interface Column {
   id: "draft" | "inbox" | "ready" | "active" | "review" | "done";
   label: string;
@@ -273,6 +295,28 @@ export const useRepoStore = defineStore("repo", () => {
   const total = computed(() => tasks.value.length);
   const backlogCount = computed(() => tasks.value.filter((t) => t.status !== "draft").length);
   const aiTasks = computed(() => tasks.value.filter((t) => t.assignee === "ai" && t.status !== "done"));
+
+  /** Priority rank for the needs-you sort: p0 first, then p1/p2/p3. */
+  const PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
+  /** Tasks a human must act on (0125), deduped, priority-first then newest. */
+  const humanNeeds = computed<HumanNeedsItem[]>(() => {
+    const items: HumanNeedsItem[] = [];
+    const seen = new Set<string>();
+    for (const t of tasks.value) {
+      const reasons = humanNeedsReasons(t);
+      if (!reasons.length || seen.has(t.id)) continue;
+      seen.add(t.id);
+      items.push({ task: t, reasons });
+    }
+    return items.sort((a, b) => {
+      const pa = PRIORITY_RANK[a.task.priority] ?? 99;
+      const pb = PRIORITY_RANK[b.task.priority] ?? 99;
+      if (pa !== pb) return pa - pb;
+      const ua = a.task.updated_at ?? a.task.created_at ?? "";
+      const ub = b.task.updated_at ?? b.task.created_at ?? "";
+      return ub.localeCompare(ua);
+    });
+  });
 
   const fmtDate = (s: string | null): string => (s ? new Date(s).toLocaleString() : "—");
 
@@ -1269,6 +1313,7 @@ export const useRepoStore = defineStore("repo", () => {
     total,
     backlogCount,
     aiTasks,
+    humanNeeds,
     fmtDate,
     byStatus,
     statusColor,

@@ -57,7 +57,8 @@ export const useUiStore = defineStore("ui", () => {
 
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
-  function openNewTask(): void {
+  /** Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human"). */
+  function openNewTask(assignedTo = ""): void {
     isNew.value = true;
     active.value = null;
     isNewDoc.value = false;
@@ -65,7 +66,7 @@ export const useUiStore = defineStore("ui", () => {
     nt.area = "web";
     nt.priority = "p2";
     nt.type = "feature";
-    nt.assignedTo = "";
+    nt.assignedTo = assignedTo;
     clearScreenshots();
   }
 
