@@ -310,6 +310,27 @@ function themeContrastOffenders(css: string): string[] {
   return out;
 }
 
+/**
+ * What the "Full build" step should do for a given run.
+ *
+ * Standalone `repoos check` (env without REPOOS_SKIP_BUILD) always builds —
+ * that path is agents' definition-of-done gate and must never weaken. Only the
+ * close-out pipeline (done.ts / integration-orchestrator.ts) sets
+ * REPOOS_SKIP_BUILD=1 after running `bun run build` itself, and even then the
+ * skip only applies when the staleness check above verified dist matches the
+ * current source exactly. If dist is missing or stale the build still runs, so
+ * REPOOS_SKIP_BUILD can never let the UI smoke test probe a bad build.
+ */
+export type BuildStepAction = "skip" | "build" | "build-not-fresh";
+
+export function skipBuildAction(
+  env: NodeJS.ProcessEnv,
+  buildFresh: boolean,
+): BuildStepAction {
+  if (env.REPOOS_SKIP_BUILD !== "1") return "build";
+  return buildFresh ? "skip" : "build-not-fresh";
+}
+
 export async function cmdCheck(): Promise<void> {
   let exitCode = 0;
   const results: CheckResult[] = [];
@@ -361,33 +382,22 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 2. Full build ───────────────────────────────────────────────────
-  // Skippable via REPOOS_SKIP_BUILD: the close-out pipeline (`completeTask` in
-  // src/server/done.ts, and `validateCandidate` in
+  // Skippable via REPOOS_SKIP_BUILD (see skipBuildAction): the close-out
+  // pipeline (`completeTask` in src/server/done.ts, and `validateCandidate` in
   // src/server/integration-orchestrator.ts) runs `bun run build` itself and
   // then invokes `repoos check` with this env var set, so its own "Full build"
   // step — which would rebuild the exact same source with nothing changed in
-  // between — is skipped. The skip only applies when the build is verified
-  // fresh by the staleness check above; if dist is missing or stale the build
-  // still runs, so REPOOS_SKIP_BUILD can never let the UI smoke test probe a
-  // bad build. Standalone `repoos check` from the CLI never sets the var and
-  // always builds.
+  // between — is skipped. Standalone `repoos check` from the CLI never sets
+  // the var and always builds.
   heading("Full build");
-  if (process.env.REPOOS_SKIP_BUILD === "1" && buildFresh) {
+  const buildAction = skipBuildAction(process.env, buildFresh);
+  if (buildAction === "skip") {
     console.log(c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"));
     results.push(pass("build", "skipped — caller already built, build verified fresh"));
-  } else if (process.env.REPOOS_SKIP_BUILD === "1") {
-    console.log(c.yellow("  · REPOOS_SKIP_BUILD=1 but build is not fresh — building anyway"));
-    try {
-      execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
-      console.log(c.green("  ✔ Build succeeded"));
-      results.push(pass("build"));
-    } catch (e) {
-      const msg = (e as Error).message;
-      console.log(c.red("  ✗ Build failed"));
-      results.push(fail("build", msg));
-      exitCode = 1;
-    }
   } else {
+    if (buildAction === "build-not-fresh") {
+      console.log(c.yellow("  · REPOOS_SKIP_BUILD=1 but build is not fresh — building anyway"));
+    }
     try {
       execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
       console.log(c.green("  ✔ Build succeeded"));
