@@ -492,8 +492,8 @@
   .restart-play{font-size:10px;opacity:.85}
 
   /* dirty-main close-out guard (#0204) — same modal language as .restart-* */
-  .dirty-overlay{position:fixed;inset:0;z-index:210;background:rgba(4,6,12,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px}
-  .dirty-card{width:min(520px,100%);max-height:min(80vh,640px);display:flex;flex-direction:column;background:var(--panel-solid);border:1px solid var(--border-bright);border-radius:16px;padding:22px;box-shadow:var(--drawer-shadow);animation:restartIn .18s ease-out}
+  .dirty-overlay{position:fixed;inset:0;z-index:1000;isolation:isolate;pointer-events:auto;background:rgba(4,6,12,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .dirty-card{position:relative;z-index:1;pointer-events:auto;width:min(520px,100%);max-height:min(80vh,640px);display:flex;flex-direction:column;background:var(--panel-solid);border:1px solid var(--border-bright);border-radius:16px;padding:22px;box-shadow:var(--drawer-shadow);animation:restartIn .18s ease-out}
   .dirty-title{margin:0 0 10px;font-size:15px;font-weight:700;color:var(--txt)}
   .dirty-body{margin:0 0 12px;font-size:13px;line-height:1.55;color:var(--txt-dim)}
   .dirty-body b{color:var(--txt);font-weight:600}
