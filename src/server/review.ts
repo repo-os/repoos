@@ -443,6 +443,9 @@ export class ReviewManager {
     if (this.runs.has(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
+    if (task.hotfix) {
+      return { ok: false, reason: "hotfix tasks skip diff-based review" };
+    }
     const agent = resolveReviewer(this.config);
     if (!agent) {
       return { ok: false, reason: "the review agent is disabled on the Agents page" };

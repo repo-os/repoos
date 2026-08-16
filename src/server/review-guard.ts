@@ -28,6 +28,7 @@ import {
   worktreePathForBranch,
   branchChangesSinceBase,
   currentBranch,
+  agentTouchedFiles,
 } from "../core/git.js";
 
 export interface ReviewGuardResult {
@@ -70,7 +71,9 @@ export async function guardReviewTransition(
     return { ok: false, detail: `task #${task.id} has no branch to finalize from` };
   }
   const registered = worktreePathForBranch(config.root, task.branch);
-  if (!registered || samePath(registered, config.root) || !existsSync(registered)) {
+  const isHotfix = task.hotfix === true;
+
+  if (!registered || (!isHotfix && samePath(registered, config.root)) || !existsSync(registered)) {
     return {
       ok: false,
       detail: `task #${task.id} has no registered worktree for branch ${task.branch}`,
@@ -92,6 +95,34 @@ export async function guardReviewTransition(
       detail: `could not clear the staging index: ${concise(clearIndex)}`,
     };
   }
+
+  if (isHotfix) {
+    const touched = agentTouchedFiles(registered, "HEAD");
+    const sourceFiles = touched.filter(
+      (p) => !isGeneratedOrTask(p, task.path),
+    );
+    if (sourceFiles.length > 0) {
+      const add = await runGit(
+        registered,
+        ["add", "--", ...sourceFiles],
+        30_000,
+      );
+      if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
+    }
+    const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
+    if (staged.status === 1) {
+      const commit = await runGit(
+        registered,
+        ["commit", "-m", `hotfix(${task.id}): ${task.title}`],
+        30_000,
+      );
+      if (commit.status !== 0) return { ok: false, detail: `git commit failed: ${concise(commit)}` };
+    } else if (staged.status !== 0) {
+      return { ok: false, detail: `could not inspect staged changes: ${concise(staged)}` };
+    }
+    return { ok: true };
+  }
+
   const add = await runGit(
     registered,
     // `git add` honors .gitignore. Do not name ignored paths as exclusions:

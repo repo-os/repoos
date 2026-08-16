@@ -157,6 +157,7 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
     repoos: null as unknown as RouteContext["repoos"],
     emitEvent: () => {},
     closeOutLock: null as unknown as RouteContext["closeOutLock"],
+    rootLock: null as unknown as RouteContext["rootLock"],
     jobCoordinator: null as unknown as RouteContext["jobCoordinator"],
     triggerJobProcessing: () => {},
     pendingReview: new Set<string>(),

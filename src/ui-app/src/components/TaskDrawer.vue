@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -323,6 +323,7 @@ async function pauseWork(): Promise<void> {
 }
 
 const confirmDelete = ref(false);
+const confirmHotfix = ref(false);
 
 async function deleteTask(): Promise<void> {
   if (!ui.active) return;
@@ -333,6 +334,19 @@ async function deleteTask(): Promise<void> {
   } catch (err) {
     repo.onError(err);
     confirmDelete.value = false;
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function startHotfix(target: "branch" | "main"): Promise<void> {
+  if (!ui.active) return;
+  ui.saving = true;
+  try {
+    await repo.activateHotfix(ui.active, target);
+    confirmHotfix.value = false;
+  } catch (err) {
+    repo.onError(err);
   } finally {
     ui.saving = false;
   }
@@ -648,6 +662,8 @@ const verdict = computed<{ label: string; tone: string } | null>(() => {
 const reviewBusy = ref(false);
 /** A follow-up message typed in the Agent Review tab. */
 const reviewDraftMsg = ref("");
+/** Keep the long-lived reviewer transcript and the completed verdict separate. */
+const reviewPane = ref<"chat" | "report">("chat");
 
 /** The rendered reviewer conversation (report streaming + human messages). */
 const reviewEntries = computed<DisplayEntry[]>(() => {
@@ -761,11 +777,42 @@ async function reviewAgain(): Promise<void> {
   }
 }
 
+/** Return a reviewed task to its existing engineer session with the review as
+ * the first instruction of the resumed turn. */
+const sendingToEngineer = ref(false);
+async function sendToEngineer(): Promise<void> {
+  const task = ui.active;
+  const report = review.value?.report;
+  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+
+  const instruction = [
+    "This task was returned from review for fixes. Resume work in the existing worktree; do not reset or discard the current changes.",
+    "Read the reviewer report below, fix every concrete applicable finding, add or update regression coverage where appropriate, then run repoos check before returning the task to review.",
+    "Reviewer report:",
+    report.markdown,
+  ].join("\n\n");
+
+  ui.saving = true;
+  sendingToEngineer.value = true;
+  try {
+    await repo.setStatus(task, "active");
+    await repo.startWork(task, "resume", instruction);
+    ui.activeTab = "agent";
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    sendingToEngineer.value = false;
+    ui.saving = false;
+  }
+}
+
 /** Hydrate the report whenever the drawer shows a task in review. */
 watch(
   () => [ui.active?.id, ui.active?.status],
   () => {
-    if (ui.active?.status === "review") void repo.loadReview(ui.active.id);
+    if (ui.active?.status !== "review") return;
+    reviewPane.value = "report";
+    void repo.loadReview(ui.active.id);
   },
   { immediate: true },
 );
@@ -1607,32 +1654,21 @@ function resetFreeformOverrides(): void {
             <div class="field">
               <div class="field-header">
                 <label for="nt-freeform">Describe the task</label>
-                <VoiceDictate @transcribed="onFreeformTranscribed" />
               </div>
-              <textarea
-                id="nt-freeform"
-                ref="freeformTextarea"
-                v-model="freeformText"
-                class="ff-textarea"
-                rows="10"
-                placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
-              ></textarea>
+              <div class="agent-input-wrapper">
+                <textarea
+                    id="nt-freeform"
+                    ref="freeformTextarea"
+                    v-model="freeformText"
+                    class="ff-textarea"
+                    rows="10"
+                    placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
+                ></textarea>
+                <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom:14px" />
+              </div>
             </div>
             <div class="ff-agent-bar">
               <div class="agent-pick-grid">
-                <div class="agent-field">
-                  <label>Role</label>
-                  <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="agent" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div class="agent-field">
                   <label>Coding agent</label>
                   <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
@@ -1661,18 +1697,20 @@ function resetFreeformOverrides(): void {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div v-if="freeformIsCustom" class="agent-override-actions">
-                <span class="agent-custom-badge">custom</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  :disabled="freeformRunning"
-                  @click="resetFreeformOverrides"
-                  title="Reset to PM defaults"
-                >
-                  <RotateCcw class="size-3" />
-                </Button>
+                   <div class="agent-field">
+                       <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
+                         <span class="agent-custom-badge">custom</span>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           :disabled="freeformRunning"
+                           @click="resetFreeformOverrides"
+                           title="Reset to PM defaults"
+                         >
+                           <RotateCcw class="size-3" />
+                         </Button>
+                       </div>
+                   </div>
               </div>
             </div>
             <div v-if="!pmAgentReady" class="ff-notice">
@@ -1945,6 +1983,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'details' }"
             @click="ui.activeTab = 'details'"
           >
+            <FileText class="tab-icon" />
             Task
           </button>
           <button
@@ -1953,6 +1992,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'pm' }"
             @click="ui.activeTab = 'pm'"
           >
+            <MessageSquare class="tab-icon" />
             PM
           </button>
           <button
@@ -1961,15 +2001,8 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'agent' }"
             @click="ui.activeTab = 'agent'"
           >
+            <Bot class="tab-icon" />
             Engineer
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'changes' }"
-            @click="ui.activeTab = 'changes'"
-          >
-            Changes
           </button>
           <button
             v-if="ui.active.status === 'review'"
@@ -1978,12 +2011,22 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
+            <ShieldCheck class="tab-icon" />
             Reviewer
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
               variant="reviewing"
               label="Reviewing…"
             />
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'changes' }"
+            @click="ui.activeTab = 'changes'"
+          >
+            <Diff class="tab-icon" />
+            Changes
           </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
@@ -2172,6 +2215,15 @@ function resetFreeformOverrides(): void {
               >
                 Delete task
               </Button>
+              <Button
+                v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
+                variant="outline"
+                size="sm"
+                :disabled="ui.saving"
+                @click="confirmHotfix = true"
+              >
+                Hotfix
+              </Button>
             </template>
             <template v-else>
               <p class="delete-prompt">
@@ -2188,23 +2240,38 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
           </div>
+          <div v-if="confirmHotfix" class="hotfix-confirm">
+            <p>
+              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
+              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
+              Previews and diff-based review are skipped.
+            </p>
+            <div class="delete-actions">
+              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                :disabled="ui.saving"
+                @click="startHotfix('branch')"
+              >
+                Hotfix on branch
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                :disabled="ui.saving"
+                @click="startHotfix('main')"
+              >
+                Hotfix on main
+              </Button>
+            </div>
+          </div>
         </div>
-        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body" :class="{ 'transition-success': transitioned }">
+        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Role</label>
-                <Select v-model="overrideDraft.agent" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="agent" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
               <div class="agent-field">
                 <label>Coding agent</label>
                 <Select v-model="overrideDraft.cli" :disabled="ui.saving">
@@ -2233,13 +2300,15 @@ function resetFreeformOverrides(): void {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div v-if="isCustom || overrideDirty" class="agent-override-actions">
-              <span v-if="isCustom" class="agent-custom-badge">custom</span>
-              <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
-              <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
-                <RotateCcw class="size-3" />
-              </Button>
+              <div class="agent-field">
+                  <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
+                    <span v-if="isCustom" class="agent-custom-badge">custom</span>
+                    <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
+                    <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
+                      <RotateCcw class="size-3" />
+                    </Button>
+                  </div>
+              </div>
             </div>
           </div>
           <div v-if="showStats" class="agent-stats">
@@ -2343,7 +2412,7 @@ function resetFreeformOverrides(): void {
             </button>
           </div>
           <div class="agent-input-row">
-            <div class="agent-input-wrapper">
+            <div class="agent-reply-input-wrapper">
               <textarea
                 ref="draftMsgTextarea"
                 v-model="draftMsg"
@@ -2380,12 +2449,30 @@ function resetFreeformOverrides(): void {
             Task is {{ ui.active.status }} — start work to run an agent turn.
           </div>
         </div>
-        <div v-else-if="ui.activeTab === 'review'" class="drawer-body">
+        <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <div class="review-toolbar">
-            <span class="review-toolbar-title">
-              Agent review
-              <span v-if="ui.active && review" class="review-toolbar-sub">· {{ ui.active.path }}</span>
-            </span>
+            <div v-if="review?.report" class="review-pane-tabs" role="tablist" aria-label="Reviewer content">
+              <button
+                type="button"
+                class="review-pane-tab"
+                :class="{ active: reviewPane === 'report' }"
+                role="tab"
+                :aria-selected="reviewPane === 'report'"
+                @click="reviewPane = 'report'"
+              >
+                Report
+              </button>
+              <button
+                type="button"
+                class="review-pane-tab"
+                :class="{ active: reviewPane === 'chat' }"
+                role="tab"
+                :aria-selected="reviewPane === 'chat'"
+                @click="reviewPane = 'chat'"
+              >
+                Chat
+              </button>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -2397,14 +2484,20 @@ function resetFreeformOverrides(): void {
               <ActivityIndicator v-else />
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
+            <Button
+              variant="accent"
+              size="sm"
+              :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
+              :title="!review?.report ? 'Wait for a completed review before sending this task back to the engineer.' : 'Return this task to active and resume the engineer with the reviewer findings'"
+              @click="sendToEngineer"
+            >
+              <Send v-if="!sendingToEngineer" class="size-3.5" />
+              <ActivityIndicator v-else />
+              {{ sendingToEngineer ? "Sending…" : "Send engineer" }}
+            </Button>
           </div>
 
-          <div v-if="review?.running" class="review-running" role="status" style="margin-top: 10px">
-            <ActivityIndicator variant="reviewing" label="Reviewing…" />
-            Reviewing… the review agent is inspecting this task.
-          </div>
-
-          <template v-else-if="review?.report">
+          <section v-if="review?.report && reviewPane === 'report'" class="review-pane review-report-pane" role="tabpanel">
             <div v-if="review.report.state === 'failed'" class="review-failed">
               {{ review.report.markdown }}
             </div>
@@ -2427,14 +2520,20 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
-          </template>
-          <p v-else-if="review && !review.enabled" class="review-hint">
-            The review agent is disabled on the Agents page, so no automatic review runs.
-          </p>
-          <p v-else class="review-hint">No agent review for this task yet.</p>
+          </section>
 
-          <div class="review-log-wrap">
-            <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
+          <section v-else class="review-pane review-chat-pane" role="tabpanel">
+            <div v-if="review?.running" class="review-running" role="status">
+              <ActivityIndicator variant="reviewing" label="Reviewing…" />
+              Reviewing… the review agent is inspecting this task.
+            </div>
+            <p v-else-if="review && !review.enabled" class="review-hint">
+              The review agent is disabled on the Agents page, so no automatic review runs.
+            </p>
+            <p v-else-if="!review?.report" class="review-hint">No agent review for this task yet.</p>
+
+            <div class="review-log-wrap">
+              <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
               <template v-if="reviewEntries.length === 0">
                 <div class="agent-empty">
                   The reviewer's conversation appears here once a review runs.
@@ -2480,48 +2579,49 @@ function resetFreeformOverrides(): void {
                   <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
                 </details>
               </div>
+              </div>
+              <button
+                v-if="!reviewStick"
+                type="button"
+                class="agent-jump"
+                @click="scrollReviewToBottom(true)"
+                aria-label="Jump to latest review message"
+              >
+                <ArrowDown class="size-3.5" />
+                Latest
+              </button>
             </div>
-            <button
-              v-if="!reviewStick"
-              type="button"
-              class="agent-jump"
-              @click="scrollReviewToBottom(true)"
-              aria-label="Jump to latest review message"
-            >
-              <ArrowDown class="size-3.5" />
-              Latest
-            </button>
-          </div>
 
-          <div class="agent-input-row">
-            <div class="agent-input-wrapper">
-              <textarea
-                ref="reviewDraftMsgTextarea"
-                v-model="reviewDraftMsg"
-                class="agent-input"
-                rows="2"
-                placeholder="Ask the reviewer a follow-up question…"
-                :disabled="review?.running || reviewBusy || ui.saving"
-                @keydown.enter.exact.prevent="sendReviewTurn"
-              ></textarea>
-              <VoiceDictate
-                :disabled="review?.running || reviewBusy || ui.saving"
-                @transcribed="onReviewDraftMsgTranscribed"
-              />
+            <div class="agent-input-row">
+              <div class="agent-reply-input-wrapper">
+                <textarea
+                  ref="reviewDraftMsgTextarea"
+                  v-model="reviewDraftMsg"
+                  class="agent-input"
+                  rows="2"
+                  placeholder="Ask the reviewer a follow-up question…"
+                  :disabled="review?.running || reviewBusy || ui.saving"
+                  @keydown.enter.exact.prevent="sendReviewTurn"
+                ></textarea>
+                <VoiceDictate
+                  :disabled="review?.running || reviewBusy || ui.saving"
+                  @transcribed="onReviewDraftMsgTranscribed"
+                />
+              </div>
+              <Button
+                variant="accent"
+                size="sm"
+                :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
+                @click="sendReviewTurn"
+              >
+                <Send class="size-3.5" />
+                Send
+              </Button>
             </div>
-            <Button
-              variant="accent"
-              size="sm"
-              :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
-              @click="sendReviewTurn"
-            >
-              <Send class="size-3.5" />
-              Send
-            </Button>
-          </div>
-          <div v-if="review?.running" class="agent-hint">
-            <ActivityIndicator /> reviewer is working — wait for this turn to finish
-          </div>
+            <div v-if="review?.running" class="agent-hint">
+              <ActivityIndicator /> reviewer is working — wait for this turn to finish
+            </div>
+          </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
           <template v-if="!ui.active">
@@ -2554,19 +2654,6 @@ function resetFreeformOverrides(): void {
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field">
-                <label>Role</label>
-                <Select v-model="pmOverrideDraft.agent" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="agent" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">{{ a.name }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field">
                 <label>Coding agent</label>
                 <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
                   <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
@@ -2594,13 +2681,15 @@ function resetFreeformOverrides(): void {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
-              <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
-              <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
-              <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
-                <RotateCcw class="size-3" />
-              </Button>
+              <div class="agent-field" style="padding-top:20px">
+                  <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
+                    <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
+                    <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
+                    <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
+                      <RotateCcw class="size-3" />
+                    </Button>
+                  </div>
+              </div>
             </div>
           </div>
           <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">
