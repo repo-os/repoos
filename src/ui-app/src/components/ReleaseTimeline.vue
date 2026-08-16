@@ -48,12 +48,17 @@ function releaseDate(value: string | null | undefined): string {
         :aria-label="`Open task ${task.id}: ${task.title}`"
         @click="ui.openTask(task)"
       >
-        <span class="release-dot"></span>
+        <span class="release-rail" aria-hidden="true">
+          <span class="release-dot"></span>
+          <span class="release-line"></span>
+        </span>
         <span class="release-copy">
           <span class="release-title">{{ task.title }}</span>
           <span class="release-meta">#{{ task.id }} · {{ task.area }}</span>
         </span>
-        <time :datetime="task.releasedAt || undefined">{{ releaseDate(task.releasedAt) }}</time>
+        <time :datetime="task.releasedAt || undefined" class="release-date">{{
+          releaseDate(task.releasedAt)
+        }}</time>
         <svg class="release-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="m9 6 6 6-6 6"
@@ -77,28 +82,21 @@ function releaseDate(value: string | null | undefined): string {
   color: var(--green);
 }
 .release-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4px 0;
 }
 .release-item {
   appearance: none;
   border: 0;
-  border-bottom: 1px solid var(--border);
   background: transparent;
   color: inherit;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   min-width: 0;
-  padding: 12px 17px;
+  width: 100%;
+  padding: 11px 17px;
   text-align: left;
   cursor: pointer;
-}
-.release-item:nth-child(odd) {
-  border-right: 1px solid var(--border);
-}
-.release-item:nth-last-child(-n + 2) {
-  border-bottom: 0;
 }
 .release-item:hover {
   background: var(--nav-hover-bg);
@@ -107,13 +105,31 @@ function releaseDate(value: string | null | undefined): string {
   outline: 2px solid var(--cyan);
   outline-offset: -2px;
 }
+.release-rail {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 10px;
+}
 .release-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex: 0 0 auto;
+  margin-top: 5px;
   background: var(--green);
   box-shadow: 0 0 7px color-mix(in srgb, var(--green) 65%, transparent);
+}
+.release-line {
+  flex: 1;
+  width: 1px;
+  background: var(--border);
+  margin: 4px 0 0;
+}
+.release-item:last-child .release-line {
+  display: none;
 }
 .release-copy {
   display: flex;
@@ -130,13 +146,13 @@ function releaseDate(value: string | null | undefined): string {
   white-space: nowrap;
 }
 .release-meta,
-time {
+.release-date {
   color: var(--txt-faint);
   font:
     10px "JetBrains Mono",
     monospace;
 }
-time {
+.release-date {
   flex: 0 0 auto;
 }
 .release-arrow {
@@ -144,16 +160,5 @@ time {
   height: 14px;
   flex: 0 0 auto;
   color: var(--txt-faint);
-}
-@media (max-width: 760px) {
-  .release-list {
-    grid-template-columns: 1fr;
-  }
-  .release-item:nth-child(odd) {
-    border-right: 0;
-  }
-  .release-item:nth-last-child(2) {
-    border-bottom: 1px solid var(--border);
-  }
 }
 </style>

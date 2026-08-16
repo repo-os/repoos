@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, readdirSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { AgentRunner, HANDOFF_READY_SIGNAL } from "../../server/agents";
@@ -20,6 +20,7 @@ import { LiveIndex } from "../../server/live-index";
 import {
   TaskWatchdog,
   isStuckActiveTask,
+  hasRecentWorktreeActivity,
   suggestNextStep,
   classifyDeadAgentReason,
   autoTransitionTarget,
@@ -102,6 +103,23 @@ interface GitFxOptions {
 
 function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+
+/**
+ * Recursively set every file and directory under `dir` to `when`. A worktree
+ * checks out the whole tree at HEAD, so "committedWork" fixtures nest files
+ * (e.g. the repo's own work/ dir) below the top level — a shallow backdate of
+ * just readdirSync(dir)'s top-level entries leaves those nested files with
+ * their real, fresh checkout-time mtime, which silently defeats a test that's
+ * trying to simulate a genuinely stale worktree.
+ */
+function backdateTree(dir: string, when: Date): void {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === ".git") continue;
+    const full = join(dir, e.name);
+    if (e.isDirectory()) backdateTree(full, when);
+    utimesSync(full, when, when);
+  }
 }
 
 /** Fixture without git: no worktree/platform for the task's branch exists. */
@@ -195,6 +213,55 @@ describe("stuck detection", () => {
       "\n- 2020-01-01T00:00:00Z · created\n",
     );
     expect(isStuckActiveTask(body, 5 * 60_000, now)).toBe(false);
+  });
+});
+
+describe("hasRecentWorktreeActivity (#0203)", () => {
+  it("is true when a worktree file was modified within the staleness window", () => {
+    const fx = makeGitFx(600_000, { committedWork: true });
+    try {
+      // Uncommitted, freshly-written — the exact shape of a live agent
+      // mid-edit, no commit yet.
+      writeFileSync(join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x", "live.txt"), "editing now\n");
+      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("is false once nothing in the worktree has changed within the window", () => {
+    const fx = makeGitFx(600_000, { committedWork: true });
+    try {
+      const now = Date.now();
+      // committedWork's file was written well before "now" in wall-clock
+      // terms, but to make the boundary deterministic, use a threshold of 0.
+      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, now)).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("is false when the task has no branch, or the branch has no worktree", () => {
+    const fx = makeGitFx(600_000);
+    try {
+      expect(hasRecentWorktreeActivity(fx.root, undefined, 5 * 60_000, Date.now())).toBe(false);
+      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("ignores node_modules and .git so a scan never pays for their size", () => {
+    const fx = makeGitFx(600_000, { committedWork: true });
+    try {
+      const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+      const nm = join(wt, "node_modules", "pkg");
+      mkdirSync(nm, { recursive: true });
+      writeFileSync(join(nm, "index.js"), "module.exports = {};\n");
+      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, Date.now())).toBe(false);
+    } finally {
+      fx.clean();
+    }
   });
 });
 
@@ -474,6 +541,59 @@ describe("TaskWatchdog", () => {
       await watchdog.checkNow();
       expect(spawns(fx)).toHaveLength(1);
       expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("does not surface a task whose registry entry is gone but its worktree has fresh files (#0203)", async () => {
+    // Reproduces the exact reported shape: an agent that "kept running... and
+    // kept writing source files" got surfaced as dead anyway. `isRunning()`
+    // is a plain in-memory Map — it reports false whenever the registry
+    // doesn't know about the task, which is true after every server restart
+    // (#0214) and is exactly what this test simulates: a fresh AgentRunner
+    // with NO entry for this task, so `isRunning()` is unconditionally false,
+    // while the worktree shows genuinely recent file activity.
+    const fx = makeGitFx(600_000, { committedWork: true }); // Activity log is stale
+    try {
+      const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+      writeFileSync(join(wt, "still-editing.ts"), "export const inProgress = true;\n");
+
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {}); // empty registry — no entry for 0001
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+      await watchdog.checkNow();
+
+      expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+      expect(parseTaskAt(fx).status).toBe("active"); // untouched
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("still surfaces a genuinely dead task with a stale worktree and an empty registry", async () => {
+    // Regression guard for the fix above: the worktree-mtime check must only
+    // SUPPRESS a false surface, never mask a real one. `committedWork`'s own
+    // setup commit has a fresh mtime (it just ran), which would otherwise
+    // spuriously look like live activity and pass this test for the wrong
+    // reason — backdate every file so the worktree is genuinely stale too.
+    const fx = makeGitFx(600_000, { committedWork: true });
+    try {
+      const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+      backdateTree(wt, new Date(Date.now() - 600_000));
+
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+      await watchdog.checkNow();
+
+      const body = readFileSync(fx.taskPath, "utf8");
+      expect(body).toContain("watchdog: auto-surfaced stuck task");
+      expect(parseTaskAt(fx).status).toBe("review"); // committedWork → dirty worktree → review
     } finally {
       fx.clean();
     }

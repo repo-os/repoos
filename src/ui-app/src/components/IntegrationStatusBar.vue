@@ -164,7 +164,9 @@ function stageClass(s: string, i: number): string {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 900;
+  /* The integration status is useful ambient UI, never a modal. Keep it
+     below the drawer and its backdrop so it cannot cover or intercept them. */
+  z-index: 60;
   pointer-events: none;
 }
 
@@ -463,6 +465,56 @@ function stageClass(s: string, i: number): string {
   height: 16px;
   color: var(--txt-faint);
   flex-shrink: 0;
+}
+
+/* Mobile: stay full-width but always float clear of the bottom tab bar,
+   whose height is safe-area aware (see .tabbar in style.css). Use the same
+   offset FloatingHeads uses so nothing tucks under the nav, and keep this
+   bar below FloatingHeads (z-index 70) but above the tab bar (z-index 50)
+   so the CTO/Ross buttons stay visible and tappable on top of it. The bar
+   no longer touches the viewport edge, so give it a card look rather than
+   the dock's top-border/upward-shadow treatment. */
+@media (max-width: 760px) {
+  .ibar-wrap {
+    bottom: calc(74px + var(--safe-bot));
+    z-index: 60;
+  }
+
+  .ibar,
+  .ibar-strip {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* Desktop: float the bar as a content-sized, rounded panel near the bottom
+   of the viewport instead of a full-bleed dock. */
+@media (min-width: 761px) {
+  .ibar-wrap {
+    left: 50%;
+    right: auto;
+    bottom: 14px;
+    transform: translateX(-50%);
+  }
+
+  .ibar,
+  .ibar-strip {
+    width: fit-content;
+    max-width: min(680px, calc(100vw - 28px));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .ibar-strip {
+    border-radius: 999px;
+    padding: 7px 16px;
+  }
+
+  .ibar {
+    padding: 10px 16px 12px;
+  }
 }
 
 @keyframes ibar-spin {

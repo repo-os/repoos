@@ -24,7 +24,7 @@ import {
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { currentBranch, worktreePathForBranch } from "../core/git.js";
+import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import { resolveCto, runPrompt, reviewCommand, type AgentRunner } from "./agents.js";
@@ -78,7 +78,10 @@ export function ctoMission(config: RepoOSConfig, agent: Agent, boardDigest: stri
     "- Do NOT move a task to 'done'.",
     "- Do NOT spend money or change config.",
     "- Do NOT run servers or long-lived processes.",
-    "- Ask the human before taking action (send message, set needs_input, file a bug).",
+    "- The monitor may send one standard completion nudge to an active engineer after",
+    "  five minutes with no worktree activity. It records and announces that nudge.",
+    "- Ask the human before every other action (set needs_input, file a bug, or any",
+    "  task/status change).",
     "- Keep nudges rare and brief. A task is only nudged once per digest unless",
     "  new information arrives.",
     "",
@@ -311,14 +314,44 @@ export class CTOManager {
 
   /**
    * Send a message to a task's agent session (nudge or escalation).
-   * The message is visible to the human in the task activity feed.
+   * The caller records any automatic nudge separately so it is visible to the
+   * human in the task activity feed.
    */
   sendTaskMessage(taskId: string, message: string, agent: Agent | null): boolean {
     if (!this.runner || !agent) return false;
     try {
-      this.runner.send(taskId, message, agent);
-      return true;
+      return this.runner.send(taskId, message, agent).ok;
     } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Persist and announce the one automatic action the CTO monitor may take:
+   * a completion reminder to an idle active engineer. Keeping this separate
+   * from `sendTaskMessage` makes the human-facing audit entry durable even
+   * when the agent transcript is later compacted or the server reloads.
+   */
+  recordAutomaticNudge(task: Task): boolean {
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (current.status !== "active") return false;
+
+      const note = "CTO nudge: sent engineer a completion reminder after 5m without worktree activity";
+      recordChange(current, note);
+      writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record CTO nudge`);
+      this.appendMarker(`↗ CTO nudged engineer for #${current.id} after 5m idle — human notified`);
+      this.emit({ type: "task.corrected", id: current.id, path: current.path, note, at: now() });
+      return true;
+    } catch (err) {
+      console.error(`[repoos] CTO: failed to record nudge for #${task.id}: ${(err as Error).message}`);
       return false;
     }
   }
