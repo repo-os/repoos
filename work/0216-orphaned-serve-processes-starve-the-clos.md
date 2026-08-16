@@ -3,7 +3,6 @@ id: "0216"
 title: Orphaned serve processes starve the close-out gate and cause false failures
 type: bug
 status: review
-needs_merge: true
 priority: p1
 area: core
 assigned_to: ai
@@ -106,3 +105,4 @@ The reload-handoff EPIPE failure was fixed separately. Do not change reload hand
 - 2026-08-16T12:01:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T13:16:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T13:38:39Z · status active→review
+- 2026-08-16T13:38:39Z · needs_merge
