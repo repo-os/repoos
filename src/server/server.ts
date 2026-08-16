@@ -139,6 +139,7 @@ import {
   restart,
   getCounts,
   getIndex,
+  getBoard,
   getDocs,
   getSkills,
   getSystem,
@@ -1249,6 +1250,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/server/restart", restart);
   router.register("GET", "/api/counts", getCounts);
   router.register("GET", "/api/index", getIndex);
+  router.register("GET", "/api/board", getBoard);
   router.register("GET", "/api/docs", getDocs);
   router.register("POST", "/api/docs/create", createDoc);
   router.register("POST", "/api/docs/freeform", createFreeformDoc);

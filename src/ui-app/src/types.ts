@@ -118,6 +118,53 @@ export interface RepoIndex {
   counts: Counts;
 }
 
+/** Lightweight task view for board cards — no full body, extra, or agent overrides.
+ * Includes a body preview for search and releasedAt for the release timeline. */
+export interface BoardTask {
+  id: string;
+  title: string;
+  type: string;
+  status: Status;
+  needsInput: boolean;
+  needsMerge: boolean;
+  priority: string;
+  area: string;
+  assignee: "ai" | "human" | "unassigned";
+  assignedTo: string;
+  createdBy: string;
+  branch: string;
+  tags: string[];
+  created_at: string | null;
+  updated_at: string | null;
+  /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
+  releasedAt: string | null;
+  /** Truncated body preview for search (first 500 chars). */
+  bodyPreview: string;
+  path: string;
+  absPath: string;
+  git: {
+    branchExists: boolean;
+    worktreeExists: boolean;
+    lastCommit: string | null;
+    lastCommitAt: string | null;
+    worktreePath: string | null;
+    dirty: boolean;
+  };
+  /** Always null from server — populated from SSE events on the client. */
+  preview: PreviewInfo | null;
+  automaticReview?: AutomaticReview;
+}
+
+/** Board index response from GET /api/board. */
+export interface BoardIndex {
+  version: number;
+  generatedAt: string;
+  root: string;
+  taskCount: number;
+  tasks: BoardTask[];
+  counts: Counts;
+}
+
 /**
  * One entry of a task's agent transcript. Legacy entries carry `s`/`d` (plain
  * lines from claude/qwen/codex and pre-JSON sessions); entries derived from
