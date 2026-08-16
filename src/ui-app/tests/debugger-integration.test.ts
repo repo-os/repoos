@@ -124,4 +124,20 @@ describe("debugger agent integration", () => {
     );
     expect(source).toContain(`const CHAT_ID = "${debuggerSessionId}"`);
   });
+
+  it("rejects the built-in run endpoint for the chat-only Debugger", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${join(fx.root, "bin")}:${oldPath}`;
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await request(server, "POST", "/api/agents/built-in/debugger/run", {});
+      expect(res.status).toBe(400);
+      expect(JSON.stringify(res.body.error)).toContain("chat-only");
+    } finally {
+      process.env.PATH = oldPath;
+      await server.close();
+      fx.clean();
+    }
+  });
 });
