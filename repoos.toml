@@ -1,0 +1,62 @@
+# RepoOS configuration. All fields optional — these are the defaults.
+
+workDir = "work"
+docsDir = "docs"
+defaultStatus = "inbox"
+defaultAssignee = "ai"
+cacheDir = ".repoos"
+
+theme = "light"
+strictBuild = false
+uiTheme = "classic"
+ntfyEnabled = true
+ntfyTopic = "repoos_repoos"
+defaultTaskMode = "freeform"
+
+autoEngineeringMode = true
+maxActiveTasks = "5"
+
+# CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
+ctoMonitorIntervalMs = 300000
+
+[tunnel]
+provider = "cloudflare"
+enabled = true
+name = "repoos-local"
+domain = "dev"
+tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
+
+[tunnel.apps.dev]
+hostname = "dev.repoos.org"
+service = "http://localhost:7171"
+access = ["njachowski@gmail.com"]
+[[agents]]
+name = "engineer"
+cli = "codex"
+model = "gpt-5.6-terra"
+enabled = true
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
+[[agents]]
+name = "reviewer"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+enabled = true
+instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Output ONE short markdown report under 400 words with exactly `"
+[[agents]]
+name = "pm"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+enabled = true
+instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
+[[agents]]
+name = "Ross"
+cli = "opencode"
+model = "deepinfra/openai/gpt-oss-120b"
+enabled = true
+instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
+[[agents]]
+name = "CTO"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+enabled = true
+instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."

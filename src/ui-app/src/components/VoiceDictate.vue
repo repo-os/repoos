@@ -22,8 +22,9 @@ const elapsedTime = ref(0);
 let timerInterval: NodeJS.Timeout | null = null;
 
 const isEnabled = computed(() => {
-  const whisper = (config.form as Record<string, unknown>).whisper as Record<string, unknown> | undefined;
-  return whisper?.enabled === true;
+  const form = config.form as Record<string, unknown>;
+  const provider = form["whisper.provider"];
+  return provider !== undefined && provider !== "none" && form.whisperEnabled === true;
 });
 
 async function startRecording(): Promise<void> {

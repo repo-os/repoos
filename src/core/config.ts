@@ -317,8 +317,16 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof whisperApiKey === "string") {
       cfg.whisper = { ...cfg.whisper, apiKey: whisperApiKey };
     } else {
-      // Env var fallbacks: REPOOS_WHISPER_KEY (generic), GROQ_API_KEY, OPENAI_API_KEY
-      const envKey = process.env.REPOOS_WHISPER_KEY ?? process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;
+      // Env var fallbacks, provider-aware: a generic key wins, then the
+      // provider's own var — never send an OPENAI_API_KEY to Groq.
+      const provider = cfg.whisper?.provider ?? "none";
+      const envKey =
+        process.env.REPOOS_WHISPER_KEY ??
+        (provider === "groq"
+          ? process.env.GROQ_API_KEY
+          : provider === "openai"
+            ? process.env.OPENAI_API_KEY
+            : process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY);
       if (envKey) {
         cfg.whisper = { ...cfg.whisper, apiKey: envKey };
       }
