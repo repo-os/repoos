@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T15:46:05Z"
-updated_at: "2026-08-16T11:48:31Z"
+updated_at: "2026-08-16T13:38:24Z"
 ---
 Let's add a new agent to "build your team" called the "Debugger Agent". If there's ever a bug you can copy-paste it to him and ask what's up — he diagnoses the root cause and suggests a fix.
 
