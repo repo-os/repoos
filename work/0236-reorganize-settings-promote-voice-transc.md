@@ -2,14 +2,14 @@
 id: "0236"
 title: "Reorganize Settings: promote voice transcription, simplify Advanced"
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/reorganize-settings-promote-voice-transc
 created_at: "2026-08-16T14:58:04Z"
-updated_at: "2026-08-16T14:58:04Z"
+updated_at: "2026-08-16T15:01:52Z"
 ---
 ## Context
 
@@ -41,3 +41,4 @@ Voice transcription (Whisper / vibe coding) is a user-facing feature that requir
 ## Activity
 
 - 2026-08-16T14:58:04Z · created · unknown
+- 2026-08-16T15:01:52Z · status ready→active, branch
