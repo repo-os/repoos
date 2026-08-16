@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/dedupe-the-close-out-pipeline-s-build-an
+model_override: default
 created_at: "2026-08-15T05:57:16Z"
-updated_at: "2026-08-16T12:08:20Z"
+updated_at: "2026-08-16T12:10:54Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ This is the narrow remainder of #0075 (deleted — that task's other concerns, a
 - 2026-08-16T11:47:43Z · status ready→active, branch
 - 2026-08-16T12:08:20Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-16T12:08:20Z · status review→active
+- 2026-08-16T12:10:54Z · model_override
