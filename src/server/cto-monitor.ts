@@ -15,7 +15,8 @@
  *
  * The CTO reads the digest and decides: ignore (nothing wrong), report only,
  * or suggest actions (nudge, escalate, file a bug). All actions are
- * logged and visible to the human — the CTO never acts without asking.
+ * logged and visible to the human. The sole automatic action is one bounded
+ * completion nudge to an active engineer after five minutes of real inactivity.
  */
 import { existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
@@ -23,6 +24,12 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { CTOManager } from "./cto.js";
+import { resolveAgentForTask } from "./agents.js";
+import { hasRecentWorktreeActivity } from "./task-watchdog.js";
+
+const AUTOMATIC_NUDGE_IDLE_MS = 5 * 60 * 1000;
+const AUTOMATIC_NUDGE_COOLDOWN_MS = 60 * 60 * 1000;
+const AUTOMATIC_NUDGE_MARKER = "CTO nudge: sent engineer a completion reminder";
 
 /** Simple hash for idempotence checks (not cryptographic). */
 function simpleHash(text: string): string {
@@ -44,6 +51,8 @@ export class CTOMonitor {
   private eventDebounce: ReturnType<typeof setTimeout> | null = null;
   private lastDigestHash: string = "";
   private lastCheckTime: number = 0;
+  /** Cleared as soon as the worktree becomes active again: one nudge per idle stretch. */
+  private nudgedIdleTasks = new Set<string>();
 
   constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager) {
     this.config = config;
@@ -80,8 +89,13 @@ export class CTOMonitor {
   }
 
   async checkNow(reason: string = "manual"): Promise<void> {
-    if (this.cto.isRunning()) return;
     if (!this.cto.enabled()) return;
+
+    // This is deliberately independent of the CTO's longer report turn: an
+    // engineer nudge should still be timely if a report is in progress.
+    this.nudgeIdleActiveTasks();
+
+    if (this.cto.isRunning()) return;
 
     const digest = this.buildDigest();
     if (!digest) return;
@@ -97,6 +111,61 @@ export class CTOMonitor {
     this.lastDigestHash = digestHash;
     this.lastCheckTime = Date.now();
     await this.cto.run(digest);
+  }
+
+  /**
+   * Resume a session only after durable evidence says its worktree has been
+   * quiet for five minutes. AgentRunner rejects a busy turn, so this can never
+   * interrupt an engineer who is merely thinking or running a long command.
+   */
+  private nudgeIdleActiveTasks(): void {
+    const now = Date.now();
+    const activeIds = new Set<string>();
+    for (const task of this.index.getTasks("active")) {
+      activeIds.add(task.id);
+      if (hasRecentWorktreeActivity(this.config.root, task.branch, AUTOMATIC_NUDGE_IDLE_MS, now)) {
+        this.nudgedIdleTasks.delete(task.id);
+        continue;
+      }
+      if (!this.isIdleLongEnough(task, now) || this.nudgedIdleTasks.has(task.id)) continue;
+      if (this.wasRecentlyNudged(task, now)) {
+        this.nudgedIdleTasks.add(task.id);
+        continue;
+      }
+
+      const engineer = resolveAgentForTask(this.config, task);
+      const message =
+        "CTO check-in: this task has been idle for five minutes. Please finish the current step, run the relevant verification, then commit and hand off to review — or clearly report the blocker.";
+      if (!this.cto.sendTaskMessage(task.id, message, engineer)) continue;
+
+      // The write emits an SSE task.corrected event for the human. Apply it
+      // immediately too; relying solely on the file watcher makes the board
+      // lag on some filesystems.
+      if (this.cto.recordAutomaticNudge(task)) {
+        this.nudgedIdleTasks.add(task.id);
+        void this.index.applyFileChange(task.absPath);
+      }
+    }
+    for (const id of this.nudgedIdleTasks) {
+      if (!activeIds.has(id)) this.nudgedIdleTasks.delete(id);
+    }
+  }
+
+  private isIdleLongEnough(task: Task, now: number): boolean {
+    const updated = task.updated_at ? Date.parse(task.updated_at) : NaN;
+    return Number.isFinite(updated) && now - updated >= AUTOMATIC_NUDGE_IDLE_MS;
+  }
+
+  /** Cooldown survives a server reload, while the in-memory set handles normal idle stretches. */
+  private wasRecentlyNudged(task: Task, now: number): boolean {
+    const marker = new RegExp(`- ([^\\n]+) · ${AUTOMATIC_NUDGE_MARKER}`, "g");
+    let match: RegExpExecArray | null;
+    let last = 0;
+    while ((match = marker.exec(task.body)) !== null) {
+      const at = Date.parse(match[1]);
+      if (Number.isFinite(at)) last = Math.max(last, at);
+    }
+    return last > 0 && now - last < AUTOMATIC_NUDGE_COOLDOWN_MS;
   }
 
   private buildDigest(): string | null {
