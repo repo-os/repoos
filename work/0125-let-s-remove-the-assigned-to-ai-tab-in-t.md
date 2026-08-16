@@ -2,7 +2,7 @@
 id: "0125"
 title: "Redesign Mission Control: drop Assigned-to-AI, add Needs-your-attention, vertical releases"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-12T06:39:43Z"
-updated_at: "2026-08-16T09:46:57Z"
+updated_at: "2026-08-16T09:47:00Z"
 ---
 ## Context
 
@@ -82,3 +82,4 @@ to do:
 
 - 2026-08-16T09:45:47Z · title, body
 - 2026-08-16T09:46:57Z · status draft→inbox
+- 2026-08-16T09:47:00Z · status inbox→ready
