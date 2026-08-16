@@ -366,6 +366,20 @@ export interface ServeOptions {
   reloadReplacement?: boolean;
 }
 
+/**
+ * Only a long-lived control-plane server may sweep machine-wide serve
+ * processes. Preview children deliberately run the same CLI on an ephemeral
+ * port, but must never classify their parent control plane (often detached
+ * with PPID 1 after a nohup/reload handoff) as an orphan and terminate it.
+ * Likewise, in-process test servers use port 0 and are never supervisors.
+ */
+export function shouldReapStrayServeProcesses(
+  opts: Pick<ServeOptions, "port">,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
+}
+
 export interface ServerHandle {
   url: string;
   port: number;
@@ -987,15 +1001,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // or not anyone is watching the UI. `psAvailable()` gate matches the
   // sampler's own platform guard.
   const REAP_INTERVAL_MS = 30_000;
-  const reapTimer = setInterval(() => {
-    if (!psAvailable()) return;
-    try {
-      const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
-      if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
-    } catch {
-      /* reaping is best-effort — never crash the server over it */
-    }
-  }, REAP_INTERVAL_MS);
+  const reapTimer = shouldReapStrayServeProcesses(opts)
+    ? setInterval(() => {
+        if (!psAvailable()) return;
+        try {
+          const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+          if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+        } catch {
+          /* reaping is best-effort — never crash the server over it */
+        }
+      }, REAP_INTERVAL_MS)
+    : null;
 
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
@@ -1582,7 +1598,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           /* ignore */
         }
         clearInterval(systemSampleTimer);
-        clearInterval(reapTimer);
+        if (reapTimer) clearInterval(reapTimer);
         clearInterval(builtInTimer);
         ctoMonitor.stop();
         runner.dispose();
@@ -1604,7 +1620,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         index,
         close: async () => {
           clearInterval(systemSampleTimer);
-          clearInterval(reapTimer);
+          if (reapTimer) clearInterval(reapTimer);
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();
