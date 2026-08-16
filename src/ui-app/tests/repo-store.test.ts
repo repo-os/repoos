@@ -328,6 +328,19 @@ describe("agent running state", () => {
     expect(repo.runningIds).toEqual(["0001"]);
   });
 
+  it("reconciles stale running markers when SSE reconnects", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    expect(repo.isRunning("0001")).toBe(true);
+
+    // A replacement server never observed the old process exit. Its `hello`
+    // must replace the browser's event-derived marker with the live set.
+    es.emit("hello", { type: "hello", taskCount: 0, at: "2026-08-16T00:00:00.000Z" });
+    await vi.waitFor(() => expect(repo.isRunning("0001")).toBe(false));
+  });
+
   it("startWork and pauseWork hit the launch endpoints", async () => {
     const repo = useRepoStore();
     await repo.init();
