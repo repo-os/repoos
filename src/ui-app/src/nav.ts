@@ -21,16 +21,16 @@ export const NAV: NavItem[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="4" height="16" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>',
   },
   {
-    id: "repo",
-    path: "/repo",
-    label: "Context",
-    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8"/></svg>',
-  },
-  {
     id: "agents",
     path: "/agents",
     label: "Agents",
     icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="8" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M12 8V4M9.5 4h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  },
+  {
+    id: "repo",
+    path: "/repo",
+    label: "Context",
+    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8"/></svg>',
   },
   {
     id: "settings",

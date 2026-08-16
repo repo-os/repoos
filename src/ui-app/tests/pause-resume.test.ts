@@ -8,13 +8,14 @@
  * Drives the real HTTP server against a fixture git repo and a fake
  * `opencode` binary that stays alive (a live agent).
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import type { RunningAgentInfo } from "../../server/agents";
+import { reapStaleFixtures } from "./helpers";
 
 interface Fixture {
   root: string;
@@ -27,8 +28,17 @@ function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
 }
 
+/**
+ * Reap fixtures a PAST run leaked before this suite's own fixtures exist.
+ * The per-test `try/finally` cleanup can't fire if the whole process is torn
+ * down (Ctrl-C, a killed CI job) — vitest's thread pool means signal handlers
+ * registered in a test file never fire either — so the next run self-heals.
+ * Shared logic in tests/helpers.ts; see `reapStaleFixtures` there.
+ */
+const FIXTURE_PREFIX = "repoos-pause-";
+
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "repoos-pause-"));
+  const root = mkdtempSync(join(tmpdir(), FIXTURE_PREFIX));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
   // A live agent: node keeps the process alive until it is signalled.
@@ -120,6 +130,10 @@ function killSpawns(fx: Fixture): void {
 
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_LOG;
+});
+
+beforeAll(() => {
+  reapStaleFixtures(FIXTURE_PREFIX);
 });
 
 describe("pause keeps the task active instead of reverting to ready (#0070)", () => {
