@@ -2,7 +2,7 @@
 id: "0214"
 title: Let a server restart adopt in-flight agent turns instead of deferring or killing them
 type: feature
-status: review
+status: done
 needs_merge: true
 priority: p3
 area: server
@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/let-a-server-restart-adopt-in-flight-age
 model_override: default
 created_at: "2026-08-15T06:28:51Z"
-updated_at: "2026-08-16T01:13:09Z"
+updated_at: "2026-08-16T10:00:53Z"
 review_rounds: 1
 ---
 ## Problem
@@ -66,3 +66,4 @@ Make a restart safe to force at any time by giving in-flight turns something dur
 - 2026-08-16T00:18:44Z · model_override
 - 2026-08-16T01:13:07Z · status active→review
 - 2026-08-16T01:13:09Z · needs_merge
+- 2026-08-16T10:00:53Z · status review→done, release:success
