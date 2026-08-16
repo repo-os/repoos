@@ -23,6 +23,7 @@ import type { RepoOSConfig, Task } from "../../core/types";
 import {
   captureOutput,
   completeTask,
+  describeRetryFailure,
   mergeTaskBranchWithAutoSync,
   redactSecrets,
   runDoneStep,
@@ -259,6 +260,54 @@ describe("runDoneStep — diagnosable gate failures", () => {
     }
   });
 });
+
+describe("describeRetryFailure — honest retry classification (#0216)", () => {
+  const failed = (output: string): CheckSummaryLike => ({
+    ok: false,
+    stage: "check",
+    output,
+    detail: "repoos check failed (exit 1)",
+    transient: true,
+  });
+
+  it("passes a successful retry straight through", () => {
+    const retry = { ok: true, stage: "check" as const };
+    expect(describeRetryFailure(failed("boom"), retry)).toBe(retry);
+  });
+
+  it("passes a non-transient retry failure straight through", () => {
+    const retry = { ...failed("boom"), transient: false };
+    expect(describeRetryFailure(failed("boom"), retry)).toBe(retry);
+  });
+
+  it("calls a retry that reproduced the first failure identically a real defect", () => {
+    const out = "✗ watcher: waitFor timed out waiting for deletion\n   at tests/watcher.test.ts:147";
+    const result = describeRetryFailure(failed(out), failed(out));
+    expect(result.detail).toMatch(/identical output/);
+    expect(result.detail).toMatch(/genuine defect/);
+    expect(result.detail).not.toMatch(/machine may be too loaded/);
+  });
+
+  it("reads a retry that failed on different output as contention", () => {
+    const result = describeRetryFailure(failed("a: first"), failed("b: second"));
+    expect(result.detail).toMatch(/different output/);
+    expect(result.detail).toMatch(/too loaded/);
+    expect(result.detail).not.toMatch(/genuine defect/);
+  });
+
+  it("says so when the two runs cannot be compared", () => {
+    const result = describeRetryFailure({ ...failed("a"), output: undefined }, failed("b"));
+    expect(result.detail).toMatch(/could not be compared/);
+  });
+});
+
+type CheckSummaryLike = {
+  ok: boolean;
+  stage?: string;
+  output?: string;
+  detail?: string;
+  transient?: boolean;
+};
 
 describe("diagnostic output hygiene", () => {
   it("redacts credential-shaped values", () => {
