@@ -233,7 +233,7 @@ async function openAgent(): Promise<void> {
 
 <template>
   <article
-    class="task-card group flex h-full cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
+    class="task-card group flex shrink-0 cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
     :class="{
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
