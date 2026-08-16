@@ -27,6 +27,7 @@ import { generateContextPack, resumePreamble } from "../../core/context-pack.js"
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import { loadDiffSnapshot } from "../diff-snapshot.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -1103,6 +1104,12 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
+    const snapshot = task.status === "done"
+      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
+      : null;
+    if (snapshot) {
+      return json(res, 200, { ok: true, stats: snapshot.stats, snapshot: true });
+    }
     return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
   }
   const stats = getDiffStats(worktreePath, "main");
@@ -1122,6 +1129,12 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
+    const snapshot = task.status === "done"
+      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
+      : null;
+    if (snapshot) {
+      return json(res, 200, { ok: true, diff: snapshot.diff, snapshot: true });
+    }
     return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noWorktree: true });
   }
   const diff = await getDiff(worktreePath, "main");
