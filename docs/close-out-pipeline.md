@@ -127,6 +127,10 @@ the conflict there, let the branch re-validate), not in the candidate.
 
 ### 3. `validating` (build + check)
 Runs `bun run build` then `repoos check` in the candidate worktree. Both must succeed.
+Since #0213, the `repoos check` subprocess is invoked with `REPOOS_SKIP_BUILD=1` (the
+candidate was just built with nothing changed since), so `check`'s own internal "Full
+build" step is skipped — exactly one build per close-out. Standalone `repoos check`
+never sets the var and always builds.
 
 **Known-fixed bug (commit `3fbbd707`):** the check step called a globally-linked `repoos`
 CLI (or `bun run repoos check`, which runs from *source*, not the freshly-built `dist/`).
