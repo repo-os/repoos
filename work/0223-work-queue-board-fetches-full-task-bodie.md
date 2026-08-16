@@ -2,7 +2,7 @@
 id: "0223"
 title: Work-queue board fetches full task bodies for every task on every load
 type: bug
-status: review
+status: done
 priority: p1
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/work-queue-board-fetches-full-task-bodie
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T10:04:18Z"
-updated_at: "2026-08-15T16:55:07Z"
+updated_at: "2026-08-16T00:16:43Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ The work-queue board loads quickly regardless of task count, and does not visibl
 - 2026-08-15T20:41:57Z · status review→active
 - 2026-08-15T20:44:32Z · status active→review
 - 2026-08-15T20:45:07Z · model_override
+- 2026-08-16T00:16:43Z · status review→done, release:success
