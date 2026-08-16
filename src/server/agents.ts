@@ -2541,10 +2541,11 @@ export class AgentRunner {
   }
 
   private sessionFile(taskId: string): string | null {
-    // Task ids normally contain digits, but keep route input from becoming a
-    // path traversal primitive if a caller asks output for an arbitrary id.
-    if (!/^[A-Za-z0-9._-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
-    return join(this.sessionsDir, `${taskId}.json`);
+    // IDs can name both tasks and durable non-task conversations such as
+    // `pm-task:0209`. Keep the input strictly filename-safe, then escape the
+    // only cross-platform-invalid separator before constructing the path.
+    if (!/^[A-Za-z0-9._:-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
+    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A")}.json`);
   }
 
   /** Read and validate one versioned file. Corruption/version drift fails soft. */
