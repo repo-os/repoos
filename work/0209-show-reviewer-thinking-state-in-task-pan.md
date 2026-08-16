@@ -2,7 +2,7 @@
 id: "0209"
 title: Show reviewer thinking state in task panel
 type: feature
-status: active
+status: review
 needs_merge: true
 priority: p2
 area: web
@@ -12,7 +12,7 @@ branch: feat/show-reviewer-thinking-state-in-task-pan
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-16T01:46:14Z"
+updated_at: "2026-08-16T02:26:22Z"
 ---
 ## Problem
 
@@ -84,3 +84,4 @@ actions appear as they do today.
 - 2026-08-16T01:36:15Z · model_override
 - 2026-08-16T01:36:17Z · status review→active
 - 2026-08-16T01:46:09Z · model_override
+- 2026-08-16T02:26:22Z · status active→review
