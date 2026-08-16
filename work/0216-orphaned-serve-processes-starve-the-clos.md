@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0216"
 title: Orphaned serve processes starve the close-out gate and cause false failures
 type: bug
@@ -108,3 +109,4 @@ The reload-handoff EPIPE failure was fixed separately. Do not change reload hand
 - 2026-08-16T13:38:39Z · needs_merge
 - 2026-08-16T13:43:46Z · status review→active
 - 2026-08-16T13:51:47Z · status active→review
+
