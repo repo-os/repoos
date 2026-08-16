@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-task-notification-settings-for-state
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-16T14:30:30Z"
+updated_at: "2026-08-16T14:30:31Z"
 ---
 ## Problem
 
