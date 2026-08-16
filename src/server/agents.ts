@@ -347,7 +347,13 @@ export function usageCostSource(
  */
 export function resolveSessionTaskId(taskKey: string | undefined): string | null {
   if (!taskKey) return null;
-  const pm = taskKey.match(/^pm-task-v2:(.+)$/i) ?? taskKey.match(/^pm[:_](.+)$/i);
+  // Each alternative has a strict literal prefix so nothing else is captured;
+  // covers the current `pm-task-v2:<id>` scheme and the legacy `pm-task:<id>` /
+  // `pm:<id>` forms without mis-parsing their suffixes (0230 / review).
+  const pm =
+    taskKey.match(/^pm-task-v2:(.+)$/i) ??
+    taskKey.match(/^pm-task:(.+)$/i) ??
+    taskKey.match(/^pm:(.+)$/i);
   if (pm) return pm[1] || null;
   return taskKey;
 }
@@ -2037,11 +2043,6 @@ export class AgentRunner {
   /** Query historical stats for a task from the database. */
   taskStats(taskId: string) {
     return this.db?.getTaskStats(taskId) ?? null;
-  }
-
-  /** Role-level usage breakdown for a task. */
-  taskRoleBreakdown(taskId: string) {
-    return this.db?.getTaskRoleBreakdown(taskId) ?? [];
   }
 
   /** Query historical stats grouped by session type from the database. */

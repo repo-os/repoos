@@ -264,6 +264,8 @@ export interface RoleUsage {
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
+  costSource: string;
 }
 
 /** Aggregated usage totals for a task, incl. role breakdown (0230). */
@@ -275,6 +277,7 @@ export interface TaskUsageStats {
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  costSource: string;
   roles: RoleUsage[];
 }
 
@@ -287,6 +290,7 @@ export interface DailyUsage {
   totalOutputTokens: number | null;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  costSource: string;
 }
 
 /** Board-level usage totals: overall + per-role + per-day (0230). */
@@ -295,6 +299,7 @@ export interface BoardUsageStats {
   totalElapsedMs: number;
   totalTokens: number | null;
   totalCostUsd: number | null;
+  costSource: string;
   roles: RoleUsage[];
   days: DailyUsage[];
 }
