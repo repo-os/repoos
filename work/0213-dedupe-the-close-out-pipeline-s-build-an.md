@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0213"
 title: Dedupe the close-out pipeline's build and browser/server launches
 type: feature
@@ -55,3 +56,4 @@ This is the narrow remainder of #0075 (deleted — that task's other concerns, a
 - 2026-08-16T12:10:54Z · model_override
 - 2026-08-16T12:10:59Z · status active→review
 - 2026-08-16T12:10:59Z · needs_merge
+
