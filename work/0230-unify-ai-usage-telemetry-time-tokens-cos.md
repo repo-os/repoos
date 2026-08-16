@@ -2,7 +2,7 @@
 id: "0230"
 title: "Unify AI usage telemetry (time, tokens, cost) across all roles"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/unify-ai-usage-telemetry-time-tokens-cos
 model_override: default
 created_at: "2026-08-16T12:09:54Z"
-updated_at: "2026-08-16T13:59:20Z"
+updated_at: "2026-08-16T14:03:29Z"
 review_rounds: 1
 ---
 ## Problem
@@ -112,3 +112,4 @@ features.
 - 2026-08-16T13:19:22Z · model_override
 - 2026-08-16T13:43:20Z · status review→active
 - 2026-08-16T13:59:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-16T14:03:29Z · status active→review
