@@ -26,10 +26,13 @@ import {
   commitTaskFile,
   mergeBranch,
   dirtyFiles,
+  getDiff,
+  getDiffStats,
   GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { markTaskReleased } from "./write.js";
+import { saveDiffSnapshot } from "./diff-snapshot.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -518,6 +521,14 @@ export class CloseOutOrchestrator {
     if (candidateShaRes.status !== 0) {
       return { ok: false, reason: "could not get candidate SHA after validation" };
     }
+
+    // Capture the reviewable source diff before publication removes the task
+    // branch/worktree. The candidate is based on the exact main SHA checked
+    // above and contains the validated feature merge, so this records the
+    // precise change that is about to land (not a later, polluted main diff).
+    const snapshotDiff = await getDiff(wtPath, mainBranch);
+    const snapshotStats = getDiffStats(wtPath, mainBranch);
+    saveDiffSnapshot(root, this.config.cacheDir, job.taskId, snapshotStats, snapshotDiff);
 
     return { ok: true, candidateSha: candidateShaRes.stdout.trim() };
   }

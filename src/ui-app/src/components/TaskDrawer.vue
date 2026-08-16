@@ -2646,14 +2646,13 @@ function resetFreeformOverrides(): void {
           <template v-else-if="!ui.active.branch">
             <p class="changes-empty">No branch yet — start work to create the worktree.</p>
           </template>
-          <template v-else-if="!ui.active.git?.worktreeExists">
-            <p class="changes-empty">
-              No git worktree is checked out for
-              <span class="mono">{{ ui.active.branch }}</span>.
-            </p>
-          </template>
           <template v-else-if="taskDiff === undefined">
             <p class="changes-empty">Loading diff…</p>
+          </template>
+          <template v-else-if="!ui.active.git?.worktreeExists && taskDiff.patch === ''">
+            <p class="changes-empty">
+              No saved code changes are available for this completed task.
+            </p>
           </template>
           <template v-else-if="taskDiff && taskDiff.patch === ''">
             <p class="changes-empty">No code changes yet</p>
