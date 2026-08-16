@@ -14,6 +14,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
+import UsagePanel from "../components/UsagePanel.vue";
 
 const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
@@ -93,6 +94,10 @@ const filterCol = computed<Column | null>(() => {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
+    <div v-if="!statusFilter" class="usage-rail">
+      <UsagePanel />
+    </div>
+
     <div class="board">
       <template v-if="statusFilter">
         <BoardColumn
@@ -119,5 +124,10 @@ const filterCol = computed<Column | null>(() => {
    integration status bar never covers the last board rows. */
 .ibar-spacer {
   height: 150px;
+}
+/* Compact, unobtrusive rail for board-level AI usage totals above the queue. */
+.usage-rail {
+  max-width: 920px;
+  margin-bottom: 14px;
 }
 </style>

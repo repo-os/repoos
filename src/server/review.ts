@@ -34,7 +34,14 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveReviewer, reviewCommand, runPrompt, type AgentRunner } from "./agents.js";
+import {
+  resolveReviewer,
+  reviewCommand,
+  runPrompt,
+  usageCostSource,
+  type AgentRunner,
+  type PromptResult,
+} from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
@@ -583,7 +590,7 @@ export class ReviewManager {
     }
 
     // Record the review session to the database
-    this.recordReviewSession(task.id, agent, report.at, state === "ok");
+    this.recordReviewSession(task.id, agent, result, report.at, state === "ok");
 
     return state === "ok"
       ? { ok: true, report }
@@ -591,10 +598,19 @@ export class ReviewManager {
   }
 
   /** Record a review session to the database. Best-effort, never fails. */
-  private recordReviewSession(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+  private recordReviewSession(
+    taskId: string,
+    agent: Agent,
+    result: PromptResult,
+    completedAt: string,
+    success: boolean,
+  ): void {
     if (!this.db) return;
     try {
       const sessionId = `review:${taskId}-${completedAt}`;
+      const elapsedMs = result.elapsedMs ?? 0;
+      // Kiro reviewers report credits (its billing unit), never US dollars.
+      const costSource = usageCostSource(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -602,11 +618,14 @@ export class ReviewManager {
         agent: agent.name,
         model: agent.model,
         codingAgent: agent.cli,
-        startedAt: completedAt, // Review sessions are point-in-time, use completion time
+        startedAt: new Date(Date.parse(completedAt) - elapsedMs).toISOString(),
         endedAt: completedAt,
-        elapsedMs: 0, // Not tracked for reviews
-        costUsd: undefined,
-        costSource: "none",
+        elapsedMs,
+        inputTokens: result.inputTokens ?? undefined,
+        outputTokens: result.outputTokens ?? undefined,
+        totalTokens: result.totalTokens ?? undefined,
+        costUsd: result.costUsd ?? undefined,
+        costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
       });
@@ -684,7 +703,7 @@ export class ReviewManager {
       });
       this.enforceStillInReview(task);
       // Record the failed chat turn
-      this.recordReviewChatTurn(task.id, agent, completedAt, false);
+      this.recordReviewChatTurn(task.id, agent, result, completedAt, false);
       return { ok: false, reason: result.error ?? "the reviewer failed to answer" };
     }
 
@@ -692,15 +711,17 @@ export class ReviewManager {
     this.emit({ type: "review", id: task.id, state: "ready", at: completedAt });
     this.enforceStillInReview(task);
     // Record the successful chat turn
-    this.recordReviewChatTurn(task.id, agent, completedAt, true);
+    this.recordReviewChatTurn(task.id, agent, result, completedAt, true);
     return { ok: true };
   }
 
   /** Record a review chat turn to the database. Best-effort, never fails. */
-  private recordReviewChatTurn(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+  private recordReviewChatTurn(taskId: string, agent: Agent, result: PromptResult, completedAt: string, success: boolean): void {
     if (!this.db) return;
     try {
       const sessionId = `review:${taskId}-chat-${completedAt}`;
+      const elapsedMs = result.elapsedMs ?? 0;
+      const costSource = usageCostSource(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -708,11 +729,14 @@ export class ReviewManager {
         agent: agent.name,
         model: agent.model,
         codingAgent: agent.cli,
-        startedAt: completedAt,
+        startedAt: new Date(Date.parse(completedAt) - elapsedMs).toISOString(),
         endedAt: completedAt,
-        elapsedMs: 0,
-        costUsd: undefined,
-        costSource: "none",
+        elapsedMs,
+        inputTokens: result.inputTokens ?? undefined,
+        outputTokens: result.outputTokens ?? undefined,
+        totalTokens: result.totalTokens ?? undefined,
+        costUsd: result.costUsd ?? undefined,
+        costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
       });

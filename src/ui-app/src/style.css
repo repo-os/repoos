@@ -792,6 +792,13 @@
   .agent-stalled-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex:none;margin-top:3px;animation:tcpulse 1.6s ease-in-out infinite}
   .agent-stalled-title{font-size:12px;font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
   .agent-stalled-sub{font-size:11.5px;color:var(--txt-dim);margin-top:2px;line-height:1.5}
+  .task-usage{margin-bottom:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel-solid);font-family:'JetBrains Mono',monospace}
+  .task-usage-title{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-faint);margin-bottom:8px}
+  .task-usage-grid{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .task-usage-roles{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .task-usage-role-list{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .task-usage-role{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--txt-dim)}
+  .task-usage-role-name{text-transform:capitalize;color:var(--cyan);min-width:70px}
   .branch-note{margin-left:8px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .preview-live{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--cyan-dim);background:var(--cyan-dim);margin-bottom:8px}
   .preview-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);flex:none;animation:tcpulse 1.1s ease-in-out infinite}

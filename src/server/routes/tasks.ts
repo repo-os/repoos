@@ -1091,6 +1091,12 @@ export const getBoardStats: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { ok: true, stats });
 };
 
+export const getDailyTotals: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  const stats = runner.dailyTotals();
+  return json(res, 200, { ok: true, stats });
+};
+
 // Diff stats endpoint
 export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
   const { index, config } = ctx;
