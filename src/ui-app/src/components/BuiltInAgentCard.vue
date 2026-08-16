@@ -84,6 +84,13 @@ const agentMeta = computed(() => {
       icon: "🏛",
     };
   }
+  if (props.agent === "design") {
+    return {
+      name: "Design Agent",
+      description: "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, saved as a markdown report to docs/agents/Design/.",
+      icon: "🎨",
+    };
+  }
   return null;
 });
 
@@ -142,6 +149,7 @@ async function runNow(): Promise<void> {
       failed?: number;
       errors?: string[];
       issuesFound?: number;
+      findingsFound?: number;
       scannedFiles?: number;
     };
     if (response.ok) {
@@ -150,11 +158,15 @@ async function runNow(): Promise<void> {
         error.value = `${response.taskCount} task(s) created, ${response.failed} failed — ${
           (response.errors ?? []).join("; ") || "unknown write error"
         }`;
+      } else if (props.agent === "design") {
+        message.value = `Review complete — ${response.findingsFound ?? 0} design finding(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Design/.`;
+      } else if (props.agent === "architect") {
+        message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Architect/.`;
       } else if (response.taskCount > 0) {
-        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;
       } else {
-        const agentType = props.agent === "performance" ? "performance" : props.agent === "architect" ? "architecture" : "tech debt";
+        const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — no ${agentType} issues found (${response.scannedFiles ?? 0} files scanned).`;
       }
       await saveState();

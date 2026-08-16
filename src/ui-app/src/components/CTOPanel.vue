@@ -85,7 +85,7 @@ onMounted(() => {
         <strong>CTO Board Monitor</strong>
         <span><i :class="{ off: !enabled }"></i>{{ enabled ? "CTO agent is active" : "Disabled on Agents page" }}</span>
       </div>
-      <button class="cto-minimize" type="button" aria-label="Minimize CTO" title="Minimize" @click="emit('close')">
+      <button class="cto-minimize" type="button" aria-label="Close CTO" title="Close" @click="emit('close')">
         <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
       </button>
     </header>
@@ -123,7 +123,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.cto-panel{position:fixed;right:90px;bottom:18px;width:min(390px,calc(100vw - 130px));height:min(610px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border-bright);border-radius:18px;background:var(--panel-gradient);box-shadow:0 24px 70px rgba(0,0,0,.38);backdrop-filter:blur(18px);animation:cto-open .18s ease-out;pointer-events:auto;z-index:71}
+.cto-panel{position:fixed;top:0;right:0;bottom:0;width:680px;max-width:100vw;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border-bright);background:var(--panel-gradient);box-shadow:var(--drawer-shadow);animation:cto-open .18s ease-out;pointer-events:auto;z-index:92}
 .cto-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .cto-avatar{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
 .cto-avatar img{width:100%;height:100%;object-fit:cover}
@@ -159,6 +159,6 @@ onMounted(() => {
 .cto-compose button:disabled{opacity:.4;cursor:default}
 @keyframes cto-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes cto-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
-@media(max-width:760px){.cto-panel{right:12px;left:12px;width:auto;height:min(560px,calc(100dvh - 150px))}}
+@media(max-width:600px){.cto-panel{left:0;right:0;width:100vw!important}}
 @media(prefers-reduced-motion:reduce){.cto-panel,.cto-thinking span{animation:none;transition:none}}
 </style>

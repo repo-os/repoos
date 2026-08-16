@@ -10,9 +10,10 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
-import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, SupervisorHeartbeat } from "../core/types.js";
+import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, BoardTask, BoardIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
+import type { IntegrationSnapshot } from "./integration-status.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -24,6 +25,7 @@ import {
   emptyGitInfo,
 } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
+import { patchTaskFile } from "./write.js";
 
 export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
@@ -98,7 +100,9 @@ export type RepoEvent =
       at: string;
     }
   | { type: "hello"; taskCount: number; at: string }
-  | { type: "system.stats"; stats: SystemStats };
+  | { type: "system.stats"; stats: SystemStats }
+  /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
+  | { type: "integration"; pipeline: IntegrationSnapshot };
 
 type Listener = (e: RepoEvent) => void;
 
@@ -119,6 +123,19 @@ export class LiveIndex {
   private listeners = new Set<Listener>();
   private useGit = false;
   private branchCache = new Set<string>();
+  /**
+   * Guard invoked by `applyFileChange` for a transition INTO `review` that
+   * did not already pass through the trusted PATCH route. #0210: a direct
+   * task-file edit must be held to the same commit/vacuity gate as the trusted
+   * handoff path. Returns false to reject the transition (the file is reverted
+   * to its previous status); true/fire-and-forget to accept it.
+   */
+  private reviewGuard: ((task: Task, prev: Task) => Promise<boolean>) | null = null;
+
+  /** Wire the #0210 review-transition guard. The server owns the logic. */
+  setReviewGuard(fn: (task: Task, prev: Task) => Promise<boolean>): void {
+    this.reviewGuard = fn;
+  }
 
   constructor(config: RepoOSConfig) {
     this.config = config;
@@ -150,8 +167,18 @@ export class LiveIndex {
     return this.config.taskExtensions.includes(extname(absPath));
   }
 
-  /** Re-parse a single file after a create/modify. Emits created or updated. */
-  applyFileChange(absPath: string): void {
+  /**
+   * Re-parse a single file after a create/modify. Emits created or updated.
+   *
+   * `opts.guarded` marks a change that already passed the #0210 review gate
+   * (the trusted PATCH route and the trusted handoff path run the gate
+   * themselves), so it is applied synchronously without re-invoking the guard.
+   * Unmarked transitions INTO `review` — a direct task-file edit picked up by
+   * the watcher — are deferred to the async guard, which reverts the file to
+   * its previous status if the transition is rejected. Returns a Promise for
+   * that deferred case so callers (and tests) can await its settlement.
+   */
+  applyFileChange(absPath: string, opts: { guarded?: boolean } = {}): void | Promise<void> {
     if (!this.isTaskFile(absPath)) return;
     if (!existsSync(absPath)) {
       this.applyFileDelete(absPath);
@@ -197,6 +224,25 @@ export class LiveIndex {
     )?.[0];
     if (priorPath && priorPath !== absPath) this.pathToId.delete(priorPath);
 
+    // #0210: a transition INTO `review` that did not already pass through the
+    // trusted PATCH/handoff paths must be held to the same commit/vacuity gate
+    // before the index reflects it. Defer so a rejected transition never
+    // surfaces as a review event (no misleading auto-review/preview launch).
+    if (
+      !opts.guarded &&
+      this.reviewGuard &&
+      existing &&
+      existing.status !== "review" &&
+      task.status === "review"
+    ) {
+      return this.runReviewGuard(absPath, task, existing);
+    }
+
+    this.applyParsed(absPath, task, existing);
+  }
+
+  /** Apply a fully-parsed task to the in-memory index and emit. */
+  private applyParsed(absPath: string, task: Task, existing: Task | undefined): void {
     this.byId.set(task.id, task);
     this.pathToId.set(absPath, task.id);
 
@@ -209,6 +255,43 @@ export class LiveIndex {
         this.emit({ type: "task.updated", task, prev, at: now() });
       }
     }
+  }
+
+  /**
+   * Run the #0210 review guard for a deferred transition into `review`. On
+   * acceptance the task is applied normally (the worktree was committed by the
+   * guard). On rejection the task file is reverted to its previous status —
+   * using the same safe write path as a server edit — so the bypass can never
+   * leave a task sitting in `review` with uncommitted work.
+   */
+  private async runReviewGuard(
+    absPath: string,
+    task: Task,
+    existing: Task,
+  ): Promise<void> {
+    if (!this.reviewGuard) {
+      this.applyParsed(absPath, task, existing);
+      return;
+    }
+    let allowed: boolean;
+    try {
+      allowed = await this.reviewGuard(task, existing);
+    } catch {
+      allowed = false; // a failing guard must not leak the transition through
+    }
+    if (!allowed) {
+      try {
+        patchTaskFile(this.config, absPath, { status: existing.status });
+      } catch {
+        // If the revert fails, reflect what git actually shows rather than the
+        // unvalidated review state.
+      }
+      // Re-read whatever is now on disk (reverted, or unchanged) and apply it.
+      if (!existsSync(absPath)) return;
+      this.applyFileChange(absPath, { guarded: true });
+      return;
+    }
+    this.applyParsed(absPath, task, existing);
   }
 
   /** Handle a file removal. Emits deleted if it mapped to a known task. */
@@ -293,6 +376,19 @@ export class LiveIndex {
     };
   }
 
+  /** Lightweight board snapshot — skips body, extra, agent overrides. */
+  boardSnapshot(): BoardIndex {
+    const tasks = this.getTasks();
+    return {
+      version: 1,
+      generatedAt: now(),
+      root: this.config.root,
+      taskCount: tasks.length,
+      tasks: tasks.map(toBoardTask),
+      counts: this.counts(),
+    };
+  }
+
   // ---- events ----
 
   on(fn: Listener): () => void {
@@ -313,6 +409,33 @@ export class LiveIndex {
 
 function now(): string {
   return new Date().toISOString();
+}
+
+/** Strip a Task down to what the board renders. */
+function toBoardTask(t: Task): BoardTask {
+  return {
+    id: t.id,
+    title: t.title,
+    type: t.type,
+    status: t.status,
+    needsInput: t.needsInput,
+    needsMerge: t.needsMerge,
+    priority: t.priority,
+    area: t.area,
+    assignee: t.assignee,
+    assignedTo: t.assignedTo,
+    createdBy: t.createdBy,
+    branch: t.branch,
+    tags: t.tags,
+    created_at: t.created_at,
+    updated_at: t.updated_at,
+    releasedAt: t.releasedAt ?? null,
+    bodyPreview: t.body?.slice(0, 500) ?? "",
+    path: t.path,
+    absPath: t.absPath,
+    git: t.git,
+    preview: null,
+  };
 }
 
 /** Shallow diff of the fields we care about, for the `prev` payload. */

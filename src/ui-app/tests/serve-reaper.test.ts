@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ServeReaper } from "../../server/serve-reaper.js";
+import { shouldReapStrayServeProcesses } from "../../server/server.js";
 import { existsSync, readFileSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -140,5 +141,56 @@ describe("ServeReaper", () => {
         process.env.REPOOS_RELOAD = oldEnv;
       }
     }
+  });
+
+  it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", () => {
+    const lockPath = join(tmpDir, ".repoos", "serve.lock");
+    mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
+
+    const oldEnv = process.env.REPOOS_PREVIEW_CHILD;
+    try {
+      process.env.REPOOS_PREVIEW_CHILD = "1";
+      const preview = new ServeReaper(tmpDir, ".repoos");
+
+      // A preview child must never reap whatever the worktree's lockfile holds.
+      require("node:fs").writeFileSync(
+        lockPath,
+        JSON.stringify({
+          pid: 999999999,
+          port: 12345,
+          host: "127.0.0.1",
+          startedAt: new Date().toISOString(),
+        }),
+      );
+      preview.cleanupStale();
+      expect(existsSync(lockPath)).toBe(true); // not reaped
+
+      // detectConflict never refuses to bind (no false positive on reused ports)
+      expect(preview.detectConflict(12345, "127.0.0.1")).toBeNull();
+
+      // register never writes the lockfile (no cross-preview collision)
+      preview.register(54321, "127.0.0.1");
+      expect(JSON.parse(require("node:fs").readFileSync(lockPath, "utf8")).port).toBe(12345);
+    } finally {
+      if (oldEnv === undefined) {
+        delete process.env.REPOOS_PREVIEW_CHILD;
+      } else {
+        process.env.REPOOS_PREVIEW_CHILD = oldEnv;
+      }
+    }
+  });
+});
+
+describe("periodic serve reaper ownership (#0216)", () => {
+  it("is disabled in preview children, which must never reap their control plane", () => {
+    expect(shouldReapStrayServeProcesses({ port: 63096 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(false);
+  });
+
+  it("is disabled for ephemeral in-process test servers", () => {
+    expect(shouldReapStrayServeProcesses({ port: 0 }, {})).toBe(false);
+  });
+
+  it("remains enabled for a normal control-plane server", () => {
+    expect(shouldReapStrayServeProcesses({ port: 7171 }, {})).toBe(true);
   });
 });

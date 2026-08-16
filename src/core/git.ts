@@ -26,6 +26,8 @@ export interface GitRun {
   status: number | null;
   stdout: string;
   stderr: string;
+  /** True when the child was SIGKILLed because it exceeded the timeout. */
+  timedOut?: boolean;
 }
 
 /**
@@ -45,11 +47,12 @@ export function runGit(
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
+    let timedOut = false;
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      resolve({ status, stdout, stderr });
+      resolve({ status, stdout, stderr, timedOut });
     };
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
@@ -58,7 +61,10 @@ export function runGit(
       finish(null);
     });
     child.on("close", (code: number | null) => finish(code));
-    timer = setTimeout(() => child.kill("SIGKILL"), timeout);
+    timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeout);
   });
 }
 
@@ -375,8 +381,19 @@ export interface DiffStats {
   deletions: number;
 }
 
+export interface DiffResult {
+  patch: string;
+  truncated: boolean;
+}
+
+const MAX_DIFF_BYTES = 256_000;
+const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
+
 /**
- * Get diff statistics comparing a branch to main.
+ * Get diff statistics comparing a branch point to the current worktree.
+ * This deliberately includes committed, staged, and unstaged source edits so
+ * the task drawer can show an agent's work before its handoff commit.
+ * Generated build output is excluded because it is not task source.
  * Returns file count and line additions/deletions.
  */
 export function getDiffStats(
@@ -386,7 +403,7 @@ export function getDiffStats(
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  const statOutput = git(worktree, ["diff", "--stat", baseFull, "HEAD"]);
+  const statOutput = git(worktree, ["diff", "--stat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
 
   let filesChanged = 0;
@@ -412,6 +429,33 @@ export function getDiffStats(
   }
 
   return { filesChanged, additions, deletions };
+}
+
+/**
+ * Get the full patch diff from a branch point to the current worktree.
+ * This includes committed, staged, and unstaged source edits, while leaving
+ * generated build output out of the task-facing code review view.
+ * Bounded at MAX_DIFF_BYTES to avoid sending giant payloads.
+ */
+export async function getDiff(
+  worktree: string,
+  baseBranch: string,
+): Promise<DiffResult> {
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  if (!baseFull) return { patch: "", truncated: false };
+
+  const run = await runGit(worktree, ["diff", "--patch", baseFull, ...DIFF_SOURCE_PATHS], 15000);
+  if (run.status !== 0 && run.stdout === "") return { patch: "", truncated: false };
+
+  const buf = Buffer.from(run.stdout, "utf8");
+  if (buf.byteLength <= MAX_DIFF_BYTES) return { patch: run.stdout, truncated: false };
+
+  let truncated = run.stdout;
+  while (Buffer.from(truncated, "utf8").byteLength > MAX_DIFF_BYTES) {
+    truncated = truncated.slice(0, -1024);
+  }
+  truncated += `\n\n--- diff truncated (${(buf.byteLength / 1024).toFixed(0)} kB total) ---`;
+  return { patch: truncated, truncated: true };
 }
 
 /** Whether git is installed at all (independent of being inside a repo). */
@@ -611,6 +655,78 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
 }
 
 /**
+ * The dirty/uncommitted file paths in a checkout (`git status --porcelain`),
+ * including tracked modifications and untracked files, in repo-relative form.
+ * Used by the close-out flow to check `main` before merging: a dirty tree
+ * aborts `git merge`, so the UI surfaces these so it can offer to commit them.
+ *
+ * FAILS CLOSED: returns `[]` only for a genuinely clean tree (git exit 0 with
+ * empty output). Any git failure — a non-zero exit, a timeout, or git being
+ * unavailable — throws `GitDirtyCheckError` instead, so a caller cannot
+ * mistake an unknown state for a clean tree and silently proceed into a merge
+ * that git will abort. This is the fix for #0211, where the old fail-open
+ * behaved that way under load.
+ */
+export class GitDirtyCheckError extends Error {
+  readonly causeKind: "timeout" | "git-error" | "no-repo";
+  constructor(causeKind: "timeout" | "git-error" | "no-repo", detail?: string) {
+    super(
+      `could not determine the dirty state of the checkout${detail ? `: ${detail}` : ""}`,
+    );
+    this.name = "GitDirtyCheckError";
+    this.causeKind = causeKind;
+  }
+}
+
+export async function dirtyFiles(root: string): Promise<string[]> {
+  const out = await runGit(root, ["status", "--porcelain"], 4000);
+  // A genuinely clean tree is git exit 0 with empty output.
+  if (out.status === 0 && (!out.stdout || out.stdout.trim() === "")) return [];
+  // Fail closed: a timeout, a spawn failure (status null), or a non-zero exit
+  // all mean "unknown", not "clean". Surface which so the caller can explain.
+  if (out.timedOut) {
+    throw new GitDirtyCheckError("timeout", "git status exceeded its time budget");
+  }
+  if (out.status === 0) {
+    // Exit 0 with non-empty output: genuinely dirty files to list.
+    return out.stdout
+      .split("\n")
+      .map((l) => l.replace(/\r$/, ""))
+      .map((l) => {
+        // Porcelain v1 short format is two status columns, a separator space,
+        // then the repo-relative path (`XY path`). We read the raw stdout here
+        // (not the shared `git()` helper, whose `.trim()` eats the first line's
+        // leading status column) so the fixed-width parse stays column-accurate.
+        const stripped = l.slice(3).trim();
+        // Renames/renames-with-changes encode the old path before the new one.
+        const arrow = stripped.indexOf(" -> ");
+        return arrow === -1 ? stripped : stripped.slice(arrow + 4);
+      })
+      .filter(Boolean);
+  }
+  const detail =
+    out.stderr.split("\n").filter(Boolean).slice(0, 2).join(" ").trim() ||
+    (out.status === null ? "git did not run" : `git exited ${out.status}`);
+  throw new GitDirtyCheckError(out.status === null ? "no-repo" : "git-error", detail);
+}
+
+/**
+ * Stage and commit every dirty/uncommitted file in a checkout with a single
+ * checkpoint commit so the tree is left clean and mergeable. Used before a
+ * close-out merge when the user opts in ("Commit & continue"). Returns the
+ * list of committed dirty files on success (matching `dirtyFiles`), or an
+ * empty array when the tree was clean or the commit failed.
+ */
+export async function commitDirtyFiles(root: string, message: string): Promise<string[]> {
+  const files = await dirtyFiles(root);
+  if (files.length === 0) return [];
+  const add = await runGit(root, ["add", "-A"], 15_000);
+  if (add.status !== 0) return [];
+  const commit = await runGit(root, ["commit", "-m", message], 15_000);
+  return commit.status === 0 ? files : [];
+}
+
+/**
  * The tab-indented paths git lists when a merge aborts because a dirty or
  * untracked working-tree file would be overwritten, e.g.:
  *
@@ -772,4 +888,92 @@ export function removeWorktree(root: string, branch: string): boolean {
   if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
   git(root, ["worktree", "prune"]);
   return git(root, ["worktree", "remove", "--force", path]) !== null;
+}
+
+export interface EnsureHotfixResult {
+  ok: boolean;
+  /** Always config.root — the hotfix runs in the main checkout. */
+  path: string;
+  /** The branch created or reused. */
+  branch: string;
+  /** Human-readable failure reason. */
+  reason?: string;
+}
+
+/**
+ * Prepare the main checkout for a hotfix task.
+ *
+ * 1. Create a `hotfix/<id>-<slug>` branch from main (when hotfixTarget is
+ *    "branch") or stay on main (when target is "main").
+ * 2. Refuse if the main checkout is dirty.
+ * 3. Return config.root as the working directory — the agent runs here.
+ */
+export function ensureHotfix(
+  root: string,
+  branch: string,
+  hotfixTarget: "branch" | "main",
+): EnsureHotfixResult {
+  if (!isGitRepo(root)) {
+    return { ok: false, path: root, branch, reason: "not a git repository" };
+  }
+  const head = currentBranch(root);
+  if (!head) {
+    return { ok: false, path: root, branch, reason: "could not determine current branch" };
+  }
+
+  // For branch-mode hotfixes: create the hotfix branch if it doesn't exist,
+  // then check it out. For main-mode: verify we're already on main.
+  if (hotfixTarget === "branch") {
+    if (head !== branch) {
+      if (!localBranches(root).has(branch)) {
+        if (git(root, ["checkout", "-b", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not create branch ${branch}` };
+        }
+      } else {
+        if (git(root, ["checkout", branch]) === null) {
+          return { ok: false, path: root, branch, reason: `could not checkout branch ${branch}` };
+        }
+      }
+    }
+  } else {
+    if (head !== "main") {
+      return { ok: false, path: root, branch, reason: "main-mode hotfix requires the main checkout to be on main" };
+    }
+  }
+
+  return { ok: true, path: root, branch };
+}
+
+/**
+ * Reset the main checkout back to `main` after a hotfix, discarding any
+ * in-flight work. Only touches root when it's on a hotfix branch.
+ */
+export function resetHotfix(root: string, branch: string): boolean {
+  // Only safe to reset if we're on the hotfix branch and it's not main.
+  const head = currentBranch(root);
+  if (!head || head === "main") return false;
+  if (head !== branch) return false;
+  return git(root, ["checkout", "main"]) !== null;
+}
+
+/**
+ * Get agent-touched files in the working directory: the union of tracked
+ * worktree-changed files and newly-added files since the last ref, excluding
+ * dist/ and screenshots/. Returns an empty list on git failure.
+ */
+export function agentTouchedFiles(root: string, sinceRef: string): string[] {
+  // Staged + unstaged changes (tracked files)
+  const diff =
+    git(root, ["diff", "--name-only", sinceRef, "--", "."])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  // Untracked files that aren't in dist/ or screenshots/
+  const untracked =
+    git(root, ["ls-files", "--others", "--exclude-standard"])
+      ?.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((p) => !p.startsWith("dist/") && !p.startsWith("screenshots/")) ?? [];
+  return [...new Set([...diff, ...untracked])];
 }

@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import type { Status, Agent } from "../../core/types.js";
+import type { Status, Agent, Task } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
@@ -13,15 +12,22 @@ import {
 import {
   resolveAgentForTask,
   resolvePmAgent,
+  taskPmPrompt,
   runPrompt,
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
-import { commitTaskFile, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
+import { guardReviewTransition } from "../review-guard.js";
+import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
+import { buildIntegrationSnapshot } from "../integration-status.js";
+import { loadDiffSnapshot } from "../diff-snapshot.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -49,7 +55,7 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
 };
 
 export const createTask: RouteHandler = async (ctx, req, res) => {
-  const { config, repoos, index } = ctx;
+  const { config, repoos, index, logger } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
   if (!body.title || typeof body.title !== "string") {
     return json(res, 400, { error: "title is required" });
@@ -63,13 +69,18 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     status: body.status as Status | undefined,
     body: typeof body.body === "string" ? body.body : undefined,
   });
+  logger.task(created.id, "info", "Task created", {
+    title: created.title,
+    type: created.type,
+    area: created.area,
+  });
   index.applyFileChange(created.absPath);
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
   return json(res, 201, index.getTask(created.id));
 };
 
 export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
-  const { config, repoos, index, emitEvent } = ctx;
+  const { config, repoos, index, logger, emitEvent } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
   const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
   if (!explanation) {
@@ -82,6 +93,10 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       title: explanationTitle(explanation),
       body: explanation,
       status: "draft",
+    });
+    logger.task(created.id, "warn", `Task created as fallback (${fallbackReason})`, {
+      fallbackReason,
+      reason: detail,
     });
     index.applyFileChange(created.absPath);
     commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
@@ -172,7 +187,7 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
 };
 
 export const patchTask: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, reviews, runner, onServerStatusChange, syncTaskBranch } = ctx;
+  const { config, index, reviews, runner, logger, onServerStatusChange, syncTaskBranch } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -191,10 +206,30 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  if (body.status === "review" && prevStatus !== "review") {
+    // #0210: any transition into `review` must pass the same commit+validate
+    // gate the trusted handoff path enforces — never silently leave an
+    // uncommitted worktree, and never allow a vacuous (zero source changes)
+    // transition unless the task opts out via no_source_change.
+    const gate = await guardReviewTransition(config, existing);
+    if (!gate.ok) {
+      return json(res, 400, { error: `Cannot move task #${existing.id} to review: ${gate.detail}` });
+    }
+  }
+
   const updated = patchTaskFile(config, existing.absPath, body, {
     onStatusChange: onServerStatusChange,
   });
-  index.applyFileChange(updated.absPath);
+
+  if (body.status && body.status !== prevStatus) {
+    logger.task(id, "info", `Task status changed`, {
+      from: prevStatus,
+      to: body.status,
+    });
+  }
+
+  // Guarded: the #0210 gate already ran above for transitions into review.
+  index.applyFileChange(updated.absPath, { guarded: true });
 
   if (
     prevStatus !== "review" &&
@@ -209,7 +244,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
 };
 
 export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
-  const { config, index, previews } = ctx;
+  const { config, index, logger, previews } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -224,6 +259,7 @@ export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
     }
     return json(res, 404, { error: `Task #${id} not found` });
   }
+  logger.task(id, "info", "Task deleted", { title: existing.title });
   index.applyFileDelete(existing.absPath);
   return json(res, 200, { ok: true });
 };
@@ -264,6 +300,15 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   return json(res, 201, { ok: true, attachment: result });
 };
 
+// Task logs
+export const getTaskLogs: RouteHandler = (ctx, _req, res, params) => {
+  const { logger } = ctx;
+  const id = params.param1;
+  const limit = 1000;
+  const logs = logger.getTaskLogs(id, limit);
+  return json(res, 200, { ok: true, logs });
+};
+
 // Task output
 export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
   const { runner } = ctx;
@@ -301,8 +346,12 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { mode?: unknown };
-    const clean = body?.mode === "clean";
+    const body = (await readBody(req)) as { mode?: unknown; instruction?: unknown };
+    const clean = body?.mode === "clean" && !existing.hotfix;
+    // A task returned from review needs its repair brief in the initial
+    // resumed turn. Sending it as a follow-up would race the agent's start
+    // and commonly be rejected while the new turn is already running.
+    const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
     const branch = existing.branch || deriveBranch(existing.title);
     if (clean) {
       if (!existing.branch) {
@@ -316,7 +365,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         });
       }
     }
-    const wtRes = ensureWorktree(config.root, branch);
+    const isHotfix = existing.hotfix === true;
+    const wtRes = isHotfix
+      ? { ok: true, path: config.root, created: false }
+      : ensureWorktree(config.root, branch);
     const patch: TaskPatch = { status: "active", needsInput: false };
     if (!existing.branch) patch.branch = branch;
     const updated = patchTaskFile(config, existing.absPath, patch, {
@@ -346,10 +398,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
 
     const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
-    const preamble =
+    const resumeContext =
       clean || !existing.branch
         ? undefined
         : resumePreamble(config, taskForLaunch, branch, cwd);
+    const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
       cwd,
@@ -386,11 +439,35 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   }
 
   if (action === "done") {
+    // Branch-less release (2026-08-15): a task fixed by a direct commit on
+    // main (a hotfix — see #0212, not yet a first-class flow) has nothing to
+    // merge. Routing it through the branch-merge close-out pipeline below
+    // just dead-ends on "no branch to merge" — that's not a rejection of the
+    // task, it's the wrong pipeline for it. This is a separate, self-contained
+    // path: verify main is currently green, then release directly. It never
+    // touches the job queue or the repo lock, since there is no merge to
+    // serialize against other close-outs.
+    if (isBranchlessReleaseEligible(existing)) {
+      if (runner.isRunning(id)) {
+        return json(res, 409, { error: `Task #${id} has an agent turn in progress` });
+      }
+      const result = await releaseBranchless(config, existing);
+      if (!result.ok) {
+        return json(res, 400, { error: result.reason });
+      }
+      index.applyFileChange(result.task!.absPath);
+      return json(res, 200, index.getTask(id));
+    }
+
     if (existing.status !== "review") {
       return json(res, 400, {
         error: `Only review tasks can be completed (#${id} is ${existing.status})`,
       });
     }
+    // A branch-less task in review is unreachable in practice (nothing sets
+    // status: review without a branch), but keep the guard as defense in
+    // depth — the branch-less release path above only handles non-review
+    // statuses, by design, so it must not silently fall through here.
     if (!existing.branch) {
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
@@ -417,11 +494,92 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
 
+    // Stale-lock guard (0204): a stale repository lock blocks all close-outs.
+    // Check before enqueueing; if stale, clear it automatically so the user
+    // doesn't hit a cryptic "could not acquire publication lock" failure.
+    const lockPath = join(config.root, ".repoos/close-out.lock");
+    if (existsSync(lockPath)) {
+      try {
+        const lockStat = statSync(lockPath);
+        const age = Date.now() - lockStat.mtime.getTime();
+        if (age > 60_000) {
+          unlinkSync(lockPath);
+        }
+      } catch {
+        // Best-effort
+      }
+    }
+
+    // Dirty-main guard (0204): a dirty working tree on `main` aborts the
+    // close-out merge. Check before enqueueing; if dirty files exist and the
+    // user has not opted in via "Commit & continue", hand the list back so the
+    // UI can show a confirmation modal and pause the close-out. The task stays
+    // in review until the user decides.
+    //
+    // Fails closed (#0211): if the dirty check itself errors or times out we
+    // cannot assert the tree is clean, so the close-out is refused rather than
+    // enqueued against a tree that git may abort at publish time. An unknown
+    // state must never silently look clean.
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before close-out (${err.message}). Retry, or commit/stash main's working tree and try again.`,
+          needsCommit: true,
+          dirtyFiles: [],
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
+    const doneBody = (await readBody(req)) as { commitDirty?: unknown };
+    const commitDirty = doneBody?.commitDirty === true;
+    if (dirty.length > 0 && !commitDirty) {
+      return json(res, 409, {
+        error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} blocking close-out`,
+        needsCommit: true,
+        dirtyFiles: dirty,
+      });
+    }
+    if (dirty.length > 0 && commitDirty) {
+      let committed: string[];
+      try {
+        committed = await commitDirtyFiles(
+          config.root,
+          `chore: checkpoint before close-out (#${id})`,
+        );
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return json(res, 500, {
+            error: `could not re-verify main while committing dirty files (${err.message}). Close-out aborted; nothing was merged.`,
+            needsCommit: true,
+            dirtyFiles: dirty,
+            dirtyCheckFailed: true,
+          });
+        }
+        throw err;
+      }
+      if (committed.length !== dirty.length) {
+        return json(res, 500, {
+          error: `auto-commit of ${dirty.length} dirty file${dirty.length === 1 ? "" : "s"} failed on main`,
+          needsCommit: true,
+          dirtyFiles: dirty,
+        });
+      }
+    }
+
     // Enqueue the close-out job (idempotent per task).
     const job = ctx.jobCoordinator.enqueue(taskStillExists);
     if (!job) {
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
+
+    // Reflect the new queue entry in the pinned status bar immediately (0207),
+    // even before job processing's own snapshot emission picks it up.
+    ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}) });
 
     // Trigger job processing to start the pipeline.
     ctx.triggerJobProcessing();
@@ -529,6 +687,95 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       task: index.getTask(updated.id),
       stopped: stopRes.stopped,
       reason: stopRes.reason,
+    });
+  }
+
+  if (action === "hotfix") {
+    if (existing.status !== "ready" && !existing.hotfix) {
+      return json(res, 400, {
+        error: `Only ready tasks can be switched to hotfix (#${id} is ${existing.status})`,
+      });
+    }
+
+    if (existing.hotfix) {
+      return json(res, 400, {
+        error: `Task #${id} is already in hotfix mode`,
+      });
+    }
+
+    const body = (await readBody(req)) as { hotfixTarget?: unknown };
+    const hotfixTarget: "branch" | "main" =
+      body?.hotfixTarget === "main" ? "main" : "branch";
+
+    const branch = `hotfix/${existing.id}-${existing.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40)}`;
+
+    const rootLock = ctx.rootLock;
+    if (!rootLock.acquire(existing.id, "hotfix")) {
+      const holder = rootLock.getHolder();
+      return json(res, 409, {
+        error: `The main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}) — wait for it to finish`,
+      });
+    }
+
+    let dirty: string[];
+    try {
+      dirty = await dirtyFiles(config.root);
+    } catch (err) {
+      rootLock.release(existing.id);
+      if (err instanceof GitDirtyCheckError) {
+        return json(res, 409, {
+          error: `could not verify main is clean before hotfix (${err.message}). Commit or stash first.`,
+          needsCommit: true,
+          dirtyCheckFailed: true,
+          causeKind: err.causeKind,
+        });
+      }
+      throw err;
+    }
+    if (dirty.length > 0) {
+      rootLock.release(existing.id);
+      return json(res, 409, {
+        error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} — commit or stash before starting a hotfix`,
+        needsCommit: true,
+        dirtyFiles: dirty,
+      });
+    }
+
+    // The lock must precede `ensureHotfix`: checking out the hotfix branch is
+    // itself a mutation of the root checkout and can race a close-out merge.
+    const hotfixRes = ensureHotfix(config.root, branch, hotfixTarget);
+    if (!hotfixRes.ok) {
+      rootLock.release(existing.id);
+      return json(res, 400, {
+        error: `Cannot switch to hotfix: ${hotfixRes.reason ?? "unknown reason"}`,
+      });
+    }
+
+    let updated: Task;
+    try {
+      updated = patchTaskFile(config, existing.absPath, {
+        hotfix: true,
+        hotfixTarget,
+        branch,
+      }, {
+        onStatusChange: onServerStatusChange,
+      });
+    } catch (err) {
+      rootLock.release(existing.id);
+      throw err;
+    }
+    index.applyFileChange(updated.absPath);
+    index.refreshBranches();
+
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      branch,
+      hotfixTarget,
     });
   }
 
@@ -656,7 +903,9 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 404, { error: `Task #${id} not found` });
   }
 
-  const pmSessionId = `pm-task:${id}`;
+  // v2 deliberately starts a clean PM conversation: older PM chats were
+  // incorrectly launched with Ross's read-only mission.
+  const pmSessionId = `pm-task-v2:${id}`;
   const body = (await readBody(req)) as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) {
@@ -717,7 +966,7 @@ ${existing.body || "(no description)"}`;
     ? runner.send(pmSessionId, text, pm, {
         resumePreamble: `Task context:\n${taskContext}`,
       })
-    : runner.startChat(pmSessionId, text, pm, taskContext);
+    : runner.startChat(pmSessionId, text, pm, taskContext, taskPmPrompt);
 
   if (!result.ok && result.busy) {
     return json(res, 409, { error: result.reason ?? "PM is busy" });
@@ -770,6 +1019,55 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
   });
 };
 
+/**
+ * Full integration-pipeline snapshot for the pinned status bar (0207).
+ * `reported` stages are empty for a cold hydration; the live `integration`
+ * SSE event keeps the bar accurate from the moment it connects.
+ */
+export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
+  return json(res, 200, {
+    ok: true,
+    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+  });
+};
+
+/**
+ * Retry a failed integration job (0207). Reuses the coordinator's existing
+ * retry path: `enqueue` re-enqueues a `failed` job as a fresh queued job
+ * (see integration-job.ts), then processing resumes from the queue.
+ */
+export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
+  const { jobCoordinator } = ctx;
+  const id = params.param1;
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `No integration job for task #${id}` });
+  }
+  if (job.phase !== "failed") {
+    return json(res, 409, {
+      error: `Task #${id} is not in a failed integration state (it is ${job.phase})`,
+    });
+  }
+  const task = ctx.index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const reenqueued = jobCoordinator.enqueue(task);
+  if (!reenqueued) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, {}) });
+  ctx.triggerJobProcessing();
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: reenqueued.taskId,
+      phase: reenqueued.phase,
+      enqueuedAt: reenqueued.enqueuedAt,
+    },
+  });
+};
+
 // Session stats endpoints
 export const getTaskStats: RouteHandler = (ctx, _req, res, params) => {
   const { runner } = ctx;
@@ -806,8 +1104,39 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
+    const snapshot = task.status === "done"
+      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
+      : null;
+    if (snapshot) {
+      return json(res, 200, { ok: true, stats: snapshot.stats, snapshot: true });
+    }
     return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
   }
   const stats = getDiffStats(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
+};
+
+// Diff endpoint — full patch
+export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (!task.branch) {
+    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noBranch: true });
+  }
+  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  if (!worktreePath) {
+    const snapshot = task.status === "done"
+      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
+      : null;
+    if (snapshot) {
+      return json(res, 200, { ok: true, diff: snapshot.diff, snapshot: true });
+    }
+    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noWorktree: true });
+  }
+  const diff = await getDiff(worktreePath, "main");
+  return json(res, 200, { ok: true, diff });
 };

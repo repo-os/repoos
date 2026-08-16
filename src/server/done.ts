@@ -9,7 +9,7 @@
  *      A retry after the branch was already integrated is detected up front
  *      (`alreadyMerged`) so it resumes the remaining steps instead of being
  *      mislabelled as a failed merge.
- *   2. rebuild + regenerate screenshots + `repoos check` so the merged main
+ *   2. rebuild + `repoos check` so the merged main
  *      stays green. The check runs the merged checkout's OWN freshly-built
  *      CLI (`dist/cli/index.js`) first — a globally linked `repoos` resolves
  *      build freshness and gate code against its own install snapshot, which
@@ -36,13 +36,15 @@ import {
   isAncestor,
   localBranches,
   runGit,
+  dirtyFiles,
+  GitDirtyCheckError,
   worktreePathForBranch,
 } from "../core/git.js";
 import { markTaskReleased } from "./write.js";
 
 export interface CheckSummary {
   ok: boolean;
-  /** Failing close-out stage — "build" | "screenshots" | "check". */
+  /** Failing close-out stage — "build" | "check". */
   stage?: string;
   /** The exact command that failed (argv joined with spaces). */
   command?: string;
@@ -72,12 +74,16 @@ export interface CompleteResult {
   check?: CheckSummary;
   /** The updated task, present when the task reached `done`. */
   task?: Task;
+  /** True when the failure is a dirty main that must be committed/stashed first. */
+  needsCommit?: boolean;
+  /** The uncommitted files on main that blocked the merge, when known. */
+  dirtyFiles?: string[];
   /** Human-readable reason (not ok). */
   reason?: string;
 }
 
 /** The progress steps reported to the UI while the flow runs. */
-export type DoneStep = "merge" | "build" | "screenshots" | "check" | "done";
+export type DoneStep = "sync" | "merge" | "build" | "check" | "done";
 
 export interface MergeAttempt {
   /** Whether the branch was merged into the main checkout. */
@@ -265,7 +271,7 @@ function fmtCommand(argv: readonly string[]): string {
   return argv.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ");
 }
 
-export type CheckStage = "build" | "screenshots" | "check";
+export type CheckStage = "build" | "check";
 
 export interface RunStepOptions {
   cwd: string;
@@ -323,23 +329,13 @@ const BUILD_STEPS: string[][] = [
 ];
 
 /**
- * Regenerate the committed screenshots. Merging a UI-changing task makes the
- * `screenshots` gate of `repoos check` fail (the `.ui-hash` drift), so the
- * done flow re-captures before checking. The script serves dist/ui itself on an
- * ephemeral port, so no build is needed here — `BUILD_STEPS` already ran.
+ * Commit regenerated `dist/` — the post-merge build just rewrote it — so main
+ * stays clean and mergeable. Nothing else generated is tracked: screenshots
+ * are regenerated on demand via `repoos screenshots`, never by the close-out.
  */
-const SCREENSHOT_STEPS: string[][] = [["node", "scripts/capture-screenshots.mjs"]];
-
-/**
- * Commit regenerated `dist/` (always — the post-merge build just rewrote it)
- * and `screenshots/` when they were re-captured, so main stays clean and
- * mergeable. Screenshot regeneration is an adhoc opt-in, so screenshots are
- * only staged when they were actually generated.
- */
-async function commitGenerated(root: string, withScreenshots: boolean): Promise<void> {
-  const paths = withScreenshots ? ["dist", "screenshots"] : ["dist"];
-  await runProcess("git", ["add", "-A", "--", ...paths], { cwd: root, timeout: 4000 });
-  await runProcess("git", ["commit", "-m", withScreenshots ? "chore: regenerate dist and screenshots" : "chore: regenerate dist"], {
+async function commitGenerated(root: string): Promise<void> {
+  await runProcess("git", ["add", "-A", "--", "dist"], { cwd: root, timeout: 4000 });
+  await runProcess("git", ["commit", "-m", "chore: regenerate dist"], {
     cwd: root,
     timeout: 4000,
   });
@@ -367,7 +363,6 @@ function checkCandidates(root: string): string[][] {
 /** Post-merge gate runners, overridable in tests to avoid real builds. */
 export interface CompleteTaskSteps {
   build?: (cwd: string) => Promise<CheckSummary>;
-  screenshots?: (cwd: string) => Promise<CheckSummary>;
   check?: (cwd: string) => Promise<CheckSummary>;
 }
 
@@ -384,6 +379,19 @@ export interface CloseOutLock {
   release: () => void;
 }
 
+/**
+ * Not the live close-out path (0187 review — flagged as unlogged; noting why
+ * it stays that way rather than adding logging nothing will ever read).
+ * `server.ts` imports this but never calls it — since #0118 the merge-queue
+ * (`JobCoordinator` + `CloseOutOrchestrator` in integration-orchestrator.ts,
+ * which now carries the phase/failure logging) is what actually runs a
+ * review->done close-out. This single-shot, run-against-main-directly version
+ * predates that and is exercised only by `src/ui-app/tests/done-*.test.ts`.
+ * Kept for its helpers (`mergeTaskBranchWithAutoSync`, `runDoneStep`,
+ * `redactSecrets`, `stripAnsi` — the last used live by `agents.ts`); consider
+ * deleting `completeTask`/`completeTaskLocked` themselves in a follow-up if
+ * nothing comes to depend on them.
+ */
 export async function completeTask(
   config: RepoOSConfig,
   task: Task,
@@ -407,15 +415,6 @@ async function completeTaskLocked(
 ): Promise<CompleteResult> {
   const root = config.root;
 
-  // Screenshot regeneration is OFF by default: it launches a headless browser
-  // against a fixture repo purely to refresh the committed PNGs, which most
-  // close-outs never consult (the UI smoke test in `repoos check` already
-  // catches mounting failures, console errors, and CSS regressions). Opt back
-  // in adhoc with `REPOOS_DONE_SCREENSHOTS=1` (deployment prep, UI doc
-  // refresh). The screenshots freshness guard in `repoos check` skips when no
-  // screenshots are committed, so skipping here stays green.
-  const withScreenshots = process.env.REPOOS_DONE_SCREENSHOTS === "1";
-
   onProgress?.("merge");
   // Ensure the task file is committed in main before merging: API-created tasks
   // are untracked in main, and the agent's main-copy sync leaves uncommitted
@@ -428,7 +427,7 @@ async function completeTaskLocked(
   // Vite asset filenames and binary PNGs don't cause artificial conflicts.
   // Both are regenerated from source on main right after the merge anyway.
   const wt = worktreePathForBranch(root, task.branch);
-  if (wt !== null) {
+  if (wt !== null && !task.hotfix) {
     const r1 = await runGit(wt, ["ls-files", "dist/", "screenshots/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
       await runGit(wt, ["rm", "-r", "--cached", "--", "dist/", "screenshots/"], 15_000);
@@ -437,14 +436,60 @@ async function completeTaskLocked(
   }
   const autoResolve = [rel, "dist/", "screenshots/"];
 
-  // Cheap pre-flight: detect source-file conflicts before the expensive
-  // build/screenshots/check steps run. Never leaves a half-applied merge.
-  // When the merge cannot proceed because the branch needs to be synchronized
-  // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
-  // operation and retries, so the close-out completes without a manual step.
-  // A retry where the branch was already integrated is detected up front and
-  // reported as `alreadyMerged`, resuming from the remaining steps.
-  const merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  // Direct-to-main hotfix: the work was done on main itself; skip the merge.
+  const isMainHotfix = task.hotfix && task.hotfixTarget === "main";
+
+  // Publish-time dirty-main guard (#0211): the main tree can be dirtied
+  // between the enqueue-time check and this publish step (validation takes
+  // minutes and `repoos check`/builds regenerate `dist/`). Re-check right
+  // before the merge so a dirty main is surfaced as an actionable error
+  // instead of git's raw "your local changes would be overwritten" message at
+  // the tail of a long job. Fails closed: an error/timeout in the check is
+  // "unknown", not "clean", and aborts the close-out rather than risking a
+  // merge git will refuse.
+  let publishDirty: string[];
+  try {
+    publishDirty = await dirtyFiles(root);
+  } catch (err) {
+    if (err instanceof GitDirtyCheckError) {
+      return {
+        ok: false,
+        merged: false,
+        conflicts: [],
+        ff: false,
+        drifted: false,
+        needsCommit: true,
+        reason: `could not verify main is clean at publish time (${err.message}). The close-out was NOT merged; retry, or commit/stash main's working tree first.`,
+      };
+    }
+    throw err;
+  }
+  if (publishDirty.length > 0) {
+    return {
+      ok: false,
+      merged: false,
+      conflicts: [],
+      ff: false,
+      drifted: false,
+      needsCommit: true,
+      dirtyFiles: publishDirty,
+      reason: `main has ${publishDirty.length} uncommitted file${publishDirty.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${publishDirty.slice(0, 8).join(", ")}${publishDirty.length > 8 ? ", …" : ""}. The close-out was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+    };
+  }
+
+  let merge: MergeAttempt;
+  if (isMainHotfix) {
+    merge = { merged: true, ff: true, drifted: false, conflicts: [] };
+  } else {
+    // Cheap pre-flight: detect source-file conflicts before the expensive
+    // build/check steps run. Never leaves a half-applied merge.
+    // When the merge cannot proceed because the branch needs to be synchronized
+    // with main, `mergeTaskBranchWithAutoSync` runs the existing sync-with-main
+    // operation and retries, so the close-out completes without a manual step.
+    // A retry where the branch was already integrated is detected up front and
+    // reported as `alreadyMerged`, resuming from the remaining steps.
+    merge = await mergeTaskBranchWithAutoSync(root, task.branch, { autoResolve });
+  }
   if (!merge.merged) {
     return {
       ok: false,
@@ -473,28 +518,7 @@ async function completeTaskLocked(
       reason: `build failed after merge (${build.exitCode ?? build.errorCode ?? "killed"}) — the branch IS merged into main; retrying resumes from the build step. Task kept in review.`,
     };
   }
-  // Re-capture screenshots against the merged UI so `repoos check` stays green
-  // — but only when explicitly opted in (REPOOS_DONE_SCREENSHOTS=1). The whole
-  // section is skipped by default: no browser launch, no PNGs, no hash file.
-  if (withScreenshots) {
-    onProgress?.("screenshots");
-    const shots = steps.screenshots
-      ? await steps.screenshots(root)
-      : await runDoneStep({ cwd: root, candidates: SCREENSHOT_STEPS, label: "repoos screenshots", stage: "screenshots", timeout: 300_000 });
-    if (!shots.ok) {
-      return {
-        ok: false,
-        merged: true,
-        alreadyMerged: merge.alreadyMerged,
-        conflicts: [],
-        ff: merge.ff,
-        drifted: merge.drifted,
-        check: shots,
-        reason: `screenshot regeneration failed after merge (${shots.exitCode ?? shots.errorCode ?? "killed"}) — the branch IS merged into main; retrying resumes from screenshot generation. Task kept in review.`,
-      };
-    }
-  }
-  await commitGenerated(root, withScreenshots);
+  await commitGenerated(root);
 
   onProgress?.("check");
   const check = steps.check
@@ -518,8 +542,16 @@ async function completeTaskLocked(
   // Best-effort cleanup; content is preserved in the merged main. The worktree
   // must go first — git refuses to delete a branch checked out in a worktree.
   // Both are fail-soft, so an already-cleaned retry is a no-op here.
-  removeWorktree(root, task.branch);
-  deleteBranch(root, task.branch);
+  // Hotfix tasks: never delete a worktree that doesn't exist, and never delete
+  // main. For branch-mode hotfixes, switch back to main after closing.
+  if (!task.hotfix) {
+    removeWorktree(root, task.branch);
+    deleteBranch(root, task.branch);
+  } else {
+    if (task.hotfixTarget !== "main" && task.branch) {
+      deleteBranch(root, task.branch);
+    }
+  }
 
   return {
     ok: true,

@@ -60,11 +60,44 @@ describe("integration jobs (0118)", () => {
   it("should be idempotent: repeated enqueue returns existing job", () => {
     const coordinator = createJobCoordinator(testRepo);
 
-    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
-    const job1Again = coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
+    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any);
+    const job1Again = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any);
 
     expect(job1!.enqueuedAt).toBe(job1Again!.enqueuedAt);
     expect(coordinator.allJobs()).toHaveLength(1);
+  });
+
+  it("re-enqueues fresh when a DONE job's task is no longer done (0195)", async () => {
+    // Nothing blocks a task leaving `done` via a plain PATCH (e.g. a manual
+    // reopen). When that happens the old job record used to sit there
+    // forever — enqueue() treated any non-failed phase as final, so "Move to
+    // done" returned the stale finished job with ok:true and started nothing.
+    const coordinator = createJobCoordinator(testRepo);
+
+    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    coordinator.updateJob("task1", { phase: "done" });
+
+    // Task reopened: back to review, same branch, no new job yet.
+    const stale = coordinator.getJob("task1")!;
+    expect(stale.phase).toBe("done");
+
+    await new Promise((r) => setTimeout(r, 5));
+    const retried = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    expect(retried.phase).toBe("queued");
+    expect(retried.enqueuedAt).not.toBe(job1.enqueuedAt);
+  });
+
+  it("still returns a DONE job as-is when the task really is done", () => {
+    // The common case: a done job for a done task is not stale, and must not
+    // be spuriously re-enqueued.
+    const coordinator = createJobCoordinator(testRepo);
+
+    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    coordinator.updateJob("task1", { phase: "done" });
+
+    const again = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "done" } as any)!;
+    expect(again.enqueuedAt).toBe(job1.enqueuedAt);
+    expect(again.phase).toBe("done");
   });
 
   it("should recover interrupted jobs on startup", () => {

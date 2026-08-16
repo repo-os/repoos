@@ -1,0 +1,164 @@
+/**
+ * Tests for the [whisper] voice-transcription config (0197): TOML + env
+ * parsing in `loadConfig`, and the `/api/config` redaction contract — the
+ * apiKey must never reach the browser while the provider + enabled state do.
+ */
+import { afterEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { loadConfig } from "../../core/config";
+import { startServer, type ServerHandle } from "../../server/server";
+
+const tmpRoots: string[] = [];
+const ENV_KEYS = ["REPOOS_WHISPER_KEY", "GROQ_API_KEY", "OPENAI_API_KEY"] as const;
+
+afterEach(() => {
+  for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
+  tmpRoots.length = 0;
+  for (const k of ENV_KEYS) delete process.env[k];
+});
+
+function tmpDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "repoos-whisper-"));
+  tmpRoots.push(dir);
+  return dir;
+}
+
+function writeToml(root: string, body: string): void {
+  writeFileSync(join(root, "repoos.toml"), body, "utf8");
+}
+
+describe("loadConfig [whisper] parsing", () => {
+  it("parses provider + apiKey from repoos.toml", () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\napiKey = "gsk_test_123"\n');
+    const config = loadConfig(root);
+    expect(config.whisper).toEqual({ provider: "groq", apiKey: "gsk_test_123" });
+  });
+
+  it("falls back to REPOOS_WHISPER_KEY env var when no TOML key is set", () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "openai"\n');
+    process.env.REPOOS_WHISPER_KEY = "sk-env-999";
+    expect(loadConfig(root).whisper?.apiKey).toBe("sk-env-999");
+  });
+
+  it("uses the provider-specific env var when the generic one is absent", () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "openai"\n');
+    process.env.OPENAI_API_KEY = "sk-openai-1";
+    process.env.GROQ_API_KEY = "gsk-groq-1";
+    expect(loadConfig(root).whisper?.apiKey).toBe("sk-openai-1");
+  });
+
+  it("never sends a different provider's key (OPENAI_API_KEY must not feed Groq)", () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\n');
+    process.env.OPENAI_API_KEY = "sk-openai-1";
+    expect(loadConfig(root).whisper?.apiKey).toBe("");
+  });
+
+  it("TOML apiKey wins over any env var", () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\napiKey = "gsk_toml"\n');
+    process.env.REPOOS_WHISPER_KEY = "sk-env-999";
+    process.env.GROQ_API_KEY = "gsk-groq-1";
+    expect(loadConfig(root).whisper?.apiKey).toBe("gsk_toml");
+  });
+
+  it("defaults to provider none / no key when nothing is configured", () => {
+    const config = loadConfig(tmpDir());
+    expect(config.whisper?.provider).toBe("none");
+    expect(config.whisper?.apiKey).toBe("");
+  });
+});
+
+async function withServer(root: string, fn: (s: ServerHandle) => Promise<void>): Promise<void> {
+  const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+  try {
+    await fn(server);
+  } finally {
+    await server.close();
+  }
+}
+
+describe("GET /api/config whisper redaction", () => {
+  it("never returns the apiKey and exposes provider + whisperEnabled flat", async () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\napiKey = "gsk_secret_42"\n');
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(JSON.stringify(body)).not.toContain("gsk_secret_42");
+      expect(body.config["whisper.provider"]).toBe("groq");
+      expect(body.config.whisperEnabled).toBe(true);
+      expect((body.config.whisper as { apiKey?: string } | undefined)?.apiKey).toBeUndefined();
+    });
+  });
+
+  it("reports whisperEnabled false when a provider is set but no key exists", async () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\n');
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(body.config["whisper.provider"]).toBe("groq");
+      expect(body.config.whisperEnabled).toBe(false);
+    });
+  });
+
+  it("reports whisperEnabled false when nothing is configured", async () => {
+    await withServer(tmpDir(), async (s) => {
+      const res = await fetch(`${s.url}/api/config`);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(body.config["whisper.provider"]).toBe("none");
+      expect(body.config.whisperEnabled).toBe(false);
+    });
+  });
+});
+
+describe("PATCH /api/config whisper", () => {
+  it("returns a sanitized config (no apiKey) and enables transcription end-to-end", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "whisper.provider": "groq", "whisper.apiKey": "gsk_new_1" }),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(JSON.stringify(body)).not.toContain("gsk_new_1");
+      expect(body.config.whisperEnabled).toBe(true);
+      expect(body.config["whisper.provider"]).toBe("groq");
+
+      // The key persisted server-side: a fresh read reports enabled.
+      const read = (await (await fetch(`${s.url}/api/config`)).json()) as {
+        config: Record<string, unknown>;
+      };
+      expect(read.config.whisperEnabled).toBe(true);
+    });
+  });
+
+  it("accepts an empty apiKey without clearing an existing key or erroring", async () => {
+    const root = tmpDir();
+    writeToml(root, '[whisper]\nprovider = "groq"\napiKey = "gsk_existing"\n');
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "whisper.apiKey": "" }),
+      });
+      expect(res.status).toBe(200);
+
+      // Existing key intact (server side), still enabled.
+      const read = (await (await fetch(`${s.url}/api/config`)).json()) as {
+        config: Record<string, unknown>;
+      };
+      expect(read.config.whisperEnabled).toBe(true);
+      expect(JSON.stringify(read)).not.toContain("gsk_existing");
+    });
+  });
+});

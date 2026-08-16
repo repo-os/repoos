@@ -38,7 +38,7 @@ export const useUiStore = defineStore("ui", () => {
   /** Cloudflare setup drawer is independent of the task drawer. */
   const tunnelOpen = ref(false);
   /** Active drawer tab: task details, the agent session, agent review, or PM. */
-  const activeTab = ref<"details" | "agent" | "review" | "pm">("details");
+  const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes">("details");
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
 
@@ -57,7 +57,8 @@ export const useUiStore = defineStore("ui", () => {
 
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
-  function openNewTask(): void {
+  /** Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human"). */
+  function openNewTask(assignedTo = ""): void {
     isNew.value = true;
     active.value = null;
     isNewDoc.value = false;
@@ -65,7 +66,7 @@ export const useUiStore = defineStore("ui", () => {
     nt.area = "web";
     nt.priority = "p2";
     nt.type = "feature";
-    nt.assignedTo = "";
+    nt.assignedTo = assignedTo;
     clearScreenshots();
   }
 

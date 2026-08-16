@@ -8,6 +8,7 @@ import {
   explanationTitle,
   parseGeneratedTask,
   pmPrompt,
+  stripToolCallMarkup,
 } from "../../server/freeform";
 
 describe("parseGeneratedTask", () => {
@@ -183,6 +184,91 @@ describe("parseGeneratedTask with kiro-rendered output (0155)", () => {
     expect(parsed.assignedTo).toBe("ai");
     expect(parsed.body).toContain("## Problem");
     expect(parsed.body).toContain("- [ ] Replace flat doc list");
+  });
+});
+
+describe("stripToolCallMarkup", () => {
+  // A model that renders tool calls as inline markup can emit the closing
+  // tokens as prose when its turn is cut short. Every dialect seen in the wild.
+  const dialects: Array<[string, string]> = [
+    ["bare closer", "</invoke>"],
+    ["bare parameter closer", "</parameter>"],
+    ["namespaced closer", "</｜DSML｜tool_calls>"],
+    ["namespaced invoke closer", "</｜DSML｜invoke>"],
+    ["colon-namespaced closer", "</ns:invoke>"],
+    ["opener with attributes", '<invoke name="create_task">'],
+    ["special-token begin", "<｜tool▁calls▁begin｜>"],
+    ["ascii special-token end", "<|tool_calls_end|>"],
+  ];
+
+  for (const [label, token] of dialects) {
+    it(`strips a leaked ${label}`, () => {
+      const body = ["## Related", "", "- `src/ui-app` web UI components", token].join("\n");
+      expect(stripToolCallMarkup(body)).toBe(
+        ["## Related", "", "- `src/ui-app` web UI components"].join("\n"),
+      );
+    });
+  }
+
+  it("leaves a body with no leaked markup exactly as it was", () => {
+    const body = ["## Problem", "", "The pill reads offline on reload.", ""].join("\n");
+    expect(stripToolCallMarkup(body)).toBe(body);
+  });
+
+  it("keeps markup a task legitimately discusses inline", () => {
+    const body = [
+      "- The `<input>` element loses focus.",
+      "- Describe `</invoke>` in the docs.",
+      "- Handle <div> nesting.",
+    ].join("\n");
+    expect(stripToolCallMarkup(body)).toBe(body);
+  });
+
+  it("keeps markup quoted inside a fenced code block", () => {
+    const body = ["## Notes for AI", "", "```html", "</invoke>", "```", "", "Ship it."].join("\n");
+    expect(stripToolCallMarkup(body)).toBe(body);
+  });
+
+  it("does not leave a gap when the leak is mid-body", () => {
+    const body = ["## Problem", "", "</invoke>", "", "## Scope"].join("\n");
+    expect(stripToolCallMarkup(body)).toBe(["## Problem", "", "## Scope"].join("\n"));
+  });
+});
+
+describe("parseGeneratedTask with leaked tool-call markup", () => {
+  it("keeps leaked closing markup out of the persisted body (#0205/#0208/#0209)", () => {
+    const out = [
+      "---",
+      "title: Show loading state instead of premature offline",
+      "type: bug",
+      "priority: p2",
+      "area: web",
+      "---",
+      "",
+      "## Problem",
+      "",
+      "The pill shows offline during startup.",
+      "",
+      "## Related",
+      "",
+      "- `src/ui-app` web UI components",
+      "</｜DSML｜parameter>",
+      "</｜DSML｜invoke>",
+      "</｜DSML｜tool_calls>",
+    ].join("\n");
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.title).toBe("Show loading state instead of premature offline");
+    expect(parsed.body).toContain("- `src/ui-app` web UI components");
+    expect(parsed.body).not.toContain("tool_calls");
+    expect(parsed.body).not.toContain("</invoke>");
+    expect(parsed.body.endsWith("- `src/ui-app` web UI components")).toBe(true);
+  });
+
+  it("never derives a title from a leaked token when frontmatter is missing", () => {
+    const out = ["</｜DSML｜tool_calls>", "Make the connection pill honest"].join("\n");
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.title).toBe("Make the connection pill honest");
+    expect(parsed.body).toBe("Make the connection pill honest");
   });
 });
 
