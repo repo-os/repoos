@@ -453,6 +453,8 @@
   .tc-btn.done{color:var(--green);border-color:var(--green-border-tint);background:var(--green-tint)}
   .tc-btn.done:hover{filter:brightness(1.15)}
   .drawer-run{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--violet)}
+  .drawer-run.reviewing{color:var(--amber)}
+  .drawer-run.reviewing{color:var(--amber)}
 
   /* review substate chip (reviewing / coding / waiting for human) */
   .rs-chip{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:6px}
@@ -606,6 +608,8 @@
   .tc-done-error{margin-top:10px}
   .drawer-done-error{margin-top:12px}
   .review-running{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
+  .review-thinking{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px 16px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
+  .review-thinking{display:flex;align-items:center;justify-content:center;gap:8px;padding:24px 16px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
   .review-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:10px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .review-card{cursor:default;margin-bottom:4px}
   .review-failed{padding:12px;border-radius:10px;background:var(--red-tint);border:1px solid var(--red-border-tint);font-size:12px;color:var(--txt);word-break:break-word}
