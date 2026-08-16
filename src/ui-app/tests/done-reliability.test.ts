@@ -217,6 +217,35 @@ describe("runDoneStep — diagnosable gate failures", () => {
       clean();
     }
   });
+
+  it("passes the provided env to the child so the close-out can skip the redundant build", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // The close-out already ran a full build, so it invokes `repoos check`
+      // with REPOOS_SKIP_BUILD=1 to skip check's own "Full build" step (#0213).
+      // This proves the env reaches the spawned gate process.
+      // Echo the env var and exit non-zero so it lands in the captured output
+      // tail (a successful candidate only returns `{ ok: true }`).
+      const result = await runDoneStep({
+        cwd: root,
+        candidates: [
+          [
+            process.execPath,
+            "-e",
+            "process.stderr.write('REPOOS_SKIP_BUILD=' + (process.env.REPOOS_SKIP_BUILD ?? 'unset')); process.exit(1)",
+          ],
+        ],
+        label: "repoos check",
+        stage: "check",
+        env: { ...process.env, REPOOS_SKIP_BUILD: "1" },
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toContain("REPOOS_SKIP_BUILD=1");
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("diagnostic output hygiene", () => {

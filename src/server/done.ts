@@ -201,10 +201,10 @@ interface RunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number },
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
 ): Promise<RunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd });
+    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
     let stdout = "";
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -282,6 +282,8 @@ export interface RunStepOptions {
   stage: CheckStage;
   /** Per-command wall-clock budget before SIGKILL, in ms. */
   timeout?: number;
+  /** Child-process environment (defaults to the parent's). */
+  env?: NodeJS.ProcessEnv;
 }
 
 /**
@@ -296,7 +298,11 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
   const timeout = opts.timeout ?? 240_000;
   let missing = "";
   for (const cmd of opts.candidates) {
-    const run = await runProcess(cmd[0], cmd.slice(1), { cwd: opts.cwd, timeout });
+    const run = await runProcess(cmd[0], cmd.slice(1), {
+      cwd: opts.cwd,
+      timeout,
+      env: opts.env,
+    });
     if (run.status === 0) return { ok: true, stage: opts.stage };
     if (run.error && (run.error.code === "ENOENT" || run.error.code === "EACCES")) {
       missing = `${cmd[0]} is not available`;
@@ -521,9 +527,20 @@ async function completeTaskLocked(
   await commitGenerated(root);
 
   onProgress?.("check");
+  // The close-out already ran a full build above (`BUILD_STEPS`), so the
+  // `repoos check` subprocess's own "Full build" step is redundant — nothing
+  // changed since. Pass REPOOS_SKIP_BUILD so check skips it (see cmdCheck in
+  // check.ts). Standalone `repoos check` never sets it and always builds.
   const check = steps.check
     ? await steps.check(root)
-    : await runDoneStep({ cwd: root, candidates: checkCandidates(root), label: "repoos check", stage: "check", timeout: 600_000 });
+    : await runDoneStep({
+        cwd: root,
+        candidates: checkCandidates(root),
+        label: "repoos check",
+        stage: "check",
+        timeout: 600_000,
+        env: { ...process.env, REPOOS_SKIP_BUILD: "1" },
+      });
   if (!check.ok) {
     return {
       ok: false,
