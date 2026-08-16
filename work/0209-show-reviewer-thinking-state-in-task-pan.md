@@ -9,10 +9,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/show-reviewer-thinking-state-in-task-pan
-model_override: default
+model_override: gpt-5.6-luna
 pm_model_override: default
 created_at: "2026-08-15T04:35:11Z"
-updated_at: "2026-08-16T00:22:08Z"
+updated_at: "2026-08-16T01:36:15Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ actions appear as they do today.
 - 2026-08-15T16:42:22Z · pm_model_override
 - 2026-08-16T00:22:08Z · status active→review
 - 2026-08-16T00:22:08Z · needs_merge
+- 2026-08-16T01:36:15Z · model_override
