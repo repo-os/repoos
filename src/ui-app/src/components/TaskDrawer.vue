@@ -2150,7 +2150,7 @@ function resetFreeformOverrides(): void {
                 Delete task
               </Button>
               <Button
-                v-if="!ui.active?.hotfix && (ui.active?.status === 'ready' || ui.active?.status === 'draft' || ui.active?.status === 'inbox')"
+                v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
                 variant="outline"
                 size="sm"
                 :disabled="ui.saving"

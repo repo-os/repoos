@@ -13,7 +13,7 @@ import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
-import type { RepositoryLock } from "./repo-lock.js";
+import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import {
   currentBranch,
   runGit,
@@ -134,6 +134,7 @@ export class CloseOutOrchestrator {
     private config: RepoOSConfig,
     private coordinator: JobCoordinator,
     private repoLock?: RepositoryLock,
+    private rootLock?: RootLock,
     private getTask?: (taskId: string) => Task | null,
     private onProgress?: (step: DoneStep) => void,
   ) {}
@@ -489,6 +490,19 @@ export class CloseOutOrchestrator {
       }
     }
 
+    // Publishing mutates the live checkout.  It must therefore mutually
+    // exclude a hotfix, which also owns that checkout for its entire run.
+    // Acquire after the publication lock so concurrent close-outs retain
+    // their existing serialization, but before inspecting or merging main.
+    if (this.rootLock && !this.rootLock.acquire(job.taskId, "close-out")) {
+      const holder = this.rootLock.getHolder();
+      this.repoLock?.release(job.taskId);
+      return {
+        ok: false,
+        reason: `main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}); wait for it to finish before moving this task to done`,
+      };
+    }
+
     try {
       // Final SHA check: ensure candidate is still based on current main (holding the lock).
       const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
@@ -563,6 +577,7 @@ export class CloseOutOrchestrator {
       this.onProgress?.("done");
       return { ok: true };
     } finally {
+      this.rootLock?.release(job.taskId);
       // Always release the lock when done publishing.
       if (this.repoLock) {
         this.repoLock.release(job.taskId);

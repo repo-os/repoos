@@ -701,6 +701,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           config,
           jobCoordinator,
           repoLock,
+          rootLock,
           (taskId) => index.getTask(taskId),
           (step) => {
             const job = jobCoordinator.peekNext();

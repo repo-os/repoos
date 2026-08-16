@@ -1,4 +1,4 @@
-import type { Status, Agent } from "../../core/types.js";
+import type { Status, Agent, Task } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
@@ -654,10 +654,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       .replace(/^-|-$/g, "")
       .slice(0, 40)}`;
 
-    const hotfixRes = ensureHotfix(config.root, branch, hotfixTarget);
-    if (!hotfixRes.ok) {
-      return json(res, 400, {
-        error: `Cannot switch to hotfix: ${hotfixRes.reason ?? "unknown reason"}`,
+    const rootLock = ctx.rootLock;
+    if (!rootLock.acquire(existing.id, "hotfix")) {
+      const holder = rootLock.getHolder();
+      return json(res, 409, {
+        error: `The main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}) — wait for it to finish`,
       });
     }
 
@@ -665,6 +666,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     try {
       dirty = await dirtyFiles(config.root);
     } catch (err) {
+      rootLock.release(existing.id);
       if (err instanceof GitDirtyCheckError) {
         return json(res, 409, {
           error: `could not verify main is clean before hotfix (${err.message}). Commit or stash first.`,
@@ -676,6 +678,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       throw err;
     }
     if (dirty.length > 0) {
+      rootLock.release(existing.id);
       return json(res, 409, {
         error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} — commit or stash before starting a hotfix`,
         needsCommit: true,
@@ -683,26 +686,29 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
 
-    const rootLock = ctx.rootLock;
-    if (rootLock.isLocked()) {
-      const holder = rootLock.getHolder();
-      return json(res, 409, {
-        error: `The main checkout is held by ${holder?.kind ?? "another operation"} (task #${holder?.taskId ?? "unknown"}) — wait for it to finish`,
-      });
-    }
-    if (!rootLock.acquire(existing.id, "hotfix")) {
-      return json(res, 409, {
-        error: "Could not acquire the root lock — another operation is using main",
+    // The lock must precede `ensureHotfix`: checking out the hotfix branch is
+    // itself a mutation of the root checkout and can race a close-out merge.
+    const hotfixRes = ensureHotfix(config.root, branch, hotfixTarget);
+    if (!hotfixRes.ok) {
+      rootLock.release(existing.id);
+      return json(res, 400, {
+        error: `Cannot switch to hotfix: ${hotfixRes.reason ?? "unknown reason"}`,
       });
     }
 
-    const updated = patchTaskFile(config, existing.absPath, {
-      hotfix: true,
-      hotfixTarget,
-      branch,
-    }, {
-      onStatusChange: onServerStatusChange,
-    });
+    let updated: Task;
+    try {
+      updated = patchTaskFile(config, existing.absPath, {
+        hotfix: true,
+        hotfixTarget,
+        branch,
+      }, {
+        onStatusChange: onServerStatusChange,
+      });
+    } catch (err) {
+      rootLock.release(existing.id);
+      throw err;
+    }
     index.applyFileChange(updated.absPath);
     index.refreshBranches();
 
