@@ -1352,6 +1352,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         failed: result.failed,
         errors: result.errors,
         issuesFound: "issuesFound" in result ? result.issuesFound : 0,
+        findingsFound: "findingsFound" in result ? result.findingsFound : 0,
         scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
       });
     } catch (err) {
