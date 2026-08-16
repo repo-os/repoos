@@ -1,4 +1,5 @@
 ---
+review_rounds: 1
 id: "0197"
 title: "bug: whisper vibe-coding dead on arrival — [whisper] unparsed, no key path, apiKey leaks to browser"
 type: bug
@@ -61,3 +62,4 @@ Reported by the human after merge: "I see microphone icon buttons on main, but I
 - 2026-08-15T19:50:41Z · model_override
 - 2026-08-15T20:00:42Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-15T20:00:42Z · status review→active
+
