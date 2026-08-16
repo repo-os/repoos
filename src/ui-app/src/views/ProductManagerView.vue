@@ -165,14 +165,16 @@ function onDraftTranscribed(text: string): void {
 }
 
 watch(selectedTaskId, () => {
-  if (selectedTaskId.value) {
-    scrollToLatest();
-  }
+  if (!selectedTaskId.value) return;
+  void repo.loadOutput(pmSessionId(selectedTaskId.value)).then(scrollToLatest);
 });
 
 onMounted(() => {
   if (tasks.value.length > 0 && !selectedTaskId.value) {
     selectedTaskId.value = tasks.value[0].id;
+  }
+  if (selectedTaskId.value) {
+    void repo.loadOutput(pmSessionId(selectedTaskId.value)).then(scrollToLatest);
   }
 });
 </script>
@@ -321,6 +323,7 @@ onMounted(() => {
 .pm-view {
   display: flex;
   height: 100%;
+  min-height: 0;
   gap: 0;
   background: var(--panel);
 }
@@ -404,6 +407,7 @@ onMounted(() => {
 
 .pm-panel {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -546,6 +550,7 @@ onMounted(() => {
 
 .pm-log {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

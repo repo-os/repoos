@@ -1270,6 +1270,15 @@ watch(
   },
 );
 
+/** Restore the PM conversation after a browser reload or a server handover. */
+watch(
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    if (!ui.active || ui.activeTab !== "pm") return;
+    void repo.loadOutput(pmSessionId(ui.active.id)).then(() => nextTick(() => pmScrollToLatest()));
+  },
+);
+
 /** Diff stats for the active task. */
 const taskDiffStats = computed(() => {
   return ui.active ? repo.diffStatsFor(ui.active.id) : undefined;
@@ -2657,7 +2666,7 @@ function resetFreeformOverrides(): void {
 </template></code></pre>
           </template>
         </div>
-        <div v-else-if="ui.activeTab === 'pm'" class="drawer-body">
+        <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field">
@@ -2773,9 +2782,11 @@ function resetFreeformOverrides(): void {
 <style scoped>
 .pm-log-wrap {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .pm-empty {
