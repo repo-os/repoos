@@ -107,6 +107,9 @@ off; the implementer never merges to \`main\` at \`review\` time.
   manipulation goes through \`repoos\` commands or HTTP API endpoints
   (\`POST /api/tasks\`, \`PATCH /api/tasks/:id\`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
+- **The Product Manager agent is authorized to create and update tasks.** It
+  must use those same RepoOS CLI commands or HTTP API endpoints for task body,
+  metadata, and status changes; it must never edit task Markdown directly.
 - **Never** deploy to production without human sign-off.
 - Keep frontmatter tidy; \`repoos\` will normalize key order on write.
 - One task = one focused worktree.

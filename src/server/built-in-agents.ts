@@ -8,6 +8,7 @@ import { writeFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
+import type { Logger } from "../core/logger.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -127,6 +128,42 @@ export interface ArchitectRunResult {
 }
 
 export class ArchitectureError extends Error {}
+
+export type DesignFindingCategory =
+  | "ui-bug"
+  | "ux-friction"
+  | "design-recommendation";
+
+export interface DesignFinding {
+  category: DesignFindingCategory;
+  file: string;
+  line?: number;
+  /** What stands out, phrased as the concrete observation. */
+  description: string;
+  /** Why this matters, grounded in a UI/UX best practice. */
+  rationale: string;
+  /** A concrete, actionable suggestion referencing the file/component. */
+  recommendation: string;
+  severity: "high" | "medium" | "low";
+}
+
+export interface DesignScanResult {
+  findings: DesignFinding[];
+  scannedFiles: number;
+  insights: string[];
+}
+
+export interface DesignRunResult {
+  reportPath: string;
+  fileName: string;
+  findingsFound: number;
+  scannedFiles: number;
+  created: number;
+  failed: number;
+  errors: string[];
+}
+
+export class DesignError extends Error {}
 
 const SOURCE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".vue"]);
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".next", ".nuxt", ".repoos"]);
@@ -856,14 +893,39 @@ updated_at: "${now}"
 export async function runTechDebtAgent(
   config: RepoOSConfig,
   options: TechDebtScanOptions = {},
+  logger?: Logger,
 ): Promise<TechDebtRunResult> {
+  logger?.agent("tech-debt", "info", "Tech Debt Agent scan started");
   const scan = await scanForTechDebt(config, options);
+  logger?.agent(
+    "tech-debt",
+    "info",
+    `Tech Debt scan completed`,
+    { issuesFound: scan.issues.length, scannedFiles: scan.scannedFiles },
+  );
+
   const created = await createTechDebtTasks(config, scan.issues);
+  if (created.failed > 0) {
+    logger?.agent(
+      "tech-debt",
+      "error",
+      `Failed to create ${created.failed} tech debt tasks`,
+      { errors: created.errors },
+    );
+  }
+  if (created.created > 0) {
+    logger?.agent("tech-debt", "info", `Created ${created.created} tech debt tasks`);
+  }
 
   const agents = { ...(config.builtInAgents ?? {}) };
   agents["tech-debt"] = { ...(agents["tech-debt"] ?? {}), lastRunAt: new Date().toISOString() };
   saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
   config.builtInAgents = agents;
+
+  logger?.agent("tech-debt", "info", "Tech Debt Agent run completed", {
+    created: created.created,
+    failed: created.failed,
+  });
 
   return {
     issuesFound: scan.issues.length,
@@ -1106,19 +1168,319 @@ export async function runArchitectAgent(config: RepoOSConfig): Promise<Architect
   };
 }
 
+/**
+ * Scan the web UI (src/ui-app/) for UI bugs, UX friction, and design
+ * improvements. Each finding is grounded in a best practice with a concrete,
+ * actionable recommendation that references the file/component involved.
+ * The scan is heuristic, flagging signal-not-noise patterns rather than trying
+ * to be a fully automated accessibility audit — it never edits UI source.
+ */
+export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignScanResult> {
+  const findings: DesignFinding[] = [];
+  const insights: string[] = [];
+
+  const uiRoot = join(config.root, "src", "ui-app", "src");
+  let files: string[] = [];
+  try {
+    files = collectSourceFiles(uiRoot);
+  } catch {
+    files = [];
+  }
+  const scanned = readScannedFiles(uiRoot, files);
+
+  const components = scanned.filter((f) => f.rel.startsWith("components/") && f.rel.endsWith(".vue"));
+  const views = scanned.filter((f) => f.rel.startsWith("views/") && f.rel.endsWith(".vue"));
+
+  insights.push(
+    `Analyzed ${scanned.length} files under \`src/ui-app/src/\` (${components.length} components, ${views.length} views).`,
+  );
+
+  if (scanned.length === 0) {
+    insights.push("No web UI source found — the scan only looks under `src/ui-app/src/`.");
+    return { findings, scannedFiles: 0, insights };
+  }
+
+  // 1. Inline `style="..."` attributes in templates: they break the design
+  // system by bypassing CSS variables/classes and make dark-mode theming drift.
+  const INLINE_STYLE_RE = /\sstyle\s*=\s*["']([^"']+)["']/g;
+  for (const file of scanned) {
+    let m: RegExpExecArray | null;
+    while ((m = INLINE_STYLE_RE.exec(file.content)) !== null) {
+      const value = m[1];
+      // Skip Tailwind-style dynamic bindings (:style) — the static style attr
+      // is the theme-unsafe one.
+      if (value.includes("{") || value.length === 0) continue;
+      findings.push({
+        category: value.includes("color") || value.includes("background") || value.includes("border")
+          ? "ui-bug"
+          : "design-recommendation",
+        file: file.rel,
+        line: findLineAt(file.content, m.index),
+        description: `Hardcoded inline style "${value}" bypasses the shared design system.`,
+        rationale: "Inline styles ignore the centralized CSS variables and can drift from the theme, especially across dark mode.",
+        recommendation: `Move this styling into a scoped class or a shared utility so it inherits the app's theme tokens (see how neighboring \`src/ui-app/src/components/*.vue\` components style via CSS variables).`,
+        severity: "medium",
+      });
+    }
+  }
+
+  // 2. Hardcoded hex colors in templates/styles: they can't respond to theme.
+  const HEX_COLOR_RE = /#[0-9a-fA-F]{3,8}\b/g;
+  for (const file of scanned) {
+    const cleaned = file.content.replace(/style\s*=\s*["'][^"']*["']/g, "");
+    let m: RegExpExecArray | null;
+    while ((m = HEX_COLOR_RE.exec(cleaned)) !== null) {
+      findings.push({
+        category: "design-recommendation",
+        file: file.rel,
+        line: findLineAt(cleaned, m.index),
+        description: `Hardcoded hex color ${m[0]} used instead of a theme variable.`,
+        rationale: "Hardcoded colors do not adapt to the app's light/dark theme and make palette changes require editing many files.",
+        recommendation: "Replace with a CSS variable (e.g. `var(--text-primary)`, `var(--border)`) so it follows the active theme.",
+        severity: "low",
+      });
+    }
+  }
+
+  // 3. Interactive elements without an accessible name: buttons with only an
+  // icon or empty labels are invisible to screen readers.
+  for (const file of scanned) {
+    if (!/\.vue$/.test(file.rel)) continue;
+    const BUTTON_RE = /<button\b([^>]*)>/g;
+    let m: RegExpExecArray | null;
+    while ((m = BUTTON_RE.exec(file.content)) !== null) {
+      const attrs = m[1];
+      // A button already has an accessible name via aria-label/title, or a
+      // closing tag on the same line means it stays open for visible content.
+      if (/aria-label\s*=|aria-labelledby\s*=|title\s*=/.test(attrs)) continue;
+      const after = file.content.slice(m.index + m[0].length);
+      const lineEnd = after.search(/\n/);
+      const restOfLine = (lineEnd === -1 ? after : after.slice(0, lineEnd)).trim();
+      // Only flag unmistakable cases: an icon/expression or an immediately-
+      // closed button with no accessible name.
+      const iconOnly = /^\{[^}]*\}/.test(restOfLine) || /^<\/button>/.test(restOfLine);
+      if (!iconOnly) continue;
+      findings.push({
+        category: "ux-friction",
+        file: file.rel,
+        line: findLineAt(file.content, m.index),
+        description: "A button appears to have no visible label or `aria-label`.",
+        rationale: "Icon-only or label-less buttons are inaccessible to screen readers and confusing to users.",
+        recommendation: "Add a visible label or an `aria-label` describing the action.",
+        severity: "medium",
+      });
+    }
+  }
+
+  // 4. click handlers on non-interactive elements (div/span/li without
+  // role="button" or a tabindex) — a common keyboard-inaccessibility bug.
+  for (const file of scanned) {
+    if (!/\.vue$/.test(file.rel)) continue;
+    const NONINT_RE = /<(div|span|li)\b([^>]*)\s@click\s*=/g;
+    let m: RegExpExecArray | null;
+    while ((m = NONINT_RE.exec(file.content)) !== null) {
+      const attrs = m[2] ?? "";
+      const isButtonRole = /role\s*=\s*["']button["']/.test(attrs) || /tabindex\s*=/.test(attrs);
+      if (isButtonRole) continue;
+      findings.push({
+        category: "ux-friction",
+        file: file.rel,
+        line: findLineAt(file.content, m.index),
+        description: `A <${m[1]}> element carries a @click handler but no role="button" or tabindex.`,
+        rationale: "Click-only handlers on non-interactive elements are unreachable by keyboard and screen readers don't announce them as actionable.",
+        recommendation: `Add role="button" and tabindex="0" (plus Enter/Space handling) or use a real <button> in \`${file.rel}\`.`,
+        severity: "medium",
+      });
+    }
+  }
+
+  // 5. v-html usage: unsanitized HTML injection risk and hard to theme/style consistently.
+  const V_HTML_RE = /\bv-html\s*=/g;
+  for (const file of scanned) {
+    let m: RegExpExecArray | null;
+    while ((m = V_HTML_RE.exec(file.content)) !== null) {
+      findings.push({
+        category: "ui-bug",
+        file: file.rel,
+        line: findLineAt(file.content, m.index),
+        description: "Uses `v-html`, which injects raw HTML.",
+        rationale: "v-html can render unsanitized HTML (XSS risk) and makes styling/consistency harder to control.",
+        recommendation: "Prefer Vue interpolation or a dedicated render approach; if v-html is required, ensure the source is trusted and sanitized.",
+        severity: "high",
+      });
+    }
+  }
+
+  // 6. Form inputs without an associated label (no <label> nearby or aria-label).
+  for (const file of scanned) {
+    if (!/\.vue$/.test(file.rel)) continue;
+    const INPUT_RE = /<input\b([^>]*)\/?>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = INPUT_RE.exec(file.content)) !== null) {
+      const attrs = m[1];
+      if (/type\s*=\s*["'](?:hidden|checkbox|radio)["']/i.test(attrs)) continue;
+      const hasName = /aria-label\s*=|aria-labelledby\s*=|id\s*=|placeholder\s*=|v-model\s*/.test(attrs);
+      if (hasName) continue;
+      const before = file.content.slice(Math.max(0, m.index - 80), m.index);
+      if (/<label\b/.test(before)) continue;
+      findings.push({
+        category: "ux-friction",
+        file: file.rel,
+        line: findLineAt(file.content, m.index),
+        description: "An <input> has no explicit label, aria-label, or labelled-by association.",
+        rationale: "Inputs without accessible labels are hard to fill out for screen-reader users and can be ambiguous for everyone.",
+        recommendation: "Wrap or associate the input with a <label>, or add aria-label/aria-labelledby.",
+        severity: "medium",
+      });
+    }
+  }
+
+  // 7. Very large component files — a maintainability and consistency concern.
+  for (const file of scanned) {
+    if (!/\.vue$/.test(file.rel)) continue;
+    if (file.lineCount > 600) {
+      findings.push({
+        category: "design-recommendation",
+        file: file.rel,
+        line: 1,
+        description: `Component file is ${file.lineCount} lines long.`,
+        rationale: "Very large single-file components are hard to maintain and tend to accumulate inconsistent, copy-pasted styling.",
+        recommendation: "Break the component into smaller focused components and extract repeated markup/styling into shared primitives.",
+        severity: "low",
+      });
+    }
+  }
+
+  // Keep the report focused: cap the number of findings per category.
+  const MAX_FINDINGS_PER_CATEGORY = 8;
+  const capped: DesignFinding[] = [];
+  const counts: Record<DesignFindingCategory, number> = {
+    "ui-bug": 0,
+    "ux-friction": 0,
+    "design-recommendation": 0,
+  };
+  for (const finding of findings) {
+    if (counts[finding.category] >= MAX_FINDINGS_PER_CATEGORY) continue;
+    counts[finding.category]++;
+    capped.push(finding);
+  }
+
+  return { findings: capped, scannedFiles: scanned.length, insights };
+}
+
+/**
+ * Generate a markdown UI/UX design report and save it with a timestamp.
+ * Fallback content guarantees the report reads correctly even when the scan
+ * found nothing to flag.
+ */
+export async function generateDesignReport(
+  config: RepoOSConfig,
+  scan: DesignScanResult,
+): Promise<{ reportPath: string; fileName: string }> {
+  const reportDir = join(config.root, "docs", "agents", "Design");
+  mkdirSync(reportDir, { recursive: true });
+
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  const fileName = `Design_report_${ts}.md`;
+  const reportPath = join(reportDir, fileName);
+
+  let report = `# UI/UX Design Review Report\n\n`;
+  report += `**Generated**: ${now.toISOString()}\n\n`;
+  report += `## Executive Summary\n\n`;
+  report += `- **Files Scanned**: ${scan.scannedFiles}\n`;
+  report += `- **Findings Identified**: ${scan.findings.length}\n`;
+  const byCat = { "ui-bug": 0, "ux-friction": 0, "design-recommendation": 0 };
+  for (const f of scan.findings) byCat[f.category]++;
+  report += `- **UI bugs**: ${byCat["ui-bug"]}\n`;
+  report += `- **UX frictions**: ${byCat["ux-friction"]}\n`;
+  report += `- **Design recommendations**: ${byCat["design-recommendation"]}\n\n`;
+
+  if (scan.insights.length > 0) {
+    report += `## Scan Overview\n\n`;
+    for (const insight of scan.insights) report += `- ${insight}\n`;
+    report += `\n`;
+  }
+
+  if (scan.findings.length > 0) {
+    const labels: Record<DesignFindingCategory, { title: string; heading: string }> = {
+      "ui-bug": { title: "UI Bugs", heading: "UI Bugs" },
+      "ux-friction": { title: "UX Friction", heading: "UX Friction" },
+      "design-recommendation": { title: "Design Recommendations", heading: "Proposed Updates, Fixes, and New Designs" },
+    };
+    const order: DesignFindingCategory[] = ["ui-bug", "ux-friction", "design-recommendation"];
+    for (const cat of order) {
+      const items = scan.findings.filter((f) => f.category === cat);
+      if (items.length === 0) continue;
+      report += `## ${labels[cat].heading}\n\n`;
+      for (const sev of ["high", "medium", "low"] as const) {
+        const filtered = items.filter((i) => i.severity === sev);
+        if (filtered.length === 0) continue;
+        report += `### ${sev.charAt(0).toUpperCase() + sev.slice(1)} Severity\n\n`;
+        for (const f of filtered) {
+          report += `**${f.description}**\n`;
+          report += `- File: \`${f.file}\`${f.line ? `:${f.line}` : ""}\n`;
+          report += `- **Rationale**: ${f.rationale}\n`;
+          report += `- **Suggested fix**: ${f.recommendation}\n\n`;
+        }
+      }
+    }
+  } else {
+    report += `## UI/UX Assessment\n\n`;
+    report += `No significant UI/UX issues detected in the current web UI.\n\n`;
+  }
+
+  report += `## Next Steps\n\n`;
+  report += `- Review the findings and confirm each is worth addressing.\n`;
+  report += `- Create follow-up tasks for the agreed-upon fixes/redesigns (this agent reports only; it does not edit UI source).\n`;
+  report += `- Track progress through subsequent reports under \`docs/agents/Design/\`.\n`;
+
+  await writeFile(reportPath, report, "utf8");
+  return { reportPath, fileName };
+}
+
+/**
+ * Run the Design Agent end to end: scan the web UI, generate a markdown
+ * report saved to docs/agents/Design/, and record lastRunAt. Like the
+ * Architect agent it only reports — it never edits UI source or creates tasks.
+ */
+export async function runDesignAgent(config: RepoOSConfig): Promise<DesignRunResult> {
+  const scan = await scanForDesignIssues(config);
+  const report = await generateDesignReport(config, scan);
+
+  const agents = { ...(config.builtInAgents ?? {}) };
+  agents["design"] = { ...(agents["design"] ?? {}), lastRunAt: new Date().toISOString() };
+  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
+  config.builtInAgents = agents;
+
+  return {
+    reportPath: report.reportPath,
+    fileName: report.fileName,
+    findingsFound: scan.findings.length,
+    scannedFiles: scan.scannedFiles,
+    created: 0,
+    failed: 0,
+    errors: [],
+  };
+}
+
 /** Dispatch to the appropriate built-in agent by name. */
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
-): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | null> {
+  logger?: Logger,
+): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult | null> {
   if (name === "tech-debt") {
-    return runTechDebtAgent(config);
+    return runTechDebtAgent(config, {}, logger);
   }
   if (name === "performance") {
     return runPerformanceAgent(config);
   }
   if (name === "architect") {
     return runArchitectAgent(config);
+  }
+  if (name === "design") {
+    return runDesignAgent(config);
   }
   return null;
 }

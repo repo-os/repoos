@@ -2,13 +2,16 @@
 id: "0201"
 title: "Let's add a new agent to \"build your team\"  called the \"D…"
 type: feature
-status: ready
+status: review
 needs_merge: true
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/let-s-add-a-new-agent-to-build-your-team
+cli_override: opencode
+model_override: default
+pm_model_override: default
 created_at: "2026-08-14T15:46:05Z"
 updated_at: "2026-08-16T13:38:24Z"
 ---
@@ -45,4 +48,21 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 - 2026-08-15T01:39:25Z · body
 - 2026-08-15T01:39:53Z · status draft→inbox
 - 2026-08-15T02:44:11Z · status inbox→ready
+- 2026-08-15T02:44:18Z · status ready→active, branch
+- 2026-08-15T02:51:18Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-15T03:13:18Z · status ready→active
+- 2026-08-15T06:12:05Z · model_override
+- 2026-08-15T06:12:18Z · pm_model_override
+- 2026-08-15T16:45:41Z · status active→review
 - 2026-08-15T16:45:42Z · needs_merge
+- 2026-08-15T18:48:20Z · cli_override
+- 2026-08-15T18:48:23Z · model_override
+- 2026-08-15T18:48:32Z · status review→active
+- 2026-08-15T18:49:03Z · model_override
+- 2026-08-15T19:11:07Z · status active→review
+- 2026-08-16T09:45:26Z · cli_override
+- 2026-08-16T09:46:24Z · status review→active
+- 2026-08-16T11:48:30Z · status active→review
+- 2026-08-16T12:18:45Z · status review→active
+- 2026-08-16T12:48:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-16T13:38:23Z · status active→review

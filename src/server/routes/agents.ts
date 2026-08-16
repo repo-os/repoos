@@ -16,3 +16,11 @@ export const detectInstalledAgents: RouteHandler = async (_ctx, _req, res) => {
   }
   return json(res, 200, { agents });
 };
+
+export const getAgentLogs: RouteHandler = (ctx, _req, res, params) => {
+  const { logger } = ctx;
+  const id = params.param1;
+  const limit = 1000;
+  const logs = logger.getAgentLogs(id, limit);
+  return json(res, 200, { ok: true, logs });
+};

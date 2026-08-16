@@ -2,14 +2,14 @@
 id: "0203"
 title: "bug: watchdog false-positives on live agents and dumps uncommitted work back to ready"
 type: bug
-status: inbox
+status: draft
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T17:06:20Z"
-updated_at: "2026-08-14T17:06:20Z"
+updated_at: "2026-08-15T16:16:06Z"
 ---
 ## Problem
 
@@ -33,12 +33,27 @@ The watchdog (#0180/#0156) misclassifies and mishandles active tasks in two comp
 
 ## Acceptance criteria
 
-- [ ] Watchdog does not surface a task whose agent is alive and producing output.
-- [ ] Uncommitted in-flight work in a surfaced task lands in `review`, never `ready`.
-- [ ] A dead/stalled agent escalates to `needs_input` with a reason when it cannot proceed autonomously.
-- [ ] Activity log clearly distinguishes watchdog actions from agent behavior.
-- [ ] `repoos check` green.
+- [x] Watchdog does not surface a task whose agent is alive and producing output.
+- [x] Uncommitted in-flight work in a surfaced task lands in `review`, never `ready` (autoTransitionTarget already did this pre-fix; unchanged).
+- [ ] A dead/stalled agent escalates to `needs_input` with a reason when it cannot proceed autonomously (unchanged by this fix — out of scope, the existing #0156 fallback covers it).
+- [ ] Activity log clearly distinguishes watchdog actions from agent behavior (unchanged — out of scope for this fix).
+- [x] `repoos check` green.
+
+## Fix landed (2026-08-15, commit 6873c1bf)
+
+Root cause confirmed: `runner.isRunning(taskId)` is a plain in-memory Map — empty after every server restart, with no record of which PID belonged to which task (#0214). Reproduced live the same day: #0212 and #0215 both bounced active→ready at the identical second, right at the default 5-minute staleness threshold, immediately after this machine's control-plane server had been reload-churning heavily.
+
+Added `hasRecentWorktreeActivity()` in `src/server/task-watchdog.ts`: checks the task's actual worktree for a file modified within the staleness window before surfacing. File mtimes live on disk, not server memory, so a restart can't erase them — the durable signal the registry can't provide. Bounded scan (2000 files), skips `.git`/`node_modules`. Wired into `isStuck()` as a bypass checked only once the Activity-log staleness check would otherwise fire, so the common case pays nothing extra.
+
+24 tests in `task-watchdog.test.ts`, including two reproducing the exact false-positive (empty registry + fresh worktree file → not surfaced) and a regression guard (empty registry + genuinely stale worktree → still surfaced).
+
+**Landed as a direct hotfix on main** (user-authorized, urgent — this bug was actively blocking "start work" across the board), not through the normal task-branch pipeline. No worktree/branch exists for this task, so this board entry stays `ready` rather than `done` — `/done` requires both `review` status and an existing branch, neither of which apply here. Worth noting as a real gap: there is currently no API path to correctly close out a task that was fixed by direct hotfix commit outside the branch flow.
+
+The remaining two unchecked acceptance criteria (needs_input escalation reason, Activity log watchdog-vs-agent distinction) are pre-existing scope this fix did not touch — worth a follow-up if still wanted, but they were not part of the false-positive bug this task was actually filed against.
 
 ## Activity
 
 - 2026-08-14T17:06:20Z · created · unknown
+- 2026-08-15T05:59:33Z · status inbox→ready
+- 2026-08-15T11:59:08Z · body
+- 2026-08-15T16:16:06Z · status ready→draft

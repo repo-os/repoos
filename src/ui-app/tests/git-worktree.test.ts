@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureWorktree, worktreeStatus, resetWorktree } from "../../core/git.js";
+import { ensureWorktree, worktreeStatus, resetWorktree, dirtyFiles, commitDirtyFiles, GitDirtyCheckError } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
 function git(root: string, args: string[]): string {
@@ -274,6 +274,115 @@ describe("resetWorktree", () => {
       const branch = git(root, ["branch", "--show-current"]);
 
       expect(resetWorktree(root, branch)).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("dirtyFiles / commitDirtyFiles (0204)", () => {
+  it("reports a clean tree as empty", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(await dirtyFiles(root)).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("lists tracked modifications and untracked files in repo-relative form", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "tracked.txt"), "v2\n");
+      git(root, ["add", "tracked.txt"]);
+      git(root, ["commit", "-m", "add tracked"]);
+      writeFileSync(join(root, "tracked.txt"), "dirty\n");
+      writeFileSync(join(root, "untracked.txt"), "new\n");
+
+      const files = await dirtyFiles(root);
+      expect(files).toContain("tracked.txt");
+      expect(files).toContain("untracked.txt");
+    } finally {
+      clean();
+    }
+  });
+
+  it("reports a renamed file under its new path", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "old.txt"), "v1\n");
+      git(root, ["add", "old.txt"]);
+      git(root, ["commit", "-m", "add old"]);
+      git(root, ["mv", "old.txt", "new.txt"]);
+
+      const files = await dirtyFiles(root);
+      expect(files).toContain("new.txt");
+    } finally {
+      clean();
+    }
+  });
+
+  it("commits every dirty file in a single checkpoint commit", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      git(root, ["config", "user.email", "t@example.com"]);
+      git(root, ["config", "user.name", "Test"]);
+      writeFileSync(join(root, "tracked.txt"), "v2\n");
+      git(root, ["add", "tracked.txt"]);
+      git(root, ["commit", "-m", "add tracked"]);
+      writeFileSync(join(root, "tracked.txt"), "dirty\n");
+      writeFileSync(join(root, "untracked.txt"), "new\n");
+
+      const committed = await commitDirtyFiles(root, "chore: checkpoint before close-out (#0204)");
+      expect(committed).toContain("tracked.txt");
+      expect(committed).toContain("untracked.txt");
+      expect(await dirtyFiles(root)).toEqual([]);
+      expect(git(root, ["log", "-1", "--format=%s"])).toBe(
+        "chore: checkpoint before close-out (#0204)",
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("is a no-op when the tree is already clean", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(await commitDirtyFiles(root, "checkpoint")).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("dirtyFiles fails closed (#0211)", () => {
+  it("throws GitDirtyCheckError on a directory that is not a git repo, not []", async () => {
+    const notARepo = mkdtempSync(join(tmpdir(), "repoos-not-repo-"));
+    try {
+      await expect(dirtyFiles(notARepo)).rejects.toBeInstanceOf(GitDirtyCheckError);
+    } finally {
+      rmSync(notARepo, { recursive: true, force: true });
+    }
+  });
+
+  it("throws GitDirtyCheckError on a corrupted git repo, not []", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // Corrupt the git dir so `git status` fails with a non-zero exit.
+      writeFileSync(join(root, ".git", "HEAD"), "garbage\n");
+      await expect(dirtyFiles(root)).rejects.toBeInstanceOf(GitDirtyCheckError);
+    } finally {
+      clean();
+    }
+  });
+
+  it("returns [] only for a genuinely clean tracked tree", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "a.txt"), "v1\n");
+      git(root, ["add", "a.txt"]);
+      git(root, ["commit", "-m", "add a"]);
+      expect(await dirtyFiles(root)).toEqual([]);
     } finally {
       clean();
     }

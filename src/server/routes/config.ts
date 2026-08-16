@@ -14,11 +14,32 @@ import {
 } from "../../core/config.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 
+/**
+ * Config as the browser may see it: `whisper.apiKey` is stripped entirely and
+ * the whisper state is exposed through the flat schema keys
+ * (`whisper.provider`) plus a `whisperEnabled` boolean. The secret never
+ * crosses the HTTP boundary.
+ */
+function safeConfigForBrowser(config: Record<string, unknown>): Record<string, unknown> {
+  const whisper = (config.whisper ?? { provider: "none", apiKey: "" }) as {
+    provider?: string;
+    apiKey?: string;
+  };
+  const whisperEnabled = whisper.provider !== "none" && !!whisper.apiKey;
+  const { whisper: _ignored, ...rest } = config;
+  return {
+    ...rest,
+    "whisper.provider": whisper.provider ?? "none",
+    whisperEnabled,
+  };
+}
+
 export const readConfig: RouteHandler = (ctx, _req, res) => {
   const { repoos } = ctx;
   const agents = agentsForConfig(repoos.config);
+  const safeConfig = safeConfigForBrowser({ ...repoos.config, agents });
   return json(res, 200, {
-    config: { ...repoos.config, agents },
+    config: safeConfig,
     schema: getConfigSchema(),
     agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
   });
@@ -105,6 +126,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = body[field.key];
 
     if (field.type === "string") {
+      if (field.key === "whisper.apiKey") {
+        // The form always carries this field (default ""). An empty value means
+        // "leave the existing key untouched" — never wipe a TOML/env key, and
+        // never reject an unrelated settings save over it.
+        const trimmed = typeof val === "string" ? val.trim() : "";
+        if (trimmed) patch[field.key] = trimmed;
+        continue;
+      }
       if (typeof val !== "string" || (!val.toString().trim() && field.key !== "ntfyTopic")) {
         return json(res, 400, { error: `${field.label} must be a non-empty string` });
       }
@@ -141,7 +170,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
   delete patch.tunnelEnabled;
 
-  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsChanged) {
+  // An empty `whisper.apiKey` alone means "leave the key as-is" — a no-op
+  // (e.g. the user cleared the field in Settings), not "nothing to update".
+  const bodyKeys = Object.keys(body);
+  const onlyEmptyWhisperKey =
+    bodyKeys.length === 1 &&
+    bodyKeys[0] === "whisper.apiKey" &&
+    (typeof body["whisper.apiKey"] !== "string" || !body["whisper.apiKey"].trim());
+
+  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsChanged && !onlyEmptyWhisperKey) {
     return json(res, 400, { error: "No valid fields to update" });
   }
 
@@ -160,5 +197,5 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     index.refreshAll();
   }
 
-  return json(res, 200, { ok: true, config: repoos.config });
+  return json(res, 200, { ok: true, config: safeConfigForBrowser({ ...repoos.config }) });
 };

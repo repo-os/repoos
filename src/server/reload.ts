@@ -14,12 +14,11 @@
  *   low-frequency hash poll as a platform-proof fallback). A hash CHANGE
  *   schedules a reload — the same hash mechanism the CLI staleness guard uses,
  *   never mtimes or timers.
- * - A reload is DEFERRED while an agent turn is running: persisted transcript
- *   history does not transfer ownership of the live child process or its
- *   streaming pipes. Restarting mid-turn would orphan the child, lose new
- *   output, and leave the runner registry inaccurate. When the runner
- *   drains (agent.exited) the deferred reload fires, and a low-frequency retry
- *   poll backs that up.
+ * - A reload no longer defers for agent turns (0214): agent child stdout/stderr
+ *   is durable (per-task log file in .repoos/agent-logs/), so the replacement
+ *   server re-attaches to still-running children via the durable registry
+ *   (.repoos/agents.json). A restart proceeds immediately regardless of how
+ *   many agent turns are in flight.
  * - A close-out (0143) is a harder deferral: the pipeline itself runs builds
  *   and checks, so reloading under it would kill the server mid-close-out.
  *   While the close-out lock is held, a new build is PARKED instead — the UI
@@ -46,6 +45,7 @@ import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBuildStamp } from "../core/build.js";
 
 /** The answer POST /api/server/restart and the reload triggers report. */
 export type ReloadState =
@@ -125,15 +125,13 @@ export function readBuildHash(root: string): string | null {
   }
 }
 
-/** Read the build timestamp (generatedAt) from dist/.build-info.json, or null. */
+/**
+ * Read the build timestamp from dist/.build-stamp.json, or null. Kept separate
+ * from the hash marker so `.build-info.json` stays byte-identical across
+ * rebuilds of identical source — see readBuildStamp in core/build.ts.
+ */
 export function readBuildAt(root: string): string | null {
-  const file = join(root, "dist", ".build-info.json");
-  try {
-    const info = JSON.parse(readFileSync(file, "utf8")) as { generatedAt?: unknown };
-    return typeof info.generatedAt === "string" && info.generatedAt ? info.generatedAt : null;
-  } catch {
-    return null;
-  }
+  return readBuildStamp(root);
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -280,11 +278,9 @@ export class ReloadManager {
       }
       return { state: "deferred", running, reason };
     }
-    if (running > 0) {
-      this.pending = true;
-      this.armRetry();
-      return { state: "deferred", running, reason };
-    }
+    // Agent-turn deferral removed (0214): in-flight agent children are now
+    // durable — stdout/stderr writes to a per-task log file and the new server
+    // re-attaches via adoptRunningAgents(). The restart proceeds immediately.
     const current = readBuildHash(this.options.root);
     if (this.loadedHash === null || current === null || current === this.loadedHash) {
       return { state: "not-stale", reason };
@@ -393,7 +389,11 @@ export class ReloadManager {
         [entry, "serve", "--port", String(this.options.port), "--host", this.options.host],
         {
           cwd: this.options.root,
-          stdio: ["ignore", "pipe", "pipe"],
+          // The replacement must inherit the durable streams of the process
+          // supervisor (for example nohup's server.out). Pipes belong to this
+          // old process; once it hands over and exits, a later console write
+          // in the replacement can hit EPIPE and leave the control port down.
+          stdio: ["ignore", "inherit", "inherit"],
           env: { ...process.env, REPOOS_RELOAD: "1", REPOOS_RELOAD_SECRET: secret },
         },
       );
@@ -403,16 +403,6 @@ export class ReloadManager {
       return;
     }
     this.child = child;
-    const bootLines: string[] = [];
-    child.stderr?.on("data", (c: Buffer) => {
-      for (const line of c.toString("utf8").split("\n")) {
-        const l = line.trim();
-        if (l) {
-          bootLines.push(l);
-          if (bootLines.length > 6) bootLines.shift();
-        }
-      }
-    });
     child.on("error", () => {
       this.childExited = true;
     });
@@ -445,11 +435,6 @@ export class ReloadManager {
       );
     } else if (confirmed && !this.childExited) {
       this.stopped = true;
-      const detach = (stream: unknown): void => {
-        (stream as { unref?: () => void } | null)?.unref?.();
-      };
-      detach(child.stdout);
-      detach(child.stderr);
       child.unref?.();
       this.log(
         `reload: replacement is up on ${this.options.host}:${this.options.port} — handing over`,
@@ -459,9 +444,8 @@ export class ReloadManager {
       this.reloading = false;
       await this.killChild();
       const rebound = await this.tryRebind();
-      const diag = bootLines.length ? ` · ${bootLines.join(" · ")}` : "";
       this.log(
-        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}${diag}`,
+        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
       );
       this.options.onReloadFailed?.(rebound ? "replacement did not become ready" : "replacement failed and re-bind failed");
     }

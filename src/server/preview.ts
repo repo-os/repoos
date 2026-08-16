@@ -225,6 +225,14 @@ export class PreviewManager {
     this.file = join(config.root, config.cacheDir, "previews.json");
   }
 
+  /**
+   * PIDs of preview servers this manager started. Used by the serve-process
+   * census (#0216) so a legitimate preview is never counted as a stray.
+   */
+  knownPids(): number[] {
+    return [...this.registry.values()].map((i) => i.pid).filter((p) => p > 0);
+  }
+
   get(taskId: string): PreviewInfo | null {
     return this.registry.get(taskId) ?? null;
   }
@@ -268,6 +276,9 @@ export class PreviewManager {
   private async doStart(task: Task): Promise<PreviewResult> {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
+    }
+    if (task.hotfix) {
+      return { ok: false, error: `Hotfix tasks do not support previews` };
     }
     const root = worktreePathForBranch(this.config.root, task.branch);
     if (!root) {
