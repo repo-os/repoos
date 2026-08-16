@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/unify-ai-usage-telemetry-time-tokens-cos
 model_override: default
 created_at: "2026-08-16T12:09:54Z"
-updated_at: "2026-08-16T13:43:20Z"
+updated_at: "2026-08-16T13:59:20Z"
 review_rounds: 1
 ---
 ## Problem
@@ -111,3 +111,4 @@ features.
 - 2026-08-16T12:48:21Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-16T13:19:22Z · model_override
 - 2026-08-16T13:43:20Z · status review→active
+- 2026-08-16T13:59:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
