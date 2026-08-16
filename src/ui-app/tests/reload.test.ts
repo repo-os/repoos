@@ -508,7 +508,7 @@ describe("Agent adoption across restarts (0214)", () => {
     // verifies that adoptRunningAgents() picks it up when the PID is alive.
     const { AgentRunner } = await import("../../server/agents");
     const { resolve } = await import("node:path");
-    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { appendFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
 
@@ -548,7 +548,11 @@ branch: feat/adopt-test
       // Separate durable stream logs retain the original output classification
       // while the server process is absent.
       mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
-      writeFileSync(join(fullCacheDir, "agent-logs", "0001.out.log"), "hello from stdout gap\n");
+      // Multi-byte text makes the initial file's byte size differ from its
+      // decoded string length. The live tail below must still begin at the
+      // correct byte offset after adoption.
+      const outLog = join(fullCacheDir, "agent-logs", "0001.out.log");
+      writeFileSync(outLog, "hello 🙂 from stdout gap\n");
       writeFileSync(join(fullCacheDir, "agent-logs", "0001.err.log"), "hello from stderr gap\n");
 
       // Create a fresh runner — it reads the registry on adoptRunningAgents()
@@ -582,8 +586,14 @@ branch: feat/adopt-test
       // Verify the gap output was caught up
       const session = runner.output("0001");
       expect(session).not.toBeNull();
-      expect(session!.lines.some((l: any) => l.d === "hello from stdout gap" && l.s === "out")).toBe(true);
+      expect(session!.lines.some((l: any) => l.d === "hello 🙂 from stdout gap" && l.s === "out")).toBe(true);
       expect(session!.lines.some((l: any) => l.d === "hello from stderr gap" && l.s === "err")).toBe(true);
+
+      appendFileSync(outLog, "live output ✓ after adoption\n");
+      await waitFor(
+        () => runner.output("0001")?.lines.some((l: any) => l.d === "live output ✓ after adoption" && l.s === "out") === true,
+        "Unicode output tailed after adoption",
+      );
 
       // The registry should be cleaned of the stale entry
       const fs = await import("node:fs");

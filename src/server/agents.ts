@@ -22,6 +22,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { agentsForConfig } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
@@ -1764,17 +1765,27 @@ export class AgentRunner {
     stream: "out" | "err",
     startAtEnd = false,
   ): { timer: ReturnType<typeof setInterval>; drain: () => void } {
+    // `stat.size` is a byte offset. Keep it in bytes and decode only the new
+    // buffer range; slicing a decoded string with that offset loses output as
+    // soon as an agent writes emoji, CJK, or any other multi-byte UTF-8.
     let lastSize = 0;
     let pending = "";
+    let decoder = new StringDecoder("utf8");
     if (startAtEnd) {
       try { lastSize = statSync(logFile).size; } catch { /* missing log */ }
     }
     const drain = (): void => {
       try {
         const currentSize = statSync(logFile).size;
+        // A new turn truncates the same durable log path. Reset both the byte
+        // cursor and decoder rather than treating the truncated file as idle.
+        if (currentSize < lastSize) {
+          lastSize = 0;
+          decoder = new StringDecoder("utf8");
+        }
         if (currentSize > lastSize) {
-          const data = readFileSync(logFile, "utf8");
-          const delta = data.slice(lastSize);
+          const data = readFileSync(logFile);
+          const delta = decoder.write(data.subarray(lastSize));
           lastSize = currentSize;
           const lines = (pending + delta).replace(/\r/g, "\n").split("\n");
           pending = lines.pop() ?? "";
