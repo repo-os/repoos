@@ -132,15 +132,26 @@ export async function handoffTask(
       if (!task.branch || request.branch !== task.branch) {
         return { ok: false, step: "validate", detail: "handoff branch does not match the task branch" };
       }
+      const isHotfix = task.hotfix === true;
       const registered = worktreePathForBranch(config.root, task.branch);
-      if (!registered || !samePath(registered, request.workdir) || !existsSync(registered)) {
-        return { ok: false, step: "validate", detail: "handoff worktree does not match the registered task worktree" };
+      const registeredIsRoot = registered ? samePath(registered, config.root) : false;
+      if (isHotfix) {
+        if (!registeredIsRoot || !samePath(config.root, request.workdir)) {
+          return { ok: false, step: "validate", detail: "hotfix handoff must run in the main checkout" };
+        }
+      } else {
+        if (!registered || !samePath(registered, request.workdir) || !existsSync(registered)) {
+          return { ok: false, step: "validate", detail: "handoff worktree does not match the registered task worktree" };
+        }
       }
-      const branch = await runGit(registered, ["branch", "--show-current"], 10_000);
+      // After validation, `registered` is non-null for both paths — hotfix
+      // requires registeredIsRoot, non-hotfix requires `registered` truthy.
+      const workdir = isHotfix ? config.root : registered!;
+      const branch = await runGit(workdir, ["branch", "--show-current"], 10_000);
       if (branch.status !== 0 || branch.stdout.trim() !== task.branch) {
         return { ok: false, step: "validate", detail: "registered worktree is not on the expected branch" };
       }
-      const worktreeTaskPath = join(registered, task.path);
+      const worktreeTaskPath = join(workdir, task.path);
       if (!existsSync(worktreeTaskPath)) {
         return { ok: false, step: "validate", detail: "task file is missing from the registered worktree" };
       }
@@ -149,7 +160,7 @@ export async function handoffTask(
         worktreeTask = parseTask({
           content: readFileSync(worktreeTaskPath, "utf8"),
           absPath: worktreeTaskPath,
-          root: registered,
+          root: workdir,
           defaultStatus: config.defaultStatus,
           defaultAssignee: config.defaultAssignee,
         });
@@ -165,7 +176,7 @@ export async function handoffTask(
       }
 
       onProgress?.("check");
-      const check = await runCheck(registered);
+      const check = await runCheck(workdir);
       if (check.status !== 0) {
         return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
       }
@@ -180,7 +191,7 @@ export async function handoffTask(
       if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
         try {
           patchTaskFile(
-            { ...config, root: registered },
+            { ...config, root: workdir },
             worktreeTaskPath,
             { status: "review", branch: task.branch },
           );

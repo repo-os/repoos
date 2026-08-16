@@ -831,6 +831,21 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  async function activateHotfix(
+    t: Task,
+    hotfixTarget: "branch" | "main" = "branch",
+  ): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(
+      `/api/tasks/${t.id}/hotfix`,
+      JSON_OPTS("POST", { hotfixTarget }),
+    );
+    if (!r.ok) {
+      const message = r.reason ?? "could not activate hotfix";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
   /**
    * Review→done close-out. On failure the error is kept on the task (the
    * caller renders it inline below the button) and no global toast is shown;
@@ -1271,6 +1286,7 @@ export const useRepoStore = defineStore("repo", () => {
     isRunning,
     startWork,
     pauseWork,
+    activateHotfix,
     completeTask,
     loadOutput,
     clearOutput,

@@ -45,6 +45,10 @@ export interface TaskPatch {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null to clear. */
   pmModelOverride?: string | null;
+  /** Set hotfix mode (true to enable, false to disable). */
+  hotfix?: boolean;
+  /** Hotfix merge target. */
+  hotfixTarget?: "branch" | "main";
 }
 
 export interface PatchTaskOptions {
@@ -159,6 +163,14 @@ export function patchTaskFile(
   if (patch.pmModelOverride !== undefined) {
     if (patch.pmModelOverride !== current.pmModelOverride) changes.push("pm_model_override");
     current.pmModelOverride = patch.pmModelOverride;
+  }
+  if (patch.hotfix !== undefined) {
+    if (patch.hotfix !== current.hotfix) changes.push("hotfix");
+    current.hotfix = patch.hotfix;
+  }
+  if (patch.hotfixTarget !== undefined) {
+    if (patch.hotfixTarget !== current.hotfixTarget) changes.push("hotfix_target");
+    current.hotfixTarget = patch.hotfixTarget;
   }
 
   if (changes.length) {
