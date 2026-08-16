@@ -36,12 +36,13 @@
  * - Bounded: a task is surfaced at most once (persisted Activity marker, so
  *   the bound survives reloads; the in-memory set is only a fast path).
  */
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
-import { commitTaskFile, worktreeStatus } from "../core/git.js";
+import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
@@ -98,6 +99,69 @@ export function isStuckActiveTask(body: string, stalenessMs: number, now: number
   const transitionAt = lastStatusTransitionTime(body, "active");
   if (transitionAt === null) return false;
   return now - lastActivityTime(body, transitionAt) >= stalenessMs;
+}
+
+/** Directories never worth scanning for agent activity: irrelevant or huge. */
+const ACTIVITY_SCAN_SKIP = new Set([".git", "node_modules"]);
+/** Bound on files inspected per scan — a stuck-check must never become slow. */
+const ACTIVITY_SCAN_FILE_LIMIT = 2000;
+
+/**
+ * True when any file in `dir` was modified within `withinMs` of `now`.
+ * Depth-first, bounded by `ACTIVITY_SCAN_FILE_LIMIT`, returns at the first
+ * qualifying file found rather than walking the whole tree.
+ */
+function hasRecentMtime(dir: string, withinMs: number, now: number, budget: { left: number }): boolean {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  for (const e of entries) {
+    if (budget.left <= 0) return false;
+    if (ACTIVITY_SCAN_SKIP.has(e.name)) continue;
+    const full = join(dir, e.name);
+    if (e.isDirectory()) {
+      if (hasRecentMtime(full, withinMs, now, budget)) return true;
+      continue;
+    }
+    if (!e.isFile()) continue;
+    budget.left--;
+    try {
+      if (now - statSync(full).mtimeMs <= withinMs) return true;
+    } catch {
+      /* file vanished mid-scan — not evidence either way */
+    }
+  }
+  return false;
+}
+
+/**
+ * True when a task's worktree has a file modified within `stalenessMs` of
+ * `now` — evidence of a genuinely live agent independent of the in-memory
+ * runner registry.
+ *
+ * The registry (`AgentRunner.isRunning`) is a plain in-memory Map: it goes
+ * empty on every server restart, with no record of which PID belonged to
+ * which task (#0214). During this repo's own reload-churn-heavy sessions that
+ * makes `isRunning()` report false for a still-working agent constantly, not
+ * as a rare edge case — the exact false-positive #0203 was filed against
+ * ("the agent was never dead: it kept running... and kept writing source
+ * files"). The registry cannot be trusted alone; the worktree's own file
+ * mtimes are a signal that survives a restart because they live on disk, not
+ * in server memory.
+ */
+export function hasRecentWorktreeActivity(
+  root: string,
+  branch: string | undefined,
+  stalenessMs: number,
+  now: number,
+): boolean {
+  if (!branch) return false;
+  const path = worktreePathForBranch(root, branch);
+  if (!path) return false;
+  return hasRecentMtime(path, stalenessMs, now, { left: ACTIVITY_SCAN_FILE_LIMIT });
 }
 
 /**
@@ -244,7 +308,18 @@ export class TaskWatchdog {
     if (this.runner.isPaused(task.id)) return false;
     // Bounded: never surface a task the watchdog already surfaced.
     if (alreadySurfaced(task.body)) return false;
-    return isStuckActiveTask(task.body, this.stalenessThresholdMs, Date.now());
+    const now = Date.now();
+    if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
+    // The Activity log looks stale, but `isRunning()` above only reflects the
+    // in-memory registry, which is empty after every server restart with no
+    // memory of which PID belonged to this task (#0214). Before surfacing,
+    // check the worktree's own file mtimes — durable, on-disk evidence a
+    // registry reset can't erase. Skips the scan entirely once the log
+    // already proves recent activity, so the common case pays nothing extra.
+    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+      return false;
+    }
+    return true;
   }
 
   private async handleStuck(task: Task): Promise<void> {

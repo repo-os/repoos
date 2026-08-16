@@ -25,10 +25,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
     class="dirty-overlay"
     role="dialog"
     aria-modal="true"
+    aria-labelledby="dirty-main-title"
     @click.self="emit('cancel')"
   >
     <div class="dirty-card">
-      <h3 class="dirty-title">main has uncommitted changes</h3>
+      <h3 id="dirty-main-title" class="dirty-title">main has uncommitted changes</h3>
       <p class="dirty-body">
         <b>{{ files.length }} file{{ files.length === 1 ? "" : "s" }}</b>
         on <code class="mono">main</code> would block the merge for task
@@ -38,8 +39,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <div v-for="f in files" :key="f" class="dirty-file mono">{{ f }}</div>
       </div>
       <div class="dirty-actions">
-        <Button variant="outline" size="sm" @click="emit('cancel')">Cancel</Button>
-        <Button variant="accent" size="sm" @click="emit('commit')">
+        <Button type="button" variant="outline" size="sm" @click="emit('cancel')">Cancel</Button>
+        <Button type="button" variant="accent" size="sm" @click="emit('commit')">
           Commit &amp; continue
         </Button>
       </div>

@@ -392,7 +392,11 @@ export class ReloadManager {
         [entry, "serve", "--port", String(this.options.port), "--host", this.options.host],
         {
           cwd: this.options.root,
-          stdio: ["ignore", "pipe", "pipe"],
+          // The replacement must inherit the durable streams of the process
+          // supervisor (for example nohup's server.out). Pipes belong to this
+          // old process; once it hands over and exits, a later console write
+          // in the replacement can hit EPIPE and leave the control port down.
+          stdio: ["ignore", "inherit", "inherit"],
           env: { ...process.env, REPOOS_RELOAD: "1", REPOOS_RELOAD_SECRET: secret },
         },
       );
@@ -402,16 +406,6 @@ export class ReloadManager {
       return;
     }
     this.child = child;
-    const bootLines: string[] = [];
-    child.stderr?.on("data", (c: Buffer) => {
-      for (const line of c.toString("utf8").split("\n")) {
-        const l = line.trim();
-        if (l) {
-          bootLines.push(l);
-          if (bootLines.length > 6) bootLines.shift();
-        }
-      }
-    });
     child.on("error", () => {
       this.childExited = true;
     });
@@ -444,11 +438,6 @@ export class ReloadManager {
       );
     } else if (confirmed && !this.childExited) {
       this.stopped = true;
-      const detach = (stream: unknown): void => {
-        (stream as { unref?: () => void } | null)?.unref?.();
-      };
-      detach(child.stdout);
-      detach(child.stderr);
       child.unref?.();
       this.log(
         `reload: replacement is up on ${this.options.host}:${this.options.port} — handing over`,
@@ -458,9 +447,8 @@ export class ReloadManager {
       this.reloading = false;
       await this.killChild();
       const rebound = await this.tryRebind();
-      const diag = bootLines.length ? ` · ${bootLines.join(" · ")}` : "";
       this.log(
-        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}${diag}`,
+        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
       );
       this.options.onReloadFailed?.(rebound ? "replacement did not become ready" : "replacement failed and re-bind failed");
     }

@@ -6,6 +6,7 @@ import type {
   AgentOutputEntry,
   AgentSessionStats,
   AutoEngineeringState,
+  BoardIndex,
   Counts,
   CtoState,
   Health,
@@ -157,7 +158,7 @@ export type SortOrder = "recent" | "current";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
-  { value: "current", label: "Current order" },
+  { value: "current", label: "Priority level" },
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
@@ -226,6 +227,8 @@ export const useRepoStore = defineStore("repo", () => {
   const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
   /** Diff statistics per task: files changed, additions, deletions. */
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
+  /** Full patch diffs per task. */
+  const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -633,13 +636,26 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function refresh(): Promise<void> {
-    const idx = await api<RepoIndex>("/api/index");
-    // /api/index has no preview state; keep any live previews across rebuilds.
+    const idx = await api<BoardIndex>("/api/board");
+    // /api/board has no preview state; keep any live previews across rebuilds.
     const previews = new Map(tasks.value.map((t) => [t.id, t.preview] as const));
+    // Preserve full bodies already in the store (from SSE task.updated events).
+    // Only fall back to bodyPreview for tasks we haven't seen before.
+    const existingBodies = new Map(tasks.value.map((t) => [t.id, t.body] as const));
     tasks.value = idx.tasks.map((t) => ({
       ...t,
       preview: t.preview ?? previews.get(t.id) ?? null,
-    }));
+      // Use existing full body if we have it; otherwise use the preview from the board response.
+      body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
+      extra: {},
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+      pmAgentOverride: null,
+      pmCliOverride: null,
+      pmModelOverride: null,
+      releasedAt: t.releasedAt ?? null,
+    })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
     // was running. Reports remain lazy-loaded by the drawer, but cards get
     // their live activity state immediately.
@@ -788,10 +804,14 @@ export const useRepoStore = defineStore("repo", () => {
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
-  async function startWork(t: Task, mode: "resume" | "clean" = "resume"): Promise<void> {
+  async function startWork(
+    t: Task,
+    mode: "resume" | "clean" = "resume",
+    instruction?: string,
+  ): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${t.id}/start`,
-      JSON_OPTS("POST", { mode }),
+      JSON_OPTS("POST", { mode, instruction }),
     );
     if (!r.ok) {
       const message = r.reason ?? "could not start work";
@@ -982,6 +1002,29 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Get diff stats for a task, or undefined if not yet fetched. */
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
+
+  /** Load the full patch diff for a task. Best-effort. */
+  async function loadDiff(id: string): Promise<void> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        diff: { patch: string; truncated: boolean };
+        noBranch?: boolean;
+        noWorktree?: boolean;
+      }>(`/api/tasks/${id}/diff`);
+      if (r.ok) {
+        diffs.value = {
+          ...diffs.value,
+          [id]: r.diff,
+        };
+      }
+    } catch {
+      /* endpoint unavailable — diff is nice-to-have */
+    }
+  }
+
+  /** Get the full diff for a task, or undefined if not yet fetched. */
+  const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
@@ -1253,6 +1296,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    loadDiff,
+    diffFor,
     sendMessage,
     reviewAgain,
     sendReviewMessage,
