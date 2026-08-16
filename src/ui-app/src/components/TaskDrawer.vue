@@ -1872,6 +1872,8 @@ function resetFreeformOverrides(): void {
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+            :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :hint="repo.doneErrorFor(ui.active.id)!.hint"
           />
           <div
             v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
