@@ -613,6 +613,16 @@
   .review-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
   .review-toolbar-title{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--txt);font-family:'JetBrains Mono',monospace}
   .review-toolbar-sub{color:var(--txt-faint);font-weight:400;text-transform:none;letter-spacing:0}
+  /* Reviewer reports can be much longer than the available drawer height.
+     Keep the report and live conversation as independent, accessible surfaces
+     so a finished report cannot push the chat and its reply controls away. */
+  .review-pane-tabs{display:flex;gap:4px;flex:none;margin:0 0 10px;padding:3px;border:1px solid var(--border);border-radius:9px;background:var(--md-body-bg);width:max-content}
+  .review-pane-tab{padding:6px 10px;border:0;border-radius:6px;background:transparent;color:var(--txt-dim);font:600 10px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+  .review-pane-tab:hover{color:var(--txt);background:var(--nav-hover-bg)}
+  .review-pane-tab.active{color:var(--txt);background:var(--panel-solid);box-shadow:0 1px 3px rgba(0,0,0,.22)}
+  .review-pane{min-height:0}
+  .review-report-pane{flex:1 1 0;overflow-y:auto;padding-right:2px;overscroll-behavior:contain}
+  .review-chat-pane{display:flex;flex:1 1 0;flex-direction:column;min-height:0}
   .review-log-wrap{position:relative;margin-top:10px}
   .review-log{min-height:140px}
   .verdict-callout{display:flex;align-items:center;gap:9px;padding:9px 12px;margin-bottom:8px;border-radius:10px;border:1px solid;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.05em}

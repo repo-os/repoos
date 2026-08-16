@@ -648,6 +648,8 @@ const verdict = computed<{ label: string; tone: string } | null>(() => {
 const reviewBusy = ref(false);
 /** A follow-up message typed in the Agent Review tab. */
 const reviewDraftMsg = ref("");
+/** Keep the long-lived reviewer transcript and the completed verdict separate. */
+const reviewPane = ref<"chat" | "report">("chat");
 
 /** The rendered reviewer conversation (report streaming + human messages). */
 const reviewEntries = computed<DisplayEntry[]>(() => {
@@ -794,7 +796,9 @@ async function sendToEngineer(): Promise<void> {
 watch(
   () => [ui.active?.id, ui.active?.status],
   () => {
-    if (ui.active?.status === "review") void repo.loadReview(ui.active.id);
+    if (ui.active?.status !== "review") return;
+    reviewPane.value = "report";
+    void repo.loadReview(ui.active.id);
   },
   { immediate: true },
 );
@@ -2396,9 +2400,28 @@ function resetFreeformOverrides(): void {
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <div class="review-toolbar">
-            <span class="review-toolbar-title">
-              Agent review
-            </span>
+            <div v-if="review?.report" class="review-pane-tabs" role="tablist" aria-label="Reviewer content">
+              <button
+                type="button"
+                class="review-pane-tab"
+                :class="{ active: reviewPane === 'report' }"
+                role="tab"
+                :aria-selected="reviewPane === 'report'"
+                @click="reviewPane = 'report'"
+              >
+                Report
+              </button>
+              <button
+                type="button"
+                class="review-pane-tab"
+                :class="{ active: reviewPane === 'chat' }"
+                role="tab"
+                :aria-selected="reviewPane === 'chat'"
+                @click="reviewPane = 'chat'"
+              >
+                Chat
+              </button>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -2419,16 +2442,11 @@ function resetFreeformOverrides(): void {
             >
               <Send v-if="!sendingToEngineer" class="size-3.5" />
               <ActivityIndicator v-else />
-              {{ sendingToEngineer ? "Sending…" : "Send to engineer" }}
+              {{ sendingToEngineer ? "Sending…" : "Send engineer" }}
             </Button>
           </div>
 
-          <div v-if="review?.running" class="review-running" role="status" style="margin-top: 10px">
-            <ActivityIndicator variant="reviewing" label="Reviewing…" />
-            Reviewing… the review agent is inspecting this task.
-          </div>
-
-          <template v-else-if="review?.report">
+          <section v-if="review?.report && reviewPane === 'report'" class="review-pane review-report-pane" role="tabpanel">
             <div v-if="review.report.state === 'failed'" class="review-failed">
               {{ review.report.markdown }}
             </div>
@@ -2451,14 +2469,20 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
-          </template>
-          <p v-else-if="review && !review.enabled" class="review-hint">
-            The review agent is disabled on the Agents page, so no automatic review runs.
-          </p>
-          <p v-else class="review-hint">No agent review for this task yet.</p>
+          </section>
 
-          <div class="review-log-wrap">
-            <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
+          <section v-else class="review-pane review-chat-pane" role="tabpanel">
+            <div v-if="review?.running" class="review-running" role="status">
+              <ActivityIndicator variant="reviewing" label="Reviewing…" />
+              Reviewing… the review agent is inspecting this task.
+            </div>
+            <p v-else-if="review && !review.enabled" class="review-hint">
+              The review agent is disabled on the Agents page, so no automatic review runs.
+            </p>
+            <p v-else-if="!review?.report" class="review-hint">No agent review for this task yet.</p>
+
+            <div class="review-log-wrap">
+              <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
               <template v-if="reviewEntries.length === 0">
                 <div class="agent-empty">
                   The reviewer's conversation appears here once a review runs.
@@ -2504,48 +2528,49 @@ function resetFreeformOverrides(): void {
                   <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
                 </details>
               </div>
+              </div>
+              <button
+                v-if="!reviewStick"
+                type="button"
+                class="agent-jump"
+                @click="scrollReviewToBottom(true)"
+                aria-label="Jump to latest review message"
+              >
+                <ArrowDown class="size-3.5" />
+                Latest
+              </button>
             </div>
-            <button
-              v-if="!reviewStick"
-              type="button"
-              class="agent-jump"
-              @click="scrollReviewToBottom(true)"
-              aria-label="Jump to latest review message"
-            >
-              <ArrowDown class="size-3.5" />
-              Latest
-            </button>
-          </div>
 
-          <div class="agent-input-row">
-            <div class="agent-reply-input-wrapper">
-              <textarea
-                ref="reviewDraftMsgTextarea"
-                v-model="reviewDraftMsg"
-                class="agent-input"
-                rows="2"
-                placeholder="Ask the reviewer a follow-up question…"
-                :disabled="review?.running || reviewBusy || ui.saving"
-                @keydown.enter.exact.prevent="sendReviewTurn"
-              ></textarea>
-              <VoiceDictate
-                :disabled="review?.running || reviewBusy || ui.saving"
-                @transcribed="onReviewDraftMsgTranscribed"
-              />
+            <div class="agent-input-row">
+              <div class="agent-reply-input-wrapper">
+                <textarea
+                  ref="reviewDraftMsgTextarea"
+                  v-model="reviewDraftMsg"
+                  class="agent-input"
+                  rows="2"
+                  placeholder="Ask the reviewer a follow-up question…"
+                  :disabled="review?.running || reviewBusy || ui.saving"
+                  @keydown.enter.exact.prevent="sendReviewTurn"
+                ></textarea>
+                <VoiceDictate
+                  :disabled="review?.running || reviewBusy || ui.saving"
+                  @transcribed="onReviewDraftMsgTranscribed"
+                />
+              </div>
+              <Button
+                variant="accent"
+                size="sm"
+                :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
+                @click="sendReviewTurn"
+              >
+                <Send class="size-3.5" />
+                Send
+              </Button>
             </div>
-            <Button
-              variant="accent"
-              size="sm"
-              :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
-              @click="sendReviewTurn"
-            >
-              <Send class="size-3.5" />
-              Send
-            </Button>
-          </div>
-          <div v-if="review?.running" class="agent-hint">
-            <ActivityIndicator /> reviewer is working — wait for this turn to finish
-          </div>
+            <div v-if="review?.running" class="agent-hint">
+              <ActivityIndicator /> reviewer is working — wait for this turn to finish
+            </div>
+          </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
           <template v-if="!ui.active">
