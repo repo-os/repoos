@@ -132,6 +132,16 @@ candidate was just built with nothing changed since), so `check`'s own internal 
 build" step is skipped — exactly one build per close-out. Standalone `repoos check`
 never sets the var and always builds.
 
+**Browser/server dedup (#0213, scoped down):** the UI smoke test inside `repoos check`
+and the standalone `bun run screenshots` script previously hand-rolled two independent
+copies of "start an ephemeral server + launch headless WebKit". They now share one
+implementation — `src/commands/ui-harness.ts` (`startPreviewServer` + `launchWebkit`) —
+used by both call sites, so the launch logic can't drift. They do NOT literally share a
+live server or browser instance: the two run in separate OS processes at different
+times (screenshots are an on-demand run that, per #0140, is never part of a close-out),
+so a literal single launch is impossible. The dedup achieved is code-level; each still
+launches its own server+browser when invoked.
+
 **Known-fixed bug (commit `3fbbd707`):** the check step called a globally-linked `repoos`
 CLI (or `bun run repoos check`, which runs from *source*, not the freshly-built `dist/`).
 Either can silently validate against the WRONG code — a global install's build-freshness
