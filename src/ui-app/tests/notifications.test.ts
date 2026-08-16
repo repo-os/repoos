@@ -299,7 +299,7 @@ describe("transition detection (repo store)", () => {
     expect(FakeNotification.instances).toHaveLength(0);
   });
 
-  it("fires stuck on active -> ready", async () => {
+  it("fires stuck when the watchdog surfaces a stuck task to `ready`", async () => {
     const n = useNotificationsStore();
     n.setPushEnabled(true);
     n.setTypeEnabled("stuck", true);
@@ -308,7 +308,93 @@ describe("transition detection (repo store)", () => {
     es.emit("task.updated", {
       type: "task.updated",
       prev: { status: "active", needsInput: false },
+      // The watchdog safely lands a stuck task in `ready` (no work to review)
+      // and writes its own marker into the body.
+      task: makeTask({
+        status: "ready",
+        needsInput: false,
+        body: "watchdog: auto-surfaced stuck task · status active→ready",
+      }),
+    });
+    await flush();
+    expect(FakeNotification.instances).toHaveLength(1);
+    expect(FakeNotification.instances[0].title).toBe("Task looks stuck");
+  });
+
+  it("fires stuck (not \"review ready\") when a stuck task is surfaced to `review`", async () => {
+    const n = useNotificationsStore();
+    n.setPushEnabled(true);
+    // Only the *stuck* type is enabled; a misclassification would gate the
+    // notification behind the review toggle and never fire it.
+    n.setTypeEnabled("stuck", true);
+    const { es } = await bootRepo();
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      prev: { status: "active", needsInput: false },
+      // The watchdog surfaces a stuck task with work into `review`; its marker
+      // is the only thing distinguishing it from a genuine review handoff.
+      task: makeTask({
+        status: "review",
+        needsInput: false,
+        body: "watchdog: auto-surfaced stuck task · status active→review",
+      }),
+    });
+    await flush();
+    expect(FakeNotification.instances).toHaveLength(1);
+    expect(FakeNotification.instances[0].title).toBe("Task looks stuck");
+  });
+
+  it("still fires \"review ready\" for a genuine active -> review handoff", async () => {
+    const n = useNotificationsStore();
+    n.setPushEnabled(true);
+    n.setTypeEnabled("stuck", true);
+    n.setTypeEnabled("review", true);
+    const { es } = await bootRepo();
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      prev: { status: "active", needsInput: false },
+      // No watchdog marker — a normal handoff, reported as review-ready.
+      task: makeTask({ status: "review", needsInput: false }),
+    });
+    await flush();
+    expect(FakeNotification.instances).toHaveLength(1);
+    expect(FakeNotification.instances[0].title).toBe("Task ready for review");
+  });
+
+  it("does not fire stuck on a manual active -> ready rollback", async () => {
+    const n = useNotificationsStore();
+    n.setPushEnabled(true);
+    n.setTypeEnabled("stuck", true);
+    const { es } = await bootRepo();
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      prev: { status: "active", needsInput: false },
+      // A human moves the active task back to ready — no watchdog marker, so
+      // it must not be reported as "stuck".
       task: makeTask({ status: "ready", needsInput: false }),
+    });
+    await flush();
+    expect(FakeNotification.instances).toHaveLength(0);
+  });
+
+  it("fires stuck (not needs-attention) for a watchdog escalation to needsInput", async () => {
+    const n = useNotificationsStore();
+    n.setPushEnabled(true);
+    n.setTypeEnabled("stuck", true);
+    const { es } = await bootRepo();
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active", needsInput: false }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      prev: { needsInput: false },
+      // watchdog.autoTransition off -> escalated to needsInput, still active.
+      task: makeTask({
+        status: "active",
+        needsInput: true,
+        body: "watchdog: escalated to needs_input",
+      }),
     });
     await flush();
     expect(FakeNotification.instances).toHaveLength(1);
