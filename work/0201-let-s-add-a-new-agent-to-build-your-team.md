@@ -2,7 +2,7 @@
 id: "0201"
 title: "Let's add a new agent to \"build your team\"  called the \"D…"
 type: feature
-status: active
+status: review
 needs_merge: true
 priority: p2
 area: general
@@ -13,7 +13,7 @@ cli_override: opencode
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T15:46:05Z"
-updated_at: "2026-08-16T09:46:25Z"
+updated_at: "2026-08-16T11:48:30Z"
 ---
 Let's add a new agent to "build your team" called the "Debugger Agent". If there's ever a bug you can copy-paste it to him and ask what's up — he diagnoses the root cause and suggests a fix.
 
@@ -62,3 +62,4 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 - 2026-08-15T19:11:07Z · status active→review
 - 2026-08-16T09:45:26Z · cli_override
 - 2026-08-16T09:46:24Z · status review→active
+- 2026-08-16T11:48:30Z · status active→review
