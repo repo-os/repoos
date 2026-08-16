@@ -3,6 +3,7 @@ id: "0209"
 title: Show reviewer thinking state in task panel
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
@@ -79,3 +80,4 @@ actions appear as they do today.
 - 2026-08-15T07:54:13Z · cli_override
 - 2026-08-15T16:42:22Z · pm_model_override
 - 2026-08-16T00:22:08Z · status active→review
+- 2026-08-16T00:22:08Z · needs_merge
