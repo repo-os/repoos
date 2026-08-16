@@ -1991,15 +1991,6 @@ function resetFreeformOverrides(): void {
             Engineer
           </button>
           <button
-            type="button"
-            class="tab-btn"
-            :class="{ active: ui.activeTab === 'changes' }"
-            @click="ui.activeTab = 'changes'"
-          >
-            <Diff class="tab-icon" />
-            Changes
-          </button>
-          <button
             v-if="ui.active.status === 'review'"
             type="button"
             class="tab-btn"
@@ -2013,6 +2004,15 @@ function resetFreeformOverrides(): void {
               variant="reviewing"
               label="Reviewing…"
             />
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'changes' }"
+            @click="ui.activeTab = 'changes'"
+          >
+            <Diff class="tab-icon" />
+            Changes
           </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
