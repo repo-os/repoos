@@ -71,11 +71,11 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         model: a.model as string,
         enabled: a.enabled,
       };
-    if (typeof a.instructions === "string" && a.instructions.trim()) {
-      entry.instructions = a.instructions.trim();
+      if (typeof a.instructions === "string" && a.instructions.trim()) {
+        entry.instructions = a.instructions.trim();
+      }
+      list.push(entry);
     }
-    list.push(entry);
-  }
     patch.agents = list;
   }
 

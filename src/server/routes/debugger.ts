@@ -32,25 +32,23 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
   const agent = debuggerAgent();
   const context = repoContextForDebugger(index);
   const existing = runner.output(debuggerSessionId);
-  const firstTurn = !existing;
   const result = existing
     ? runner.send(debuggerSessionId, text, agent, {
         resumePreamble: `Updated repository context:\n${context}`,
       })
     : (runner as any).startChat(debuggerSessionId, text, agent, context);
-  if (!result.ok && (result as any).busy) {
-    return json(res, 409, { error: result.reason ?? "Debugger is busy" });
-  }
   if (!result.ok) {
-    // A concurrency race can create a session between the output check above
-    // and startChat; in that case the caller should treat it as a busied
-    // conversation and retry on the next message.
-    if (!firstTurn && (result.reason ?? "").includes("already exists")) {
+    const reason = result.reason ?? "could not send message";
+    // Both a busy turn (`busy`) and the concurrency race where another request
+    // created the session between the output check above and startChat
+    // ("conversation already exists") mean the conversation is in flight — the
+    // caller should surface a retry, not a hard failure.
+    if ((result as any).busy || reason.includes("already exists")) {
       return json(res, 409, {
         error: "Debugger is busy — wait for the current turn to finish",
       });
     }
-    return json(res, 400, { error: result.reason ?? "could not send message" });
+    return json(res, 400, { error: reason });
   }
   return json(res, 200, { ok: true });
 };
