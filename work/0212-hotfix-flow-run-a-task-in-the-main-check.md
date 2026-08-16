@@ -2,7 +2,7 @@
 id: "0212"
 title: "Hotfix flow: run a task in the main checkout instead of a worktree"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/hotfix-flow-run-a-task-in-the-main-check
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T05:46:19Z"
-updated_at: "2026-08-15T20:35:24Z"
+updated_at: "2026-08-16T01:25:36Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ Half the plumbing already exists: `ensureWorktree` returns `config.root` when th
 - 2026-08-15T17:01:47Z · status ready→active
 - 2026-08-15T19:29:02Z · model_override
 - 2026-08-15T20:35:24Z · pm_model_override
+- 2026-08-16T01:25:36Z · status active→review
