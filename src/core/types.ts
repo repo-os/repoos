@@ -61,6 +61,10 @@ export interface TaskFrontmatter {
   cli_override?: string;
   /** Per-task model override (e.g. "default", "big pickle"). */
   model_override?: string;
+  /** True when this task runs as a hotfix in the main checkout. */
+  hotfix?: boolean;
+  /** Hotfix merge target: "branch" or "main". */
+  hotfix_target?: "branch" | "main";
   [key: string]: unknown;
 }
 
@@ -110,6 +114,11 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+
+  /** True when this task runs as a hotfix in the main checkout. */
+  hotfix?: boolean;
+  /** Hotfix merge target: "branch" (default) or "main". */
+  hotfixTarget?: "branch" | "main";
 
   /** Live git facts, populated by the git layer (best-effort). */
   git: TaskGitInfo;
@@ -374,5 +383,48 @@ export interface RepoIndex {
   /** Sorted by (status order, priority, id). */
   tasks: Task[];
   /** Quick counts per status, for dashboards. */
+  counts: Record<Status, number>;
+}
+
+/**
+ * Lightweight task view for the board — everything TaskCard.vue renders,
+ * without the full body, extra, agent overrides, or activity (saved ~4-5 KB per
+ * task at current task counts). Includes a body preview for search and
+ * releasedAt for the release timeline.
+ */
+export interface BoardTask {
+  id: string;
+  title: string;
+  type: string;
+  status: Status;
+  needsInput: boolean;
+  needsMerge: boolean;
+  priority: Priority | string;
+  area: string;
+  assignee: Assignee;
+  assignedTo: string;
+  createdBy: string;
+  branch: string;
+  tags: string[];
+  created_at: string | null;
+  updated_at: string | null;
+  /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
+  releasedAt: string | null;
+  /** Truncated body preview for search (first 500 chars). */
+  bodyPreview: string;
+  path: string;
+  absPath: string;
+  git: TaskGitInfo;
+  /** Always null in the board response — set on the client from SSE events. */
+  preview: null;
+}
+
+/** Board index — like RepoIndex but with BoardTask[] instead of Task[]. */
+export interface BoardIndex {
+  version: number;
+  generatedAt: string;
+  root: string;
+  taskCount: number;
+  tasks: BoardTask[];
   counts: Record<Status, number>;
 }

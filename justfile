@@ -10,6 +10,10 @@ serve:
 build:
     bun run build
 
+# stage and commit all current changes: `just commit "Describe the change"`
+commit message:
+    git add . && git commit -m {{quote(message)}}
+
 # run repoos check
 check:
     repoos check
@@ -24,6 +28,10 @@ kill:
 
 # restart: kill then serve
 restart: kill serve
+
+# show the server-out log
+wtf:
+    tail .repoos/logs/server.out
 
 # tail system logs
 log:

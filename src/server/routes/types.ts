@@ -7,6 +7,7 @@ import type { PreviewManager } from "../preview.js";
 import type { ReviewManager } from "../review.js";
 import type { CTOManager } from "../cto.js";
 import type { CloseOutLock } from "../done.js";
+import type { RootLock } from "../repo-lock.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
 import type { Logger } from "../../core/logger.js";
@@ -28,6 +29,7 @@ export interface RouteContext {
   logger: Logger;
   emitEvent: (e: RepoEvent) => void;
   closeOutLock: CloseOutLock;
+  rootLock: RootLock;
   jobCoordinator: JobCoordinator;
   triggerJobProcessing: () => void;
   pendingReview: Set<string>;

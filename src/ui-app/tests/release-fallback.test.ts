@@ -17,7 +17,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { createRepositoryLock } from "../../server/repo-lock.js";
+import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -82,6 +82,7 @@ describe("release-marking fallback when the live index misses (#0195)", () => {
         { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
+        createRootLock(root),
         (id) => (id === "T1" ? ({ absPath } as any) : null),
       );
 

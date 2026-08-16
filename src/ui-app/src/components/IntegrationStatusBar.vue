@@ -164,7 +164,9 @@ function stageClass(s: string, i: number): string {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 900;
+  /* The integration status is useful ambient UI, never a modal. Keep it
+     below the drawer and its backdrop so it cannot cover or intercept them. */
+  z-index: 60;
   pointer-events: none;
 }
 
