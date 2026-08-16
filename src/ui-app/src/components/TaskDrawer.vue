@@ -1891,7 +1891,10 @@ function resetFreeformOverrides(): void {
               {{ doingDone ? doneProgress : "Move to done" }}
             </Button>
           </div>
-          <p v-if="review?.running" class="review-hint">Waiting for automatic review to finish.</p>
+          <span v-if="review?.running" class="drawer-run reviewing" role="status">
+            <ActivityIndicator variant="reviewing" label="Reviewing…" />
+            Reviewer is reviewing this task…
+          </span>
           <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
             <ActivityIndicator /> agent coding
           </span>
@@ -2401,7 +2404,7 @@ function resetFreeformOverrides(): void {
 
           <div v-if="review?.running" class="review-running" role="status" style="margin-top: 10px">
             <ActivityIndicator variant="reviewing" label="Reviewing…" />
-            Reviewing… the review agent is inspecting this task.
+            Reviewer is reviewing this task…
           </div>
 
           <template v-else-if="review?.report">
@@ -2436,7 +2439,11 @@ function resetFreeformOverrides(): void {
           <div class="review-log-wrap">
             <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
               <template v-if="reviewEntries.length === 0">
-                <div class="agent-empty">
+                <div v-if="review?.running" class="review-thinking" role="status">
+                  <ActivityIndicator variant="reviewing" label="Reviewing…" />
+                  The reviewer is thinking…
+                </div>
+                <div v-else class="agent-empty">
                   The reviewer's conversation appears here once a review runs.
                   <br />
                   Start a review to see the reviewer at work, then chat below.
