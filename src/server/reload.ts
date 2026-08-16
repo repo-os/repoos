@@ -14,12 +14,11 @@
  *   low-frequency hash poll as a platform-proof fallback). A hash CHANGE
  *   schedules a reload — the same hash mechanism the CLI staleness guard uses,
  *   never mtimes or timers.
- * - A reload is DEFERRED while an agent turn is running: persisted transcript
- *   history does not transfer ownership of the live child process or its
- *   streaming pipes. Restarting mid-turn would orphan the child, lose new
- *   output, and leave the runner registry inaccurate. When the runner
- *   drains (agent.exited) the deferred reload fires, and a low-frequency retry
- *   poll backs that up.
+ * - A reload no longer defers for agent turns (0214): agent child stdout/stderr
+ *   is durable (per-task log file in .repoos/agent-logs/), so the replacement
+ *   server re-attaches to still-running children via the durable registry
+ *   (.repoos/agents.json). A restart proceeds immediately regardless of how
+ *   many agent turns are in flight.
  * - A close-out (0143) is a harder deferral: the pipeline itself runs builds
  *   and checks, so reloading under it would kill the server mid-close-out.
  *   While the close-out lock is held, a new build is PARKED instead — the UI
@@ -279,11 +278,9 @@ export class ReloadManager {
       }
       return { state: "deferred", running, reason };
     }
-    if (running > 0) {
-      this.pending = true;
-      this.armRetry();
-      return { state: "deferred", running, reason };
-    }
+    // Agent-turn deferral removed (0214): in-flight agent children are now
+    // durable — stdout/stderr writes to a per-task log file and the new server
+    // re-attaches via adoptRunningAgents(). The restart proceeds immediately.
     const current = readBuildHash(this.options.root);
     if (this.loadedHash === null || current === null || current === this.loadedHash) {
       return { state: "not-stale", reason };
