@@ -324,6 +324,53 @@ onUnmounted(() => {
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="setting-group">
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Voice transcription
+          </div>
+          <div
+            v-for="f in config.voiceFields"
+            :key="f.key"
+            :id="`setting-${f.key}`"
+            class="setting-row"
+          >
+            <div class="setting-info">
+              <div class="setting-label">{{ f.label }}</div>
+              <div class="setting-desc">{{ f.description }}</div>
+            </div>
+            <div class="setting-input">
+              <Select
+                v-if="f.type === 'select'"
+                :model-value="String(form[f.key])"
+                :disabled="config.saving"
+                @update:model-value="(v) => (form[f.key] = v)"
+              >
+                <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                      o.label
+                    }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <Input
+                v-else-if="f.type === 'string'"
+                :model-value="String(form[f.key] ?? '')"
+                type="password"
+                autocomplete="new-password"
+                placeholder="sk-… or gsk_…"
+                @update:model-value="(v) => (form[f.key] = v)"
+              />
+            </div>
+            <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
             <span
               style="cursor: pointer; user-select: none"
               @click="config.showAdvanced = !config.showAdvanced"
