@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
-pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro
+pm_model_override: default
 created_at: "2026-08-12T06:39:43Z"
-updated_at: "2026-08-16T02:54:12Z"
+updated_at: "2026-08-16T03:08:48Z"
 ---
 Let's remove the "assigned to AI tab" in the control page, since everything is pretty much assigned to ai, what we should probably replace it with is actions needed by human (i.e. assigned to human)
 
@@ -21,3 +21,4 @@ Let's remove the "assigned to AI tab" in the control page, since everything is p
 - 2026-08-16T02:52:56Z · model_override
 - 2026-08-16T02:52:59Z · pm_model_override
 - 2026-08-16T02:54:12Z · pm_model_override
+- 2026-08-16T03:08:48Z · pm_model_override
