@@ -2,14 +2,14 @@
 id: "0185"
 title: Always-on service management (launchd/systemd) with settings toggle and onboarding prompt
 type: feature
-status: ready
+status: inbox
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-14T04:16:57Z"
-updated_at: "2026-08-14T04:18:54Z"
+updated_at: "2026-08-16T13:56:36Z"
 ---
 ## Activity
 
@@ -109,3 +109,4 @@ without OS-level crash supervision — not an edge case.
 ## Activity
 
 - 2026-08-14T04:18:54Z · status inbox→ready
+- 2026-08-16T13:56:36Z · status ready→inbox

@@ -131,6 +131,20 @@ const action = computed<CardAction | null>(() => {
   return ACTIONS[t.status] ?? null;
 });
 
+/** Full-width footer colors retain the board's action/status language. */
+const actionFooterClass = computed(() => {
+  switch (action.value?.variant) {
+    case "start":
+      return "border-[var(--cyan-dim)] bg-[var(--cyan-dim)] text-[var(--cyan)] hover:brightness-125";
+    case "pause":
+      return "border-[var(--amber-tint)] bg-[var(--amber-tint)] text-[var(--amber)] hover:brightness-110";
+    case "done":
+      return "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110";
+    default:
+      return "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground";
+  }
+});
+
 /** True when the action would relaunch the agent (fresh start or resume from pause). */
 const isLaunchAction = computed(
   () => props.task.status === "ready" || (props.task.status === "active" && !repo.isRunning(props.task.id)),
@@ -218,8 +232,8 @@ async function openAgent(): Promise<void> {
 </script>
 
 <template>
-  <div
-    class="task-card"
+  <article
+    class="task-card group flex shrink-0 cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
     :class="{
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
@@ -235,63 +249,52 @@ async function openAgent(): Promise<void> {
     @dragstart="onDragStart"
     @dragend="onDragEnd"
   >
-    <div class="tc-top">
-      <span class="tc-id">#{{ task.id }}</span>
-      <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">
-        needs input
-      </span>
-      <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — move to done to sync and merge">
-        needs merge
-      </span>
-      <span v-if="task.hotfix" class="tc-hotfix" :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`">
-        hotfix
-      </span>
-      <span class="chip">{{ task.type }}</span>
-      <span class="tc-prio" :class="task.priority">{{ task.priority }}</span>
+    <div class="flex flex-1 flex-col p-[13px]">
+      <div class="flex items-center gap-[7px]">
+        <span class="font-mono text-[10px] text-[var(--txt-faint)]">#{{ task.id }}</span>
+        <span class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">{{ task.type }}</span>
+        <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">needs input</span>
+        <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — move to done to sync and merge">needs merge</span>
+        <span v-if="task.hotfix" class="tc-hotfix" :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`">hotfix</span>
+        <span class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold" :class="task.priority">{{ task.priority }}</span>
+      </div>
+
+      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">{{ task.title }}</h3>
+
+      <div class="mt-[11px] flex flex-wrap gap-[6px]">
+        <span class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">{{ task.area }}</span>
+        <span v-if="task.assignee !== 'ai'" class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">
+          {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
+        </span>
+        <span v-if="diffStats && diffStats.filesChanged > 0" class="diff-stats-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]" :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`">
+          {{ diffStats.filesChanged }}f {{ diffStats.additions }}+
+        </span>
+        <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="diff-stats-empty rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]" title="No code changes">0 changes</span>
+      </div>
+
+      <div v-if="hint || (isLaunchAction && task.git?.dirty)" class="mt-[13px]">
+        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined">
+          <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
+          {{ hint.label }}
+        </span>
+        <span
+          v-if="isLaunchAction && task.git?.dirty"
+          class="tc-dirty"
+          :title="task.git.worktreePath ? 'worktree has uncommitted changes — restarting asks to resume or start clean' : 'branch has unmerged work — restarting asks to resume or start clean'"
+        >dirty</span>
+      </div>
     </div>
-    <div class="tc-title">{{ task.title }}</div>
-    <div class="tc-tags">
-      <span class="chip">{{ task.area }}</span>
-      <span v-if="task.assignee !== 'ai'" class="chip">
-        {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
-      </span>
-      <span v-if="diffStats && diffStats.filesChanged > 0" class="chip diff-stats-chip" :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`">
-        {{ diffStats.filesChanged }}f {{diffStats.additions}}+
-      </span>
-      <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="chip diff-stats-empty" title="No code changes">
-        0 changes
-      </span>
-    </div>
-    <div class="tc-foot">
-      <span
-        v-if="hint"
-        class="tc-hint"
-        :class="hint.cls"
-        :title="hint.title"
-        @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined"
-      >
-        <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
-        <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
-        {{ hint.label }}
-      </span>
-      <span
-        v-if="isLaunchAction && task.git?.dirty"
-        class="tc-dirty"
-        :title="
-          task.git.worktreePath
-            ? 'worktree has uncommitted changes — restarting asks to resume or start clean'
-            : 'branch has unmerged work — restarting asks to resume or start clean'
-        "
-      >dirty</span>
-      <div v-if="action" class="tc-actions">
+
+    <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
         <button
-          class="tc-btn"
-          :class="action.variant"
+          class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+          :class="actionFooterClass"
           :disabled="busy || (task.status === 'review' && repo.reviewFor(task.id)?.running)"
           :title="task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : action.title"
           @click.stop="runAction"
         >
-          <svg viewBox="0 0 24 24" fill="none">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
             <path
               :d="action.icon"
               stroke="currentColor"
@@ -302,7 +305,6 @@ async function openAgent(): Promise<void> {
           </svg>
           {{ busy ? "Working…" : action.label }}
         </button>
-      </div>
     </div>
     <!-- A failed move-to-done stays with the card that triggered it, directly
          below the button, instead of detaching into a global toast. -->
@@ -314,7 +316,7 @@ async function openAgent(): Promise<void> {
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
       @click.stop
     />
-  </div>
+  </article>
 
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
   <DirtyMainDialog

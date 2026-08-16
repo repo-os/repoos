@@ -2,15 +2,16 @@
 id: "0215"
 title: Close-out failure UI shows merge-conflict advice for non-conflict failures
 type: bug
-status: ready
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-failure-ui-shows-merge-conflic
 model_override: default
+pm_model_override: default
 created_at: "2026-08-15T07:05:46Z"
-updated_at: "2026-08-16T02:16:26Z"
+updated_at: "2026-08-16T14:18:41Z"
 ---
 ## Problem
 
@@ -56,3 +57,7 @@ The failure message should match the phase that failed:
 - 2026-08-15T11:05:56Z · status ready→active, branch
 - 2026-08-15T11:12:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-16T02:16:26Z · model_override
+- 2026-08-16T13:43:39Z · status ready→active
+- 2026-08-16T14:09:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-16T14:13:44Z · status active→review
+- 2026-08-16T14:18:41Z · pm_model_override

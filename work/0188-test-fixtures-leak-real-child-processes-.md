@@ -2,15 +2,16 @@
 id: "0188"
 title: Test fixtures leak real child processes on interrupt across the suite (vitest worker-thread signal gap)
 type: bug
-status: active
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/test-fixtures-leak-real-child-processes-
 model_override: default
+pm_model_override: default
 created_at: "2026-08-14T06:34:37Z"
-updated_at: "2026-08-16T11:45:14Z"
+updated_at: "2026-08-16T12:06:05Z"
 ---
 ## Activity
 
@@ -90,3 +91,6 @@ archaeology needed to notice or fix a leak.
 - 2026-08-14T10:32:36Z · status inbox→ready
 - 2026-08-16T11:45:10Z · model_override
 - 2026-08-16T11:45:14Z · status ready→active, branch
+- 2026-08-16T12:01:19Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-16T12:04:56Z · pm_model_override
+- 2026-08-16T12:06:05Z · status review→done, release:success

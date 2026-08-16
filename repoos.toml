@@ -8,7 +8,7 @@ cacheDir = ".repoos"
 
 theme = "light"
 strictBuild = false
-uiTheme = "clear"
+uiTheme = "gen z"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
@@ -60,3 +60,12 @@ cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
+
+
+
+
+
+
+
+
+
