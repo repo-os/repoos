@@ -9,7 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/reorganize-settings-promote-voice-transc
 created_at: "2026-08-16T14:58:04Z"
-updated_at: "2026-08-16T18:56:49Z"
+updated_at: "2026-08-17T03:27:29Z"
+review_rounds: 1
 ---
 ## Context
 
@@ -44,3 +45,5 @@ Voice transcription (Whisper / vibe coding) is a user-facing feature that requir
 - 2026-08-16T15:01:52Z · status ready→active, branch
 - 2026-08-16T18:56:49Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-16T18:56:49Z · status review→active
+- 2026-08-16T19:52:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-17T03:27:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity

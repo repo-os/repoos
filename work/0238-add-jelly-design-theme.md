@@ -2,14 +2,16 @@
 id: "0238"
 title: Add jelly design theme
 type: feature
-status: ready
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-jelly-design-theme
+model_override: default
+pm_model_override: default
 created_at: "2026-08-16T19:05:22Z"
-updated_at: "2026-08-16T19:06:08Z"
+updated_at: "2026-08-17T03:38:47Z"
 ---
 ## Problem
 
@@ -47,3 +49,10 @@ The user picks **Jelly** from the **Design theme** dropdown in Settings. The who
 
 - 2026-08-16T19:05:22Z · created · unknown
 - 2026-08-16T19:06:08Z · status inbox→ready
+- 2026-08-16T19:06:42Z · status ready→active, branch
+- 2026-08-16T19:06:57Z · model_override
+- 2026-08-16T19:07:04Z · pm_model_override
+- 2026-08-17T03:27:26Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-17T03:29:47Z · status review→active
+- 2026-08-17T03:36:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-17T03:38:47Z · status active→review
