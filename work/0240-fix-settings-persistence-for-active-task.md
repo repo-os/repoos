@@ -2,14 +2,14 @@
 id: "0240"
 title: Fix Settings persistence for active-task limit and Jelly theme
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-17T04:51:24Z"
-updated_at: "2026-08-17T04:51:24Z"
+updated_at: "2026-08-17T04:57:42Z"
 ---
 ## Activity
 
@@ -31,3 +31,9 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-08-17T04:51:48Z · status inbox→ready
+- 2026-08-17T04:52:07Z · status ready→active
+- 2026-08-17T04:57:42Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
