@@ -92,6 +92,19 @@ server.listen(port, host);
 setTimeout(() => process.exit(1), 150);
 `;
 
+/** A failed replacement that starts a descendant before it becomes ready. */
+const FAKEBIN_WITH_DESCENDANT = `#!/usr/bin/env node
+const { spawn } = require("node:child_process");
+const fs = require("node:fs");
+const log = process.env.REPOOS_RELOAD_FAKE_LOG;
+fs.appendFileSync(log, JSON.stringify({ pid: process.pid, tree: "parent" }) + "\\n");
+const descendant = spawn(process.execPath, ["-e", \
+  "require('node:fs').appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({pid:process.pid,tree:'child'})+'\\\\n'); setInterval(()=>{}, 1000)"],
+  { stdio: "ignore", env: process.env });
+descendant.unref();
+setInterval(() => {}, 1000);
+`;
+
 interface SpawnRecord {
   pid?: number;
   args?: string[];
@@ -107,6 +120,7 @@ interface Fixture {
   readyCli: string;
   deadCli: string;
   flashCli: string;
+  descendantCli: string;
   log: string;
   port: number;
   clean: () => void;
@@ -142,6 +156,7 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(bin, "repoos"), FAKEBIN, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-dead"), FAKEBIN_DEAD, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, { mode: 0o755 });
   const port = await reservePort();
   return {
     repo,
@@ -149,6 +164,7 @@ async function makeFixture(): Promise<Fixture> {
     readyCli: join(bin, "repoos"),
     deadCli: join(bin, "repoos-dead"),
     flashCli: join(bin, "repoos-flash"),
+    descendantCli: join(bin, "repoos-descendant"),
     log: join(root, "spawns.log"),
     port,
     clean: () => rmSync(root, { recursive: true, force: true }),
@@ -512,6 +528,40 @@ describe("ReloadManager", () => {
       fx.clean();
     }
   });
+
+  it("terminates the full failed-replacement process group", async () => {
+    if (process.platform === "win32") return;
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.descendantCli,
+      graceMs: 20,
+      handshakeTimeoutMs: 500,
+    });
+    try {
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      manager.requestReload("test descendant cleanup");
+      await waitFor(() => calls.failed > 0, "descendant replacement failure");
+      const tree = spawns(fx);
+      const pids = tree.map((entry) => entry.pid).filter((pid): pid is number => typeof pid === "number");
+      expect(tree.map((entry) => (entry as { tree?: string }).tree).sort()).toEqual(["child", "parent"]);
+      await waitFor(
+        () => pids.every((pid) => {
+          try {
+            process.kill(pid, 0);
+            return false;
+          } catch {
+            return true;
+          }
+        }),
+        "failed replacement process group is gone",
+      );
+    } finally {
+      await killReplacement(fx);
+      manager.stop();
+      fx.clean();
+    }
+  }, 12_000);
 });
 
 describe("Agent adoption across restarts (0214)", () => {
