@@ -2,7 +2,7 @@
 id: "0247"
 title: Hide mic/voice icons when no valid API key is configured
 type: feature
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -48,3 +48,4 @@ Out of scope: voice input backend changes, API key validation beyond presence ch
 - 2026-08-17T11:17:15Z · model_override
 - 2026-08-17T12:20:15Z · pm_model_override
 - 2026-08-17T12:20:52Z · status ready→active, branch
+- 2026-08-17T12:21:17Z · status active→ready
