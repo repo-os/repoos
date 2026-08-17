@@ -51,6 +51,7 @@ const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
 const ESCALATED_ACTIVITY = /watchdog: escalated to needs_input/;
 const HANDOFF_FAILURE_ACTIVITY = /handoff failed · (.+)$/m;
+const HANDOFF_RETAINED = /handoff retained for recovery/;
 
 /** Why a dead/stalled active task's agent session stopped. */
 export type DeadAgentReason = "never-started" | "crashed" | "exited-without-handoff";
@@ -67,6 +68,9 @@ export interface DeadAgentClassification {
  */
 export function suggestNextStep(reason: string): string {
   const r = reason.toLowerCase();
+  if (/retained for recovery/.test(r)) {
+    return "the handoff request was retained for recovery — it will be finalized automatically on the next server start";
+  }
   if (/permission|approval|allowed|confirm|prompt/.test(r)) {
     return (
       "check the transcript for an unanswered permission/approval prompt — see " +
@@ -179,6 +183,14 @@ export function classifyDeadAgentReason(
   // resolved) — the "killed mid-turn" shape.
   const failed = extractHandoffFailure(task.body);
   if (failed) {
+    // A "retained for recovery" failure means the request was persisted and
+    // will be re-fired on the next server boot — not truly crashed (#0235).
+    if (HANDOFF_RETAINED.test(failed)) {
+      return {
+        kind: "crashed",
+        reason: "agent turn was interrupted with a pending handoff — retained for recovery on next server start",
+      };
+    }
     return {
       kind: "crashed",
       reason: `agent crashed or was interrupted mid-turn — ${failed}`,
@@ -308,6 +320,9 @@ export class TaskWatchdog {
     if (this.runner.isPaused(task.id)) return false;
     // Bounded: never surface a task the watchdog already surfaced.
     if (alreadySurfaced(task.body)) return false;
+    // A task whose handoff was retained for recovery (#0235) is not stuck —
+    // the recovery is in progress or will fire on the next boot.
+    if (HANDOFF_RETAINED.test(task.body)) return false;
     const now = Date.now();
     if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
     // The Activity log looks stale, but `isRunning()` above only reflects the

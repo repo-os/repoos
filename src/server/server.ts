@@ -962,6 +962,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // to still-running children so isRunning() reports true immediately.
   runner.adoptRunningAgents();
 
+  // Recover any pending handoff requests from a previous interrupted turn (#0235).
+  // Validates each request (task still exists, active, branch matches) and
+  // re-fires onHandoff for valid ones. Must run after adoptRunningAgents so
+  // in-flight handoffs from adopted agents are visible.
+  runner.recoverPendingHandoffs();
+
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
