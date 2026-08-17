@@ -1981,8 +1981,8 @@ function resetFreeformOverrides(): void {
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running"
-              :title="review?.running ? 'Waiting for automatic review to finish.' : undefined"
+              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id)"
+              :title="review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone" class="size-3.5" />
