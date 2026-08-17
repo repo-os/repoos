@@ -2099,6 +2099,14 @@ export class AgentRunner {
       // request. If finalization ultimately fails, the task stays active and
       // can be resumed manually.
       this.clearPendingHandoff(request.taskId);
+      // Ensure the session is loaded so system()/appendLine() can write to
+      // the transcript.  For a dead-interrupted task, adoptRunningAgents only
+      // pre-loads sessions for live PIDs — the interrupted-turn session is on
+      // disk but not yet in memory (#0235 review fix).
+      if (!this.sessions.has(request.taskId)) {
+        const loaded = this.loadSession(request.taskId);
+        if (loaded) this.sessions.set(request.taskId, loaded);
+      }
       // Surface in the transcript so the human sees recovery.
       this.system(request.taskId, "Recovering pending handoff from interrupted turn — finalizing now");
       void Promise.resolve(this.onHandoff?.(request))
@@ -2113,6 +2121,15 @@ export class AgentRunner {
           // a later validateHandoff check.
           if (this.authorizedHandoffs.has(request.runId)) {
             this.authorizedHandoffs.delete(request.runId);
+          }
+          // If the task is still active after recovery, record the outcome in
+          // the Activity log so the watchdog's HANDOFF_RETAINED guard can
+          // unstick it: without this, the retained line permanently blocks
+          // auto-surface/escalation even when recovery has already been
+          // attempted and failed (#0235 review fix).
+          const task = this.getTask?.(request.taskId) ?? null;
+          if (task && task.status === "active") {
+            this.persistHandoffFailure(request.taskId, task, "handoff recovery attempted · finalization failed");
           }
         });
     }
