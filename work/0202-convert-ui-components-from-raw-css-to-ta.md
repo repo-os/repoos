@@ -2,14 +2,14 @@
 id: "0202"
 title: Convert Vue SFCs from raw CSS to Tailwind utility classes
 type: chore
-status: active
+status: review
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-17T08:07:08Z"
+updated_at: "2026-08-17T14:56:32Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-15T05:49:17Z · merged duplicate task file (double-submit created two files sharing id 0202, 4s apart); kept this one
 - 2026-08-15T05:59:12Z · status inbox→ready
 - 2026-08-17T08:07:08Z · status ready→active, branch
+- 2026-08-17T14:56:32Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work

@@ -2,6 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore, type PendingScreenshot } from "./ui";
+import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -85,6 +86,10 @@ export interface DoneError {
   message: string;
   conflicts: string[];
   step: string;
+  /** Per-failure guidance; replaces the default conflict hint when set. */
+  hint?: string;
+  /** Newline-preserving check/build output excerpt for the expanded panel. */
+  detail?: string;
 }
 
 /**
@@ -102,16 +107,7 @@ export class MoveToDoneError extends Error {
 }
 
 /** Pull the conflicting file names out of the server's close-out error. */
-export function extractConflicts(message: string): string[] {
-  const prefix = "merge conflict: ";
-  const idx = message.indexOf(prefix);
-  if (idx === -1) return [];
-  return message
-    .slice(idx + prefix.length)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+export { extractConflicts } from "../lib/closeOutFailure";
 
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
@@ -553,11 +549,11 @@ export const useRepoStore = defineStore("repo", () => {
       // job, so a later failure arrives here as an SSE event. Surface it as the
       // inline done error the card/drawer already render.
       if (e.step === "failed" && e.detail) {
-        setDoneError(e.id, {
-          message: e.detail,
-          conflicts: extractConflicts(e.detail),
-          step: "check",
-        });
+        // Background close-out failure (0199, 0215): the /done POST only
+        // enqueues the job, so a later failure arrives here as an SSE event.
+        // The job's failing `phase` (when known) and its `reason` drive the
+        // message, so a `check failed` reason never reads like a conflict.
+        setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
       }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed
@@ -951,10 +947,10 @@ export const useRepoStore = defineStore("repo", () => {
       // actionable error instead of the commit modal.
       if (body.dirtyCheckFailed) {
         const message = body.error ?? "could not verify main is clean before close-out";
+        const mapped = describeCloseOutFailure(undefined, message);
         setDoneError(t.id, {
-          message,
-          conflicts: extractConflicts(message),
-          step: doneSteps.value[t.id] ?? "merge",
+          ...mapped,
+          step: doneSteps.value[t.id] ?? mapped.step,
         });
         throw new MoveToDoneError(t.id, message);
       }
@@ -964,10 +960,10 @@ export const useRepoStore = defineStore("repo", () => {
     const r = body as DoneResult;
     if (!raw.ok || !r.ok) {
       const message = r.error ?? raw.statusText ?? "could not complete task";
+      const mapped = describeCloseOutFailure(undefined, message);
       setDoneError(t.id, {
-        message,
-        conflicts: extractConflicts(message),
-        step: doneSteps.value[t.id] ?? "merge",
+        ...mapped,
+        step: doneSteps.value[t.id] ?? mapped.step,
       });
       throw new MoveToDoneError(t.id, message);
     }

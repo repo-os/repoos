@@ -310,7 +310,7 @@ export type RepoEvent =
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
-  | { type: "task.progress"; id: string; step: string; at: string; detail?: string }
+  | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {
