@@ -234,9 +234,14 @@ describe("pending handoff persistence (#0235)", () => {
   it("recoverPendingHandoffs re-fires onHandoff for valid pending handoffs", async () => {
     const fx = fixture("active");
     const handoffs: AgentHandoffRequest[] = [];
+    // Use a consumeHandoff-gated wrapper that mirrors the real server.ts
+    // onHandoff handler — this verifies the capability was properly admitted.
     const runner = new AgentRunner(fx.config, () => {}, {
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => { handoffs.push(request); },
+      onHandoff: async (request) => {
+        if (!runner.consumeHandoff(request)) return;
+        handoffs.push(request);
+      },
     });
     // Simulate a persisted pending handoff from an interrupted prior run
     mkdirSync(fx.cacheDir, { recursive: true });
@@ -249,6 +254,33 @@ describe("pending handoff persistence (#0235)", () => {
     runner.recoverPendingHandoffs();
     await waitFor(() => handoffs.length > 0, "recovery fired onHandoff");
     expect(handoffs[0]).toMatchObject({ taskId: fx.task.id, branch: fx.task.branch, workdir: fx.root });
+    // The capability was consumed by consumeHandoff (authorizedHandoffs cleaned up)
+    expect(runner.validateHandoff(handoffs[0])).toBe(false);
+  });
+
+  it("recoverPendingHandoffs cleans up capability if server rejects the recovered request", async () => {
+    const fx = fixture("active");
+    // Server-like handler that rejects via consumeHandoff's in-flight guard
+    const runner = new AgentRunner(fx.config, () => {}, {
+      getTask: (id: string) => (id === fx.task.id ? fx.task : null),
+      onHandoff: async (request) => {
+        if (!runner.consumeHandoff(request)) return;
+        if (runner.isHandoffInFlight(request.taskId)) return;
+        // Would finalize here — but for this test the guard rejects.
+      },
+    });
+    mkdirSync(fx.cacheDir, { recursive: true });
+    writeFileSync(
+      join(fx.cacheDir, "pending-handoffs.json"),
+      JSON.stringify({
+        requests: [{ taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root }],
+      }, null, 2),
+    );
+    runner.recoverPendingHandoffs();
+    // Wait for the async onHandoff to settle (it is fire-and-forget)
+    await new Promise((r) => setTimeout(r, 100));
+    // The capability was admitted then cleaned up — validateHandoff should be false
+    expect(runner.validateHandoff({ taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root })).toBe(false);
   });
 
   it("recoverPendingHandoffs drops pending for completed tasks", async () => {
