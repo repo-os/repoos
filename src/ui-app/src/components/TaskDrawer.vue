@@ -2108,13 +2108,6 @@ function resetFreeformOverrides(): void {
               <div class="ro-value">{{ ui.active.title }}</div>
             </div>
           </template>
-          <div class="field">
-            <label>Branch</label>
-            <div class="ro-value mono" style="color: var(--cyan)">
-              {{ effectiveBranch || "—" }}
-              <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
-            </div>
-          </div>
 
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
