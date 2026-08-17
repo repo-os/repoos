@@ -26,8 +26,8 @@ list:
 kill:
     pkill -f "node.*dist/cli/index.js.*serve" || true
 
-# restart: kill then serve
-restart: kill serve
+# restart: build then kill then serve
+restart: build kill serve
 
 # show the server-out log
 wtf:
