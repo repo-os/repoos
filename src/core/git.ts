@@ -4,7 +4,7 @@
  * We shell out rather than depend on a git library (zero deps).
  */
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, realpathSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir } from "./config.js";
@@ -242,6 +242,18 @@ export function ensureWorktree(
     ? ["worktree", "add", target, branch]
     : ["worktree", "add", "-b", branch, target];
   if (git(root, args) === null) {
+    // An orphaned directory (leftover from a prior interrupted close-out) blocks
+    // `git worktree add`.  Remove it once and retry — the branch is still valid,
+    // only the worktree registration (gitdir) is missing.
+    if (existsSync(target)) {
+      try { rmSync(target, { recursive: true, force: true }); } catch { /* best-effort */ }
+      if (git(root, args) !== null) {
+        let path = target;
+        try { path = realpathSync(target); } catch { /* keep */ }
+        if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
+        return { ok: true, path, created: true };
+      }
+    }
     return {
       ok: false,
       path: target,
