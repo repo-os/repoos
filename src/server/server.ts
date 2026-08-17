@@ -150,6 +150,7 @@ import {
   initInfoHandlers,
   getDebugger,
   sendDebuggerMessage,
+  repairWithDebugger,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -1311,6 +1312,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/chat/message", sendChatMessage);
   router.register("GET", "/api/debugger", getDebugger);
   router.register("POST", "/api/debugger/message", sendDebuggerMessage);
+  router.register("POST", "/api/debugger/repair", repairWithDebugger);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);

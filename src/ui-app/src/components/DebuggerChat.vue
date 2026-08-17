@@ -24,6 +24,8 @@ const submitting = ref(false);
 const hydratedEnabled = ref(false);
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
+const repairing = ref(false);
+const repaired = ref(false);
 
 interface DebuggerResponse {
   ok: boolean;
@@ -36,6 +38,24 @@ const enabled = computed(() => evalBuiltInEnabled() || hydratedEnabled.value);
 const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID));
 const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
+const repairTaskId = computed(() => {
+  const text = lines.value.map(lineText).join("\n");
+  return text.match(/task\s+#(\d{4})/i)?.[1] ?? null;
+});
+const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
+
+async function repair(): Promise<void> {
+  if (!repairTaskId.value || repairing.value || !diagnosis.value) return;
+  repairing.value = true;
+  try {
+    await api("/api/debugger/repair", JSON_OPTS("POST", { taskId: repairTaskId.value, diagnosis: diagnosis.value }));
+    repaired.value = true;
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    repairing.value = false;
+  }
+}
 
 // Read the Debugger's enabled state from persisted builtInAgents config.
 function evalBuiltInEnabled(): boolean {
@@ -177,6 +197,9 @@ onMounted(() => {
       <div v-if="busy" class="debugger-thinking" aria-label="Debugger is working">
         <span></span><span></span><span></span>
       </div>
+      <div v-if="repairTaskId && !busy" class="debugger-repair">
+        <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Starting repair…" : repaired ? "Engineer repairing" : "Send repair to engineer" }}</button>
+      </div>
     </div>
 
     <form class="debugger-compose" @submit.prevent="send">
@@ -199,7 +222,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.debugger-panel{position:fixed;right:90px;bottom:18px;width:min(390px,calc(100vw - 130px));height:min(610px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border-bright);border-radius:18px;background:var(--panel-gradient);box-shadow:0 24px 70px rgba(0,0,0,.38);backdrop-filter:blur(18px);animation:debugger-open .18s ease-out;pointer-events:auto;z-index:71}
+.debugger-panel{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);height:100dvh;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border-bright);background:var(--panel-gradient);box-shadow:-24px 0 70px rgba(0,0,0,.28);backdrop-filter:blur(18px);animation:debugger-open .18s ease-out;pointer-events:auto;z-index:71}
+.debugger-repair{padding:0 14px 10px}.debugger-repair button{border:1px solid var(--cyan);border-radius:9px;padding:8px 10px;background:var(--btn-primary-bg);color:var(--btn-primary-color);font:600 11px var(--font-sans);cursor:pointer}.debugger-repair button:disabled{opacity:.6;cursor:default}
 .debugger-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .debugger-avatar{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
 .debugger-avatar img{width:100%;height:100%;object-fit:cover}

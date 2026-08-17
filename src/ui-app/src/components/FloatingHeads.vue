@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import RepoGuideChat from "./RepoGuideChat.vue";
@@ -29,6 +29,10 @@ const activeHead = ref<string | null>(null);
 function toggle(head: string) {
   activeHead.value = activeHead.value === head ? null : head;
 }
+
+const openDebugger = () => { activeHead.value = "debugger"; };
+onMounted(() => window.addEventListener("repoos:open-debugger", openDebugger));
+onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDebugger));
 </script>
 
 <template>
