@@ -11,7 +11,7 @@ branch: feat/hide-mic-voice-icons-when-no-valid-api-k
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T11:15:56Z"
-updated_at: "2026-08-17T12:20:52Z"
+updated_at: "2026-08-17T12:21:17Z"
 ---
 ## Problem
 
