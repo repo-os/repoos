@@ -345,7 +345,12 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
   ui.saving = true;
   try {
     await repo.activateHotfix(ui.active, target);
+    // Selecting a hotfix target is the start action, not merely a mode
+    // setting. Launch the engineer immediately so the user sees the task
+    // enter active state and its progress tab without a second click.
+    await repo.startWork(ui.active);
     confirmHotfix.value = false;
+    ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
