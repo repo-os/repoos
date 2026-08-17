@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
+pm_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-17T14:56:32Z"
+updated_at: "2026-08-17T15:10:42Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-15T05:59:12Z · status inbox→ready
 - 2026-08-17T08:07:08Z · status ready→active, branch
 - 2026-08-17T14:56:32Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-17T15:10:42Z · pm_model_override
