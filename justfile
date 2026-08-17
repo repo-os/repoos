@@ -26,8 +26,8 @@ list:
 kill:
     pkill -f "node.*dist/cli/index.js.*serve" || true
 
-# restart: kill then serve
-restart: kill serve
+# restart: build then kill then serve
+restart: build kill serve
 
 # show the server-out log
 wtf:
@@ -56,3 +56,7 @@ api-log-task id:
 # dev HMR UI
 dev:
     bunx vite --config src/ui-app/vite.config.ts
+
+# git status
+status:
+    git status

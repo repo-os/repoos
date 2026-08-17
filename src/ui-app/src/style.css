@@ -508,6 +508,15 @@
   .dirty-file{font-size:11px;line-height:1.75;color:var(--txt-dim);word-break:break-all}
   .dirty-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 
+  /* Hotfix activation confirmation: teleport above the task drawer so this
+     sensitive choice never looks like ordinary inline content. */
+  .hotfix-overlay{position:fixed;inset:0;z-index:1000;isolation:isolate;pointer-events:auto;background:rgba(4,6,12,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .hotfix-card{position:relative;z-index:1;pointer-events:auto;width:min(540px,100%);background:var(--panel-solid);border:1px solid var(--border-bright);border-radius:16px;padding:22px;box-shadow:var(--drawer-shadow);animation:restartIn .18s ease-out}
+  .hotfix-title{margin:0 0 10px;font-size:15px;font-weight:700;color:var(--txt)}
+  .hotfix-body{margin:0;font-size:13px;line-height:1.55;color:var(--txt-dim)}
+  .hotfix-body strong{color:var(--txt)}
+  .hotfix-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:18px}
+
   /* docs */
   .ctx-page{display:flex;flex-direction:column;height:100%;min-height:0}
   .repo-grid{display:grid;grid-template-columns:230px 1fr;grid-template-rows:minmax(0,1fr);gap:18px;flex:1;min-height:0}
@@ -607,6 +616,8 @@
   .done-error-head{display:flex;align-items:center;gap:7px;color:var(--red);font-weight:700;margin-bottom:6px}
   .done-error-step{font-weight:400;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);font-size:11px}
   .done-error-files{margin-bottom:8px}
+  .done-error-output{margin-bottom:8px}
+  .done-error-pre{margin:6px 0 0;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.28);color:var(--txt-dim);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}
   .done-error-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-error-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
   .done-error-hint{color:var(--txt-dim);font-size:11px;line-height:1.5;margin:0}

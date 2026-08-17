@@ -104,6 +104,28 @@ describe("DoneErrorCard", () => {
     expect(wrapper.text()).toContain("src/b.ts");
   });
 
+  it("renders the per-phase hint and check-output excerpt instead of conflict guidance (0215)", async () => {
+    stubOverflow(true);
+    const wrapper = mount(DoneErrorCard, {
+      props: {
+        message: "The validation check failed — deletion detected by watcher",
+        step: "check",
+        hint: "The build or check gate failed on the merged branch. Fix the failure in the feature branch's worktree, commit, and retry the close-out.",
+        detail: "deletion detected by watcher\n  at tests/x.test.ts:12",
+      },
+    });
+    await flush();
+    await wrapper.find("button").trigger("click");
+    await flush();
+
+    expect(wrapper.text()).toContain("Check output");
+    expect(wrapper.text()).toContain("tests/x.test.ts:12");
+    expect(wrapper.text()).toContain("Fix the failure in the feature branch's worktree");
+    // No conflict guidance for a check failure.
+    expect(wrapper.text()).not.toContain("resolve the conflicting files");
+    expect(wrapper.find(".done-error-files").exists()).toBe(false);
+  });
+
   it("collapses onto the fresh message when a retry replaces it", async () => {
     stubOverflow(true);
     const wrapper = mount(DoneErrorCard, {

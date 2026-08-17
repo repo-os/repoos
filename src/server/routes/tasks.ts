@@ -26,6 +26,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
+import { parseTask } from "../../core/task.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 
@@ -326,9 +327,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange } = ctx;
   const id = params.param1;
   const action = params.param2;
-  const existing = index.getTask(id);
+  let existing = index.getTask(id);
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
+  }
+
+  // Hotfix activation switches the root checkout and rewrites this task file.
+  // A rapid follow-up /start must use that on-disk state, not a snapshot that
+  // was captured before the switch and can still point at a normal worktree.
+  if (action === "start") {
+    try {
+      existing = parseTask({
+        content: readFileSync(existing.absPath, "utf8"),
+        absPath: existing.absPath,
+        root: config.root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+      });
+    } catch (error) {
+      return json(res, 500, { error: `Could not refresh task #${id} before starting: ${(error as Error).message}` });
+    }
   }
 
   if (action === "start") {
