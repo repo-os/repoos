@@ -8,8 +8,9 @@ area: web
 assigned_to: unassigned
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-08-17T11:01:34Z"
+updated_at: "2026-08-17T11:01:40Z"
 ---
 ## Problem
 
@@ -88,3 +89,4 @@ When authentication is enabled:
 ## Activity
 
 - 2026-08-17T11:01:34Z · created · unknown
+- 2026-08-17T11:01:40Z · model_override
