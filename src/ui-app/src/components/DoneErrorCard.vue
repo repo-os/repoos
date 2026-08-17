@@ -1,12 +1,35 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
-import { CircleAlert, ChevronDown } from "lucide-vue-next";
+import { CircleAlert, ChevronDown, Wrench } from "lucide-vue-next";
+import { api, JSON_OPTS } from "../api";
 
 const props = defineProps<{
   message: string;
   step?: string;
   conflicts?: string[];
+  taskId?: string;
+  taskTitle?: string;
 }>();
+
+const fixing = ref(false);
+const fixSent = ref(false);
+async function fix(): Promise<void> {
+  if (fixing.value || !props.taskId) return;
+  fixing.value = true;
+  try {
+    await api("/api/debugger/message", JSON_OPTS("POST", {
+      text: [
+        `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
+        `Phase: ${props.step ?? "unknown"}.`,
+        `Error: ${props.message}`,
+        "Identify the concrete cause and the smallest safe repair so the task can be retried.",
+      ].join("\n"),
+    }));
+    fixSent.value = true;
+  } finally {
+    fixing.value = false;
+  }
+}
 
 /** True when the collapsed message overflows its two-line clamp. */
 const overflow = ref(false);
@@ -91,5 +114,9 @@ defineExpose({ measure, toggle, overflow, expanded });
         in the worktree, then retry.
       </p>
     </div>
+    <button v-if="taskId" type="button" class="done-error-fix" :disabled="fixing || fixSent" @click="fix">
+      <Wrench class="size-3.5" />
+      {{ fixing ? "Sending…" : fixSent ? "Sent to Debugger" : "Fix" }}
+    </button>
   </div>
 </template>
