@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-17T14:28:17Z"
-updated_at: "2026-08-17T14:28:17Z"
+updated_at: "2026-08-17T14:28:25Z"
 ---
 # Refactor coding agent and model selector into a modal
 
@@ -89,3 +90,4 @@ Selecting values in the modal updates the selection that the page-level
 ## Activity
 
 - 2026-08-17T14:28:17Z · created · unknown
+- 2026-08-17T14:28:25Z · model_override
