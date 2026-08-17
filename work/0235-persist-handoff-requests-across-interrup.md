@@ -2,7 +2,7 @@
 id: "0235"
 title: Persist handoff requests across interrupted agent turns
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/persist-handoff-requests-across-interrup
 model_override: default
 pm_model_override: default
 created_at: "2026-08-16T14:52:17Z"
-updated_at: "2026-08-17T15:13:29Z"
+updated_at: "2026-08-17T15:48:23Z"
 review_rounds: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ If finalization fails (e.g. `repoos check` fails on the recovered request), the 
 - 2026-08-17T11:13:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-17T12:16:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-17T15:13:29Z · status active→review
+- 2026-08-17T15:48:23Z · status review→done, release:success
