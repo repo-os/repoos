@@ -307,6 +307,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    // Older Settings builds wrote this select value as a quoted TOML string.
+    // Accept a strict integer string on load so existing repos immediately
+    // recover, while the API now writes new values as numbers.
+    if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
+      cfg.maxActiveTasks = Number(maxActiveTasks);
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
