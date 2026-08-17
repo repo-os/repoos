@@ -9,6 +9,8 @@ onMounted(() => {
 });
 
 const stats = computed(() => repo.boardUsage);
+const loading = computed(() => repo.boardUsageLoading);
+const error = computed(() => repo.boardUsageError);
 
 function fmtElapsed(ms: number | null | undefined): string {
   const totalSec = Math.max(0, Math.floor((ms ?? 0) / 1000));
@@ -48,12 +50,17 @@ const days = computed(() => stats.value?.days ?? []);
 </script>
 
 <template>
-  <div v-if="stats" class="usage-panel">
+  <div class="usage-panel" aria-live="polite">
     <div class="usage-head">
       <span class="usage-title">AI usage — all roles</span>
-      <span v-if="hasUsage" class="usage-sessions">{{ stats.totalSessions }} sessions</span>
+      <span v-if="hasUsage" class="usage-sessions">{{ stats?.totalSessions }} sessions</span>
     </div>
-    <template v-if="hasUsage">
+    <div v-if="loading" class="usage-empty">Loading AI usage…</div>
+    <div v-else-if="error" class="usage-error">
+      AI usage is unavailable: {{ error }}
+      <button type="button" @click="repo.loadBoardUsage()">Retry</button>
+    </div>
+    <template v-else-if="stats && hasUsage">
       <div class="usage-grid">
         <div class="usage-cell">
           <span class="usage-label">time</span>
@@ -94,7 +101,7 @@ const days = computed(() => stats.value?.days ?? []);
         <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
       </div>
     </template>
-    <div v-else class="usage-empty">No AI usage recorded yet.</div>
+    <div v-else>No AI usage recorded yet.</div>
   </div>
 </template>
 
@@ -176,6 +183,23 @@ const days = computed(() => stats.value?.days ?? []);
 .usage-empty {
   font-size: 11.5px;
   color: var(--txt-dim);
+}
+.usage-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--red);
+  font-size: 11.5px;
+}
+.usage-error button {
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 3px 7px;
 }
 .usage-legend {
   margin-top: 6px;
