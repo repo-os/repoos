@@ -261,6 +261,10 @@ export const useRepoStore = defineStore("repo", () => {
   const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
   /** Board-level usage totals (overall + per-role + per-day, 0230). */
   const boardUsage = ref<BoardUsageStats | null>(null);
+  /** Board usage is fetched separately from the board payload. Keep its state
+   * explicit so a failed optional request is not mistaken for invisible UI. */
+  const boardUsageLoading = ref(false);
+  const boardUsageError = ref<string | null>(null);
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -1091,11 +1095,16 @@ export const useRepoStore = defineStore("repo", () => {
    * Best-effort — surfaces empty when telemetry is unavailable.
    */
   async function loadBoardUsage(): Promise<void> {
+    boardUsageLoading.value = true;
+    boardUsageError.value = null;
     try {
       const r = await api<{ ok: boolean; stats: BoardUsageStats }>("/api/stats/board");
-      if (r.ok) boardUsage.value = r.stats;
-    } catch {
-      /* endpoint unavailable — board totals are nice-to-have */
+      if (r.ok && r.stats) boardUsage.value = r.stats;
+      else boardUsageError.value = "The server did not return usage data.";
+    } catch (err) {
+      boardUsageError.value = err instanceof Error ? err.message : "Unable to load usage data.";
+    } finally {
+      boardUsageLoading.value = false;
     }
   }
 
@@ -1404,6 +1413,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadTaskUsage,
     taskUsageFor,
     boardUsage,
+    boardUsageLoading,
+    boardUsageError,
     loadBoardUsage,
     loadDiff,
     diffFor,
