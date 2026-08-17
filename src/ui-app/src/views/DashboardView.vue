@@ -7,6 +7,7 @@ import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
 import NeedsYouPanel from "../components/NeedsYouPanel.vue";
 import SystemResourcePanel from "../components/SystemResourcePanel.vue";
+import UsagePanel from "../components/UsagePanel.vue";
 import AutoEngineeringPanel from "../components/AutoEngineeringPanel.vue";
 import ReleaseTimeline from "../components/ReleaseTimeline.vue";
 
@@ -40,6 +41,10 @@ const { counts, repoName } = storeToRefs(repo);
         </svg>
         New task
       </Button>
+    </div>
+
+    <div class="control-usage">
+      <UsagePanel />
     </div>
 
     <SystemResourcePanel />
@@ -160,3 +165,9 @@ const { counts, repoName } = storeToRefs(repo);
     </div>
   </div>
 </template>
+
+<style scoped>
+.control-usage {
+  margin-bottom: 14px;
+}
+</style>
