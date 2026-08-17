@@ -2088,8 +2088,15 @@ export class AgentRunner {
         this.clearPendingHandoff(request.taskId);
         continue;
       }
+      // Admit to the authorized-capability map so the server's
+      // consumeHandoff validation (server.ts onHandoff) succeeds. The normal
+      // clean-exit path does the same in cleanup().
+      this.authorizedHandoffs.set(request.runId, request);
       // Move to in-flight before firing so concurrent checks see it.
       this.handoffsInFlight.add(request.taskId);
+      // Clear the persisted entry so a later boot does not re-fire the same
+      // request. If finalization ultimately fails, the task stays active and
+      // can be resumed manually.
       this.clearPendingHandoff(request.taskId);
       // Surface in the transcript so the human sees recovery.
       this.system(request.taskId, "Recovering pending handoff from interrupted turn — finalizing now");
@@ -2097,7 +2104,16 @@ export class AgentRunner {
         .catch((err) => {
           this.appendLine(request.taskId, "sys", `✗ recovered handoff failed: ${(err as Error).message}`);
         })
-        .finally(() => this.handoffsInFlight.delete(request.taskId));
+        .finally(() => {
+          this.handoffsInFlight.delete(request.taskId);
+          // If the server handler rejected (consumeHandoff denied, or a
+          // concurrent finalization was already in flight), the capability
+          // was never consumed — remove it so it does not leak and confuse
+          // a later validateHandoff check.
+          if (this.authorizedHandoffs.has(request.runId)) {
+            this.authorizedHandoffs.delete(request.runId);
+          }
+        });
     }
   }
 
