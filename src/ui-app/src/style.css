@@ -610,6 +610,9 @@
   .done-error-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-error-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
   .done-error-hint{color:var(--txt-dim);font-size:11px;line-height:1.5;margin:0}
+  .done-error-fix{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:5px 9px;border:1px solid var(--red-border-tint);border-radius:7px;background:var(--panel);color:var(--red);font:600 11px var(--font-sans);cursor:pointer}
+  .done-error-fix:hover:not(:disabled){border-color:var(--red);background:var(--red-tint)}
+  .done-error-fix:disabled{opacity:.65;cursor:default}
   .tc-done-error{margin-top:10px}
   .drawer-done-error{margin-top:12px}
   .review-running{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
