@@ -1397,7 +1397,8 @@ export const DEBUGGER_NAME = "debugger";
 
 /** The Debugger agent: a chat-first bug diagnostician (no background scan). */
 export function debuggerAgent(): Agent {
-  const base = { cli: "opencode", model: "big pickle" } as const;
+  // previously "big pickle"
+  const base = { cli: "opencode", model: "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731" } as const;
   return {
     name: DEBUGGER_NAME,
     cli: base.cli,
