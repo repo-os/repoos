@@ -26,6 +26,7 @@ async function fix(): Promise<void> {
       ].join("\n"),
     }));
     fixSent.value = true;
+    window.dispatchEvent(new CustomEvent("repoos:open-debugger"));
   } finally {
     fixing.value = false;
   }
