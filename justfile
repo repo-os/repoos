@@ -56,3 +56,7 @@ api-log-task id:
 # dev HMR UI
 dev:
     bunx vite --config src/ui-app/vite.config.ts
+
+# git status
+status:
+    git status
