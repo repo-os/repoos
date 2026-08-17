@@ -115,6 +115,8 @@ interface Entry {
   handoffRequested: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
+  /** A review-fix follow-up keeps the worktree's last committed review state. */
+  skipBoardDivergence?: boolean;
   /**
    * For adopted entries (0214): the PID to poll for liveness. When non-null
    * the stall checker periodically verifies the PID is still alive and cleans
@@ -303,6 +305,59 @@ export function extractUsage(raw: string): { inputTokens?: number; outputTokens?
     }
   }
   return out;
+}
+
+/**
+ * Fold usage/cost found in a raw output line into a running total, clamped to
+ * never move backward (some CLIs report a running total, some reset per turn).
+ * Mirrors `AgentRunner.applyUsage` so one-shot roles aggregate the same way the
+ * streaming engineer runner does. Never fabricates a number — absent fields are
+ * simply left untouched.
+ */
+export function foldUsage(
+  total: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number },
+  raw: string,
+): void {
+  const found = extractUsage(raw);
+  if (found.inputTokens !== undefined) total.inputTokens = Math.max(total.inputTokens ?? 0, found.inputTokens);
+  if (found.outputTokens !== undefined) total.outputTokens = Math.max(total.outputTokens ?? 0, found.outputTokens);
+  if (found.totalTokens !== undefined) total.totalTokens = Math.max(total.totalTokens ?? 0, found.totalTokens);
+  if (found.costUsd !== undefined) total.costUsd = Math.max(total.costUsd ?? 0, found.costUsd);
+}
+
+/**
+ * Classify the cost source for a recorded session (0230). Authoritative
+ * CLI-reported cost wins; Kiro is flagged as its own unit (credits), never
+ * passed off as USD. Callers that compute a token-based estimate (the engineer
+ * runner) set `costSource` to "estimate" themselves — this only reports whether
+ * a real CLI figure was present.
+ */
+export function usageCostSource(
+  agent: Agent,
+  usage: { costUsd?: number },
+): string {
+  if (usage.costUsd) return agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
+  return "none";
+}
+
+/**
+ * Map a runner session key to the REAL task id it belongs to (0230). Engineer
+ * and review sessions are keyed by the task id directly. PM chats are keyed by
+ * a synthetic `pm-task-v2:<id>` id whose suffix is the actual task — attribute
+ * them under that real id so PM cost/tokens aggregate per-task. Non-task chats
+ * (guide) have no task and return null.
+ */
+export function resolveSessionTaskId(taskKey: string | undefined): string | null {
+  if (!taskKey) return null;
+  // Each alternative has a strict literal prefix so nothing else is captured;
+  // covers the current `pm-task-v2:<id>` scheme and the legacy `pm-task:<id>` /
+  // `pm:<id>` forms without mis-parsing their suffixes (0230 / review).
+  const pm =
+    taskKey.match(/^pm-task-v2:(.+)$/i) ??
+    taskKey.match(/^pm-task:(.+)$/i) ??
+    taskKey.match(/^pm:(.+)$/i);
+  if (pm) return pm[1] || null;
+  return taskKey;
 }
 
 /** Input tokens from a `usage`-shaped JSON object, or undefined if absent. */
@@ -1342,7 +1397,8 @@ export const DEBUGGER_NAME = "debugger";
 
 /** The Debugger agent: a chat-first bug diagnostician (no background scan). */
 export function debuggerAgent(): Agent {
-  const base = { cli: "opencode", model: "big pickle" } as const;
+  // previously "big pickle"
+  const base = { cli: "opencode", model: "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731" } as const;
   return {
     name: DEBUGGER_NAME,
     cli: base.cli,
@@ -1468,6 +1524,13 @@ export interface PromptResult {
   ok: boolean;
   output?: string;
   error?: string;
+  /** Wall-clock elapsed ms for the run, or 0 if it never spawned. */
+  elapsedMs?: number;
+  /** Cumulative tokens/cost the CLI reported, when extractUsage found any. */
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
 }
 
 /** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
@@ -1584,6 +1647,7 @@ export function runPrompt(
   return new Promise((resolve) => {
     const { cmd, args } = opts.command ?? promptCommand(agent, prompt);
     let proc: ChildProcess;
+    const startedAt = Date.now();
     try {
       proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     } catch (err) {
@@ -1596,15 +1660,23 @@ export function runPrompt(
     const out: Buffer[] = [];
     const errOut: Buffer[] = [];
     let pending = "";
+    // The full stdout, folded through the same usage/extract path the streaming
+    // runner uses, so one-shot roles (reviewer/CTO) persist real CLI-reported
+    // tokens/cost instead of zeros (0230). `costUsd` holds Kiro credits when
+    // this is a Kiro session (extractUsage maps its credits footer) — callers
+    // must present it as credits, never as USD.
+    const usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } = {};
     const forwardChunk = (c: Buffer): void => {
       out.push(c);
-      if (!opts.onLine) return;
       pending += c.toString("utf8").replace(/\r/g, "\n");
       const parts = pending.split("\n");
       pending = parts.pop() ?? "";
       for (const part of parts) {
         if (part.length === 0) continue;
-        opts.onLine(part);
+        // Fold usage regardless of whether a consumer wants live lines, so the
+        // one-shot result always carries CLI-reported tokens/cost (0230).
+        foldUsage(usage, part);
+        opts.onLine?.(part);
       }
     };
     proc.stdout?.on("data", forwardChunk);
@@ -1624,19 +1696,33 @@ export function runPrompt(
 
     const done = (): void => {
       clearTimeout(timer);
+      const elapsedMs = Date.now() - startedAt;
       // Flush a trailing line with no final newline so nothing is held back.
-      if (opts.onLine && pending.trim()) opts.onLine(pending.trimEnd());
+      if (opts.onLine && pending.trim()) {
+        foldUsage(usage, pending.trimEnd());
+        opts.onLine(pending.trimEnd());
+      }
       pending = "";
       const output = stripAnsi(Buffer.concat(out).toString("utf8").trim());
       const stderr = Buffer.concat(errOut).toString("utf8").trim();
+      // The line stream may drop usage when a CLI emits no trailing newline, so
+      // fold the full accumulated stdout as a backstop (idempotent via Math.max).
+      foldUsage(usage, output);
+      const usageFields = {
+        elapsedMs,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        costUsd: usage.costUsd,
+      };
       if (output) {
-        resolve({ ok: true, output });
+        resolve({ ok: true, output, ...usageFields });
         return;
       }
       const reason = stderr
         ? stderr.split("\n").slice(-3).join(" ").trim()
         : "no output produced";
-      resolve({ ok: false, error: `${cmd} exited without output: ${reason}` });
+      resolve({ ok: false, error: `${cmd} exited without output: ${reason}`, ...usageFields });
     };
     // `close` (not `exit`) fires only after stdio has drained, so a trailing
     // line with no final newline is still readable when we flush it.
@@ -2009,6 +2095,11 @@ export class AgentRunner {
     return this.db?.getSessionTypeStats() ?? [];
   }
 
+  /** Per-day usage totals (server's local time). */
+  dailyTotals() {
+    return this.db?.getDailyTotals() ?? [];
+  }
+
   /** Query board-level summary stats from the database. */
   boardStats() {
     return this.db?.getBoardStats() ?? null;
@@ -2093,7 +2184,7 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string } = {},
+    opts: { resumePreamble?: string; skipBoardDivergence?: boolean } = {},
   ): StartResult {
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
@@ -2135,6 +2226,7 @@ export class AgentRunner {
       session.workdir ?? this.config.root,
       session.task,
       session.branch,
+      { skipBoardDivergence: opts.skipBoardDivergence },
     );
   }
 
@@ -2174,6 +2266,7 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
@@ -2243,6 +2336,7 @@ export class AgentRunner {
       runId,
       handoffRequested: false,
       previewRequested: false,
+      skipBoardDivergence: opts.skipBoardDivergence,
       tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -2700,7 +2794,7 @@ export class AgentRunner {
   }
 
   /** Record a session to the database. Best-effort, never fails the server. */
-  private recordSessionToDb(sessionId: string | undefined, session: Session, taskId: string, exitedCleanly: boolean): void {
+  private recordSessionToDb(sessionId: string | undefined, session: Session, taskKey: string, exitedCleanly: boolean): void {
     if (!this.db || !session) return;
     try {
       // Determine session type from agent name for better aggregations
@@ -2712,10 +2806,17 @@ export class AgentRunner {
       else if (agentName.includes("ross") || agentName.includes("guide")) sessionType = "guide";
       else if (agentName.includes("cto")) sessionType = "cto";
       else if (agentName.includes("tech")) sessionType = "tech-debt";
-      else sessionType = taskId ? "task" : "chat";
+      else sessionType = taskKey ? "task" : "chat";
+
+      // Attribute the session to the REAL task ID. The runner key (`taskKey`) is
+      // the task id for engineer/review sessions, but chat-style sessions (PM)
+      // are keyed by a synthetic id like `pm-task-v2:123`; stripping the prefix
+      // restores the actual task so PM cost/tokens aggregate under the task
+      // (0230). Non-task chats (guide) record no task id at all.
+      const taskId = resolveSessionTaskId(taskKey);
 
       // Reuse existing session ID to accumulate multi-turn sessions into one record
-      const finalSessionId = sessionId || `${taskId}-${randomUUID()}`;
+      const finalSessionId = sessionId || `${taskKey}-${randomUUID()}`;
       const endedAt = new Date().toISOString();
       const elapsedMs = session.accumulatedMs;
       const agent = session.agent ?? "unknown";
@@ -2727,12 +2828,15 @@ export class AgentRunner {
       const totalTokens = session.tokens ?? undefined;
       let costUsd = session.costUsd ?? undefined;
       let costSource = "none";
+      const isKiro = session.engine === "kiro";
 
       if (totalTokens && !costUsd) {
         costUsd = estimateCostUsd(totalTokens);
         costSource = "estimate";
       } else if (session.costUsd) {
-        costSource = "extractUsage";
+        // Kiro reports credits in its billing unit, not US dollars — flag the
+        // source so aggregation/UI never present it as USD (0230).
+        costSource = isKiro ? "kiro-credits" : "extractUsage";
       }
 
       const status = exitedCleanly ? "finished" : "errored";
@@ -3123,6 +3227,7 @@ export class AgentRunner {
    * a transcript sys line) because it means the checklist itself failed.
    */
   private healBoardDivergence(taskId: string, entry: Entry, session?: Session): void {
+    if (entry.skipBoardDivergence) return;
     const task = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (!task || !entry.workdir) return;
     const worktreeCopy = join(entry.workdir, task.path);

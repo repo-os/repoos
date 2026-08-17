@@ -150,6 +150,7 @@ import {
   initInfoHandlers,
   getDebugger,
   sendDebuggerMessage,
+  repairWithDebugger,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -165,6 +166,7 @@ import {
   getTaskStats,
   getSessionTypeStats,
   getBoardStats,
+  getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
   taskAction,
@@ -385,7 +387,7 @@ export function shouldReapStrayServeProcesses(
 export interface ServerHandle {
   url: string;
   port: number;
-  close: () => Promise<void>;
+  close: (reason?: string) => Promise<void>;
   index: LiveIndex;
 }
 
@@ -670,7 +672,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  logger.system("info", "RepoOS server starting", { root: config.root });
+  const requestedPort = opts.port ?? 7171;
+  const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
+  const isControlPlane = requestedPort !== 0 && !isPreviewChild;
+  const mode = isPreviewChild ? "preview" : requestedPort === 0 ? "ephemeral" : opts.reloadReplacement ? "reload-replacement" : "control-plane";
+  logger.system("info", "RepoOS server starting", {
+    root: config.root,
+    pid: process.pid,
+    requestedPort,
+    host: opts.host ?? "127.0.0.1",
+    mode,
+    buildHash: readBuildHash(config.root),
+  });
   activeLogger = logger;
   registerFatalHandlersOnce();
 
@@ -848,7 +861,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Serve process reaper (0168): detect and reap stale serve processes,
   // and prevent port binding conflicts.
-  const reaper = new ServeReaper(config.root, config.cacheDir);
+  // Port-0 harnesses and preview children must neither overwrite nor remove
+  // the real control-plane lock. They are deliberately short-lived and are
+  // not valid evidence about who owns 7171.
+  const reaper = new ServeReaper(config.root, config.cacheDir, isControlPlane);
   reaper.cleanupStale();
   // Boot-time sweep for historical orphans whose deleted root took their
   // lockfile with it. Deliberately fire-and-forget: the sweep is async and
@@ -883,10 +899,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }
-      if (runner.isHandoffInFlight(request.taskId)) {
-        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
-        return;
-      }
+      // AgentRunner marks the handoff as in-flight *before* invoking this
+      // callback so it cannot be mistaken for a stalled task or restarted
+      // mid-finalization. The capability above is single-use, so a duplicate
+      // callback has already been rejected by consumeHandoff(). Checking the
+      // in-flight marker here would reject this very handoff every time.
       const task = index.getTask(request.taskId);
       if (!task) {
         runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
@@ -1207,6 +1224,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
+  // Preview state is process-local. Recreate previews for tasks that were
+  // already in review when this control-plane process started, otherwise a
+  // server restart leaves review tasks without their expected preview URL.
+  for (const task of index.getTasks()) {
+    if (task.status === "review") void autoLaunchPreview(task);
+  }
+
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {
     if (e.type !== "task.updated") return;
@@ -1304,10 +1328,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/chat/message", sendChatMessage);
   router.register("GET", "/api/debugger", getDebugger);
   router.register("POST", "/api/debugger/message", sendDebuggerMessage);
+  router.register("POST", "/api/debugger/repair", repairWithDebugger);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
   router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+  router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
@@ -1325,7 +1351,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
-  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
@@ -1556,7 +1582,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
-  const port = opts.port ?? 7171;
+  const port = requestedPort;
   const host = opts.host ?? "127.0.0.1";
 
   /** One bind attempt: resolves once listening, rejects on the listen error. */
@@ -1623,6 +1649,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           await bindOnce(false);
         }
       } catch (err) {
+        logger.system("error", "RepoOS server bind failed", {
+          pid: process.pid,
+          port,
+          host,
+          mode,
+          error: err instanceof Error ? err.message : String(err),
+        });
         // A bind-only failure must terminate the process cleanly: the file
         // watcher and SSE subscriber are live handles that would otherwise keep
         // a listenerless `repoos serve` process alive (the #0096 incident).
@@ -1646,6 +1679,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
       const actualPort = (server.address() as { port: number }).port;
       const url = `http://${host}:${actualPort}`;
+      logger.system("info", "RepoOS server listening", {
+        pid: process.pid,
+        port: actualPort,
+        host,
+        mode,
+        buildHash: loadedHash,
+      });
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
@@ -1657,7 +1697,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         url,
         port: actualPort,
         index,
-        close: async () => {
+        close: async (reason: string = "handle.close") => {
+          if (isControlPlane) {
+            logger.system("info", "RepoOS control plane shutting down", {
+              pid: process.pid,
+              port: actualPort,
+              reason,
+            });
+          }
           clearInterval(systemSampleTimer);
           if (reapTimer) clearInterval(reapTimer);
           clearInterval(builtInTimer);
@@ -1690,6 +1737,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clients.clear();
           reaper.unregister();
           await closeHttp();
+          if (isControlPlane) {
+            logger.system("info", "RepoOS control plane stopped", {
+              pid: process.pid,
+              port: actualPort,
+              reason,
+            });
+          }
         },
       };
 
@@ -1736,11 +1790,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         stopListening: closeHttp,
         listen: () => bindOnce(false),
         onReloadConfirmed: async () => {
-          await handle.close();
+          await handle.close("reload replacement confirmed");
           process.exit(0);
         },
         onReloadFailed: (reason) => {
           console.log(`  ${reason} — old process keeps serving`);
+          logger.system("warn", "RepoOS reload failed; old control plane retained", {
+            pid: process.pid,
+            port: actualPort,
+            reason,
+          });
           // A manual restart failed: the old server keeps serving (no outage).
           // Release the UI's "Restarting…" state so the notice stays actionable.
           emitEvent({
@@ -1749,7 +1808,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             at: new Date().toISOString(),
           });
         },
-        log: (msg) => console.log(msg),
+        log: (msg) => {
+          console.log(msg);
+          logger.system("info", "RepoOS reload lifecycle", { pid: process.pid, port: actualPort, message: msg });
+        },
       });
       reload.start();
       // Stale-boot self-heal: a newer build that landed while we were starting
