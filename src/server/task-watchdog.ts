@@ -52,6 +52,7 @@ const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
 const ESCALATED_ACTIVITY = /watchdog: escalated to needs_input/;
 const HANDOFF_FAILURE_ACTIVITY = /handoff failed · (.+)$/m;
 const HANDOFF_RETAINED = /handoff retained for recovery/;
+const HANDOFF_RECOVERY_ATTEMPTED = /handoff recovery attempted/;
 
 /** Why a dead/stalled active task's agent session stopped. */
 export type DeadAgentReason = "never-started" | "crashed" | "exited-without-handoff";
@@ -70,6 +71,9 @@ export function suggestNextStep(reason: string): string {
   const r = reason.toLowerCase();
   if (/retained for recovery/.test(r)) {
     return "the handoff request was retained for recovery — it will be finalized automatically on the next server start";
+  }
+  if (/recovery attempted.*finalization failed/.test(r)) {
+    return "handoff recovery was attempted but failed — open the task and resume the session manually to finish and hand off";
   }
   if (/permission|approval|allowed|confirm|prompt/.test(r)) {
     return (
@@ -183,6 +187,14 @@ export function classifyDeadAgentReason(
   // resolved) — the "killed mid-turn" shape.
   const failed = extractHandoffFailure(task.body);
   if (failed) {
+    // Recovery was attempted but finalization failed — surface that outcome,
+    // not the original "retained for recovery" which is now stale (#0235).
+    if (HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) {
+      return {
+        kind: "crashed",
+        reason: "handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed",
+      };
+    }
     // A "retained for recovery" failure means the request was persisted and
     // will be re-fired on the next server boot — not truly crashed (#0235).
     if (HANDOFF_RETAINED.test(failed)) {
@@ -321,8 +333,12 @@ export class TaskWatchdog {
     // Bounded: never surface a task the watchdog already surfaced.
     if (alreadySurfaced(task.body)) return false;
     // A task whose handoff was retained for recovery (#0235) is not stuck —
-    // the recovery is in progress or will fire on the next boot.
-    if (HANDOFF_RETAINED.test(task.body)) return false;
+    // the recovery is in progress or will fire on the next boot.  But only
+    // when no recovery attempt has already been recorded: if recoverPending-
+    // Handoffs fired and finalization failed, the Activity log will contain a
+    // "handoff recovery attempted" entry and the watchdog must be free to
+    // surface/escalate the task again.
+    if (HANDOFF_RETAINED.test(task.body) && !HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) return false;
     const now = Date.now();
     if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
     // The Activity log looks stale, but `isRunning()` above only reflects the
