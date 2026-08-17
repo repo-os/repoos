@@ -231,6 +231,10 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
+  /** Server-authoritative start time for a live agent turn, keyed by task id. */
+  const runningSince = ref<Record<string, string>>({});
+  /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
+  const agentActivityAt = ref<Record<string, string>>({});
   /** When each task's agent last exited (ms timestamp), for the "paused" grace period. */
   const agentExitedAt = ref<Record<string, number>>({});
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
@@ -491,6 +495,8 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
+      runningSince.value = { ...runningSince.value, [e.id]: e.at };
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
@@ -522,10 +528,13 @@ export const useRepoStore = defineStore("repo", () => {
         ...outputs.value,
         [e.id]: [...prev, e.entry].slice(-OUTPUT_MAX_LINES),
       };
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: new Date().toISOString() };
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
+      runningSince.value = Object.fromEntries(Object.entries(runningSince.value).filter(([id]) => id !== e.id));
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
       if (outputs.value[e.id]) {
@@ -673,6 +682,10 @@ export const useRepoStore = defineStore("repo", () => {
       void refreshIntegration().catch(() => {
         /* non-fatal hydration */
       });
+      // The running map is independent from task status. Reconcile it on every
+      // connection so a missed `agent.running` frame can never leave a review
+      // card saying "waiting for human" while its engineer is still working.
+      void fetchRunning();
     };
     es.onerror = () => {
       connected.value = false;
@@ -1160,8 +1173,13 @@ export const useRepoStore = defineStore("repo", () => {
   /** Hydrate the running marker on reload so a running agent is never phantom. */
   async function fetchRunning(): Promise<void> {
     try {
-      const r = await api<{ tasks: { id: string }[] }>("/api/agents/running");
+      const r = await api<{ tasks: { id: string; startedAt: string }[] }>("/api/agents/running");
       runningIds.value = r.tasks.map((t) => t.id);
+      runningSince.value = Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt]));
+      agentActivityAt.value = {
+        ...agentActivityAt.value,
+        ...Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt])),
+      };
     } catch {
       /* endpoint unavailable — running state is best-effort */
     }
@@ -1322,6 +1340,8 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     transitionState,
     runningIds,
+    runningSince,
+    agentActivityAt,
     agentExitedAt,
     outputs,
     agentStats,

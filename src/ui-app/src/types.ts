@@ -326,8 +326,8 @@ export type RepoEvent =
       at: string;
       error?: string;
     }
-  | { type: "agent.running"; id: string }
-  | { type: "agent.exited"; id: string }
+  | { type: "agent.running"; id: string; at: string }
+  | { type: "agent.exited"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats }
