@@ -132,6 +132,8 @@ const THEME_VARIANTS: Record<string, string> = {
   ':root[data-ui-theme="clear"][data-theme="light"]': "clear-light",
   ':root[data-ui-theme="gen z"]': "gen-z-dark",
   ':root[data-ui-theme="gen z"][data-theme="light"]': "gen-z-light",
+  ':root[data-ui-theme="jelly"]': "jelly-dark",
+  ':root[data-ui-theme="jelly"][data-theme="light"]': "jelly-light",
 };
 
 /** Which blocks each variant inherits from, in order (later wins). */
@@ -142,6 +144,8 @@ const THEME_INHERIT: Record<string, string[]> = {
   "clear-light": ["classic-dark", "clear-dark", "clear-light"],
   "gen-z-dark": ["classic-dark", "gen-z-dark"],
   "gen-z-light": ["classic-dark", "gen-z-dark", "gen-z-light"],
+  "jelly-dark": ["classic-dark", "jelly-dark"],
+  "jelly-light": ["classic-dark", "jelly-dark", "jelly-light"],
 };
 
 /** (foreground token, background token) pairs checked for contrast. */
