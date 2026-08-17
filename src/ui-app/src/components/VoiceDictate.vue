@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="voice-dictate">
+  <div v-if="isEnabled" class="voice-dictate">
     <button
       type="button"
       :disabled="!isEnabled || disabled"
