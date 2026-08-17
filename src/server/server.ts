@@ -898,10 +898,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }
-      if (runner.isHandoffInFlight(request.taskId)) {
-        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
-        return;
-      }
+      // AgentRunner marks the handoff as in-flight *before* invoking this
+      // callback so it cannot be mistaken for a stalled task or restarted
+      // mid-finalization. The capability above is single-use, so a duplicate
+      // callback has already been rejected by consumeHandoff(). Checking the
+      // in-flight marker here would reject this very handoff every time.
       const task = index.getTask(request.taskId);
       if (!task) {
         runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
