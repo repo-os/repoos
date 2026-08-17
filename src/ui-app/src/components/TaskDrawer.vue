@@ -14,6 +14,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
+import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -2277,34 +2278,6 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
           </div>
-          <div v-if="confirmHotfix" class="hotfix-confirm">
-            <p>
-              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
-              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
-              Previews and diff-based review are skipped.
-            </p>
-            <div class="delete-actions">
-              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('branch')"
-              >
-                Hotfix on branch
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('main')"
-              >
-                Hotfix on main
-              </Button>
-            </div>
-          </div>
         </div>
         <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
@@ -2850,6 +2823,14 @@ function resetFreeformOverrides(): void {
     :files="dirtyFiles"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+
+  <HotfixConfirmDialog
+    :open="confirmHotfix"
+    :task-id="ui.active?.id"
+    :busy="ui.saving"
+    @cancel="confirmHotfix = false"
+    @start="startHotfix"
   />
 </template>
 
