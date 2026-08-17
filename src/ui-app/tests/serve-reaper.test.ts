@@ -171,23 +171,27 @@ describe("ServeReaper", () => {
 
   it("does not fire while the root keeps reappearing (debounce) (#0216)", async () => {
     let closed = 0;
-    // interval 5ms, needs 3 consecutive misses: a root that flickers back
+    // interval 50ms, needs 3 consecutive misses: a root that flickers back
     // before three checks must never tear the server down.
-    reaper.watchRoot(() => { closed += 1; }, 5, 3);
+    // The timing gap between rm/mkdir must be wide enough that the interval
+    // always lands while the directory state is stable — otherwise Node's
+    // event loop can batch the interval check between rm and mkdir within the
+    // same cycle, counting a false miss.
+    reaper.watchRoot(() => { closed += 1; }, 50, 3);
 
     rmSync(tmpDir, { recursive: true, force: true });
     for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 3));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       mkdirSync(tmpDir, { recursive: true });
-      await new Promise((resolve) => setTimeout(resolve, 3));
+      await new Promise((resolve) => setTimeout(resolve, 30));
       rmSync(tmpDir, { recursive: true, force: true });
     }
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(closed).toBe(0);
 
     // The real case: the root stays gone — three consecutive misses fire.
     rmSync(tmpDir, { recursive: true, force: true });
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     expect(closed).toBe(1);
   });
 
