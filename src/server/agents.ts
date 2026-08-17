@@ -202,6 +202,51 @@ function registryPath(cacheDir: string): string {
   return join(cacheDir, "agents.json");
 }
 
+/** Path to the pending-handoffs store (#0235). */
+function pendingHandoffsPath(cacheDir: string): string {
+  return join(cacheDir, "pending-handoffs.json");
+}
+
+/** On-disk pending handoff store: keyed by taskId, newer runs supersede older ones. */
+interface PendingHandoffStore {
+  requests: AgentHandoffRequest[];
+}
+
+/** Read the pending handoff store; returns empty when missing or corrupted. */
+function readPendingHandoffs(cacheDir: string): PendingHandoffStore {
+  try {
+    const raw = readFileSync(pendingHandoffsPath(cacheDir), "utf8");
+    const parsed = JSON.parse(raw) as Partial<PendingHandoffStore>;
+    if (Array.isArray(parsed.requests)) {
+      return {
+        requests: parsed.requests.filter(
+          (r) => typeof r.taskId === "string" && typeof r.runId === "string" && typeof r.branch === "string" && typeof r.workdir === "string",
+        ),
+      };
+    }
+  } catch {
+    /* missing or corrupt — start fresh */
+  }
+  return { requests: [] };
+}
+
+/** Persist the pending handoff store atomically (best-effort). */
+function writePendingHandoffs(cacheDir: string, store: PendingHandoffStore): void {
+  try {
+    mkdirSync(cacheDir, { recursive: true });
+    const file = pendingHandoffsPath(cacheDir);
+    const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+    try {
+      writeFileSync(temp, JSON.stringify(store, null, 2), "utf8");
+      renameSync(temp, file);
+    } finally {
+      if (existsSync(temp)) unlinkSync(temp);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Read the durable registry; returns empty when missing or corrupted. */
 function readRegistry(cacheDir: string): DurableRegistry {
   try {
@@ -1998,6 +2043,98 @@ export class AgentRunner {
     }
   }
 
+  // ---- Pending handoff persistence (#0235) ----
+
+  /** Persist a handoff request for recovery across process boundaries. */
+  private persistPendingHandoff(request: AgentHandoffRequest): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    // Newer run supersedes older one for the same task.
+    store.requests = store.requests.filter((r) => r.taskId !== request.taskId);
+    store.requests.push(request);
+    writePendingHandoffs(this.cacheDir, store);
+  }
+
+  /** Remove a persisted handoff request (by task id). */
+  private clearPendingHandoff(taskId: string): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    const before = store.requests.length;
+    store.requests = store.requests.filter((r) => r.taskId !== taskId);
+    if (store.requests.length < before) {
+      writePendingHandoffs(this.cacheDir, store);
+    }
+  }
+
+  /**
+   * Recover persisted handoff requests at server boot. Validates each request
+   * (task still exists, still active, branch matches, not already finalizing)
+   * and re-fires onHandoff for valid ones. Idempotent: a request already in
+   * handoffsInFlight is skipped.
+   */
+  recoverPendingHandoffs(): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    if (store.requests.length === 0) return;
+    for (const request of store.requests) {
+      if (this.handoffsInFlight.has(request.taskId)) continue;
+      // Validate: task must still exist and be active, branch must match.
+      const task = this.getTask?.(request.taskId) ?? null;
+      if (!task) {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      if (task.status !== "active") {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      if (task.branch !== request.branch) {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      // Admit to the authorized-capability map so the server's
+      // consumeHandoff validation (server.ts onHandoff) succeeds. The normal
+      // clean-exit path does the same in cleanup().
+      this.authorizedHandoffs.set(request.runId, request);
+      // Move to in-flight before firing so concurrent checks see it.
+      this.handoffsInFlight.add(request.taskId);
+      // Clear the persisted entry so a later boot does not re-fire the same
+      // request. If finalization ultimately fails, the task stays active and
+      // can be resumed manually.
+      this.clearPendingHandoff(request.taskId);
+      // Ensure the session is loaded so system()/appendLine() can write to
+      // the transcript.  For a dead-interrupted task, adoptRunningAgents only
+      // pre-loads sessions for live PIDs — the interrupted-turn session is on
+      // disk but not yet in memory (#0235 review fix).
+      if (!this.sessions.has(request.taskId)) {
+        const loaded = this.loadSession(request.taskId);
+        if (loaded) this.sessions.set(request.taskId, loaded);
+      }
+      // Surface in the transcript so the human sees recovery.
+      this.system(request.taskId, "Recovering pending handoff from interrupted turn — finalizing now");
+      void Promise.resolve(this.onHandoff?.(request))
+        .catch((err) => {
+          this.appendLine(request.taskId, "sys", `✗ recovered handoff failed: ${(err as Error).message}`);
+        })
+        .finally(() => {
+          this.handoffsInFlight.delete(request.taskId);
+          // If the server handler rejected (consumeHandoff denied, or a
+          // concurrent finalization was already in flight), the capability
+          // was never consumed — remove it so it does not leak and confuse
+          // a later validateHandoff check.
+          if (this.authorizedHandoffs.has(request.runId)) {
+            this.authorizedHandoffs.delete(request.runId);
+          }
+          // If the task is still active after recovery, record the outcome in
+          // the Activity log so the watchdog's HANDOFF_RETAINED guard can
+          // unstick it: without this, the retained line permanently blocks
+          // auto-surface/escalation even when recovery has already been
+          // attempted and failed (#0235 review fix).
+          const task = this.getTask?.(request.taskId) ?? null;
+          if (task && task.status === "active") {
+            this.persistHandoffFailure(request.taskId, task, "handoff recovery attempted · finalization failed");
+          }
+        });
+    }
+  }
+
   /** Append trusted server orchestration progress to the retained transcript. */
   system(taskId: string, text: string): void {
     this.appendLine(taskId, "sys", text);
@@ -2240,6 +2377,8 @@ export class AgentRunner {
    * draining after a stop request, cleanup performs the final flush/eviction.
    */
   complete(taskId: string): void {
+    // Task is leaving active — clear any persisted handoff (#0235).
+    this.clearPendingHandoff(taskId);
     for (const [runId, req] of this.authorizedPreviews) {
       if (req.taskId === taskId) this.authorizedPreviews.delete(runId);
     }
@@ -2272,6 +2411,8 @@ export class AgentRunner {
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
     this.pausedTasks.delete(taskId);
+    // A new turn supersedes any persisted handoff from a previous turn (#0235).
+    this.clearPendingHandoff(taskId);
     // A new run supersedes the previous run's preview capability for this task
     // (#0121): a capability minted for an older run is expired the moment a
     // newer turn claims the task.
@@ -2433,7 +2574,7 @@ export class AgentRunner {
       this.tryExtractSessionId(raw, session);
     }
     if (stream === "out") {
-      entry = this.applySignals(taskId, raw, entry);
+      entry = this.applySignals(taskId, raw, entry, session);
     }
     this.recordEntry(taskId, session, stream, entry);
     this.lineTouched(taskId, session, raw);
@@ -2499,7 +2640,7 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
@@ -2531,7 +2672,7 @@ export class AgentRunner {
       // An orphaned tool_result (an id we never saw a tool_use for) has
       // nothing to attach to — drop it rather than fabricate a tool card.
     } else if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
@@ -2545,13 +2686,13 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -2562,13 +2703,13 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -2625,8 +2766,11 @@ export class AgentRunner {
    * request is recorded for server-side start+probe at turn exit (#0121). The
    * surfaced entry becomes a trusted system line so the raw signal text never
    * clutters the transcript.
+   *
+   * When a handoff signal is recognized (#0235), the request is persisted to
+   * disk immediately so it survives an interrupted turn or server restart.
    */
-  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry): AgentOutputEntry {
+  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry, session?: Session): AgentOutputEntry {
     let out = entry;
     if (this.isPreviewRequestSignal(raw, entry)) {
       const running = this.entries.get(taskId);
@@ -2636,6 +2780,16 @@ export class AgentRunner {
     if (this.isHandoffSignal(raw, entry)) {
       const running = this.entries.get(taskId);
       if (running) running.handoffRequested = true;
+      // Persist immediately so the request survives a crash before cleanup (#0235).
+      if (running) {
+        this.persistPendingHandoff({
+          taskId,
+          runId: running.runId,
+          branch: running.branch,
+          workdir: running.workdir ?? this.config.root,
+          ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+        });
+      }
       out = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     return out;
@@ -2935,6 +3089,8 @@ export class AgentRunner {
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
+      // Clean exit with handoff requested: clear the persisted request and fire finalization.
+      this.clearPendingHandoff(taskId);
       const request: AgentHandoffRequest = {
         taskId,
         runId: entry.runId,
@@ -2951,10 +3107,12 @@ export class AgentRunner {
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && exitedCleanly && !taskForHandoff) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the task could not be resolved");
+      this.clearPendingHandoff(taskId);
       this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
     } else if (entry.handoffRequested && !exitedCleanly) {
-      this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
-      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted");
+      // Interrupted turn: the persisted request survives for recovery on next boot (#0235).
+      this.appendLine(taskId, "sys", "⚠ handoff retained for recovery — the request will be finalized on the next server start");
+      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted · handoff retained for recovery");
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
