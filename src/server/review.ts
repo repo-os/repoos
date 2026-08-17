@@ -867,7 +867,11 @@ export class ReviewManager {
     messageParts.push(`Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`);
     const message = messageParts.join("\n");
 
-    // Increment review_rounds and send message
+    // Start the engineer before changing the task state. If the session cannot
+    // resume, leaving the task in review is honest and does not consume a
+    // review round. Once it does start, the task MUST leave review: otherwise
+    // Move to done is blocked by a real engineer process that the board still
+    // presents as sign-off-ready (#0239).
     try {
       const agent = resolveReviewer(this.config);
       if (!agent) return;
@@ -877,7 +881,21 @@ export class ReviewManager {
       const engineerAgent = resolveAgentForTask(this.config, task);
       if (!engineerAgent) return;
 
-      // Increment the counter in task frontmatter
+      const sent = this.runner.send(task.id, message, engineerAgent, { skipBoardDivergence: true });
+      if (!sent.ok) {
+        const note = `Auto-bounce could not start the engineer: ${sent.reason ?? "unknown error"}`;
+        this.emit({
+          type: "task.corrected",
+          id: task.id,
+          path: task.path,
+          note,
+          at: now(),
+        });
+        console.log(`[repoos] auto-bounce blocked for #${task.id}: ${note}`);
+        return;
+      }
+
+      // Increment the counter in task frontmatter.
       const newRounds = reviewRounds + 1;
 
       // Update the review_rounds counter in the task file
@@ -893,8 +911,11 @@ export class ReviewManager {
         return;
       }
 
-      // Send the message to the engineer session
-      this.runner.send(task.id, message, engineerAgent);
+      // A successful auto-bounce is engineering work, not a review task. This
+      // status write also records an activity entry and commits the updated
+      // review-round counter. The live index observes it and keeps the board
+      // and completion guards in sync.
+      patchTaskFile(this.config, task.absPath, { status: "active" });
 
       this.emit({
         type: "task.corrected",
