@@ -450,8 +450,12 @@ export class CloseOutOrchestrator {
     // branch remains, but harmless to leave indefinitely.
     const task = this.getTask?.(job.taskId);
     const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    // The task currently closing is authoritative on its branch. Other task
+    // files can change independently on main (for example, a CTO nudge), so
+    // preserve main's version for those rather than blocking close-out.
+    const autoResolveOurs = ["work/"];
     this.onProgress?.("merge");
-    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
+    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying
       // re-derives the identical conflict; the fix is always to merge main into

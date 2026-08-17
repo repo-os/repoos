@@ -764,7 +764,7 @@ function blockingFiles(stderr: string): string[] {
 export async function mergeBranch(
   root: string,
   branch: string,
-  opts: { autoResolve?: string[] } = {},
+  opts: { autoResolve?: string[]; autoResolveOurs?: string[] } = {},
 ): Promise<MergeBranchResult> {
   const head = currentBranch(root);
   let ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
@@ -792,26 +792,20 @@ export async function mergeBranch(
     // entry exactly or sits under a directory entry (e.g. "dist/").
     const autoResolvable = (p: string): boolean =>
       (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
-    if (conflicts.every(autoResolvable)) {
-      // Every conflicted path is regenerated output or task bookkeeping, so
-      // resolve toward the branch's version wholesale. `-X theirs` handles
-      // content, modify/delete and add/add conflicts; the tree is clean (dirty
-      // files were committed above), so aborting and re-merging is safe.
-      await runGit(root, ["merge", "--abort"], 4000);
-      const theirs = await runGit(root, ["merge", "--no-edit", "-X", "theirs", branch], 60_000);
-      if (theirs.status === 0) {
-        return { merged: true, ff: false, conflicts: [] };
+    const keepOurs = (p: string): boolean =>
+      (opts.autoResolveOurs ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+    if (conflicts.every((p) => autoResolvable(p) || keepOurs(p))) {
+      // Task metadata may be updated concurrently. The closing task's branch
+      // copy is authoritative, while unrelated task files must retain main's
+      // newer activity/status. Resolve each direction explicitly rather than
+      // applying `-X theirs` to every task file wholesale.
+      for (const p of conflicts) {
+        const side = autoResolvable(p) ? "--theirs" : "--ours";
+        const resolved = await runGit(root, ["checkout", side, "--", p], 10_000);
+        if (resolved.status !== 0) break;
       }
-      // `-X theirs` still leaves rename/delete and rename/rename conflicts
-      // (git never auto-resolves those). They only occur among the hashed
-      // build assets inside the auto-resolvable directories, which the build
-      // right after this merge regenerates anyway — keep the current
-      // versions and complete the merge.
-      const rest =
-        git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
-      for (const p of rest) git(root, ["checkout", "--ours", "--", p]);
-      if (rest.length > 0) git(root, ["add", "-A", "--", ...rest]);
-      if (git(root, ["commit", "--no-edit"]) !== null) {
+      const staged = await runGit(root, ["add", "-A", "--", ...conflicts], 10_000);
+      if (staged.status === 0 && git(root, ["commit", "--no-edit"]) !== null) {
         return { merged: true, ff: false, conflicts: [] };
       }
       await runGit(root, ["merge", "--abort"], 4000);
