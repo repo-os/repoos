@@ -115,6 +115,8 @@ interface Entry {
   handoffRequested: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
+  /** A review-fix follow-up keeps the worktree's last committed review state. */
+  skipBoardDivergence?: boolean;
   /**
    * For adopted entries (0214): the PID to poll for liveness. When non-null
    * the stall checker periodically verifies the PID is still alive and cleans
@@ -2181,7 +2183,7 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string } = {},
+    opts: { resumePreamble?: string; skipBoardDivergence?: boolean } = {},
   ): StartResult {
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
@@ -2223,6 +2225,7 @@ export class AgentRunner {
       session.workdir ?? this.config.root,
       session.task,
       session.branch,
+      { skipBoardDivergence: opts.skipBoardDivergence },
     );
   }
 
@@ -2262,6 +2265,7 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
@@ -2331,6 +2335,7 @@ export class AgentRunner {
       runId,
       handoffRequested: false,
       previewRequested: false,
+      skipBoardDivergence: opts.skipBoardDivergence,
       tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -3221,6 +3226,7 @@ export class AgentRunner {
    * a transcript sys line) because it means the checklist itself failed.
    */
   private healBoardDivergence(taskId: string, entry: Entry, session?: Session): void {
+    if (entry.skipBoardDivergence) return;
     const task = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (!task || !entry.workdir) return;
     const worktreeCopy = join(entry.workdir, task.path);
