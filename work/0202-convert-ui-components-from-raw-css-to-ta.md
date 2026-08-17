@@ -2,14 +2,14 @@
 id: "0202"
 title: Convert Vue SFCs from raw CSS to Tailwind utility classes
 type: chore
-status: ready
+status: active
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-15T05:59:12Z"
+updated_at: "2026-08-17T08:07:08Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-14T16:06:37Z · created · unknown
 - 2026-08-15T05:49:17Z · merged duplicate task file (double-submit created two files sharing id 0202, 4s apart); kept this one
 - 2026-08-15T05:59:12Z · status inbox→ready
+- 2026-08-17T08:07:08Z · status ready→active, branch
