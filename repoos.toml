@@ -6,9 +6,9 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "dark"
+theme = "light"
 strictBuild = false
-uiTheme = "gen z"
+uiTheme = "clear"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
@@ -40,7 +40,7 @@ instructions = "Implements tasks: reads the task file, writes clean code, runs `
 name = "reviewer"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
-enabled = true
+enabled = false
 instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Output ONE short markdown report under 400 words with exactly `"
 [[agents]]
 name = "pm"
@@ -60,13 +60,8 @@ cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
-
-
-
-
-
-
-
-
-
-
+[[agents]]
+name = "data analyst"
+cli = "opencode"
+model = "big pickle"
+enabled = true
