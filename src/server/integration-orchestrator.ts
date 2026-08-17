@@ -31,6 +31,7 @@ import {
   GitDirtyCheckError,
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
+import { redactSecrets, stripAnsi } from "./done.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 
@@ -107,32 +108,28 @@ function findTaskFileById(root: string, workDir: string, taskId: string): string
  * code 1`) that is useless as a reason on its own, so keep the last several
  * meaningful lines — the real cause (a failing test, a compiler error) sits
  * just above the wrapper.
+ *
+ * The reason is persisted to `.repoos/integration-jobs/<id>.json` and shown
+ * verbatim in the UI, so it must be free of ANSI escapes (the gate's test
+ * output is colored) and of anything that looks like a credential. When the
+ * excerpt exceeds the character cap it is cut from the front at a WORD
+ * boundary — cutting mid-word produced reasons like `check failed: …eletion
+ * detected by…` (0215) that read as garbage.
  */
-/** Remove terminal control sequences before persisting a diagnostic to JSON/UI. */
-const ANSI_ESCAPE_RE = /\u001b\[[0-?]*[ -/]*[@-~]/g;
-
-/**
- * Format command output for a close-out failure. Keep complete, readable tail
- * lines so a JSON-backed UI never receives terminal colours or a diagnostic
- * truncated in the middle of an ANSI escape sequence.
- */
-export function summarizeCommandFailure(stdout: string, stderr: string): string {
-  const lines = `${stdout}\n${stderr}`
-    .replace(ANSI_ESCAPE_RE, "")
-    .replace(/\r/g, "")
+export function tailLine(stdout: string, stderr: string): string {
+  const lines = redactSecrets(stripAnsi(`${stdout}\n${stderr}`))
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
   if (lines.length === 0) return "unknown error";
-  const tail: string[] = [];
-  let length = 0;
-  for (const line of lines.slice(-TAIL_LINES).reverse()) {
-    const nextLength = length + (tail.length > 0 ? 1 : 0) + line.length;
-    if (nextLength > TAIL_MAX_CHARS && tail.length > 0) break;
-    tail.unshift(nextLength > TAIL_MAX_CHARS ? `…${line.slice(-(TAIL_MAX_CHARS - 1))}` : line);
-    length = tail.join("\n").length;
+  let tail = lines.slice(-TAIL_LINES).join("\n");
+  if (tail.length > TAIL_MAX_CHARS) {
+    const cut = tail.length - TAIL_MAX_CHARS;
+    const lastWs = Math.max(tail.lastIndexOf(" ", cut), tail.lastIndexOf("\n", cut));
+    const start = lastWs >= 0 ? lastWs + 1 : cut;
+    return `…${tail.slice(start)}`;
   }
-  return tail.join("\n");
+  return tail;
 }
 
 interface ProcessRunResult {
@@ -224,6 +221,7 @@ export class CloseOutOrchestrator {
           this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "syncing",
             reason: syncRes.reason,
           });
           return syncRes;
@@ -250,6 +248,7 @@ export class CloseOutOrchestrator {
           this.logger?.integration(job.taskId, "error", "validation failed (non-retryable)", { reason: validateRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "validating",
             reason: validateRes.reason,
           });
           return validateRes;
@@ -264,6 +263,7 @@ export class CloseOutOrchestrator {
               : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
             this.coordinator.updateJob(job.taskId, {
               phase: PHASE_FAILED,
+              failedPhase: "validating",
               reason,
             });
             return { ok: false, reason };
@@ -292,6 +292,7 @@ export class CloseOutOrchestrator {
           this.logger?.integration(job.taskId, "error", "publish failed", { reason: pubRes.reason });
           this.coordinator.updateJob(job.taskId, {
             phase: PHASE_FAILED,
+            failedPhase: "publishing",
             reason: pubRes.reason,
           });
           return pubRes;
@@ -317,6 +318,7 @@ export class CloseOutOrchestrator {
       this.logger?.integration(job.taskId, "error", "orchestrator error", { reason });
       this.coordinator.updateJob(job.taskId, {
         phase: PHASE_FAILED,
+        failedPhase: job.phase ?? "unknown",
         reason: `orchestrator error: ${reason}`,
       });
       return { ok: false, reason };
@@ -496,7 +498,7 @@ export class CloseOutOrchestrator {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
-      return { ok: false, reason: `build failed: ${summarizeCommandFailure(buildRes.stdout, buildRes.stderr)}` };
+      return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
     }
 
     this.onProgress?.("check");
@@ -517,7 +519,7 @@ export class CloseOutOrchestrator {
       checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000 });
     }
     if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${summarizeCommandFailure(checkRes.stdout, checkRes.stderr)}` };
+      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
     }
 
     // Candidate is green. Capture its SHA.

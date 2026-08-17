@@ -616,6 +616,8 @@
   .done-error-head{display:flex;align-items:center;gap:7px;color:var(--red);font-weight:700;margin-bottom:6px}
   .done-error-step{font-weight:400;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);font-size:11px}
   .done-error-files{margin-bottom:8px}
+  .done-error-output{margin-bottom:8px}
+  .done-error-pre{margin:6px 0 0;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.28);color:var(--txt-dim);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}
   .done-error-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-error-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
   .done-error-hint{color:var(--txt-dim);font-size:11px;line-height:1.5;margin:0}

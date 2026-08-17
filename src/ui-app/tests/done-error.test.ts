@@ -111,6 +111,7 @@ describe("inline move-to-done errors", () => {
       message: "merge conflict: src/a.ts, src/b.ts",
       conflicts: ["src/a.ts", "src/b.ts"],
       step: "merge",
+      hint: "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry.",
     });
     // The inline error replaces the global toast — nothing is pushed.
     expect(repo.toasts).toHaveLength(0);
@@ -134,6 +135,45 @@ describe("inline move-to-done errors", () => {
     expect(repo.doneErrorFor("0042")?.step).toBe("check");
   });
 
+  it("maps a background check-failure via SSE to output, never conflicts (0215)", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.progress", {
+      type: "task.progress",
+      id: "0042",
+      step: "failed",
+      phase: "validating",
+      detail: "check failed: \u001b[31m✗\u001b[0m deletion detected by watcher",
+    });
+
+    const err = repo.doneErrorFor("0042");
+    expect(err).not.toBeNull();
+    expect(err?.message).not.toContain("\u001b[");
+    expect(err?.message).toContain("deletion detected by watcher");
+    expect(err?.conflicts).toEqual([]);
+    expect(err?.hint).not.toMatch(/conflict/i);
+  });
+
+  it("maps a background conflict via SSE to conflict guidance (0215)", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.progress", {
+      type: "task.progress",
+      id: "0042",
+      step: "failed",
+      phase: "validating",
+      detail:
+        "merge conflict in src/a.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry",
+    });
+
+    const err = repo.doneErrorFor("0042");
+    expect(err).not.toBeNull();
+    expect(err?.conflicts).toEqual(["src/a.ts"]);
+    expect(err?.hint).toMatch(/resolve the conflicting files/i);
+  });
+
   it("replaces the previous error on retry and clears it on success", async () => {
     const repo = useRepoStore();
     await repo.init();
@@ -145,8 +185,10 @@ describe("inline move-to-done errors", () => {
     // A retry fails with a different message → replaced, still scoped.
     stubDone({ "/done": { ok: false, error: "repoos check failed: build" } });
     await expect(repo.completeTask(task)).rejects.toThrow();
-    expect(repo.doneErrorFor("0042")?.message).toBe("repoos check failed: build");
+    expect(repo.doneErrorFor("0042")?.message).toBe("The validation check failed — build");
     expect(repo.doneErrorFor("0042")?.conflicts).toEqual([]);
+    // A check failure never suggests resolving conflicts.
+    expect(repo.doneErrorFor("0042")?.hint).not.toMatch(/conflict/i);
 
     // A successful retry removes it.
     stubDone({ "/done": { ok: true } });

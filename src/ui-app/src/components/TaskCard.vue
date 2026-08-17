@@ -329,6 +329,8 @@ async function openAgent(): Promise<void> {
       :message="repo.doneErrorFor(task.id)!.message"
       :step="repo.doneErrorFor(task.id)!.step"
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
+      :detail="repo.doneErrorFor(task.id)!.detail"
+      :hint="repo.doneErrorFor(task.id)!.hint"
       :task-id="task.id"
       :task-title="task.title"
       @click.stop
