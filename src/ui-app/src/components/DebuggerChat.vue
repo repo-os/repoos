@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { useConfigStore } from "../stores/config";
@@ -19,6 +20,7 @@ const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const router = useRouter();
 const draft = ref("");
 const submitting = ref(false);
 const hydratedEnabled = ref(false);
@@ -43,6 +45,15 @@ const repairTaskId = computed(() => {
   return text.match(/task\s+#(\d{4})/i)?.[1] ?? null;
 });
 const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
+const providerError = computed(() => lines.value
+  .map(lineText)
+  .reverse()
+  .find((text) => /unexpected server error|unknownerror|connection|credit|rate limit/i.test(text)) ?? null);
+
+function configureDebugger(): void {
+  emit("close");
+  void router.push({ name: "agents" });
+}
 
 async function repair(): Promise<void> {
   if (!repairTaskId.value || repairing.value || !diagnosis.value) return;
@@ -197,6 +208,11 @@ onMounted(() => {
       <div v-if="busy" class="debugger-thinking" aria-label="Debugger is working">
         <span></span><span></span><span></span>
       </div>
+      <div v-if="providerError && !busy" class="debugger-provider-error" role="alert">
+        <strong>The Debugger's agent or model could not respond.</strong>
+        <span>It may be out of credit, unavailable, or disconnected. Choose a different agent or model, then try again.</span>
+        <button type="button" @click="configureDebugger">Change agent or model</button>
+      </div>
       <div v-if="repairTaskId && !busy" class="debugger-repair">
         <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Starting repair…" : repaired ? "Engineer repairing" : "Send repair to engineer" }}</button>
       </div>
@@ -263,6 +279,7 @@ onMounted(() => {
 .debugger-thinking{display:flex;gap:4px;align-self:flex-start;margin-left:31px;padding:9px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
 .debugger-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:debugger-bounce 1.2s infinite}
 .debugger-thinking span:nth-child(2){animation-delay:.15s}.debugger-thinking span:nth-child(3){animation-delay:.3s}
+.debugger-provider-error{display:flex;flex-direction:column;gap:7px;padding:10px 11px;border:1px solid var(--red,#ef5b5b);border-radius:10px;background:color-mix(in srgb,var(--red,#ef5b5b) 10%,var(--panel));color:var(--txt-dim);font-size:11px;line-height:1.45}.debugger-provider-error strong{color:var(--txt);font-size:11px}.debugger-provider-error button{align-self:flex-start;border:1px solid var(--border-bright);border-radius:7px;padding:6px 8px;background:var(--panel-solid);color:var(--txt);font:600 10px var(--font-sans);cursor:pointer}.debugger-provider-error button:hover{border-color:var(--cyan);color:var(--cyan)}
 .debugger-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
 .debugger-compose:focus-within{border-color:var(--border-bright);box-shadow:0 0 0 3px var(--cyan-dim)}
 .debugger-compose textarea{flex:1;min-height:34px;max-height:96px;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
