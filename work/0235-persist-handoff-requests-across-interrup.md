@@ -11,7 +11,7 @@ branch: feat/persist-handoff-requests-across-interrup
 model_override: default
 pm_model_override: default
 created_at: "2026-08-16T14:52:17Z"
-updated_at: "2026-08-17T08:03:34Z"
+updated_at: "2026-08-17T08:13:06Z"
 ---
 ## Problem
 
