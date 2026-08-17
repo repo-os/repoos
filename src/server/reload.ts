@@ -410,15 +410,17 @@ export class ReloadManager {
       return;
     }
     this.child = child;
-    child.on("error", () => {
+    child.on("error", (err) => {
       this.childExited = true;
+      this.log(`reload: replacement pid ${child.pid ?? "unknown"} spawn error: ${err.message}`);
     });
-    child.on("exit", () => {
+    child.on("exit", (code, signal) => {
       this.childExited = true;
+      this.log(`reload: replacement pid ${child.pid ?? "unknown"} exited (code=${code ?? "null"}, signal=${signal ?? "none"})`);
     });
 
     this.log(
-      `reload: spawning replacement on ${this.options.host}:${this.options.port} (${reason})`,
+      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason})`,
     );
     const confirmed = await this.waitForReplacement(secret);
 
