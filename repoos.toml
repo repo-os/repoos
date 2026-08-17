@@ -6,7 +6,7 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
 uiTheme = "clear"
 ntfyEnabled = true
@@ -66,3 +66,4 @@ name = "data analyst"
 cli = "opencode"
 model = "big pickle"
 enabled = true
+
