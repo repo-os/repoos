@@ -23,6 +23,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import SelectSearchGroup from "./SelectSearchGroup.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -253,35 +254,14 @@ function onDocBodyTranscribed(text: string): void {
                   </SelectContent>
                 </Select>
               </div>
-              <div class="agent-field">
-                <label>Coding agent</label>
-                <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field">
-                <label>Model</label>
-                <Select v-model="freeformOverride.model" :disabled="freeformRunning">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectSearchGroup :options="modelOptions" #default="{ options }">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">
-                          {{ m.label }}
-                        </SelectItem>
-                      </SelectViewport>
-                    </SelectSearchGroup>
-                  </SelectContent>
-                </Select>
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="modelOptions"
+                  v-model:cli="freeformOverride.cli"
+                  v-model:model="freeformOverride.model"
+                  :disabled="freeformRunning"
+                />
               </div>
             </div>
             <div v-if="freeformIsCustom" class="agent-override-actions">
