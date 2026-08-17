@@ -2,7 +2,7 @@
 id: "0238"
 title: Add jelly design theme
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-jelly-design-theme
 model_override: default
 pm_model_override: default
 created_at: "2026-08-16T19:05:22Z"
-updated_at: "2026-08-17T03:38:47Z"
+updated_at: "2026-08-17T03:48:53Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The user picks **Jelly** from the **Design theme** dropdown in Settings. The who
 - 2026-08-17T03:29:47Z · status review→active
 - 2026-08-17T03:36:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-17T03:38:47Z · status active→review
+- 2026-08-17T03:48:53Z · status review→done, release:success
