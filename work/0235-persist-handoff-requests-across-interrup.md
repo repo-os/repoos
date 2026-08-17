@@ -11,7 +11,7 @@ branch: feat/persist-handoff-requests-across-interrup
 model_override: default
 pm_model_override: default
 created_at: "2026-08-16T14:52:17Z"
-updated_at: "2026-08-17T07:26:43Z"
+updated_at: "2026-08-17T07:42:31Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ If finalization fails (e.g. `repoos check` fails on the recovered request), the 
 - 2026-08-17T07:23:50Z · body
 - 2026-08-17T07:26:38Z · status review→ready
 - 2026-08-17T07:26:43Z · status ready→active
+- 2026-08-17T07:42:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
