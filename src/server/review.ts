@@ -34,7 +34,14 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveReviewer, reviewCommand, runPrompt, type AgentRunner } from "./agents.js";
+import {
+  resolveReviewer,
+  reviewCommand,
+  runPrompt,
+  usageCostSource,
+  type AgentRunner,
+  type PromptResult,
+} from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
@@ -583,7 +590,7 @@ export class ReviewManager {
     }
 
     // Record the review session to the database
-    this.recordReviewSession(task.id, agent, report.at, state === "ok");
+    this.recordReviewSession(task.id, agent, result, report.at, state === "ok");
 
     return state === "ok"
       ? { ok: true, report }
@@ -591,10 +598,19 @@ export class ReviewManager {
   }
 
   /** Record a review session to the database. Best-effort, never fails. */
-  private recordReviewSession(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+  private recordReviewSession(
+    taskId: string,
+    agent: Agent,
+    result: PromptResult,
+    completedAt: string,
+    success: boolean,
+  ): void {
     if (!this.db) return;
     try {
       const sessionId = `review:${taskId}-${completedAt}`;
+      const elapsedMs = result.elapsedMs ?? 0;
+      // Kiro reviewers report credits (its billing unit), never US dollars.
+      const costSource = usageCostSource(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -602,11 +618,14 @@ export class ReviewManager {
         agent: agent.name,
         model: agent.model,
         codingAgent: agent.cli,
-        startedAt: completedAt, // Review sessions are point-in-time, use completion time
+        startedAt: new Date(Date.parse(completedAt) - elapsedMs).toISOString(),
         endedAt: completedAt,
-        elapsedMs: 0, // Not tracked for reviews
-        costUsd: undefined,
-        costSource: "none",
+        elapsedMs,
+        inputTokens: result.inputTokens ?? undefined,
+        outputTokens: result.outputTokens ?? undefined,
+        totalTokens: result.totalTokens ?? undefined,
+        costUsd: result.costUsd ?? undefined,
+        costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
       });
@@ -684,7 +703,7 @@ export class ReviewManager {
       });
       this.enforceStillInReview(task);
       // Record the failed chat turn
-      this.recordReviewChatTurn(task.id, agent, completedAt, false);
+      this.recordReviewChatTurn(task.id, agent, result, completedAt, false);
       return { ok: false, reason: result.error ?? "the reviewer failed to answer" };
     }
 
@@ -692,15 +711,17 @@ export class ReviewManager {
     this.emit({ type: "review", id: task.id, state: "ready", at: completedAt });
     this.enforceStillInReview(task);
     // Record the successful chat turn
-    this.recordReviewChatTurn(task.id, agent, completedAt, true);
+    this.recordReviewChatTurn(task.id, agent, result, completedAt, true);
     return { ok: true };
   }
 
   /** Record a review chat turn to the database. Best-effort, never fails. */
-  private recordReviewChatTurn(taskId: string, agent: Agent, completedAt: string, success: boolean): void {
+  private recordReviewChatTurn(taskId: string, agent: Agent, result: PromptResult, completedAt: string, success: boolean): void {
     if (!this.db) return;
     try {
       const sessionId = `review:${taskId}-chat-${completedAt}`;
+      const elapsedMs = result.elapsedMs ?? 0;
+      const costSource = usageCostSource(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -708,11 +729,14 @@ export class ReviewManager {
         agent: agent.name,
         model: agent.model,
         codingAgent: agent.cli,
-        startedAt: completedAt,
+        startedAt: new Date(Date.parse(completedAt) - elapsedMs).toISOString(),
         endedAt: completedAt,
-        elapsedMs: 0,
-        costUsd: undefined,
-        costSource: "none",
+        elapsedMs,
+        inputTokens: result.inputTokens ?? undefined,
+        outputTokens: result.outputTokens ?? undefined,
+        totalTokens: result.totalTokens ?? undefined,
+        costUsd: result.costUsd ?? undefined,
+        costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
       });
@@ -843,7 +867,11 @@ export class ReviewManager {
     messageParts.push(`Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`);
     const message = messageParts.join("\n");
 
-    // Increment review_rounds and send message
+    // Start the engineer before changing the task state. If the session cannot
+    // resume, leaving the task in review is honest and does not consume a
+    // review round. Once it does start, the task MUST leave review: otherwise
+    // Move to done is blocked by a real engineer process that the board still
+    // presents as sign-off-ready (#0239).
     try {
       const agent = resolveReviewer(this.config);
       if (!agent) return;
@@ -853,7 +881,21 @@ export class ReviewManager {
       const engineerAgent = resolveAgentForTask(this.config, task);
       if (!engineerAgent) return;
 
-      // Increment the counter in task frontmatter
+      const sent = this.runner.send(task.id, message, engineerAgent, { skipBoardDivergence: true });
+      if (!sent.ok) {
+        const note = `Auto-bounce could not start the engineer: ${sent.reason ?? "unknown error"}`;
+        this.emit({
+          type: "task.corrected",
+          id: task.id,
+          path: task.path,
+          note,
+          at: now(),
+        });
+        console.log(`[repoos] auto-bounce blocked for #${task.id}: ${note}`);
+        return;
+      }
+
+      // Increment the counter in task frontmatter.
       const newRounds = reviewRounds + 1;
 
       // Update the review_rounds counter in the task file
@@ -869,8 +911,11 @@ export class ReviewManager {
         return;
       }
 
-      // Send the message to the engineer session
-      this.runner.send(task.id, message, engineerAgent);
+      // A successful auto-bounce is engineering work, not a review task. This
+      // status write also records an activity entry and commits the updated
+      // review-round counter. The live index observes it and keeps the board
+      // and completion guards in sync.
+      patchTaskFile(this.config, task.absPath, { status: "active" });
 
       this.emit({
         type: "task.corrected",

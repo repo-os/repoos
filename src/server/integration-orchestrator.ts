@@ -452,8 +452,12 @@ export class CloseOutOrchestrator {
     // branch remains, but harmless to leave indefinitely.
     const task = this.getTask?.(job.taskId);
     const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    // The task currently closing is authoritative on its branch. Other task
+    // files can change independently on main (for example, a CTO nudge), so
+    // preserve main's version for those rather than blocking close-out.
+    const autoResolveOurs = ["work/"];
     this.onProgress?.("merge");
-    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve });
+    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying
       // re-derives the identical conflict; the fix is always to merge main into
@@ -587,6 +591,24 @@ export class CloseOutOrchestrator {
           candidateSha: null,
         });
         return { ok: false, reason: "main advanced, revalidating" };
+      }
+
+      // Ensure the main checkout is on the actual main branch before merging.
+      // A branch-mode hotfix leaves the main checkout on its hotfix branch
+      // (ensureHotfix checks it out there). Merging the candidate into the
+      // hotfix branch instead of main silently succeeds (FF or no-op) but
+      // leaves main unchanged and blocks hotfix-branch cleanup. Switch to
+      // main first so the merge, dirty check, and subsequent branch deletion
+      // all target the correct branch.
+      const currentHead = currentBranch(root);
+      if (currentHead && currentHead !== mainBranch) {
+        const checkoutRes = await runGit(root, ["checkout", mainBranch], 10_000);
+        if (checkoutRes.status !== 0) {
+          return {
+            ok: false,
+            reason: `could not switch main checkout from ${currentHead} to ${mainBranch} before publishing (${checkoutRes.stderr.trim()}). The candidate was NOT merged; retry.`,
+          };
+        }
       }
 
       // Publish-time dirty-main guard (#0211): the main working tree can be
