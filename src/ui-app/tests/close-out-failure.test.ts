@@ -45,6 +45,22 @@ describe("classifyFailure", () => {
   it("keeps other publish failures distinct from dirty", () => {
     expect(classifyFailure("publishing", "could not acquire publication lock")).toBe("publishing");
   });
+
+  it("classifies unresolved conflict markers as conflict, not other", () => {
+    expect(classifyFailure("validating", "unresolved conflict markers in src/config.ts")).toBe("conflict");
+    expect(classifyFailure(undefined, "unresolved conflict markers in README.md")).toBe("conflict");
+  });
+
+  it("classifies 'could not verify main is clean at publish time' as dirty", () => {
+    const reason = 'could not verify main is clean at publish time (dirty). The candidate was NOT merged; retry, or commit/stash main\'s working tree first.';
+    expect(classifyFailure("publishing", reason)).toBe("dirty");
+    // Also matches when phase is undefined (sync-path /done handler).
+    expect(classifyFailure(undefined, reason)).toBe("dirty");
+  });
+
+  it("classifies a reason with undefined phase as publishing, not other", () => {
+    expect(classifyFailure(undefined, "could not acquire publication lock")).toBe("publishing");
+  });
 });
 
 describe("describeCloseOutFailure", () => {
@@ -88,6 +104,12 @@ describe("describeCloseOutFailure", () => {
   it("keeps the legacy conflict form working", () => {
     const err = describeCloseOutFailure(undefined, "merge conflict: src/a.ts, src/b.ts");
     expect(err.conflicts).toEqual(["src/a.ts", "src/b.ts"]);
+    expect(err.hint).toBe(CONFLICT_HINT);
+  });
+
+  it("extracts files from 'unresolved conflict markers in X' form", () => {
+    const err = describeCloseOutFailure("validating", "unresolved conflict markers in src/config.ts");
+    expect(err.conflicts).toEqual(["src/config.ts"]);
     expect(err.hint).toBe(CONFLICT_HINT);
   });
 
