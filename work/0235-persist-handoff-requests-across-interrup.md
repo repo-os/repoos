@@ -2,7 +2,7 @@
 id: "0235"
 title: Persist handoff requests across interrupted agent turns
 type: bug
-status: review
+status: ready
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/persist-handoff-requests-across-interrup
 model_override: default
 pm_model_override: default
 created_at: "2026-08-16T14:52:17Z"
-updated_at: "2026-08-17T07:23:50Z"
+updated_at: "2026-08-17T07:26:38Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ If finalization fails (e.g. `repoos check` fails on the recovered request), the 
 - 2026-08-17T06:32:01Z · pm_model_override
 - 2026-08-17T12:00:00Z · pm: fleshed out task description (problem, desired UX, acceptance criteria, notes)
 - 2026-08-17T07:23:50Z · body
+- 2026-08-17T07:26:38Z · status review→ready
