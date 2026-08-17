@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/refactor-coding-agent-and-model-selector
 model_override: default
 created_at: "2026-08-17T14:28:17Z"
-updated_at: "2026-08-17T15:30:20Z"
+updated_at: "2026-08-17T15:50:18Z"
 ---
 # Refactor coding agent and model selector into a modal
 
