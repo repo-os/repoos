@@ -12,7 +12,7 @@ branch: feat/split-code-changes-tab-by-filename
 model_override: default
 pm_model_override: default
 updated_at: "2026-08-18T15:06:13Z"
-review_rounds: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -60,5 +60,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 - 2026-08-18T13:11:41Z · pm_model_override
 - 2026-08-18T13:13:12Z · status active→review
 - 2026-08-18T13:13:12Z · needs_merge
-- 2026-08-18T13:48:32Z · status review→active
-- 2026-08-18T15:06:13Z · status active→review
+- 2026-08-18T15:06:13Z · status ready→review

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, Coins } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -1349,11 +1349,66 @@ watch(
   },
 );
 
-/** Split the diff patch into individual lines for rendering. */
-const diffLines = computed(() => {
-  if (!taskDiff.value || !taskDiff.value.patch) return [] as string[];
-  return taskDiff.value.patch.split("\n");
+/** Parse the unified diff into per-file sections with stats. */
+interface DiffFile {
+  filename: string;
+  lines: string[];
+  added: number;
+  removed: number;
+  type: "added" | "deleted" | "modified";
+}
+
+const diffFiles = computed<DiffFile[]>(() => {
+  if (!taskDiff.value || !taskDiff.value.patch) return [];
+  const sections = taskDiff.value.patch.split(/^diff --git /m);
+  const files: DiffFile[] = [];
+  for (const section of sections) {
+    if (!section.trim()) continue;
+    const lines = section.split("\n");
+    const diffLines = ["diff --git " + lines[0], ...lines.slice(1)];
+    const plusLine = diffLines.find((l) => l.startsWith("+++ "));
+    const minusLine = diffLines.find((l) => l.startsWith("--- "));
+    const isAdd = diffLines.some((l) => l.startsWith("--- /dev/null"));
+    const isDel = diffLines.some((l) => l.startsWith("+++ /dev/null"));
+    const plusName = plusLine ? plusLine.slice(6) : "";
+    const minusName = minusLine ? minusLine.slice(6) : "";
+    const filename = isDel ? minusName : plusName;
+    if (!filename || filename === "/dev/null") continue;
+    let added = 0;
+    let removed = 0;
+    for (const l of diffLines) {
+      if (l.startsWith("+") && !l.startsWith("+++ ")) added++;
+      else if (l.startsWith("-") && !l.startsWith("--- ")) removed++;
+    }
+    files.push({
+      filename,
+      lines: diffLines,
+      added,
+      removed,
+      type: isAdd ? "added" : isDel ? "deleted" : "modified",
+    });
+  }
+  return files;
 });
+
+/** File IDs that are currently collapsed (all expanded by default). */
+const collapsedFiles = reactive(new Set<string>());
+
+function toggleFileCollapse(fileId: string): void {
+  if (collapsedFiles.has(fileId)) collapsedFiles.delete(fileId);
+  else collapsedFiles.add(fileId);
+}
+
+function scrollToDiffFile(fileId: string): void {
+  const el = document.getElementById(fileId);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Reset collapsed state when switching tasks or diffs. */
+watch(
+  () => taskDiff.value,
+  () => { collapsedFiles.clear(); },
+);
 
 /** Classify a single diff line for syntax highlighting. */
 function diffLineClass(line: string): string {
@@ -2637,11 +2692,62 @@ function resetFreeformOverrides(): void {
               </div>
               <div v-else class="diff-stats-loading">Loading change summary…</div>
             </section>
+            <div v-if="diffFiles.length > 0" class="diff-file-list">
+              <button
+                v-for="file in diffFiles"
+                :key="file.filename"
+                type="button"
+                class="diff-file-item"
+                @click="scrollToDiffFile(file.filename)"
+              >
+                <span
+                  class="diff-file-badge"
+                  :class="`diff-file-badge-${file.type}`"
+                >{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
+                <span class="diff-file-name" :title="file.filename">{{ file.filename }}</span>
+                <span class="diff-file-delta">
+                  <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
+                  <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
+                </span>
+              </button>
+              <button
+                v-if="diffFiles.length > 8"
+                type="button"
+                class="diff-file-collapse-all"
+                @click="collapsedFiles.size === diffFiles.length ? collapsedFiles.clear() : diffFiles.forEach(f => collapsedFiles.add(f.filename))"
+              >
+                <ChevronsDownUp class="size-3" />
+                {{ collapsedFiles.size === diffFiles.length ? 'Expand all' : 'Collapse all' }}
+              </button>
+            </div>
             <div v-if="taskDiff.truncated" class="diff-truncated">
               Diff output was truncated — showing the first ~250 kB.
             </div>
-            <pre class="diff-output"><code><template v-for="(line, i) in diffLines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
-</template></code></pre>
+            <div class="diff-sections">
+              <div v-for="file in diffFiles" :key="file.filename" :id="file.filename" class="diff-section">
+                <div
+                  class="diff-section-header"
+                  role="button"
+                  tabindex="0"
+                  @click="toggleFileCollapse(file.filename)"
+                  @keydown.enter="toggleFileCollapse(file.filename)"
+                >
+                  <svg class="diff-section-chevron" :class="{ collapsed: collapsedFiles.has(file.filename) }" viewBox="0 0 24 24" fill="none">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
+                  <span class="diff-section-name">{{ file.filename }}</span>
+                  <span class="diff-file-delta">
+                    <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
+                    <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
+                  </span>
+                </div>
+                <div v-if="!collapsedFiles.has(file.filename)" class="diff-section-content">
+                  <code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+</template></code>
+                </div>
+              </div>
+            </div>
           </template>
         </div>
         <div v-else-if="ui.activeTab === 'tokens'" class="drawer-body">
@@ -3157,5 +3263,170 @@ function resetFreeformOverrides(): void {
 
 .diff-ctx {
   color: #c9d1d9;
+}
+
+/* File list */
+.diff-file-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 224px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.diff-file-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 4px 10px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+  font: 11.5px/1.5 var(--font-mono);
+  text-align: left;
+}
+
+.diff-file-item:last-child {
+  border-bottom: none;
+}
+
+.diff-file-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.diff-file-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: 3px;
+  font: 600 9px/1 var(--font-mono);
+  font-weight: 700;
+}
+
+.diff-file-badge-modified {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.diff-file-badge-added {
+  background: rgba(78, 240, 168, 0.15);
+  color: #4ef0a8;
+}
+
+.diff-file-badge-deleted {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+.diff-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--txt);
+}
+
+.diff-file-delta {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  font: 600 10px/1 var(--font-mono);
+}
+
+.diff-file-add {
+  color: #4ef0a8;
+}
+
+.diff-file-rem {
+  color: #ff6b6b;
+}
+
+.diff-file-collapse-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+  font: 10px/1 var(--font-sans);
+}
+
+.diff-file-collapse-all:hover {
+  color: var(--txt);
+}
+
+/* Diff sections */
+.diff-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diff-section-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  user-select: none;
+}
+
+.diff-section-header:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.diff-section-chevron {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--txt-faint);
+  transition: transform 0.15s ease;
+  transform: rotate(0deg);
+}
+
+.diff-section-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.diff-section-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px/1.4 var(--font-mono);
+  color: #c9d1d9;
+}
+
+.diff-section-content {
+  padding: 12px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+  color: #c9d1d9;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 </style>
