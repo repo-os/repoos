@@ -2,7 +2,7 @@
 id: "0248"
 title: Split code changes tab by filename
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/split-code-changes-tab-by-filename
 model_override: default
 pm_model_override: default
-updated_at: "2026-08-18T13:11:41Z"
+updated_at: "2026-08-18T13:13:12Z"
 review_rounds: 1
 ---
 ## Problem
@@ -57,3 +57,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 - 2026-08-18T12:49:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-18T12:49:45Z · status review→active
 - 2026-08-18T13:11:41Z · pm_model_override
+- 2026-08-18T13:13:12Z · status active→review
