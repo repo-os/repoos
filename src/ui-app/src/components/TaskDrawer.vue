@@ -1349,12 +1349,6 @@ watch(
   },
 );
 
-/** Split the diff patch into individual lines for rendering. */
-const diffLines = computed(() => {
-  if (!taskDiff.value || !taskDiff.value.patch) return [] as string[];
-  return taskDiff.value.patch.split("\n");
-});
-
 /** Parse the unified diff into per-file sections with stats. */
 interface DiffFile {
   filename: string;
@@ -1373,15 +1367,19 @@ const diffFiles = computed<DiffFile[]>(() => {
     const lines = section.split("\n");
     const diffLines = ["diff --git " + lines[0], ...lines.slice(1)];
     const plusLine = diffLines.find((l) => l.startsWith("+++ "));
-    const filename = plusLine ? plusLine.slice(6) : "";
+    const minusLine = diffLines.find((l) => l.startsWith("--- "));
+    const isAdd = diffLines.some((l) => l.startsWith("--- /dev/null"));
+    const isDel = diffLines.some((l) => l.startsWith("+++ /dev/null"));
+    const plusName = plusLine ? plusLine.slice(6) : "";
+    const minusName = minusLine ? minusLine.slice(6) : "";
+    const filename = isDel ? minusName : plusName;
+    if (!filename || filename === "/dev/null") continue;
     let added = 0;
     let removed = 0;
     for (const l of diffLines) {
       if (l.startsWith("+") && !l.startsWith("+++ ")) added++;
       else if (l.startsWith("-") && !l.startsWith("--- ")) removed++;
     }
-    const isAdd = diffLines.some((l) => l.startsWith("--- /dev/null"));
-    const isDel = diffLines.some((l) => l.startsWith("+++ /dev/null"));
     files.push({
       filename,
       lines: diffLines,
@@ -1405,6 +1403,12 @@ function scrollToDiffFile(fileId: string): void {
   const el = document.getElementById(fileId);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+/** Reset collapsed state when switching tasks or diffs. */
+watch(
+  () => taskDiff.value,
+  () => { collapsedFiles.clear(); },
+);
 
 /** Classify a single diff line for syntax highlighting. */
 function diffLineClass(line: string): string {
