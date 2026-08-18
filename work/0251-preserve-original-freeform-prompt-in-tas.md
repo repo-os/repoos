@@ -2,14 +2,14 @@
 id: "0251"
 title: Preserve original freeform prompt in task file and create draft before PM processing
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/preserve-original-freeform-prompt-in-tas
 created_at: "2026-08-18T06:44:31Z"
-updated_at: "2026-08-18T07:28:55Z"
+updated_at: "2026-08-18T07:30:49Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ The current flow is: receive prompt → spawn PM agent → parse output → crea
 
 - 2026-08-18T06:46:45Z · body
 - 2026-08-18T07:28:55Z · status inbox→ready
+- 2026-08-18T07:30:49Z · status ready→active, branch
