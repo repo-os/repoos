@@ -92,6 +92,8 @@ export const useConfigStore = defineStore("config", () => {
   );
   const voiceFields = computed(() => schema.value.filter((f) => f.group === "voice"));
   const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
+  /** All settings exposed outside the Advanced disclosure — the ⌘K index. */
+  const searchableFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
 
   function animateTheme(): void {
     const el = document.documentElement;
@@ -278,6 +280,7 @@ export const useConfigStore = defineStore("config", () => {
     visibleFields,
     voiceFields,
     guardedFields,
+    searchableFields,
     load,
     save,
     saveAgents,

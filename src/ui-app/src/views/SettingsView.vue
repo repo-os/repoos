@@ -131,13 +131,25 @@ async function autoSave(): Promise<void> {
   }
   saveInFlight = true;
   savePending = false;
+  let saved = false;
   try {
     await config.save(buildBody());
+    saved = true;
   } catch {
     // The store exposes the error inline; keep edits in place for the next retry.
   } finally {
     saveInFlight = false;
-    if (savePending) scheduleAutoSave(0);
+    if (savePending) {
+      // New edits arrived while the save was in flight — save again, keeping
+      // whatever the user typed (possibly a fresh secret).
+      scheduleAutoSave(0);
+    } else if (saved) {
+      // The save succeeded and nothing is pending, so the local form is a
+      // stale copy of what was just saved. Re-sync from the store so
+      // server-redacted values (e.g. the voice transcription API key) never
+      // linger plaintext in the local form. On a failed save we keep edits.
+      sync();
+    }
   }
 }
 

@@ -44,6 +44,12 @@ describe("getConfigSchema voice promotion (#0236)", () => {
     const guardedKeys = schema.filter((f) => f.tier === "guarded").map((f) => f.key);
     expect(guardedKeys).not.toContain("whisper.provider");
     expect(guardedKeys).not.toContain("whisper.apiKey");
+
+    // Being `tier: "live"`, both fields land in the searchable/⌘K index
+    // (indexed as everything outside the Advanced disclosure).
+    const searchable = schema.filter((f) => f.tier !== "guarded").map((f) => f.key);
+    expect(searchable).toContain("whisper.provider");
+    expect(searchable).toContain("whisper.apiKey");
   });
 
   it("keeps every non-voice guard low-frequency/risky or developer-facing", () => {
