@@ -42,7 +42,8 @@ const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
 const repairTaskId = computed(() => {
   const text = lines.value.map(lineText).join("\n");
-  return text.match(/task\s+#(\d{4})/i)?.[1] ?? null;
+  const matches = [...text.matchAll(/task\s+#(\d{4})/gi)];
+  return matches.length ? matches[matches.length - 1][1] : null;
 });
 const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
 const providerError = computed(() => lines.value
