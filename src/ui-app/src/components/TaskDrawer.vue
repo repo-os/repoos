@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -2083,6 +2083,15 @@ function resetFreeformOverrides(): void {
             <Diff class="tab-icon" />
             Changes
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'tokens' }"
+            @click="ui.activeTab = 'tokens'"
+          >
+            <Coins class="tab-icon" />
+            Tokens
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -2287,53 +2296,6 @@ function resetFreeformOverrides(): void {
                       <RotateCcw class="size-3" />
                     </Button>
                   </div>
-              </div>
-            </div>
-          </div>
-          <div v-if="showStats" class="agent-stats">
-            <ActivityIndicator v-if="agentBusy" size="sm" />
-            <span class="agent-stat">
-              <span class="agent-stat-label">time</span>
-              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">tokens</span>
-              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">cost</span>
-              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
-            </span>
-          </div>
-          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
-            <div class="task-usage-title">usage — all roles &amp; sessions</div>
-            <div class="task-usage-grid">
-              <span class="agent-stat">
-                <span class="agent-stat-label">total time</span>
-                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total tokens</span>
-                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total cost</span>
-                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">sessions</span>
-                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
-              </span>
-            </div>
-            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
-              <span class="agent-stat-label">by role</span>
-              <div class="task-usage-role-list">
-                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
-                  <span class="task-usage-role-name">{{ r.role }}</span>
-                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
-                  <span>{{ fmtTokens(r.totalTokens) }}</span>
-                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
-                </span>
               </div>
             </div>
           </div>
@@ -2682,6 +2644,58 @@ function resetFreeformOverrides(): void {
 </template></code></pre>
           </template>
         </div>
+        <div v-else-if="ui.activeTab === 'tokens'" class="drawer-body">
+          <div v-if="showStats" class="agent-stats">
+            <ActivityIndicator v-if="agentBusy" size="sm" />
+            <span class="agent-stat">
+              <span class="agent-stat-label">time</span>
+              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">tokens</span>
+              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">cost</span>
+              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
+            </span>
+          </div>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
+            <div class="task-usage-title">usage — all roles &amp; sessions</div>
+            <div class="task-usage-grid">
+              <span class="agent-stat">
+                <span class="agent-stat-label">total time</span>
+                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total tokens</span>
+                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total cost</span>
+                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">sessions</span>
+                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+              </span>
+            </div>
+            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
+              <span class="agent-stat-label">by role</span>
+              <div class="task-usage-role-list">
+                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                  <span class="task-usage-role-name">{{ r.role }}</span>
+                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
+                  <span>{{ fmtTokens(r.totalTokens) }}</span>
+                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
+            <p>No token or usage data yet.</p>
+          </div>
+        </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
@@ -2694,7 +2708,7 @@ function resetFreeformOverrides(): void {
                   :disabled="ui.saving"
                 />
               </div>
-              <div class="agent-field" style="padding-top:20px">
+               <div class="agent-field" style="padding-top:20px">
                   <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
                     <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
                     <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
