@@ -65,3 +65,5 @@ name = "data analyst"
 cli = "opencode"
 model = "big pickle"
 enabled = true
+
+
