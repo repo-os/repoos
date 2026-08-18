@@ -272,6 +272,20 @@ export class AuthStore {
     }
   }
 
+  /** Update the role column on all active sessions for a user. */
+  updateSessionRoles(email: string, newRole: AuthRole): number {
+    if (!this.available) return 0;
+    try {
+      const result = this.db.prepare(`
+        UPDATE auth_sessions SET role = ?
+        WHERE email = ? AND revoked_at IS NULL
+      `).run(newRole, email);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
   cleanupExpiredSessions(): number {
     if (!this.available) return 0;
     try {

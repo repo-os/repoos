@@ -16,7 +16,6 @@
  * GET    /api/auth/audit         – Audit log
  */
 
-import { randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -34,6 +33,9 @@ import {
   otpRequestLimiter,
   otpVerifyLimiter,
   globalRateLimiter,
+  generatePkceVerifier,
+  pkceChallenge,
+  randomHex,
 } from "../../core/auth.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -323,20 +325,20 @@ export const googleLogin: RouteHandler = (ctx, _req, res) => {
     return json(res, 400, { error: "Google OAuth not configured" });
   }
 
-  const state = randomBytes(16).toString("hex");
+  const state = randomHex(16);
+  const nonce = randomHex(16);
+  const codeVerifier = generatePkceVerifier();
+  const codeChallenge = pkceChallenge(codeVerifier);
   const redirectUri = `${_req.headers["x-forwarded-proto"] ?? "http"}://${_req.headers.host}/api/auth/callback/google`;
 
-  // Store state in a short-lived cookie
+  // Store state, nonce, and PKCE verifier in short-lived cookies
   const secure = getSecureFlag(_req);
-  const stateCookie = [
-    `repoos_oauth_state=${state}`,
-    "HttpOnly",
-    "Path=/",
-    `Max-Age=600`,
-    `SameSite=Lax`,
-    secure ? "Secure" : "",
-  ].filter(Boolean).join("; ");
-  res.setHeader("Set-Cookie", stateCookie);
+  const cookieBase = "HttpOnly; Path=/; Max-Age=600; SameSite=Lax" + (secure ? "; Secure" : "");
+  res.setHeader("Set-Cookie", [
+    `repoos_oauth_state=${state}; ${cookieBase}`,
+    `repoos_oauth_nonce=${nonce}; ${cookieBase}`,
+    `repoos_oauth_pkce=${codeVerifier}; ${cookieBase}`,
+  ]);
 
   const params = new URLSearchParams({
     client_id: config.auth.google.clientId,
@@ -344,8 +346,11 @@ export const googleLogin: RouteHandler = (ctx, _req, res) => {
     response_type: "code",
     scope: "openid email profile",
     state,
+    nonce,
     access_type: "offline",
     prompt: "select_account",
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
   });
 
   res.writeHead(302, { Location: `https://accounts.google.com/o/oauth2/v2/auth?${params}` });
@@ -369,14 +374,21 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
   // Verify state
   const cookies = parseCookies(req.headers.cookie);
   const savedState = cookies["repoos_oauth_state"];
+  const savedNonce = cookies["repoos_oauth_nonce"];
+  const codeVerifier = cookies["repoos_oauth_pkce"];
+
   if (!savedState || !timingSafeEqualStr(state, savedState)) {
     res.writeHead(302, { Location: "/login?error=invalid_state" });
     res.end();
     return;
   }
 
-  // Clear the state cookie
-  res.setHeader("Set-Cookie", `repoos_oauth_state=; HttpOnly; Path=/; Max-Age=0`);
+  // Clear the OAuth cookies
+  res.setHeader("Set-Cookie", [
+    "repoos_oauth_state=; HttpOnly; Path=/; Max-Age=0",
+    "repoos_oauth_nonce=; HttpOnly; Path=/; Max-Age=0",
+    "repoos_oauth_pkce=; HttpOnly; Path=/; Max-Age=0",
+  ]);
 
   if (!config.auth?.google) {
     res.writeHead(302, { Location: "/login?error=oauth_not_configured" });
@@ -389,16 +401,22 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
 
   // Exchange code for tokens
   try {
+    const tokenBody: Record<string, string> = {
+      code,
+      client_id: config.auth.google.clientId,
+      client_secret: config.auth.google.clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    };
+    // PKCE: include the code verifier so Google can validate the challenge
+    if (codeVerifier) {
+      tokenBody.code_verifier = codeVerifier;
+    }
+
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: config.auth.google.clientId,
-        client_secret: config.auth.google.clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }),
+      body: new URLSearchParams(tokenBody),
     });
 
     if (!tokenRes.ok) {
@@ -415,10 +433,17 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
       return;
     }
 
-    // Decode JWT payload (no verification needed for user info — Google already validated it)
+    // Decode JWT payload and verify nonce claim
     const payload = JSON.parse(
       Buffer.from(tokens.id_token.split(".")[1], "base64url").toString("utf8"),
     );
+
+    if (savedNonce && payload.nonce !== savedNonce) {
+      res.writeHead(302, { Location: "/login?error=invalid_nonce" });
+      res.end();
+      return;
+    }
+
     const email = payload.email as string | undefined;
     if (!email) {
       res.writeHead(302, { Location: "/login?error=no_email" });
@@ -596,6 +621,8 @@ export const updateUserRole: RouteHandler = async (ctx, req, res) => {
   }
 
   store.upsertUser(email, role, admin.email);
+  // Propagate the new role to all active sessions so authorization is immediate.
+  store.updateSessionRoles(email, role);
   store.logAudit("change_role", email, admin.email, `role: ${role}`);
   return json(res, 200, { ok: true, email, role });
 };
