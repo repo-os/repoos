@@ -1,0 +1,37 @@
+---
+id: "0243"
+title: Convert deterministic built-in scanners into configurable AI agents
+type: feature
+status: inbox
+priority: p1
+area: agent
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-08-17T07:16:50Z"
+updated_at: "2026-08-17T07:16:50Z"
+---
+## Problem
+Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
+
+## Goal
+Convert each scanner into a real AI agent with its own configurable coding CLI and model. Preserve lightweight deterministic checks only as optional evidence/pre-filtering, never as the sole diagnosis.
+
+## Scope
+- Add persisted per-agent configuration for Tech Debt, Performance, Architect, and Design: enabled, schedule, CLI, model, and instructions.
+- Surface CLI/model controls on the Agents page using the available agent/model catalog and validate them server-side.
+- Run each agent through the configured coding-agent CLI with role-specific, read-only prompts and bounded repository context.
+- Keep outputs appropriate to each role: Tech Debt and Performance may create deduplicated inbox tasks; Architect and Design should produce review reports, with explicit user approval before material writes outside those established outputs.
+- Show actionable failures (including unavailable/credit-exhausted models) with a route back to the relevant agent settings.
+- Migrate existing built-in-agent enable/schedule/last-run state without losing it.
+
+## Acceptance criteria
+- Changing any of the four agents CLI/model persists across reloads and is used on its next run.
+- Each agent can complete a read-only analysis using its configured CLI/model.
+- Model/connector failures clearly identify the affected agent and offer configuration recovery.
+- Existing schedules, manual Run now actions, reports, and task-creation safeguards continue to work.
+- Regression tests cover configuration persistence, command selection, success/failure states, and migration from existing scanner settings.
+
+## Activity
+
+- 2026-08-17T07:16:50Z · created · unknown

@@ -18,6 +18,11 @@ const repo = useRepoStore();
 const busy = ref(false);
 const dragging = ref(false);
 
+function formatActivity(at: string | undefined): string | null {
+  if (!at || Number.isNaN(Date.parse(at))) return null;
+  return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 /** Diff stats for this task. */
 const diffStats = computed(() => {
   return repo.diffStatsFor(props.task.id);
@@ -107,13 +112,23 @@ const hint = computed<CardHint | null>(() => {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
     if (repo.isRunning(t.id)) {
-      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
+      return {
+        label: activity ? `coding · active ${activity}` : "coding",
+        title: "agent is making code changes — click to watch the session",
+        cls: "tc-coding",
+      };
     }
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
     if (repo.isRunning(t.id)) {
-      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
+      return {
+        label: activity ? `coding · active ${activity}` : "coding",
+        title: "agent is making code changes — click to watch the session",
+        cls: "tc-coding",
+      };
     }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
@@ -290,8 +305,8 @@ async function openAgent(): Promise<void> {
         <button
           class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
           :class="actionFooterClass"
-          :disabled="busy || (task.status === 'review' && repo.reviewFor(task.id)?.running)"
-          :title="task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : action.title"
+          :disabled="busy || (task.status === 'review' && (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))"
+          :title="task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : task.status === 'review' && repo.isRunning(task.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : action.title"
           @click.stop="runAction"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
@@ -314,6 +329,10 @@ async function openAgent(): Promise<void> {
       :message="repo.doneErrorFor(task.id)!.message"
       :step="repo.doneErrorFor(task.id)!.step"
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
+      :detail="repo.doneErrorFor(task.id)!.detail"
+      :hint="repo.doneErrorFor(task.id)!.hint"
+      :task-id="task.id"
+      :task-title="task.title"
       @click.stop
     />
   </article>

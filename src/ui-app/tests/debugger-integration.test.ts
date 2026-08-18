@@ -123,6 +123,8 @@ describe("debugger agent integration", () => {
       "utf8",
     );
     expect(source).toContain(`const CHAT_ID = "${debuggerSessionId}"`);
+    expect(source).toContain("Change agent or model");
+    expect(source).toContain("useRouter");
   });
 
   it("rejects the built-in run endpoint for the chat-only Debugger", async () => {

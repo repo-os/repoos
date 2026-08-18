@@ -20,6 +20,8 @@ export interface IntegrationJob {
   branch?: string;
   /** Current phase */
   phase: JobPhase;
+  /** The phase the job was in when it failed (only set when `phase` is "failed"). */
+  failedPhase?: JobPhase;
   /** When the job was enqueued (ISO string) */
   enqueuedAt: string;
   /** When job processing started (ISO string, null if not yet started) */
@@ -99,6 +101,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       taskId: stored.taskId,
       branch: stored.branch,
       phase: stored.phase,
+      failedPhase: stored.failedPhase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
       baseMainSha: stored.baseMainSha,

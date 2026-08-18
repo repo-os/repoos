@@ -2,7 +2,7 @@
 id: "0215"
 title: Close-out failure UI shows merge-conflict advice for non-conflict failures
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/close-out-failure-ui-shows-merge-conflic
 model_override: default
 pm_model_override: default
 created_at: "2026-08-15T07:05:46Z"
-updated_at: "2026-08-16T14:18:41Z"
+updated_at: "2026-08-17T15:05:32Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -61,3 +62,8 @@ The failure message should match the phase that failed:
 - 2026-08-16T14:09:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-16T14:13:44Z · status active→review
 - 2026-08-16T14:18:41Z · pm_model_override
+- 2026-08-17T07:05:16Z · status review→active
+- 2026-08-17T07:18:54Z · status active→review
+- 2026-08-17T14:52:38Z · status review→active
+- 2026-08-17T14:55:23Z · status active→review
+- 2026-08-17T15:05:32Z · status review→done, release:success

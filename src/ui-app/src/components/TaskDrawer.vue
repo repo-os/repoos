@@ -14,6 +14,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
+import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -344,7 +345,12 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
   ui.saving = true;
   try {
     await repo.activateHotfix(ui.active, target);
+    // Selecting a hotfix target is the start action, not merely a mode
+    // setting. Launch the engineer immediately so the user sees the task
+    // enter active state and its progress tab without a second click.
+    await repo.startWork(ui.active);
     confirmHotfix.value = false;
+    ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -1981,8 +1987,8 @@ function resetFreeformOverrides(): void {
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running"
-              :title="review?.running ? 'Waiting for automatic review to finish.' : undefined"
+              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id)"
+              :title="review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone" class="size-3.5" />
@@ -2003,6 +2009,10 @@ function resetFreeformOverrides(): void {
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+            :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :task-id="ui.active.id"
+            :task-title="ui.active.title"
           />
           <div
             v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
@@ -2066,17 +2076,17 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'agent'"
           >
             <Bot class="tab-icon" />
-            Engineer
+            Dev
           </button>
           <button
-            v-if="ui.active.status === 'review'"
+            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
             <ShieldCheck class="tab-icon" />
-            Reviewer
+            Review
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
               variant="reviewing"
@@ -2106,13 +2116,6 @@ function resetFreeformOverrides(): void {
               <div class="ro-value">{{ ui.active.title }}</div>
             </div>
           </template>
-          <div class="field">
-            <label>Branch</label>
-            <div class="ro-value mono" style="color: var(--cyan)">
-              {{ effectiveBranch || "—" }}
-              <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
-            </div>
-          </div>
 
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
@@ -2281,34 +2284,6 @@ function resetFreeformOverrides(): void {
                 </Button>
               </div>
             </template>
-          </div>
-          <div v-if="confirmHotfix" class="hotfix-confirm">
-            <p>
-              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
-              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
-              Previews and diff-based review are skipped.
-            </p>
-            <div class="delete-actions">
-              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('branch')"
-              >
-                Hotfix on branch
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('main')"
-              >
-                Hotfix on main
-              </Button>
-            </div>
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
@@ -2855,6 +2830,14 @@ function resetFreeformOverrides(): void {
     :files="dirtyFiles"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+
+  <HotfixConfirmDialog
+    :open="confirmHotfix"
+    :task-id="ui.active?.id"
+    :busy="ui.saving"
+    @cancel="confirmHotfix = false"
+    @start="startHotfix"
   />
 </template>
 
