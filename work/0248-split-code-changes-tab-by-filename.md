@@ -2,7 +2,7 @@
 id: "0248"
 title: Split code changes tab by filename
 type: feature
-status: draft
+status: done
 needs_merge: true
 priority: p2
 area: web
@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/split-code-changes-tab-by-filename
 model_override: default
 pm_model_override: default
-updated_at: "2026-08-18T15:20:00Z"
+updated_at: "2026-08-18T15:20:04Z"
 review_rounds: 1
 ---
 ## Problem
@@ -62,3 +62,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 - 2026-08-18T13:13:12Z · needs_merge
 - 2026-08-18T15:06:13Z · status ready→review
 - 2026-08-18T15:20:00Z · status review→draft
+- 2026-08-18T15:20:04Z · status draft→done, release:success
