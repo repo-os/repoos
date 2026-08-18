@@ -181,12 +181,12 @@ describe("ServeReaper", () => {
 
     rmSync(tmpDir, { recursive: true, force: true });
     for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 20));
       mkdirSync(tmpDir, { recursive: true });
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       rmSync(tmpDir, { recursive: true, force: true });
     }
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 30));
     expect(closed).toBe(0);
 
     // The real case: the root stays gone — three consecutive misses fire.
