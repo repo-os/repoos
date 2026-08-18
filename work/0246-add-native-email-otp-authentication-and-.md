@@ -2,15 +2,15 @@
 id: "0246"
 title: Add native email OTP authentication and admin user allowlist
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: unassigned
 created_by: ""
-branch: ""
+branch: feat/add-native-email-otp-authentication-and-
 model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-08-17T11:07:31Z"
+updated_at: "2026-08-18T11:45:52Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Admins manage members, roles, and auth settings from Settings. Cloudflare Tunnel
 ## Activity
 
 - 2026-08-17T11:07:31Z · body
+- 2026-08-18T11:45:52Z · status ready→active, branch
