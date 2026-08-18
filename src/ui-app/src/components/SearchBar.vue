@@ -201,7 +201,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
-      <span class="search-placeholder">Search tasks, docs, settings…</span>
+      <span class="search-placeholder hidden sm:inline">Search tasks, docs, settings…</span>
       <kbd>⌘K</kbd>
     </button>
 

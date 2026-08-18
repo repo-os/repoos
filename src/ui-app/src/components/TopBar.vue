@@ -37,7 +37,7 @@ function toggleTheme(): void {
         <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
       </svg>
     </div>
-    <div class="brand">RepoOS<small>repo is the os</small></div>
+    <div class="brand hidden sm:inline">RepoOS<small>repo is the os</small></div>
     <div v-if="health" class="repo-pill">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8" />
