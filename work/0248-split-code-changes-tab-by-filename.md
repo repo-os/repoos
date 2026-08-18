@@ -1,11 +1,15 @@
 ---
+id: "0248"
 title: Split code changes tab by filename
 type: feature
+status: ready
 priority: p2
 area: web
 assigned_to: ai
+created_by: ""
+branch: ""
+updated_at: "2026-08-18T02:28:20Z"
 ---
-
 ## Problem
 
 The "Changes" tab currently renders the entire unified diff as a single flat `<pre>` block. For tasks that touch many files, this forces the user to scroll through the entire diff linearly to find the file they care about. There is no way to see at a glance which files changed or jump directly to a specific file's changes.
@@ -41,3 +45,7 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 - The per-file diff header (collapsible) should reuse the existing `diff-header` CSS class styling for visual consistency.
 - Do not add any new runtime dependencies. The parsing is straightforward string splitting on `diff --git` lines.
 - Assume the diff is always in `git diff --patch` format (which it is, per `getDiff()` in `src/core/git.ts`).
+
+## Activity
+
+- 2026-08-18T02:28:20Z · status inbox→ready
