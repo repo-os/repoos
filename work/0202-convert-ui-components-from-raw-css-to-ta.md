@@ -2,7 +2,7 @@
 id: "0202"
 title: Convert Vue SFCs from raw CSS to Tailwind utility classes
 type: chore
-status: active
+status: review
 needs_merge: true
 priority: p3
 area: ui
@@ -12,7 +12,7 @@ branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-18T14:11:31Z"
+updated_at: "2026-08-18T14:11:36Z"
 review_rounds: 1
 ---
 ## Problem
@@ -111,3 +111,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 
 - 2026-08-18T05:47:11Z · body
 - 2026-08-18T06:27:10Z · status review→active
+- 2026-08-18T14:11:36Z · status active→review
