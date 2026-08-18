@@ -77,6 +77,14 @@ const buildTitle = computed(() =>
       >
         Gen Z
       </button>
+      <button
+        :class="{ on: config.uiTheme === 'jelly' }"
+        type="button"
+        :aria-pressed="config.uiTheme === 'jelly'"
+        @click="setUiTheme('jelly')"
+      >
+        Jelly
+      </button>
     </div>
 
     <div class="build-widget" :title="buildTitle">
