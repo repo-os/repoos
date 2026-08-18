@@ -1384,8 +1384,7 @@
    renders as a centered, generously-sized modal instead of a right-side drawer. */
 .am-modal.drawer-wrap.drawer {
   top: 50%; left: 50%; right: auto; bottom: auto;
-  width: min(680px, 92vw); height: auto;
-  max-height: min(80vh, 700px);
+  width: min(680px, 92vw); height: 60vh;
   transform: translate(-50%, -50%);
   border-radius: 16px; border: 1px solid var(--border-bright);
   background: var(--panel-gradient);
@@ -1452,14 +1451,14 @@
 
 /* Agent + Model control button */
 .am-control {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; gap: 7px; width: 100%;
   padding: 7px 13px; border-radius: 9px; border: 1px solid var(--border);
   background: var(--panel-solid); color: var(--txt-dim); font-size: 12.5px;
   font-weight: 600; cursor: pointer; transition: .15s;
   font-family: 'JetBrains Mono', monospace; letter-spacing: .01em;
-  white-space: nowrap;
+  white-space: nowrap; overflow: hidden;
 }
 .am-control:hover { border-color: var(--border-bright); color: var(--txt) }
 .am-control:disabled { opacity: .5; cursor: not-allowed }
 .am-control-icon { color: var(--txt-faint); flex-shrink: 0 }
-.am-control-label { min-width: 0 }
+.am-control-label { min-width: 0; overflow: hidden; text-overflow: ellipsis }
