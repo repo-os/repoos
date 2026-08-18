@@ -8,7 +8,8 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
-updated_at: "2026-08-18T02:28:20Z"
+model_override: default
+updated_at: "2026-08-18T12:36:48Z"
 ---
 ## Problem
 
@@ -49,3 +50,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 ## Activity
 
 - 2026-08-18T02:28:20Z · status inbox→ready
+- 2026-08-18T12:36:48Z · model_override
