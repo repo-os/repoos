@@ -8,11 +8,11 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
-cli_override: claude code
+cli_override: qwen code
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-18T02:59:08Z"
+updated_at: "2026-08-18T02:59:09Z"
 review_rounds: 1
 ---
 ## Problem
@@ -47,3 +47,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-17T15:11:39Z · status review→active
 - 2026-08-17T15:18:05Z · model_override
 - 2026-08-18T02:59:08Z · cli_override
+- 2026-08-18T02:59:09Z · cli_override
