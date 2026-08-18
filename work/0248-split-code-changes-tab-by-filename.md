@@ -3,13 +3,14 @@ id: "0248"
 title: Split code changes tab by filename
 type: feature
 status: ready
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
-updated_at: "2026-08-18T12:36:48Z"
+updated_at: "2026-08-18T13:13:12Z"
 ---
 ## Problem
 
@@ -51,3 +52,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 
 - 2026-08-18T02:28:20Z · status inbox→ready
 - 2026-08-18T12:36:48Z · model_override
+- 2026-08-18T13:13:12Z · needs_merge
