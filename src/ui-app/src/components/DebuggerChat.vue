@@ -28,6 +28,8 @@ const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const repairing = ref(false);
 const repaired = ref(false);
+const showScrollToBottom = ref(false);
+const SCROLL_BOTTOM_THRESHOLD = 80;
 
 interface DebuggerResponse {
   ok: boolean;
@@ -104,7 +106,14 @@ function lineText(entry: AgentOutputEntry): string {
 function scrollToLatest(): void {
   nextTick(() => {
     if (log.value) log.value.scrollTop = log.value.scrollHeight;
+    showScrollToBottom.value = false;
   });
+}
+
+function onLogScroll(): void {
+  const el = log.value;
+  if (!el) return;
+  showScrollToBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight > SCROLL_BOTTOM_THRESHOLD;
 }
 
 async function hydrate(): Promise<void> {
@@ -162,6 +171,10 @@ watch(() => lines.value.length, () => {
   if (props.open) scrollToLatest();
 });
 
+watch(() => props.open, (isOpen) => {
+  if (isOpen) scrollToLatest();
+});
+
 onMounted(() => {
   void config.load();
   void hydrate();
@@ -187,7 +200,8 @@ onMounted(() => {
       </button>
     </header>
 
-    <div ref="log" class="debugger-log" role="log" aria-live="polite" aria-label="Conversation with the Debugger">
+    <div class="debugger-log-wrap">
+    <div ref="log" class="debugger-log" role="log" aria-live="polite" aria-label="Conversation with the Debugger" @scroll="onLogScroll">
       <div v-if="!hasConversation" class="debugger-welcome">
         <div class="debugger-welcome-avatar"><img :src="DEBUGGER_AVATAR" alt="Debugger" /></div>
         <strong>Paste a bug, get a diagnosis</strong>
@@ -217,6 +231,11 @@ onMounted(() => {
       <div v-if="repairTaskId && !busy" class="debugger-repair">
         <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Starting repair…" : repaired ? "Engineer repairing" : "Send repair to engineer" }}</button>
       </div>
+    </div>
+    <button v-if="showScrollToBottom" type="button" class="debugger-scroll-bottom" aria-label="Scroll to latest messages" @click="scrollToLatest">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      Scroll to bottom
+    </button>
     </div>
 
     <form class="debugger-compose" @submit.prevent="send">
@@ -252,7 +271,11 @@ onMounted(() => {
 .debugger-minimize{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:var(--txt-dim);cursor:pointer}
 .debugger-minimize:hover{background:var(--nav-hover-bg);color:var(--txt)}
 .debugger-minimize svg{width:19px;height:19px}
+.debugger-log-wrap{position:relative;flex:1;display:flex;min-height:0}
 .debugger-log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px 14px;overscroll-behavior:contain}
+.debugger-scroll-bottom{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border-bright);border-radius:999px;background:var(--panel-solid);color:var(--txt);font:600 10.5px var(--font-sans);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:2}
+.debugger-scroll-bottom:hover{border-color:var(--cyan);color:var(--cyan)}
+.debugger-scroll-bottom svg{width:13px;height:13px}
 .debugger-welcome{margin:auto 0;text-align:center;padding:22px 12px;color:var(--txt-dim)}
 .debugger-welcome-avatar{width:52px;height:52px;margin:0 auto 12px;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
 .debugger-welcome-avatar img{width:100%;height:100%;object-fit:cover}
