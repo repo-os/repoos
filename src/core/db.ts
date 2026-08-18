@@ -9,10 +9,15 @@
  */
 
 import { existsSync, mkdirSync, statSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 
 let Database: any;
 let dbAvailable = false;
+// RepoOS is ESM, so the CommonJS global `require` is not available. Create a
+// local resolver for optional runtime builtins instead; otherwise telemetry
+// silently degrades even on Node versions that provide `node:sqlite`.
+const runtimeRequire = createRequire(import.meta.url);
 
 // Try to load SQLite. Both Bun and Node 22+ have builtin sqlite support.
 // We try Bun first, then fall back to node:sqlite, and gracefully degrade
@@ -22,7 +27,7 @@ try {
   if (global.Bun && typeof global.Bun === "object") {
     // Running in Bun — use bun:sqlite if available
     try {
-      const sqlite = require("bun:sqlite");
+      const sqlite = runtimeRequire("bun:sqlite");
       Database = sqlite.Database;
       dbAvailable = true;
     } catch {
@@ -33,7 +38,7 @@ try {
   // Fallback to node:sqlite (Node 22+)
   if (!dbAvailable) {
     try {
-      const sqlite = require("node:sqlite");
+      const sqlite = runtimeRequire("node:sqlite");
       Database = sqlite.DatabaseSync;
       dbAvailable = true;
     } catch {

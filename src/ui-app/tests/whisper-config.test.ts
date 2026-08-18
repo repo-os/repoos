@@ -4,7 +4,7 @@
  * apiKey must never reach the browser while the provider + enabled state do.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getConfigSchema, loadConfig } from "../../core/config";
@@ -158,6 +158,26 @@ describe("GET /api/config whisper redaction", () => {
       expect(body.config["whisper.provider"]).toBe("none");
       expect(body.config.whisperEnabled).toBe(false);
     });
+  });
+});
+
+describe("PATCH /api/config select persistence", () => {
+  it("persists the active-task limit as a number and keeps Jelly after reload", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxActiveTasks: "5", uiTheme: "jelly" }),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(body.config.maxActiveTasks).toBe(5);
+      expect(body.config.uiTheme).toBe("jelly");
+    });
+    expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain("maxActiveTasks = 5");
+    expect(loadConfig(root).maxActiveTasks).toBe(5);
+    expect(loadConfig(root).uiTheme).toBe("jelly");
   });
 });
 

@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { CloseOutOrchestrator, summarizeCommandFailure } from "../../server/integration-orchestrator.js";
+import { CloseOutOrchestrator, tailLine } from "../../server/integration-orchestrator.js";
 
 describe("close-out gate retry (0216)", () => {
   let repo: string;
@@ -39,7 +39,7 @@ describe("close-out gate retry (0216)", () => {
   });
 
   it("stores ANSI-free, whole-line command diagnostics", () => {
-    const reason = summarizeCommandFailure(
+    const reason = tailLine(
       "noise\n\u001b[31m+ Received\u001b[39m\n\u001b[32m- 1\u001b[39m\n\u001b[31m+ 2\u001b[39m\n",
       "\u001b[36m ❯ tests/handoff.test.ts:221:73\u001b[39m\nerror: script failed\n",
     );

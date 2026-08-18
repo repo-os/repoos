@@ -39,6 +39,9 @@ export class ServeReaper {
   private readonly lockPath: string;
   private readonly pid = process.pid;
   private readonly repoRoot: string;
+  /** Ephemeral test/harness servers must never touch the control-plane lock. */
+  private readonly enabled: boolean;
+  private registered = false;
   private rootWatch: ReturnType<typeof setInterval> | null = null;
 
   /**
@@ -53,9 +56,10 @@ export class ServeReaper {
    */
   private readonly previewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
 
-  constructor(repoRoot: string, cacheDir: string = ".repoos") {
+  constructor(repoRoot: string, cacheDir: string = ".repoos", enabled: boolean = true) {
     this.repoRoot = repoRoot;
     this.lockPath = join(repoRoot, cacheDir, "serve.lock");
+    this.enabled = enabled;
   }
 
   /**
@@ -135,6 +139,7 @@ export class ServeReaper {
    * This is safe to call multiple times and always succeeds (best-effort).
    */
   cleanupStale(): void {
+    if (!this.enabled) return;
     // A preview child must never reap other processes (see `previewChild`).
     if (this.previewChild) return;
     // Skip cleanup when spawned as a reload replacement — the parent process
@@ -192,6 +197,7 @@ export class ServeReaper {
    * number of processes killed.
    */
   async cleanupOrphanedRoots(): Promise<number> {
+    if (!this.enabled) return 0;
     if (process.platform === "win32") return 0;
     let rows: string;
     try {
@@ -229,6 +235,7 @@ export class ServeReaper {
    * Returns a human-readable error message if there's a conflict, null otherwise.
    */
   detectConflict(port: number, host: string): string | null {
+    if (!this.enabled) return null;
     // Preview children bind distinct ephemeral ports; the control-plane
     // conflict check (which reads the shared per-worktree lockfile) does not
     // apply and can false-positive on a reused port (see `previewChild`).
@@ -263,7 +270,7 @@ export class ServeReaper {
   register(port: number, host: string): void {
     // Preview children don't own the control-plane lockfile; writing it would
     // collide with the worktree's other preview cycles (see `previewChild`).
-    if (this.previewChild) return;
+    if (!this.enabled || this.previewChild) return;
     try {
       mkdirSync(dirname(this.lockPath), { recursive: true });
       const info: ServeLockInfo = {
@@ -273,6 +280,7 @@ export class ServeReaper {
         startedAt: new Date().toISOString(),
       };
       writeFileSync(this.lockPath, JSON.stringify(info, null, 2));
+      this.registered = true;
     } catch {
       // Registration is best-effort — never crash the server
     }
@@ -284,7 +292,11 @@ export class ServeReaper {
    */
   unregister(): void {
     this.stopWatchingRoot();
+    // An ephemeral server used the same repo root but never registered itself;
+    // it must not delete the long-lived control plane's lock on close.
+    if (!this.registered) return;
     this.removeLock();
+    this.registered = false;
   }
 
   // ---- internals ----

@@ -310,7 +310,7 @@ export type RepoEvent =
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
-  | { type: "task.progress"; id: string; step: string; at: string; detail?: string }
+  | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {
@@ -326,8 +326,8 @@ export type RepoEvent =
       at: string;
       error?: string;
     }
-  | { type: "agent.running"; id: string }
-  | { type: "agent.exited"; id: string }
+  | { type: "agent.running"; id: string; at: string }
+  | { type: "agent.exited"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats }
