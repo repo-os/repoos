@@ -2,7 +2,7 @@
 id: "0246"
 title: Add native email OTP authentication and admin user allowlist
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: unassigned
@@ -11,7 +11,8 @@ branch: feat/add-native-email-otp-authentication-and-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-08-18T16:07:41Z"
+updated_at: "2026-08-18T16:12:14Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ Admins manage members, roles, and auth settings from Settings. Cloudflare Tunnel
 - 2026-08-18T15:27:52Z · status active→review
 - 2026-08-18T15:38:13Z · status review→active
 - 2026-08-18T16:06:51Z · status active→review
+- 2026-08-18T16:12:14Z · status review→active
