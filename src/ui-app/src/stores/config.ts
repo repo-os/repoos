@@ -125,6 +125,8 @@ export const useConfigStore = defineStore("config", () => {
     applyUiTheme(t, true);
     try {
       await api("/api/config", JSON_OPTS("PATCH", { uiTheme: t }));
+      if (data.value) data.value.uiTheme = t;
+      form.uiTheme = t;
     } catch (err) {
       applyUiTheme(prev);
       throw err;
@@ -192,6 +194,7 @@ export const useConfigStore = defineStore("config", () => {
       const val = res.config[f.key] ?? f.default;
       if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
       else if (f.type === "boolean") form[f.key] = !!val;
+      else if (f.type === "select") form[f.key] = String(val);
       else form[f.key] = val;
     }
   }
