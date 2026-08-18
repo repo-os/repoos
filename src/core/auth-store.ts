@@ -275,9 +275,10 @@ export class AuthStore {
   cleanupExpiredSessions(): number {
     if (!this.available) return 0;
     try {
+      const now = new Date().toISOString();
       const result = this.db.prepare(`
-        DELETE FROM auth_sessions WHERE expires_at < datetime('now')
-      `).run();
+        DELETE FROM auth_sessions WHERE expires_at < ?
+      `).run(now);
       return result.changes ?? 0;
     } catch {
       return 0;
@@ -361,9 +362,10 @@ export class AuthStore {
   cleanupExpiredOtps(): number {
     if (!this.available) return 0;
     try {
+      const now = new Date().toISOString();
       const result = this.db.prepare(`
-        DELETE FROM auth_otp WHERE expires_at < datetime('now')
-      `).run();
+        DELETE FROM auth_otp WHERE expires_at < ?
+      `).run(now);
       return result.changes ?? 0;
     } catch {
       return 0;
