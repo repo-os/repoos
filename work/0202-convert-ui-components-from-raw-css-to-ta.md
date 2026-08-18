@@ -10,9 +10,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
-pm_model_override: default
+pm_model_override: deepinfra/Qwen/Qwen3-235B-A22B-Instruct-2507
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-18T03:09:49Z"
+updated_at: "2026-08-18T03:30:04Z"
 review_rounds: 1
 ---
 ## Problem
@@ -56,3 +56,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-18T03:01:51Z · status active→review
 - 2026-08-18T03:01:52Z · needs_merge
 - 2026-08-18T03:09:49Z · model_override
+- 2026-08-18T03:30:04Z · pm_model_override
