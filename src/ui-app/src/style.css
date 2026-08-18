@@ -422,6 +422,7 @@
   .tc-hint{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;cursor:help}
   .task-card.coding{border-color:var(--violet-border-tint)}
   .task-card.reviewing{border-color:var(--amber-tint)}
+  .task-card.moving-to-done{border-color:var(--cyan-dim)}
   .task-card.waiting-for-human{border-color:var(--green-border-tint)}
   .task-card[draggable="true"]{cursor:grab}
   .task-card[draggable="true"]:hover{cursor:grab}
@@ -436,6 +437,7 @@
   .tc-human::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
   .task-card .tc-coding::before{display:none}
   .task-card .tc-human::before{display:none}
+  .tc-moving{color:var(--cyan)}
   .tc-needs-input{color:var(--amber)}
   .tc-stalled{color:var(--txt-dim)}
   .tc-dirty{color:var(--amber);font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:help}
