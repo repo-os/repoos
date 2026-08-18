@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/add-task-notification-settings-for-state
 model_override: default
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-16T14:57:04Z"
+updated_at: "2026-08-18T11:44:36Z"
 ---
 ## Problem
 
