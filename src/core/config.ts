@@ -307,6 +307,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    // Older Settings builds wrote this select value as a quoted TOML string.
+    // Accept a strict integer string on load so existing repos immediately
+    // recover, while the API now writes new values as numbers.
+    if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
+      cfg.maxActiveTasks = Number(maxActiveTasks);
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
@@ -357,6 +362,13 @@ export interface ConfigFieldMeta {
   label: string;
   type: "string" | "boolean" | "select" | "array";
   tier: "live" | "restart" | "guarded";
+  /**
+   * Which primary Settings section a field belongs to. Defaults to "general"
+   * for non-guarded fields and "advanced" for guarded ones. "voice" carves out
+   * a dedicated, always-visible "Voice transcription" section so the feature
+   * is discoverable without opening Advanced.
+   */
+  group?: "general" | "voice";
   restartRequired: boolean;
   default: unknown;
   options?: { value: string; label: string }[];
@@ -390,6 +402,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "classic", label: "Classic" },
         { value: "clear", label: "Clear" },
         { value: "gen z", label: "Gen Z" },
+        { value: "jelly", label: "Jelly" },
       ],
       description: "Visual design language — applies immediately, no restart",
     },
@@ -547,7 +560,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       key: "whisper.provider",
       label: "Voice transcription provider",
       type: "select",
-      tier: "guarded",
+      tier: "live",
+      group: "voice",
       restartRequired: false,
       default: DEFAULT_CONFIG.whisper?.provider ?? "none",
       options: [
@@ -561,10 +575,12 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       key: "whisper.apiKey",
       label: "Voice transcription API key",
       type: "string",
-      tier: "guarded",
+      tier: "live",
+      group: "voice",
       restartRequired: false,
       default: "",
-      description: "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
+      description:
+        "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
     },
   ];
 }

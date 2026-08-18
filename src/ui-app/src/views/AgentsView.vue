@@ -9,13 +9,7 @@ import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
-import Select from "../components/ui/select/root.vue";
-import SelectContent from "../components/ui/select/content.vue";
-import SelectItem from "../components/ui/select/item.vue";
-import SelectTrigger from "../components/ui/select/trigger.vue";
-import SelectValue from "../components/ui/select/value.vue";
-import SelectViewport from "../components/ui/select/viewport.vue";
-import SelectSearchGroup from "../components/SelectSearchGroup.vue";
+import AgentModelControl from "../components/AgentModelControl.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -137,6 +131,8 @@ function onCustomInstrTranscribed(agentName: string, text: string): void {
 const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
+
+const cliOptions = computed(() => config.agentsMeta.clis ?? []);
 
 // ---- Live model list (opencode) ----
 // Fetched on mount from /api/models; the dropdown shows the static fallback
@@ -417,34 +413,13 @@ onUnmounted(() => {
           </div>
           <div class="agent-body">
             <div class="agent-field">
-              <label>Coding agent</label>
-              <Select :model-value="a.cli" @update:model-value="(v) => (a.cli = v ?? a.cli)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="c in clis" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="agent-field">
-              <label>Model</label>
-              <Select :model-value="a.model" @update:model-value="(v) => (a.model = v ?? a.model)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
-                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectSearchGroup>
-                </SelectContent>
-              </Select>
+              <label>Coding agent + Model</label>
+              <AgentModelControl
+                :cli-options="cliOptions"
+                :model-options="config.modelsFor(a.cli, a.model)"
+                v-model:cli="a.cli"
+                v-model:model="a.model"
+              />
             </div>
             <div class="agent-field agent-test-result">
               <label>Compatibility</label>
@@ -516,34 +491,13 @@ onUnmounted(() => {
           </div>
           <div class="agent-body">
             <div class="agent-field">
-              <label>Coding agent</label>
-              <Select :model-value="a.cli" @update:model-value="(v) => (a.cli = v ?? a.cli)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="c in clis" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="agent-field">
-              <label>Model</label>
-              <Select :model-value="a.model" @update:model-value="(v) => (a.model = v ?? a.model)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
-                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectSearchGroup>
-                </SelectContent>
-              </Select>
+              <label>Coding agent + Model</label>
+              <AgentModelControl
+                :cli-options="cliOptions"
+                :model-options="config.modelsFor(a.cli, a.model)"
+                v-model:cli="a.cli"
+                v-model:model="a.model"
+              />
             </div>
             <div class="agent-field agent-test-result">
               <label>Compatibility</label>
@@ -595,34 +549,13 @@ onUnmounted(() => {
           </div>
           <div class="agent-body">
             <div class="agent-field">
-              <label>Coding agent</label>
-              <Select :model-value="a.cli" @update:model-value="(v) => (a.cli = v ?? a.cli)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="c in clis" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="agent-field">
-              <label>Model</label>
-              <Select :model-value="a.model" @update:model-value="(v) => (a.model = v ?? a.model)">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectSearchGroup :options="modelsFor(a.cli, a.model)" #default="{ options }">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="m in options" :key="m.value" :value="m.value" :disabled="m.disabled">
-                        {{ m.label }}{{ m.disabled ? " — failed test" : "" }}
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectSearchGroup>
-                </SelectContent>
-              </Select>
+              <label>Coding agent + Model</label>
+              <AgentModelControl
+                :cli-options="cliOptions"
+                :model-options="config.modelsFor(a.cli, a.model)"
+                v-model:cli="a.cli"
+                v-model:model="a.model"
+              />
             </div>
             <div class="agent-field agent-test-result">
               <label>Compatibility</label>

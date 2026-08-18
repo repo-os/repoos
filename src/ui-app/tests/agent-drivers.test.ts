@@ -697,7 +697,7 @@ describe("structured runner handoff (#0094)", () => {
       await waitFor(() => !runner.isRunning("0001"), "failed turn exit");
       expect(requests).toEqual([]);
       expect(runner.output("0001")!.lines.map(dOf)).toContain(
-        "✗ handoff was not started because the agent turn was interrupted",
+        "⚠ handoff retained for recovery — the request will be finalized on the next server start",
       );
     } finally {
       process.env.PATH = oldPath;

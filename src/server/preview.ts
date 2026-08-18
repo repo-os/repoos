@@ -250,6 +250,16 @@ export class PreviewManager {
    * return the existing healthy preview.
    */
   async start(task: Task): Promise<PreviewResult> {
+    // A preview is a read-only leaf in the process tree. It still hosts the
+    // normal API for static rendering, but it must never become an authority
+    // that can create another preview (which otherwise permits recursive
+    // preview trees when a request reaches a preview's API port).
+    if (process.env[CHILD_ENV] === "1") {
+      return {
+        ok: false,
+        error: "Preview servers are read-only; only the main RepoOS control plane can start previews",
+      };
+    }
     if (!task.id) {
       return { ok: false, error: "A task id is required to start a preview" };
     }
