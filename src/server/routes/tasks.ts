@@ -17,6 +17,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
+import { withOriginalPromptSection } from "../../core/repoos.js";
 import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
@@ -61,6 +62,16 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   if (!body.title || typeof body.title !== "string") {
     return json(res, 400, { error: "title is required" });
   }
+  const taskBody = typeof body.body === "string" ? body.body : undefined;
+  // The client-side "Save as draft" freeform path posts the raw prompt as the
+  // body with status `draft` (no client change allowed, see #0251). Treat that
+  // as `originalPrompt` so the raw capture is stored under `## Original prompt`.
+  const originalPrompt =
+    body.status === "draft"
+      ? (typeof body.originalPrompt === "string" && body.originalPrompt
+          ? body.originalPrompt
+          : taskBody)
+      : undefined;
   const created = repoos.createTask({
     title: body.title,
     type: body.type as string | undefined,
@@ -68,7 +79,8 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     priority: body.priority as string | undefined,
     assignedTo: body.assignedTo as string | undefined,
     status: body.status as Status | undefined,
-    body: typeof body.body === "string" ? body.body : undefined,
+    body: taskBody,
+    originalPrompt,
   });
   logger.task(created.id, "info", "Task created", {
     title: created.title,
@@ -89,26 +101,21 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
 
-  const saveDraft = (fallbackReason: "no-pm-agent" | "agent-failed", detail?: string) => {
-    const created = repoos.createTask({
-      title: explanationTitle(explanation),
-      body: explanation,
-      status: "draft",
-    });
-    logger.task(created.id, "warn", `Task created as fallback (${fallbackReason})`, {
-      fallbackReason,
-      reason: detail,
-    });
-    index.applyFileChange(created.absPath);
-    commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-    return json(res, 201, {
-      ok: true,
-      fallback: true,
-      fallbackReason,
-      reason: detail,
-      task: index.getTask(created.id),
-    });
-  };
+  // #0251: create a draft task with the raw prompt preserved FIRST, then spawn
+  // the PM agent asynchronously to flesh it out. The draft survives a PM
+  // failure, a slow/unavailable agent, or a bad response — the user's capture
+  // is never lost.
+  const created = repoos.createTask({
+    title: explanationTitle(explanation),
+    body: explanation,
+    originalPrompt: explanation,
+    status: "draft",
+  });
+  logger.task(created.id, "info", "Task created as draft, PM agent will flesh it out", {
+    title: created.title,
+  });
+  index.applyFileChange(created.absPath);
+  commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
 
   const freeformAgentName =
     typeof body?.agentOverride === "string" && body.agentOverride
@@ -137,37 +144,80 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   } else {
     pm = resolvePmAgent(config);
   }
+
+  // No PM agent configured: leave the draft exactly as created (the fallback
+  // behavior — the original prompt is already preserved under its heading).
   if (!pm) {
-    return saveDraft("no-pm-agent");
+    return json(res, 201, {
+      ok: true,
+      fallback: true,
+      fallbackReason: "no-pm-agent",
+      task: index.getTask(created.id),
+    });
   }
 
-  const result = await runPrompt(pm, pmPrompt(explanation), {
-    cwd: config.root,
-    onLine: runId
-      ? (line) => {
-          emitEvent({
-            type: "agent.output",
-            id: runId,
-            entry: { s: "out", d: line },
-            stream: "out",
-            at: new Date().toISOString(),
-          });
-        }
-      : undefined,
-  });
-  if (!result.ok || !result.output) {
-    return saveDraft(
-      "agent-failed",
-      result.error ?? "the PM agent returned no usable output",
-    );
-  }
-  const fields = parseGeneratedTask(result.output);
-  if (!fields.title || !fields.body) {
-    return saveDraft("agent-failed", "the PM agent returned unusable output");
-  }
-  const created = repoos.createTask(fields);
-  index.applyFileChange(created.absPath);
-  commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
+  // Spawn the PM agent asynchronously to replace the draft body with the
+  // structured version, keeping the `## Original prompt` section intact. The
+  // response is returned immediately so the user gets their draft right away.
+  void (async () => {
+    try {
+      const result = await runPrompt(pm!, pmPrompt(explanation), {
+        cwd: config.root,
+        onLine: runId
+          ? (line) => {
+              emitEvent({
+                type: "agent.output",
+                id: runId,
+                entry: { s: "out", d: line },
+                stream: "out",
+                at: new Date().toISOString(),
+              });
+            }
+          : undefined,
+      });
+      if (!result.ok || !result.output) {
+        logger.task(created.id, "warn", "PM agent failed; keeping draft with original prompt", {
+          reason: result.error ?? "the PM agent returned no usable output",
+        });
+        return;
+      }
+      const fields = parseGeneratedTask(result.output);
+      if (!fields.title || !fields.body) {
+        logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {});
+        return;
+      }
+      // Keep the raw prompt section, then promote the fleshed-out task to the
+      // config's default status (usually "inbox") so it lands on the board like
+      // the pre-0251 flow did, instead of lingering as a draft.
+      const finalBody = withOriginalPromptSection(fields.body, explanation);
+      const updated = patchTaskFile(
+        config,
+        created.absPath,
+        {
+          title: fields.title,
+          type: fields.type,
+          priority: fields.priority,
+          area: fields.area,
+          assignedTo: fields.assignedTo,
+          body: finalBody,
+          status: config.defaultStatus,
+        },
+        { onStatusChange: ctx.onServerStatusChange },
+      );
+      index.applyFileChange(updated.absPath);
+      logger.task(created.id, "info", "PM agent fleshed out draft task", {
+        title: updated.title,
+      });
+    } catch (err) {
+      logger.task(
+        created.id,
+        "warn",
+        "PM agent update failed; keeping draft with original prompt",
+        { reason: err instanceof Error ? err.message : String(err) },
+      );
+    }
+  })();
+
   return json(res, 201, {
     ok: true,
     fallback: false,
