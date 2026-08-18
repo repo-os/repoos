@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/dedupe-the-close-out-pipeline-s-build-an
 model_override: default
 created_at: "2026-08-15T05:57:16Z"
-updated_at: "2026-08-16T13:55:43Z"
+updated_at: "2026-08-17T08:06:36Z"
 review_rounds: 1
 ---
 ## Problem
@@ -58,3 +58,4 @@ This is the narrow remainder of #0075 (deleted — that task's other concerns, a
 - 2026-08-16T12:10:59Z · needs_merge
 - 2026-08-16T13:43:29Z · status review→active
 - 2026-08-16T13:55:41Z · status active→review
+- 2026-08-17T08:06:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
