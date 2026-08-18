@@ -203,11 +203,44 @@ export async function handoffTask(
       onProgress?.("main");
       if (task.status !== "review") {
         try {
-          patchTaskFile(config, task.absPath, { status: "review" }, {
+          // A branch-mode hotfix runs in the root checkout, so task.absPath
+          // points at the hotfix branch's copy. Before the checkout returns to
+          // main (for example during a server reload), write the same metadata
+          // to main's canonical board copy as well. Otherwise the next server
+          // reads the pre-hotfix task and makes completed work look ready again.
+          if (isHotfix && task.hotfixTarget !== "main") {
+            const onHotfixBranch = await runGit(config.root, ["branch", "--show-current"], 10_000);
+            if (onHotfixBranch.status !== 0 || onHotfixBranch.stdout.trim() !== task.branch) {
+              return { ok: false, step: "main", detail: "hotfix checkout changed before canonical task sync" };
+            }
+            const checkoutMain = await runGit(config.root, ["checkout", "main"], 20_000);
+            if (checkoutMain.status !== 0) {
+              return { ok: false, step: "main", detail: `could not check out main for task sync: ${concise(checkoutMain)}` };
+            }
+            try {
+              patchTaskFile(config, join(config.root, task.path), {
+                status: "review",
+                branch: task.branch,
+                hotfix: true,
+                hotfixTarget: task.hotfixTarget,
+              }, {
+                onStatusChange: onStatusChange
+                  ? (updated, prev, next) => onStatusChange(updated, prev, next)
+                  : undefined,
+              });
+            } finally {
+              const restore = await runGit(config.root, ["checkout", task.branch], 20_000);
+              if (restore.status !== 0) {
+                return { ok: false, step: "main", detail: `canonical task synced but could not restore hotfix checkout: ${concise(restore)}` };
+              }
+            }
+          } else {
+            patchTaskFile(config, task.absPath, { status: "review" }, {
             onStatusChange: onStatusChange
               ? (updated, prev, next) => onStatusChange(updated, prev, next)
               : undefined,
-          });
+            });
+          }
         } catch (error) {
           return { ok: false, step: "main", detail: `could not update the canonical task: ${(error as Error).message}` };
         }

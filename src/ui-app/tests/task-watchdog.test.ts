@@ -399,7 +399,7 @@ describe("TaskWatchdog", () => {
       expect(task.status).toBe("ready"); // no worktree/work → back to ready
       expect(task.needsInput).toBe(false);
       expect(body).toContain("watchdog: auto-surfaced stuck task");
-      expect(body).toContain("crashed or was interrupted");
+      expect(body).toContain("retained for recovery");
       expect(body).toContain("agent turn was interrupted");
       expect(spawns(fx)).toHaveLength(1); // the original turn only — no re-spawn
     } finally {

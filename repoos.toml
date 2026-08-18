@@ -6,9 +6,9 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
-uiTheme = "gen z"
+uiTheme = "clear"
 ntfyEnabled = true
 ntfyTopic = "repoos_repoos"
 defaultTaskMode = "freeform"
@@ -29,7 +29,7 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 [tunnel.apps.dev]
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
-access = ["njachowski@gmail.com"]
+access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
 [[agents]]
 name = "engineer"
 cli = "opencode"
@@ -58,14 +58,12 @@ instructions = "A general-purpose, repository-aware assistant. Answers questions
 name = "CTO"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
-enabled = true
+enabled = false
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
-
-
-
-
-
-
-
+[[agents]]
+name = "data analyst"
+cli = "opencode"
+model = "big pickle"
+enabled = true
 
 

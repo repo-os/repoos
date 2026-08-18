@@ -29,6 +29,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { ensureWorktree } from "../../core/git";
+import { PreviewManager } from "../../server/preview";
 
 interface Fixture {
   root: string;
@@ -116,6 +117,25 @@ async function api(
 }
 
 describe("server-owned previews (#0096 integration)", () => {
+  it("does not let a preview child create another preview", async () => {
+    const prior = process.env.REPOOS_PREVIEW_CHILD;
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    try {
+      const previews = new PreviewManager({
+        root: "/unused",
+        cacheDir: ".repoos",
+      } as any, () => {});
+      const result = await previews.start({} as any);
+      expect(result).toEqual({
+        ok: false,
+        error: "Preview servers are read-only; only the main RepoOS control plane can start previews",
+      });
+    } finally {
+      if (prior === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
+      else process.env.REPOOS_PREVIEW_CHILD = prior;
+    }
+  });
+
   it(
     "serves each task's own worktree on distinct ports and keeps the main server healthy through a rebuild",
     async () => {

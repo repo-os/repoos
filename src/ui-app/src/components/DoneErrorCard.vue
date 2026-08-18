@@ -1,12 +1,40 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
-import { CircleAlert, ChevronDown } from "lucide-vue-next";
+import { CircleAlert, ChevronDown, Wrench } from "lucide-vue-next";
+import { api, JSON_OPTS } from "../api";
 
 const props = defineProps<{
   message: string;
   step?: string;
   conflicts?: string[];
+  /** Newline-preserving check/build output excerpt shown in the expanded panel. */
+  detail?: string;
+  /** Guidance paragraph; defaults to the merge-conflict guidance. */
+  hint?: string;
+  taskId?: string;
+  taskTitle?: string;
 }>();
+
+const fixing = ref(false);
+const fixSent = ref(false);
+async function fix(): Promise<void> {
+  if (fixing.value || !props.taskId) return;
+  fixing.value = true;
+  try {
+    await api("/api/debugger/message", JSON_OPTS("POST", {
+      text: [
+        `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
+        `Phase: ${props.step ?? "unknown"}.`,
+        `Error: ${props.message}`,
+        "Identify the concrete cause and the smallest safe repair so the task can be retried.",
+      ].join("\n"),
+    }));
+    fixSent.value = true;
+    window.dispatchEvent(new CustomEvent("repoos:open-debugger"));
+  } finally {
+    fixing.value = false;
+  }
+}
 
 /** True when the collapsed message overflows its two-line clamp. */
 const overflow = ref(false);
@@ -80,6 +108,10 @@ defineExpose({ measure, toggle, overflow, expanded });
         Move to done failed
         <span v-if="step" class="done-error-step">at {{ step }}</span>
       </div>
+      <div v-if="detail" class="done-error-output">
+        <div class="done-error-sub">Check output</div>
+        <pre class="done-error-pre mono">{{ detail }}</pre>
+      </div>
       <div v-if="conflicts?.length" class="done-error-files">
         <div class="done-error-sub">Conflicting files</div>
         <ul>
@@ -87,9 +119,15 @@ defineExpose({ measure, toggle, overflow, expanded });
         </ul>
       </div>
       <p class="done-error-hint">
-        RepoOS couldn't sync this branch with main automatically — resolve the conflicting files
-        in the worktree, then retry.
+        {{
+          hint ??
+          "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
+        }}
       </p>
     </div>
+    <button v-if="taskId" type="button" class="done-error-fix" :disabled="fixing || fixSent" @click="fix">
+      <Wrench class="size-3.5" />
+      {{ fixing ? "Sending…" : fixSent ? "Sent to Debugger" : "Fix" }}
+    </button>
   </div>
 </template>

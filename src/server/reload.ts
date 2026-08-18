@@ -389,6 +389,13 @@ export class ReloadManager {
         [entry, "serve", "--port", String(this.options.port), "--host", this.options.host],
         {
           cwd: this.options.root,
+          // A replacement can start server-owned children (notably previews)
+          // before a failed handover is detected. Give it its own process group
+          // so failure cleanup can terminate that whole replacement tree rather
+          // than leaving descendants alive under an otherwise-live ancestor.
+          // Without this, the periodic orphan sweep cannot safely classify the
+          // leftovers: their immediate parent is still alive.
+          detached: process.platform !== "win32",
           // The replacement must inherit the durable streams of the process
           // supervisor (for example nohup's server.out). Pipes belong to this
           // old process; once it hands over and exits, a later console write
@@ -403,15 +410,17 @@ export class ReloadManager {
       return;
     }
     this.child = child;
-    child.on("error", () => {
+    child.on("error", (err) => {
       this.childExited = true;
+      this.log(`reload: replacement pid ${child.pid ?? "unknown"} spawn error: ${err.message}`);
     });
-    child.on("exit", () => {
+    child.on("exit", (code, signal) => {
       this.childExited = true;
+      this.log(`reload: replacement pid ${child.pid ?? "unknown"} exited (code=${code ?? "null"}, signal=${signal ?? "none"})`);
     });
 
     this.log(
-      `reload: spawning replacement on ${this.options.host}:${this.options.port} (${reason})`,
+      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason})`,
     );
     const confirmed = await this.waitForReplacement(secret);
 
@@ -490,8 +499,29 @@ export class ReloadManager {
   private async killChild(): Promise<void> {
     const child = this.child;
     if (!child || this.childExited) return;
+    const pid = child.pid;
+    const killTree = (signal: NodeJS.Signals): void => {
+      // A detached Unix child is the leader of a new process group. A negative
+      // PID signals the group, including any previews it created while trying
+      // to boot. Windows has no compatible process-group signal API, so retain
+      // Node's direct-child behaviour there.
+      if (process.platform !== "win32" && pid && pid > 0) {
+        try {
+          process.kill(-pid, signal);
+          return;
+        } catch {
+          // The group may already be gone; direct signalling below preserves
+          // the existing best-effort cleanup semantics.
+        }
+      }
+      try {
+        child.kill(signal);
+      } catch {
+        /* already gone */
+      }
+    };
     try {
-      child.kill("SIGTERM");
+      killTree("SIGTERM");
     } catch {
       return; // already gone
     }
@@ -502,7 +532,7 @@ export class ReloadManager {
       return; // exited on SIGTERM
     }
     try {
-      child.kill("SIGKILL");
+      killTree("SIGKILL");
     } catch {
       /* ignore */
     }

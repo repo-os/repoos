@@ -49,6 +49,21 @@ describe("ServeReaper", () => {
     expect(existsSync(lockPath)).toBe(false);
   });
 
+  it("keeps the control-plane lock intact when an ephemeral harness closes", () => {
+    const lockPath = join(tmpDir, ".repoos", "serve.lock");
+    reaper.register(7171, "127.0.0.1");
+    const controlLock = readFileSync(lockPath, "utf8");
+
+    // `startServer({ port: 0 })` is used by UI smoke tests and must never
+    // claim or remove the lock for a real server rooted at the same checkout.
+    const ephemeral = new ServeReaper(tmpDir, ".repoos", false);
+    ephemeral.cleanupStale();
+    ephemeral.register(49876, "127.0.0.1");
+    ephemeral.unregister();
+
+    expect(readFileSync(lockPath, "utf8")).toBe(controlLock);
+  });
+
   it("detects conflict when a live process is registered for the same port", () => {
     reaper.register(7171, "127.0.0.1");
     const conflict = reaper.detectConflict(7171, "127.0.0.1");

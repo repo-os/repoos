@@ -150,7 +150,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           error: `${field.label} must be one of: ${valid.join(", ")}`,
         });
       }
-      patch[field.key] = val;
+      // Native/select components submit strings. This one setting is a number
+      // in the runtime config, so persist it as TOML numeric syntax rather
+      // than `maxActiveTasks = "5"`, which loadConfig intentionally rejects.
+      patch[field.key] = field.key === "maxActiveTasks" ? Number(val) : val;
     } else if (field.type === "array") {
       if (!Array.isArray(val) || !val.length) {
         return json(res, 400, { error: `${field.label} must be a non-empty array` });

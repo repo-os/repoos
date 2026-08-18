@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -14,6 +14,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
+import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -28,7 +29,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
-import SelectSearchGroup from "./SelectSearchGroup.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -344,7 +345,12 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
   ui.saving = true;
   try {
     await repo.activateHotfix(ui.active, target);
+    // Selecting a hotfix target is the start action, not merely a mode
+    // setting. Launch the engineer immediately so the user sees the task
+    // enter active state and its progress tab without a second click.
+    await repo.startWork(ui.active);
     confirmHotfix.value = false;
+    ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -1249,10 +1255,16 @@ function fmtTokens(n: number | null | undefined): string {
   return String(n);
 }
 
-/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. */
-function fmtCost(usd: number | null | undefined): string {
+/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. Estimates,
+ *  Kiro credits, and mixed sources are labeled so they are never read as firm
+ *  USD (0230). */
+function fmtCost(usd: number | null | undefined, source?: string): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
-  return `$${usd < 1 ? usd.toFixed(3) : usd.toFixed(2)}`;
+  const n = usd < 1 ? usd.toFixed(3) : usd.toFixed(2);
+  if (source === "kiro-credits") return `${n} credits`;
+  if (source === "estimate") return `~$${n} est`;
+  if (source === "mixed") return `$${n}*`;
+  return `$${n}`;
 }
 
 watch(displayEntries, () => {
@@ -1306,6 +1318,19 @@ watch(
   () => {
     if (!ui.active) return;
     void repo.loadDiffStats(ui.active.id);
+  },
+  { immediate: true },
+);
+
+/** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
+const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
+
+/** Load the task's durable usage totals when the drawer opens or the task changes. */
+watch(
+  () => ui.active?.id,
+  () => {
+    if (!ui.active) return;
+    void repo.loadTaskUsage(ui.active.id);
   },
   { immediate: true },
 );
@@ -1694,33 +1719,14 @@ function resetFreeformOverrides(): void {
             </div>
             <div class="ff-agent-bar">
               <div class="agent-pick-grid">
-                <div class="agent-field">
-                  <label>Coding agent</label>
-                  <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="CLI" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="agent-field">
-                  <label>Model</label>
-                  <Select v-model="freeformOverride.model" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="model" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectSearchGroup :options="freeformModelOptions" #default="{ options }">
-                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                          <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                        </SelectViewport>
-                      </SelectSearchGroup>
-                    </SelectContent>
-                  </Select>
+                <div class="agent-field" style="grid-column: 1 / -1">
+                  <AgentModelControl
+                    :cli-options="cliOptions"
+                    :model-options="freeformModelOptions"
+                    v-model:cli="freeformOverride.cli"
+                    v-model:model="freeformOverride.model"
+                    :disabled="freeformRunning"
+                  />
                 </div>
                    <div class="agent-field">
                        <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
@@ -1962,8 +1968,8 @@ function resetFreeformOverrides(): void {
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running"
-              :title="review?.running ? 'Waiting for automatic review to finish.' : undefined"
+              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id)"
+              :title="review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone" class="size-3.5" />
@@ -1984,6 +1990,10 @@ function resetFreeformOverrides(): void {
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+            :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :task-id="ui.active.id"
+            :task-title="ui.active.title"
           />
           <div
             v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
@@ -2047,17 +2057,17 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'agent'"
           >
             <Bot class="tab-icon" />
-            Engineer
+            Dev
           </button>
           <button
-            v-if="ui.active.status === 'review'"
+            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
             <ShieldCheck class="tab-icon" />
-            Reviewer
+            Review
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
               variant="reviewing"
@@ -2073,6 +2083,15 @@ function resetFreeformOverrides(): void {
             <Diff class="tab-icon" />
             Changes
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'tokens' }"
+            @click="ui.activeTab = 'tokens'"
+          >
+            <Coins class="tab-icon" />
+            Tokens
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -2087,13 +2106,6 @@ function resetFreeformOverrides(): void {
               <div class="ro-value">{{ ui.active.title }}</div>
             </div>
           </template>
-          <div class="field">
-            <label>Branch</label>
-            <div class="ro-value mono" style="color: var(--cyan)">
-              {{ effectiveBranch || "—" }}
-              <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
-            </div>
-          </div>
 
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
@@ -2263,65 +2275,18 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
           </div>
-          <div v-if="confirmHotfix" class="hotfix-confirm">
-            <p>
-              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
-              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
-              Previews and diff-based review are skipped.
-            </p>
-            <div class="delete-actions">
-              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('branch')"
-              >
-                Hotfix on branch
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('main')"
-              >
-                Hotfix on main
-              </Button>
-            </div>
-          </div>
         </div>
         <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Coding agent</label>
-                <Select v-model="overrideDraft.cli" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field">
-                <label>Model</label>
-                <Select v-model="overrideDraft.model" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectSearchGroup :options="modelOptions" #default="{ options }">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                      </SelectViewport>
-                    </SelectSearchGroup>
-                  </SelectContent>
-                </Select>
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="modelOptions"
+                  v-model:cli="overrideDraft.cli"
+                  v-model:model="overrideDraft.model"
+                  :disabled="ui.saving"
+                />
               </div>
               <div class="agent-field">
                   <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
@@ -2333,21 +2298,6 @@ function resetFreeformOverrides(): void {
                   </div>
               </div>
             </div>
-          </div>
-          <div v-if="showStats" class="agent-stats">
-            <ActivityIndicator v-if="agentBusy" size="sm" />
-            <span class="agent-stat">
-              <span class="agent-stat-label">time</span>
-              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">tokens</span>
-              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">cost</span>
-              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
-            </span>
           </div>
           <div v-if="sessionStats?.stalled" class="agent-stalled">
             <span class="agent-stalled-dot"></span>
@@ -2694,38 +2644,71 @@ function resetFreeformOverrides(): void {
 </template></code></pre>
           </template>
         </div>
+        <div v-else-if="ui.activeTab === 'tokens'" class="drawer-body">
+          <div v-if="showStats" class="agent-stats">
+            <ActivityIndicator v-if="agentBusy" size="sm" />
+            <span class="agent-stat">
+              <span class="agent-stat-label">time</span>
+              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">tokens</span>
+              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">cost</span>
+              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
+            </span>
+          </div>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
+            <div class="task-usage-title">usage — all roles &amp; sessions</div>
+            <div class="task-usage-grid">
+              <span class="agent-stat">
+                <span class="agent-stat-label">total time</span>
+                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total tokens</span>
+                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total cost</span>
+                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">sessions</span>
+                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+              </span>
+            </div>
+            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
+              <span class="agent-stat-label">by role</span>
+              <div class="task-usage-role-list">
+                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                  <span class="task-usage-role-name">{{ r.role }}</span>
+                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
+                  <span>{{ fmtTokens(r.totalTokens) }}</span>
+                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
+            <p>No token or usage data yet.</p>
+          </div>
+        </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Coding agent</label>
-                <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="pmModelOptions"
+                  v-model:cli="pmOverrideDraft.cli"
+                  v-model:model="pmOverrideDraft.model"
+                  :disabled="ui.saving"
+                />
               </div>
-              <div class="agent-field">
-                <label>Model</label>
-                <Select v-model="pmOverrideDraft.model" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectSearchGroup :options="pmModelOptions" #default="{ options }">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                      </SelectViewport>
-                    </SelectSearchGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field" style="padding-top:20px">
+               <div class="agent-field" style="padding-top:20px">
                   <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
                     <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
                     <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
@@ -2804,6 +2787,14 @@ function resetFreeformOverrides(): void {
     :files="dirtyFiles"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+
+  <HotfixConfirmDialog
+    :open="confirmHotfix"
+    :task-id="ui.active?.id"
+    :busy="ui.saving"
+    @cancel="confirmHotfix = false"
+    @start="startHotfix"
   />
 </template>
 

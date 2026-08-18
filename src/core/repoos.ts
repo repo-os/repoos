@@ -37,6 +37,31 @@ export interface CreateTaskInput {
   createdBy?: string;
   branch?: string;
   body?: string;
+  /**
+   * The user's raw freeform prompt. When provided, it is preserved verbatim
+   * under a `## Original prompt` section in the initial body so the user's
+   * capture is never lost, even if a later agent pass rewrites the body.
+   */
+  originalPrompt?: string;
+}
+
+export const ORIGINAL_PROMPT_HEADING = "## Original prompt";
+
+/**
+ * Append the user's raw freeform prompt as a `## Original prompt` section to a
+ * body, unless the section is already present (idempotent). An empty prompt is
+ * left untouched. This keeps the raw capture in the file no matter how a later
+ * agent pass rewrites the rest of the body.
+ */
+export function withOriginalPromptSection(
+  body: string,
+  originalPrompt?: string,
+): string {
+  if (!originalPrompt) return body;
+  if (body.includes(ORIGINAL_PROMPT_HEADING)) return body;
+  const section = `${ORIGINAL_PROMPT_HEADING}\n\n${originalPrompt.trim()}`;
+  const trimmed = body.trim();
+  return trimmed ? `${trimmed}\n\n${section}` : section;
 }
 
 export interface RepoOS {
@@ -197,8 +222,11 @@ export function createRepoOS(root?: string): RepoOS {
         updated_at: ts,
         path: join(config.workDir, fileName).split("\\").join("/"),
         absPath,
+        // Preserve the raw freeform prompt under its own heading (see
+        // withOriginalPromptSection) so it survives any later agent rewrite of
+        // the body, then append the creation activity entry.
         body: appendActivityEntry(
-          input.body ?? "",
+          withOriginalPromptSection(input.body ?? "", input.originalPrompt),
           `- ${ts} · created · ${input.createdBy || "unknown"}`,
         ),
         extra: {},

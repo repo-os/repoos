@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDocument } from "../../core/frontmatter";
-import { createRepoOS } from "../../core/repoos";
+import { createRepoOS, withOriginalPromptSection } from "../../core/repoos";
 import {
   explanationTitle,
   parseGeneratedTask,
@@ -148,6 +148,43 @@ describe("freeform → createTask round-trip (0065)", () => {
       expect(parsed.body).toContain("- [ ] Real title");
       expect(parsed.body).not.toContain("---");
       expect(content.split("---")).toHaveLength(3); // one opening + one closing
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("withOriginalPromptSection (#0251)", () => {
+  it("appends the raw prompt under a ## Original prompt heading", () => {
+    const out = withOriginalPromptSection("made with love", "please make the UI nice");
+    expect(out).toContain("## Original prompt");
+    expect(out).toContain("please make the UI nice");
+    expect(out).toContain("made with love");
+  });
+
+  it("is idempotent when the section is already present", () => {
+    const body = "## Problem\n\nIt is broken.\n\n## Original prompt\n\nfix it";
+    expect(withOriginalPromptSection(body, "fix it")).toBe(body);
+  });
+
+  it("leaves the body untouched when no original prompt is passed", () => {
+    expect(withOriginalPromptSection("## Problem", undefined)).toBe("## Problem");
+  });
+
+  it("writes a draft with the original prompt section preserved via createTask", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-origprompt-"));
+    try {
+      const repoos = createRepoOS(root);
+      const created = repoos.createTask({
+        title: "My draft",
+        body: "the raw user prompt",
+        originalPrompt: "the raw user prompt",
+        status: "draft",
+      });
+      const parsed = parseDocument(readFileSync(created.absPath, "utf8"));
+      expect(parsed.data.status).toBe("draft");
+      expect(parsed.body).toContain("## Original prompt");
+      expect(parsed.body).toContain("the raw user prompt");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
