@@ -58,6 +58,7 @@ watch(
       nextTick(() => {
         const list = modelListEl.value;
         if (list) list.scrollTop = 0;
+        modelSearchEl.value?.focus();
       });
     }
   },

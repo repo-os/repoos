@@ -29,7 +29,6 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
-import SelectSearchGroup from "./SelectSearchGroup.vue";
 import AgentModelControl from "./AgentModelControl.vue";
 
 const repo = useRepoStore();
