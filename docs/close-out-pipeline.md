@@ -132,6 +132,15 @@ candidate was just built with nothing changed since), so `check`'s own internal 
 build" step is skipped — exactly one build per close-out. Standalone `repoos check`
 never sets the var and always builds.
 
+**Measured win (#0213):** the skip was verified by instrumentation, not just reading
+code — a `bun` shim counting `run build` invocations recorded **0** builds inside the
+`REPOOS_SKIP_BUILD=1` check subprocess vs **exactly 1** for a standalone check. The
+saved wall-clock is the "Full build" step itself: ~9s on this machine
+(`bun run build` = 8.7s), the only step the skip removes. Full-check wall-clock is
+dominated by the test suite and machine load (~1min either way on a loaded box), so
+the ~9s build-step saving is the honest, deterministic number to quote for a full
+move-to-done.
+
 **Browser/server dedup (#0213, scoped down):** the UI smoke test inside `repoos check`
 and the standalone `bun run screenshots` script previously hand-rolled two independent
 copies of "start an ephemeral server + launch headless WebKit". They now share one
