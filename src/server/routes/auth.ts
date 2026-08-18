@@ -17,6 +17,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createVerify, createPublicKey } from "node:crypto";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { getAuthStore, type AuthStore } from "../../core/auth-store.js";
@@ -138,6 +139,109 @@ async function sendOtpEmail(
 }
 
 // ---------------------------------------------------------------------------
+// Google JWKS verification
+// ---------------------------------------------------------------------------
+
+interface JwksKey {
+  kty: string;
+  kid: string;
+  use: string;
+  alg: string;
+  n: string;
+  e: string;
+}
+
+let cachedJwks: { keys: JwksKey[]; fetchedAt: number } | null = null;
+const JWKS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function getGoogleJwks(): Promise<JwksKey[]> {
+  const now = Date.now();
+  if (cachedJwks && now - cachedJwks.fetchedAt < JWKS_CACHE_TTL_MS) {
+    return cachedJwks.keys;
+  }
+  const res = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+  if (!res.ok) throw new Error(`Failed to fetch Google JWKS: ${res.status}`);
+  const data = (await res.json()) as { keys: JwksKey[] };
+  cachedJwks = { keys: data.keys, fetchedAt: now };
+  return data.keys;
+}
+
+function base64UrlToBuffer(b64url: string): Buffer {
+  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+  return Buffer.from(padded, "base64");
+}
+
+function importRsaPublicKey(n: string, e: string): ReturnType<typeof import("node:crypto").createPublicKey> {
+  const nBuf = base64UrlToBuffer(n);
+  const eBuf = base64UrlToBuffer(e);
+
+  function encodeLength(len: number): Buffer {
+    if (len < 0x80) return Buffer.from([len]);
+    const bytes: number[] = [];
+    let l = len;
+    while (l > 0) { bytes.unshift(l & 0xff); l >>= 8; }
+    return Buffer.from([0x80 | bytes.length, ...bytes]);
+  }
+
+  function encodeInteger(buf: Buffer): Buffer {
+    const prefix = buf[0] & 0x80 ? Buffer.from([0x00]) : Buffer.alloc(0);
+    return Buffer.concat([Buffer.from([0x02]), encodeLength(buf.length + prefix.length), prefix, buf]);
+  }
+
+  const nEncoded = encodeInteger(nBuf);
+  const eEncoded = encodeInteger(eBuf);
+  const rsaPubKey = Buffer.concat([Buffer.from([0x30]), encodeLength(nEncoded.length + eEncoded.length), nEncoded, eEncoded]);
+
+  const algId = Buffer.from("300d06092a864886f70d01010b0500", "hex");
+
+  const spki = Buffer.concat([Buffer.from([0x30]), encodeLength(algId.length + rsaPubKey.length + 1), algId, Buffer.from([0x03]), encodeLength(rsaPubKey.length + 1), Buffer.from([0x00]), rsaPubKey]);
+
+  return createPublicKey({ key: spki, format: "der", type: "spki" });
+}
+
+async function verifyGoogleIdToken(
+  idToken: string,
+  clientId: string,
+): Promise<{ email: string; sub: string } | null> {
+  const parts = idToken.split(".");
+  if (parts.length !== 3) return null;
+
+  const [headerB64, payloadB64, signatureB64] = parts;
+  const header = JSON.parse(base64UrlToBuffer(headerB64).toString("utf8"));
+
+  if (header.alg !== "RS256" || header.typ !== "JWT") return null;
+
+  const payload = JSON.parse(base64UrlToBuffer(payloadB64).toString("utf8"));
+
+  // Standard claims validation
+  if (payload.iss !== "accounts.google.com" && payload.iss !== "https://accounts.google.com") {
+    return null;
+  }
+  if (payload.aud !== clientId) return null;
+  if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now()) return null;
+
+  // Fetch JWKS and verify signature
+  try {
+    const keys = await getGoogleJwks();
+    const key = keys.find((k) => k.kid === header.kid);
+    if (!key) return null;
+
+    const publicKey = await importRsaPublicKey(key.n, key.e);
+    const valid = createVerify("RSA-SHA256")
+      .update(idToken.split(".")[0] + "." + payloadB64)
+      .verify(publicKey, signatureB64.replace(/-/g, "+").replace(/_/g, "/"));
+
+    if (!valid) return null;
+
+    if (typeof payload.email !== "string") return null;
+    return { email: payload.email, sub: payload.sub };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Route handlers
 // ---------------------------------------------------------------------------
 
@@ -234,11 +338,6 @@ export const requestOtp: RouteHandler = async (ctx, req, res) => {
   if (!user) {
     // Non-enumerating: same response whether or not user exists
     return json(res, 200, { ok: true });
-  }
-
-  // Check OTP attempt limits
-  if (!otpVerifyLimiter.tryAcquire(`otp_verify:${email}`)) {
-    return json(res, 429, { error: "Too many failed attempts. Please wait before trying again." });
   }
 
   // Generate and store OTP
@@ -383,6 +482,13 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
     return;
   }
 
+  // Nonce cookie must be present — reject if missing
+  if (!savedNonce) {
+    res.writeHead(302, { Location: "/login?error=invalid_nonce" });
+    res.end();
+    return;
+  }
+
   // Clear the OAuth cookies
   res.setHeader("Set-Cookie", [
     "repoos_oauth_state=; HttpOnly; Path=/; Max-Age=0",
@@ -408,7 +514,6 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
     };
-    // PKCE: include the code verifier so Google can validate the challenge
     if (codeVerifier) {
       tokenBody.code_verifier = codeVerifier;
     }
@@ -433,23 +538,26 @@ export const googleCallback: RouteHandler = async (ctx, req, res) => {
       return;
     }
 
-    // Decode JWT payload and verify nonce claim
+    // Verify the id_token (aud, iss, signature, expiry) via Google JWKS
+    const verified = await verifyGoogleIdToken(tokens.id_token, config.auth.google.clientId);
+    if (!verified) {
+      res.writeHead(302, { Location: "/login?error=invalid_token" });
+      res.end();
+      return;
+    }
+
+    // Verify nonce claim matches
+    // Decode payload again for nonce check (already verified signature above)
     const payload = JSON.parse(
       Buffer.from(tokens.id_token.split(".")[1], "base64url").toString("utf8"),
     );
-
-    if (savedNonce && payload.nonce !== savedNonce) {
+    if (payload.nonce !== savedNonce) {
       res.writeHead(302, { Location: "/login?error=invalid_nonce" });
       res.end();
       return;
     }
 
-    const email = payload.email as string | undefined;
-    if (!email) {
-      res.writeHead(302, { Location: "/login?error=no_email" });
-      res.end();
-      return;
-    }
+    const email = verified.email;
 
     // Check allowlist
     const store = getAuthStore(config.root);
