@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-16T14:51:01Z"
+updated_at: "2026-08-17T08:06:36Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-11T19:14:59Z · status inbox→ready
 - 2026-08-14T00:00:00Z · scope expanded to cover paused, stuck, and needs-attention transitions
 - 2026-08-16T14:51:01Z · needs_merge
+- 2026-08-17T08:06:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
