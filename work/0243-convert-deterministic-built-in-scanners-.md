@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-18T02:29:09Z"
+updated_at: "2026-08-18T03:08:16Z"
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
@@ -36,3 +37,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 
 - 2026-08-17T07:16:50Z · created · unknown
 - 2026-08-18T02:29:09Z · status inbox→ready
+- 2026-08-18T03:08:16Z · model_override
