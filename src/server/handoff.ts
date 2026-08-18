@@ -7,12 +7,14 @@
  * executed: task, branch and worktree are all checked against RepoOS state.
  */
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
-import type { AgentHandoffRequest } from "./agents.js";
+import { parseDocument, serializeDocument } from "../core/frontmatter.js";
+import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
+import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
 
@@ -256,4 +258,79 @@ export async function handoffTask(
   })();
 
   return Promise.race([resultPromise, timeoutPromise]);
+}
+
+/** Automatic retries allowed for a `check`-step finalization failure before
+ *  the task is left for the task watchdog / a human (mirrors review.ts's
+ *  MAX_AUTO_REVIEW_ROUNDS bound on auto-bounce). */
+const MAX_CHECK_RETRY_ATTEMPTS = 2;
+/** Resume is deferred this long past the failed handoff so AgentRunner has
+ *  cleared the task from `handoffsInFlight` — `send()` rejects while set. */
+const CHECK_RETRY_DELAY_MS = 3_000;
+
+/**
+ * On a finalization failure at the `check` step, automatically resume the
+ * same engineer session with the check output and ask it to fix (or re-verify,
+ * if the failure looks transient) and re-hand-off — up to
+ * `MAX_CHECK_RETRY_ATTEMPTS` times. Every other failure step (validate,
+ * commit, review, main) is structural/environmental, not something a plain
+ * retry of the same session fixes, so only `check` is retried.
+ *
+ * Returns true when a retry was scheduled. On give-up (cap reached, or no
+ * engineer configured) the failure reason is persisted to the task's Activity
+ * log via `AgentRunner.persistHandoffFailure` so the task watchdog classifies
+ * it correctly instead of falling back to its generic
+ * "exited without handoff" guess.
+ */
+export function scheduleCheckFailureRetry(
+  config: RepoOSConfig,
+  task: Task,
+  result: HandoffResult,
+  runner: AgentRunner,
+): boolean {
+  if (result.step !== "check") return false;
+  let retries = task.extra?.check_retry_count as number | undefined;
+  if (typeof retries !== "number") retries = 0;
+  const detail = result.detail ?? "repoos check failed";
+
+  if (retries >= MAX_CHECK_RETRY_ATTEMPTS) {
+    runner.persistHandoffFailure(task.id, task, `check failed after ${MAX_CHECK_RETRY_ATTEMPTS} automatic retries · ${detail}`);
+    return false;
+  }
+
+  const engineer = resolveAgentForTask(config, task);
+  if (!engineer) {
+    runner.persistHandoffFailure(task.id, task, `check failed and no engineer is configured to retry · ${detail}`);
+    return false;
+  }
+
+  const attempt = retries + 1;
+  setTimeout(() => {
+    const message = [
+      `Server finalization's \`repoos check\` failed after your handoff (automatic retry ${attempt} of ${MAX_CHECK_RETRY_ATTEMPTS}):`,
+      "",
+      detail,
+      "",
+      "Fix the failure — or, if it looks like an unrelated flaky/timing test, just re-run and re-verify — then re-emit the handoff signal once `repoos check` passes.",
+    ].join("\n");
+    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    if (!sent.ok) {
+      runner.system(task.id, `✗ automatic check-failure retry could not resume: ${sent.reason ?? "unknown error"}`);
+      runner.persistHandoffFailure(task.id, task, `could not auto-retry after check failure · ${sent.reason ?? "unknown error"}`);
+      return;
+    }
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.check_retry_count = attempt;
+      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count");
+      keys.unshift("check_retry_count");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+    } catch (err) {
+      console.error(`[repoos] could not persist check_retry_count for #${task.id}: ${(err as Error).message}`);
+    }
+    runner.system(task.id, `↻ automatically resuming after check failure (attempt ${attempt} of ${MAX_CHECK_RETRY_ATTEMPTS})`);
+  }, CHECK_RETRY_DELAY_MS);
+
+  return true;
 }
