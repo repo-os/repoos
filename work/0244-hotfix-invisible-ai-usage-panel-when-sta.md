@@ -2,14 +2,14 @@
 id: "0244"
 title: Hotfix invisible AI usage panel when stats cannot load
 type: bug
-status: ready
+status: active
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/hotfix-invisible-ai-usage-panel-when-sta
 created_at: "2026-08-17T08:17:42Z"
-updated_at: "2026-08-17T08:26:32Z"
+updated_at: "2026-08-18T15:18:13Z"
 ---
 ## Activity
 
@@ -40,3 +40,4 @@ _Constraints, files to touch, things NOT to do._
 - 2026-08-17T08:26:21Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-08-17T08:26:32Z · status ready→review
 - 2026-08-17T08:26:32Z · status review→ready
+- 2026-08-18T15:18:13Z · status ready→active, branch
