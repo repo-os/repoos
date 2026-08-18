@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/reorganize-settings-promote-voice-transc
 created_at: "2026-08-16T14:58:04Z"
-updated_at: "2026-08-18T02:27:04Z"
+updated_at: "2026-08-18T02:27:05Z"
 review_rounds: 1
 ---
 ## Context
