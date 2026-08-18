@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
+  AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
   RepoOSConfig,

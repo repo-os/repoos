@@ -220,6 +220,29 @@ export interface SkillMeta {
   description: string;
 }
 
+/** Authentication configuration. Opt-in, disabled by default. */
+export interface AuthConfig {
+  /** Whether authentication is enabled. Default false. */
+  enabled?: boolean;
+  /** Server-side session secret. Never exposed to browser. */
+  sessionSecret?: string;
+  /** Session lifetime in seconds. Default 604800 (7 days). */
+  sessionMaxAge?: number;
+  /** Email OTP provider config. */
+  emailProvider?: {
+    type: "resend";
+    apiKey: string;
+    fromAddress: string;
+  };
+  /** Google OAuth config (optional). */
+  google?: {
+    clientId: string;
+    clientSecret: string;
+  };
+  /** Bootstrap admin email (set on first enable, cleared after bootstrap). */
+  bootstrapAdmin?: string;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
   /** Absolute path to the repo root. */
@@ -273,6 +296,8 @@ export interface RepoOSConfig {
   watchdog?: WatchdogConfig;
   /** Voice transcription configuration for vibe-coding feature. */
   whisper?: WhisperConfig;
+  /** Authentication configuration. */
+  auth?: AuthConfig;
 }
 
 /** Whisper voice transcription configuration. */

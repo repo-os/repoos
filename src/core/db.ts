@@ -94,6 +94,58 @@ const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    up: `
+      -- Allowed users with roles
+      CREATE TABLE IF NOT EXISTS auth_users (
+        email TEXT PRIMARY KEY,
+        role TEXT NOT NULL DEFAULT 'member',
+        display_name TEXT,
+        auth_source TEXT NOT NULL DEFAULT 'otp',
+        added_by TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Server-side sessions (hashed tokens)
+      CREATE TABLE IF NOT EXISTS auth_sessions (
+        session_id TEXT PRIMARY KEY,
+        token_hash TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL,
+        role TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL,
+        revoked_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions(token_hash);
+      CREATE INDEX IF NOT EXISTS idx_auth_sessions_email ON auth_sessions(email);
+
+      -- OTP challenges (hashed codes)
+      CREATE TABLE IF NOT EXISTS auth_otp (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL,
+        used_at TEXT,
+        source_ip TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_auth_otp_email ON auth_otp(email);
+
+      -- Audit log for membership/role changes
+      CREATE TABLE IF NOT EXISTS auth_audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        target_email TEXT,
+        actor_email TEXT,
+        details TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ];
 
 /** Singleton database instance. */
