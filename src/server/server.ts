@@ -109,7 +109,7 @@ import { createJobCoordinator, type JobCoordinator } from "./integration-job.js"
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
-import { handoffTask } from "./handoff.js";
+import { handoffTask, scheduleCheckFailureRetry } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -930,6 +930,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           task.id,
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
+        scheduleCheckFailureRetry(config, task, result, runner);
       }
     },
     onPreviewRequest: async (request) => {

@@ -3353,11 +3353,14 @@ export class AgentRunner {
 
   /**
    * Persist a handoff failure reason to the task file's Activity log.
-   * Called when a handoff signal is expected but not detected, or the process
-   * exits uncleanly before handoff can be finalized. This persists the reason
-   * so it survives server reloads (unlike in-memory transcript entries).
+   * Called when a handoff signal is expected but not detected, the process
+   * exits uncleanly before handoff can be finalized, or (from handoff.ts)
+   * server-side finalization itself fails. This persists the reason so it
+   * survives server reloads and lets the task watchdog classify the failure
+   * correctly instead of falling back to its generic guess (unlike
+   * in-memory transcript entries, which the watchdog cannot see).
    */
-  private persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
+  persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
     if (!task) return;
     try {
       const current = parseTask({
