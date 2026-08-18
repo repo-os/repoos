@@ -2,7 +2,7 @@
 id: "0246"
 title: Add native email OTP authentication and admin user allowlist
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: unassigned
@@ -11,7 +11,7 @@ branch: feat/add-native-email-otp-authentication-and-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-08-18T12:18:31Z"
+updated_at: "2026-08-18T13:48:01Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Admins manage members, roles, and auth settings from Settings. Cloudflare Tunnel
 - 2026-08-18T12:05:48Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-18T12:18:26Z · pm_model_override
 - 2026-08-18T12:18:31Z · status review→active
+- 2026-08-18T13:48:01Z · status active→review
