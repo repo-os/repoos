@@ -131,7 +131,7 @@ import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
-import { parseCookies, SESSION_COOKIE_NAME } from "../core/auth.js";
+import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
   Router,
@@ -702,6 +702,43 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   });
   activeLogger = logger;
   registerFatalHandlersOnce();
+
+  // ---- Fail-closed auth validation at startup (0246) ----
+  // When auth is enabled, the server must have a usable login method and a
+  // bootstrap admin path — otherwise enable auth silently locks everyone out.
+  if (config.auth?.enabled) {
+    const hasEmailProvider = !!(config.auth.emailProvider?.apiKey && config.auth.emailProvider?.fromAddress);
+    const hasGoogle = !!(config.auth.google?.clientId && config.auth.google?.clientSecret);
+    if (!hasEmailProvider && !hasGoogle) {
+      throw new Error(
+        "Auth is enabled but no login provider is configured. " +
+        "Set [auth.emailProvider] (Resend API key + from address) or " +
+        "[auth.google] (client ID + secret) in your config, or disable auth.",
+      );
+    }
+    // Auto-generate a session secret if none was provided. The secret is
+    // only meaningful for signed-cookie schemes; with DB-backed sessions
+    // the token is opaque — but keep the field consistent for forward
+    // compatibility and so the config is explicit about intent.
+    if (!config.auth.sessionSecret) {
+      config.auth.sessionSecret = randomHex(32);
+    }
+    const authStore = getAuthStore(config.root);
+    const userCount = authStore?.listUsers().length ?? 0;
+    if (userCount === 0 && !config.auth.bootstrapAdmin) {
+      throw new Error(
+        "Auth is enabled but no users exist and no bootstrap admin email is configured. " +
+        "Set [auth.bootstrapAdmin] to an email address in your config, " +
+        "or use the Settings UI to add users before enabling auth.",
+      );
+    }
+    logger.system("info", "Auth enabled — login providers validated", {
+      emailProvider: hasEmailProvider,
+      google: hasGoogle,
+      userCount,
+      bootstrapAdmin: config.auth.bootstrapAdmin ?? null,
+    });
+  }
 
   const uiDir = findUiDir(repoos.config.root);
 
@@ -1485,13 +1522,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     // ---- Auth middleware ----
     // When auth is enabled, every request except public routes must carry a
-    // valid session cookie. Public routes: /api/health, /api/auth/*, and
-    // OPTIONS. Unauthenticated API requests get 401; browser GETs redirect
-    // to /login. Auth-disabled deployments pass everything through.
+    // valid session cookie. Public routes: /api/health, /api/auth/*,
+    // /login, static UI assets, manifest, icons, and OPTIONS. Unauthenticated
+    // API requests get 401; browser navigations to non-public non-SPA routes
+    // redirect to /login. Auth-disabled deployments pass everything through.
     const authEnabled = config.auth?.enabled === true;
     if (authEnabled) {
       const PUBLIC_PREFIXES = ["/api/health", "/api/auth/"];
-      const isPublicRoute = PUBLIC_PREFIXES.some((p) => path.startsWith(p)) || method === "OPTIONS";
+      const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
+      const isPublicRoute =
+        PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
+        PUBLIC_PATHS.includes(path) ||
+        path.startsWith("/icons/") ||
+        path.startsWith("/assets/") ||
+        method === "OPTIONS";
       if (!isPublicRoute) {
         const cookies = parseCookies(req.headers.cookie);
         const sessionToken = cookies[SESSION_COOKIE_NAME];
@@ -1502,11 +1546,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           validSession = !!session;
         }
         if (!validSession) {
-          // API requests get 401 JSON; browser GETs redirect to /login
+          // API requests get 401 JSON; browser GETs to SPA routes are served
+          // the login page (via SPA fallback) so the client-side router can
+          // render the login UI. Other browser navigations redirect to /login.
           const isApiRequest = path.startsWith("/api/");
           const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
           if (isApiRequest) {
             return json(res, 401, { error: "Authentication required" });
+          }
+          if (isNavigation && uiDir) {
+            // Serve the SPA shell so the client router renders /login
+            const indexPath = join(uiDir, "index.html");
+            if (existsSync(indexPath)) {
+              res.writeHead(200, {
+                "Content-Type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*",
+              });
+              res.end(readFileSync(indexPath, "utf8"));
+              return;
+            }
           }
           if (isNavigation) {
             res.writeHead(302, { Location: `/login?redirect=${encodeURIComponent(path)}` });
