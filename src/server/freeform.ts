@@ -171,7 +171,13 @@ const TASK_CONVENTIONS = [
   "Do not ask clarifying questions.",
 ].join("\n");
 
-/** Build the PM agent's prompt from a raw explanation. */
+/**
+ * Build the PM agent's prompt from a raw explanation.
+ *
+ * The system already persists the raw explanation under a `## Original prompt`
+ * section before the PM runs, so the PM is told not to duplicate it. It should
+ * still end with the structured body only; the system re-ensures the section.
+ */
 export function pmPrompt(explanation: string): string {
   return [
     "You are the PM agent for RepoOS. Turn the user's rough explanation into a",
@@ -182,6 +188,10 @@ export function pmPrompt(explanation: string): string {
     "```",
     explanation.trim(),
     "```",
+    "",
+    "The raw explanation is already stored by the system under a",
+    "'## Original prompt' section, so do NOT repeat it in your output — write",
+    "the structured body only (the section is re-appended for you).",
     "",
     "Task-file conventions (follow them exactly):",
     "",
