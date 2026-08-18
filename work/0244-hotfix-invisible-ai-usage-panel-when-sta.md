@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/hotfix-invisible-ai-usage-panel-when-sta
+model_override: default
 created_at: "2026-08-17T08:17:42Z"
-updated_at: "2026-08-18T15:18:13Z"
+updated_at: "2026-08-18T15:26:53Z"
 ---
 ## Activity
 
@@ -41,3 +42,4 @@ _Constraints, files to touch, things NOT to do._
 - 2026-08-17T08:26:32Z · status ready→review
 - 2026-08-17T08:26:32Z · status review→ready
 - 2026-08-18T15:18:13Z · status ready→active, branch
+- 2026-08-18T15:26:53Z · model_override
