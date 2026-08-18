@@ -2,15 +2,15 @@
 id: "0240"
 title: Fix Settings persistence for active-task limit and Jelly theme
 type: bug
-status: ready
+status: active
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-settings-persistence-for-active-task
 pm_model_override: default
 created_at: "2026-08-17T04:51:24Z"
-updated_at: "2026-08-18T15:27:47Z"
+updated_at: "2026-08-18T15:30:53Z"
 ---
 ## Activity
 
@@ -68,3 +68,4 @@ Because `buildBody()` in `SettingsView.vue:111-125` sends **all** schema fields 
 ## Activity
 
 - 2026-08-18T15:27:47Z · body
+- 2026-08-18T15:30:53Z · status ready→active, branch
