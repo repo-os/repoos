@@ -401,6 +401,7 @@ export interface ConfigField {
   label: string;
   type: "string" | "boolean" | "select" | "array";
   tier: "live" | "restart" | "guarded";
+  group?: "general" | "voice";
   restartRequired: boolean;
   default: unknown;
   options?: { value: string; label: string }[];
