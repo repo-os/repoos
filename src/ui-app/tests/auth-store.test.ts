@@ -294,4 +294,45 @@ describe("AuthStore edge cases", () => {
     const bobUser = store.getUser("bob@test.com");
     expect(bobUser).not.toBeNull();
   });
+
+  it("updateSessionRoles propagates role to existing sessions", () => {
+    store.upsertUser("alice@test.com", "admin", null);
+    const token = store.createSession("alice@test.com", "admin", 3600);
+    const sessionBefore = store.getSession(token);
+    expect(sessionBefore!.role).toBe("admin");
+
+    // Demote alice to member
+    store.upsertUser("alice@test.com", "member", "admin@test.com");
+    store.updateSessionRoles("alice@test.com", "member");
+
+    const sessionAfter = store.getSession(token);
+    expect(sessionAfter!.role).toBe("member");
+  });
+
+  it("updateSessionRoles only affects active sessions", () => {
+    store.upsertUser("alice@test.com", "admin", null);
+    const tokenActive = store.createSession("alice@test.com", "admin", 3600);
+    const tokenRevoked = store.createSession("alice@test.com", "admin", 3600);
+    store.revokeSession(tokenRevoked);
+
+    store.updateSessionRoles("alice@test.com", "member");
+
+    // Active session gets the new role
+    expect(store.getSession(tokenActive)!.role).toBe("member");
+    // Revoked session is still not returned by getSession
+    expect(store.getSession(tokenRevoked)).toBeNull();
+  });
+
+  it("updateSessionRoles returns count of updated sessions", () => {
+    store.upsertUser("alice@test.com", "admin", null);
+    store.createSession("alice@test.com", "admin", 3600);
+    store.createSession("alice@test.com", "admin", 3600);
+    const count = store.updateSessionRoles("alice@test.com", "member");
+    expect(count).toBe(2);
+  });
+
+  it("updateSessionRoles returns 0 for nonexistent user", () => {
+    const count = store.updateSessionRoles("nobody@test.com", "admin");
+    expect(count).toBe(0);
+  });
 });

@@ -85,6 +85,21 @@ describe("auth crypto utilities", () => {
     expect(c1).toBe(c2);
     expect(c1).toMatch(/^[A-Za-z0-9_-]+$/);
   });
+
+  it("pkceChallenge produces a different challenge for different verifiers", () => {
+    const v1 = generatePkceVerifier();
+    const v2 = generatePkceVerifier();
+    expect(pkceChallenge(v1)).not.toBe(pkceChallenge(v2));
+  });
+
+  it("PKCE verifier is always within the allowed character set and length", () => {
+    for (let i = 0; i < 50; i++) {
+      const verifier = generatePkceVerifier();
+      expect(verifier.length).toBeGreaterThanOrEqual(43);
+      expect(verifier.length).toBeLessThanOrEqual(128);
+      expect(verifier).toMatch(/^[A-Za-z0-9_-]+$/);
+    }
+  });
 });
 
 describe("email validation", () => {
