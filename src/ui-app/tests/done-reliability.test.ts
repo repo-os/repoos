@@ -424,6 +424,28 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("passes REPOOS_SKIP_BUILD through to the gate CLI (#0213)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-skipbuild-"));
+    try {
+      // The close-out already ran `bun run build` (BUILD_STEPS) with nothing
+      // changed since, so `completeTask` invokes the gate with
+      // REPOOS_SKIP_BUILD=1 to skip `repoos check`'s own redundant "Full
+      // build" step. This proves the env actually reaches the spawned gate
+      // process — the exact wiring the skip depends on (and the mirror image
+      // of the direct runDoneStep-level test above).
+      const envOut = join(root, "env.out");
+      const { log } = fakeCheckCli(root, `
+        require("node:fs").writeFileSync(${JSON.stringify(envOut)}, process.env.REPOOS_SKIP_BUILD ?? "unset");
+        process.exit(0);
+      `);
+      const result = await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_BUILD: "1" });
+      expect(result.ok).toBe(true);
+      expect(readFileSync(envOut, "utf8")).toBe("1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 type CheckSummaryLike = {

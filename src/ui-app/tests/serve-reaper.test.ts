@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { spawn } from "node:child_process";
 import { ServeReaper, isOrphanRoot, isOrphanServeCommand } from "../../server/serve-reaper.js";
 import { shouldReapStrayServeProcesses } from "../../server/server.js";
@@ -144,36 +144,56 @@ describe("ServeReaper", () => {
     }
   });
 
-  it("calls its owner when the served root disappears", async () => {
-    let closed = 0;
-    reaper.watchRoot(() => { closed += 1; }, 5);
+  it("calls its owner when the served root disappears", () => {
+    vi.useFakeTimers();
+    try {
+      let closed = 0;
+      // interval 5ms, default 3 consecutive misses required.
+      reaper.watchRoot(() => { closed += 1; }, 5);
 
-    rmSync(tmpDir, { recursive: true, force: true });
-    await new Promise((resolve) => setTimeout(resolve, 30));
-
-    expect(closed).toBe(1);
+      rmSync(tmpDir, { recursive: true, force: true });
+      vi.advanceTimersByTime(5); // miss 1
+      vi.advanceTimersByTime(5); // miss 2
+      expect(closed).toBe(0);
+      vi.advanceTimersByTime(5); // miss 3 → fires
+      expect(closed).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("does not fire while the root keeps reappearing (debounce) (#0216)", async () => {
-    let closed = 0;
-    // interval 5ms, needs 3 consecutive misses: a root that flickers back
-    // before three checks must never tear the server down.
-    reaper.watchRoot(() => { closed += 1; }, 5, 3);
+  it("does not fire while the root keeps reappearing (debounce) (#0216)", () => {
+    // Real timers made this racy under load (#0213): a 5ms polling interval
+    // racing 3ms create/delete cycles can have 3 consecutive checks land on a
+    // moment the root is gone, spuriously tearing the server down. Fake timers
+    // make the exact miss/reset sequence deterministic.
+    vi.useFakeTimers();
+    try {
+      let closed = 0;
+      // interval 5ms, needs 3 consecutive misses: a root that flickers back
+      // before three checks must never tear the server down.
+      reaper.watchRoot(() => { closed += 1; }, 5, 3);
 
-    rmSync(tmpDir, { recursive: true, force: true });
-    for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 3));
-      mkdirSync(tmpDir, { recursive: true });
-      await new Promise((resolve) => setTimeout(resolve, 3));
+      // Flicker: each cycle the root is missing for one check, then restored —
+      // the miss counter must reset before it ever reaches 3.
+      for (let i = 0; i < 3; i++) {
+        rmSync(tmpDir, { recursive: true, force: true });
+        vi.advanceTimersByTime(5); // miss 1
+        mkdirSync(tmpDir, { recursive: true });
+        vi.advanceTimersByTime(5); // root present → resets misses
+      }
+      expect(closed).toBe(0);
+
+      // The real case: the root stays gone — three consecutive misses fire.
       rmSync(tmpDir, { recursive: true, force: true });
+      vi.advanceTimersByTime(5); // miss 1
+      vi.advanceTimersByTime(5); // miss 2
+      expect(closed).toBe(0);
+      vi.advanceTimersByTime(5); // miss 3 → fires
+      expect(closed).toBe(1);
+    } finally {
+      vi.useRealTimers();
     }
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(closed).toBe(0);
-
-    // The real case: the root stays gone — three consecutive misses fire.
-    rmSync(tmpDir, { recursive: true, force: true });
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(closed).toBe(1);
   });
 
   it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", () => {
