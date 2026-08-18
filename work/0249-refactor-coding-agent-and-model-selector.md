@@ -9,9 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/refactor-coding-agent-and-model-selector
 model_override: default
-pm_model_override: default
 created_at: "2026-08-17T14:28:17Z"
-updated_at: "2026-08-18T02:25:20Z"
+updated_at: "2026-08-18T02:25:17Z"
 ---
 # Refactor coding agent and model selector into a modal
 
@@ -97,4 +96,3 @@ Selecting values in the modal updates the selection that the page-level
 - 2026-08-17T15:30:20Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-17T15:30:20Z · status review→active
 - 2026-08-18T02:25:16Z · status active→review
-- 2026-08-18T02:25:20Z · pm_model_override
