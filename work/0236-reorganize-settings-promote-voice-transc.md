@@ -2,14 +2,14 @@
 id: "0236"
 title: "Reorganize Settings: promote voice transcription, simplify Advanced"
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/reorganize-settings-promote-voice-transc
 created_at: "2026-08-16T14:58:04Z"
-updated_at: "2026-08-18T02:27:05Z"
+updated_at: "2026-08-18T03:03:47Z"
 review_rounds: 1
 ---
 ## Context
@@ -52,3 +52,4 @@ Voice transcription (Whisper / vibe coding) is a user-facing feature that requir
 - 2026-08-17T06:02:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-17T08:26:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-18T02:27:04Z · status active→review
+- 2026-08-18T03:03:47Z · status review→done, release:success
