@@ -10,9 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/dedupe-the-close-out-pipeline-s-build-an
 model_override: default
-pm_model_override: default
 created_at: "2026-08-15T05:57:16Z"
-updated_at: "2026-08-18T12:42:36Z"
+updated_at: "2026-08-18T12:50:28Z"
 review_rounds: 1
 ---
 ## Problem
@@ -62,3 +61,4 @@ This is the narrow remainder of #0075 (deleted — that task's other concerns, a
 - 2026-08-16T14:35:50Z · status review→active
 - 2026-08-18T11:45:17Z · status active→review
 - 2026-08-18T12:42:36Z · pm_model_override
+- 2026-08-18T12:50:28Z · pm_model_override
