@@ -2057,17 +2057,17 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'agent'"
           >
             <Bot class="tab-icon" />
-            Engineer
+            Dev
           </button>
           <button
-            v-if="ui.active.status === 'review'"
+            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
             <ShieldCheck class="tab-icon" />
-            Reviewer
+            Review
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
               variant="reviewing"
