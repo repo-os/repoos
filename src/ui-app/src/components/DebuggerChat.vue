@@ -238,7 +238,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.debugger-panel{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);height:100dvh;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border-bright);background:var(--panel-gradient);box-shadow:-24px 0 70px rgba(0,0,0,.28);backdrop-filter:blur(18px);animation:debugger-open .18s ease-out;pointer-events:auto;z-index:71}
+.debugger-panel{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);height:100dvh;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border-bright);background:var(--panel-gradient);box-shadow:-24px 0 70px rgba(0,0,0,.28);backdrop-filter:blur(18px);animation:debugger-open .18s ease-out;pointer-events:auto;z-index:110}
 .debugger-repair{padding:0 14px 10px}.debugger-repair button{border:1px solid var(--cyan);border-radius:9px;padding:8px 10px;background:var(--btn-primary-bg);color:var(--btn-primary-color);font:600 11px var(--font-sans);cursor:pointer}.debugger-repair button:disabled{opacity:.6;cursor:default}
 .debugger-header{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .debugger-avatar{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;border:1px solid var(--border-bright)}
