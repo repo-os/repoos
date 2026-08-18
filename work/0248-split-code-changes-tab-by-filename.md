@@ -2,7 +2,7 @@
 id: "0248"
 title: Split code changes tab by filename
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -53,3 +53,4 @@ The "Changes" tab currently renders the entire unified diff as a single flat `<p
 - 2026-08-18T12:36:48Z · model_override
 - 2026-08-18T12:37:22Z · status ready→active, branch
 - 2026-08-18T12:49:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-18T12:49:45Z · status review→active
