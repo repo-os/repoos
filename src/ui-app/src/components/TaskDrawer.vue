@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -2089,7 +2089,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: ui.activeTab === 'tokens' }"
             @click="ui.activeTab = 'tokens'"
           >
-            <Diff class="tab-icon" />
+            <Coins class="tab-icon" />
             Tokens
           </button>
         </div>
