@@ -81,6 +81,9 @@ export interface AuditLogEntry {
 // Schema migration
 // ---------------------------------------------------------------------------
 
+// Safety-net DDL — identical to db.ts migration v2 but ensures auth tables
+// exist even if the auth-store is opened before the main DB migration runs.
+// All statements use CREATE TABLE IF NOT EXISTS, so this is idempotent.
 const AUTH_MIGRATION = `
   CREATE TABLE IF NOT EXISTS auth_users (
     email TEXT PRIMARY KEY,
@@ -467,19 +470,36 @@ export class AuthStore {
 }
 
 // ---------------------------------------------------------------------------
-// Singleton
+// Singleton + periodic cleanup
 // ---------------------------------------------------------------------------
 
 let authStoreInstance: AuthStore | null = null;
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 export function getAuthStore(repoRoot: string): AuthStore | null {
   if (!authStoreInstance) {
     authStoreInstance = new AuthStore(repoRoot);
   }
+  // Start periodic cleanup on first access
+  if (!cleanupTimer && authStoreInstance.isAvailable()) {
+    cleanupTimer = setInterval(() => {
+      if (authStoreInstance?.isAvailable()) {
+        authStoreInstance.cleanupExpiredSessions();
+        authStoreInstance.cleanupExpiredOtps();
+      }
+    }, CLEANUP_INTERVAL_MS);
+    // Allow the process to exit even if the timer is running
+    if (cleanupTimer.unref) cleanupTimer.unref();
+  }
   return authStoreInstance.isAvailable() ? authStoreInstance : null;
 }
 
 export function resetAuthStoreInstance(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
   if (authStoreInstance) {
     authStoreInstance.close();
   }

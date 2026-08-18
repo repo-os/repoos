@@ -182,6 +182,22 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     if (val) patch["auth.google.clientSecret"] = val;
   }
 
+  // Guard: enabling auth requires a login provider to be configured.
+  const enablingAuth = patch["auth.enabled"] === true;
+  if (enablingAuth) {
+    const hasEmailProvider =
+      !!(body["auth.emailProvider.apiKey"] && body["auth.emailProvider.fromAddress"]) ||
+      !!(repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress);
+    const hasGoogle =
+      !!(body["auth.google.clientId"] && body["auth.google.clientSecret"]) ||
+      !!(repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret);
+    if (!hasEmailProvider && !hasGoogle) {
+      return json(res, 400, {
+        error: "Cannot enable auth: configure at least one login provider (email OTP or Google OAuth) first",
+      });
+    }
+  }
+
   const schema = getConfigSchema();
   for (const field of schema) {
     if (body[field.key] === undefined) continue;
