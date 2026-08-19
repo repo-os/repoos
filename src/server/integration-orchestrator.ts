@@ -671,6 +671,27 @@ export class CloseOutOrchestrator {
         }
       }
 
+      // Rebuild the live checkout's dist/ so the running `repoos serve`
+      // process (which loads compiled JS at boot and never reloads on its
+      // own) has something newer to notice. dist/ is gitignored, so the
+      // merge above brought in new source but left dist/ exactly as it was.
+      // This runs while rootLock/repoLock are still held (released in the
+      // `finally` below), so ReloadManager's closingOut() check correctly
+      // parks the resulting build for a user-triggered reload instead of
+      // restarting the server out from under this still-running publish.
+      // Fail-soft: the merge already succeeded, so a failed rebuild here
+      // must not fail the whole publish — it just leaves dist/ stale, the
+      // same pre-existing failure mode this is fixing, now at least logged.
+      let rebuildRes = await runProcess("bun", ["run", "build"], { cwd: root, timeout: 300_000 });
+      if (rebuildRes.status !== 0) {
+        rebuildRes = await runProcess("npm", ["run", "build"], { cwd: root, timeout: 300_000 });
+      }
+      if (rebuildRes.status !== 0) {
+        console.error(
+          `Post-merge rebuild of ${root} failed for task ${job.taskId}: ${tailLine(rebuildRes.stdout, rebuildRes.stderr)}`,
+        );
+      }
+
       this.onProgress?.("done");
       return { ok: true };
     } finally {
