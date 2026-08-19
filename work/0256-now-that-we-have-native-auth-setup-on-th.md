@@ -2,7 +2,7 @@
 id: "0256"
 title: Simplify Cloudflare publishing now that native auth is built in
 type: refactor
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/simplify-cloudflare-publishing-now-that-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T13:04:26Z"
-updated_at: "2026-08-19T13:18:55Z"
+updated_at: "2026-08-19T13:32:57Z"
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ now that we have native auth setup on the server let's simplify the cloudflare p
 - 2026-08-19T13:18:50Z · model_override
 - 2026-08-19T13:18:52Z · status inbox→ready
 - 2026-08-19T13:18:55Z · status ready→active, branch
+- 2026-08-19T13:32:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
