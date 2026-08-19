@@ -2742,10 +2742,8 @@ function resetFreeformOverrides(): void {
                     <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                   </span>
                 </div>
-                <div v-if="!collapsedFiles.has(file.filename)" class="diff-section-content">
-                  <code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
-</template></code>
-                </div>
+                <pre v-if="!collapsedFiles.has(file.filename)" class="diff-section-content"><code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+</template></code></pre>
               </div>
             </div>
           </template>
