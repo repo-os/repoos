@@ -2,7 +2,7 @@
 id: "0256"
 title: Simplify Cloudflare publishing now that native auth is built in
 type: refactor
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/simplify-cloudflare-publishing-now-that-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T13:04:26Z"
-updated_at: "2026-08-19T18:03:11Z"
+updated_at: "2026-08-19T18:29:15Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ email whitelist optional.
 ## Activity
 
 - 2026-08-19T18:03:11Z · body
+- 2026-08-19T18:29:15Z · status review→done, release:success
