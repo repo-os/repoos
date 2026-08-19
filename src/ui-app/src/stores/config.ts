@@ -87,8 +87,13 @@ export const useConfigStore = defineStore("config", () => {
   }
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const visibleFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
+  const visibleFields = computed(() =>
+    schema.value.filter((f) => f.tier !== "guarded" && f.group !== "voice"),
+  );
+  const voiceFields = computed(() => schema.value.filter((f) => f.group === "voice"));
   const guardedFields = computed(() => schema.value.filter((f) => f.tier === "guarded"));
+  /** All settings exposed outside the Advanced disclosure — the ⌘K index. */
+  const searchableFields = computed(() => schema.value.filter((f) => f.tier !== "guarded"));
 
   function animateTheme(): void {
     const el = document.documentElement;
@@ -120,6 +125,8 @@ export const useConfigStore = defineStore("config", () => {
     applyUiTheme(t, true);
     try {
       await api("/api/config", JSON_OPTS("PATCH", { uiTheme: t }));
+      if (data.value) data.value.uiTheme = t;
+      form.uiTheme = t;
     } catch (err) {
       applyUiTheme(prev);
       throw err;
@@ -187,6 +194,7 @@ export const useConfigStore = defineStore("config", () => {
       const val = res.config[f.key] ?? f.default;
       if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
       else if (f.type === "boolean") form[f.key] = !!val;
+      else if (f.type === "select") form[f.key] = String(val);
       else form[f.key] = val;
     }
   }
@@ -273,7 +281,9 @@ export const useConfigStore = defineStore("config", () => {
     showAdvanced,
     form,
     visibleFields,
+    voiceFields,
     guardedFields,
+    searchableFields,
     load,
     save,
     saveAgents,

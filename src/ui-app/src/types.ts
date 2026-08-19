@@ -255,13 +255,62 @@ export interface AgentSessionStats {
   stalled: boolean;
 }
 
+/** One role's aggregated usage (engineer/pm/reviewer/cto/guide/…). */
+export interface RoleUsage {
+  role: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
+  costSource: string;
+}
+
+/** Aggregated usage totals for a task, incl. role breakdown (0230). */
+export interface TaskUsageStats {
+  taskId: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  costSource: string;
+  roles: RoleUsage[];
+}
+
+/** One day's aggregated usage (server's local time). */
+export interface DailyUsage {
+  day: string;
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalInputTokens: number | null;
+  totalOutputTokens: number | null;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  costSource: string;
+}
+
+/** Board-level usage totals: overall + per-role + per-day (0230). */
+export interface BoardUsageStats {
+  totalSessions: number;
+  totalElapsedMs: number;
+  totalTokens: number | null;
+  totalCostUsd: number | null;
+  costSource: string;
+  roles: RoleUsage[];
+  days: DailyUsage[];
+}
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
-  | { type: "task.progress"; id: string; step: string; at: string; detail?: string }
+  | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {
@@ -277,8 +326,8 @@ export type RepoEvent =
       at: string;
       error?: string;
     }
-  | { type: "agent.running"; id: string }
-  | { type: "agent.exited"; id: string }
+  | { type: "agent.running"; id: string; at: string }
+  | { type: "agent.exited"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats }
@@ -352,6 +401,7 @@ export interface ConfigField {
   label: string;
   type: "string" | "boolean" | "select" | "array";
   tier: "live" | "restart" | "guarded";
+  group?: "general" | "voice";
   restartRequired: boolean;
   default: unknown;
   options?: { value: string; label: string }[];

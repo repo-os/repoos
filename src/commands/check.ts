@@ -11,11 +11,11 @@
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot } from "../core/config.js";
+import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
 
 
 interface CheckResult {
@@ -132,6 +132,8 @@ const THEME_VARIANTS: Record<string, string> = {
   ':root[data-ui-theme="clear"][data-theme="light"]': "clear-light",
   ':root[data-ui-theme="gen z"]': "gen-z-dark",
   ':root[data-ui-theme="gen z"][data-theme="light"]': "gen-z-light",
+  ':root[data-ui-theme="jelly"]': "jelly-dark",
+  ':root[data-ui-theme="jelly"][data-theme="light"]': "jelly-light",
 };
 
 /** Which blocks each variant inherits from, in order (later wins). */
@@ -142,6 +144,8 @@ const THEME_INHERIT: Record<string, string[]> = {
   "clear-light": ["classic-dark", "clear-dark", "clear-light"],
   "gen-z-dark": ["classic-dark", "gen-z-dark"],
   "gen-z-light": ["classic-dark", "gen-z-dark", "gen-z-light"],
+  "jelly-dark": ["classic-dark", "jelly-dark"],
+  "jelly-light": ["classic-dark", "jelly-dark", "jelly-light"],
 };
 
 /** (foreground token, background token) pairs checked for contrast. */
@@ -310,6 +314,27 @@ function themeContrastOffenders(css: string): string[] {
   return out;
 }
 
+/**
+ * What the "Full build" step should do for a given run.
+ *
+ * Standalone `repoos check` (env without REPOOS_SKIP_BUILD) always builds —
+ * that path is agents' definition-of-done gate and must never weaken. Only the
+ * close-out pipeline (done.ts / integration-orchestrator.ts) sets
+ * REPOOS_SKIP_BUILD=1 after running `bun run build` itself, and even then the
+ * skip only applies when the staleness check above verified dist matches the
+ * current source exactly. If dist is missing or stale the build still runs, so
+ * REPOOS_SKIP_BUILD can never let the UI smoke test probe a bad build.
+ */
+export type BuildStepAction = "skip" | "build" | "build-not-fresh";
+
+export function skipBuildAction(
+  env: NodeJS.ProcessEnv,
+  buildFresh: boolean,
+): BuildStepAction {
+  if (env.REPOOS_SKIP_BUILD !== "1") return "build";
+  return buildFresh ? "skip" : "build-not-fresh";
+}
+
 export async function cmdCheck(): Promise<void> {
   let exitCode = 0;
   const results: CheckResult[] = [];
@@ -331,6 +356,10 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.dim(`  · ${stale.message ?? stale.code}`));
     results.push(pass("staleness", stale.message ?? stale.code));
   }
+  // True when dist matches the current source exactly — the precondition under
+  // which REPOOS_SKIP_BUILD may skip the build below (nothing changed since the
+  // caller built). Never true when dist is missing or stale.
+  const buildFresh = !stale.stale && stale.code === "fresh";
 
   // ── 1b. Lockfile sync check ─────────────────────────────────────────
   // A dependency bump in package.json without a regenerated bun.lock passes
@@ -357,16 +386,32 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 2. Full build ───────────────────────────────────────────────────
+  // Skippable via REPOOS_SKIP_BUILD (see skipBuildAction): the close-out
+  // pipeline (`completeTask` in src/server/done.ts, and `validateCandidate` in
+  // src/server/integration-orchestrator.ts) runs `bun run build` itself and
+  // then invokes `repoos check` with this env var set, so its own "Full build"
+  // step — which would rebuild the exact same source with nothing changed in
+  // between — is skipped. Standalone `repoos check` from the CLI never sets
+  // the var and always builds.
   heading("Full build");
-  try {
-    execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
-    console.log(c.green("  ✔ Build succeeded"));
-    results.push(pass("build"));
-  } catch (e) {
-    const msg = (e as Error).message;
-    console.log(c.red("  ✗ Build failed"));
-    results.push(fail("build", msg));
-    exitCode = 1;
+  const buildAction = skipBuildAction(process.env, buildFresh);
+  if (buildAction === "skip") {
+    console.log(c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"));
+    results.push(pass("build", "skipped — caller already built, build verified fresh"));
+  } else {
+    if (buildAction === "build-not-fresh") {
+      console.log(c.yellow("  · REPOOS_SKIP_BUILD=1 but build is not fresh — building anyway"));
+    }
+    try {
+      execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
+      console.log(c.green("  ✔ Build succeeded"));
+      results.push(pass("build"));
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.log(c.red("  ✗ Build failed"));
+      results.push(fail("build", msg));
+      exitCode = 1;
+    }
   }
 
   // ── 2b. CSS layering guard ──────────────────────────────────────────
@@ -472,198 +517,152 @@ export async function cmdCheck(): Promise<void> {
   process.exit(exitCode);
 }
 
-/** Structural subset of the Playwright WebKit API used by the smoke test. */
-interface SmokeConsoleMessage {
-  type(): string;
-  text(): string;
-}
-interface SmokePage {
-  on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
-  on(event: "pageerror", handler: (err: Error) => void): void;
-  goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
-  title(): Promise<string>;
-  evaluate<R>(fn: () => R): Promise<R>;
-  $(selector: string): Promise<unknown>;
-  waitForTimeout(ms: number): Promise<void>;
-}
-interface SmokeBrowser {
-  newPage(): Promise<SmokePage>;
-  close(): Promise<void>;
-}
-interface SmokePlaywright {
-  webkit: {
-    launch(options: { headless: boolean }): Promise<SmokeBrowser>;
-  };
-}
-
 /**
  * Start the dev server, run Playwright WebKit smoke tests, then stop.
- * Exports failures as thrown errors.
+ * Exports failures as thrown errors. Server startup + webkit launch share the
+ * harness in ui-harness.ts with the screenshot script (#0213).
  */
 async function runUISmokeTest(): Promise<void> {
-  let server: { close: () => void; url: string };
-
-  // @playwright/test is a CJS package. Bun's ESM `import()` of it resolves the
-  // named browser exports to `undefined` (root cause of #0200), so load it via
-  // createRequire, which handles the CJS interop under both Bun and Node.
-  // Playwright may not be installed — treat that as a graceful skip upstream.
-  // Types are structural (Smoke*) rather than `typeof import("@playwright/test")`
-  // so `tsc` compiles even when the package is absent — the build must not fail
-  // before the "not installed" skip can run.
-  const require = createRequire(import.meta.url);
-  let playwright: SmokePlaywright;
+  const server = await startPreviewServer();
+  let browser: SmokeBrowser | undefined;
   try {
-    playwright = require("@playwright/test");
-  } catch {
-    throw new Error("Cannot find module @playwright/test (not installed)");
+    browser = await launchWebkit();
+  } catch (err) {
+    server.close();
+    throw err;
   }
-  const webkit = playwright.webkit;
-
-  // Start the server on an ephemeral port so the check works even when a
-  // `repoos serve` instance is already running on the default port.
-  const { startServer } = await import("../server/server.js");
   try {
-    server = await startServer({ host: "127.0.0.1", port: 0 }) as unknown as { close: () => void; url: string };
-  } catch (e) {
-    throw new Error("Failed to start server: " + (e as Error).message);
-  }
+    const page = await browser.newPage();
+    const consoleErrs: string[] = [];
+    const pageErrors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") consoleErrs.push(msg.text());
+    });
+    page.on("pageerror", (err) => {
+      pageErrors.push(err.message);
+    });
 
-  try {
-    const browser = await webkit.launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      const consoleErrs: string[] = [];
-      const pageErrors: string[] = [];
-      page.on("console", (msg) => {
-        if (msg.type() === "error") consoleErrs.push(msg.text());
-      });
-      page.on("pageerror", (err) => {
-        pageErrors.push(err.message);
-      });
+    await page.goto(server.url, { waitUntil: "load", timeout: 20_000 });
 
-      await page.goto(server.url, { waitUntil: "load", timeout: 20_000 });
+    // Check page title is correct
+    const title = await page.title();
+    if (title !== "RepoOS") throw new Error(`Unexpected title: "${title}"`);
 
-      // Check page title is correct
-      const title = await page.title();
-      if (title !== "RepoOS") throw new Error(`Unexpected title: "${title}"`);
+    // Verify we are testing the built Vite SPA, which references hashed
+    // assets in /assets/.
+    const hashedAsset = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll("script[src]"));
+      return scripts.some((s) => (s.getAttribute("src") ?? "").startsWith("/assets/"));
+    });
+    if (!hashedAsset) {
+      throw new Error("Served page is not the built Vite app (no /assets/ bundle)");
+    }
 
-      // Verify we are testing the built Vite SPA, which references hashed
-      // assets in /assets/.
-      const hashedAsset = await page.evaluate(() => {
-        const scripts = Array.from(document.querySelectorAll("script[src]"));
-        return scripts.some((s) => (s.getAttribute("src") ?? "").startsWith("/assets/"));
-      });
-      if (!hashedAsset) {
-        throw new Error("Served page is not the built Vite app (no /assets/ bundle)");
+    // Check that the app MOUNTED — no unrendered mustache in the DOM
+    const bodyText = await page.evaluate(() => document.body.innerText);
+    if (bodyText.includes("{{") || bodyText.includes("}}")) {
+      throw new Error("Unrendered mustache found in DOM — Vue did not mount");
+    }
+
+    // Check that a known root element rendered with real content
+    const appEl = await page.$("#app");
+    if (!appEl) throw new Error("#app element not found");
+
+    const hasBrand = await page.evaluate(() =>
+      document.body.innerText.includes("RepoOS"),
+    );
+    if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
+
+    // Navigate to work page and click +New Task
+    await page.evaluate(() => {
+      const navItems = document.querySelectorAll(".nav-item");
+      for (const item of Array.from(navItems)) {
+        if (item.textContent?.includes("Work")) (item as HTMLElement).click();
       }
+    });
+    await page.waitForTimeout(500);
 
-      // Check that the app MOUNTED — no unrendered mustache in the DOM
-      const bodyText = await page.evaluate(() => document.body.innerText);
-      if (bodyText.includes("{{") || bodyText.includes("}}")) {
-        throw new Error("Unrendered mustache found in DOM — Vue did not mount");
-      }
+    // Verify work page rendered
+    const workEl = await page.$(".board");
+    if (!workEl) {
+      consoleErrs.push("Work page board not rendered — check page navigation");
+    }
 
-      // Check that a known root element rendered with real content
-      const appEl = await page.$("#app");
-      if (!appEl) throw new Error("#app element not found");
+    // Check that the +New Task button exists
+    const newBtn = await page.$(".new-btn");
+    if (!newBtn) {
+      consoleErrs.push("+New Task button not found in DOM");
+    }
 
-      const hasBrand = await page.evaluate(() =>
-        document.body.innerText.includes("RepoOS"),
-      );
-      if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
-
-      // Navigate to work page and click +New Task
-      await page.evaluate(() => {
-        const navItems = document.querySelectorAll(".nav-item");
-        for (const item of Array.from(navItems)) {
-          if (item.textContent?.includes("Work")) (item as HTMLElement).click();
-        }
-      });
-      await page.waitForTimeout(500);
-
-      // Verify work page rendered
-      const workEl = await page.$(".board");
-      if (!workEl) {
-        consoleErrs.push("Work page board not rendered — check page navigation");
-      }
-
-      // Check that the +New Task button exists
-      const newBtn = await page.$(".new-btn");
-      if (!newBtn) {
-        consoleErrs.push("+New Task button not found in DOM");
-      }
-
-      // ── CSS regression guard: utility spacing must actually apply ─────
-      // Tailwind v4 emits all its CSS inside cascade layers. If an
-      // UNLAYERED reset such as `*{padding:0;margin:0}` is ever added to
-      // style.css, it silently beats every spacing utility (unlayered rules
-      // take precedence over @layer rules), collapsing padding on shadcn
-      // controls while console stays clean. Flag any non-explicit-zero
-      // spacing utility whose computed value is 0.
-      const assertUtilitySpacing = async (where: string) => {
-        const offenders = await page.evaluate(() => {
-          const AXIS: Record<string, string[]> = {
-            p: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
-            px: ["paddingLeft", "paddingRight"],
-            py: ["paddingTop", "paddingBottom"],
-            pt: ["paddingTop"], pr: ["paddingRight"], pb: ["paddingBottom"], pl: ["paddingLeft"],
-            m: ["marginTop", "marginRight", "marginBottom", "marginLeft"],
-            mx: ["marginLeft", "marginRight"],
-            my: ["marginTop", "marginBottom"],
-            mt: ["marginTop"], mr: ["marginRight"], mb: ["marginBottom"], ml: ["marginLeft"],
-          };
-          const bad: string[] = [];
-          for (const el of Array.from(document.querySelectorAll("*"))) {
-            if (!(el instanceof HTMLElement)) continue;
-            const s = getComputedStyle(el) as unknown as Record<string, string>;
-            for (const cls of el.classList) {
-              if (cls.startsWith("-")) continue; // negative margins are intentional
-              const m = /^([pm])([trblxy]?)-(?:\[)?([1-9])/.exec(cls);
-              if (!m) continue;
-              for (const prop of AXIS[m[1] + m[2]] ?? []) {
-                if (parseFloat(s[prop] as string) <= 0) {
-                  bad.push(`${cls} → ${prop} = ${s[prop]} on <${el.tagName.toLowerCase()}>`);
-                  break;
-                }
+    // ── CSS regression guard: utility spacing must actually apply ─────
+    // Tailwind v4 emits all its CSS inside cascade layers. If an
+    // UNLAYERED reset such as `*{padding:0;margin:0}` is ever added to
+    // style.css, it silently beats every spacing utility (unlayered rules
+    // take precedence over @layer rules), collapsing padding on shadcn
+    // controls while console stays clean. Flag any non-explicit-zero
+    // spacing utility whose computed value is 0.
+    const assertUtilitySpacing = async (where: string) => {
+      const offenders = await page.evaluate(() => {
+        const AXIS: Record<string, string[]> = {
+          p: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
+          px: ["paddingLeft", "paddingRight"],
+          py: ["paddingTop", "paddingBottom"],
+          pt: ["paddingTop"], pr: ["paddingRight"], pb: ["paddingBottom"], pl: ["paddingLeft"],
+          m: ["marginTop", "marginRight", "marginBottom", "marginLeft"],
+          mx: ["marginLeft", "marginRight"],
+          my: ["marginTop", "marginBottom"],
+          mt: ["marginTop"], mr: ["marginRight"], mb: ["marginBottom"], ml: ["marginLeft"],
+        };
+        const bad: string[] = [];
+        for (const el of Array.from(document.querySelectorAll("*"))) {
+          if (!(el instanceof HTMLElement)) continue;
+          const s = getComputedStyle(el) as unknown as Record<string, string>;
+          for (const cls of el.classList) {
+            if (cls.startsWith("-")) continue; // negative margins are intentional
+            const m = /^([pm])([trblxy]?)-(?:\[)?([1-9])/.exec(cls);
+            if (!m) continue;
+            for (const prop of AXIS[m[1] + m[2]] ?? []) {
+              if (parseFloat(s[prop] as string) <= 0) {
+                bad.push(`${cls} → ${prop} = ${s[prop]} on <${el.tagName.toLowerCase()}>`);
+                break;
               }
             }
           }
-          return [...new Set(bad)];
-        });
-        if (offenders.length > 0) {
-          throw new Error(
-            "Utility spacing collapsed on " + where + ": " + offenders.slice(0, 6).join("; "),
-          );
         }
-      };
-
-      await assertUtilitySpacing("dashboard");
-
-      // Re-run the guard on the settings page (covers shadcn Button + Select)
-      await page.evaluate(() => {
-        const navItems = document.querySelectorAll(".nav-item");
-        for (const item of Array.from(navItems)) {
-          if (item.textContent?.includes("Settings")) (item as HTMLElement).click();
-        }
+        return [...new Set(bad)];
       });
-      await page.waitForTimeout(500);
-      await assertUtilitySpacing("settings");
-
-      // Check for zero console errors
-      if (consoleErrs.length > 0) {
-        let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");
-        if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
-        throw new Error(msg);
-      }
-      if (pageErrors.length > 0) {
+      if (offenders.length > 0) {
         throw new Error(
-          "Page errors (" + pageErrors.length + "): " + pageErrors.join("; "),
+          "Utility spacing collapsed on " + where + ": " + offenders.slice(0, 6).join("; "),
         );
       }
-    } finally {
-      await browser.close();
+    };
+
+    await assertUtilitySpacing("dashboard");
+
+    // Re-run the guard on the settings page (covers shadcn Button + Select)
+    await page.evaluate(() => {
+      const navItems = document.querySelectorAll(".nav-item");
+      for (const item of Array.from(navItems)) {
+        if (item.textContent?.includes("Settings")) (item as HTMLElement).click();
+      }
+    });
+    await page.waitForTimeout(500);
+    await assertUtilitySpacing("settings");
+
+    // Check for zero console errors
+    if (consoleErrs.length > 0) {
+      let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");
+      if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
+      throw new Error(msg);
+    }
+    if (pageErrors.length > 0) {
+      throw new Error(
+        "Page errors (" + pageErrors.length + "): " + pageErrors.join("; "),
+      );
     }
   } finally {
+    if (browser) await browser.close();
     server.close();
   }
 }

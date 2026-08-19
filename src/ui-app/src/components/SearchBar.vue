@@ -21,7 +21,7 @@ const config = useConfigStore();
 const ui = useUiStore();
 const { tasks } = storeToRefs(repo);
 const { docs: docList } = storeToRefs(docs);
-const { visibleFields } = storeToRefs(config);
+const { searchableFields } = storeToRefs(config);
 
 const query = ref("");
 const overlayOpen = ref(false);
@@ -36,7 +36,7 @@ const searchSource = computed(() => ({
     ...d,
     content: docsWithContent.value.get(d.path),
   })),
-  fields: visibleFields.value,
+  fields: searchableFields.value,
 }));
 
 const results = computed(() =>
@@ -201,7 +201,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
-      <span class="search-placeholder">Search tasks, docs, settings…</span>
+      <span class="search-placeholder hidden sm:inline">Search tasks, docs, settings…</span>
       <kbd>⌘K</kbd>
     </button>
 

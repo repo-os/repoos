@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
+import { LogOut, Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const auth = useAuthStore();
 const { health, connected, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
@@ -37,7 +39,7 @@ function toggleTheme(): void {
         <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
       </svg>
     </div>
-    <div class="brand">RepoOS<small>repo is the os</small></div>
+    <div class="brand hidden sm:inline">RepoOS<small>repo is the os</small></div>
     <div v-if="health" class="repo-pill">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8" />
@@ -68,6 +70,12 @@ function toggleTheme(): void {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
+    <div v-if="auth.authEnabled && auth.authenticated" class="user-chip" :title="auth.email ?? undefined">
+      <span class="user-chip-email mono hidden sm:inline">{{ auth.email }}</span>
+      <button class="logout-btn" type="button" aria-label="Log out" title="Log out" @click="auth.logout()">
+        <LogOut :size="14" :stroke-width="1.8" />
+      </button>
+    </div>
     <div
       class="conn"
       :class="connState"

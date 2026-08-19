@@ -459,6 +459,56 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
     });
   });
 
+  it("returns a task to active when review findings are auto-bounced to the engineer", async () => {
+    const needsWorkReport = [
+      "## Verdict",
+      "`needs some work` — fix the issue below.",
+      "",
+      "## Bugs",
+      "- Fix the missing status transition.",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- Add a regression test.",
+    ].join("\\n");
+    const fx = makeFixture(`
+const mission = process.argv.join(" ");
+if (mission.includes("automated review found")) process.stdout.write("engineer resumed\\n");
+else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
+`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Auto-bounce status");
+      const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(
+        async () => {
+          const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+          return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+        },
+        "an engineer session is available to resume",
+      );
+      await waitForAsync(async () => {
+        const response = await fetch(`${server.url}/api/agents/running`);
+        const running = (await response.json()) as { tasks: Array<{ id: string }> };
+        return !running.tasks.some((entry) => entry.id === task.id);
+      }, "the initial engineer turn exits");
+      const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      expect(patched.status).toBe(200);
+
+      await waitForAsync(async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active", "auto-bounce moves task to active");
+
+      const taskFile = readFileSync(task.absPath, "utf8");
+      expect(taskFile).toMatch(/^status: active$/m);
+      expect(taskFile).toMatch(/^review_rounds: 1$/m);
+      expect(taskFile).toContain("status review→active");
+      expect(spawns(fx).some((args) => args.join(" ").includes("automated review found"))).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: active$/m);
+    });
+  });
+
   it("routes reviewer chat to its own session and serves the conversation", async () => {
     const report = [
       "## Verdict",

@@ -109,7 +109,7 @@ import { createJobCoordinator, type JobCoordinator } from "./integration-job.js"
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
-import { handoffTask } from "./handoff.js";
+import { handoffTask, scheduleCheckFailureRetry } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -131,6 +131,8 @@ import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
+import { getAuthStore } from "../core/auth-store.js";
 import {
   Router,
   type RouteContext,
@@ -148,6 +150,9 @@ import {
   getChat,
   sendChatMessage,
   initInfoHandlers,
+  getDebugger,
+  sendDebuggerMessage,
+  repairWithDebugger,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -163,6 +168,7 @@ import {
   getTaskStats,
   getSessionTypeStats,
   getBoardStats,
+  getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
   taskAction,
@@ -198,6 +204,21 @@ import {
   serveManifest,
   serveIcon,
   setIconRenderer,
+  // Auth routes
+  authStatus,
+  bootstrapAdmin,
+  requestOtp,
+  verifyOtp,
+  googleLogin,
+  googleCallback,
+  authMe,
+  authLogout,
+  listUsers,
+  addUser,
+  sendInvite,
+  deleteUser,
+  updateUserRole,
+  getAuditLog,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -364,6 +385,13 @@ export interface ServeOptions {
    * EADDRINUSE until the old process releases the port, instead of failing.
    */
   reloadReplacement?: boolean;
+  /**
+   * Force auth off for this instance regardless of [auth] in repoos.toml.
+   * For ephemeral in-process servers (the UI smoke gate) that test generic
+   * rendering, not auth flows — a project with real auth enabled must not
+   * make `repoos check` itself unable to reach the dashboard.
+   */
+  disableAuth?: boolean;
 }
 
 /**
@@ -383,7 +411,7 @@ export function shouldReapStrayServeProcesses(
 export interface ServerHandle {
   url: string;
   port: number;
-  close: () => Promise<void>;
+  close: (reason?: string) => Promise<void>;
   index: LiveIndex;
 }
 
@@ -664,13 +692,64 @@ function registerFatalHandlersOnce(): void {
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
+  if (opts.disableAuth && config.auth) {
+    config.auth = { ...config.auth, enabled: false };
+  }
   const logger = createLogger(config.root);
   const index = new LiveIndex(config);
   index.refreshAll();
 
-  logger.system("info", "RepoOS server starting", { root: config.root });
+  const requestedPort = opts.port ?? 7171;
+  const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
+  const isControlPlane = requestedPort !== 0 && !isPreviewChild;
+  const mode = isPreviewChild ? "preview" : requestedPort === 0 ? "ephemeral" : opts.reloadReplacement ? "reload-replacement" : "control-plane";
+  logger.system("info", "RepoOS server starting", {
+    root: config.root,
+    pid: process.pid,
+    requestedPort,
+    host: opts.host ?? "127.0.0.1",
+    mode,
+    buildHash: readBuildHash(config.root),
+  });
   activeLogger = logger;
   registerFatalHandlersOnce();
+
+  // ---- Fail-closed auth validation at startup (0246) ----
+  // When auth is enabled, the server must have a usable login method and a
+  // bootstrap admin path — otherwise enable auth silently locks everyone out.
+  if (config.auth?.enabled) {
+    const hasEmailProvider = !!(config.auth.emailProvider?.apiKey && config.auth.emailProvider?.fromAddress);
+    const hasGoogle = !!(config.auth.google?.clientId && config.auth.google?.clientSecret);
+    if (!hasEmailProvider && !hasGoogle) {
+      throw new Error(
+        "Auth is enabled but no login provider is configured. " +
+        "Set [auth.emailProvider] (Resend API key + from address) or " +
+        "[auth.google] (client ID + secret) in your config, or disable auth.",
+      );
+    }
+    // Auto-generate a session secret if none was provided. The secret is
+    // only meaningful for signed-cookie schemes; with DB-backed sessions
+    // the token is opaque — but keep the field consistent for forward
+    // compatibility and so the config is explicit about intent.
+    if (!config.auth.sessionSecret) {
+      config.auth.sessionSecret = randomHex(32);
+    }
+    const authStore = getAuthStore(config.root);
+    const userCount = authStore?.listUsers().length ?? 0;
+    if (userCount === 0 && !config.auth.bootstrapAdmin) {
+      throw new Error(
+        "Auth is enabled but no users exist and no bootstrap admin email is configured. " +
+        "Set [auth.bootstrapAdmin] to an email address in your config, " +
+        "or use the Settings UI to add users before enabling auth.",
+      );
+    }
+    logger.system("info", "Auth enabled — login providers validated", {
+      emailProvider: hasEmailProvider,
+      google: hasGoogle,
+      userCount,
+      bootstrapAdmin: config.auth.bootstrapAdmin ?? null,
+    });
+  }
 
   const uiDir = findUiDir(repoos.config.root);
 
@@ -788,6 +867,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             id: jobBefore.taskId,
             step: "failed",
             detail: result.reason,
+            phase: jobCoordinator.getJob(jobBefore.taskId)?.failedPhase,
             at: new Date().toISOString(),
           });
         }
@@ -845,8 +925,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Serve process reaper (0168): detect and reap stale serve processes,
   // and prevent port binding conflicts.
-  const reaper = new ServeReaper(config.root, config.cacheDir);
+  // Port-0 harnesses and preview children must neither overwrite nor remove
+  // the real control-plane lock. They are deliberately short-lived and are
+  // not valid evidence about who owns 7171.
+  const reaper = new ServeReaper(config.root, config.cacheDir, isControlPlane);
   reaper.cleanupStale();
+  // Boot-time sweep for historical orphans whose deleted root took their
+  // lockfile with it. Deliberately fire-and-forget: the sweep is async and
+  // bounded, so serve startup never blocks on it even with hundreds of
+  // accumulated orphans. It always resolves (never rejects). Gated like the
+  // periodic stray sweep — preview children and ephemeral in-process servers
+  // must not each run a full `ps`+`lsof` census of the machine.
+  if (shouldReapStrayServeProcesses(opts)) {
+    void reaper.cleanupOrphanedRoots();
+  }
 
   // Agent supervisor: periodic health checks and safe recovery (0112)
   let supervisor: AgentSupervisor | null = null;
@@ -871,10 +963,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
         return;
       }
-      if (runner.isHandoffInFlight(request.taskId)) {
-        runner.system(request.taskId, "✗ server-side handoff rejected: a finalization is already in flight for this task");
-        return;
-      }
+      // AgentRunner marks the handoff as in-flight *before* invoking this
+      // callback so it cannot be mistaken for a stalled task or restarted
+      // mid-finalization. The capability above is single-use, so a duplicate
+      // callback has already been rejected by consumeHandoff(). Checking the
+      // in-flight marker here would reject this very handoff every time.
       const task = index.getTask(request.taskId);
       if (!task) {
         runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
@@ -901,6 +994,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           task.id,
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
+        scheduleCheckFailureRetry(config, task, result, runner);
       }
     },
     onPreviewRequest: async (request) => {
@@ -948,6 +1042,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
   runner.adoptRunningAgents();
+
+  // Recover any pending handoff requests from a previous interrupted turn (#0235).
+  // Validates each request (task still exists, active, branch matches) and
+  // re-fires onHandoff for valid ones. Must run after adoptRunningAgents so
+  // in-flight handoffs from adopted agents are visible.
+  runner.recoverPendingHandoffs();
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
@@ -1014,6 +1114,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         try {
           const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
           if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+          // The PPID-based pass above cannot see every deleted-root orphan;
+          // repeat the narrower root sweep so leaks created after boot do not
+          // wait until the next control-plane restart.
+          void reaper.cleanupOrphanedRoots();
         } catch {
           /* reaping is best-effort — never crash the server over it */
         }
@@ -1031,6 +1135,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
     for (const name of Object.keys(agents)) {
+      // Chat-only agents (the Debugger) have no scan to schedule — their
+      // floating-head conversation is the only interaction surface (0201).
+      if (name === "debugger") continue;
       if (!isDueForScheduledRun(agents[name])) continue;
       builtInRun.inFlight = true;
       void runBuiltInAgent(name, repoos.config, logger)
@@ -1188,6 +1295,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
+  // Preview state is process-local. Recreate previews for tasks that were
+  // already in review when this control-plane process started, otherwise a
+  // server restart leaves review tasks without their expected preview URL.
+  for (const task of index.getTasks()) {
+    if (task.status === "review") void autoLaunchPreview(task);
+  }
+
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {
     if (e.type !== "task.updated") return;
@@ -1283,10 +1397,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("GET", "/api/debugger", getDebugger);
+  router.register("POST", "/api/debugger/message", sendDebuggerMessage);
+  router.register("POST", "/api/debugger/repair", repairWithDebugger);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
   router.register("GET", "/api/stats/by-type", getSessionTypeStats);
+  router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
@@ -1304,7 +1422,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
-  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/, taskAction);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
@@ -1331,6 +1449,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
     const agentName = params.param1;
     const cfg = ctx.repoos.config;
+    // The Debugger is chat-only (its floating head / bug-paste panel). It has
+    // no scan to run now, and exposing a dead endpoint invites a 500 when the
+    // dispatch returns null — reject it explicitly before touching the
+    // in-flight guard (0201).
+    if (agentName === "debugger") {
+      return json(res, 400, {
+        error: `"${agentName}" is chat-only — talk to it from its floating head instead of running it`,
+      });
+    }
     // Manual and scheduled runs share one in-flight guard, so two scans can
     // never overlap and block the server twice over.
     if (builtInRun.inFlight) {
@@ -1370,6 +1497,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Transcription routes
   router.register("POST", "/api/transcribe", transcribe);
 
+  // Auth routes
+  router.register("GET", "/api/auth/status", authStatus);
+  router.register("POST", "/api/auth/bootstrap-admin", bootstrapAdmin);
+  router.register("POST", "/api/auth/request-otp", requestOtp);
+  router.register("POST", "/api/auth/verify-otp", verifyOtp);
+  router.register("GET", "/api/auth/login/google", googleLogin);
+  router.register("GET", "/api/auth/callback/google", googleCallback);
+  router.register("GET", "/api/auth/me", authMe);
+  router.register("POST", "/api/auth/logout", authLogout);
+  router.register("GET", "/api/auth/users", listUsers);
+  router.register("POST", "/api/auth/users", addUser);
+  router.register("POST", /^\/api\/auth\/users\/([^/]+)\/invite$/, sendInvite);
+  router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
+  router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
+  router.register("GET", "/api/auth/audit", getAuditLog);
+
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
   router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
@@ -1389,6 +1532,61 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         res.end();
         return;
       }
+
+    // ---- Auth middleware ----
+    // When auth is enabled, every request except public routes must carry a
+    // valid session cookie. Public routes: /api/health, /api/auth/*,
+    // /login, static UI assets, manifest, icons, and OPTIONS. Unauthenticated
+    // API requests get 401; browser navigations to non-public non-SPA routes
+    // redirect to /login. Auth-disabled deployments pass everything through.
+    const authEnabled = config.auth?.enabled === true;
+    if (authEnabled) {
+      const PUBLIC_PREFIXES = ["/api/health", "/api/auth/"];
+      const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
+      const isPublicRoute =
+        PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
+        PUBLIC_PATHS.includes(path) ||
+        path.startsWith("/icons/") ||
+        path.startsWith("/assets/") ||
+        method === "OPTIONS";
+      if (!isPublicRoute) {
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionToken = cookies[SESSION_COOKIE_NAME];
+        let validSession = false;
+        if (sessionToken) {
+          const authStore = getAuthStore(config.root);
+          const session = authStore?.getSession(sessionToken);
+          validSession = !!session;
+        }
+        if (!validSession) {
+          // API requests get 401 JSON; browser GETs to SPA routes are served
+          // the login page (via SPA fallback) so the client-side router can
+          // render the login UI. Other browser navigations redirect to /login.
+          const isApiRequest = path.startsWith("/api/");
+          const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
+          if (isApiRequest) {
+            return json(res, 401, { error: "Authentication required" });
+          }
+          if (isNavigation && uiDir) {
+            // Serve the SPA shell so the client router renders /login
+            const indexPath = join(uiDir, "index.html");
+            if (existsSync(indexPath)) {
+              res.writeHead(200, {
+                "Content-Type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*",
+              });
+              res.end(readFileSync(indexPath, "utf8"));
+              return;
+            }
+          }
+          if (isNavigation) {
+            res.writeHead(302, { Location: `/login?redirect=${encodeURIComponent(path)}` });
+            return res.end();
+          }
+          return json(res, 401, { error: "Authentication required" });
+        }
+      }
+    }
 
     // ---- SSE stream ----
     if (path === "/api/events" && method === "GET") {
@@ -1526,7 +1724,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
 
-  const port = opts.port ?? 7171;
+  const port = requestedPort;
   const host = opts.host ?? "127.0.0.1";
 
   /** One bind attempt: resolves once listening, rejects on the listen error. */
@@ -1593,6 +1791,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           await bindOnce(false);
         }
       } catch (err) {
+        logger.system("error", "RepoOS server bind failed", {
+          pid: process.pid,
+          port,
+          host,
+          mode,
+          error: err instanceof Error ? err.message : String(err),
+        });
         // A bind-only failure must terminate the process cleanly: the file
         // watcher and SSE subscriber are live handles that would otherwise keep
         // a listenerless `repoos serve` process alive (the #0096 incident).
@@ -1616,6 +1821,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
       const actualPort = (server.address() as { port: number }).port;
       const url = `http://${host}:${actualPort}`;
+      logger.system("info", "RepoOS server listening", {
+        pid: process.pid,
+        port: actualPort,
+        host,
+        mode,
+        buildHash: loadedHash,
+      });
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
@@ -1627,7 +1839,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         url,
         port: actualPort,
         index,
-        close: async () => {
+        close: async (reason: string = "handle.close") => {
+          if (isControlPlane) {
+            logger.system("info", "RepoOS control plane shutting down", {
+              pid: process.pid,
+              port: actualPort,
+              reason,
+            });
+          }
           clearInterval(systemSampleTimer);
           if (reapTimer) clearInterval(reapTimer);
           clearInterval(builtInTimer);
@@ -1660,8 +1879,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clients.clear();
           reaper.unregister();
           await closeHttp();
+          if (isControlPlane) {
+            logger.system("info", "RepoOS control plane stopped", {
+              pid: process.pid,
+              port: actualPort,
+              reason,
+            });
+          }
         },
       };
+
+      // A fixture or preview can have its checkout deleted while this child is
+      // still alive (for example when a test aborts before its finally block).
+      // Do not let that leave a server with an unreapable lockfile inside the
+      // deleted root: close its listener and all owned resources on its own.
+      // Only ephemeral test servers and preview children watch their root.
+      // A live control plane can serve a real checkout on a briefly unavailable
+      // network volume; it must not terminate itself in that situation.
+      if (opts.port === 0 || process.env.REPOOS_PREVIEW_CHILD === "1") {
+        reaper.watchRoot(() => {
+          void handle.close();
+        });
+      }
 
       // Auto-reload (0066): watch dist/.build-info.json and hand over to a
       // replacement process on a hash change. Deferred while an agent runs.
@@ -1693,11 +1932,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         stopListening: closeHttp,
         listen: () => bindOnce(false),
         onReloadConfirmed: async () => {
-          await handle.close();
+          await handle.close("reload replacement confirmed");
           process.exit(0);
         },
         onReloadFailed: (reason) => {
           console.log(`  ${reason} — old process keeps serving`);
+          logger.system("warn", "RepoOS reload failed; old control plane retained", {
+            pid: process.pid,
+            port: actualPort,
+            reason,
+          });
           // A manual restart failed: the old server keeps serving (no outage).
           // Release the UI's "Restarting…" state so the notice stays actionable.
           emitEvent({
@@ -1706,7 +1950,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             at: new Date().toISOString(),
           });
         },
-        log: (msg) => console.log(msg),
+        log: (msg) => {
+          console.log(msg);
+          logger.system("info", "RepoOS reload lifecycle", { pid: process.pid, port: actualPort, message: msg });
+        },
       });
       reload.start();
       // Stale-boot self-heal: a newer build that landed while we were starting

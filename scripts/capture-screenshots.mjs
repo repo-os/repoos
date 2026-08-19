@@ -12,12 +12,11 @@
  *
  * Exits non-zero if any capture produced console/page errors.
  */
-import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { startServer } from "../dist/server/server.js";
-import { HASH_FILE, SCREENSHOT_NAMES, screenshotsHash } from "../dist/commands/screenshots.js";
+import { startPreviewServer, launchWebkit } from "../dist/commands/ui-harness.js";
+import { HASH_FILE, screenshotsHash } from "../dist/commands/screenshots.js";
 
 const ROOT = process.cwd();
 const SHOTS = resolve(ROOT, "screenshots");
@@ -36,16 +35,16 @@ cpSync(FIXTURES, tmp, { recursive: true });
 
 let server;
 try {
-  server = await startServer({ root: tmp, host: "127.0.0.1", port: 0 });
+  server = await startPreviewServer(tmp);
 } catch (e) {
   console.error("Failed to start server:", e);
   rmSync(tmp, { recursive: true, force: true });
   process.exit(1);
 }
 
-let playwright;
+let browser;
 try {
-  playwright = await import("@playwright/test");
+  browser = await launchWebkit();
 } catch {
   console.error("Cannot find module @playwright/test (not installed).");
   console.error("Install: bun add -d @playwright/test && npx playwright install webkit");
@@ -100,54 +99,50 @@ async function capture(newPage, name, url, ready, act) {
 }
 
 try {
-  const browser = await playwright.webkit.launch({ headless: true });
-  try {
-    // ── dashboard ──
-    await capture(
-      browser.newPage({ viewport: VIEWPORT }),
-      "dashboard.png",
-      `${server.url}/`,
-      ".stat-grid",
-    );
-    // ── work queue board ──
-    await capture(
-      browser.newPage({ viewport: VIEWPORT }),
-      "work-board.png",
-      `${server.url}/work`,
-      ".board",
-    );
-    // ── open task drawer (click first card on the board) ──
-    await capture(
-      browser.newPage({ viewport: VIEWPORT }),
-      "task-drawer.png",
-      `${server.url}/work`,
-      ".board",
-      async (page) => {
-        await page.click(".task-card");
-        await page.waitForSelector(".drawer-resize", { timeout: 10_000 });
-      },
-    );
-    // ── repo / docs context ──
-    await capture(
-      browser.newPage({ viewport: VIEWPORT }),
-      "docs-context.png",
-      `${server.url}/repo`,
-      ".repo-grid",
-    );
-    // ── settings ──
-    await capture(
-      browser.newPage({ viewport: VIEWPORT }),
-      "settings.png",
-      `${server.url}/settings`,
-      ".setting-group",
-    );
-  } finally {
-    await browser.close();
-  }
+  // ── dashboard ──
+  await capture(
+    browser.newPage({ viewport: VIEWPORT }),
+    "dashboard.png",
+    `${server.url}/`,
+    ".stat-grid",
+  );
+  // ── work queue board ──
+  await capture(
+    browser.newPage({ viewport: VIEWPORT }),
+    "work-board.png",
+    `${server.url}/work`,
+    ".board",
+  );
+  // ── open task drawer (click first card on the board) ──
+  await capture(
+    browser.newPage({ viewport: VIEWPORT }),
+    "task-drawer.png",
+    `${server.url}/work`,
+    ".board",
+    async (page) => {
+      await page.click(".task-card");
+      await page.waitForSelector(".drawer-resize", { timeout: 10_000 });
+    },
+  );
+  // ── repo / docs context ──
+  await capture(
+    browser.newPage({ viewport: VIEWPORT }),
+    "docs-context.png",
+    `${server.url}/repo`,
+    ".repo-grid",
+  );
+  // ── settings ──
+  await capture(
+    browser.newPage({ viewport: VIEWPORT }),
+    "settings.png",
+    `${server.url}/settings`,
+    ".setting-group",
+  );
 
   // Write the freshness marker AFTER the PNGs, so it covers their contents.
   writeFileSync(join(ROOT, HASH_FILE), screenshotsHash(ROOT) ?? "", "utf8");
 } finally {
+  await browser.close();
   server.close();
   rmSync(tmp, { recursive: true, force: true });
 }

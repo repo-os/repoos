@@ -132,7 +132,7 @@ function stageClass(s: string, i: number): string {
                 <svg v-if="i < currentIndex" viewBox="0 0 24 24" class="stage-check" fill="none">
                   <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
-                <span v-else class="stage-dot" :class="{ spin: i === currentIndex && !active.failed }"></span>
+                <span v-else class="stage-dot" :class="{ spinning: i === currentIndex && !active.failed }"></span>
               </span>
               <span class="stage-name">{{ s }}</span>
               <span v-if="i < INTEGRATION_STAGES.length - 1" class="stage-arrow" aria-hidden="true">→</span>
@@ -294,7 +294,7 @@ function stageClass(s: string, i: number): string {
   box-sizing: content-box;
 }
 
-.stage-dot.spin {
+.stage-dot.spinning {
   border-top-color: var(--cyan);
   border-right-color: var(--cyan);
   animation: ibar-spin 0.9s linear infinite;
@@ -524,7 +524,7 @@ function stageClass(s: string, i: number): string {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage-dot.spin {
+  .stage-dot.spinning {
     animation: none;
   }
 }

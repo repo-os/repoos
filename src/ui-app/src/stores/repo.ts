@@ -3,11 +3,13 @@ import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
+import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
   AutoEngineeringState,
   BoardIndex,
+  BoardUsageStats,
   Counts,
   CtoState,
   Health,
@@ -20,6 +22,7 @@ import type {
   Status,
   SystemStats,
   Task,
+  TaskUsageStats,
 } from "../types";
 
 export interface FeedItem {
@@ -84,6 +87,10 @@ export interface DoneError {
   message: string;
   conflicts: string[];
   step: string;
+  /** Per-failure guidance; replaces the default conflict hint when set. */
+  hint?: string;
+  /** Newline-preserving check/build output excerpt for the expanded panel. */
+  detail?: string;
 }
 
 /**
@@ -101,16 +108,7 @@ export class MoveToDoneError extends Error {
 }
 
 /** Pull the conflicting file names out of the server's close-out error. */
-export function extractConflicts(message: string): string[] {
-  const prefix = "merge conflict: ";
-  const idx = message.indexOf(prefix);
-  if (idx === -1) return [];
-  return message
-    .slice(idx + prefix.length)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+export { extractConflicts } from "../lib/closeOutFailure";
 
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
@@ -230,6 +228,10 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
+  /** Server-authoritative start time for a live agent turn, keyed by task id. */
+  const runningSince = ref<Record<string, string>>({});
+  /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
+  const agentActivityAt = ref<Record<string, string>>({});
   /** When each task's agent last exited (ms timestamp), for the "paused" grace period. */
   const agentExitedAt = ref<Record<string, number>>({});
   /**
@@ -262,6 +264,14 @@ export const useRepoStore = defineStore("repo", () => {
   const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
+  const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
+  /** Board-level usage totals (overall + per-role + per-day, 0230). */
+  const boardUsage = ref<BoardUsageStats | null>(null);
+  /** Board usage is fetched separately from the board payload. Keep its state
+   * explicit so a failed optional request is not mistaken for invisible UI. */
+  const boardUsageLoading = ref(false);
+  const boardUsageError = ref<string | null>(null);
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -551,6 +561,8 @@ export const useRepoStore = defineStore("repo", () => {
         delete next[e.id];
         pendingPauseTimers.value = next;
       }
+      runningSince.value = { ...runningSince.value, [e.id]: e.at };
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
@@ -582,11 +594,14 @@ export const useRepoStore = defineStore("repo", () => {
         ...outputs.value,
         [e.id]: [...prev, e.entry].slice(-OUTPUT_MAX_LINES),
       };
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: new Date().toISOString() };
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
       const wasRunning = runningIds.value.includes(e.id);
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
+      runningSince.value = Object.fromEntries(Object.entries(runningSince.value).filter(([id]) => id !== e.id));
+      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
       // A deliberate pause (0100): a running agent stops on a task that stays
       // `active` (and neither needs input nor handed off to review).  Instead
@@ -625,11 +640,11 @@ export const useRepoStore = defineStore("repo", () => {
       // job, so a later failure arrives here as an SSE event. Surface it as the
       // inline done error the card/drawer already render.
       if (e.step === "failed" && e.detail) {
-        setDoneError(e.id, {
-          message: e.detail,
-          conflicts: extractConflicts(e.detail),
-          step: "check",
-        });
+        // Background close-out failure (0199, 0215): the /done POST only
+        // enqueues the job, so a later failure arrives here as an SSE event.
+        // The job's failing `phase` (when known) and its `reason` drive the
+        // message, so a `check failed` reason never reads like a conflict.
+        setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
       }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed
@@ -758,6 +773,10 @@ export const useRepoStore = defineStore("repo", () => {
       void refreshIntegration().catch(() => {
         /* non-fatal hydration */
       });
+      // The running map is independent from task status. Reconcile it on every
+      // connection so a missed `agent.running` frame can never leave a review
+      // card saying "waiting for human" while its engineer is still working.
+      void fetchRunning();
     };
     es.onerror = () => {
       connected.value = false;
@@ -1019,10 +1038,10 @@ export const useRepoStore = defineStore("repo", () => {
       // actionable error instead of the commit modal.
       if (body.dirtyCheckFailed) {
         const message = body.error ?? "could not verify main is clean before close-out";
+        const mapped = describeCloseOutFailure(undefined, message);
         setDoneError(t.id, {
-          message,
-          conflicts: extractConflicts(message),
-          step: doneSteps.value[t.id] ?? "merge",
+          ...mapped,
+          step: doneSteps.value[t.id] ?? mapped.step,
         });
         throw new MoveToDoneError(t.id, message);
       }
@@ -1032,10 +1051,10 @@ export const useRepoStore = defineStore("repo", () => {
     const r = body as DoneResult;
     if (!raw.ok || !r.ok) {
       const message = r.error ?? raw.statusText ?? "could not complete task";
+      const mapped = describeCloseOutFailure(undefined, message);
       setDoneError(t.id, {
-        message,
-        conflicts: extractConflicts(message),
-        step: doneSteps.value[t.id] ?? "merge",
+        ...mapped,
+        step: doneSteps.value[t.id] ?? mapped.step,
       });
       throw new MoveToDoneError(t.id, message);
     }
@@ -1142,6 +1161,40 @@ export const useRepoStore = defineStore("repo", () => {
   /** Get diff stats for a task, or undefined if not yet fetched. */
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
 
+  /**
+   * Load a task's durable usage totals (time/tokens/cost + role breakdown,
+   * 0230). Best-effort — a task with no recorded sessions just yields no data.
+   */
+  async function loadTaskUsage(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; stats: TaskUsageStats | null }>(`/api/tasks/${id}/stats`);
+      if (r.ok) taskUsage.value = { ...taskUsage.value, [id]: r.stats ?? null };
+    } catch {
+      /* endpoint unavailable — usage is nice-to-have */
+    }
+  }
+
+  /** Usage totals for a task, or null when none have been fetched/recorded. */
+  const taskUsageFor = (id: string) => taskUsage.value[id];
+
+  /**
+   * Load board-level usage totals (overall + per-role + per-day, 0230).
+   * Best-effort — surfaces empty when telemetry is unavailable.
+   */
+  async function loadBoardUsage(): Promise<void> {
+    boardUsageLoading.value = true;
+    boardUsageError.value = null;
+    try {
+      const r = await api<{ ok: boolean; stats: BoardUsageStats }>("/api/stats/board");
+      if (r.ok && r.stats) boardUsage.value = r.stats;
+      else boardUsageError.value = "The server did not return usage data.";
+    } catch (err) {
+      boardUsageError.value = err instanceof Error ? err.message : "Unable to load usage data.";
+    } finally {
+      boardUsageLoading.value = false;
+    }
+  }
+
   /** Load the full patch diff for a task. Best-effort. */
   async function loadDiff(id: string): Promise<void> {
     try {
@@ -1216,8 +1269,13 @@ export const useRepoStore = defineStore("repo", () => {
   /** Hydrate the running marker on reload so a running agent is never phantom. */
   async function fetchRunning(): Promise<void> {
     try {
-      const r = await api<{ tasks: { id: string }[] }>("/api/agents/running");
+      const r = await api<{ tasks: { id: string; startedAt: string }[] }>("/api/agents/running");
       runningIds.value = r.tasks.map((t) => t.id);
+      runningSince.value = Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt]));
+      agentActivityAt.value = {
+        ...agentActivityAt.value,
+        ...Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt])),
+      };
     } catch {
       /* endpoint unavailable — running state is best-effort */
     }
@@ -1378,6 +1436,8 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     transitionState,
     runningIds,
+    runningSince,
+    agentActivityAt,
     agentExitedAt,
     outputs,
     agentStats,
@@ -1436,6 +1496,13 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    taskUsage,
+    loadTaskUsage,
+    taskUsageFor,
+    boardUsage,
+    boardUsageLoading,
+    boardUsageError,
+    loadBoardUsage,
     loadDiff,
     diffFor,
     sendMessage,

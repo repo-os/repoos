@@ -69,6 +69,17 @@ const fields: ConfigField[] = [
     default: "",
     description: "Cache location",
   },
+  {
+    key: "whisper.provider",
+    label: "Voice transcription provider",
+    type: "select",
+    tier: "live",
+    group: "voice",
+    restartRequired: false,
+    default: "none",
+    options: [{ value: "groq", label: "Groq" }],
+    description: "Voice-to-text provider",
+  },
 ];
 
 describe("searchAll", () => {
@@ -118,6 +129,15 @@ describe("searchAll", () => {
     expect(byLabel.filter((r) => r.kind === "setting").map((r) => r.key)).toEqual(["cacheDir"]);
     const byKey = searchAll("theme", { tasks, docs, fields });
     expect(byKey.filter((r) => r.kind === "setting").map((r) => r.key)).toContain("theme");
+  });
+
+  it("surfaces voice-transcription settings so they are reachable via ⌘K", () => {
+    const byLabel = searchAll("voice transcription", { tasks, docs, fields });
+    expect(byLabel.filter((r) => r.kind === "setting").map((r) => r.key)).toContain(
+      "whisper.provider",
+    );
+    const byKey = searchAll("whisper.provider", { tasks, docs, fields });
+    expect(byKey.some((r) => r.kind === "setting" && r.key === "whisper.provider")).toBe(true);
   });
 
   it("groups results tasks → docs → settings", () => {

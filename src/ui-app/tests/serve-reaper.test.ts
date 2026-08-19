@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { ServeReaper } from "../../server/serve-reaper.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { spawn } from "node:child_process";
+import { ServeReaper, isOrphanRoot, isOrphanServeCommand } from "../../server/serve-reaper.js";
 import { shouldReapStrayServeProcesses } from "../../server/server.js";
-import { existsSync, readFileSync, rmSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 
 describe("ServeReaper", () => {
   let tmpDir: string;
@@ -46,6 +47,21 @@ describe("ServeReaper", () => {
 
     reaper.unregister();
     expect(existsSync(lockPath)).toBe(false);
+  });
+
+  it("keeps the control-plane lock intact when an ephemeral harness closes", () => {
+    const lockPath = join(tmpDir, ".repoos", "serve.lock");
+    reaper.register(7171, "127.0.0.1");
+    const controlLock = readFileSync(lockPath, "utf8");
+
+    // `startServer({ port: 0 })` is used by UI smoke tests and must never
+    // claim or remove the lock for a real server rooted at the same checkout.
+    const ephemeral = new ServeReaper(tmpDir, ".repoos", false);
+    ephemeral.cleanupStale();
+    ephemeral.register(49876, "127.0.0.1");
+    ephemeral.unregister();
+
+    expect(readFileSync(lockPath, "utf8")).toBe(controlLock);
   });
 
   it("detects conflict when a live process is registered for the same port", () => {
@@ -143,6 +159,58 @@ describe("ServeReaper", () => {
     }
   });
 
+  it("calls its owner when the served root disappears", () => {
+    vi.useFakeTimers();
+    try {
+      let closed = 0;
+      // interval 5ms, default 3 consecutive misses required.
+      reaper.watchRoot(() => { closed += 1; }, 5);
+
+      rmSync(tmpDir, { recursive: true, force: true });
+      vi.advanceTimersByTime(5); // miss 1
+      vi.advanceTimersByTime(5); // miss 2
+      expect(closed).toBe(0);
+      vi.advanceTimersByTime(5); // miss 3 → fires
+      expect(closed).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not fire while the root keeps reappearing (debounce) (#0216)", () => {
+    // Real timers made this racy under load (#0213): a 5ms polling interval
+    // racing 3ms create/delete cycles can have 3 consecutive checks land on a
+    // moment the root is gone, spuriously tearing the server down. Fake timers
+    // make the exact miss/reset sequence deterministic.
+    vi.useFakeTimers();
+    try {
+      let closed = 0;
+      // interval 5ms, needs 3 consecutive misses: a root that flickers back
+      // before three checks must never tear the server down.
+      reaper.watchRoot(() => { closed += 1; }, 5, 3);
+
+      // Flicker: each cycle the root is missing for one check, then restored —
+      // the miss counter must reset before it ever reaches 3.
+      for (let i = 0; i < 3; i++) {
+        rmSync(tmpDir, { recursive: true, force: true });
+        vi.advanceTimersByTime(5); // miss 1
+        mkdirSync(tmpDir, { recursive: true });
+        vi.advanceTimersByTime(5); // root present → resets misses
+      }
+      expect(closed).toBe(0);
+
+      // The real case: the root stays gone — three consecutive misses fire.
+      rmSync(tmpDir, { recursive: true, force: true });
+      vi.advanceTimersByTime(5); // miss 1
+      vi.advanceTimersByTime(5); // miss 2
+      expect(closed).toBe(0);
+      vi.advanceTimersByTime(5); // miss 3 → fires
+      expect(closed).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", () => {
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
@@ -192,5 +260,60 @@ describe("periodic serve reaper ownership (#0216)", () => {
 
   it("remains enabled for a normal control-plane server", () => {
     expect(shouldReapStrayServeProcesses({ port: 7171 }, {})).toBe(true);
+  });
+});
+
+describe("orphaned-root sweep classification (#0216)", () => {
+  it("matches the repoos CLI serve shape in compiled and dev form", () => {
+    expect(isOrphanServeCommand("/x/repoos/dist/cli/index.js serve --port 42222")).toBe(true);
+    expect(isOrphanServeCommand("/x/repoos/src/cli/index.ts serve --port 42222")).toBe(true);
+    expect(isOrphanServeCommand("/x/repoos/dist/cli/index.js serve")).toBe(true);
+    // A plain test runner or unrelated process is never a candidate.
+    expect(isOrphanServeCommand("vitest run")).toBe(false);
+    expect(isOrphanServeCommand("/usr/bin/node /x/repoos/dist/cli/index.js")).toBe(false);
+    // A different command's subcommand that merely mentions "serve" is not it.
+    expect(isOrphanServeCommand("bun run test:serve")).toBe(false);
+  });
+
+  it("flags a deleted cwd under the system temp dir, and nothing else", () => {
+    const goneUnderTmp = join(tmpdir(), `repoos-autoprev-gone-${Date.now()}`);
+    // The dir was never created — a stand-in for a deleted fixture root.
+    expect(isOrphanRoot(goneUnderTmp)).toBe(true);
+
+    // An existing temp-dir path is a healthy preview, not an orphan.
+    expect(isOrphanRoot(tmpdir())).toBe(false);
+
+    // A deleted path OUTSIDE the temp dir (e.g. a renamed/unmounted repo) is
+    // not conclusively an orphan — a sweep must never kill a user's checkout.
+    const goneOutsideTmp = join(homedir(), `repoos-missing-${Date.now()}`);
+    expect(isOrphanRoot(goneOutsideTmp)).toBe(false);
+  });
+
+  it("reaps a real serve-shaped process whose tmpdir root is deleted (#0216)", async () => {
+    if (process.platform === "win32") return; // sweep is Unix/Mac only
+    const root = join(tmpdir(), `repoos-sweep-live-${Date.now()}`);
+    mkdirSync(join(root, "cli"), { recursive: true });
+    writeFileSync(join(root, "cli", "index.js"), "setInterval(() => {}, 1000);\n");
+    const sweep = new ServeReaper(join(tmpdir(), `repoos-sweep-unused-${Date.now()}`), ".repoos");
+    const child = spawn(process.execPath, [join(root, "cli", "index.js"), "serve"], { cwd: root });
+    try {
+      const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
+        child.once("exit", (code, signal) => resolve({ code, signal })),
+      );
+      // Give the child time to bind its cwd before the root disappears.
+      await new Promise((r) => setTimeout(r, 200));
+      rmSync(root, { recursive: true, force: true });
+
+      const reaped = await sweep.cleanupOrphanedRoots();
+
+      expect(reaped).toBeGreaterThanOrEqual(1);
+      const outcome = await exited;
+      // The sweep's SIGTERM terminated it; the child must not have survived.
+      expect(outcome.code ?? outcome.signal).toBeTruthy();
+    } finally {
+      // The sweep already reaped it; a belt-and-braces kill for failure paths.
+      if (child.exitCode === null) child.kill("SIGKILL");
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
