@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
+import { useDocsStore } from "../stores/docs";
 import Button from "./ui/button.vue";
 import Card from "./ui/card.vue";
 import Input from "./ui/input.vue";
 import Switch from "./ui/switch.vue";
+
+const router = useRouter();
+const docs = useDocsStore();
+
+function openAuthDocs(): void {
+  void docs.loadDoc("docs/native-auth.md");
+  void router.push({ name: "repo" });
+}
 
 interface AuthUser {
   email: string;
@@ -129,6 +139,7 @@ function formatDate(iso: string): string {
       <div class="auth-info">
         <p class="auth-desc">
           Authentication is configured via <code>repoos.toml</code> and requires a server restart.
+          <button class="model-pricing-link" @click="openAuthDocs">Setup guide →</button>
           Manage the allowed users and their roles below.
         </p>
       </div>

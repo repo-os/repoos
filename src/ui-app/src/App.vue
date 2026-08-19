@@ -25,7 +25,9 @@ const auth = useAuthStore();
 const isPublicRoute = computed(() => route.meta.public === true);
 
 onMounted(async () => {
-  await auth.loadMe();
+  // The router guard already calls this before the first navigation
+  // resolves, so it's normally already loaded by the time we mount.
+  if (!auth.loaded) await auth.loadMe();
   await repo.init();
   await docs.loadDocs();
   await docs.loadSkills();

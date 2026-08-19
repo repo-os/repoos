@@ -60,7 +60,10 @@ export interface SmokePlaywright {
  */
 export async function startPreviewServer(root?: string): Promise<PreviewServer> {
   const { startServer } = await import("../server/server.js");
-  const opts: ServeOptions = { host: "127.0.0.1", port: 0 };
+  // disableAuth: the smoke gate tests generic rendering (title, board,
+  // buttons), not auth flows — a project with [auth] enabled must not make
+  // `repoos check` itself unable to reach the dashboard.
+  const opts: ServeOptions = { host: "127.0.0.1", port: 0, disableAuth: true };
   if (root !== undefined) opts.root = root;
   return startServer(opts);
 }

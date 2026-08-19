@@ -148,6 +148,35 @@ export function worktreesDir(root: string): string {
   return join(dirname(root), `${basename(root)}-worktrees`);
 }
 
+/**
+ * Load `.env` from the repo root into `process.env`, if present. Zero
+ * runtime deps (no dotenv package) — a minimal `KEY=value` parser, one line
+ * per variable. Real env vars already set take precedence over the file, so
+ * e.g. a systemd unit's `Environment=` still wins. Safe to call more than
+ * once; safe when `.env` doesn't exist.
+ */
+export function loadDotEnv(root: string = findRepoRoot()): void {
+  const envPath = join(root, ".env");
+  if (!existsSync(envPath)) return;
+  const text = readFileSync(envPath, "utf8");
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    if (!key || key in process.env) continue;
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
 export function findRepoRoot(start: string = process.cwd()): string {
   let dir = resolve(start);
@@ -280,6 +309,11 @@ function parseFlatToml(text: string): Record<string, unknown> {
 
 export function loadConfig(rootArg?: string): RepoOSConfig {
   const root = rootArg ? resolve(rootArg) : findRepoRoot();
+  // Load .env before resolving [auth]/[whisper] secrets below, so every path
+  // that boots a real server (repoos serve, previews, the UI smoke test)
+  // sees the same env-sourced values consistently, not just the CLI's own
+  // entrypoint.
+  loadDotEnv(root);
   const cfg: RepoOSConfig = { root, ...DEFAULT_CONFIG };
 
   const tomlPath = join(root, "repoos.toml");
