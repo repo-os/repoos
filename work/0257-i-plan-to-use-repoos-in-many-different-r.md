@@ -8,7 +8,7 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-repo-name-pill-clickable-with-custo
-cli_override: kiro
+cli_override: codex
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
@@ -126,4 +126,5 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 - 2026-08-19T17:48:27Z · status ready→active, branch
 - 2026-08-19T17:53:31Z · cli_override
 - 2026-08-19T17:53:32Z · cli_override
+- 2026-08-19T17:53:33Z · cli_override
 - 2026-08-19T17:53:33Z · cli_override
