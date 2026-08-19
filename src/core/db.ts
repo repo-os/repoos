@@ -258,7 +258,7 @@ export class RepoOSDb {
         mkdirSync(cacheDir, { recursive: true });
       }
       const dbPath = join(cacheDir, "repoos.db");
-      this.db = new Database(dbPath, { mode: "rwc" });
+      this.db = new Database(dbPath);
 
       // Enable WAL mode for better concurrency
       this.db.exec("PRAGMA journal_mode=WAL");
