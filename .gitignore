@@ -5,6 +5,9 @@ node_modules/
 # macOS
 .DS_Store
 
+# Local secrets (auth provider keys, session secret) — never commit these
+.env
+
 # Build output. Not needed for distribution — npm builds it fresh at publish
 # time via `files: ["dist"]` + `prepublishOnly`. Tracking it in git only ever
 # manufactured merge conflicts: `dist/.build-info.json` used to carry a
