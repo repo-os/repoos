@@ -7,7 +7,7 @@ priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/make-repo-name-pill-clickable-with-custo
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
