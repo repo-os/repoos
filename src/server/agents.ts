@@ -420,9 +420,12 @@ function outputTokensFromObject(obj: Record<string, unknown>): number | undefine
 }
 
 /**
- * Locate a `usage`-shaped block: top-level (codex/opencode events and claude's
+ * Locate a `usage`-shaped block: top-level (codex `usage` events and claude's
  * terminal `result`) or nested at `message.usage` (claude per-`assistant`
- * events, 0109).
+ * events, 0109). Also recognizes opencode's `step_finish` shape, whose tokens
+ * live at `part.tokens.{total,input,output}` and cost at `part.cost` — a
+ * different field layout entirely, normalized here to the `input_tokens` /
+ * `output_tokens` / `total_tokens` / `cost_usd` names the callers expect.
  */
 function findUsage(obj: Record<string, unknown>): Record<string, unknown> | undefined {
   if (obj.usage && typeof obj.usage === "object") return obj.usage as Record<string, unknown>;
@@ -430,6 +433,20 @@ function findUsage(obj: Record<string, unknown>): Record<string, unknown> | unde
   if (msg && typeof msg === "object") {
     const m = msg as Record<string, unknown>;
     if (m.usage && typeof m.usage === "object") return m.usage as Record<string, unknown>;
+  }
+  const part = obj.part;
+  if (part && typeof part === "object") {
+    const p = part as Record<string, unknown>;
+    const tokens = p.tokens;
+    if (tokens && typeof tokens === "object") {
+      const t = tokens as Record<string, unknown>;
+      return {
+        ...(typeof t.input === "number" ? { input_tokens: t.input } : {}),
+        ...(typeof t.output === "number" ? { output_tokens: t.output } : {}),
+        ...(typeof t.total === "number" ? { total_tokens: t.total } : {}),
+        ...(typeof p.cost === "number" ? { cost_usd: p.cost } : {}),
+      };
+    }
   }
   return undefined;
 }

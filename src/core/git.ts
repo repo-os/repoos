@@ -415,28 +415,24 @@ export function getDiffStats(
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  const statOutput = git(worktree, ["diff", "--stat", baseFull, ...DIFF_SOURCE_PATHS]);
+  // --numstat gives exact per-file added/removed line counts, unlike --stat's
+  // ASCII bar (which git scales/truncates to fit terminal width and which
+  // this code previously had to reverse-engineer by proportional guessing —
+  // lossy and prone to drifting from the real totals, see 0248).
+  const statOutput = git(worktree, ["diff", "--numstat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
 
   let filesChanged = 0;
   let additions = 0;
   let deletions = 0;
 
-  // Parse output like: "src/file.ts | 10 ++++--"
+  // Parse output like: "278\t7\tsrc/file.ts" ("-\t-\tpath" for binary files)
   for (const line of statOutput.split("\n")) {
-    const match = line.match(/\s+\|\s+(\d+)\s+([\+\-]*)/);
+    const match = line.match(/^(\d+|-)\t(\d+|-)\t/);
     if (match) {
       filesChanged++;
-      const changeLine = match[2];
-      const numChanges = parseInt(match[1], 10);
-      const plusCount = (changeLine.match(/\+/g) || []).length;
-      const minusCount = (changeLine.match(/\-/g) || []).length;
-
-      // Distribute changes proportionally
-      if (plusCount + minusCount > 0) {
-        additions += Math.floor(numChanges * (plusCount / (plusCount + minusCount)));
-        deletions += Math.floor(numChanges * (minusCount / (plusCount + minusCount)));
-      }
+      if (match[1] !== "-") additions += parseInt(match[1]!, 10);
+      if (match[2] !== "-") deletions += parseInt(match[2]!, 10);
     }
   }
 
