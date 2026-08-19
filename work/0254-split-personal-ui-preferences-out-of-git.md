@@ -2,7 +2,7 @@
 id: "0254"
 title: Split personal UI preferences out of git-tracked repoos.toml
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -10,7 +10,8 @@ created_by: ""
 branch: feat/split-personal-ui-preferences-out-of-git
 model_override: default
 created_at: "2026-08-19T07:38:18Z"
-updated_at: "2026-08-19T19:13:33Z"
+updated_at: "2026-08-19T19:16:34Z"
+review_rounds: 1
 ---
 ## Activity
 
@@ -123,3 +124,4 @@ separate task.
 - 2026-08-19T07:39:52Z · status inbox→ready
 - 2026-08-19T19:01:53Z · status ready→active, branch
 - 2026-08-19T19:13:33Z · status active→review
+- 2026-08-19T19:16:34Z · status review→active
