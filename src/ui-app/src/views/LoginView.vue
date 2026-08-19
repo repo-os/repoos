@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 
 // Auth status
 const authEnabled = ref(false);
@@ -43,6 +45,11 @@ async function checkStatus(): Promise<void> {
     const meRes = await fetch("/api/auth/me");
     const meData = await meRes.json();
     if (meData.authenticated) {
+      // Sync the pinia auth store (App.vue's onMounted may have already
+      // cached a stale "not authenticated" snapshot from before this check
+      // resolved) so the router guard on the redirect target sees the
+      // current session instead of bouncing straight back here.
+      await auth.loadMe();
       const redirect = (route.query.redirect as string) || "/";
       router.replace(redirect);
       return;
@@ -105,6 +112,9 @@ async function verifyOtp(): Promise<void> {
       }),
     });
     if (res.ok) {
+      // Refresh the pinia auth store — see the comment in checkStatus()
+      // above — before the router guard on the redirect target checks it.
+      await auth.loadMe();
       const redirect = (route.query.redirect as string) || "/";
       router.replace(redirect);
     } else {
@@ -130,6 +140,9 @@ async function doBootstrap(): Promise<void> {
       body: JSON.stringify({ email: bootstrapEmail.value.trim().toLowerCase() }),
     });
     if (res.ok) {
+      // Refresh the pinia auth store — see the comment in checkStatus()
+      // above — before the router guard on the redirect target checks it.
+      await auth.loadMe();
       router.replace("/");
     } else {
       const data = await res.json();

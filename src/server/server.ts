@@ -384,6 +384,13 @@ export interface ServeOptions {
    * EADDRINUSE until the old process releases the port, instead of failing.
    */
   reloadReplacement?: boolean;
+  /**
+   * Force auth off for this instance regardless of [auth] in repoos.toml.
+   * For ephemeral in-process servers (the UI smoke gate) that test generic
+   * rendering, not auth flows — a project with real auth enabled must not
+   * make `repoos check` itself unable to reach the dashboard.
+   */
+  disableAuth?: boolean;
 }
 
 /**
@@ -684,6 +691,9 @@ function registerFatalHandlersOnce(): void {
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoos = createRepoOS(opts.root);
   const config = repoos.config;
+  if (opts.disableAuth && config.auth) {
+    config.auth = { ...config.auth, enabled: false };
+  }
   const logger = createLogger(config.root);
   const index = new LiveIndex(config);
   index.refreshAll();
