@@ -21,6 +21,7 @@ export interface TunnelPublishPlan {
   publicUrl: string;
   localOrigin: string;
   commands: { setup: string; create: string; run: string; status: string };
+  authNote: string;
 }
 
 export function validateTunnelPublishInput(input: TunnelPublishInput): string[] {
@@ -65,5 +66,7 @@ export function buildTunnelPublishPlan(input: TunnelPublishInput): TunnelPublish
       run: input.runMode === "background" ? "repoos tunnel install" : "repoos tunnel start",
       status: "repoos tunnel status",
     },
+    authNote:
+      "When using a public Cloudflare Tunnel, enable RepoOS native auth (auth.enabled = true in repoos.toml) for an additional layer of access control beyond Cloudflare Access. This ensures RepoOS itself rejects unauthorized requests, even if the tunnel is publicly accessible.",
   };
 }

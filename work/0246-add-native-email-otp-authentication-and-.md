@@ -11,8 +11,7 @@ branch: feat/add-native-email-otp-authentication-and-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-08-19T06:02:40Z"
-review_rounds: 1
+updated_at: "2026-08-18T13:48:02Z"
 ---
 ## Problem
 
@@ -55,13 +54,3 @@ Admins manage members, roles, and auth settings from Settings. Cloudflare Tunnel
 - 2026-08-18T12:18:26Z · pm_model_override
 - 2026-08-18T12:18:31Z · status review→active
 - 2026-08-18T13:48:01Z · status active→review
-- 2026-08-18T14:01:44Z · status review→active
-- 2026-08-18T14:46:31Z · status active→review
-- 2026-08-18T14:46:31Z · status review→active
-- 2026-08-18T15:27:52Z · status active→review
-- 2026-08-18T15:38:13Z · status review→active
-- 2026-08-18T16:06:51Z · status active→review
-- 2026-08-18T16:12:14Z · status review→active
-- 2026-08-18T16:51:58Z · status active→review
-- 2026-08-18T16:51:58Z · status review→active
-- 2026-08-19T06:02:40Z · status active→review

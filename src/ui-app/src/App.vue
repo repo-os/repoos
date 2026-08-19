@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
 import { useConfigStore } from "./stores/config";
+import { useAuthStore } from "./stores/auth";
 import TopBar from "./components/TopBar.vue";
 import Sidebar from "./components/Sidebar.vue";
 import MobileTabs from "./components/MobileTabs.vue";
@@ -11,11 +13,19 @@ import TunnelDrawer from "./components/TunnelDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
 
+const route = useRoute();
 const repo = useRepoStore();
 const docs = useDocsStore();
 const config = useConfigStore();
+const auth = useAuthStore();
+
+// Routes marked `public` (currently just /login) render as a standalone
+// full-viewport screen with no app chrome — the visitor isn't authenticated
+// yet, and the sidebar/topbar assume a signed-in session.
+const isPublicRoute = computed(() => route.meta.public === true);
 
 onMounted(async () => {
+  await auth.loadMe();
   await repo.init();
   await docs.loadDocs();
   await docs.loadSkills();
@@ -30,21 +40,24 @@ onMounted(async () => {
 
 <template>
   <div id="app">
-    <TopBar />
+    <RouterView v-if="isPublicRoute" />
+    <template v-else>
+      <TopBar />
 
-    <div class="body">
-      <Sidebar />
+      <div class="body">
+        <Sidebar />
 
-      <div class="main">
-        <div v-if="repo.loading" class="spin"></div>
-        <RouterView v-else />
+        <div class="main">
+          <div v-if="repo.loading" class="spin"></div>
+          <RouterView v-else />
+        </div>
       </div>
-    </div>
 
-    <MobileTabs />
-    <TaskDrawer />
-    <TunnelDrawer />
-    <ToastPanel />
-    <FloatingHeads />
+      <MobileTabs />
+      <TaskDrawer />
+      <TunnelDrawer />
+      <ToastPanel />
+      <FloatingHeads />
+    </template>
   </div>
 </template>

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
+import { LogOut, Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const auth = useAuthStore();
 const { health, connected, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
@@ -68,6 +70,12 @@ function toggleTheme(): void {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
+    <div v-if="auth.authEnabled && auth.authenticated" class="user-chip" :title="auth.email ?? undefined">
+      <span class="user-chip-email mono hidden sm:inline">{{ auth.email }}</span>
+      <button class="logout-btn" type="button" aria-label="Log out" title="Log out" @click="auth.logout()">
+        <LogOut :size="14" :stroke-width="1.8" />
+      </button>
+    </div>
     <div
       class="conn"
       :class="connState"
