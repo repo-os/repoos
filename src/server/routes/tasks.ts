@@ -437,14 +437,20 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
     const isHotfix = existing.hotfix === true;
-    const wtRes = isHotfix
-      ? { ok: true, path: config.root, created: false }
-      : ensureWorktree(config.root, branch);
     const patch: TaskPatch = { status: "active", needsInput: false };
     if (!existing.branch) patch.branch = branch;
+    // Patch (and commit) the task file in main BEFORE forking the worktree's
+    // branch — ensureWorktree forks from main's current committed HEAD, so
+    // doing this after would freeze the new branch's task-file copy at the
+    // pre-activation state (status: ready, branch: "") forever, since nothing
+    // later syncs main's corrected metadata back into an already-forked
+    // branch. That stale copy then fails handoff finalization's branch check.
     const updated = patchTaskFile(config, existing.absPath, patch, {
       onStatusChange: onServerStatusChange,
     });
+    const wtRes = isHotfix
+      ? { ok: true, path: config.root, created: false }
+      : ensureWorktree(config.root, branch);
     index.applyFileChange(updated.absPath);
     index.refreshBranches();
     const cwd = wtRes.ok ? wtRes.path : config.root;
