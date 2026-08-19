@@ -20,6 +20,9 @@ export interface AuthEmailProvider {
   type: "resend";
   apiKey: string;
   fromAddress: string;
+  /** Display name shown alongside fromAddress (e.g. "RepoOS"). Optional —
+   *  without it, mail clients fall back to showing the address's local part. */
+  fromName?: string;
 }
 
 export interface AuthGoogleConfig {

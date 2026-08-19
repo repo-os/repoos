@@ -64,6 +64,33 @@ describe("loadConfig [auth] secret env fallbacks", () => {
     });
   });
 
+  it("parses an optional fromName alongside fromAddress", () => {
+    const root = tmpDir();
+    writeToml(
+      root,
+      '[auth]\nenabled = true\n\n[auth.emailProvider]\ntype = "resend"\napiKey = "re_key"\nfromAddress = "otp@send.x.com"\nfromName = "RepoOS"\n',
+    );
+    expect(loadConfig(root).auth?.emailProvider).toEqual({
+      type: "resend",
+      apiKey: "re_key",
+      fromAddress: "otp@send.x.com",
+      fromName: "RepoOS",
+    });
+  });
+
+  it("omits fromName from the parsed config when not set", () => {
+    const root = tmpDir();
+    writeToml(
+      root,
+      '[auth]\nenabled = true\n\n[auth.emailProvider]\ntype = "resend"\napiKey = "re_key"\nfromAddress = "otp@send.x.com"\n',
+    );
+    expect(loadConfig(root).auth?.emailProvider).toEqual({
+      type: "resend",
+      apiKey: "re_key",
+      fromAddress: "otp@send.x.com",
+    });
+  });
+
   it("does not register emailProvider when neither TOML nor env supplies an apiKey", () => {
     const root = tmpDir();
     writeToml(

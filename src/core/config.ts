@@ -415,10 +415,16 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof emailProviderType === "string" && emailProviderType === "resend") {
       const emailApiKey = parsed["auth.emailProvider.apiKey"] ?? process.env.REPOOS_RESEND_API_KEY;
       const emailFrom = parsed["auth.emailProvider.fromAddress"];
+      const emailFromName = parsed["auth.emailProvider.fromName"];
       if (typeof emailApiKey === "string" && emailApiKey && typeof emailFrom === "string") {
         cfg.auth = {
           ...cfg.auth,
-          emailProvider: { type: "resend", apiKey: emailApiKey, fromAddress: emailFrom },
+          emailProvider: {
+            type: "resend",
+            apiKey: emailApiKey,
+            fromAddress: emailFrom,
+            ...(typeof emailFromName === "string" && emailFromName ? { fromName: emailFromName } : {}),
+          },
         };
       }
     }

@@ -21,7 +21,7 @@ import { createVerify, createPublicKey } from "node:crypto";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { getAuthStore, type AuthStore } from "../../core/auth-store.js";
-import type { AuthRole } from "../../core/auth.js";
+import type { AuthEmailProvider, AuthRole } from "../../core/auth.js";
 import {
   generateOtp,
   hashOtp,
@@ -101,6 +101,15 @@ function requireAdmin(
 // Email sending via Resend
 // ---------------------------------------------------------------------------
 
+/**
+ * RFC 5322 `From` header: "Display Name <addr>" when a name is configured,
+ * otherwise the bare address. Without a name, mail clients fall back to
+ * showing the address's local part (e.g. "otp") as the sender name.
+ */
+export function buildFromHeader(provider: AuthEmailProvider): string {
+  return provider.fromName ? `${provider.fromName} <${provider.fromAddress}>` : provider.fromAddress;
+}
+
 async function sendOtpEmail(
   config: RepoOSConfig,
   toEmail: string,
@@ -116,7 +125,7 @@ async function sendOtpEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: provider.fromAddress,
+        from: buildFromHeader(provider),
         to: [toEmail],
         subject: "Your RepoOS Login Code",
         html: `

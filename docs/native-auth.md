@@ -18,6 +18,7 @@ bootstrapAdmin = "you@example.com"   # only this email can claim the founding ad
 [auth.emailProvider]
 type = "resend"
 fromAddress = "noreply@yourdomain.com"
+fromName = "RepoOS"   # optional — without it, mail clients show the address's local part ("noreply") as the sender name
 # apiKey = "re_..."   # or set REPOOS_RESEND_API_KEY instead — see "Secrets" below
 
 # Optional — adds a "Sign in with Google" button. A successful Google
