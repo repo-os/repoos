@@ -2,7 +2,7 @@
 id: "0240"
 title: Fix Settings persistence for active-task limit and Jelly theme
 type: bug
-status: ready
+status: done
 priority: p1
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 pm_model_override: default
 created_at: "2026-08-17T04:51:24Z"
-updated_at: "2026-08-19T08:37:01Z"
+updated_at: "2026-08-19T16:27:22Z"
 ---
 ## Activity
 
@@ -70,3 +70,4 @@ Because `buildBody()` in `SettingsView.vue:111-125` sends **all** schema fields 
 - 2026-08-18T15:27:47Z · body
 - 2026-08-18T15:39:49Z · status ready→active
 - 2026-08-19T08:37:01Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-19T16:27:22Z · status ready→done, release:success
