@@ -17,6 +17,7 @@ import {
   deriveBranch,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
+import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
@@ -81,6 +82,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     status: body.status as Status | undefined,
     body: taskBody,
     originalPrompt,
+    createdBy: getCurrentUser(req, config)?.email,
   });
   logger.task(created.id, "info", "Task created", {
     title: created.title,
@@ -110,6 +112,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     body: explanation,
     originalPrompt: explanation,
     status: "draft",
+    createdBy: getCurrentUser(req, config)?.email,
   });
   logger.task(created.id, "info", "Task created as draft, PM agent will flesh it out", {
     title: created.title,

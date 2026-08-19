@@ -68,7 +68,7 @@ function getSessionTokenFromRequest(req: IncomingMessage): string | null {
   return cookies[SESSION_COOKIE_NAME] ?? null;
 }
 
-function getCurrentUser(
+export function getCurrentUser(
   req: IncomingMessage,
   config: RepoOSConfig,
 ): { email: string; role: AuthRole } | null {
