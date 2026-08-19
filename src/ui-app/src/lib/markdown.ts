@@ -199,7 +199,7 @@ function renderBlock(b: Block): string {
           }
           const mark = it.checked ? "checked" : "unchecked";
           const box = it.checked ? "☑" : "☐";
-          return `<li class="md-task md-task-${mark}"><span class="md-task-box" aria-hidden="true">${box}</span>${inline(escapeHtml(it.text))}</li>`;
+          return `<li class="md-task md-task-${mark}"><span class="md-task-box" aria-hidden="true">${box}</span><span class="md-task-text">${inline(escapeHtml(it.text))}</span></li>`;
         })
         .join("");
       return `<ul>${items}</ul>`;

@@ -695,6 +695,7 @@
   .md-rendered hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   .md-rendered .md-task{display:flex;gap:8px;align-items:flex-start}
   .md-rendered .md-task-box{flex-shrink:0;color:var(--cyan)}
+  .md-rendered .md-task-text{min-width:0}
   .md-rendered .md-task-checked .md-task-box{color:var(--txt-faint)}
   .md-rendered .md-task-checked{color:var(--txt-faint)}
   .md-rendered table{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:12px;line-height:1.5}
