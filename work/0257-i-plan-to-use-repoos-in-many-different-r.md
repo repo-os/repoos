@@ -8,11 +8,11 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: default
 pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
-updated_at: "2026-08-20T00:00:00Z"
+updated_at: "2026-08-19T17:47:23Z"
 ---
-
 ## Problem
 
 When using RepoOS across many different repos, it is hard to visually distinguish
@@ -120,3 +120,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 - 2026-08-19T17:30:04Z · status draft→inbox, title, body
 - 2026-08-19T17:31:00Z · pm_model_override
 - 2026-08-20T00:00:00Z · title, area, body corrected (previous PM write corrupted the file with a nested frontmatter block)
+- 2026-08-19T17:47:23Z · model_override
