@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import RepoGuideChat from "./RepoGuideChat.vue";
 import CTOPanel from "./CTOPanel.vue";
+import DebuggerChat from "./DebuggerChat.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -15,6 +16,11 @@ function agentEnabled(head: string): boolean {
   if (head === "ross") {
     return config.agents.some((a) => (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide") && a.enabled);
   }
+  if (head === "debugger") {
+    const data = config.data as Record<string, unknown> | null;
+    const agents = data?.builtInAgents as Record<string, { enabled?: boolean }> | undefined;
+    return Boolean(agents?.debugger?.enabled);
+  }
   return false;
 }
 
@@ -23,14 +29,28 @@ const activeHead = ref<string | null>(null);
 function toggle(head: string) {
   activeHead.value = activeHead.value === head ? null : head;
 }
+
+const openDebugger = () => { activeHead.value = "debugger"; };
+onMounted(() => window.addEventListener("repoos:open-debugger", openDebugger));
+onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDebugger));
 </script>
 
 <template>
   <div class="floating-heads" :class="{ 'any-open': activeHead }">
     <CTOPanel :open="activeHead === 'cto'" @close="activeHead = null" />
     <RepoGuideChat :open="activeHead === 'ross'" @close="activeHead = null" />
+    <DebuggerChat :open="activeHead === 'debugger'" @close="activeHead = null" />
 
     <div class="stack">
+      <button
+        v-if="agentEnabled('debugger')"
+        class="head-btn"
+        :class="{ active: activeHead === 'debugger' }"
+        title="Debugger — diagnose a bug"
+        @click="toggle('debugger')"
+      >
+        <img src="/assets/repoos-orchestrator-square.webp" alt="Debugger" />
+      </button>
       <button
         v-if="agentEnabled('cto')"
         class="head-btn"

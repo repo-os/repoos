@@ -56,6 +56,8 @@ export interface CheckSummary {
   output?: string;
   /** Human-readable failure detail (redacted, includes command + status). */
   detail?: string;
+  /** True when a timeout suggests machine contention, not a test assertion. */
+  transient?: boolean;
 }
 
 export interface CompleteResult {
@@ -201,10 +203,10 @@ interface RunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number },
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
 ): Promise<RunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd });
+    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
     let stdout = "";
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -282,6 +284,8 @@ export interface RunStepOptions {
   stage: CheckStage;
   /** Per-command wall-clock budget before SIGKILL, in ms. */
   timeout?: number;
+  /** Child-process environment (defaults to the parent's). */
+  env?: NodeJS.ProcessEnv;
 }
 
 /**
@@ -296,7 +300,11 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
   const timeout = opts.timeout ?? 240_000;
   let missing = "";
   for (const cmd of opts.candidates) {
-    const run = await runProcess(cmd[0], cmd.slice(1), { cwd: opts.cwd, timeout });
+    const run = await runProcess(cmd[0], cmd.slice(1), {
+      cwd: opts.cwd,
+      timeout,
+      env: opts.env,
+    });
     if (run.status === 0) return { ok: true, stage: opts.stage };
     if (run.error && (run.error.code === "ENOENT" || run.error.code === "EACCES")) {
       missing = `${cmd[0]} is not available`;
@@ -310,6 +318,14 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
         : `exit ${run.status}`;
     const output = captureOutput(run.stdout, run.stderr);
     const short = output.slice(0, 500).replace(/\s+/g, " ").trim();
+    // Vitest reports a contention-induced polling deadline as a normal
+    // non-zero test result, not as a timeout of this outer subprocess. Treat
+    // that narrow shape like a process deadline: retry once, but do not hide
+    // assertion failures or other real regressions behind a retry.
+    const transient = run.timedOut || (
+      opts.stage === "check" &&
+      /(?:timed out waiting for|test timed out|worker .*?(?:timeout|exited))/i.test(output)
+    );
     return {
       ok: false,
       stage: opts.stage,
@@ -318,6 +334,7 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
       errorCode: run.error?.code,
       output,
       detail: `${opts.label} failed (${statusText}) — ${command}${short ? ` — ${short}` : ""}`,
+      transient,
     };
   }
   return { ok: false, stage: opts.stage, detail: missing || `\`${opts.label}\` could not be run` };
@@ -358,6 +375,57 @@ function checkCandidates(root: string): string[][] {
   }
   list.push(["repoos", "check"], ["bun", "run", "repoos", "check"]);
   return list;
+}
+
+/**
+ * Report the outcome of a close-out check retry honestly (#0216).  A retry is
+ * only reached when the first run failed with a timeout-shaped signature, but
+ * that heuristic is message-based and a genuine assertion failure could match
+ * it too — so the retry is never assumed to be contention.  The task's own
+ * guidance for telling the two apart: a failure that reproduces IDENTICALLY is
+ * a real defect, because contention lands on a different test each run.  When
+ * the retry produces the same output as the first run, say so instead of
+ * blaming the machine; only a retry that fails differently supports the
+ * contention reading.
+ */
+export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): CheckSummary {
+  if (retry.ok || !retry.transient) return retry;
+  const reproduced = first.output !== undefined && first.output === retry.output;
+  retry.detail = `${retry.detail ?? "repoos check failed"} — ${
+    reproduced
+      ? "the same failure appeared on the retry with identical output. Identical reproduction points at a genuine defect, not machine contention"
+      : first.output === undefined || retry.output === undefined
+        ? "the failure reappeared on the retry, but it could not be compared against the first run"
+        : "the retry failed on different output than the first run; the machine may be too loaded to run the gate reliably"
+  }`;
+  return retry;
+}
+
+/**
+ * A timeout means the gate could not obtain enough machine time; it says
+ * nothing about the merged branch. Retry that infrastructure failure once,
+ * while preserving ordinary non-zero test failures as immediately actionable.
+ * Exported for the retry-wiring regression tests.
+ */
+export async function runCloseOutCheck(root: string, env?: NodeJS.ProcessEnv): Promise<CheckSummary> {
+  const first = await runDoneStep({
+    cwd: root,
+    candidates: checkCandidates(root),
+    label: "repoos check",
+    stage: "check",
+    timeout: 600_000,
+    env,
+  });
+  if (!first.transient) return first;
+  const retry = await runDoneStep({
+    cwd: root,
+    candidates: checkCandidates(root),
+    label: "repoos check (retry after timeout)",
+    stage: "check",
+    timeout: 600_000,
+    env,
+  });
+  return describeRetryFailure(first, retry);
 }
 
 /** Post-merge gate runners, overridable in tests to avoid real builds. */
@@ -521,9 +589,13 @@ async function completeTaskLocked(
   await commitGenerated(root);
 
   onProgress?.("check");
+  // The close-out already ran a full build above (`BUILD_STEPS`), so the
+  // `repoos check` subprocess's own "Full build" step is redundant — nothing
+  // changed since. Pass REPOOS_SKIP_BUILD so check skips it (see cmdCheck in
+  // check.ts). Standalone `repoos check` never sets it and always builds.
   const check = steps.check
     ? await steps.check(root)
-    : await runDoneStep({ cwd: root, candidates: checkCandidates(root), label: "repoos check", stage: "check", timeout: 600_000 });
+    : await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_BUILD: "1" });
   if (!check.ok) {
     return {
       ok: false,

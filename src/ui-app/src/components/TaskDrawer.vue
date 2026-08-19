@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -14,6 +14,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
+import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -28,7 +29,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
-import SelectSearchGroup from "./SelectSearchGroup.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -344,7 +345,12 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
   ui.saving = true;
   try {
     await repo.activateHotfix(ui.active, target);
+    // Selecting a hotfix target is the start action, not merely a mode
+    // setting. Launch the engineer immediately so the user sees the task
+    // enter active state and its progress tab without a second click.
+    await repo.startWork(ui.active);
     confirmHotfix.value = false;
+    ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -603,6 +609,27 @@ async function stopPreview(): Promise<void> {
   previewBusy.value = true;
   try {
     await repo.stopPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
+}
+
+/**
+ * Manual fallback for the auto-launched review preview (#0198): that
+ * auto-launch only fires on the transition INTO `review`, so a task that
+ * lands there some other way (or whose agent handoff never emitted the
+ * request signal, or that skipped straight past auto-launch for any other
+ * reason) can sit in review with no preview and no way to get one short of
+ * a fresh agent turn. This button is shown only when review has no live
+ * preview yet, so it never duplicates or interferes with the automatic one.
+ */
+async function startPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.startPreview(ui.active);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -1249,10 +1276,16 @@ function fmtTokens(n: number | null | undefined): string {
   return String(n);
 }
 
-/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. */
-function fmtCost(usd: number | null | undefined): string {
+/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. Estimates,
+ *  Kiro credits, and mixed sources are labeled so they are never read as firm
+ *  USD (0230). */
+function fmtCost(usd: number | null | undefined, source?: string): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
-  return `$${usd < 1 ? usd.toFixed(3) : usd.toFixed(2)}`;
+  const n = usd < 1 ? usd.toFixed(3) : usd.toFixed(2);
+  if (source === "kiro-credits") return `${n} credits`;
+  if (source === "estimate") return `~$${n} est`;
+  if (source === "mixed") return `$${n}*`;
+  return `$${n}`;
 }
 
 watch(displayEntries, () => {
@@ -1310,6 +1343,19 @@ watch(
   { immediate: true },
 );
 
+/** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
+const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
+
+/** Load the task's durable usage totals when the drawer opens or the task changes. */
+watch(
+  () => ui.active?.id,
+  () => {
+    if (!ui.active) return;
+    void repo.loadTaskUsage(ui.active.id);
+  },
+  { immediate: true },
+);
+
 /** Full diff patch for the active task. */
 const taskDiff = computed(() => {
   return ui.active ? repo.diffFor(ui.active.id) : undefined;
@@ -1324,11 +1370,66 @@ watch(
   },
 );
 
-/** Split the diff patch into individual lines for rendering. */
-const diffLines = computed(() => {
-  if (!taskDiff.value || !taskDiff.value.patch) return [] as string[];
-  return taskDiff.value.patch.split("\n");
+/** Parse the unified diff into per-file sections with stats. */
+interface DiffFile {
+  filename: string;
+  lines: string[];
+  added: number;
+  removed: number;
+  type: "added" | "deleted" | "modified";
+}
+
+const diffFiles = computed<DiffFile[]>(() => {
+  if (!taskDiff.value || !taskDiff.value.patch) return [];
+  const sections = taskDiff.value.patch.split(/^diff --git /m);
+  const files: DiffFile[] = [];
+  for (const section of sections) {
+    if (!section.trim()) continue;
+    const lines = section.split("\n");
+    const diffLines = ["diff --git " + lines[0], ...lines.slice(1)];
+    const plusLine = diffLines.find((l) => l.startsWith("+++ "));
+    const minusLine = diffLines.find((l) => l.startsWith("--- "));
+    const isAdd = diffLines.some((l) => l.startsWith("--- /dev/null"));
+    const isDel = diffLines.some((l) => l.startsWith("+++ /dev/null"));
+    const plusName = plusLine ? plusLine.slice(6) : "";
+    const minusName = minusLine ? minusLine.slice(6) : "";
+    const filename = isDel ? minusName : plusName;
+    if (!filename || filename === "/dev/null") continue;
+    let added = 0;
+    let removed = 0;
+    for (const l of diffLines) {
+      if (l.startsWith("+") && !l.startsWith("+++ ")) added++;
+      else if (l.startsWith("-") && !l.startsWith("--- ")) removed++;
+    }
+    files.push({
+      filename,
+      lines: diffLines,
+      added,
+      removed,
+      type: isAdd ? "added" : isDel ? "deleted" : "modified",
+    });
+  }
+  return files;
 });
+
+/** File IDs that are currently collapsed (all expanded by default). */
+const collapsedFiles = reactive(new Set<string>());
+
+function toggleFileCollapse(fileId: string): void {
+  if (collapsedFiles.has(fileId)) collapsedFiles.delete(fileId);
+  else collapsedFiles.add(fileId);
+}
+
+function scrollToDiffFile(fileId: string): void {
+  const el = document.getElementById(fileId);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Reset collapsed state when switching tasks or diffs. */
+watch(
+  () => taskDiff.value,
+  () => { collapsedFiles.clear(); },
+);
 
 /** Classify a single diff line for syntax highlighting. */
 function diffLineClass(line: string): string {
@@ -1694,33 +1795,14 @@ function resetFreeformOverrides(): void {
             </div>
             <div class="ff-agent-bar">
               <div class="agent-pick-grid">
-                <div class="agent-field">
-                  <label>Coding agent</label>
-                  <Select v-model="freeformOverride.cli" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="CLI" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="agent-field">
-                  <label>Model</label>
-                  <Select v-model="freeformOverride.model" :disabled="freeformRunning">
-                    <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                      <SelectValue placeholder="model" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectSearchGroup :options="freeformModelOptions" #default="{ options }">
-                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                          <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                        </SelectViewport>
-                      </SelectSearchGroup>
-                    </SelectContent>
-                  </Select>
+                <div class="agent-field" style="grid-column: 1 / -1">
+                  <AgentModelControl
+                    :cli-options="cliOptions"
+                    :model-options="freeformModelOptions"
+                    v-model:cli="freeformOverride.cli"
+                    v-model:model="freeformOverride.model"
+                    :disabled="freeformRunning"
+                  />
                 </div>
                    <div class="agent-field">
                        <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
@@ -1962,8 +2044,8 @@ function resetFreeformOverrides(): void {
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running"
-              :title="review?.running ? 'Waiting for automatic review to finish.' : undefined"
+              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id)"
+              :title="review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone" class="size-3.5" />
@@ -1984,13 +2066,18 @@ function resetFreeformOverrides(): void {
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+            :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :task-id="ui.active.id"
+            :task-title="ui.active.title"
           />
           <div
             v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
             class="quickbar-row"
           >
             <!-- Previews are auto-launched when a task lands in review (#0198);
-                 no manual start button — the live URL simply appears when ready. -->
+                 the live URL simply appears when ready. A manual "Start preview"
+                 fallback (below) covers review tasks where that didn't happen. -->
             <div class="preview-live">
               <span class="preview-dot"></span>
               <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
@@ -2020,6 +2107,22 @@ function resetFreeformOverrides(): void {
             No git worktree is checked out for
             <span class="mono">{{ ui.active.branch }}</span>.
           </p>
+          <div
+            v-else-if="ui.active.status === 'review' && !ui.active.preview"
+            class="quickbar-row"
+          >
+            <p class="preview-hint">
+              No preview running — the agent didn't request one before handoff.
+            </p>
+            <Button
+              variant="outline"
+              :disabled="ui.saving || previewBusy"
+              @click="startPreview"
+            >
+              <Play class="size-3.5" />
+              Start preview
+            </Button>
+          </div>
         </div>
         <div class="drawer-tabs">
           <button
@@ -2047,17 +2150,17 @@ function resetFreeformOverrides(): void {
             @click="ui.activeTab = 'agent'"
           >
             <Bot class="tab-icon" />
-            Engineer
+            Dev
           </button>
           <button
-            v-if="ui.active.status === 'review'"
+            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
             @click="ui.activeTab = 'review'"
           >
             <ShieldCheck class="tab-icon" />
-            Reviewer
+            Review
             <ActivityIndicator
               v-if="ui.activeTab !== 'review' && review?.running"
               variant="reviewing"
@@ -2073,6 +2176,15 @@ function resetFreeformOverrides(): void {
             <Diff class="tab-icon" />
             Changes
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'tokens' }"
+            @click="ui.activeTab = 'tokens'"
+          >
+            <Coins class="tab-icon" />
+            Tokens
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -2087,13 +2199,6 @@ function resetFreeformOverrides(): void {
               <div class="ro-value">{{ ui.active.title }}</div>
             </div>
           </template>
-          <div class="field">
-            <label>Branch</label>
-            <div class="ro-value mono" style="color: var(--cyan)">
-              {{ effectiveBranch || "—" }}
-              <span v-if="!locked && !ui.active.branch" class="branch-note">auto-derived from title</span>
-            </div>
-          </div>
 
           <div class="field-row" style="margin-top: 16px">
             <div class="field">
@@ -2263,65 +2368,18 @@ function resetFreeformOverrides(): void {
               </div>
             </template>
           </div>
-          <div v-if="confirmHotfix" class="hotfix-confirm">
-            <p>
-              Run this task as a <strong>hotfix</strong> in the main checkout (no worktree).
-              The agent works in the repo root on a <code>hotfix/{{ ui.active?.id }}-…</code> branch.
-              Previews and diff-based review are skipped.
-            </p>
-            <div class="delete-actions">
-              <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmHotfix = false">
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('branch')"
-              >
-                Hotfix on branch
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                :disabled="ui.saving"
-                @click="startHotfix('main')"
-              >
-                Hotfix on main
-              </Button>
-            </div>
-          </div>
         </div>
         <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Coding agent</label>
-                <Select v-model="overrideDraft.cli" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field">
-                <label>Model</label>
-                <Select v-model="overrideDraft.model" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectSearchGroup :options="modelOptions" #default="{ options }">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                      </SelectViewport>
-                    </SelectSearchGroup>
-                  </SelectContent>
-                </Select>
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="modelOptions"
+                  v-model:cli="overrideDraft.cli"
+                  v-model:model="overrideDraft.model"
+                  :disabled="ui.saving"
+                />
               </div>
               <div class="agent-field">
                   <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
@@ -2333,21 +2391,6 @@ function resetFreeformOverrides(): void {
                   </div>
               </div>
             </div>
-          </div>
-          <div v-if="showStats" class="agent-stats">
-            <ActivityIndicator v-if="agentBusy" size="sm" />
-            <span class="agent-stat">
-              <span class="agent-stat-label">time</span>
-              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">tokens</span>
-              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
-            </span>
-            <span class="agent-stat">
-              <span class="agent-stat-label">cost</span>
-              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
-            </span>
           </div>
           <div v-if="sessionStats?.stalled" class="agent-stalled">
             <span class="agent-stalled-dot"></span>
@@ -2687,45 +2730,127 @@ function resetFreeformOverrides(): void {
               </div>
               <div v-else class="diff-stats-loading">Loading change summary…</div>
             </section>
+            <div v-if="diffFiles.length > 0" class="diff-file-list">
+              <button
+                v-for="file in diffFiles"
+                :key="file.filename"
+                type="button"
+                class="diff-file-item"
+                @click="scrollToDiffFile(file.filename)"
+              >
+                <span
+                  class="diff-file-badge"
+                  :class="`diff-file-badge-${file.type}`"
+                >{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
+                <span class="diff-file-name" :title="file.filename">{{ file.filename }}</span>
+                <span class="diff-file-delta">
+                  <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
+                  <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
+                </span>
+              </button>
+              <button
+                v-if="diffFiles.length > 8"
+                type="button"
+                class="diff-file-collapse-all"
+                @click="collapsedFiles.size === diffFiles.length ? collapsedFiles.clear() : diffFiles.forEach(f => collapsedFiles.add(f.filename))"
+              >
+                <ChevronsDownUp class="size-3" />
+                {{ collapsedFiles.size === diffFiles.length ? 'Expand all' : 'Collapse all' }}
+              </button>
+            </div>
             <div v-if="taskDiff.truncated" class="diff-truncated">
               Diff output was truncated — showing the first ~250 kB.
             </div>
-            <pre class="diff-output"><code><template v-for="(line, i) in diffLines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+            <div class="diff-sections">
+              <div v-for="file in diffFiles" :key="file.filename" :id="file.filename" class="diff-section">
+                <div
+                  class="diff-section-header"
+                  role="button"
+                  tabindex="0"
+                  @click="toggleFileCollapse(file.filename)"
+                  @keydown.enter="toggleFileCollapse(file.filename)"
+                >
+                  <svg class="diff-section-chevron" :class="{ collapsed: collapsedFiles.has(file.filename) }" viewBox="0 0 24 24" fill="none">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
+                  <span class="diff-section-name">{{ file.filename }}</span>
+                  <span class="diff-file-delta">
+                    <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
+                    <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
+                  </span>
+                </div>
+                <pre v-if="!collapsedFiles.has(file.filename)" class="diff-section-content"><code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
 </template></code></pre>
+              </div>
+            </div>
           </template>
+        </div>
+        <div v-else-if="ui.activeTab === 'tokens'" class="drawer-body">
+          <div v-if="showStats" class="agent-stats">
+            <ActivityIndicator v-if="agentBusy" size="sm" />
+            <span class="agent-stat">
+              <span class="agent-stat-label">time</span>
+              <span class="agent-stat-value">{{ fmtElapsed(elapsedMs) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">tokens</span>
+              <span class="agent-stat-value">{{ fmtTokens(sessionStats?.tokens) }}</span>
+            </span>
+            <span class="agent-stat">
+              <span class="agent-stat-label">cost</span>
+              <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
+            </span>
+          </div>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
+            <div class="task-usage-title">usage — all roles &amp; sessions</div>
+            <div class="task-usage-grid">
+              <span class="agent-stat">
+                <span class="agent-stat-label">total time</span>
+                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total tokens</span>
+                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">total cost</span>
+                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
+              </span>
+              <span class="agent-stat">
+                <span class="agent-stat-label">sessions</span>
+                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+              </span>
+            </div>
+            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
+              <span class="agent-stat-label">by role</span>
+              <div class="task-usage-role-list">
+                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                  <span class="task-usage-role-name">{{ r.role }}</span>
+                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
+                  <span>{{ fmtTokens(r.totalTokens) }}</span>
+                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
+            <p>No token or usage data yet.</p>
+          </div>
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
-              <div class="agent-field">
-                <label>Coding agent</label>
-                <Select v-model="pmOverrideDraft.cli" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="CLI" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="c in cliOptions" :key="c" :value="c">{{ c }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="pmModelOptions"
+                  v-model:cli="pmOverrideDraft.cli"
+                  v-model:model="pmOverrideDraft.model"
+                  :disabled="ui.saving"
+                />
               </div>
-              <div class="agent-field">
-                <label>Model</label>
-                <Select v-model="pmOverrideDraft.model" :disabled="ui.saving">
-                  <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                    <SelectValue placeholder="model" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectSearchGroup :options="pmModelOptions" #default="{ options }">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="m in options" :key="m.value" :value="m.value">{{ m.label }}</SelectItem>
-                      </SelectViewport>
-                    </SelectSearchGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="agent-field" style="padding-top:20px">
+               <div class="agent-field" style="padding-top:20px">
                   <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
                     <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
                     <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
@@ -2804,6 +2929,14 @@ function resetFreeformOverrides(): void {
     :files="dirtyFiles"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+
+  <HotfixConfirmDialog
+    :open="confirmHotfix"
+    :task-id="ui.active?.id"
+    :busy="ui.saving"
+    @cancel="confirmHotfix = false"
+    @start="startHotfix"
   />
 </template>
 
@@ -3166,5 +3299,170 @@ function resetFreeformOverrides(): void {
 
 .diff-ctx {
   color: #c9d1d9;
+}
+
+/* File list */
+.diff-file-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 224px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.diff-file-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 4px 10px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+  font: 11.5px/1.5 var(--font-mono);
+  text-align: left;
+}
+
+.diff-file-item:last-child {
+  border-bottom: none;
+}
+
+.diff-file-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.diff-file-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: 3px;
+  font: 600 9px/1 var(--font-mono);
+  font-weight: 700;
+}
+
+.diff-file-badge-modified {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.diff-file-badge-added {
+  background: rgba(78, 240, 168, 0.15);
+  color: #4ef0a8;
+}
+
+.diff-file-badge-deleted {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+.diff-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--txt);
+}
+
+.diff-file-delta {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  font: 600 10px/1 var(--font-mono);
+}
+
+.diff-file-add {
+  color: #4ef0a8;
+}
+
+.diff-file-rem {
+  color: #ff6b6b;
+}
+
+.diff-file-collapse-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+  font: 10px/1 var(--font-sans);
+}
+
+.diff-file-collapse-all:hover {
+  color: var(--txt);
+}
+
+/* Diff sections */
+.diff-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diff-section-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  user-select: none;
+}
+
+.diff-section-header:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.diff-section-chevron {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--txt-faint);
+  transition: transform 0.15s ease;
+  transform: rotate(0deg);
+}
+
+.diff-section-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.diff-section-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px/1.4 var(--font-mono);
+  color: #c9d1d9;
+}
+
+.diff-section-content {
+  padding: 12px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+  color: #c9d1d9;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 </style>

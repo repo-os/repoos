@@ -18,6 +18,11 @@ const repo = useRepoStore();
 const busy = ref(false);
 const dragging = ref(false);
 
+function formatActivity(at: string | undefined): string | null {
+  if (!at || Number.isNaN(Date.parse(at))) return null;
+  return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 /** Diff stats for this task. */
 const diffStats = computed(() => {
   return repo.diffStatsFor(props.task.id);
@@ -99,21 +104,57 @@ interface CardHint {
   cls: string;
 }
 
+/** True once Move to done has been clicked and the close-out job for this
+ *  task is enqueued or running in the integration pipeline (0207). The
+ *  `/done` request itself resolves as soon as the job is queued — status
+ *  stays `review` for the whole pipeline run — so this is the only signal
+ *  that MTD was already triggered and shouldn't be offered again. */
+const inPipeline = computed(() => {
+  const snap = repo.integration;
+  if (!snap) return false;
+  const t = props.task;
+  return snap.active?.taskId === t.id || snap.queue.includes(t.id);
+});
+
+/** The active pipeline stage (sync/merge/build/check/done) for this task, or
+ *  null when it's still queued behind another close-out. */
+const pipelineStage = computed(() => {
+  const snap = repo.integration;
+  return snap?.active?.taskId === props.task.id ? snap.active.stage : null;
+});
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
   if (t.status === "review") {
+    if (inPipeline.value) {
+      return {
+        label: pipelineStage.value ? `moving to done · ${pipelineStage.value}` : "queued for close-out",
+        title: "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
+        cls: "tc-moving",
+      };
+    }
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
     if (repo.isRunning(t.id)) {
-      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
+      return {
+        label: activity ? `coding · active ${activity}` : "coding",
+        title: "agent is making code changes — click to watch the session",
+        cls: "tc-coding",
+      };
     }
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
     if (repo.isRunning(t.id)) {
-      return { label: "coding", title: "agent is making code changes — click to watch the session", cls: "tc-coding" };
+      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
+      return {
+        label: activity ? `coding · active ${activity}` : "coding",
+        title: "agent is making code changes — click to watch the session",
+        cls: "tc-coding",
+      };
     }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
@@ -123,10 +164,18 @@ const hint = computed<CardHint | null>(() => {
   return null;
 });
 
+const IN_PIPELINE: CardAction = {
+  label: "Moving to done…",
+  title: "Already queued for close-out — no further action needed",
+  icon: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2",
+  variant: "done",
+};
+
 /** `task.status` alone can't tell paused from running once pausing no longer
  *  demotes to `ready` — the running-agent set (repo.isRunning) is the signal. */
 const action = computed<CardAction | null>(() => {
   const t = props.task;
+  if (t.status === "review" && inPipeline.value) return IN_PIPELINE;
   if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
   return ACTIONS[t.status] ?? null;
 });
@@ -238,8 +287,9 @@ async function openAgent(): Promise<void> {
       flash: repo.flashId === task.id,
       'transition-success': repo.transitionState?.id === task.id,
       coding: repo.isRunning(task.id),
-      reviewing: task.status === 'review' && repo.reviewFor(task.id)?.running,
-      'waiting-for-human': task.status === 'review' && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
+      reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
+      'moving-to-done': task.status === 'review' && inPipeline,
+      'waiting-for-human': task.status === 'review' && !inPipeline && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
       'needs-input': task.needsInput,
       dragging,
       'has-action': !!action,
@@ -276,6 +326,7 @@ async function openAgent(): Promise<void> {
         <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined">
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
         </span>
         <span
@@ -290,8 +341,8 @@ async function openAgent(): Promise<void> {
         <button
           class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
           :class="actionFooterClass"
-          :disabled="busy || (task.status === 'review' && repo.reviewFor(task.id)?.running)"
-          :title="task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : action.title"
+          :disabled="busy || inPipeline || (task.status === 'review' && (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))"
+          :title="inPipeline ? action.title : task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : task.status === 'review' && repo.isRunning(task.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : action.title"
           @click.stop="runAction"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
@@ -314,6 +365,10 @@ async function openAgent(): Promise<void> {
       :message="repo.doneErrorFor(task.id)!.message"
       :step="repo.doneErrorFor(task.id)!.step"
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
+      :detail="repo.doneErrorFor(task.id)!.detail"
+      :hint="repo.doneErrorFor(task.id)!.hint"
+      :task-id="task.id"
+      :task-title="task.title"
       @click.stop
     />
   </article>

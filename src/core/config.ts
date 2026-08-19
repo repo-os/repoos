@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
+  AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
   RepoOSConfig,
@@ -130,6 +131,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     provider: "none",
     apiKey: "",
   },
+  auth: {
+    enabled: false,
+    sessionMaxAge: 604800,
+  },
 };
 
 /**
@@ -141,6 +146,35 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
  */
 export function worktreesDir(root: string): string {
   return join(dirname(root), `${basename(root)}-worktrees`);
+}
+
+/**
+ * Load `.env` from the repo root into `process.env`, if present. Zero
+ * runtime deps (no dotenv package) — a minimal `KEY=value` parser, one line
+ * per variable. Real env vars already set take precedence over the file, so
+ * e.g. a systemd unit's `Environment=` still wins. Safe to call more than
+ * once; safe when `.env` doesn't exist.
+ */
+export function loadDotEnv(root: string = findRepoRoot()): void {
+  const envPath = join(root, ".env");
+  if (!existsSync(envPath)) return;
+  const text = readFileSync(envPath, "utf8");
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    if (!key || key in process.env) continue;
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
 }
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
@@ -275,6 +309,11 @@ function parseFlatToml(text: string): Record<string, unknown> {
 
 export function loadConfig(rootArg?: string): RepoOSConfig {
   const root = rootArg ? resolve(rootArg) : findRepoRoot();
+  // Load .env before resolving [auth]/[whisper] secrets below, so every path
+  // that boots a real server (repoos serve, previews, the UI smoke test)
+  // sees the same env-sourced values consistently, not just the CLI's own
+  // entrypoint.
+  loadDotEnv(root);
   const cfg: RepoOSConfig = { root, ...DEFAULT_CONFIG };
 
   const tomlPath = join(root, "repoos.toml");
@@ -307,6 +346,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    // Older Settings builds wrote this select value as a quoted TOML string.
+    // Accept a strict integer string on load so existing repos immediately
+    // recover, while the API now writes new values as numbers.
+    if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
+      cfg.maxActiveTasks = Number(maxActiveTasks);
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
@@ -345,6 +389,55 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof watchdogAutoTransition === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
     }
+
+    // [auth] section — authentication configuration.
+    const authEnabled = parsed["auth.enabled"];
+    if (typeof authEnabled === "boolean") {
+      cfg.auth = { ...cfg.auth, enabled: authEnabled };
+    }
+    // Secrets prefer an env var over the (git-tracked) config file, same
+    // fallback pattern as [whisper] above — env wins when both are set.
+    const authSessionSecret = parsed["auth.sessionSecret"] ?? process.env.REPOOS_AUTH_SESSION_SECRET;
+    if (typeof authSessionSecret === "string" && authSessionSecret) {
+      cfg.auth = { ...cfg.auth, sessionSecret: authSessionSecret };
+    }
+    const authSessionMaxAge = parsed["auth.sessionMaxAge"];
+    if (typeof authSessionMaxAge === "number" && authSessionMaxAge >= 300) {
+      cfg.auth = { ...cfg.auth, sessionMaxAge: authSessionMaxAge };
+    }
+    const authBootstrapAdmin = parsed["auth.bootstrapAdmin"];
+    if (typeof authBootstrapAdmin === "string") {
+      cfg.auth = { ...cfg.auth, bootstrapAdmin: authBootstrapAdmin };
+    }
+    // Email provider — fromAddress isn't sensitive and stays config-only;
+    // apiKey may come from the config file or REPOOS_RESEND_API_KEY.
+    const emailProviderType = parsed["auth.emailProvider.type"];
+    if (typeof emailProviderType === "string" && emailProviderType === "resend") {
+      const emailApiKey = parsed["auth.emailProvider.apiKey"] ?? process.env.REPOOS_RESEND_API_KEY;
+      const emailFrom = parsed["auth.emailProvider.fromAddress"];
+      const emailFromName = parsed["auth.emailProvider.fromName"];
+      if (typeof emailApiKey === "string" && emailApiKey && typeof emailFrom === "string") {
+        cfg.auth = {
+          ...cfg.auth,
+          emailProvider: {
+            type: "resend",
+            apiKey: emailApiKey,
+            fromAddress: emailFrom,
+            ...(typeof emailFromName === "string" && emailFromName ? { fromName: emailFromName } : {}),
+          },
+        };
+      }
+    }
+    // Google OAuth — clientId isn't sensitive and stays config-only;
+    // clientSecret may come from the config file or REPOOS_GOOGLE_CLIENT_SECRET.
+    const googleClientId = parsed["auth.google.clientId"];
+    const googleClientSecret = parsed["auth.google.clientSecret"] ?? process.env.REPOOS_GOOGLE_CLIENT_SECRET;
+    if (typeof googleClientId === "string" && typeof googleClientSecret === "string" && googleClientSecret) {
+      cfg.auth = {
+        ...cfg.auth,
+        google: { clientId: googleClientId, clientSecret: googleClientSecret },
+      };
+    }
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
@@ -357,6 +450,13 @@ export interface ConfigFieldMeta {
   label: string;
   type: "string" | "boolean" | "select" | "array";
   tier: "live" | "restart" | "guarded";
+  /**
+   * Which primary Settings section a field belongs to. Defaults to "general"
+   * for non-guarded fields and "advanced" for guarded ones. "voice" carves out
+   * a dedicated, always-visible "Voice transcription" section so the feature
+   * is discoverable without opening Advanced.
+   */
+  group?: "general" | "voice";
   restartRequired: boolean;
   default: unknown;
   options?: { value: string; label: string }[];
@@ -390,6 +490,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "classic", label: "Classic" },
         { value: "clear", label: "Clear" },
         { value: "gen z", label: "Gen Z" },
+        { value: "jelly", label: "Jelly" },
       ],
       description: "Visual design language — applies immediately, no restart",
     },
@@ -547,7 +648,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       key: "whisper.provider",
       label: "Voice transcription provider",
       type: "select",
-      tier: "guarded",
+      tier: "live",
+      group: "voice",
       restartRequired: false,
       default: DEFAULT_CONFIG.whisper?.provider ?? "none",
       options: [
@@ -561,10 +663,30 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       key: "whisper.apiKey",
       label: "Voice transcription API key",
       type: "string",
-      tier: "guarded",
+      tier: "live",
+      group: "voice",
       restartRequired: false,
       default: "",
-      description: "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
+      description:
+        "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
+    },
+    {
+      key: "auth.enabled",
+      label: "Authentication",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description: "Require login to access RepoOS (email OTP or Google OAuth)",
+    },
+    {
+      key: "auth.sessionMaxAge",
+      label: "Session duration (seconds)",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "604800",
+      description: "How long a login session lasts in seconds (default 604800 = 7 days)",
     },
   ];
 }

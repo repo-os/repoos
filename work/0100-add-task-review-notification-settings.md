@@ -2,15 +2,17 @@
 id: "0100"
 title: Add task notification settings for state transitions requiring attention
 type: feature
-status: ready
+status: review
 needs_merge: true
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-task-notification-settings-for-state
+model_override: default
+pm_model_override: default
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-19T17:21:28Z"
+updated_at: "2026-08-19T17:35:04Z"
 ---
 ## Problem
 
@@ -63,5 +65,15 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-11T17:37:58Z · status ready→inbox
 - 2026-08-11T19:14:59Z · status inbox→ready
 - 2026-08-14T00:00:00Z · scope expanded to cover paused, stuck, and needs-attention transitions
+- 2026-08-16T13:56:38Z · status ready→active, branch
+- 2026-08-16T14:18:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-16T14:18:36Z · status review→active
+- 2026-08-16T14:43:41Z · model_override
+- 2026-08-16T14:51:00Z · status active→review
 - 2026-08-16T14:51:01Z · needs_merge
+- 2026-08-16T14:57:04Z · status review→active
 - 2026-08-17T08:06:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-08-18T11:44:40Z · status active→review
+- 2026-08-18T15:16:28Z · status review→active
+- 2026-08-19T17:21:27Z · status active→review
+- 2026-08-19T17:35:04Z · pm_model_override

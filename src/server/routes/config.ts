@@ -9,6 +9,8 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  sanitizeBuiltInAgents,
+  saveBuiltInAgentsConfig,
 } from "../../core/config.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 
@@ -16,7 +18,8 @@ import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
  * Config as the browser may see it: `whisper.apiKey` is stripped entirely and
  * the whisper state is exposed through the flat schema keys
  * (`whisper.provider`) plus a `whisperEnabled` boolean. The secret never
- * crosses the HTTP boundary.
+ * crosses the HTTP boundary. Auth secrets (sessionSecret, emailProvider.apiKey,
+ * google.clientSecret) are also stripped.
  */
 function safeConfigForBrowser(config: Record<string, unknown>): Record<string, unknown> {
   const whisper = (config.whisper ?? { provider: "none", apiKey: "" }) as {
@@ -24,9 +27,29 @@ function safeConfigForBrowser(config: Record<string, unknown>): Record<string, u
     apiKey?: string;
   };
   const whisperEnabled = whisper.provider !== "none" && !!whisper.apiKey;
-  const { whisper: _ignored, ...rest } = config;
+  const { whisper: _ignoredWhisper, ...rest } = config;
+  // Strip auth secrets
+  const authRaw = rest.auth as Record<string, unknown> | undefined;
+  let safeAuth: Record<string, unknown> | undefined;
+  if (authRaw && typeof authRaw === "object") {
+    safeAuth = { ...authRaw };
+    delete safeAuth.sessionSecret;
+    if (safeAuth.emailProvider && typeof safeAuth.emailProvider === "object") {
+      safeAuth.emailProvider = {
+        ...(safeAuth.emailProvider as Record<string, unknown>),
+        apiKey: "***",
+      };
+    }
+    if (safeAuth.google && typeof safeAuth.google === "object") {
+      safeAuth.google = {
+        ...(safeAuth.google as Record<string, unknown>),
+        clientSecret: "***",
+      };
+    }
+  }
   return {
     ...rest,
+    auth: safeAuth,
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
   };
@@ -98,6 +121,83 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     patch.agents = list;
   }
 
+  // builtInAgents toggles (e.g. enabling the Debugger or Tech Debt Agent) are
+  // persisted to the sidecar, NOT repoos.toml — mirroring how built-in agent
+  // state is stored and read (see config.ts:saveBuiltInAgentsConfig).
+  let builtInAgentsChanged = false;
+  if (body.builtInAgents !== undefined) {
+    if (
+      typeof body.builtInAgents !== "object" ||
+      body.builtInAgents === null ||
+      Array.isArray(body.builtInAgents)
+    ) {
+      return json(res, 400, { error: "builtInAgents must be an object" });
+    }
+    const state = sanitizeBuiltInAgents(body.builtInAgents);
+    const base = repoos.config.builtInAgents ?? {};
+    const merged = { ...base, ...state };
+    saveBuiltInAgentsConfig(config.root, merged, config.cacheDir);
+    repoos.config.builtInAgents = merged;
+    builtInAgentsChanged = true;
+  }
+
+  // Auth config patching — handle auth-specific fields that live in [auth]
+  // section of repoos.toml. Secrets (sessionSecret, apiKey, clientSecret)
+  // are never accepted from the browser.
+  let authEnabledChanged = false;
+  if (body["auth.enabled"] !== undefined) {
+    const val = body["auth.enabled"];
+    if (typeof val !== "boolean") {
+      return json(res, 400, { error: "auth.enabled must be true or false" });
+    }
+    patch["auth.enabled"] = val;
+    authEnabledChanged = true;
+  }
+  if (body["auth.sessionMaxAge"] !== undefined) {
+    const val = body["auth.sessionMaxAge"];
+    if (typeof val === "string" || typeof val === "number") {
+      const num = Number(val);
+      if (Number.isInteger(num) && num >= 300) {
+        patch["auth.sessionMaxAge"] = num;
+      }
+    }
+  }
+  if (body["auth.emailProvider.type"] !== undefined) {
+    patch["auth.emailProvider.type"] = "resend";
+  }
+  if (body["auth.emailProvider.apiKey"] !== undefined) {
+    const val = typeof body["auth.emailProvider.apiKey"] === "string" ? body["auth.emailProvider.apiKey"].trim() : "";
+    if (val) patch["auth.emailProvider.apiKey"] = val;
+  }
+  if (body["auth.emailProvider.fromAddress"] !== undefined) {
+    const val = typeof body["auth.emailProvider.fromAddress"] === "string" ? body["auth.emailProvider.fromAddress"].trim() : "";
+    if (val) patch["auth.emailProvider.fromAddress"] = val;
+  }
+  if (body["auth.google.clientId"] !== undefined) {
+    const val = typeof body["auth.google.clientId"] === "string" ? body["auth.google.clientId"].trim() : "";
+    if (val) patch["auth.google.clientId"] = val;
+  }
+  if (body["auth.google.clientSecret"] !== undefined) {
+    const val = typeof body["auth.google.clientSecret"] === "string" ? body["auth.google.clientSecret"].trim() : "";
+    if (val) patch["auth.google.clientSecret"] = val;
+  }
+
+  // Guard: enabling auth requires a login provider to be configured.
+  const enablingAuth = patch["auth.enabled"] === true;
+  if (enablingAuth) {
+    const hasEmailProvider =
+      !!(body["auth.emailProvider.apiKey"] && body["auth.emailProvider.fromAddress"]) ||
+      !!(repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress);
+    const hasGoogle =
+      !!(body["auth.google.clientId"] && body["auth.google.clientSecret"]) ||
+      !!(repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret);
+    if (!hasEmailProvider && !hasGoogle) {
+      return json(res, 400, {
+        error: "Cannot enable auth: configure at least one login provider (email OTP or Google OAuth) first",
+      });
+    }
+  }
+
   const schema = getConfigSchema();
   for (const field of schema) {
     if (body[field.key] === undefined) continue;
@@ -128,7 +228,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           error: `${field.label} must be one of: ${valid.join(", ")}`,
         });
       }
-      patch[field.key] = val;
+      // Native/select components submit strings. This one setting is a number
+      // in the runtime config, so persist it as TOML numeric syntax rather
+      // than `maxActiveTasks = "5"`, which loadConfig intentionally rejects.
+      patch[field.key] = field.key === "maxActiveTasks" ? Number(val) : val;
     } else if (field.type === "array") {
       if (!Array.isArray(val) || !val.length) {
         return json(res, 400, { error: `${field.label} must be a non-empty array` });
@@ -156,7 +259,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     bodyKeys[0] === "whisper.apiKey" &&
     (typeof body["whisper.apiKey"] !== "string" || !body["whisper.apiKey"].trim());
 
-  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !onlyEmptyWhisperKey) {
+  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsChanged && !authEnabledChanged && !onlyEmptyWhisperKey) {
     return json(res, 400, { error: "No valid fields to update" });
   }
 

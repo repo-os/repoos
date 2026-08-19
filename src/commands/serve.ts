@@ -117,11 +117,14 @@ export async function cmdServe(args: string[]): Promise<void> {
     });
   }
 
-  const shutdown = async () => {
-    console.log(c.dim("\n  shutting down…"));
-    await handle.close();
+  let shuttingDown = false;
+  const shutdown = async (signal: "SIGINT" | "SIGTERM") => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(c.dim(`\n  shutting down after ${signal} (pid ${process.pid}, port ${handle.port})…`));
+    await handle.close(`received ${signal}`);
     process.exit(0);
   };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
 }

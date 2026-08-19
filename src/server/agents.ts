@@ -115,6 +115,8 @@ interface Entry {
   handoffRequested: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
+  /** A review-fix follow-up keeps the worktree's last committed review state. */
+  skipBoardDivergence?: boolean;
   /**
    * For adopted entries (0214): the PID to poll for liveness. When non-null
    * the stall checker periodically verifies the PID is still alive and cleans
@@ -198,6 +200,51 @@ const OUTPUT_CAP_BYTES = 256 * 1024;
 /** Path to the durable agent registry (0214). */
 function registryPath(cacheDir: string): string {
   return join(cacheDir, "agents.json");
+}
+
+/** Path to the pending-handoffs store (#0235). */
+function pendingHandoffsPath(cacheDir: string): string {
+  return join(cacheDir, "pending-handoffs.json");
+}
+
+/** On-disk pending handoff store: keyed by taskId, newer runs supersede older ones. */
+interface PendingHandoffStore {
+  requests: AgentHandoffRequest[];
+}
+
+/** Read the pending handoff store; returns empty when missing or corrupted. */
+function readPendingHandoffs(cacheDir: string): PendingHandoffStore {
+  try {
+    const raw = readFileSync(pendingHandoffsPath(cacheDir), "utf8");
+    const parsed = JSON.parse(raw) as Partial<PendingHandoffStore>;
+    if (Array.isArray(parsed.requests)) {
+      return {
+        requests: parsed.requests.filter(
+          (r) => typeof r.taskId === "string" && typeof r.runId === "string" && typeof r.branch === "string" && typeof r.workdir === "string",
+        ),
+      };
+    }
+  } catch {
+    /* missing or corrupt — start fresh */
+  }
+  return { requests: [] };
+}
+
+/** Persist the pending handoff store atomically (best-effort). */
+function writePendingHandoffs(cacheDir: string, store: PendingHandoffStore): void {
+  try {
+    mkdirSync(cacheDir, { recursive: true });
+    const file = pendingHandoffsPath(cacheDir);
+    const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+    try {
+      writeFileSync(temp, JSON.stringify(store, null, 2), "utf8");
+      renameSync(temp, file);
+    } finally {
+      if (existsSync(temp)) unlinkSync(temp);
+    }
+  } catch {
+    /* best-effort */
+  }
 }
 
 /** Read the durable registry; returns empty when missing or corrupted. */
@@ -305,6 +352,59 @@ export function extractUsage(raw: string): { inputTokens?: number; outputTokens?
   return out;
 }
 
+/**
+ * Fold usage/cost found in a raw output line into a running total, clamped to
+ * never move backward (some CLIs report a running total, some reset per turn).
+ * Mirrors `AgentRunner.applyUsage` so one-shot roles aggregate the same way the
+ * streaming engineer runner does. Never fabricates a number — absent fields are
+ * simply left untouched.
+ */
+export function foldUsage(
+  total: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number },
+  raw: string,
+): void {
+  const found = extractUsage(raw);
+  if (found.inputTokens !== undefined) total.inputTokens = Math.max(total.inputTokens ?? 0, found.inputTokens);
+  if (found.outputTokens !== undefined) total.outputTokens = Math.max(total.outputTokens ?? 0, found.outputTokens);
+  if (found.totalTokens !== undefined) total.totalTokens = Math.max(total.totalTokens ?? 0, found.totalTokens);
+  if (found.costUsd !== undefined) total.costUsd = Math.max(total.costUsd ?? 0, found.costUsd);
+}
+
+/**
+ * Classify the cost source for a recorded session (0230). Authoritative
+ * CLI-reported cost wins; Kiro is flagged as its own unit (credits), never
+ * passed off as USD. Callers that compute a token-based estimate (the engineer
+ * runner) set `costSource` to "estimate" themselves — this only reports whether
+ * a real CLI figure was present.
+ */
+export function usageCostSource(
+  agent: Agent,
+  usage: { costUsd?: number },
+): string {
+  if (usage.costUsd) return agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
+  return "none";
+}
+
+/**
+ * Map a runner session key to the REAL task id it belongs to (0230). Engineer
+ * and review sessions are keyed by the task id directly. PM chats are keyed by
+ * a synthetic `pm-task-v2:<id>` id whose suffix is the actual task — attribute
+ * them under that real id so PM cost/tokens aggregate per-task. Non-task chats
+ * (guide) have no task and return null.
+ */
+export function resolveSessionTaskId(taskKey: string | undefined): string | null {
+  if (!taskKey) return null;
+  // Each alternative has a strict literal prefix so nothing else is captured;
+  // covers the current `pm-task-v2:<id>` scheme and the legacy `pm-task:<id>` /
+  // `pm:<id>` forms without mis-parsing their suffixes (0230 / review).
+  const pm =
+    taskKey.match(/^pm-task-v2:(.+)$/i) ??
+    taskKey.match(/^pm-task:(.+)$/i) ??
+    taskKey.match(/^pm:(.+)$/i);
+  if (pm) return pm[1] || null;
+  return taskKey;
+}
+
 /** Input tokens from a `usage`-shaped JSON object, or undefined if absent. */
 function inputTokensFromObject(obj: Record<string, unknown>): number | undefined {
   const usage = findUsage(obj);
@@ -320,9 +420,12 @@ function outputTokensFromObject(obj: Record<string, unknown>): number | undefine
 }
 
 /**
- * Locate a `usage`-shaped block: top-level (codex/opencode events and claude's
+ * Locate a `usage`-shaped block: top-level (codex `usage` events and claude's
  * terminal `result`) or nested at `message.usage` (claude per-`assistant`
- * events, 0109).
+ * events, 0109). Also recognizes opencode's `step_finish` shape, whose tokens
+ * live at `part.tokens.{total,input,output}` and cost at `part.cost` — a
+ * different field layout entirely, normalized here to the `input_tokens` /
+ * `output_tokens` / `total_tokens` / `cost_usd` names the callers expect.
  */
 function findUsage(obj: Record<string, unknown>): Record<string, unknown> | undefined {
   if (obj.usage && typeof obj.usage === "object") return obj.usage as Record<string, unknown>;
@@ -330,6 +433,20 @@ function findUsage(obj: Record<string, unknown>): Record<string, unknown> | unde
   if (msg && typeof msg === "object") {
     const m = msg as Record<string, unknown>;
     if (m.usage && typeof m.usage === "object") return m.usage as Record<string, unknown>;
+  }
+  const part = obj.part;
+  if (part && typeof part === "object") {
+    const p = part as Record<string, unknown>;
+    const tokens = p.tokens;
+    if (tokens && typeof tokens === "object") {
+      const t = tokens as Record<string, unknown>;
+      return {
+        ...(typeof t.input === "number" ? { input_tokens: t.input } : {}),
+        ...(typeof t.output === "number" ? { output_tokens: t.output } : {}),
+        ...(typeof t.total === "number" ? { total_tokens: t.total } : {}),
+        ...(typeof p.cost === "number" ? { cost_usd: p.cost } : {}),
+      };
+    }
   }
   return undefined;
 }
@@ -1334,6 +1451,49 @@ User question:
 ${question}`;
 }
 
+/** Persistent session id for the Debugger's bug-paste conversation. */
+export const debuggerSessionId = "__repoos-debugger__";
+
+/** The Debugger agent's role name, used to route its chat prompt. */
+export const DEBUGGER_NAME = "debugger";
+
+/** The Debugger agent: a chat-first bug diagnostician (no background scan). */
+export function debuggerAgent(): Agent {
+  // previously "big pickle"
+  const base = { cli: "opencode", model: "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731" } as const;
+  return {
+    name: DEBUGGER_NAME,
+    cli: base.cli,
+    model: base.model,
+    enabled: true,
+    instructions:
+      "You are the Debugger, a bug diagnostician. When you're handed a pasted bug report, stack trace, or error message, identify the root cause and suggest a concrete, actionable fix. Ask for more context only when the report is too ambiguous to diagnose. Ground your diagnosis in the repository when the pasted text references code you can inspect.",
+  };
+}
+
+export function debuggerPrompt(
+  question: string,
+  repositoryContext: string,
+  agent: Agent,
+): string {
+  return `You are the Debugger, the agent you copy a failing report to for a clear diagnosis.
+
+${agent.instructions ?? "Diagnose the root cause and suggest a fix."}
+
+Rules:
+- Identify the root cause, not just the symptom, and explain your reasoning briefly.
+- Give a concrete, actionable suggested fix (code or config where appropriate).
+- You may read repository files and run read-only discovery commands to verify.
+- Never edit files, change task status, commit, launch servers, or start agents.
+- If you cannot determine the cause with confidence, say exactly what is missing.
+
+The pasted bug / error / question is below. Current repository context:
+${repositoryContext}
+
+Bug report:
+${question}`;
+}
+
 /** Build the writable task-management mission used only by the PM chat. */
 export function taskPmPrompt(
   request: string,
@@ -1345,7 +1505,7 @@ export function taskPmPrompt(
 ${agent.instructions ?? "Own the roadmap and keep task specifications accurate."}
 
 Rules:
-- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands or HTTP API endpoints.
+- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands (e.g. \`repoos new\`, \`repoos update\`, \`repoos mv\`). Never call the RepoOS HTTP API directly (no \`curl\`/fetch against localhost) — it requires a browser session and is not reachable from your sandbox.
 - Never edit \`work/*.md\` files directly. Never move task files between folders.
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain the requested task change briefly after applying it, including the task ID and what changed.
@@ -1426,6 +1586,13 @@ export interface PromptResult {
   ok: boolean;
   output?: string;
   error?: string;
+  /** Wall-clock elapsed ms for the run, or 0 if it never spawned. */
+  elapsedMs?: number;
+  /** Cumulative tokens/cost the CLI reported, when extractUsage found any. */
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
 }
 
 /** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
@@ -1542,6 +1709,7 @@ export function runPrompt(
   return new Promise((resolve) => {
     const { cmd, args } = opts.command ?? promptCommand(agent, prompt);
     let proc: ChildProcess;
+    const startedAt = Date.now();
     try {
       proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     } catch (err) {
@@ -1554,15 +1722,23 @@ export function runPrompt(
     const out: Buffer[] = [];
     const errOut: Buffer[] = [];
     let pending = "";
+    // The full stdout, folded through the same usage/extract path the streaming
+    // runner uses, so one-shot roles (reviewer/CTO) persist real CLI-reported
+    // tokens/cost instead of zeros (0230). `costUsd` holds Kiro credits when
+    // this is a Kiro session (extractUsage maps its credits footer) — callers
+    // must present it as credits, never as USD.
+    const usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } = {};
     const forwardChunk = (c: Buffer): void => {
       out.push(c);
-      if (!opts.onLine) return;
       pending += c.toString("utf8").replace(/\r/g, "\n");
       const parts = pending.split("\n");
       pending = parts.pop() ?? "";
       for (const part of parts) {
         if (part.length === 0) continue;
-        opts.onLine(part);
+        // Fold usage regardless of whether a consumer wants live lines, so the
+        // one-shot result always carries CLI-reported tokens/cost (0230).
+        foldUsage(usage, part);
+        opts.onLine?.(part);
       }
     };
     proc.stdout?.on("data", forwardChunk);
@@ -1582,19 +1758,33 @@ export function runPrompt(
 
     const done = (): void => {
       clearTimeout(timer);
+      const elapsedMs = Date.now() - startedAt;
       // Flush a trailing line with no final newline so nothing is held back.
-      if (opts.onLine && pending.trim()) opts.onLine(pending.trimEnd());
+      if (opts.onLine && pending.trim()) {
+        foldUsage(usage, pending.trimEnd());
+        opts.onLine(pending.trimEnd());
+      }
       pending = "";
       const output = stripAnsi(Buffer.concat(out).toString("utf8").trim());
       const stderr = Buffer.concat(errOut).toString("utf8").trim();
+      // The line stream may drop usage when a CLI emits no trailing newline, so
+      // fold the full accumulated stdout as a backstop (idempotent via Math.max).
+      foldUsage(usage, output);
+      const usageFields = {
+        elapsedMs,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        costUsd: usage.costUsd,
+      };
       if (output) {
-        resolve({ ok: true, output });
+        resolve({ ok: true, output, ...usageFields });
         return;
       }
       const reason = stderr
         ? stderr.split("\n").slice(-3).join(" ").trim()
         : "no output produced";
-      resolve({ ok: false, error: `${cmd} exited without output: ${reason}` });
+      resolve({ ok: false, error: `${cmd} exited without output: ${reason}`, ...usageFields });
     };
     // `close` (not `exit`) fires only after stdio has drained, so a trailing
     // line with no final newline is still readable when we flush it.
@@ -1870,6 +2060,98 @@ export class AgentRunner {
     }
   }
 
+  // ---- Pending handoff persistence (#0235) ----
+
+  /** Persist a handoff request for recovery across process boundaries. */
+  private persistPendingHandoff(request: AgentHandoffRequest): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    // Newer run supersedes older one for the same task.
+    store.requests = store.requests.filter((r) => r.taskId !== request.taskId);
+    store.requests.push(request);
+    writePendingHandoffs(this.cacheDir, store);
+  }
+
+  /** Remove a persisted handoff request (by task id). */
+  private clearPendingHandoff(taskId: string): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    const before = store.requests.length;
+    store.requests = store.requests.filter((r) => r.taskId !== taskId);
+    if (store.requests.length < before) {
+      writePendingHandoffs(this.cacheDir, store);
+    }
+  }
+
+  /**
+   * Recover persisted handoff requests at server boot. Validates each request
+   * (task still exists, still active, branch matches, not already finalizing)
+   * and re-fires onHandoff for valid ones. Idempotent: a request already in
+   * handoffsInFlight is skipped.
+   */
+  recoverPendingHandoffs(): void {
+    const store = readPendingHandoffs(this.cacheDir);
+    if (store.requests.length === 0) return;
+    for (const request of store.requests) {
+      if (this.handoffsInFlight.has(request.taskId)) continue;
+      // Validate: task must still exist and be active, branch must match.
+      const task = this.getTask?.(request.taskId) ?? null;
+      if (!task) {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      if (task.status !== "active") {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      if (task.branch !== request.branch) {
+        this.clearPendingHandoff(request.taskId);
+        continue;
+      }
+      // Admit to the authorized-capability map so the server's
+      // consumeHandoff validation (server.ts onHandoff) succeeds. The normal
+      // clean-exit path does the same in cleanup().
+      this.authorizedHandoffs.set(request.runId, request);
+      // Move to in-flight before firing so concurrent checks see it.
+      this.handoffsInFlight.add(request.taskId);
+      // Clear the persisted entry so a later boot does not re-fire the same
+      // request. If finalization ultimately fails, the task stays active and
+      // can be resumed manually.
+      this.clearPendingHandoff(request.taskId);
+      // Ensure the session is loaded so system()/appendLine() can write to
+      // the transcript.  For a dead-interrupted task, adoptRunningAgents only
+      // pre-loads sessions for live PIDs — the interrupted-turn session is on
+      // disk but not yet in memory (#0235 review fix).
+      if (!this.sessions.has(request.taskId)) {
+        const loaded = this.loadSession(request.taskId);
+        if (loaded) this.sessions.set(request.taskId, loaded);
+      }
+      // Surface in the transcript so the human sees recovery.
+      this.system(request.taskId, "Recovering pending handoff from interrupted turn — finalizing now");
+      void Promise.resolve(this.onHandoff?.(request))
+        .catch((err) => {
+          this.appendLine(request.taskId, "sys", `✗ recovered handoff failed: ${(err as Error).message}`);
+        })
+        .finally(() => {
+          this.handoffsInFlight.delete(request.taskId);
+          // If the server handler rejected (consumeHandoff denied, or a
+          // concurrent finalization was already in flight), the capability
+          // was never consumed — remove it so it does not leak and confuse
+          // a later validateHandoff check.
+          if (this.authorizedHandoffs.has(request.runId)) {
+            this.authorizedHandoffs.delete(request.runId);
+          }
+          // If the task is still active after recovery, record the outcome in
+          // the Activity log so the watchdog's HANDOFF_RETAINED guard can
+          // unstick it: without this, the retained line permanently blocks
+          // auto-surface/escalation even when recovery has already been
+          // attempted and failed (#0235 review fix).
+          const task = this.getTask?.(request.taskId) ?? null;
+          if (task && task.status === "active") {
+            this.persistHandoffFailure(request.taskId, task, "handoff recovery attempted · finalization failed");
+          }
+        });
+    }
+  }
+
   /** Append trusted server orchestration progress to the retained transcript. */
   system(taskId: string, text: string): void {
     this.appendLine(taskId, "sys", text);
@@ -1967,6 +2249,11 @@ export class AgentRunner {
     return this.db?.getSessionTypeStats() ?? [];
   }
 
+  /** Per-day usage totals (server's local time). */
+  dailyTotals() {
+    return this.db?.getDailyTotals() ?? [];
+  }
+
   /** Query board-level summary stats from the database. */
   boardStats() {
     return this.db?.getBoardStats() ?? null;
@@ -2034,7 +2321,10 @@ export class AgentRunner {
       stalledEmitted: false,
     };
     this.sessions.set(sessionId, session);
-    const mission = promptBuilder(text, repositoryContext, agent);
+    const mission =
+      agent.name === DEBUGGER_NAME
+        ? debuggerPrompt(text, repositoryContext, agent)
+        : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
     return this.spawnTurn(sessionId, cmd, args, this.config.root);
   }
@@ -2048,7 +2338,7 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string } = {},
+    opts: { resumePreamble?: string; skipBoardDivergence?: boolean } = {},
   ): StartResult {
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
@@ -2090,6 +2380,7 @@ export class AgentRunner {
       session.workdir ?? this.config.root,
       session.task,
       session.branch,
+      { skipBoardDivergence: opts.skipBoardDivergence },
     );
   }
 
@@ -2103,6 +2394,8 @@ export class AgentRunner {
    * draining after a stop request, cleanup performs the final flush/eviction.
    */
   complete(taskId: string): void {
+    // Task is leaving active — clear any persisted handoff (#0235).
+    this.clearPendingHandoff(taskId);
     for (const [runId, req] of this.authorizedPreviews) {
       if (req.taskId === taskId) this.authorizedPreviews.delete(runId);
     }
@@ -2129,11 +2422,14 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
     this.pausedTasks.delete(taskId);
+    // A new turn supersedes any persisted handoff from a previous turn (#0235).
+    this.clearPendingHandoff(taskId);
     // A new run supersedes the previous run's preview capability for this task
     // (#0121): a capability minted for an older run is expired the moment a
     // newer turn claims the task.
@@ -2198,6 +2494,7 @@ export class AgentRunner {
       runId,
       handoffRequested: false,
       previewRequested: false,
+      skipBoardDivergence: opts.skipBoardDivergence,
       tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -2294,7 +2591,7 @@ export class AgentRunner {
       this.tryExtractSessionId(raw, session);
     }
     if (stream === "out") {
-      entry = this.applySignals(taskId, raw, entry);
+      entry = this.applySignals(taskId, raw, entry, session);
     }
     this.recordEntry(taskId, session, stream, entry);
     this.lineTouched(taskId, session, raw);
@@ -2360,7 +2657,7 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
@@ -2392,7 +2689,7 @@ export class AgentRunner {
       // An orphaned tool_result (an id we never saw a tool_use for) has
       // nothing to attach to — drop it rather than fabricate a tool card.
     } else if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
@@ -2406,13 +2703,13 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -2423,13 +2720,13 @@ export class AgentRunner {
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
       this.tryExtractSessionId(raw, session);
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry));
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -2486,8 +2783,11 @@ export class AgentRunner {
    * request is recorded for server-side start+probe at turn exit (#0121). The
    * surfaced entry becomes a trusted system line so the raw signal text never
    * clutters the transcript.
+   *
+   * When a handoff signal is recognized (#0235), the request is persisted to
+   * disk immediately so it survives an interrupted turn or server restart.
    */
-  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry): AgentOutputEntry {
+  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry, session?: Session): AgentOutputEntry {
     let out = entry;
     if (this.isPreviewRequestSignal(raw, entry)) {
       const running = this.entries.get(taskId);
@@ -2497,6 +2797,16 @@ export class AgentRunner {
     if (this.isHandoffSignal(raw, entry)) {
       const running = this.entries.get(taskId);
       if (running) running.handoffRequested = true;
+      // Persist immediately so the request survives a crash before cleanup (#0235).
+      if (running) {
+        this.persistPendingHandoff({
+          taskId,
+          runId: running.runId,
+          branch: running.branch,
+          workdir: running.workdir ?? this.config.root,
+          ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+        });
+      }
       out = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     return out;
@@ -2655,7 +2965,7 @@ export class AgentRunner {
   }
 
   /** Record a session to the database. Best-effort, never fails the server. */
-  private recordSessionToDb(sessionId: string | undefined, session: Session, taskId: string, exitedCleanly: boolean): void {
+  private recordSessionToDb(sessionId: string | undefined, session: Session, taskKey: string, exitedCleanly: boolean): void {
     if (!this.db || !session) return;
     try {
       // Determine session type from agent name for better aggregations
@@ -2667,10 +2977,17 @@ export class AgentRunner {
       else if (agentName.includes("ross") || agentName.includes("guide")) sessionType = "guide";
       else if (agentName.includes("cto")) sessionType = "cto";
       else if (agentName.includes("tech")) sessionType = "tech-debt";
-      else sessionType = taskId ? "task" : "chat";
+      else sessionType = taskKey ? "task" : "chat";
+
+      // Attribute the session to the REAL task ID. The runner key (`taskKey`) is
+      // the task id for engineer/review sessions, but chat-style sessions (PM)
+      // are keyed by a synthetic id like `pm-task-v2:123`; stripping the prefix
+      // restores the actual task so PM cost/tokens aggregate under the task
+      // (0230). Non-task chats (guide) record no task id at all.
+      const taskId = resolveSessionTaskId(taskKey);
 
       // Reuse existing session ID to accumulate multi-turn sessions into one record
-      const finalSessionId = sessionId || `${taskId}-${randomUUID()}`;
+      const finalSessionId = sessionId || `${taskKey}-${randomUUID()}`;
       const endedAt = new Date().toISOString();
       const elapsedMs = session.accumulatedMs;
       const agent = session.agent ?? "unknown";
@@ -2682,12 +2999,15 @@ export class AgentRunner {
       const totalTokens = session.tokens ?? undefined;
       let costUsd = session.costUsd ?? undefined;
       let costSource = "none";
+      const isKiro = session.engine === "kiro";
 
       if (totalTokens && !costUsd) {
         costUsd = estimateCostUsd(totalTokens);
         costSource = "estimate";
       } else if (session.costUsd) {
-        costSource = "extractUsage";
+        // Kiro reports credits in its billing unit, not US dollars — flag the
+        // source so aggregation/UI never present it as USD (0230).
+        costSource = isKiro ? "kiro-credits" : "extractUsage";
       }
 
       const status = exitedCleanly ? "finished" : "errored";
@@ -2786,6 +3106,8 @@ export class AgentRunner {
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
+      // Clean exit with handoff requested: clear the persisted request and fire finalization.
+      this.clearPendingHandoff(taskId);
       const request: AgentHandoffRequest = {
         taskId,
         runId: entry.runId,
@@ -2802,10 +3124,12 @@ export class AgentRunner {
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && exitedCleanly && !taskForHandoff) {
       this.appendLine(taskId, "sys", "✗ handoff was not started because the task could not be resolved");
+      this.clearPendingHandoff(taskId);
       this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
     } else if (entry.handoffRequested && !exitedCleanly) {
-      this.appendLine(taskId, "sys", "✗ handoff was not started because the agent turn was interrupted");
-      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted");
+      // Interrupted turn: the persisted request survives for recovery on next boot (#0235).
+      this.appendLine(taskId, "sys", "⚠ handoff retained for recovery — the request will be finalized on the next server start");
+      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted · handoff retained for recovery");
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
@@ -3046,11 +3370,14 @@ export class AgentRunner {
 
   /**
    * Persist a handoff failure reason to the task file's Activity log.
-   * Called when a handoff signal is expected but not detected, or the process
-   * exits uncleanly before handoff can be finalized. This persists the reason
-   * so it survives server reloads (unlike in-memory transcript entries).
+   * Called when a handoff signal is expected but not detected, the process
+   * exits uncleanly before handoff can be finalized, or (from handoff.ts)
+   * server-side finalization itself fails. This persists the reason so it
+   * survives server reloads and lets the task watchdog classify the failure
+   * correctly instead of falling back to its generic guess (unlike
+   * in-memory transcript entries, which the watchdog cannot see).
    */
-  private persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
+  persistHandoffFailure(taskId: string, task: Task | undefined, reason: string): void {
     if (!task) return;
     try {
       const current = parseTask({
@@ -3078,6 +3405,7 @@ export class AgentRunner {
    * a transcript sys line) because it means the checklist itself failed.
    */
   private healBoardDivergence(taskId: string, entry: Entry, session?: Session): void {
+    if (entry.skipBoardDivergence) return;
     const task = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     if (!task || !entry.workdir) return;
     const worktreeCopy = join(entry.workdir, task.path);
