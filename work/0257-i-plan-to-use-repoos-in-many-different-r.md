@@ -2,7 +2,7 @@
 id: "0257"
 title: Make repo name pill clickable with customizable pastel background color
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -130,3 +130,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 - 2026-08-19T17:53:34Z · cli_override
 - 2026-08-19T17:53:35Z · cli_override
 - 2026-08-19T17:59:52Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-19T17:59:52Z · status review→active
