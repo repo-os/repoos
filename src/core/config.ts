@@ -361,8 +361,10 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof authEnabled === "boolean") {
       cfg.auth = { ...cfg.auth, enabled: authEnabled };
     }
-    const authSessionSecret = parsed["auth.sessionSecret"];
-    if (typeof authSessionSecret === "string") {
+    // Secrets prefer an env var over the (git-tracked) config file, same
+    // fallback pattern as [whisper] above — env wins when both are set.
+    const authSessionSecret = parsed["auth.sessionSecret"] ?? process.env.REPOOS_AUTH_SESSION_SECRET;
+    if (typeof authSessionSecret === "string" && authSessionSecret) {
       cfg.auth = { ...cfg.auth, sessionSecret: authSessionSecret };
     }
     const authSessionMaxAge = parsed["auth.sessionMaxAge"];
@@ -373,22 +375,24 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof authBootstrapAdmin === "string") {
       cfg.auth = { ...cfg.auth, bootstrapAdmin: authBootstrapAdmin };
     }
-    // Email provider
+    // Email provider — fromAddress isn't sensitive and stays config-only;
+    // apiKey may come from the config file or REPOOS_RESEND_API_KEY.
     const emailProviderType = parsed["auth.emailProvider.type"];
     if (typeof emailProviderType === "string" && emailProviderType === "resend") {
-      const emailApiKey = parsed["auth.emailProvider.apiKey"];
+      const emailApiKey = parsed["auth.emailProvider.apiKey"] ?? process.env.REPOOS_RESEND_API_KEY;
       const emailFrom = parsed["auth.emailProvider.fromAddress"];
-      if (typeof emailApiKey === "string" && typeof emailFrom === "string") {
+      if (typeof emailApiKey === "string" && emailApiKey && typeof emailFrom === "string") {
         cfg.auth = {
           ...cfg.auth,
           emailProvider: { type: "resend", apiKey: emailApiKey, fromAddress: emailFrom },
         };
       }
     }
-    // Google OAuth
+    // Google OAuth — clientId isn't sensitive and stays config-only;
+    // clientSecret may come from the config file or REPOOS_GOOGLE_CLIENT_SECRET.
     const googleClientId = parsed["auth.google.clientId"];
-    const googleClientSecret = parsed["auth.google.clientSecret"];
-    if (typeof googleClientId === "string" && typeof googleClientSecret === "string") {
+    const googleClientSecret = parsed["auth.google.clientSecret"] ?? process.env.REPOOS_GOOGLE_CLIENT_SECRET;
+    if (typeof googleClientId === "string" && typeof googleClientSecret === "string" && googleClientSecret) {
       cfg.auth = {
         ...cfg.auth,
         google: { clientId: googleClientId, clientSecret: googleClientSecret },
