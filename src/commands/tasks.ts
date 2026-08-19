@@ -2,10 +2,12 @@
  * Read and mutate commands. All go through the createRepoOS() facade so the
  * file remains the single source of truth.
  */
+import { readFileSync } from "node:fs";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
+import { patchTaskFile, type TaskPatch } from "../server/write.js";
 
 /**
  * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
@@ -156,6 +158,84 @@ export function cmdMv(id?: string, status?: string): void {
         c.dim("#" + t.id) +
         " → " +
         statusColor(t.status)(t.status),
+    );
+  } catch (e) {
+    console.error(c.red("  " + (e as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
+  title: "title",
+  area: "area",
+  priority: "priority",
+  type: "type",
+  body: "body",
+  branch: "branch",
+  "assigned-to": "assignedTo",
+};
+
+/**
+ * `repoos update <id> [--title ...] [--area ...] [--priority ...] [--type ...]
+ *   [--body ... | --body -] [--branch ...] [--assigned-to ai|human]`
+ *
+ * Writes directly via patchTaskFile (same path the server's PATCH route uses),
+ * so it works with no HTTP round-trip and no session auth — this is the path
+ * agents/scripts should use to edit task metadata instead of hitting the API.
+ * `--body -` reads the new body from stdin, for large/multiline bodies.
+ */
+export function cmdUpdate(args: string[]): void {
+  const [id, ...rest] = args;
+  const usage =
+    '  Usage: repoos update <id> [--title "..."] [--area a] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human]';
+  if (!id) {
+    console.error(c.red(usage));
+    process.exitCode = 1;
+    return;
+  }
+
+  const patch: TaskPatch = {};
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (!a.startsWith("--")) {
+      console.error(c.red(`  Unexpected argument: ${a}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    const key = a.slice(2);
+    const field = UPDATE_FLAGS[key];
+    if (!field) {
+      console.error(c.red(`  Unknown flag --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    const raw = rest[++i];
+    if (raw === undefined) {
+      console.error(c.red(`  Missing value for --${key}`));
+      process.exitCode = 1;
+      return;
+    }
+    const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
+    (patch[field] as string) = value;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    console.error(c.red("  No fields given.\n" + usage));
+    process.exitCode = 1;
+    return;
+  }
+
+  const repoos = createRepoOS();
+  const task = repoos.getTask(id);
+  if (!task) {
+    console.error(c.red(`  Task #${id} not found.`));
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const updated = patchTaskFile(repoos.config, task.absPath, patch);
+    console.log(
+      "  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title,
     );
   } catch (e) {
     console.error(c.red("  " + (e as Error).message));
