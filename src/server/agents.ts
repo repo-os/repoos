@@ -1505,7 +1505,7 @@ export function taskPmPrompt(
 ${agent.instructions ?? "Own the roadmap and keep task specifications accurate."}
 
 Rules:
-- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands or HTTP API endpoints.
+- You may create or update tasks, including task body, metadata, and status, only through RepoOS CLI commands (e.g. \`repoos new\`, \`repoos update\`, \`repoos mv\`). Never call the RepoOS HTTP API directly (no \`curl\`/fetch against localhost) — it requires a browser session and is not reachable from your sandbox.
 - Never edit \`work/*.md\` files directly. Never move task files between folders.
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain the requested task change briefly after applying it, including the task ID and what changed.
