@@ -10,7 +10,8 @@
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
@@ -518,17 +519,40 @@ export async function cmdCheck(): Promise<void> {
 }
 
 /**
+ * Build a throwaway, empty fixture repo to serve the built SPA against.
+ * The smoke test only cares that the built UI renders with zero console errors,
+ * so booting it against the live checkout's real board drags in job recovery
+ * and preview auto-launch reconciliation for every active/review task (0260).
+ * A bare `work/` + minimal `repoos.toml` avoids all of that: no tasks, no
+ * recovery, no auto-launch — constant cost regardless of board size.
+ */
+function makeSmokeFixture(): string {
+  const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
+  mkdirSync(join(root, "work"), { recursive: true });
+  writeFileSync(join(root, "repoos.toml"), "theme = \"dark\"\nuiTheme = \"classic\"\n\n");
+  return root;
+}
+
+/**
  * Start the dev server, run Playwright WebKit smoke tests, then stop.
  * Exports failures as thrown errors. Server startup + webkit launch share the
  * harness in ui-harness.ts with the screenshot script (#0213).
  */
 async function runUISmokeTest(): Promise<void> {
-  const server = await startPreviewServer();
+  const fixture = makeSmokeFixture();
+  let server;
+  try {
+    server = await startPreviewServer(fixture);
+  } catch (err) {
+    rmSync(fixture, { recursive: true, force: true });
+    throw err;
+  }
   let browser: SmokeBrowser | undefined;
   try {
     browser = await launchWebkit();
   } catch (err) {
     server.close();
+    rmSync(fixture, { recursive: true, force: true });
     throw err;
   }
   try {
@@ -664,5 +688,6 @@ async function runUISmokeTest(): Promise<void> {
   } finally {
     if (browser) await browser.close();
     server.close();
+    rmSync(fixture, { recursive: true, force: true });
   }
 }
