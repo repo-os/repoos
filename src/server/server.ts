@@ -215,6 +215,7 @@ import {
   authLogout,
   listUsers,
   addUser,
+  sendInvite,
   deleteUser,
   updateUserRole,
   getAuditLog,
@@ -1507,6 +1508,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/auth/logout", authLogout);
   router.register("GET", "/api/auth/users", listUsers);
   router.register("POST", "/api/auth/users", addUser);
+  router.register("POST", /^\/api\/auth\/users\/([^/]+)\/invite$/, sendInvite);
   router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);

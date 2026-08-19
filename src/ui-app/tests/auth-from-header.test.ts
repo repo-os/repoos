@@ -1,27 +1,57 @@
 /**
  * Resend's `from` field is a bare RFC 5322 address by default, so with no
  * display name mail clients fall back to showing the address's local part
- * (e.g. "otp") as the sender name. buildFromHeader adds an optional name.
+ * (e.g. "otp") as the sender name. buildFromHeader always supplies a name —
+ * either the configured override, or the standardized "RepoOS at <repo>
+ * repo" default (matching the ntfy test-notification convention).
  */
 import { describe, expect, it } from "vitest";
+import type { RepoOSConfig } from "../../core/types";
 import { buildFromHeader } from "../../server/routes/auth";
 
+function config(root: string): RepoOSConfig {
+  return {
+    root,
+    workDir: "work",
+    docsDir: "docs",
+    skillsDir: "skills",
+    taskExtensions: [".md"],
+    defaultStatus: "inbox",
+    defaultAssignee: "unassigned",
+    cacheDir: ".repoos",
+  };
+}
+
 describe("buildFromHeader", () => {
-  it("uses 'Name <address>' format when fromName is set", () => {
+  it("uses the configured fromName when set", () => {
     expect(
-      buildFromHeader({ type: "resend", apiKey: "x", fromAddress: "otp@send.x.com", fromName: "RepoOS" }),
-    ).toBe("RepoOS <otp@send.x.com>");
+      buildFromHeader(config("/repos/JagoCoffee"), {
+        type: "resend",
+        apiKey: "x",
+        fromAddress: "otp@send.x.com",
+        fromName: "Custom Name",
+      }),
+    ).toBe("Custom Name <otp@send.x.com>");
   });
 
-  it("falls back to the bare address when fromName is unset", () => {
-    expect(buildFromHeader({ type: "resend", apiKey: "x", fromAddress: "otp@send.x.com" })).toBe(
-      "otp@send.x.com",
-    );
+  it("falls back to 'RepoOS at <repo> repo' when fromName is unset", () => {
+    expect(
+      buildFromHeader(config("/repos/JagoCoffee"), {
+        type: "resend",
+        apiKey: "x",
+        fromAddress: "otp@send.x.com",
+      }),
+    ).toBe("RepoOS at JagoCoffee repo <otp@send.x.com>");
   });
 
-  it("falls back to the bare address when fromName is an empty string", () => {
+  it("falls back to the default when fromName is an empty string", () => {
     expect(
-      buildFromHeader({ type: "resend", apiKey: "x", fromAddress: "otp@send.x.com", fromName: "" }),
-    ).toBe("otp@send.x.com");
+      buildFromHeader(config("/repos/Celleris"), {
+        type: "resend",
+        apiKey: "x",
+        fromAddress: "otp@send.x.com",
+        fromName: "",
+      }),
+    ).toBe("RepoOS at Celleris repo <otp@send.x.com>");
   });
 });

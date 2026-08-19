@@ -12,6 +12,7 @@ const authEnabled = ref(false);
 const bootstrapNeeded = ref(false);
 const hasGoogle = ref(false);
 const hasEmailProvider = ref(false);
+const repoName = ref("");
 const loading = ref(true);
 
 // OTP flow
@@ -36,6 +37,7 @@ async function checkStatus(): Promise<void> {
     bootstrapNeeded.value = data.bootstrapNeeded;
     hasGoogle.value = data.hasGoogle;
     hasEmailProvider.value = data.hasEmailProvider;
+    repoName.value = data.repoName ?? "";
     if (!data.enabled) {
       // Auth not enabled, go to dashboard
       router.replace("/");
@@ -175,6 +177,7 @@ function googleLogin(): void {
           <span class="login-tagline mono">repo is the os</span>
         </div>
       </div>
+      <div v-if="repoName" class="login-repo-badge mono">{{ repoName }}</div>
 
       <!-- Loading -->
       <div v-if="loading" class="login-loading">
@@ -309,7 +312,7 @@ function googleLogin(): void {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 36px;
+  margin-bottom: 20px;
 }
 
 .login-logo {
@@ -353,6 +356,18 @@ function googleLogin(): void {
   text-transform: uppercase;
   color: var(--txt-faint);
   margin-top: 3px;
+}
+
+.login-repo-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  padding: 5px 13px;
+  margin-bottom: 28px;
 }
 
 .login-body h2 {

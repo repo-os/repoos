@@ -46,6 +46,7 @@ const errorMsg = ref("");
 const successMsg = ref("");
 const authEnabled = ref(false);
 const showAudit = ref(false);
+const invitingEmail = ref<string | null>(null);
 
 async function loadUsers(): Promise<void> {
   loadingUsers.value = true;
@@ -69,22 +70,40 @@ async function loadAudit(): Promise<void> {
 
 async function addUser(): Promise<void> {
   if (!newEmail.value.trim()) return;
+  const email = newEmail.value.trim().toLowerCase();
   adding.value = true;
   errorMsg.value = "";
   successMsg.value = "";
   try {
     await api("/api/auth/users", JSON_OPTS("POST", {
-      email: newEmail.value.trim().toLowerCase(),
+      email,
       role: newRole.value,
     }));
-    successMsg.value = `Added ${newEmail.value}`;
+    successMsg.value = `Added ${email}`;
     newEmail.value = "";
     newRole.value = "member";
     await loadUsers();
+    if (confirm(`Send an invite email to ${email} now?`)) {
+      await sendInvite(email);
+    }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : "Failed to add user";
   } finally {
     adding.value = false;
+  }
+}
+
+async function sendInvite(email: string): Promise<void> {
+  invitingEmail.value = email;
+  errorMsg.value = "";
+  successMsg.value = "";
+  try {
+    await api(`/api/auth/users/${encodeURIComponent(email)}/invite`, JSON_OPTS("POST", {}));
+    successMsg.value = `Invite sent to ${email}`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : "Failed to send invite";
+  } finally {
+    invitingEmail.value = null;
   }
 }
 
@@ -174,6 +193,13 @@ function formatDate(iso: string): string {
             <span class="auth-user-role" :class="user.role">{{ user.role }}</span>
           </div>
           <div class="auth-user-actions">
+            <button
+              class="auth-action"
+              :disabled="invitingEmail === user.email"
+              @click="sendInvite(user.email)"
+            >
+              {{ invitingEmail === user.email ? "Sending..." : "Invite" }}
+            </button>
             <button class="auth-action" @click="toggleRole(user)">
               {{ user.role === "admin" ? "Demote" : "Promote" }}
             </button>

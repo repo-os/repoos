@@ -14,10 +14,12 @@
  * DELETE /api/auth/users/:email  – Remove a user
  * PATCH  /api/auth/users/:email  – Change role
  * GET    /api/auth/audit         – Audit log
+ * POST   /api/auth/users/:email/invite – (Re)send an invite email
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createVerify, createPublicKey } from "node:crypto";
+import { basename } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { getAuthStore, type AuthStore } from "../../core/auth-store.js";
@@ -102,18 +104,29 @@ function requireAdmin(
 // ---------------------------------------------------------------------------
 
 /**
- * RFC 5322 `From` header: "Display Name <addr>" when a name is configured,
- * otherwise the bare address. Without a name, mail clients fall back to
- * showing the address's local part (e.g. "otp") as the sender name.
+ * The standardized default sender name: "RepoOS at <repo> repo", where
+ * <repo> is the checkout's directory name (same convention as the ntfy test
+ * notification in notify.ts). auth.emailProvider.fromName overrides it.
  */
-export function buildFromHeader(provider: AuthEmailProvider): string {
-  return provider.fromName ? `${provider.fromName} <${provider.fromAddress}>` : provider.fromAddress;
+function defaultFromName(config: RepoOSConfig): string {
+  return `RepoOS at ${basename(config.root)} repo`;
 }
 
-async function sendOtpEmail(
+/**
+ * RFC 5322 `From` header: "Display Name <addr>". Without a configured
+ * fromName, mail clients fall back to showing the address's local part
+ * (e.g. "otp") as the sender name, so this always supplies one.
+ */
+export function buildFromHeader(config: RepoOSConfig, provider: AuthEmailProvider): string {
+  const name = provider.fromName || defaultFromName(config);
+  return `${name} <${provider.fromAddress}>`;
+}
+
+async function sendResendEmail(
   config: RepoOSConfig,
   toEmail: string,
-  code: string,
+  subject: string,
+  html: string,
 ): Promise<boolean> {
   const provider = config.auth?.emailProvider;
   if (!provider || provider.type !== "resend") return false;
@@ -125,26 +138,73 @@ async function sendOtpEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: buildFromHeader(provider),
+        from: buildFromHeader(config, provider),
         to: [toEmail],
-        subject: "Your RepoOS Login Code",
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-            <h2 style="margin-bottom: 16px;">RepoOS Login Code</h2>
-            <p>Your one-time login code is:</p>
-            <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0; text-align: center; color: #333;">
-              ${code}
-            </div>
-            <p style="color: #666; font-size: 14px;">This code expires in 10 minutes and can only be used once.</p>
-            <p style="color: #999; font-size: 12px; margin-top: 24px;">If you didn't request this code, you can safely ignore this email.</p>
-          </div>
-        `,
+        subject,
+        html,
       }),
     });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error(`Resend send to ${toEmail} failed (${res.status}): ${detail.slice(0, 500)}`);
+    }
     return res.ok;
-  } catch {
+  } catch (err) {
+    console.error(`Resend send to ${toEmail} threw: ${err instanceof Error ? err.message : String(err)}`);
     return false;
   }
+}
+
+async function sendOtpEmail(
+  config: RepoOSConfig,
+  toEmail: string,
+  code: string,
+): Promise<boolean> {
+  return sendResendEmail(
+    config,
+    toEmail,
+    "Your RepoOS Login Code",
+    `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+        <h2 style="margin-bottom: 16px;">RepoOS Login Code</h2>
+        <p>Your one-time login code is:</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0; text-align: center; color: #333;">
+          ${code}
+        </div>
+        <p style="color: #666; font-size: 14px;">This code expires in 10 minutes and can only be used once.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you didn't request this code, you can safely ignore this email.</p>
+      </div>
+    `,
+  );
+}
+
+/** Best-effort base URL for links in outbound email: proto + host from the inviting request. */
+function requestOrigin(req: IncomingMessage): string {
+  const proto = req.headers["x-forwarded-proto"] ?? "http";
+  return `${proto}://${req.headers.host}`;
+}
+
+async function sendInviteEmail(
+  config: RepoOSConfig,
+  toEmail: string,
+  loginUrl: string,
+): Promise<boolean> {
+  const repoName = basename(config.root);
+  return sendResendEmail(
+    config,
+    toEmail,
+    `You're invited to RepoOS at ${repoName} repo`,
+    `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+        <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${repoName} repo</h2>
+        <p>An admin has added <strong>${toEmail}</strong> to the allowlist. Sign in any time with a one-time email code${config.auth?.google ? " or Google" : ""}:</p>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Sign in to RepoOS</a>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you weren't expecting this, you can safely ignore this email.</p>
+      </div>
+    `,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -265,6 +325,10 @@ export const authStatus: RouteHandler = (ctx, _req, res) => {
     bootstrapNeeded: auth.enabled === true && userCount === 0,
     hasGoogle: !!(auth.google?.clientId && auth.google?.clientSecret),
     hasEmailProvider: !!(auth.emailProvider?.apiKey && auth.emailProvider?.fromAddress),
+    // So the login page can show which instance you're signing into — the
+    // same "RepoOS at <repo> repo" convention used in outbound email. Just
+    // the directory name, never the full server filesystem path.
+    repoName: basename(config.root),
   });
 };
 
@@ -687,6 +751,41 @@ export const addUser: RouteHandler = async (ctx, req, res) => {
   store.upsertUser(email, role, admin.email);
   store.logAudit("add_user", email, admin.email, `role: ${role}`);
   return json(res, 200, { ok: true, email, role });
+};
+
+/** (Re)send an invite email. Callable any time, not just once at add-time. */
+export const sendInvite: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  const admin = requireAdmin(req, config, res);
+  if (!admin) return;
+
+  const store = getAuthStore(config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+
+  // Extract email from URL path: /api/auth/users/:email/invite
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const segments = url.pathname.split("/").filter(Boolean);
+  const email = decodeURIComponent(segments[segments.length - 2] ?? "").trim().toLowerCase();
+
+  if (!isValidEmail(email)) {
+    return json(res, 400, { error: "Invalid email" });
+  }
+  const user = store.getUser(email);
+  if (!user) {
+    return json(res, 404, { error: "User not found" });
+  }
+  if (!config.auth?.emailProvider) {
+    return json(res, 400, { error: "No email provider configured — cannot send invites" });
+  }
+
+  const loginUrl = `${requestOrigin(req)}/login`;
+  const sent = await sendInviteEmail(config, email, loginUrl);
+  if (!sent) {
+    return json(res, 502, { error: "Failed to send invite email — check server logs for the provider error" });
+  }
+
+  store.logAudit("invite_sent", email, admin.email);
+  return json(res, 200, { ok: true });
 };
 
 /** Remove a user. */
