@@ -2,7 +2,7 @@
 id: "0256"
 title: Simplify Cloudflare publishing now that native auth is built in
 type: refactor
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T13:04:26Z"
-updated_at: "2026-08-19T13:18:50Z"
+updated_at: "2026-08-19T13:18:52Z"
 ---
 ## Problem
 
@@ -89,3 +89,4 @@ now that we have native auth setup on the server let's simplify the cloudflare p
 
 - 2026-08-19T13:07:06Z · status draft→inbox, title, area, type, body
 - 2026-08-19T13:18:50Z · model_override
+- 2026-08-19T13:18:52Z · status inbox→ready
