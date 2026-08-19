@@ -67,7 +67,8 @@ describe("Ross (Repository Assistant)", () => {
     const prompt = taskPmPrompt("Update the task", "Task #0125: Example", pm);
 
     expect(prompt).toContain("Product Manager");
-    expect(prompt).toContain("RepoOS CLI commands or HTTP API endpoints");
+    expect(prompt).toContain("RepoOS CLI commands");
+    expect(prompt).toContain("Never call the RepoOS HTTP API directly");
     expect(prompt).not.toContain("You are Ross");
   });
 });
