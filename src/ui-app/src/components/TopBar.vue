@@ -92,7 +92,7 @@ function clearColor(): void {
 
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
-  if (target.closest(".repo-pill")) return;
+  if (target.closest(".repo-pill-wrapper")) return;
   popoverOpen.value = false;
 }
 
@@ -121,7 +121,7 @@ watch(repoName, () => {
     </div>
     <div class="brand hidden sm:inline">RepoOS<small>repo is the os</small></div>
     <div v-if="health" class="repo-pill-wrapper">
-      <button class="repo-pill" type="button" :style="pillStyle" @click="togglePopover">
+      <button class="repo-pill" type="button" :aria-expanded="popoverOpen" :style="pillStyle" @click="togglePopover">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
           <path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8" />
         </svg>
@@ -136,11 +136,13 @@ watch(repoName, () => {
             class="repo-color-swatch"
             :class="{ selected: savedColor === color }"
             :style="{ backgroundColor: color }"
+            :aria-label="`Set color ${color}`"
+            :aria-pressed="savedColor === color"
             :title="color"
-            @click.stop="selectColor(color)"
+            @click="selectColor(color)"
           />
         </div>
-        <button v-if="savedColor" type="button" class="repo-color-default" @click.stop="clearColor">
+        <button type="button" class="repo-color-default" @click="clearColor">
           Default
         </button>
       </div>
@@ -189,24 +191,6 @@ watch(repoName, () => {
 <style scoped>
 .repo-pill-wrapper {
   position: relative;
-}
-.repo-pill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 11px;
-  border-radius: 9px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  font-size: 11.5px;
-  color: var(--txt-dim);
-  cursor: pointer;
-  font-family: inherit;
-  line-height: inherit;
-  text-align: left;
-}
-.repo-pill .mono {
-  color: var(--txt);
 }
 .repo-color-popover {
   position: absolute;
