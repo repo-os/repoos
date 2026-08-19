@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
+import { useNotificationsStore, NOTIFICATION_TYPE_LABELS, type NotificationType } from "../stores/notifications";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
@@ -20,6 +21,13 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 const config = useConfigStore();
 const ui = useUiStore();
 const repo = useRepoStore();
+const notifications = useNotificationsStore();
+const notificationTypes = [
+  "review",
+  "paused",
+  "stuck",
+  "needsInput",
+] as NotificationType[];
 const route = useRoute();
 const router = useRouter();
 const tunnelReadiness = ref<Record<string, any> | null>(null);
@@ -379,6 +387,73 @@ onUnmounted(() => {
               />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Attention Notifications
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Sound notifications</div>
+              <div class="setting-desc">
+                Play a bell sound on your computer when a task moves into a state that needs
+                you. Off by default.
+              </div>
+            </div>
+            <div class="setting-input">
+              <Switch
+                :checked="notifications.soundEnabled"
+                @update:checked="notifications.setSoundEnabled"
+              />
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Push notifications</div>
+              <div class="setting-desc">
+                Send a notification through your computer's notification system when a task
+                moves into a state that needs you. Turning this on will ask for permission.
+              </div>
+            </div>
+            <div class="setting-input">
+              <Switch
+                :checked="notifications.pushEnabled"
+                @update:checked="notifications.setPushEnabled"
+              />
+            </div>
+          </div>
+          <div v-if="notifications.permissionError" class="setting-row">
+            <div class="setting-info">
+              <div class="setting-desc" style="color: var(--red)">{{ notifications.permissionError }}</div>
+            </div>
+          </div>
+          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--txt-faint); font-weight: 600; padding-top: 8px">Events</div>
+          <div
+            v-for="t in notificationTypes"
+            :key="t"
+            class="setting-row"
+          >
+            <div class="setting-info">
+              <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
+              <div class="setting-desc">
+                {{
+                  t === "review"
+                    ? "A task moved from active to review, ready for your sign-off."
+                    : t === "paused"
+                      ? "A running task was paused."
+                      : t === "stuck"
+                        ? "A task was surfaced as stuck (no progress detected)."
+                        : "A task explicitly needs your attention."
+                }}
+              </div>
+            </div>
+            <div class="setting-input">
+              <Switch :checked="notifications.types[t]" @update:checked="notifications.setTypeEnabled(t, $event)" />
+            </div>
           </div>
         </div>
       </Card>

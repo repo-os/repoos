@@ -2,6 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useUiStore, type PendingScreenshot } from "./ui";
+import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import type {
   AgentOutputEntry,
@@ -233,6 +234,16 @@ export const useRepoStore = defineStore("repo", () => {
   const agentActivityAt = ref<Record<string, string>>({});
   /** When each task's agent last exited (ms timestamp), for the "paused" grace period. */
   const agentExitedAt = ref<Record<string, number>>({});
+  /**
+   * Debounce timers for paused notifications (0100). When an agent exits on an
+   * active task we wait briefly before firing "paused" — if a new turn starts
+   * (agent.running) or the task status changes (e.g. handoff to review), the
+   * timer is cancelled. This prevents false "paused" notifications on every
+   * normal turn boundary and on the server-side race where agent.exited is
+   * emitted before the handoff's task.updated.
+   */
+  const pendingPauseTimers = ref<Record<string, ReturnType<typeof setTimeout>>>({});
+  const PAUSE_DEBOUNCE_MS = 3000;
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live run telemetry per task (time/tokens/cost/stalled), keyed by task id. */
   const agentStats = ref<Record<string, AgentSessionStats>>({});
@@ -420,6 +431,27 @@ export const useRepoStore = defineStore("repo", () => {
     dirtyMain.value = next;
   }
 
+  /**
+   * Fire an attention notification for a monitored state transition (0100):
+   * review-ready, paused, stuck, or needs-attention. Only the user's enabled
+   * channels (bell sound / push) run, gated per event type. Best-effort —
+   * never throws into the SSE pipeline.
+   */
+  function notifyAttention(type: NotificationType, t: Task): void {
+    const notifications = useNotificationsStore();
+    if (!notifications.types[type]) return;
+    const label = `#${t.id} · ${t.title}`;
+    if (type === "review") {
+      void notifications.notify(type, "Task ready for review", label);
+    } else if (type === "paused") {
+      void notifications.notify(type, "Task paused", label);
+    } else if (type === "stuck") {
+      void notifications.notify(type, "Task looks stuck", label);
+    } else {
+      void notifications.notify(type, "Task needs attention", label);
+    }
+  }
+
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
     if (e.type === "hello") {
@@ -484,6 +516,33 @@ export const useRepoStore = defineStore("repo", () => {
       if (statusChanged) {
         startTransition(e.task.id, prevStatus!, e.task.status);
       }
+      // Attention notifications (0100): only on a genuine transition, never on
+      // page load for a task that already sits in a monitored state.
+      //
+      // A "stuck" transition is detected from the watchdog's own activity
+      // marker rather than a status pair. The watchdog surfaces a stuck task
+      // into `review` whenever its worktree holds reviewable work (the common
+      // case) or into `ready` when it has none, and escalates a stuck task to
+      // `needsInput` when auto-transition is off — so no single status change
+      // uniquely identifies "stuck". Its marker, written into the task body on
+      // every surface/escalation, is the authoritative signal. Keying off it
+      // also means a manual `active`->`review` handoff (or an `active`->`ready`
+      // rollback) is never misreported as stuck.
+      const prevNeedsInput = e.prev?.needsInput;
+      const watchdogStuck =
+        before &&
+        /watchdog: auto-surfaced stuck task|watchdog: escalated to needs_input/i.test(
+          e.task.body ?? "",
+        );
+      if (watchdogStuck) {
+        notifyAttention("stuck", e.task);
+      } else if (before && statusChanged && prevStatus === "active" && e.task.status === "review") {
+        notifyAttention("review", e.task);
+      } else if (before && prevNeedsInput === false && e.task.needsInput === true) {
+        // A user-set needs-attention flag (the `needsInput` marker is what the
+        // watchdog escalation does NOT carry).
+        notifyAttention("needsInput", e.task);
+      }
     } else if (e.type === "task.deleted") {
       tasks.value = tasks.value.filter((t) => t.id !== e.id);
       const ui = useUiStore();
@@ -494,6 +553,13 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
+      }
+      // Cancel any pending "paused" debounce — a new turn is starting.
+      if (pendingPauseTimers.value[e.id]) {
+        clearTimeout(pendingPauseTimers.value[e.id]);
+        const next = { ...pendingPauseTimers.value };
+        delete next[e.id];
+        pendingPauseTimers.value = next;
       }
       runningSince.value = { ...runningSince.value, [e.id]: e.at };
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
@@ -532,10 +598,35 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {
+      const wasRunning = runningIds.value.includes(e.id);
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
       runningSince.value = Object.fromEntries(Object.entries(runningSince.value).filter(([id]) => id !== e.id));
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
+      // A deliberate pause (0100): a running agent stops on a task that stays
+      // `active` (and neither needs input nor handed off to review).  Instead
+      // of firing immediately we debounce — a new turn (agent.running) or a
+      // status change (task.updated for the handoff) will cancel the timer.
+      // This avoids two races:
+      //  1. Every normal turn boundary emits agent.exited while the task
+      //     remains active; the next agent.running cancels the pending timer.
+      //  2. On a handoff the server emits agent.exited *before* the
+      //     handoff's task.updated (active→review); the timer fires after
+      //     3 s and sees the task is no longer active, so no false "paused".
+      if (wasRunning) {
+        const timer = setTimeout(() => {
+          const next = { ...pendingPauseTimers.value };
+          delete next[e.id];
+          pendingPauseTimers.value = next;
+          const exited = tasks.value.find((t) => t.id === e.id);
+          if (exited && exited.status === "active" && !exited.needsInput) {
+            notifyAttention("paused", exited);
+          }
+        }, PAUSE_DEBOUNCE_MS);
+        const prev = pendingPauseTimers.value[e.id];
+        if (prev) clearTimeout(prev);
+        pendingPauseTimers.value = { ...pendingPauseTimers.value, [e.id]: timer };
+      }
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
       if (outputs.value[e.id]) {
         outputs.value = {
