@@ -1,25 +1,16 @@
 ---
 id: "0257"
-title: Now let me look at the TopBar.vue more closely to underst…
-type: feature
-status: inbox
-priority: p2
-area: general
-assigned_to: ai
-created_by: hello@repoos.org
-branch: ""
-pm_model_override: default
-created_at: "2026-08-19T17:27:44Z"
-updated_at: "2026-08-19T17:31:00Z"
----
-Now let me look at the TopBar.vue more closely to understand the repo pill styling:
----
 title: Make repo name pill clickable with customizable pastel background color
 type: feature
 status: inbox
 priority: p2
 area: web
 assigned_to: ai
+created_by: hello@repoos.org
+branch: ""
+pm_model_override: default
+created_at: "2026-08-19T17:27:44Z"
+updated_at: "2026-08-20T00:00:00Z"
 ---
 
 ## Problem
@@ -128,3 +119,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 
 - 2026-08-19T17:30:04Z · status draft→inbox, title, body
 - 2026-08-19T17:31:00Z · pm_model_override
+- 2026-08-20T00:00:00Z · title, area, body corrected (previous PM write corrupted the file with a nested frontmatter block)

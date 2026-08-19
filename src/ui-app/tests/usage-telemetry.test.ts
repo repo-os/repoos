@@ -82,6 +82,21 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.costUsd).toBeCloseTo(0.05, 10);
   });
 
+  it("extracts tokens/cost from opencode's step_finish event (part.tokens, not usage)", () => {
+    // Captured from a real `opencode run --format json` session — opencode
+    // nests usage under `part.tokens.{total,input,output}` and `part.cost`,
+    // a different shape than the `usage.{input,output}_tokens` claude/codex
+    // events use, so this previously fell through extractUsage unrecognized
+    // and every opencode-backed session's tokens/cost stayed null forever.
+    const u = extractUsage(
+      '{"type":"step_finish","part":{"type":"step-finish","tokens":{"total":8339,"input":7274,"output":41,"reasoning":0,"cache":{"write":0,"read":1024}},"cost":0.02}}',
+    );
+    expect(u.inputTokens).toBe(7274);
+    expect(u.outputTokens).toBe(41);
+    expect(u.totalTokens).toBe(8339);
+    expect(u.costUsd).toBeCloseTo(0.02, 10);
+  });
+
   it("never fabricates numbers for output with no usage", () => {
     const u = extractUsage("the agent produced a normal answer with no usage block");
     expect(u.inputTokens).toBeUndefined();
