@@ -161,23 +161,55 @@ describe("GET /api/config whisper redaction", () => {
   });
 });
 
-describe("PATCH /api/config select persistence", () => {
-  it("persists the active-task limit as a number and keeps Jelly after reload", async () => {
+describe("GET /api/config strips theme/uiTheme (#0254)", () => {
+  it("never returns theme or uiTheme even when repoos.toml contains them", async () => {
+    const root = tmpDir();
+    writeToml(root, 'theme = "dark"\nuiTheme = "jelly"\n');
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { config: Record<string, unknown> };
+      expect(body.config).not.toHaveProperty("theme");
+      expect(body.config).not.toHaveProperty("uiTheme");
+    });
+  });
+});
+
+describe("PATCH /api/config ignores theme/uiTheme (#0254)", () => {
+  it("does not persist theme or uiTheme when sent in the request body", async () => {
     const root = tmpDir();
     await withServer(root, async (s) => {
       const res = await fetch(`${s.url}/api/config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maxActiveTasks: "5", uiTheme: "jelly" }),
+        body: JSON.stringify({ theme: "dark", uiTheme: "jelly", ntfyTopic: "test_topic" }),
+      });
+      expect(res.status).toBe(200);
+      // theme/uiTheme must not appear in repoos.toml
+      const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(toml).not.toContain("theme");
+      expect(toml).not.toContain("uiTheme");
+      // ntfyTopic should still be persisted
+      expect(toml).toContain("test_topic");
+    });
+  });
+});
+
+describe("PATCH /api/config select persistence", () => {
+  it("persists the active-task limit as a number and keeps it after reload", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const res = await fetch(`${s.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxActiveTasks: "5" }),
       });
       expect(res.status).toBe(200);
       const body = (await res.json()) as { config: Record<string, unknown> };
       expect(body.config.maxActiveTasks).toBe(5);
-      expect(body.config.uiTheme).toBe("jelly");
     });
     expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain("maxActiveTasks = 5");
     expect(loadConfig(root).maxActiveTasks).toBe(5);
-    expect(loadConfig(root).uiTheme).toBe("jelly");
   });
 });
 

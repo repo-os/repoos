@@ -27,7 +27,7 @@ function safeConfigForBrowser(config: Record<string, unknown>): Record<string, u
     apiKey?: string;
   };
   const whisperEnabled = whisper.provider !== "none" && !!whisper.apiKey;
-  const { whisper: _ignoredWhisper, ...rest } = config;
+  const { whisper: _ignoredWhisper, theme: _ignoredTheme, uiTheme: _ignoredUiTheme, ...rest } = config;
   // Strip auth secrets
   const authRaw = rest.auth as Record<string, unknown> | undefined;
   let safeAuth: Record<string, unknown> | undefined;
