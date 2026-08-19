@@ -578,6 +578,25 @@ export class ReviewManager {
     });
     this.enforceStillInReview(task);
 
+    // The review agent produced no report at all (crash, timeout) — there's no
+    // verdict to auto-bounce on and nothing for the engineer to act on, so
+    // bouncing would just burn a round on silence. Escalate straight to a
+    // human, same as the relevance-flag escalation below.
+    if (state === "failed" && !task.needsInput) {
+      try {
+        patchTaskFile(this.config, task.absPath, { needsInput: true });
+        this.emit({
+          type: "task.corrected",
+          id: task.id,
+          path: task.path,
+          note: `Review agent failed to produce a report (${result.error ?? "unknown error"}) — needs a human to retry or investigate.`,
+          at: now(),
+        });
+      } catch (err) {
+        console.error(`[repoos] could not escalate failed review for #${task.id}: ${(err as Error).message}`);
+      }
+    }
+
     // Auto-bounce if review is ok and verdict is not "good to go"
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok") {

@@ -6,7 +6,7 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
-theme = "light"
+theme = "dark"
 strictBuild = false
 uiTheme = "clear"
 ntfyEnabled = true
@@ -28,6 +28,8 @@ auth.sessionMaxAge = "604800"
 auth.bootstrapAdmin = "hello@repoos.org"   # ONLY this email can claim the founding admin account
 auth.emailProvider.type = "resend"
 auth.emailProvider.fromAddress = "otp@send.repoos.org"
+# fromName defaults to "RepoOS at <repo dir name> repo" (here: "RepoOS at repoos repo").
+# auth.emailProvider.fromName = "..."       # optional override
 # # apiKey goes in .env as REPOOS_RESEND_API_KEY instead — this file is
 # # git-tracked, secrets don't belong in it.
 # auth.google.clientId = "..."              # optional: adds a "Sign in with Google" button
@@ -81,3 +83,12 @@ name = "data analyst"
 cli = "opencode"
 model = "big pickle"
 enabled = true
+
+
+
+
+
+
+
+
+
