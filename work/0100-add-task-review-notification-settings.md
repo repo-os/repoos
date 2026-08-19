@@ -72,6 +72,7 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-16T14:51:00Z · status active→review
 - 2026-08-16T14:51:01Z · needs_merge
 - 2026-08-16T14:57:04Z · status review→active
+- 2026-08-17T08:06:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-08-18T11:44:40Z · status active→review
 - 2026-08-18T15:16:28Z · status review→active
 - 2026-08-19T17:21:27Z · status active→review
