@@ -336,8 +336,6 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
-    if (typeof get("theme") === "string") cfg.theme = get("theme") as Theme;
-    if (typeof get("uiTheme") === "string") cfg.uiTheme = get("uiTheme") as UiTheme;
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
@@ -465,35 +463,6 @@ export interface ConfigFieldMeta {
 
 export function getConfigSchema(): ConfigFieldMeta[] {
   return [
-    {
-      key: "theme",
-      label: "Theme",
-      type: "select",
-      tier: "live",
-      restartRequired: false,
-      default: DEFAULT_CONFIG.theme,
-      options: [
-        { value: "system", label: "System (follow OS)" },
-        { value: "dark", label: "Dark" },
-        { value: "light", label: "Light" },
-      ],
-      description: "UI appearance — applies immediately, no restart",
-    },
-    {
-      key: "uiTheme",
-      label: "Design theme",
-      type: "select",
-      tier: "live",
-      restartRequired: false,
-      default: DEFAULT_CONFIG.uiTheme,
-      options: [
-        { value: "classic", label: "Classic" },
-        { value: "clear", label: "Clear" },
-        { value: "gen z", label: "Gen Z" },
-        { value: "jelly", label: "Jelly" },
-      ],
-      description: "Visual design language — applies immediately, no restart",
-    },
     {
       key: "tunnelEnabled",
       label: "Cloudflare Tunnel",
