@@ -2,16 +2,15 @@
 id: "0240"
 title: Fix Settings persistence for active-task limit and Jelly theme
 type: bug
-status: review
+status: ready
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: feat/fix-settings-persistence-for-active-task
-model_override: default
+branch: ""
 pm_model_override: default
 created_at: "2026-08-17T04:51:24Z"
-updated_at: "2026-08-18T15:54:34Z"
+updated_at: "2026-08-19T08:37:01Z"
 ---
 ## Activity
 
@@ -69,6 +68,5 @@ Because `buildBody()` in `SettingsView.vue:111-125` sends **all** schema fields 
 ## Activity
 
 - 2026-08-18T15:27:47Z · body
-- 2026-08-18T15:30:53Z · status ready→active, branch
-- 2026-08-18T15:47:02Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
-- 2026-08-18T15:54:34Z · model_override
+- 2026-08-18T15:39:49Z · status ready→active
+- 2026-08-19T08:37:01Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
