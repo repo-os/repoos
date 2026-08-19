@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-19T07:38:18Z"
-updated_at: "2026-08-19T07:38:18Z"
+updated_at: "2026-08-19T07:39:32Z"
 ---
 ## Activity
 
@@ -82,3 +83,7 @@ for a missing `repoos.toml`.
   auth work is what surfaced `repoos.toml` being git-tracked as a live
   problem (secrets), and this task is the follow-up for the unrelated but
   adjacent noisy-diff problem (personal UI prefs), not a dependency of it.
+
+## Activity
+
+- 2026-08-19T07:39:32Z · model_override
