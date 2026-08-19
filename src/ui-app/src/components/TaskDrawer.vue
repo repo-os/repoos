@@ -616,6 +616,27 @@ async function stopPreview(): Promise<void> {
   }
 }
 
+/**
+ * Manual fallback for the auto-launched review preview (#0198): that
+ * auto-launch only fires on the transition INTO `review`, so a task that
+ * lands there some other way (or whose agent handoff never emitted the
+ * request signal, or that skipped straight past auto-launch for any other
+ * reason) can sit in review with no preview and no way to get one short of
+ * a fresh agent turn. This button is shown only when review has no live
+ * preview yet, so it never duplicates or interferes with the automatic one.
+ */
+async function startPreview(): Promise<void> {
+  if (!ui.active || previewBusy.value) return;
+  previewBusy.value = true;
+  try {
+    await repo.startPreview(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    previewBusy.value = false;
+  }
+}
+
 // ---- agent review (0101) ----
 
 /**
@@ -2055,7 +2076,8 @@ function resetFreeformOverrides(): void {
             class="quickbar-row"
           >
             <!-- Previews are auto-launched when a task lands in review (#0198);
-                 no manual start button — the live URL simply appears when ready. -->
+                 the live URL simply appears when ready. A manual "Start preview"
+                 fallback (below) covers review tasks where that didn't happen. -->
             <div class="preview-live">
               <span class="preview-dot"></span>
               <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
@@ -2085,6 +2107,22 @@ function resetFreeformOverrides(): void {
             No git worktree is checked out for
             <span class="mono">{{ ui.active.branch }}</span>.
           </p>
+          <div
+            v-else-if="ui.active.status === 'review' && !ui.active.preview"
+            class="quickbar-row"
+          >
+            <p class="preview-hint">
+              No preview running — the agent didn't request one before handoff.
+            </p>
+            <Button
+              variant="outline"
+              :disabled="ui.saving || previewBusy"
+              @click="startPreview"
+            >
+              <Play class="size-3.5" />
+              Start preview
+            </Button>
+          </div>
         </div>
         <div class="drawer-tabs">
           <button
