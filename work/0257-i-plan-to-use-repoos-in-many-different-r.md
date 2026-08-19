@@ -8,8 +8,9 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
-updated_at: "2026-08-19T17:30:04Z"
+updated_at: "2026-08-19T17:31:00Z"
 ---
 Now let me look at the TopBar.vue more closely to understand the repo pill styling:
 ---
@@ -126,3 +127,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 ## Activity
 
 - 2026-08-19T17:30:04Z · status draft→inbox, title, body
+- 2026-08-19T17:31:00Z · pm_model_override
