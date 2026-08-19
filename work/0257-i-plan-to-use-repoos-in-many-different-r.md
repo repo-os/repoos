@@ -8,11 +8,10 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-repo-name-pill-clickable-with-custo
-cli_override: github copilot
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
-updated_at: "2026-08-19T17:53:34Z"
+updated_at: "2026-08-19T17:53:35Z"
 ---
 ## Problem
 
@@ -129,3 +128,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 - 2026-08-19T17:53:33Z · cli_override
 - 2026-08-19T17:53:33Z · cli_override
 - 2026-08-19T17:53:34Z · cli_override
+- 2026-08-19T17:53:35Z · cli_override
