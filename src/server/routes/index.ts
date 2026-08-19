@@ -9,6 +9,7 @@ export * from "./info.js";
 export * from "./debugger.js";
 export * from "./notify.js";
 export * from "./transcribe.js";
+export * from "./auth.js";
 export { type RouteContext, type RouteHandler, type Route, type SyncResult } from "./types.js";
 export { Router } from "./router.js";
 export * from "./helpers.js";

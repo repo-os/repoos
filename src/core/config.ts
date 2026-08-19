@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
+  AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
   RepoOSConfig,
@@ -129,6 +130,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   whisper: {
     provider: "none",
     apiKey: "",
+  },
+  auth: {
+    enabled: false,
+    sessionMaxAge: 604800,
   },
 };
 
@@ -349,6 +354,49 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const watchdogAutoTransition = parsed["watchdog.autoTransition"];
     if (typeof watchdogAutoTransition === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
+    }
+
+    // [auth] section — authentication configuration.
+    const authEnabled = parsed["auth.enabled"];
+    if (typeof authEnabled === "boolean") {
+      cfg.auth = { ...cfg.auth, enabled: authEnabled };
+    }
+    // Secrets prefer an env var over the (git-tracked) config file, same
+    // fallback pattern as [whisper] above — env wins when both are set.
+    const authSessionSecret = parsed["auth.sessionSecret"] ?? process.env.REPOOS_AUTH_SESSION_SECRET;
+    if (typeof authSessionSecret === "string" && authSessionSecret) {
+      cfg.auth = { ...cfg.auth, sessionSecret: authSessionSecret };
+    }
+    const authSessionMaxAge = parsed["auth.sessionMaxAge"];
+    if (typeof authSessionMaxAge === "number" && authSessionMaxAge >= 300) {
+      cfg.auth = { ...cfg.auth, sessionMaxAge: authSessionMaxAge };
+    }
+    const authBootstrapAdmin = parsed["auth.bootstrapAdmin"];
+    if (typeof authBootstrapAdmin === "string") {
+      cfg.auth = { ...cfg.auth, bootstrapAdmin: authBootstrapAdmin };
+    }
+    // Email provider — fromAddress isn't sensitive and stays config-only;
+    // apiKey may come from the config file or REPOOS_RESEND_API_KEY.
+    const emailProviderType = parsed["auth.emailProvider.type"];
+    if (typeof emailProviderType === "string" && emailProviderType === "resend") {
+      const emailApiKey = parsed["auth.emailProvider.apiKey"] ?? process.env.REPOOS_RESEND_API_KEY;
+      const emailFrom = parsed["auth.emailProvider.fromAddress"];
+      if (typeof emailApiKey === "string" && emailApiKey && typeof emailFrom === "string") {
+        cfg.auth = {
+          ...cfg.auth,
+          emailProvider: { type: "resend", apiKey: emailApiKey, fromAddress: emailFrom },
+        };
+      }
+    }
+    // Google OAuth — clientId isn't sensitive and stays config-only;
+    // clientSecret may come from the config file or REPOOS_GOOGLE_CLIENT_SECRET.
+    const googleClientId = parsed["auth.google.clientId"];
+    const googleClientSecret = parsed["auth.google.clientSecret"] ?? process.env.REPOOS_GOOGLE_CLIENT_SECRET;
+    if (typeof googleClientId === "string" && typeof googleClientSecret === "string" && googleClientSecret) {
+      cfg.auth = {
+        ...cfg.auth,
+        google: { clientId: googleClientId, clientSecret: googleClientSecret },
+      };
     }
   }
 
@@ -581,6 +629,24 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: "",
       description:
         "API key for the selected provider (never sent to browser; stored in repoos.toml or REPOOS_WHISPER_KEY env var)",
+    },
+    {
+      key: "auth.enabled",
+      label: "Authentication",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description: "Require login to access RepoOS (email OTP or Google OAuth)",
+    },
+    {
+      key: "auth.sessionMaxAge",
+      label: "Session duration (seconds)",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "604800",
+      description: "How long a login session lasts in seconds (default 604800 = 7 days)",
     },
   ];
 }
