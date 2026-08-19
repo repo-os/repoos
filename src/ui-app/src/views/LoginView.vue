@@ -218,9 +218,11 @@ function googleLogin(): void {
               class="login-input"
               @keyup.enter="requestOtp"
             />
-            <button class="login-btn primary" :disabled="sending || !email.trim()" @click="requestOtp">
-              {{ sending ? "Sending..." : "Send code" }}
-            </button>
+            <p class="mt-4 text-right">
+                <button class="login-btn primary" :disabled="sending || !email.trim()" @click="requestOtp">
+                    {{ sending ? "Sending..." : "Send code" }}
+                </button>
+            </p>
           </div>
           <div v-else class="login-no-provider">
             <p>Email provider not configured.</p>
@@ -392,6 +394,7 @@ function googleLogin(): void {
 }
 
 .login-input {
+    width:100%;
   padding: 12px 15px;
   border: 1px solid var(--border);
   border-radius: 10px;
