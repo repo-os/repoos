@@ -223,7 +223,8 @@ function googleLogin(): void {
             </button>
           </div>
           <div v-else class="login-no-provider">
-            <p>Email provider not configured. Contact your administrator.</p>
+            <p>Email provider not configured.</p>
+            <p>Contact your administrator.</p>
           </div>
 
           <div v-if="hasGoogle" class="login-divider">
