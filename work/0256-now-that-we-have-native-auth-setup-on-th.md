@@ -8,9 +8,10 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 pm_model_override: default
 created_at: "2026-08-19T13:04:26Z"
-updated_at: "2026-08-19T13:07:06Z"
+updated_at: "2026-08-19T13:18:50Z"
 ---
 ## Problem
 
@@ -87,3 +88,4 @@ now that we have native auth setup on the server let's simplify the cloudflare p
 ## Activity
 
 - 2026-08-19T13:07:06Z · status draft→inbox, title, area, type, body
+- 2026-08-19T13:18:50Z · model_override
