@@ -2,14 +2,14 @@
 id: "0260"
 title: Isolate the UI smoke test from the live repo board
 type: perf
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/isolate-the-ui-smoke-test-from-the-live-
 created_at: "2026-08-19T18:55:42Z"
-updated_at: "2026-08-19T19:00:26Z"
+updated_at: "2026-08-19T19:00:28Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ unrelated job-recovery and preview-auto-launch overhead.
 
 - 2026-08-19T18:56:20Z · body
 - 2026-08-19T19:00:26Z · status inbox→ready
+- 2026-08-19T19:00:28Z · status ready→active, branch
