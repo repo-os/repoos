@@ -272,11 +272,25 @@ export const bootstrapAdmin: RouteHandler = async (ctx, req, res) => {
   if (store.listUsers().length > 0) {
     return json(res, 400, { error: "Users already exist — use the admin panel instead" });
   }
+  // Startup already fails closed when auth is enabled with zero users and no
+  // bootstrapAdmin configured (server.ts), so this is always set here — but
+  // guard anyway rather than trust that invariant blindly.
+  const configuredAdmin = config.auth?.bootstrapAdmin?.trim().toLowerCase();
+  if (!configuredAdmin) {
+    return json(res, 400, { error: "No bootstrap admin email is configured" });
+  }
 
   const body = (await readBody(req)) as Record<string, unknown>;
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!isValidEmail(email)) {
     return json(res, 400, { error: "Valid email address required" });
+  }
+  // Only the operator-configured email may claim the founding admin account —
+  // otherwise the first visitor to reach /login on a fresh instance (which,
+  // per this task's own premise, may be sitting behind a public Cloudflare
+  // Tunnel) could self-appoint as admin before the real owner ever logs in.
+  if (email !== configuredAdmin) {
+    return json(res, 403, { error: "This email is not authorized to bootstrap the admin account" });
   }
 
   // Create the admin user
