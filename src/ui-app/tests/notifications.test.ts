@@ -401,17 +401,39 @@ describe("transition detection (repo store)", () => {
     expect(FakeNotification.instances[0].title).toBe("Task looks stuck");
   });
 
-  it("fires paused on agent.exited for an active task", async () => {
+  it("fires paused on agent.exited for an active task (after debounce)", async () => {
     const n = useNotificationsStore();
     n.setPushEnabled(true);
     n.setTypeEnabled("paused", true);
     const { es } = await bootRepo();
     es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
     es.emit("agent.running", { type: "agent.running", id: "0001" });
+    // Install fake timers *before* the exit event so the debounce setTimeout
+    // is scheduled on the fake timer and can be advanced deterministically.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+    vi.advanceTimersByTime(3000);
+    vi.useRealTimers();
     await flush();
     expect(FakeNotification.instances).toHaveLength(1);
     expect(FakeNotification.instances[0].title).toBe("Task paused");
+  });
+
+  it("cancels pending paused notification when a new turn starts immediately", async () => {
+    const n = useNotificationsStore();
+    n.setPushEnabled(true);
+    n.setTypeEnabled("paused", true);
+    const { es } = await bootRepo();
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+    // A new turn starts before the debounce window completes.
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    vi.advanceTimersByTime(3000);
+    vi.useRealTimers();
+    await flush();
+    expect(FakeNotification.instances).toHaveLength(0);
   });
 
   it("does not fire paused when the active task handed off to review first", async () => {
@@ -420,14 +442,21 @@ describe("transition detection (repo store)", () => {
     n.setTypeEnabled("paused", true);
     const { es } = await bootRepo();
     es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    // On a real handoff, the server emits agent.exited BEFORE task.updated
+    // (active→review). The debounce timer fires after 3 s and sees the task
+    // is no longer active — so no false "paused" notification fires.
+    es.emit("agent.running", { type: "agent.running", id: "0001" });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    es.emit("agent.exited", { type: "agent.exited", id: "0001" });
     es.emit("task.updated", {
       type: "task.updated",
       prev: { status: "active", needsInput: false },
       task: makeTask({ status: "review" }),
     });
-    es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+    vi.advanceTimersByTime(3000);
+    vi.useRealTimers();
     await flush();
-    // Status is review by the time the agent exits — not a pause.
+    // Status is review by the time the debounce fires — not a pause.
     expect(FakeNotification.instances).toHaveLength(0);
   });
 });

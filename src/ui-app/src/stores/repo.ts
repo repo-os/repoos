@@ -232,6 +232,16 @@ export const useRepoStore = defineStore("repo", () => {
   const runningIds = ref<string[]>([]);
   /** When each task's agent last exited (ms timestamp), for the "paused" grace period. */
   const agentExitedAt = ref<Record<string, number>>({});
+  /**
+   * Debounce timers for paused notifications (0100). When an agent exits on an
+   * active task we wait briefly before firing "paused" — if a new turn starts
+   * (agent.running) or the task status changes (e.g. handoff to review), the
+   * timer is cancelled. This prevents false "paused" notifications on every
+   * normal turn boundary and on the server-side race where agent.exited is
+   * emitted before the handoff's task.updated.
+   */
+  const pendingPauseTimers = ref<Record<string, ReturnType<typeof setTimeout>>>({});
+  const PAUSE_DEBOUNCE_MS = 3000;
   const outputs = ref<Record<string, AgentOutputEntry[]>>({});
   /** Live run telemetry per task (time/tokens/cost/stalled), keyed by task id. */
   const agentStats = ref<Record<string, AgentSessionStats>>({});
@@ -534,6 +544,13 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
+      // Cancel any pending "paused" debounce — a new turn is starting.
+      if (pendingPauseTimers.value[e.id]) {
+        clearTimeout(pendingPauseTimers.value[e.id]);
+        const next = { ...pendingPauseTimers.value };
+        delete next[e.id];
+        pendingPauseTimers.value = next;
+      }
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
@@ -572,12 +589,28 @@ export const useRepoStore = defineStore("repo", () => {
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
       // A deliberate pause (0100): a running agent stops on a task that stays
-      // `active` (and neither needs input nor handed off to review). The
-      // `active` gate excludes a normal handoff, whose status moves off
-      // `active` before the process exits.
-      const exited = tasks.value.find((t) => t.id === e.id);
-      if (wasRunning && exited && exited.status === "active" && !exited.needsInput) {
-        notifyAttention("paused", exited);
+      // `active` (and neither needs input nor handed off to review).  Instead
+      // of firing immediately we debounce — a new turn (agent.running) or a
+      // status change (task.updated for the handoff) will cancel the timer.
+      // This avoids two races:
+      //  1. Every normal turn boundary emits agent.exited while the task
+      //     remains active; the next agent.running cancels the pending timer.
+      //  2. On a handoff the server emits agent.exited *before* the
+      //     handoff's task.updated (active→review); the timer fires after
+      //     3 s and sees the task is no longer active, so no false "paused".
+      if (wasRunning) {
+        const timer = setTimeout(() => {
+          const next = { ...pendingPauseTimers.value };
+          delete next[e.id];
+          pendingPauseTimers.value = next;
+          const exited = tasks.value.find((t) => t.id === e.id);
+          if (exited && exited.status === "active" && !exited.needsInput) {
+            notifyAttention("paused", exited);
+          }
+        }, PAUSE_DEBOUNCE_MS);
+        const prev = pendingPauseTimers.value[e.id];
+        if (prev) clearTimeout(prev);
+        pendingPauseTimers.value = { ...pendingPauseTimers.value, [e.id]: timer };
       }
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
       if (outputs.value[e.id]) {
