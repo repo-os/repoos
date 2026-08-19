@@ -8,6 +8,7 @@ import {
   cmdList,
   cmdShow,
   cmdMv,
+  cmdUpdate,
   cmdNew,
   cmdIndex,
 } from "../commands/tasks.js";
@@ -34,6 +35,7 @@ function help(): void {
     ${c.cyan("list")} [status]        Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
+    ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim('flags: --title --area --priority --type --body --branch --assigned-to')}
     ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority')}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
@@ -46,6 +48,7 @@ function help(): void {
     ${c.dim("$")} repoos new "Add company dashboard" --ai --type feature --area web --priority p1
     ${c.dim("$")} repoos new-doc "API design doc for the payment system"
     ${c.dim("$")} repoos mv 0012 active
+    ${c.dim("$")} repoos update 0012 --title "New title" --area web
     ${c.dim("$")} repoos list ready
     ${c.dim("$")} repoos index --json   ${c.dim("# machine-readable, for agents/tools")}
     ${c.dim("$")} repoos serve          ${c.dim("# live API + SSE at http://127.0.0.1:7171")}
@@ -85,6 +88,9 @@ function main(): void {
     case "mv":
     case "move":
       cmdMv(rest[0], rest[1]);
+      break;
+    case "update":
+      cmdUpdate(rest);
       break;
     case "new":
     case "add":
