@@ -92,6 +92,23 @@ server.listen(port, host);
 setTimeout(() => process.exit(1), 150);
 `;
 
+/** Binds and responds, but never answers the reload handshake — always "failed". */
+const FAKEBIN_NEVER_CONFIRM = `#!/usr/bin/env node
+const http = require("node:http");
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({
+  pid: process.pid, args, neverConfirm: true,
+}) + "\\n");
+const port = Number(args[args.indexOf("--port") + 1]);
+const host = args[args.indexOf("--host") + 1] || "127.0.0.1";
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ ok: true }));
+});
+server.listen(port, host);
+`;
+
 /** A failed replacement that starts a descendant before it becomes ready. */
 const FAKEBIN_WITH_DESCENDANT = `#!/usr/bin/env node
 const { spawn } = require("node:child_process");
@@ -121,6 +138,7 @@ interface Fixture {
   deadCli: string;
   flashCli: string;
   descendantCli: string;
+  neverConfirmCli: string;
   log: string;
   port: number;
   clean: () => void;
@@ -157,6 +175,7 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(bin, "repoos-dead"), FAKEBIN_DEAD, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-never-confirm"), FAKEBIN_NEVER_CONFIRM, { mode: 0o755 });
   const port = await reservePort();
   return {
     repo,
@@ -165,6 +184,7 @@ async function makeFixture(): Promise<Fixture> {
     deadCli: join(bin, "repoos-dead"),
     flashCli: join(bin, "repoos-flash"),
     descendantCli: join(bin, "repoos-descendant"),
+    neverConfirmCli: join(bin, "repoos-never-confirm"),
     log: join(root, "spawns.log"),
     port,
     clean: () => rmSync(root, { recursive: true, force: true }),
@@ -524,6 +544,55 @@ describe("ReloadManager", () => {
         "flash replacement process is gone",
       );
     } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("#leak: never leaves an orphaned replacement alive when poll ticks race the failure cleanup", async () => {
+    // Regression for a real incident: `reloading` was reset to false BEFORE
+    // killChild()/tryRebind() finished, reopening reload()'s re-entry guard
+    // mid-cleanup. A fast poll tick firing in that window started a new
+    // reload() that overwrote `this.child` with the NEW attempt before the
+    // failed attempt's killChild() read it — so killChild() killed the wrong
+    // (newer) process and the original failed replacement leaked forever,
+    // unmanaged. A fast poll interval against a replacement that never
+    // confirms reproduces many overlapping poll ticks during one failed
+    // attempt's cleanup window.
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.neverConfirmCli,
+      pollMs: 30,
+      handshakeTimeoutMs: 400,
+      graceMs: 20,
+      confirmMs: 50,
+    });
+    try {
+      manager.start();
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+
+      await waitFor(() => calls.failed > 0, "first reload failure reported");
+      // Let any racing poll ticks that fired during the cleanup window settle.
+      await sleep(500);
+
+      const allPids = spawns(fx)
+        .map((s) => s.pid)
+        .filter((pid): pid is number => typeof pid === "number");
+      expect(allPids.length).toBeGreaterThan(0);
+      const alive = allPids.filter((pid) => {
+        try {
+          process.kill(pid, 0);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+      // Every spawned replacement so far must be dead — none leaked, even
+      // though the manager may have legitimately retried more than once.
+      expect(alive).toEqual([]);
+    } finally {
+      await killReplacement(fx);
       manager.stop();
       fx.clean();
     }

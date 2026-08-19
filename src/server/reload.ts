@@ -432,9 +432,11 @@ export class ReloadManager {
       // A close-out started while the replacement was warming up. Handing over
       // now would kill the server mid-pipeline (0143), so abort the reload:
       // kill the replacement, re-bind, and park the new build for the user.
-      this.reloading = false;
+      // `reloading` stays true until cleanup finishes — see the failure branch
+      // below for why resetting it earlier is unsafe (#leak).
       await this.killChild();
       const rebound = await this.tryRebind();
+      this.reloading = false;
       const current = readBuildHash(this.options.root);
       if (current !== null && this.loadedHash !== null && current !== this.loadedHash) {
         this.parkBuild(current);
@@ -450,9 +452,18 @@ export class ReloadManager {
       );
       await this.options.onReloadConfirmed();
     } else {
-      this.reloading = false;
+      // #leak: `reloading` must stay true for the whole cleanup, not just the
+      // spawn+wait phase. Resetting it before killChild()/tryRebind() complete
+      // reopens the reload() re-entry guard mid-cleanup — a poll tick or
+      // fs.watch event firing in that window starts a NEW reload(), which
+      // overwrites `this.child` with the new attempt before this failed
+      // attempt's killChild() reads it. killChild() then kills the WRONG
+      // (newer) child while the original failed replacement leaks forever,
+      // unmanaged. Under load (many poll ticks racing a slow cleanup) this
+      // fires repeatedly and accumulates orphaned `repoos serve` processes.
       await this.killChild();
       const rebound = await this.tryRebind();
+      this.reloading = false;
       this.log(
         `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
       );
