@@ -172,7 +172,6 @@ function formatDate(iso: string): string {
           <div class="auth-user-info">
             <span class="auth-user-email">{{ user.email }}</span>
             <span class="auth-user-role" :class="user.role">{{ user.role }}</span>
-            <span class="auth-user-source">{{ user.authSource }}</span>
           </div>
           <div class="auth-user-actions">
             <button class="auth-action" @click="toggleRole(user)">
@@ -278,10 +277,6 @@ function formatDate(iso: string): string {
 .auth-user-role.member {
   background: #f3f4f6;
   color: #374151;
-}
-.auth-user-source {
-  font-size: 11px;
-  color: var(--text-secondary, #999);
 }
 .auth-user-actions {
   display: flex;
