@@ -2,7 +2,7 @@
 id: "0257"
 title: Make repo name pill clickable with customizable pastel background color
 type: feature
-status: ready
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/make-repo-name-pill-clickable-with-custo
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T17:27:44Z"
-updated_at: "2026-08-19T17:48:11Z"
+updated_at: "2026-08-19T18:27:17Z"
 ---
 ## Problem
 
@@ -122,3 +122,4 @@ I plan to use RepoOS in many different repos and it will be hard to tell them ap
 - 2026-08-20T00:00:00Z · title, area, body corrected (previous PM write corrupted the file with a nested frontmatter block)
 - 2026-08-19T17:47:23Z · model_override
 - 2026-08-19T17:48:11Z · status inbox→ready
+- 2026-08-19T18:27:17Z · status ready→review
