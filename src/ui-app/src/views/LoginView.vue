@@ -151,12 +151,16 @@ function googleLogin(): void {
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" />
-          <path d="M2 17l10 5 10-5" />
-          <path d="M2 12l10 5 10-5" />
-        </svg>
-        <h1>RepoOS</h1>
+        <div class="login-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" />
+            <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <h1>RepoOS</h1>
+          <span class="login-tagline mono">repo is the os</span>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -253,85 +257,149 @@ function googleLogin(): void {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg, #f5f5f5);
-  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  background: var(--body-gradient), var(--bg);
+  padding: 24px;
+  font-family: var(--font-sans);
+}
+
+/* soft ambient glow behind the card, echoing the app's neon/glass look */
+.login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(680px 420px at 15% 12%, rgba(57, 224, 255, 0.14), transparent 60%),
+    radial-gradient(720px 480px at 88% 92%, rgba(157, 123, 255, 0.16), transparent 55%);
 }
 
 .login-card {
-  background: var(--surface, #fff);
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  padding: 40px;
-  max-width: 400px;
+  position: relative;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--card-glow), 0 24px 60px -20px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  padding: 48px 44px;
+  max-width: 460px;
   width: 100%;
 }
 
 .login-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.login-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(from 200deg, var(--cyan), var(--violet), var(--cyan));
+  box-shadow: var(--logo-shadow);
+}
+
+.login-logo::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 9px;
+  background: var(--bg-2);
+}
+
+.login-logo svg {
+  position: relative;
+  z-index: 1;
 }
 
 .login-header h1 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
-  color: var(--text, #1a1a1a);
+  color: var(--txt);
+}
+
+.login-tagline {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  margin-top: 3px;
 }
 
 .login-body h2 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 700;
   margin: 0 0 8px 0;
-  color: var(--text, #1a1a1a);
+  color: var(--txt);
 }
 
 .login-subtitle {
-  color: var(--text-secondary, #666);
+  color: var(--txt-dim);
   font-size: 14px;
-  margin: 0 0 20px 0;
+  line-height: 1.5;
+  margin: 0 0 22px 0;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .login-input {
-  padding: 10px 14px;
-  border: 1px solid var(--border, #ddd);
-  border-radius: 8px;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   font-size: 15px;
-  background: var(--surface, #fff);
-  color: var(--text, #1a1a1a);
+  background: var(--panel);
+  color: var(--txt);
   outline: none;
-  transition: border-color 0.15s;
+  font-family: inherit;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.login-input::placeholder {
+  color: var(--txt-faint);
 }
 
 .login-input:focus {
-  border-color: var(--accent, #3b82f6);
+  border-color: var(--border-bright);
+  background: var(--panel-solid);
 }
 
 .otp-input {
-  font-size: 24px;
+  font-size: 26px;
   text-align: center;
-  letter-spacing: 8px;
-  font-weight: 600;
+  letter-spacing: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .login-btn {
-  padding: 10px 16px;
+  padding: 12px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
+  transition: filter 0.15s, opacity 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
 .login-btn:disabled {
@@ -340,28 +408,33 @@ function googleLogin(): void {
 }
 
 .login-btn.primary {
-  background: var(--accent, #3b82f6);
-  color: white;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-color);
+  border: 1px solid var(--border-bright);
 }
 
 .login-btn.primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
+  filter: brightness(1.12);
 }
 
 .login-btn.google {
-  background: white;
-  color: #333;
-  border: 1px solid #ddd;
+  background: var(--panel);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-btn.google:hover:not(:disabled) {
-  background: #f9f9f9;
+  border-color: var(--border-bright);
+  background: var(--panel-solid);
 }
 
 .login-divider {
   text-align: center;
   position: relative;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .login-divider::before {
@@ -371,14 +444,14 @@ function googleLogin(): void {
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--border, #ddd);
+  background: var(--border);
 }
 
 .login-divider span {
-  background: var(--surface, #fff);
+  background: var(--panel-solid);
   padding: 0 12px;
   position: relative;
-  color: var(--text-secondary, #999);
+  color: var(--txt-faint);
   font-size: 13px;
 }
 
@@ -392,19 +465,20 @@ function googleLogin(): void {
 .login-link {
   background: none;
   border: none;
-  color: var(--accent, #3b82f6);
+  color: var(--cyan);
   cursor: pointer;
   font-size: 13px;
   padding: 4px;
+  font-family: inherit;
 }
 
 .login-link:disabled {
-  color: var(--text-secondary, #999);
+  color: var(--txt-faint);
   cursor: not-allowed;
 }
 
 .login-error {
-  color: #dc2626;
+  color: var(--red);
   font-size: 13px;
   margin-top: 8px;
   text-align: center;
@@ -417,10 +491,10 @@ function googleLogin(): void {
 }
 
 .spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--border, #ddd);
-  border-top-color: var(--accent, #3b82f6);
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--border);
+  border-top-color: var(--cyan);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -432,6 +506,12 @@ function googleLogin(): void {
 .login-no-provider {
   text-align: center;
   padding: 24px;
-  color: var(--text-secondary, #666);
+  color: var(--txt-dim);
+}
+
+@media (max-width: 520px) {
+  .login-card {
+    padding: 36px 26px;
+  }
 }
 </style>

@@ -146,7 +146,7 @@ export class AuthStore {
       const cacheDir = join(repoRoot, ".repoos");
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
       const dbPath = join(cacheDir, "repoos.db");
-      this.db = new Database(dbPath, { mode: "rwc" });
+      this.db = new Database(dbPath);
       this.db.exec("PRAGMA journal_mode=WAL");
       this.db.exec("PRAGMA synchronous=NORMAL");
       this.db.exec(AUTH_MIGRATION);
