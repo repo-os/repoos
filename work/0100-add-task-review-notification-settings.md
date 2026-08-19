@@ -2,7 +2,7 @@
 id: "0100"
 title: Add task notification settings for state transitions requiring attention
 type: feature
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: ui
@@ -12,7 +12,7 @@ branch: feat/add-task-notification-settings-for-state
 model_override: default
 pm_model_override: default
 created_at: "2026-08-11T16:18:32Z"
-updated_at: "2026-08-19T17:35:04Z"
+updated_at: "2026-08-19T18:58:07Z"
 ---
 ## Problem
 
@@ -77,3 +77,4 @@ This task covers bell sounds and browser push notifications for task state trans
 - 2026-08-18T15:16:28Z · status review→active
 - 2026-08-19T17:21:27Z · status active→review
 - 2026-08-19T17:35:04Z · pm_model_override
+- 2026-08-19T18:58:07Z · status review→done, release:success
