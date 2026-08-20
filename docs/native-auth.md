@@ -94,6 +94,18 @@ You don't need Access to use native auth safely, and turning on native auth
 doesn't require touching your tunnel or Access configuration at all — they
 compose independently.
 
+By default, `repoos tunnel create` **always** sets up a Cloudflare Access
+policy for every app (an empty allowlist denies everyone — there's no way to
+end up with a publicly reachable app through the normal flow). To actually
+skip Access and rely on native auth alone, pass `--no-access` explicitly:
+
+```bash
+repoos tunnel create dev --port 7171 --domain dev.example.com --no-access
+```
+
+This refuses to run unless `auth.enabled = true` is already set — otherwise
+the app would have no login at all, from either layer.
+
 ## Troubleshooting
 
 - **Config changes not taking effect**: `[auth]` is restart-tier — restart

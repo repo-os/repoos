@@ -18,7 +18,7 @@ const copied = ref("");
 const plan = ref<TunnelPublishPlan | null>(null);
 const errors = ref<string[]>([]);
 const readiness = ref<Record<string, any> | null>(null);
-const form = reactive({ zone: "repoos.org", app: "dev", port: "7171", emails: "you@example.com", runMode: "foreground" as "foreground" | "background" });
+const form = reactive({ zone: "repoos.org", app: "dev", port: "7171", emails: "you@example.com", runMode: "foreground" as "foreground" | "background", noAccess: false });
 let copiedTimer: number | undefined;
 
 const status = computed(() => {
@@ -32,8 +32,9 @@ async function refreshReadiness(): Promise<void> {
 }
 
 function preview(): void {
-  errors.value = validateTunnelPublishInput({ ...form, port: Number(form.port) });
-  plan.value = errors.value.length ? null : buildTunnelPublishPlan({ ...form, port: Number(form.port) });
+  const input = { ...form, port: Number(form.port) };
+  errors.value = validateTunnelPublishInput(input);
+  plan.value = errors.value.length ? null : buildTunnelPublishPlan(input);
 }
 
 async function copyCommand(command: string): Promise<void> {
@@ -71,9 +72,17 @@ onMounted(() => { void refreshReadiness(); });
           <label>Cloudflare zone/base domain<Input v-model="form.zone" placeholder="repoos.org" /></label>
           <label>App or subdomain<Input v-model="form.app" placeholder="dev" /></label>
           <label>Local port<Input v-model="form.port" type="number" min="1" max="65535" placeholder="7171" /></label>
-          <label>Allowed email address(es)<Input v-model="form.emails" placeholder="you@example.com, team@example.com" /></label>
+          <label v-if="!form.noAccess">Allowed email address(es)<Input v-model="form.emails" placeholder="you@example.com, team@example.com" /></label>
           <label>Run mode<select v-model="form.runMode"><option value="foreground">Foreground (development)</option><option value="background">Background service</option></select></label>
         </div>
+        <label class="tunnel-no-access-toggle">
+          <input type="checkbox" v-model="form.noAccess" />
+          Skip Cloudflare Access — fully public tunnel, RepoOS native auth only
+        </label>
+        <p v-if="form.noAccess" class="tunnel-help tunnel-no-access-warning">
+          No Access policy will be created at all. This only refuses to publish if RepoOS native auth
+          (<code>auth.enabled = true</code>) isn't already on — see the Authentication settings above.
+        </p>
         <p class="tunnel-help">Port 7171 is RepoOS. Use 3000 only when the intended local app actually listens on 3000.</p>
         <Button @click="preview">Validate and preview commands</Button>
         <div v-if="errors.length" class="tunnel-errors"><div v-for="error in errors" :key="error">{{ error }}</div></div>
@@ -86,6 +95,7 @@ onMounted(() => { void refreshReadiness(); });
               <Button variant="outline" size="sm" :aria-label="`Copy ${command}`" @click="copyCommand(command)"><Check v-if="copied === command" class="size-[14px]" /><Clipboard v-else class="size-[14px]" />{{ copied === command ? "Copied" : "Copy" }}</Button>
             </div>
           </div>
+          <p class="tunnel-help" :class="{ 'tunnel-no-access-warning': plan.noAccess }">{{ plan.authNote }}</p>
         </div>
 
         <div class="tunnel-readiness">
