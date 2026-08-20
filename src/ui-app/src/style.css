@@ -856,6 +856,13 @@
   .task-usage-role-list{display:flex;flex-direction:column;gap:4px;margin-top:6px}
   .task-usage-role{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--txt-dim)}
   .task-usage-role-name{text-transform:capitalize;color:var(--cyan);min-width:70px}
+  .task-usage-sessions{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .task-usage-session-list{display:flex;flex-direction:column;gap:3px;margin-top:6px;overflow-x:auto}
+  .task-usage-session-row{display:grid;grid-template-columns:76px 1fr 96px 96px 56px 56px 72px;gap:8px;font-size:11px;color:var(--txt-dim);white-space:nowrap;align-items:center}
+  .task-usage-session-head{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-faint)}
+  .task-usage-session-type{text-transform:capitalize;color:var(--cyan)}
+  .task-usage-session-active{color:var(--txt)}
+  .task-usage-session-active .task-usage-session-type{color:var(--green)}
   .branch-note{margin-left:8px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
   .preview-live{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--cyan-dim);background:var(--cyan-dim);margin-bottom:8px}
   .preview-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);flex:none;animation:tcpulse 1.1s ease-in-out infinite}
