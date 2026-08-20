@@ -126,7 +126,7 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, killTrackedProcess, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
@@ -1405,6 +1405,34 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/stats/board", getBoardStats);
   router.register("GET", "/api/stats/by-type", getSessionTypeStats);
   router.register("GET", "/api/stats/daily", getDailyTotals);
+
+  // System resource routes
+  router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {
+    const body = (await readBody(req)) as { pid?: unknown };
+    const pid = body.pid;
+    if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) {
+      return json(res, 400, { error: "pid must be a positive integer" });
+    }
+    if (pid === process.pid) {
+      return json(res, 400, { error: "refusing to kill the control-plane process itself" });
+    }
+    // Only ever kill a PID RepoOS itself is currently tracking — a fresh
+    // sample, not the client's say-so, is what authorizes the kill. This is
+    // the same trust boundary reapStrayServeProcesses already uses.
+    const stats = sampleSystem({
+      serverPid: process.pid,
+      cacheDir: join(config.root, config.cacheDir),
+      runningAgents: runner.running(),
+      knownServePids: previews.knownPids(),
+    });
+    const known = new Set(stats.processes.map((p) => p.pid));
+    for (const p of stats.serve?.processes ?? []) known.add(p.pid);
+    if (!known.has(pid)) {
+      return json(res, 404, { error: `pid ${pid} is not a RepoOS-tracked process` });
+    }
+    const ok = killTrackedProcess(pid);
+    return json(res, ok ? 200 : 404, ok ? { ok: true } : { error: "process was already gone" });
+  });
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
