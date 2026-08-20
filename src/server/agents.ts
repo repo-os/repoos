@@ -390,15 +390,18 @@ export function usageCostSource(
  * and review sessions are keyed by the task id directly. PM chats are keyed by
  * a synthetic `pm-task-v2:<id>` id whose suffix is the actual task — attribute
  * them under that real id so PM cost/tokens aggregate per-task. Non-task chats
- * (guide) have no task and return null.
+ * (guide) have no task and return null. Per-user PM sessions (0248) append
+ * `::<email>` after the task id; that suffix is stripped here too so cost
+ * attribution doesn't treat "<id>::<email>" as the task id.
  */
 export function resolveSessionTaskId(taskKey: string | undefined): string | null {
   if (!taskKey) return null;
   // Each alternative has a strict literal prefix so nothing else is captured;
-  // covers the current `pm-task-v2:<id>` scheme and the legacy `pm-task:<id>` /
-  // `pm:<id>` forms without mis-parsing their suffixes (0230 / review).
+  // covers the current `pm-task-v2:<id>` scheme (with or without a `::<email>`
+  // per-user suffix) and the legacy `pm-task:<id>` / `pm:<id>` forms, without
+  // mis-parsing their suffixes (0230 / review).
   const pm =
-    taskKey.match(/^pm-task-v2:(.+)$/i) ??
+    taskKey.match(/^pm-task-v2:([^:]+)(?:::.*)?$/i) ??
     taskKey.match(/^pm-task:(.+)$/i) ??
     taskKey.match(/^pm:(.+)$/i);
   if (pm) return pm[1] || null;
@@ -3206,10 +3209,11 @@ export class AgentRunner {
 
   private sessionFile(taskId: string): string | null {
     // IDs can name both tasks and durable non-task conversations such as
-    // `pm-task:0209`. Keep the input strictly filename-safe, then escape the
-    // only cross-platform-invalid separator before constructing the path.
-    if (!/^[A-Za-z0-9._:-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
-    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A")}.json`);
+    // `pm-task-v2:0209::alice@example.com` (per-user PM chat, 0248). Keep the
+    // input strictly filename-safe, then escape the cross-platform-invalid
+    // separators before constructing the path.
+    if (!/^[A-Za-z0-9._:@-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
+    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A").replaceAll("@", "%40")}.json`);
   }
 
   /** Read and validate one versioned file. Corruption/version drift fails soft. */

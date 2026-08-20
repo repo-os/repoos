@@ -6,6 +6,7 @@ import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
@@ -34,6 +35,7 @@ import AgentModelControl from "./AgentModelControl.vue";
 const repo = useRepoStore();
 const ui = useUiStore();
 const config = useConfigStore();
+const auth = useAuthStore();
 const router = useRouter();
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
@@ -870,9 +872,13 @@ watch(
 
 // ---- PM tab ----
 
-/** Generate session ID for PM chat on a specific task. */
+/**
+ * Generate session ID for PM chat on a specific task. Per-user when auth is
+ * on (0248), so teammates sharing one instance each get their own PM
+ * conversation per task. Matches the server's pmMessage route.
+ */
 function pmSessionId(taskId: string): string {
-  return `pm-task-v2:${taskId}`;
+  return auth.email ? `pm-task-v2:${taskId}::${auth.email}` : `pm-task-v2:${taskId}`;
 }
 
 const pmDraft = ref("");

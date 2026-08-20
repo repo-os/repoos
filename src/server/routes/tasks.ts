@@ -981,8 +981,13 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   }
 
   // v2 deliberately starts a clean PM conversation: older PM chats were
-  // incorrectly launched with Ross's read-only mission.
-  const pmSessionId = `pm-task-v2:${id}`;
+  // incorrectly launched with Ross's read-only mission. When auth is on,
+  // each user gets their own PM conversation per task (0248) — otherwise
+  // teammates sharing one instance would all read and post into the same
+  // thread. Falls back to the unscoped id when auth is off, matching every
+  // existing single-user setup exactly as before.
+  const currentUserEmail = getCurrentUser(req, config)?.email;
+  const pmSessionId = currentUserEmail ? `pm-task-v2:${id}::${currentUserEmail}` : `pm-task-v2:${id}`;
   const body = (await readBody(req)) as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) {
