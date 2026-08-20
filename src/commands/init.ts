@@ -141,8 +141,47 @@ function repoosToml(layout: "root" | "repoos"): string {
 
 ${ns}defaultStatus = "inbox"
 defaultAssignee = "unassigned"
+
+# Optional features, off by default — uncomment to turn them on. Real
+# secrets (API keys, client secrets) go in .env, never here (this file is
+# git-tracked); see .env.example for the matching variables.
+
+# [auth]                                # require login (email OTP / Google) — docs/native-auth.md
+# enabled = true
+# bootstrapAdmin = "you@example.com"    # only this email can claim the first admin account
+#
+# [auth.emailProvider]
+# type = "resend"
+# fromAddress = "noreply@yourdomain.com"
+
+# [whisper]                             # voice-to-text in text areas
+# provider = "groq"                     # or "openai"
+
+# ntfyEnabled = true                    # push notifications on task lifecycle events
+# ntfyTopic = "repoos_myproject"
+# ntfyBaseUrl = "https://ntfy.sh"       # or your self-hosted ntfy server
 `;
 }
+
+const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
+# tracked so the repo documents which secrets a full setup expects.
+# repoos serve auto-loads .env at startup; real shell/process-supervisor env
+# vars still take precedence over it.
+
+# --- Auth (docs/native-auth.md) — only used when [auth].enabled = true ---
+# REPOOS_RESEND_API_KEY=re_...
+# REPOOS_GOOGLE_CLIENT_SECRET=...
+# REPOOS_AUTH_SESSION_SECRET=...          # auto-generated on first boot if omitted
+
+# --- Voice-to-text transcription (only used when [whisper] is configured) ---
+# REPOOS_WHISPER_KEY=...                  # or GROQ_API_KEY / OPENAI_API_KEY directly
+
+# --- repoos tunnel (Cloudflare Tunnel + Access) ---
+# CLOUDFLARE_API_TOKEN=...
+
+# --- ntfy.sh push notifications ---
+# NTFY_BASE_URL=https://ntfy.sh          # or your self-hosted ntfy server
+`;
 
 const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
@@ -185,20 +224,23 @@ function scaffoldInto(
   ensureDir(config.docsDir);
   ensureFile("AGENTS.md", AGENTS_MD);
   ensureFile(join(config.workDir, "0001-set-up-repoos.md"), SAMPLE_TASK(description));
+  ensureFile(".env.example", ENV_EXAMPLE);
 
-  // gitignore the derived cache
+  // gitignore the derived cache and local secrets
   const giPath = join(root, ".gitignore");
-  const ignoreLine = `${config.cacheDir}/`;
-  if (existsSync(giPath)) {
-    const gi = readFileSync(giPath, "utf8");
-    if (!gi.split(/\r?\n/).some((l) => l.trim() === ignoreLine)) {
-      appendFileSync(giPath, `\n# RepoOS derived index cache\n${ignoreLine}\n`);
-      created.push(".gitignore (+entry)");
-    } else {
-      skipped.push(".gitignore");
-    }
+  const ignoreLines = [
+    { comment: "# RepoOS derived index cache", line: `${config.cacheDir}/` },
+    { comment: "# Local secrets — see .env.example", line: ".env" },
+  ];
+  const existingLines = existsSync(giPath) ? readFileSync(giPath, "utf8").split(/\r?\n/) : [];
+  const toAdd = ignoreLines.filter((l) => !existingLines.some((e) => e.trim() === l.line));
+  if (toAdd.length === 0) {
+    skipped.push(".gitignore");
+  } else if (existsSync(giPath)) {
+    appendFileSync(giPath, "\n" + toAdd.map((l) => `${l.comment}\n${l.line}`).join("\n\n") + "\n");
+    created.push(".gitignore (+entry)");
   } else {
-    writeFileSync(giPath, `# RepoOS derived index cache\n${ignoreLine}\n`);
+    writeFileSync(giPath, toAdd.map((l) => `${l.comment}\n${l.line}`).join("\n\n") + "\n");
     created.push(".gitignore");
   }
 
