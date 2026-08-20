@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -18,9 +18,44 @@ const repo = useRepoStore();
 const busy = ref(false);
 const dragging = ref(false);
 
-function formatActivity(at: string | undefined): string | null {
+/**
+ * A running agent process can go silent (hung network call, dead stream)
+ * without ever exiting, so `repo.isRunning()` alone can't tell "coding right
+ * now" apart from "stuck." `now` ticks so the staleness check below stays
+ * live without needing any store event to fire.
+ */
+const now = ref(Date.now());
+let nowTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = Date.now();
+  }, 15_000);
+});
+onUnmounted(() => {
+  clearInterval(nowTimer);
+});
+
+/** Mirrors the task watchdog's default staleness window (task-watchdog.ts) — a
+ *  reasonable heuristic even though the server-configured value can differ. */
+const STUCK_SILENCE_MS = 5 * 60 * 1000;
+
+function silentMs(at: string | undefined): number | null {
   if (!at || Number.isNaN(Date.parse(at))) return null;
-  return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return now.value - Date.parse(at);
+}
+
+function formatDuration(ms: number): string {
+  const mins = Math.round(ms / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return rem ? `${hours}h ${rem}m` : `${hours}h`;
+}
+
+function formatActivity(at: string | undefined): string | null {
+  const ms = silentMs(at);
+  return ms === null ? null : `${formatDuration(ms)} ago`;
 }
 
 /** Diff stats for this task. */
@@ -123,6 +158,26 @@ const pipelineStage = computed(() => {
   return snap?.active?.taskId === props.task.id ? snap.active.stage : null;
 });
 
+/** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
+ *  normal "coding" hint when it's still producing output. */
+function codingOrStuckHint(taskId: string): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent process is still running but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `coding · active ${activity}` : "coding",
+    title: "agent is making code changes — click to watch the session",
+    cls: "tc-coding",
+  };
+}
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -137,25 +192,11 @@ const hint = computed<CardHint | null>(() => {
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
-    if (repo.isRunning(t.id)) {
-      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
-      return {
-        label: activity ? `coding · active ${activity}` : "coding",
-        title: "agent is making code changes — click to watch the session",
-        cls: "tc-coding",
-      };
-    }
+    if (repo.isRunning(t.id)) return codingOrStuckHint(t.id);
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
-    if (repo.isRunning(t.id)) {
-      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
-      return {
-        label: activity ? `coding · active ${activity}` : "coding",
-        title: "agent is making code changes — click to watch the session",
-        cls: "tc-coding",
-      };
-    }
+    if (repo.isRunning(t.id)) return codingOrStuckHint(t.id);
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
@@ -323,7 +364,7 @@ async function openAgent(): Promise<void> {
       </div>
 
       <div v-if="hint || (isLaunchAction && task.git?.dirty)" class="mt-[13px]">
-        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined">
+        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined">
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
