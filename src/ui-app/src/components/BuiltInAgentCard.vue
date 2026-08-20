@@ -3,12 +3,14 @@ import { computed, ref, watch } from "vue";
 import { useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
+import Switch from "./ui/switch.vue";
 import Select from "./ui/select/root.vue";
 import SelectContent from "./ui/select/content.vue";
 import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 
 interface Props {
   agent: string;
@@ -24,18 +26,22 @@ type Schedule = "daily" | "weekly" | "manual";
 interface BuiltInAgentState {
   enabled: boolean;
   schedule: Schedule;
+  cli: string;
+  model: string;
   lastRunAt?: string;
   isRunning?: boolean;
 }
 
-const defaultState: BuiltInAgentState = {
+const defaultState = computed<BuiltInAgentState>(() => ({
   enabled: false,
   schedule: "manual",
-};
+  cli: config.agentsMeta.clis[0] ?? "opencode",
+  model: config.agentsMeta.models[1] ?? "big pickle",
+}));
 
-const state = ref<BuiltInAgentState>({ ...defaultState });
+const state = ref<BuiltInAgentState>({ ...defaultState.value });
 
-// Keeps the card in sync with persisted config: config.data may be empty when
+// Keeps the row in sync with persisted config: config.data may be empty when
 // the component mounts, and another tab can change builtInAgents at any time.
 // Merge the server's value over local state on every change rather than
 // initializing once (stale-state fix from review).
@@ -46,10 +52,20 @@ watch(
   },
   (agents) => {
     const persisted = agents?.[props.agent] as BuiltInAgentState | undefined;
-    if (persisted) state.value = { ...defaultState, ...persisted };
+    if (persisted) {
+      state.value = {
+        ...defaultState.value,
+        ...persisted,
+        cli: persisted.cli || defaultState.value.cli,
+        model: persisted.model || defaultState.value.model,
+      };
+    }
   },
   { immediate: true, deep: true },
 );
+
+const cliOptions = computed(() => config.agentsMeta.clis ?? []);
+const modelsFor = config.modelsFor;
 
 const isRunning = ref(false);
 const error = ref("");
@@ -122,8 +138,18 @@ async function saveState(): Promise<void> {
   }
 }
 
-function toggleEnabled(): void {
-  state.value.enabled = !state.value.enabled;
+function toggleEnabled(v: boolean): void {
+  state.value.enabled = v;
+  void saveState();
+}
+
+function onCliUpdate(v: string): void {
+  state.value.cli = v;
+  void saveState();
+}
+
+function onModelUpdate(v: string): void {
+  state.value.model = v;
   void saveState();
 }
 
@@ -182,39 +208,28 @@ async function runNow(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="agentMeta" class="built-in-agent-card">
-    <div class="agent-card-head">
-      <div class="agent-info">
-        <span class="agent-icon">{{ agentMeta.icon }}</span>
-        <div>
-          <div class="agent-name">{{ agentMeta.name }}</div>
-          <div class="agent-status">
-            <span v-if="state.enabled" class="status-badge enabled">Enabled</span>
-            <span v-else class="status-badge">Disabled</span>
-            <span v-if="state.lastRunAt" class="last-run">
-              Last run: {{ lastRunDisplay }}
-            </span>
-          </div>
-        </div>
+  <div v-if="agentMeta" class="agent-card" :class="{ off: !state.enabled }">
+    <div class="agent-head">
+      <div class="agent-title">
+        <span class="agent-dot"></span>
+        <span class="agent-name">{{ agentMeta.icon }} {{ agentMeta.name }}</span>
+        <span class="agent-badge">built-in</span>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        :class="{ 'toggle-on': state.enabled }"
-        @click="toggleEnabled"
-      >
-        {{ state.enabled ? "Disable" : "Enable" }}
-      </Button>
+      <Switch :checked="state.enabled" @update:checked="toggleEnabled" />
     </div>
-
-    <div class="agent-desc">{{ agentMeta.description }}</div>
-
-    <div v-if="state.enabled" class="agent-config">
-      <div v-if="interactive" class="interactive-hint">
-        <span class="interactive-dot"></span>
-        Chat with the {{ agentMeta.name }} from his floating head.
+    <div class="agent-body">
+      <div class="agent-field">
+        <label>Coding agent + Model</label>
+        <AgentModelControl
+          :cli-options="cliOptions"
+          :model-options="modelsFor(state.cli, state.model)"
+          :cli="state.cli"
+          :model="state.model"
+          @update:cli="onCliUpdate"
+          @update:model="onModelUpdate"
+        />
       </div>
-      <template v-else><div class="config-field">
+      <div v-if="!interactive" class="agent-field">
         <label>Run schedule</label>
         <Select :model-value="state.schedule" @update:model-value="updateSchedule">
           <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
@@ -229,118 +244,51 @@ async function runNow(): Promise<void> {
           </SelectContent>
         </Select>
       </div>
-
-      <div class="config-actions">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="isRunning"
-          @click="runNow"
-        >
-          {{ isRunning ? "Running…" : "Run now" }}
-        </Button>
+      <div v-else class="agent-field">
+        <label>Interaction</label>
+        <div class="built-in-interactive-hint">
+          <span class="built-in-interactive-dot"></span>
+          Chat from floating head
+        </div>
       </div>
-
-      <div v-if="message" class="status-message success">{{ message }}</div>
-      <div v-if="error" class="status-message error">{{ error }}</div></template>
+      <div class="agent-field">
+        <label>Actions</label>
+        <div class="agent-test-actions">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="isRunning || !state.enabled"
+            @click="runNow"
+          >
+            {{ isRunning ? "Running…" : "Run now" }}
+          </Button>
+          <span v-if="state.lastRunAt" class="built-in-last-run">
+            Last: {{ lastRunDisplay }}
+          </span>
+        </div>
+      </div>
+      <div v-if="message || error" class="agent-field built-in-status-field">
+        <div v-if="message" class="built-in-status success">{{ message }}</div>
+        <div v-if="error" class="built-in-status error">{{ error }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.built-in-agent-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  margin: 8px 0;
-  background: var(--bg-secondary);
-}
-
-.agent-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.agent-info {
-  display: flex;
-  gap: 12px;
-  flex: 1;
-}
-
-.agent-icon {
-  font-size: 24px;
-  line-height: 1.5;
-}
-
-.agent-name {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.agent-status {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 4px;
-  font-size: 12px;
-}
-
-.status-badge {
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-}
-
-.status-badge.enabled {
-  background: var(--green);
-  color: white;
-}
-
-.last-run {
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-
-.agent-desc {
-  margin-bottom: 12px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.agent-config {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-}
-
-.config-field {
-  margin-bottom: 12px;
-}
-
-.config-field label {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: var(--text-secondary);
-}
-
-.interactive-hint {
+.built-in-interactive-hint {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
   border: 1px dashed var(--border-bright);
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: var(--txt-secondary);
   font-size: 12.5px;
   line-height: 1.4;
 }
 
-.interactive-dot {
+.built-in-interactive-dot {
   flex: none;
   width: 8px;
   height: 8px;
@@ -349,30 +297,31 @@ async function runNow(): Promise<void> {
   box-shadow: 0 0 8px var(--green);
 }
 
-.config-actions {
-  display: flex;
-  gap: 8px;
+.built-in-last-run {
+  font-size: 11px;
+  color: var(--txt-faint);
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.status-message {
-  margin-top: 10px;
+.built-in-status-field {
+  grid-column: 1 / -1;
+}
+
+.built-in-status {
+  margin-top: 4px;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 12px;
   line-height: 1.3;
 }
 
-.status-message.success {
+.built-in-status.success {
   background: rgba(34, 197, 94, 0.1);
   color: var(--green);
 }
 
-.status-message.error {
+.built-in-status.error {
   background: rgba(239, 68, 68, 0.1);
   color: var(--red);
-}
-
-.toggle-on {
-  color: var(--green);
 }
 </style>
