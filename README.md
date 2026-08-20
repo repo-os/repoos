@@ -48,6 +48,14 @@ bun add -d repoos
 npm i -D repoos
 ```
 
+Or install a standalone `repoos` command straight from GitHub Releases (no npm registry, no repo devDependency):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
+```
+
+Requires Node.js >= 20.6.0. Installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
+
 Then in any repo:
 
 ```bash
@@ -262,4 +270,6 @@ For live status and what's in progress, run `repoos list`. The task files in
 
 ## License
 
-MIT
+[FSL-1.1-MIT](LICENSE.md) — free to use, self-host, and modify. The only
+restriction is offering it as a competing commercial product/service. Each
+version converts to plain MIT two years after release.
