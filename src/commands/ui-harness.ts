@@ -55,8 +55,10 @@ export interface SmokePlaywright {
 /**
  * Start the built UI's server on an ephemeral port so the gate works even when
  * a `repoos serve` instance is already running on the default port. `root` is
- * optional — the smoke test serves the checkout's own config/work; the
- * screenshot script passes a throwaway fixture copy for determinism.
+ * optional — both callers pass a throwaway fixture root for determinism: the
+ * smoke test (check.ts) boots against a bare empty work/ + minimal repoos.toml
+ * so it never touches the live board's jobs or preview auto-launch (#0260),
+ * and the screenshot script serves a fixture copy.
  */
 export async function startPreviewServer(root?: string): Promise<PreviewServer> {
   const { startServer } = await import("../server/server.js");

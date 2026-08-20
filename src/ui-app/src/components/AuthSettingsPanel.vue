@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
+import { useAuthStore } from "../stores/auth";
 import { useDocsStore } from "../stores/docs";
 import Button from "./ui/button.vue";
 import Card from "./ui/card.vue";
@@ -9,6 +10,7 @@ import Input from "./ui/input.vue";
 import Switch from "./ui/switch.vue";
 
 const router = useRouter();
+const auth = useAuthStore();
 const docs = useDocsStore();
 
 function openAuthDocs(): void {
@@ -137,7 +139,9 @@ watch(showAudit, (show) => {
   if (show && auditLog.value.length === 0) void loadAudit();
 });
 
-onMounted(loadUsers);
+onMounted(() => {
+  if (auth.authEnabled) void loadUsers();
+});
 
 function formatDate(iso: string): string {
   try {
