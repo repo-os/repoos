@@ -153,6 +153,9 @@ defaultAssignee = "unassigned"
 # [auth.emailProvider]
 # type = "resend"
 # fromAddress = "noreply@yourdomain.com"
+#
+# [auth.google]                         # optional — adds a "Sign in with Google" button
+# clientId = "..."                      # clientSecret goes in .env, not here
 
 # [whisper]                             # voice-to-text in text areas
 # provider = "groq"                     # or "openai"
