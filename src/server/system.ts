@@ -363,6 +363,34 @@ export function reapStrayServeProcesses(
   return reaped;
 }
 
+/**
+ * Kill a single process by PID: SIGTERM first, escalating to SIGKILL after a
+ * grace period if it hasn't exited. Same sequence AgentRunner.stop() and the
+ * stray-serve reaper already use elsewhere. Backs the manual "Kill" action in
+ * the System Resources panel — callers must verify the PID is one RepoOS
+ * itself is tracking (a fresh sampleSystem()/scanServeProcesses() result)
+ * before calling this; it does not re-check.
+ */
+export function killTrackedProcess(
+  pid: number,
+  kill: (pid: number, signal: NodeJS.Signals) => void = process.kill.bind(process),
+): boolean {
+  try {
+    kill(pid, "SIGTERM");
+  } catch {
+    return false; // already gone, or no such process
+  }
+  const t = setTimeout(() => {
+    try {
+      kill(pid, "SIGKILL");
+    } catch {
+      /* already gone */
+    }
+  }, 3000);
+  t.unref?.();
+  return true;
+}
+
 export interface SampleSystemOptions {
   serverPid: number;
   cacheDir: string;

@@ -2,12 +2,13 @@
  * 0091 — system resource sampler tests. The sampler's parsing (of `ps` output)
  * and orphan-detection logic are pure functions tested against fixture strings.
  */
-import { describe, expect, it } from "vitest";
-import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, reapStrayServeProcesses } from "../../server/system";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, reapStrayServeProcesses, killTrackedProcess } from "../../server/system";
 import type { RunningAgentInfo } from "../../server/agents";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { startServer, type ServerHandle } from "../../server/server";
 
 describe("parsePsOutput", () => {
   it("parses a single ps line", () => {
@@ -299,5 +300,117 @@ describe("reapStrayServeProcesses", () => {
     const reaped = reapStrayServeProcesses(100, new Set(), () => { killCalled = true; }, fakeScan);
     expect(reaped).toBe(0);
     expect(killCalled).toBe(false);
+  });
+});
+
+describe("killTrackedProcess", () => {
+  it("sends SIGTERM immediately, escalates to SIGKILL after the grace period if still alive", () => {
+    vi.useFakeTimers();
+    try {
+      const signals: string[] = [];
+      const fakeKill = (_pid: number, signal: string) => {
+        signals.push(signal);
+      };
+      const ok = killTrackedProcess(123, fakeKill);
+      expect(ok).toBe(true);
+      expect(signals).toEqual(["SIGTERM"]);
+
+      vi.advanceTimersByTime(3000);
+      expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("returns false and never schedules SIGKILL when the process is already gone", () => {
+    vi.useFakeTimers();
+    try {
+      const signals: string[] = [];
+      const fakeKill = (_pid: number, signal: string) => {
+        signals.push(signal);
+        throw new Error("ESRCH");
+      };
+      const ok = killTrackedProcess(123, fakeKill);
+      expect(ok).toBe(false);
+      expect(signals).toEqual(["SIGTERM"]);
+
+      vi.advanceTimersByTime(5000);
+      expect(signals).toEqual(["SIGTERM"]); // no SIGKILL scheduled — kill() never returned
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("swallows a SIGKILL escalation error (process died in between) without throwing", () => {
+    vi.useFakeTimers();
+    try {
+      let calls = 0;
+      const fakeKill = (_pid: number, signal: string) => {
+        calls++;
+        if (signal === "SIGKILL") throw new Error("ESRCH");
+      };
+      killTrackedProcess(123, fakeKill);
+      expect(() => vi.advanceTimersByTime(3000)).not.toThrow();
+      expect(calls).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("POST /api/system/kill-process", () => {
+  let server: ServerHandle | undefined;
+  let fixtureRoot: string | undefined;
+
+  afterEach(async () => {
+    await server?.close();
+    server = undefined;
+    if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true });
+    fixtureRoot = undefined;
+  });
+
+  it("refuses a pid RepoOS isn't currently tracking, never touching the real process", async () => {
+    fixtureRoot = mkdtempSync(join(tmpdir(), "repoos-killroute-"));
+    server = await startServer({ root: fixtureRoot, host: "127.0.0.1", port: 0 });
+
+    // PID 1 (init/launchd) is about as far from "a RepoOS-tracked process" as
+    // it gets, and definitely isn't in this test's sampleSystem() snapshot.
+    const res = await fetch(`${server.url}/api/system/kill-process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid: 1 }),
+    });
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toMatch(/not a RepoOS-tracked process/);
+  });
+
+  it("refuses to kill the control-plane process itself", async () => {
+    fixtureRoot = mkdtempSync(join(tmpdir(), "repoos-killroute-"));
+    server = await startServer({ root: fixtureRoot, host: "127.0.0.1", port: 0 });
+
+    // The in-process test server shares this test runner's own pid.
+    const res = await fetch(`${server.url}/api/system/kill-process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid: process.pid }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/refusing to kill the control-plane process/);
+  });
+
+  it("rejects a non-integer or missing pid with 400", async () => {
+    fixtureRoot = mkdtempSync(join(tmpdir(), "repoos-killroute-"));
+    server = await startServer({ root: fixtureRoot, host: "127.0.0.1", port: 0 });
+
+    for (const pid of [undefined, "123", -1, 1.5]) {
+      const res = await fetch(`${server.url}/api/system/kill-process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pid }),
+      });
+      expect(res.status).toBe(400);
+    }
   });
 });
