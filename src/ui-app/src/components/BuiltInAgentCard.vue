@@ -9,6 +9,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 
 interface Props {
   agent: string;
@@ -26,6 +27,9 @@ interface BuiltInAgentState {
   schedule: Schedule;
   lastRunAt?: string;
   isRunning?: boolean;
+  cli?: string;
+  model?: string;
+  instructions?: string;
 }
 
 const defaultState: BuiltInAgentState = {
@@ -105,6 +109,9 @@ const lastRunDisplay = computed(() => {
   });
 });
 
+const cliOptions = computed(() => config.agentsMeta.clis ?? []);
+const modelOptions = computed(() => config.modelsFor(state.value.cli ?? "opencode", state.value.model));
+
 async function saveState(): Promise<void> {
   try {
     const data = config.data as Record<string, unknown> | null;
@@ -132,6 +139,16 @@ async function updateSchedule(value: string | undefined): Promise<void> {
     state.value.schedule = value;
     await saveState();
   }
+}
+
+function updateCli(v: string): void {
+  state.value.cli = v;
+  void saveState();
+}
+
+function updateModel(v: string): void {
+  state.value.model = v;
+  void saveState();
 }
 
 async function runNow(): Promise<void> {
@@ -214,35 +231,52 @@ async function runNow(): Promise<void> {
         <span class="interactive-dot"></span>
         Chat with the {{ agentMeta.name }} from his floating head.
       </div>
-      <template v-else><div class="config-field">
-        <label>Run schedule</label>
-        <Select :model-value="state.schedule" @update:model-value="updateSchedule">
-          <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="manual">Manual only</SelectItem>
-            </SelectViewport>
-          </SelectContent>
-        </Select>
-      </div>
+      <template v-else>
+        <div v-if="props.agent !== 'debugger'" class="config-field">
+          <label>Coding agent + Model</label>
+          <AgentModelControl
+            :cli-options="cliOptions"
+            :model-options="modelOptions"
+            :cli="state.cli ?? 'opencode'"
+            :model="state.model ?? 'default'"
+            @update:cli="updateCli"
+            @update:model="updateModel"
+          />
+          <div class="config-hint">
+            Optional — when set, the agent runs AI-powered analysis via this CLI after the deterministic scan.
+          </div>
+        </div>
 
-      <div class="config-actions">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="isRunning"
-          @click="runNow"
-        >
-          {{ isRunning ? "Running…" : "Run now" }}
-        </Button>
-      </div>
+        <div class="config-field">
+          <label>Run schedule</label>
+          <Select :model-value="state.schedule" @update:model-value="updateSchedule">
+            <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="manual">Manual only</SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div v-if="message" class="status-message success">{{ message }}</div>
-      <div v-if="error" class="status-message error">{{ error }}</div></template>
+        <div class="config-actions">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="isRunning"
+            @click="runNow"
+          >
+            {{ isRunning ? "Running…" : "Run now" }}
+          </Button>
+        </div>
+
+        <div v-if="message" class="status-message success">{{ message }}</div>
+        <div v-if="error" class="status-message error">{{ error }}</div>
+      </template>
     </div>
   </div>
 </template>
@@ -326,6 +360,13 @@ async function runNow(): Promise<void> {
   font-weight: 500;
   margin-bottom: 6px;
   color: var(--text-secondary);
+}
+
+.config-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.3;
 }
 
 .interactive-hint {

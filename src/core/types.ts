@@ -315,6 +315,17 @@ export interface BuiltInAgentConfig {
   schedule?: BuiltInAgentSchedule;
   /** ISO timestamp of the last completed run, set by the server. */
   lastRunAt?: string;
+  /**
+   * Coding CLI used for the AI-powered analysis. When set, the agent runs
+   * through the configured CLI with a role-specific prompt (the deterministic
+   * scan results are included as evidence/pre-filtering). When absent, only
+   * the deterministic scanner runs (legacy behavior).
+   */
+  cli?: string;
+  /** Model to pin for the AI run. "default" lets the CLI pick its own. */
+  model?: string;
+  /** Custom instructions appended to the role-specific prompt. */
+  instructions?: string;
 }
 
 /** Task watchdog configuration (#0180). */

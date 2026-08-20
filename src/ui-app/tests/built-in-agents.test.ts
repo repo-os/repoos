@@ -14,6 +14,7 @@ import {
   scanForDesignIssues,
   generateDesignReport,
   runDesignAgent,
+  runBuiltInAgent,
   TechDebtError,
   PerformanceError,
   type TechDebtIssue,
@@ -329,6 +330,59 @@ describe("built-in agent state persistence", () => {
     });
   });
 
+  it("preserves cli, model, and instructions fields when valid", () => {
+    const clean = sanitizeBuiltInAgents({
+      "tech-debt": {
+        enabled: true,
+        schedule: "daily",
+        cli: "opencode",
+        model: "big pickle",
+        instructions: "Focus on security issues",
+      },
+      "performance": {
+        enabled: true,
+        cli: "claude code",
+        model: "sonnet",
+      },
+    });
+    expect(clean).toEqual({
+      "tech-debt": {
+        enabled: true,
+        schedule: "daily",
+        cli: "opencode",
+        model: "big pickle",
+        instructions: "Focus on security issues",
+      },
+      "performance": {
+        enabled: true,
+        cli: "claude code",
+        model: "sonnet",
+      },
+    });
+  });
+
+  it("drops invalid cli values while keeping valid ones", () => {
+    const clean = sanitizeBuiltInAgents({
+      "tech-debt": { cli: "invalid-cli" },
+      "performance": { cli: "claude code" },
+    });
+    expect(clean).toEqual({
+      "tech-debt": {},
+      "performance": { cli: "claude code" },
+    });
+  });
+
+  it("drops empty or whitespace-only model and instructions", () => {
+    const clean = sanitizeBuiltInAgents({
+      "tech-debt": { model: "  ", instructions: "" },
+      "performance": { model: "opus", instructions: " custom " },
+    });
+    expect(clean).toEqual({
+      "tech-debt": {},
+      "performance": { model: "opus", instructions: "custom" },
+    });
+  });
+
   it("round-trips through the sidecar file and into loadConfig", () => {
     const root = makeRepo({});
     const state: RepoOSConfig["builtInAgents"] = {
@@ -337,6 +391,20 @@ describe("built-in agent state persistence", () => {
     saveBuiltInAgentsConfig(root, state);
     expect(loadBuiltInAgentsConfig(root)).toEqual(state);
     expect(loadConfig(root).builtInAgents).toEqual(state);
+  });
+
+  it("round-trips cli/model/instructions through the sidecar", () => {
+    const root = makeRepo({});
+    const state: RepoOSConfig["builtInAgents"] = {
+      "tech-debt": { enabled: true, schedule: "daily", cli: "opencode", model: "big pickle", instructions: "Focus on security" },
+      "architect": { enabled: true, cli: "claude code", model: "sonnet" },
+    };
+    saveBuiltInAgentsConfig(root, state);
+    const loaded = loadBuiltInAgentsConfig(root);
+    expect(loaded).toEqual(state);
+    expect(loaded?.["tech-debt"]?.cli).toBe("opencode");
+    expect(loaded?.["tech-debt"]?.model).toBe("big pickle");
+    expect(loaded?.["architect"]?.cli).toBe("claude code");
   });
 
   it("returns undefined when no sidecar exists and {} for a corrupt one", () => {
@@ -634,5 +702,49 @@ describe("runDesignAgent", () => {
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["design"]?.lastRunAt).toBeTruthy();
     expect(config.builtInAgents?.["design"]?.lastRunAt).toBeTruthy();
+  });
+});
+
+describe("runBuiltInAgent dispatch", () => {
+  it("falls back to deterministic-only when no CLI is configured", async () => {
+    const root = makeRepo({
+      "src/a.ts": "var legacy = 1;\nexport const fine = 2;\n",
+      "package.json": "{}",
+    });
+    mkdirSync(join(root, "work"));
+    const config = configFor(root);
+    // No builtInAgents config — should use deterministic path
+    const result = await runBuiltInAgent("tech-debt", config);
+    expect(result).not.toBeNull();
+    expect(result!.issuesFound).toBeGreaterThan(0);
+    expect("created" in result! ? (result as any).created : 0).toBeGreaterThan(0);
+  });
+
+  it("returns null for unknown agent names", async () => {
+    const root = makeRepo({ "package.json": "{}" });
+    const config = configFor(root);
+    const result = await runBuiltInAgent("nonexistent-agent", config);
+    expect(result).toBeNull();
+  });
+
+  it("dispatches to deterministic path for architect without CLI config", async () => {
+    const root = makeRepo({
+      "src/a.ts": "export const a = 1;\n".repeat(20),
+      "package.json": "{}",
+    });
+    const config = configFor(root);
+    const result = await runBuiltInAgent("architect", config);
+    expect(result).not.toBeNull();
+    expect(result!.issuesFound).toBeGreaterThanOrEqual(0);
+  });
+
+  it("dispatches to deterministic path for design without CLI config", async () => {
+    const root = makeRepo({
+      "src/ui-app/src/views/Page.vue": "<div style=\"color:red\">x</div>",
+    });
+    const config = configFor(root);
+    const result = await runBuiltInAgent("design", config);
+    expect(result).not.toBeNull();
+    expect("findingsFound" in result! ? (result as any).findingsFound : 0).toBeGreaterThanOrEqual(0);
   });
 });

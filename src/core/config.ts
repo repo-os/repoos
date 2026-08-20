@@ -800,6 +800,16 @@ export function sanitizeBuiltInAgent(value: unknown): BuiltInAgentConfig | null 
   if (typeof raw.lastRunAt === "string" && !Number.isNaN(Date.parse(raw.lastRunAt))) {
     out.lastRunAt = raw.lastRunAt;
   }
+  // AI agent configuration: CLI, model, and custom instructions.
+  if (typeof raw.cli === "string" && (AGENT_CLIS as readonly string[]).includes(raw.cli)) {
+    out.cli = raw.cli;
+  }
+  if (typeof raw.model === "string" && raw.model.trim()) {
+    out.model = raw.model.trim();
+  }
+  if (typeof raw.instructions === "string" && raw.instructions.trim()) {
+    out.instructions = raw.instructions.trim();
+  }
   return out;
 }
 

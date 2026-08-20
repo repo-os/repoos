@@ -9,6 +9,7 @@ import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
 import type { Logger } from "../core/logger.js";
+import { runPrompt, type Agent } from "./agents.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -1464,12 +1465,216 @@ export async function runDesignAgent(config: RepoOSConfig): Promise<DesignRunRes
   };
 }
 
+// ---- AI-powered built-in agent prompts ----
+
+/** Format deterministic scan issues into a context block for the AI prompt. */
+function formatScanEvidence(issues: { type: string; file: string; line?: number; description: string; severity: string }[]): string {
+  if (issues.length === 0) return "The deterministic scan found no issues.";
+  const lines = issues.map(
+    (i) => `- [${i.severity}] ${i.type}: ${i.description} (${i.file}${i.line ? `:${i.line}` : ""})`,
+  );
+  return `Deterministic scan pre-filtering found ${issues.length} issue(s):\n${lines.join("\n")}`;
+}
+
+/** Format design findings into a context block for the AI prompt. */
+function formatDesignEvidence(findings: DesignFinding[]): string {
+  if (findings.length === 0) return "The deterministic scan found no design issues.";
+  const lines = findings.map(
+    (f) => `- [${f.severity}] ${f.category}: ${f.description} (${f.file}${f.line ? `:${f.line}` : ""})`,
+  );
+  return `Deterministic scan pre-filtering found ${findings.length} finding(s):\n${lines.join("\n")}`;
+}
+
+/** Role-specific system prompt for the Tech Debt AI agent. */
+const TECH_DEBT_AI_PROMPT = `You are the Tech Debt Agent. You analyze a codebase for technical debt — outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs.
+
+${""}
+Rules:
+- The deterministic scan results below are pre-filtering evidence. Use them as a starting point but dig deeper: look for patterns the static scan missed, assess business impact, and prioritize by actual cost to the team.
+- You may read files and run read-only discovery commands (grep, find, tree) to verify and expand on the findings.
+- NEVER edit files, change task status, commit, launch servers, or start agents.
+- Focus on actionable, concrete improvements — not aspirational refactoring.
+
+Deterministic scan evidence:
+`;
+
+/** Role-specific system prompt for the Performance AI agent. */
+const PERFORMANCE_AI_PROMPT = `You are the Performance Agent. You analyze a codebase for performance issues — slow functions, blocking operations, nested loops, unbounded growth, and duplicated computations.
+
+${""}
+Rules:
+- The deterministic scan results below are pre-filtering evidence. Use them as a starting point but reason about actual runtime impact: which issues affect real user-facing latency or memory?
+- You may read files and run read-only discovery commands to verify findings and identify additional hotspots.
+- NEVER edit files, change task status, commit, launch servers, or start agents.
+- Prioritize issues that affect real-world performance over theoretical concerns.
+
+Deterministic scan evidence:
+`;
+
+/** Role-specific system prompt for the Architect AI agent. */
+const ARCHITECT_AI_PROMPT = `You are the Architect Agent. You analyze a codebase's architecture — coupling, missing abstractions, scalability risks, and over-engineering.
+
+${""}
+Rules:
+- The deterministic scan results below are pre-filtering evidence. Use them as a starting point but provide deeper architectural analysis: identify patterns, assess trade-offs, and recommend concrete improvements.
+- You may read files and run read-only discovery commands to understand module boundaries and dependencies.
+- NEVER edit files, change task status, commit, launch servers, or start agents.
+- Produce a structured review report covering: current state, key issues, and prioritized recommendations.
+- Keep the report focused and actionable — the human will review it before taking action.
+
+Deterministic scan evidence:
+`;
+
+/** Role-specific system prompt for the Design AI agent. */
+const DESIGN_AI_PROMPT = `You are the Design Agent. You review a web UI's quality — layout, styling consistency, accessibility, and interaction flows.
+
+${""}
+Rules:
+- The deterministic scan results below are pre-filtering evidence. Use them as a starting point but assess the broader design: user flows, visual consistency, accessibility compliance, and interaction patterns.
+- You may read Vue components, CSS files, and run read-only discovery commands to understand the design system.
+- NEVER edit files, change task status, commit, launch servers, or start agents.
+- Produce a structured review report covering: UI bugs, UX friction points, and design improvement recommendations.
+- Keep the report focused and actionable — the human will review it before taking action.
+
+Deterministic scan evidence:
+`;
+
+/**
+ * Run a built-in agent through its configured AI coding CLI. The deterministic
+ * scan runs first as pre-filtering evidence; the AI then provides deeper,
+ * context-aware analysis using the configured CLI and model.
+ */
+async function runBuiltInAgentWithAI(
+  name: string,
+  config: RepoOSConfig,
+  agentConfig: BuiltInAgentConfig,
+  logger?: Logger,
+): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult | null> {
+  const cli = agentConfig.cli!;
+  const model = agentConfig.model ?? "default";
+  const customInstructions = agentConfig.instructions ?? "";
+
+  // Build the Agent object expected by runPrompt
+  const agent: Agent = {
+    name: `built-in-${name}`,
+    cli,
+    model,
+    enabled: true,
+    instructions: customInstructions,
+  };
+
+  let promptBase: string;
+  let deterministicResult: TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult;
+
+  // Run the deterministic scan first to gather evidence
+  if (name === "tech-debt") {
+    logger?.agent(name, "info", "Running deterministic scan for evidence");
+    const scan = await scanForTechDebt(config);
+    const evidence = formatScanEvidence(scan.issues);
+    promptBase = TECH_DEBT_AI_PROMPT + evidence;
+    // Still create tasks from deterministic findings (deduplication is handled by task creation)
+    const created = await createTechDebtTasks(config, scan.issues);
+    deterministicResult = {
+      issuesFound: scan.issues.length,
+      scannedFiles: scan.scannedFiles,
+      ...created,
+    };
+  } else if (name === "performance") {
+    logger?.agent(name, "info", "Running deterministic scan for evidence");
+    const scan = await scanForPerformanceIssues(config);
+    const evidence = formatScanEvidence(scan.issues);
+    promptBase = PERFORMANCE_AI_PROMPT + evidence;
+    const created = await createPerformanceTasks(config, scan.issues);
+    deterministicResult = {
+      issuesFound: scan.issues.length,
+      scannedFiles: scan.scannedFiles,
+      ...created,
+    };
+  } else if (name === "architect") {
+    logger?.agent(name, "info", "Running deterministic scan for evidence");
+    const scan = await scanForArchitectureIssues(config);
+    const evidence = formatScanEvidence(scan.issues);
+    promptBase = ARCHITECT_AI_PROMPT + evidence;
+    deterministicResult = {
+      reportPath: "",
+      fileName: "",
+      issuesFound: scan.issues.length,
+      scannedFiles: scan.scannedFiles,
+      taskCount: scan.taskCount,
+      created: 0,
+      failed: 0,
+      errors: [],
+    };
+    // Generate deterministic report first; AI analysis will be appended after
+    const report = await generateArchitectureReport(config, scan);
+    deterministicResult.reportPath = report.reportPath;
+    deterministicResult.fileName = report.fileName;
+  } else if (name === "design") {
+    logger?.agent(name, "info", "Running deterministic scan for evidence");
+    const scan = await scanForDesignIssues(config);
+    const evidence = formatDesignEvidence(scan.findings);
+    promptBase = DESIGN_AI_PROMPT + evidence;
+    deterministicResult = {
+      reportPath: "",
+      fileName: "",
+      findingsFound: scan.findings.length,
+      scannedFiles: scan.scannedFiles,
+      created: 0,
+      failed: 0,
+      errors: [],
+    };
+    const report = await generateDesignReport(config, scan);
+    deterministicResult.reportPath = report.reportPath;
+    deterministicResult.fileName = report.fileName;
+  } else {
+    return null;
+  }
+
+  // Run the AI agent with the role-specific prompt
+  logger?.agent(name, "info", `Running AI analysis via ${cli} (${model})`);
+  const aiResult = await runPrompt(agent, promptBase, { cwd: config.root });
+
+  if (!aiResult.ok) {
+    const errorMsg = aiResult.error ?? "AI agent produced no output";
+    logger?.agent(name, "error", `AI analysis failed: ${errorMsg}`);
+    // Fall back to deterministic-only results with the error noted
+    return {
+      ...deterministicResult,
+      errors: [...(deterministicResult.errors ?? []), `AI analysis failed: ${errorMsg}`],
+    } as TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult;
+  }
+
+  logger?.agent(name, "info", `AI analysis completed (${aiResult.output?.length ?? 0} chars)`);
+
+  // For architect and design, append the AI analysis to the deterministic report
+  if ((name === "architect" || name === "design") && aiResult.output && deterministicResult.reportPath) {
+    const aiAnalysis = `\n\n---\n\n## AI-Powered Analysis\n\n${aiResult.output}`;
+    const existingReport = readFileSync(deterministicResult.reportPath, "utf8");
+    writeFile(deterministicResult.reportPath, existingReport + aiAnalysis, "utf8");
+  }
+
+  // Record lastRunAt
+  const agents = { ...(config.builtInAgents ?? {}) };
+  agents[name] = { ...(agents[name] ?? {}), lastRunAt: new Date().toISOString() };
+  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
+  config.builtInAgents = agents;
+
+  return deterministicResult;
+}
+
 /** Dispatch to the appropriate built-in agent by name. */
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult | null> {
+  // When a CLI is configured for this built-in agent, run through the AI path
+  // (deterministic scan as evidence, then AI-powered analysis via the CLI).
+  const agentConfig = config.builtInAgents?.[name];
+  if (agentConfig?.cli) {
+    return runBuiltInAgentWithAI(name, config, agentConfig, logger);
+  }
+  // Legacy deterministic-only path
   if (name === "tech-debt") {
     return runTechDebtAgent(config, {}, logger);
   }
