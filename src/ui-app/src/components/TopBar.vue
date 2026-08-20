@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
-import { LogOut, Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
+import { LogOut, Moon, RefreshCw, RotateCcw, Sun, User } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
@@ -90,19 +90,40 @@ function clearColor(): void {
   popoverOpen.value = false;
 }
 
+const userMenuOpen = ref(false);
+
+function toggleUserMenu(): void {
+  userMenuOpen.value = !userMenuOpen.value;
+}
+
+function closeUserMenu(): void {
+  userMenuOpen.value = false;
+}
+
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
   if (target.closest(".repo-pill-wrapper")) return;
   popoverOpen.value = false;
+  if (target.closest(".user-menu-wrapper")) return;
+  userMenuOpen.value = false;
+}
+
+function onDocumentKeyDown(e: KeyboardEvent): void {
+  if (e.key === "Escape") {
+    popoverOpen.value = false;
+    userMenuOpen.value = false;
+  }
 }
 
 onMounted(() => {
   loadSavedColor();
   document.addEventListener("mousedown", onDocumentMouseDown);
+  document.addEventListener("keydown", onDocumentKeyDown);
 });
 
 onUnmounted(() => {
   document.removeEventListener("mousedown", onDocumentMouseDown);
+  document.removeEventListener("keydown", onDocumentKeyDown);
 });
 
 watch(repoName, () => {
@@ -171,11 +192,23 @@ watch(repoName, () => {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
-    <div v-if="auth.authEnabled && auth.authenticated" class="user-chip" :title="auth.email ?? undefined">
-      <span class="user-chip-email mono hidden sm:inline">{{ auth.email }}</span>
-      <button class="logout-btn" type="button" aria-label="Log out" title="Log out" @click="auth.logout()">
-        <LogOut :size="14" :stroke-width="1.8" />
+    <div v-if="auth.authEnabled && auth.authenticated" class="user-menu-wrapper">
+      <button
+        class="user-menu-trigger"
+        type="button"
+        aria-label="User menu"
+        :aria-expanded="userMenuOpen"
+        @click="toggleUserMenu"
+      >
+        <User :size="15" :stroke-width="1.8" />
       </button>
+      <div v-if="userMenuOpen" class="user-menu-popover">
+        <span class="user-menu-email mono" :title="auth.email ?? undefined">{{ auth.email }}</span>
+        <button class="user-menu-logout" type="button" @click="auth.logout()">
+          <LogOut :size="13" :stroke-width="1.8" />
+          <span>Log out</span>
+        </button>
+      </div>
     </div>
     <div
       class="conn"
@@ -242,5 +275,72 @@ watch(repoName, () => {
 .repo-color-default:hover {
   color: var(--txt);
   border-color: var(--txt-dim);
+}
+.user-menu-wrapper {
+  position: relative;
+}
+.user-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: .15s;
+}
+.user-menu-trigger:hover {
+  color: var(--txt);
+  border-color: var(--border-bright);
+  background: var(--panel-solid);
+}
+.user-menu-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  width: max-content;
+  min-width: 160px;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.user-menu-email {
+  display: block;
+  font-size: 12px;
+  color: var(--txt-dim);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.user-menu-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--red-tint, #ef4444);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: .15s;
+}
+.user-menu-logout:hover {
+  background: var(--red-tint, #ef4444);
+  color: #fff;
+  border-color: transparent;
 }
 </style>
