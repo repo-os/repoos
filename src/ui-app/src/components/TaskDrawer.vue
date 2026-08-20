@@ -660,18 +660,20 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   return { label: "waiting for human", cls: "rs-human" };
 });
 
-/** Compact lifecycle counts: initial engineering is round one; each completed
- * review bounce starts the next engineering pass. A task presently in review
+/** Compact lifecycle counts: initial dev pass is round one; each completed
+ * review bounce starts the next dev pass. A task presently in review
  * is also in its next review pass unless the engineer is actively fixing it. */
 const taskRounds = computed(() => {
   const task = ui.active;
-  if (!task || (!task.branch && task.status === "inbox")) return { engineering: 0, review: 0 };
+  if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
+    return { dev: 0, review: 0 };
+  }
   const bounced = task.extra?.review_rounds;
   const completedReviews = typeof bounced === "number" && Number.isFinite(bounced)
     ? Math.max(0, Math.floor(bounced))
     : 0;
   return {
-    engineering: completedReviews + 1,
+    dev: completedReviews + 1,
     review: completedReviews + (task.status === "review" && !repo.isRunning(task.id) ? 1 : 0),
   };
 });
@@ -1286,6 +1288,14 @@ function fmtCost(usd: number | null | undefined, source?: string): string {
   if (source === "estimate") return `~$${n} est`;
   if (source === "mixed") return `$${n}*`;
   return `$${n}`;
+}
+
+/** "Aug 20, 3:14 PM" — local time, for a session's start/end timestamp. */
+function fmtSessionTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 watch(displayEntries, () => {
@@ -1997,12 +2007,21 @@ function resetFreeformOverrides(): void {
               </SelectContent>
             </Select>
             <span
-              v-if="taskRounds.engineering > 0"
+              v-if="taskRounds.dev > 0"
               class="rounds-badge"
-              title="Engineering and review passes for this task"
+              title="Dev and review passes for this task"
             >
-              E{{ taskRounds.engineering }} · R{{ taskRounds.review }}
+              D{{ taskRounds.dev }} · R{{ taskRounds.review }}
             </span>
+            <Button
+              v-if="ui.active.status === 'draft'"
+              variant="outline"
+              :disabled="ui.saving"
+              @click="setStatus('inbox')"
+            >
+              <ArrowRight class="size-3.5" />
+              Move to inbox
+            </Button>
             <Button
               v-if="ui.active.status === 'inbox'"
               variant="outline"
@@ -2831,6 +2850,34 @@ function resetFreeformOverrides(): void {
                   <span>{{ fmtTokens(r.totalTokens) }}</span>
                   <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
                 </span>
+              </div>
+            </div>
+            <div v-if="taskUsage.sessions && taskUsage.sessions.length > 0" class="task-usage-sessions">
+              <div class="task-usage-title">individual sessions</div>
+              <div class="task-usage-session-list">
+                <div class="task-usage-session-row task-usage-session-head">
+                  <span>type</span>
+                  <span>agent / model</span>
+                  <span>started</span>
+                  <span>ended</span>
+                  <span>time</span>
+                  <span>tokens</span>
+                  <span>cost</span>
+                </div>
+                <div
+                  v-for="s in taskUsage.sessions"
+                  :key="s.sessionId"
+                  class="task-usage-session-row"
+                  :class="{ 'task-usage-session-active': s.status === 'active' }"
+                >
+                  <span class="task-usage-session-type">{{ s.sessionType }}</span>
+                  <span>{{ s.agent }} · {{ s.model }}</span>
+                  <span>{{ fmtSessionTime(s.startedAt) }}</span>
+                  <span>{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</span>
+                  <span>{{ fmtElapsed(s.elapsedMs) }}</span>
+                  <span>{{ fmtTokens(s.totalTokens) }}</span>
+                  <span>{{ fmtCost(s.costUsd, s.costSource) }}</span>
+                </div>
               </div>
             </div>
           </div>

@@ -184,6 +184,8 @@ export interface TaskStats {
   costSource: string;
   /** Role-level breakdown (engineer/pm/reviewer/cto/guide/…) for this task. */
   roles: TaskRoleStats[];
+  /** Individual session rows for this task, newest first. */
+  sessions: SessionRecord[];
 }
 
 /** Aggregation: one role's share of a task's usage. */
@@ -409,6 +411,7 @@ export class RepoOSDb {
         roles: this.groupRows(rows, (r) => r.sessionType)
           .map(([role, group]) => this.toRoleStats(role, group))
           .sort((a, b) => b.totalElapsedMs - a.totalElapsedMs),
+        sessions: rows,
       };
     } catch {
       return null;

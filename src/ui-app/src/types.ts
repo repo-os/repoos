@@ -268,6 +268,21 @@ export interface RoleUsage {
   costSource: string;
 }
 
+/** One individual agent session's usage row. */
+export interface SessionUsage {
+  sessionId: string;
+  sessionType: string;
+  agent: string;
+  model: string;
+  startedAt: string;
+  endedAt: string | null;
+  elapsedMs: number;
+  totalTokens: number | null;
+  costUsd: number | null;
+  costSource: string;
+  status: string;
+}
+
 /** Aggregated usage totals for a task, incl. role breakdown (0230). */
 export interface TaskUsageStats {
   taskId: string;
@@ -279,6 +294,7 @@ export interface TaskUsageStats {
   totalCostUsd: number | null;
   costSource: string;
   roles: RoleUsage[];
+  sessions: SessionUsage[];
 }
 
 /** One day's aggregated usage (server's local time). */
