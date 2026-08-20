@@ -16,6 +16,7 @@ import { cmdNewDoc } from "../commands/docs.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdServe } from "../commands/serve.js";
 import { cmdTunnel } from "../commands/tunnel.js";
+import { cmdUpgrade } from "../commands/upgrade.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { c } from "./colors.js";
@@ -41,6 +42,7 @@ function help(): void {
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
     ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
+    ${c.cyan("upgrade")}              Self-update a standalone (curl-installed) repoos to the latest release
 
   ${c.bold("EXAMPLES")}
     ${c.dim("$")} repoos init
@@ -59,7 +61,7 @@ function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
 
   // Staleness check — skip for version/help since those read no source.
-  const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h"]);
+  const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h", "upgrade"]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
     if (result.stale) {
@@ -112,6 +114,9 @@ function main(): void {
       break;
     case "tunnel":
       void cmdTunnel(rest);
+      break;
+    case "upgrade":
+      void cmdUpgrade(rest);
       break;
     case "version":
     case "--version":
