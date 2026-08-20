@@ -24,6 +24,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
+// supported Node versions and prints an ExperimentalWarning the first time
+// it's loaded. That's expected/stable usage here, not something a user needs
+// to see — suppress just that one warning, leaving everything else intact.
+process.on("warning", (warning) => {
+  if (warning.name === "ExperimentalWarning" && /SQLite/i.test(warning.message)) return;
+  console.warn(warning);
+});
+
 /** Reads the version stamped into .build-info.json at build time; falls back for dev/source runs. */
 function readVersion(): string {
   try {
