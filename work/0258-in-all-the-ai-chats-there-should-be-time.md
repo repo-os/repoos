@@ -2,16 +2,15 @@
 id: "0258"
 title: Add timestamps to all AI chat panels
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-19T18:02:58Z"
-updated_at: "2026-08-19T18:02:58Z"
+updated_at: "2026-08-20T11:20:02Z"
 ---
-
 ## Problem
 
 The AI chat panels — Debugger (DebuggerChat), Ross (RepoGuideChat), CTO (CTOPanel), and the PM tab in the TaskDrawer — do not show timestamps on individual messages. A human reading a conversation cannot tell when a message was sent, making it hard to gauge recency, correlate with other activity, or understand pacing. The Agent tab (dev chat) already shows step timestamps, but the other chats lack any per-message time reference.
@@ -68,3 +67,4 @@ In all the AI chats there should be timestamps on each message (e.g. PM, ross, c
 ## Activity
 
 - 2026-08-19T18:02:58Z · created · hello@repoos.org
+- 2026-08-20T11:20:02Z · status draft→inbox
