@@ -12,7 +12,7 @@ branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-20T10:44:30Z"
+updated_at: "2026-08-20T11:40:55Z"
 review_rounds: 1
 ---
 ## Redo notice (2026-08-20)
@@ -39,6 +39,70 @@ the verification step in Acceptance criteria below). Two new `.vue` files
 (`AuthSettingsPanel.vue`, `LoginView.vue`) have also been added to the
 codebase since the original scope was written and are now in scope too —
 the file list below is the current, re-audited one (57 files, not 49).
+
+## Verification findings, round 2 (2026-08-20, later same day)
+
+**Still not done. A chat transcript claimed "Task #0202 is now in `review`"
+— it wasn't, and isn't.** The board correctly stayed on `active` throughout,
+but for the wrong reason at first (see below) — worth understanding both.
+
+1. **Why the board didn't move to `review` despite the agent's claim:**
+   `repoos mv 0202 review`, run from inside this task's own worktree, wrote
+   `status: review` into the WORKTREE's own copy of this file — a completely
+   separate file from the one the live board reads (the main checkout's
+   copy). Root cause: the CLI's board-write commands resolved their root
+   from `cwd` (nearest `.git` upward — a worktree has its own), not from the
+   board root. **This is now fixed** (main commit `c5e39773`, this session)
+   — `repoos mv`/`update`/`new` now always target the main checkout, same as
+   the read commands already did.
+   A second, independent gap compounds this even after the fix: `repoos mv`
+   never commits the status change to git, only writes the file. That's why
+   the board's own self-heal safety net (designed for exactly this
+   divergence shape) correctly declined to auto-correct anything — it only
+   trusts a worktree state backed by a real commit, and this one wasn't.
+   Filed as #0263 rather than folded in here.
+
+2. **Actual scope progress this round:** commit `23d518d9` converted
+   `BoardColumn.vue` and (most of) `TaskCard.vue`, plus part of
+   `TunnelDrawer.vue` and one badge in `TaskDrawer.vue`. Re-scanning actual
+   `<style>` block contents (not git-touched-file lists) on the current
+   commit: **14 files still carry substantial untouched raw CSS** —
+   `ActivityIndicator.vue`, `BoardColumn.vue` (still 41 non-keyframe lines —
+   base layout moved to Tailwind, but plenty of raw CSS relocated into a
+   scoped block rather than converted), `CTOPanel.vue`, `DebuggerChat.vue`,
+   `FloatingHeads.vue`, `IntegrationStatusBar.vue`, `RepoGuideChat.vue`,
+   `SystemResourcePanel.vue`, `TaskCard.vue` (74 lines — went up, not down;
+   see note below), `TaskDrawer.vue` (206 lines — essentially untouched
+   despite being listed as addressed), `ToastPanel.vue`, `TunnelDrawer.vue`
+   (52 lines remaining), `VoiceDictate.vue`, `ProductManagerView.vue`.
+
+3. **A process concern, not just a completeness one:** this round's
+   "conversion" for `BoardColumn.vue`/`TaskCard.vue` largely moved classes
+   from the shared `style.css` into per-component `<style scoped>` blocks
+   that are NOT keyframes-only — which reduces global CSS (a real,
+   measurable win: -133 lines) but does not actually satisfy this task's own
+   acceptance criteria ("Keep `<style scoped>` only for `@keyframes`
+   animations... genuinely custom overrides"). Relocating raw CSS into a
+   scoped block is not the same as converting it to Tailwind utilities.
+   Worth being explicit about this distinction with whoever picks this up
+   next, since "moved" and "converted" can look identical in a diffstat.
+
+4. **One genuinely good, unprompted fix this round:** `check.ts`'s UI smoke
+   test had a blanket `if (text.includes("InvalidCharacterError")) return;`
+   suppression (predating this task), intended to ignore a cosmetic WebKit
+   `classList` parsing quirk with Tailwind arbitrary-value classes — but it
+   was broad enough to also swallow the FeedPanel.vue crash found and fixed
+   earlier today (round 1 of these findings). This round narrowed it to
+   `InvalidCharacterError` messages that also mention `classList`, which
+   correctly lets a real bug like that one through while still suppressing
+   the actual cosmetic case. Good catch — keep this.
+
+**Recommendation, unchanged in substance:** finish the 14 files above,
+prioritizing `TaskDrawer.vue` (by far the largest, and barely touched) and
+`TunnelDrawer.vue`/`BoardColumn.vue`/`TaskCard.vue` (finish converting what
+got relocated into scoped blocks instead, per point 3). Then re-run the same
+raw-CSS audit before claiming done — self-report has now been wrong on this
+task three times in a row (8/57, then a blank Dashboard page, now this).
 
 ## Verification findings (2026-08-20)
 
@@ -201,3 +265,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-20T02:32:33Z · status active→review
 - 2026-08-20T02:35:43Z · status review→active
 - 2026-08-20T10:44:30Z · body
+- 2026-08-20T11:40:55Z · body
