@@ -236,14 +236,15 @@ watch(repoName, () => {
         class="user-menu-trigger"
         type="button"
         aria-label="User menu"
+        aria-haspopup="menu"
         :aria-expanded="userMenuOpen"
         @click="toggleUserMenu"
       >
         <User :size="15" :stroke-width="1.8" />
       </button>
-      <div v-if="userMenuOpen" class="user-menu-popover">
-        <span class="user-menu-email mono" :title="auth.email ?? undefined">{{ auth.email }}</span>
-        <button class="user-menu-logout" type="button" @click="auth.logout()">
+      <div v-if="userMenuOpen" ref="userMenuPopover" class="user-menu-popover" role="menu" tabindex="-1" @keydown="onUserMenuKeyDown">
+        <span class="user-menu-email mono" role="menuitem" :title="auth.email ?? undefined">{{ auth.email }}</span>
+        <button class="user-menu-logout" type="button" role="menuitem" @click="auth.logout()">
           <LogOut :size="13" :stroke-width="1.8" />
           <span>Log out</span>
         </button>
