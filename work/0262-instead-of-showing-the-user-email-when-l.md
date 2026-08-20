@@ -11,8 +11,7 @@ branch: feat/user-avatar-popover-replace-email-displa
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T19:06:38Z"
-updated_at: "2026-08-20T12:19:56Z"
-review_rounds: 1
+updated_at: "2026-08-20T09:31:40Z"
 ---
 ## Goal
 
@@ -62,11 +61,3 @@ Replace the always-visible email text + inline logout button in the top-right co
 - 2026-08-20T05:21:09Z · status inbox→ready
 - 2026-08-20T09:27:57Z · status ready→active, branch
 - 2026-08-20T09:31:40Z · status active→review
-- 2026-08-20T10:37:11Z · status review→active
-- 2026-08-20T11:49:08Z · status active→review
-- 2026-08-20T11:49:09Z · status review→active
-- 2026-08-20T11:54:27Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
-- 2026-08-20T12:13:39Z · status review→active
-- 2026-08-20T12:15:53Z · status active→review
-- 2026-08-20T12:18:12Z · status review→active
-- 2026-08-20T12:19:56Z · status active→review
