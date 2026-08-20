@@ -38,7 +38,7 @@ chmod +x "$INSTALL_DIR/cli/index.js"
 
 cat > "$BIN_DIR/repoos" <<EOF
 #!/usr/bin/env bash
-exec node "$INSTALL_DIR/cli/index.js" "\$@"
+exec node --no-warnings "$INSTALL_DIR/cli/index.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/repoos"
 
