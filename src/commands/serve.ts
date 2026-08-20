@@ -10,14 +10,22 @@ import { detectTailscaleIPv4 } from "../core/tailscale.js";
 
 /**
  * Picks the bind host: an explicit `--host` always wins; otherwise, if
- * Tailscale is running on this machine, default to its tailnet IP so the
- * server is reachable from other Tailscale devices without extra setup.
- * Falls back to localhost-only when Tailscale isn't detected.
+ * Tailscale is running on this machine, default to 0.0.0.0 (all interfaces)
+ * so the server is reachable both from other Tailscale devices AND from
+ * localhost — binding to the Tailscale IP alone would leave nothing
+ * listening on 127.0.0.1, silently breaking anything on this same machine
+ * that assumes localhost reachability (Cloudflare Tunnel's local origin,
+ * RepoOS's own tunnel readiness check, etc.). Falls back to localhost-only
+ * when Tailscale isn't detected. `tailscaleIP` is surfaced separately (even
+ * though the actual bind is 0.0.0.0) so callers can show the address other
+ * tailnet devices should actually use.
  */
-export function resolveServeHost(explicitHost?: string): { host: string; tailscaleDetected: boolean } {
+export function resolveServeHost(
+  explicitHost?: string,
+): { host: string; tailscaleDetected: boolean; tailscaleIP?: string } {
   if (explicitHost) return { host: explicitHost, tailscaleDetected: false };
   const tailscaleIP = detectTailscaleIPv4();
-  if (tailscaleIP) return { host: tailscaleIP, tailscaleDetected: true };
+  if (tailscaleIP) return { host: "0.0.0.0", tailscaleDetected: true, tailscaleIP };
   return { host: "127.0.0.1", tailscaleDetected: false };
 }
 
@@ -64,7 +72,7 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
     else if (args[i] === "--host") explicitHost = args[++i];
     else if (args[i] === "--quiet" || args[i] === "-q") quiet = true;
   }
-  const { host, tailscaleDetected } = resolveServeHost(explicitHost);
+  const { host, tailscaleDetected, tailscaleIP } = resolveServeHost(explicitHost);
 
   let handle;
   try {
@@ -110,13 +118,13 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
   );
   if (tailscaleDetected) {
     console.log(
-      c.dim("  Tailscale detected — bound to your tailnet IP (") +
-        c.cyan(host) +
-        c.dim("), reachable from other Tailscale devices. Use ") +
+      c.dim("  Tailscale detected — listening on all interfaces (") +
+        c.cyan("0.0.0.0") +
+        c.dim("), reachable from other Tailscale devices at ") +
+        c.cyan(`http://${tailscaleIP}:${handle.port}`) +
+        c.dim(". Use ") +
         c.cyan("--host 127.0.0.1") +
-        c.dim(" for localhost-only, or ") +
-        c.cyan("--host 0.0.0.0") +
-        c.dim(" for all interfaces."),
+        c.dim(" to restrict to localhost only."),
     );
   }
   console.log(c.dim("  press ^C to stop\n"));

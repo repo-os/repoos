@@ -1848,7 +1848,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
 
       const actualPort = (server.address() as { port: number }).port;
-      const url = `http://${host}:${actualPort}`;
+      // "0.0.0.0" is a valid bind address but not a connectable one — anything
+      // that needs to actually call back into this server (spawned agents via
+      // runner.apiUrl, the URL handed to callers below) must use localhost
+      // instead, regardless of which interfaces are actually bound.
+      const connectHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+      const url = `http://${connectHost}:${actualPort}`;
       logger.system("info", "RepoOS server listening", {
         pid: process.pid,
         port: actualPort,

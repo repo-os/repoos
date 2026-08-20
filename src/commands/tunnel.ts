@@ -29,6 +29,7 @@ import {
   hostnameWarning,
   inferHostname,
   isValidAppName,
+  isValidBaseDomain,
   isValidEmail,
   parseEmailList,
   readTunnelConfig,
@@ -482,8 +483,14 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   // 4. Base domain for hostname inference.
   let domain = tunnel.domain;
   if (!domain) {
-    const entered = await prompt("  Base domain for publishing (e.g. repoos.org, blank to skip): ");
-    domain = entered;
+    for (;;) {
+      const entered = await prompt("  Base domain for publishing (e.g. repoos.org, blank to skip): ");
+      if (!entered || isValidBaseDomain(entered)) {
+        domain = entered;
+        break;
+      }
+      console.log(c.yellow(`  "${entered}" doesn't look like a domain (need at least one dot, e.g. repoos.org) — try again, or leave blank to skip.`));
+    }
   }
 
   tunnel.name = tunnel.name || DEFAULT_TUNNEL_NAME;

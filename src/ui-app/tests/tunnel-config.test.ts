@@ -7,6 +7,7 @@ import {
   hostnameWarning,
   inferHostname,
   isValidAppName,
+  isValidBaseDomain,
   isValidEmail,
   parseEmailList,
   parseTunnelSection,
@@ -149,6 +150,12 @@ describe("hostname inference + validation", () => {
     expect(isValidAppName("has.dot")).toBe(false);
     expect(isValidEmail("alice@example.com")).toBe(true);
     expect(isValidEmail("not-an-email")).toBe(false);
+  });
+
+  it("validates base domains — rejects a bare word like an app name typed into the wrong prompt", () => {
+    expect(isValidBaseDomain("repoos.org")).toBe(true);
+    expect(isValidBaseDomain("celleris")).toBe(false);
+    expect(isValidBaseDomain("")).toBe(false);
   });
 
   it("parses comma-separated allowlists, trims and dedupes", () => {
