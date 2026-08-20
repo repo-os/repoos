@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import { computed, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { LogOut, Moon, RefreshCw, RotateCcw, Sun, User } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
@@ -91,14 +91,51 @@ function clearColor(): void {
 }
 
 const userMenuOpen = ref(false);
+const userMenuTrigger = ref<InstanceType<typeof HTMLButtonElement> | null>(null);
+const userMenuPopover = ref<InstanceType<typeof HTMLDivElement> | null>(null);
 
 function toggleUserMenu(): void {
   userMenuOpen.value = !userMenuOpen.value;
 }
 
-function closeUserMenu(): void {
+function closeAndFocusTrigger(): void {
   userMenuOpen.value = false;
+  nextTick(() => {
+    userMenuTrigger.value?.focus();
+  });
 }
+
+function onUserMenuKeyDown(e: KeyboardEvent): void {
+  if (e.key !== "Tab") return;
+  const popover = userMenuPopover.value;
+  if (!popover) return;
+  const focusable = popover.querySelectorAll<HTMLElement>("button, [href], [tabindex]:not([tabindex='-1'])");
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+}
+
+watch(userMenuOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      const popover = userMenuPopover.value;
+      if (!popover) return;
+      const first = popover.querySelector<HTMLElement>("button");
+      first?.focus();
+    });
+  }
+});
 
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
@@ -111,7 +148,9 @@ function onDocumentMouseDown(e: MouseEvent): void {
 function onDocumentKeyDown(e: KeyboardEvent): void {
   if (e.key === "Escape") {
     popoverOpen.value = false;
-    userMenuOpen.value = false;
+    if (userMenuOpen.value) {
+      closeAndFocusTrigger();
+    }
   }
 }
 
@@ -331,7 +370,7 @@ watch(repoName, () => {
   gap: 6px;
   padding: 6px 8px;
   font-size: 12px;
-  color: var(--red-tint, #ef4444);
+  color: var(--red-tint);
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -339,8 +378,8 @@ watch(repoName, () => {
   transition: .15s;
 }
 .user-menu-logout:hover {
-  background: var(--red-tint, #ef4444);
-  color: #fff;
+  background: var(--red-tint);
+  color: var(--txt);
   border-color: transparent;
 }
 </style>
