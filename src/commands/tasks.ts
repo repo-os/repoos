@@ -1,6 +1,10 @@
 /**
- * Read and mutate commands. All go through the createRepoOS() facade so the
- * file remains the single source of truth.
+ * Read and mutate commands. Every command that touches the board — reads and
+ * writes alike — goes through boardRepoOS(), which resolves to the MAIN
+ * checkout even when run from inside a task's linked worktree. Task files
+ * are the single source of truth, and there is only one copy of that source
+ * of truth: the main checkout's. Never call createRepoOS() directly from a
+ * board command (see boardRepoOS()'s own comment for why).
  */
 import { readFileSync } from "node:fs";
 import { createRepoOS } from "../core/repoos.js";
@@ -149,7 +153,12 @@ export function cmdMv(id?: string, status?: string): void {
     process.exitCode = 1;
     return;
   }
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202): an agent running this from inside
+  // its own task worktree must still land the status change on the MAIN
+  // checkout's task file — the only copy the live board ever reads. Writing
+  // to the worktree's own copy (findRepoRoot() stops at the worktree's own
+  // .git) is a silent no-op from the board's perspective.
+  const repoos = boardRepoOS();
   try {
     const t = repoos.updateStatus(id, status as Status);
     console.log(
@@ -225,7 +234,8 @@ export function cmdUpdate(args: string[]): void {
     return;
   }
 
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why.
+  const repoos = boardRepoOS();
   const task = repoos.getTask(id);
   if (!task) {
     console.error(c.red(`  Task #${id} not found.`));
@@ -259,7 +269,10 @@ export function cmdNew(args: string[]): void {
     process.exitCode = 1;
     return;
   }
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why. Otherwise a
+  // task created from inside a worktree lands in that worktree's own work/
+  // dir and is invisible to the real board entirely.
+  const repoos = boardRepoOS();
   const t = repoos.createTask({
     title,
     type: (flags.type as string) || undefined,
