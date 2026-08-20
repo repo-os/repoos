@@ -46,7 +46,7 @@
   "engines": {
     "node": ">=20.6.0"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE.md",
   "devDependencies": {
     "@playwright/test": "1.40.0",
     "@tailwindcss/vite": "^4.3.3",
