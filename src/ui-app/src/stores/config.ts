@@ -124,12 +124,10 @@ export const useConfigStore = defineStore("config", () => {
     const prev = uiTheme.value;
     applyUiTheme(t, true);
     try {
-      await api("/api/config", JSON_OPTS("PATCH", { uiTheme: t }));
-      if (data.value) data.value.uiTheme = t;
+      localStorage.setItem("repoos.uiTheme", t);
       form.uiTheme = t;
-    } catch (err) {
+    } catch {
       applyUiTheme(prev);
-      throw err;
     }
   }
 
@@ -149,12 +147,10 @@ export const useConfigStore = defineStore("config", () => {
     const prev = typeof form.theme === "string" ? form.theme : "system";
     applyTheme(t, true);
     try {
-      await api("/api/config", JSON_OPTS("PATCH", { theme: t }));
-      if (data.value) data.value.theme = t;
+      localStorage.setItem("repoos.theme", t);
       form.theme = t;
-    } catch (err) {
+    } catch {
       applyTheme(prev);
-      throw err;
     }
   }
 
@@ -217,8 +213,12 @@ export const useConfigStore = defineStore("config", () => {
       syncWhisperFlag(res);
       agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
       if (res.agentsMeta) agentsMeta.value = res.agentsMeta;
-      applyTheme(String(res.config.theme ?? "system"));
-      applyUiTheme(String(res.config.uiTheme ?? "classic"));
+      const storedTheme = localStorage.getItem("repoos.theme") ?? "system";
+      const storedUiTheme = localStorage.getItem("repoos.uiTheme") ?? "classic";
+      form.theme = storedTheme;
+      form.uiTheme = storedUiTheme;
+      applyTheme(storedTheme);
+      applyUiTheme(storedUiTheme);
       loaded.value = true;
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
@@ -261,8 +261,12 @@ export const useConfigStore = defineStore("config", () => {
       data.value = res.config;
       fillForm(res);
       syncWhisperFlag(res);
-      applyTheme(String(res.config.theme ?? "system"));
-      applyUiTheme(String(res.config.uiTheme ?? "classic"));
+      const storedTheme = localStorage.getItem("repoos.theme") ?? "system";
+      const storedUiTheme = localStorage.getItem("repoos.uiTheme") ?? "classic";
+      form.theme = storedTheme;
+      form.uiTheme = storedUiTheme;
+      applyTheme(storedTheme);
+      applyUiTheme(storedUiTheme);
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
       throw err;
