@@ -371,7 +371,7 @@ watch(repoName, () => {
   gap: 6px;
   padding: 6px 8px;
   font-size: 12px;
-  color: var(--red-tint);
+  color: var(--red);
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
