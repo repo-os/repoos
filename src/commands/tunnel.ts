@@ -607,6 +607,57 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   console.log(c.dim("  run:     ") + c.cyan("repoos tunnel start") + c.dim("  ·  server: ") + c.cyan("repoos tunnel install"));
 }
 
+/**
+ * Remove a published app: deletes its Cloudflare Access app + policy (if it
+ * has one), drops it from repoos.toml, and rewrites the ingress config. The
+ * DNS CNAME is left alone — it's harmless to leave pointed at the tunnel
+ * (matches nothing once the ingress route is gone → falls through to the
+ * 404 catch-all), and re-creating the app under the same hostname later
+ * needs it to still exist anyway.
+ */
+async function cmdTunnelDestroy(args: string[]): Promise<void> {
+  const [name] = args;
+  if (!name) fail("Usage: repoos tunnel destroy <name>");
+
+  const cfg = loadConfig();
+  const tunnel = readTunnelConfig(cfg.root);
+  const app = tunnel.apps[name];
+  if (!app) fail(`No app named "${name}" — see \`repoos tunnel list\`.`);
+
+  if (
+    !(await confirm(
+      `  Destroy "${name}" (${app.hostname})? This removes its Cloudflare Access policy and RepoOS's record of it.`,
+      false,
+    ))
+  ) {
+    console.log(c.dim("  cancelled."));
+    return;
+  }
+
+  if (!app.noAccess) {
+    try {
+      const { token, accountId } = await accessClient();
+      const existing = await findAccessApp(token, accountId, app.hostname);
+      if (existing?.id) {
+        await cfFetch(token, `/accounts/${accountId}/access/apps/${existing.id}`, "DELETE");
+        console.log(c.green("  ✔ deleted Cloudflare Access app for ") + c.cyan(app.hostname));
+      } else {
+        console.log(c.dim("  · no Cloudflare Access app found for ") + app.hostname + c.dim(" — nothing to delete there."));
+      }
+    } catch (e) {
+      console.log(c.yellow(`  ⚠ Failed to delete the Access app: ${(e as Error).message}`));
+      console.log(c.dim("    Continuing to remove it from repoos.toml anyway — clean up the stale Access app in the Cloudflare dashboard if needed."));
+    }
+  }
+
+  delete tunnel.apps[name];
+  writeTunnelConfig(cfg.root, tunnel);
+  const derived = writeDerivedConfig(tunnel);
+  console.log(c.green(`  ✔ removed "${name}" from repoos.toml`) + c.dim(" · ingress config rewritten → " + derived));
+  console.log(c.dim("  DNS record for ") + app.hostname + c.dim(" was left as-is — delete it in the Cloudflare dashboard if you don't plan to recreate this app."));
+  console.log(c.dim("  Restart `repoos tunnel start`/reinstall the service to pick up the ingress change."));
+}
+
 async function cmdTunnelAllow(args: string[]): Promise<void> {
   await mutateAllowlist("allow", args);
 }
@@ -872,6 +923,7 @@ function tunnelHelp(): void {
   ${c.bold("SUBCOMMANDS")}
     ${c.cyan("setup")}                 One-time machine setup: install/check cloudflared, log in, create the tunnel, store the API token
     ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y" | --no-access (requires auth.enabled)')}
+    ${c.cyan("destroy")} <name>        Remove a published app (deletes its Access policy, drops it from repoos.toml)
     ${c.cyan("allow")} <name> <email>  Add an email to an app's allowlist
     ${c.cyan("deny")} <name> <email>   Remove an email from an app's allowlist
     ${c.cyan("start")}                 Run cloudflared in the foreground (dev)
@@ -894,6 +946,7 @@ export async function cmdTunnel(args: string[]): Promise<void> {
   const handlers: Record<string, (a: string[]) => Promise<void> | void> = {
     setup: cmdTunnelSetup,
     create: cmdTunnelCreate,
+    destroy: cmdTunnelDestroy,
     allow: cmdTunnelAllow,
     deny: cmdTunnelDeny,
     start: cmdTunnelStart,
