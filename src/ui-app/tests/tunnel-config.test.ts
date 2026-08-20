@@ -197,7 +197,10 @@ describe("Cloudflare Access payloads", () => {
     const body = buildAccessAppBody("dashboard.repoos.org");
     expect(body.type).toBe("self_hosted");
     expect(body.domain).toBe("dashboard.repoos.org");
-    expect(body.auto_redirect_to_identity).toBe(true);
+    // auto_redirect_to_identity requires allowed_idps to name exactly one
+    // provider, which RepoOS never sets — Cloudflare's API rejects the app
+    // outright when it's true without that (a real 400 error hit in the wild).
+    expect(body.auto_redirect_to_identity).toBeUndefined();
   });
 
   it("builds an allow policy whose include list is exactly the emails", () => {

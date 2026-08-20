@@ -312,7 +312,10 @@ export function buildAccessAppBody(hostname: string): Record<string, unknown> {
     domain: hostname,
     type: "self_hosted",
     session_duration: "24h",
-    auto_redirect_to_identity: true,
+    // auto_redirect_to_identity requires allowed_idps to name exactly one
+    // identity provider, which RepoOS never configures — Cloudflare's API
+    // rejects the app outright when it's true without that. Omitting it just
+    // shows the standard identity-provider picker instead of auto-redirecting.
   };
 }
 
