@@ -176,10 +176,11 @@ repoos serve --host 0.0.0.0  # listen on all interfaces
 repoos serve --quiet         # no terminal activity log
 ```
 
-If Tailscale is running on the machine, `repoos serve` binds to its tailnet IP by
-default instead of localhost, so it's reachable from your other Tailscale devices
-with no extra flags. Pass `--host` explicitly to override (`127.0.0.1` for
-localhost-only, `0.0.0.0` for all interfaces).
+If Tailscale is running on the machine, `repoos serve` binds to `0.0.0.0` (all
+interfaces) by default instead of localhost-only, so it's reachable both from
+your other Tailscale devices and from localhost-only tools on the same machine
+(e.g. a Cloudflare Tunnel's local origin). Pass `--host 127.0.0.1` explicitly
+to restrict it to localhost only.
 
 ### Endpoints
 

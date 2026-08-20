@@ -251,6 +251,16 @@ export function isValidAppName(name: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(name);
 }
 
+/**
+ * Shape check for a base domain like `repoos.org` — requires at least one dot
+ * and a plausible TLD, so a plain word (an app name typed into the wrong
+ * prompt, e.g. "celleris") is rejected rather than silently stored and only
+ * surfacing later as a confusing "deeper than one label" hostname warning.
+ */
+export function isValidBaseDomain(domain: string): boolean {
+  return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain.toLowerCase());
+}
+
 /** Basic email shape check for `--allow` / `allow` / `deny` args. */
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

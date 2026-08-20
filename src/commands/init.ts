@@ -524,7 +524,9 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     const { host } = resolveServeHost();
     const dirHint = target === cwd ? null : `cd ${target}`;
     if (target !== cwd) process.chdir(target);
-    if (port > 0) openBrowser(`http://${host}:${port}`);
+    // "0.0.0.0" (the Tailscale-detected bind) isn't openable in a browser —
+    // localhost is always reachable regardless of what's actually bound.
+    if (port > 0) openBrowser(`http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
     if (dirHint) {
       console.log(
         c.dim("\n  Your shell is still in ") + c.cyan(cwd) +
