@@ -2,7 +2,7 @@
 id: "0262"
 title: "User avatar popover: replace email display with icon + dropdown menu"
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T19:06:38Z"
-updated_at: "2026-08-20T03:25:16Z"
+updated_at: "2026-08-20T04:07:43Z"
 ---
 ## Goal
 
@@ -57,3 +57,4 @@ Replace the always-visible email text + inline logout button in the top-right co
 ## Activity
 
 - 2026-08-20T03:25:16Z · body
+- 2026-08-20T04:07:43Z · status draft→inbox
