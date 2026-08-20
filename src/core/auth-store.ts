@@ -14,25 +14,36 @@ import { hashOtp, hashSessionToken, randomHex, DEFAULT_SESSION_MAX_AGE } from ".
 
 let Database: any;
 let dbAvailable = false;
+let sqliteLoadAttempted = false;
 const runtimeRequire = createRequire(import.meta.url);
 
-try {
-  const g = globalThis as any;
-  if (g.Bun && typeof g.Bun === "object") {
-    try {
-      const sqlite = runtimeRequire("bun:sqlite");
-      Database = sqlite.Database;
-      dbAvailable = true;
-    } catch { /* fall through */ }
-  }
-  if (!dbAvailable) {
-    try {
-      const sqlite = runtimeRequire("node:sqlite");
-      Database = sqlite.DatabaseSync;
-      dbAvailable = true;
-    } catch { /* unavailable */ }
-  }
-} catch { /* degrade */ }
+/**
+ * Load SQLite on first actual use, not at module import time — see the
+ * matching comment in db.ts for why (this module is on the same
+ * nearly-every-command import path, so requiring node:sqlite eagerly here
+ * would print its ExperimentalWarning before the CLI even dispatches).
+ */
+function loadSqlite(): void {
+  if (sqliteLoadAttempted) return;
+  sqliteLoadAttempted = true;
+  try {
+    const g = globalThis as any;
+    if (g.Bun && typeof g.Bun === "object") {
+      try {
+        const sqlite = runtimeRequire("bun:sqlite");
+        Database = sqlite.Database;
+        dbAvailable = true;
+      } catch { /* fall through */ }
+    }
+    if (!dbAvailable) {
+      try {
+        const sqlite = runtimeRequire("node:sqlite");
+        Database = sqlite.DatabaseSync;
+        dbAvailable = true;
+      } catch { /* unavailable */ }
+    }
+  } catch { /* degrade */ }
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,6 +151,7 @@ export class AuthStore {
 
   constructor(repoRoot: string) {
     this.available = false;
+    loadSqlite();
     if (!dbAvailable || !Database) return;
 
     try {
