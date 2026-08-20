@@ -5,6 +5,7 @@ import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 import type { Task, Agent, AgentOutputEntry } from "../types";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -18,6 +19,7 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const auth = useAuthStore();
 
 const selectedTaskId = ref<string | null>(null);
 const draft = ref("");
@@ -29,8 +31,11 @@ const pmCliOverride = ref<string | null>(null);
 const pmModelOverride = ref<string | null>(null);
 const showAgentConfig = ref(false);
 
+// Per-user PM session when auth is on (0248), so teammates sharing one
+// instance each get their own PM conversation per task instead of reading
+// and posting into the same thread. Matches the server's pmMessage route.
 function pmSessionId(taskId: string): string {
-  return `pm-task-v2:${taskId}`;
+  return auth.email ? `pm-task-v2:${taskId}::${auth.email}` : `pm-task-v2:${taskId}`;
 }
 
 const tasks = computed(() => repo.tasks);

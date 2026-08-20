@@ -61,6 +61,11 @@ describe("resolveSessionTaskId — role-to-task attribution (0230)", () => {
     expect(resolveSessionTaskId("pm-task:0007")).toBe("0007");
   });
 
+  it("strips the per-user ::<email> suffix from PM chat keys (0248)", () => {
+    expect(resolveSessionTaskId("pm-task-v2:0001::alice@example.com")).toBe("0001");
+    expect(resolveSessionTaskId("pm-task-v2:1234::bob.smith@sub.example.co")).toBe("1234");
+  });
+
   it("passes engineer/review task ids straight through", () => {
     expect(resolveSessionTaskId("0001")).toBe("0001");
     expect(resolveSessionTaskId("0042")).toBe("0042");
