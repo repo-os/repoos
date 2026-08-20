@@ -17,23 +17,16 @@
 
     <script>
       // Apply theme before first paint to avoid flash of wrong theme.
+      // Reads from localStorage (sync, zero network wait) — falls back to
+      // OS preference when no explicit choice has been saved.
       (function () {
         var p = window.matchMedia("(prefers-color-scheme: dark)");
-        var r = p.matches ? "dark" : "light";
-        document.documentElement.dataset.theme = r;
-        fetch("/api/config")
-          .then(function (r) {
-            return r.json();
-          })
-          .then(function (d) {
-            var t = (d.config && d.config.theme) || "system";
-            document.documentElement.dataset.theme =
-              t === "system" ? (p.matches ? "dark" : "light") : t;
-          })
-          .catch(function () {});
+        var t = localStorage.getItem("repoos.theme") || "system";
+        document.documentElement.dataset.theme =
+          t === "system" ? (p.matches ? "dark" : "light") : t;
         p.addEventListener("change", function (e) {
           var c = document.documentElement.dataset.theme;
-          if (!c || c === "system")
+          if (!c || localStorage.getItem("repoos.theme") === "system" || !localStorage.getItem("repoos.theme"))
             document.documentElement.dataset.theme = e.matches ? "dark" : "light";
         });
       })();

@@ -179,20 +179,6 @@ watch(
   { deep: true, flush: "sync" },
 );
 
-// Apply theme preferences live as the user changes them.
-watch(
-  () => form.theme,
-  (t) => {
-    if (typeof t === "string") config.applyTheme(t, true);
-  },
-);
-watch(
-  () => form.uiTheme,
-  (t) => {
-    if (typeof t === "string") config.applyUiTheme(t, true);
-  },
-);
-
 onUnmounted(() => {
   clearTimeout(autoSaveTimer);
   clearTimeout(testStateTimer);
