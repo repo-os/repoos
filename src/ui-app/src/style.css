@@ -444,6 +444,9 @@
   .tc-moving{color:var(--cyan)}
   .tc-needs-input{color:var(--amber)}
   .tc-stalled{color:var(--txt-dim)}
+  .tc-stuck{color:var(--red)}
+  .tc-stuck::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
+  .task-card .tc-stuck::before{display:none}
   .tc-dirty{color:var(--amber);font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:help}
   .tc-dirty::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:4px;box-shadow:0 0 6px var(--amber)}
   @keyframes tcpulse{0%,100%{opacity:1}50%{opacity:.35}}
