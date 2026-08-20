@@ -30,7 +30,7 @@ import {
   isGitRepo,
 } from "../core/git.js";
 import { c } from "../cli/colors.js";
-import { cmdServe } from "./serve.js";
+import { cmdServe, resolveServeHost } from "./serve.js";
 
 const SAMPLE_TASK = (description: string) => `---
 id: "0001"
@@ -476,10 +476,23 @@ async function guidedNewRepo(args: string[]): Promise<void> {
         port = free;
       }
     }
+    const { host } = resolveServeHost();
+    const dirHint = target === cwd ? null : `cd ${target}`;
     if (target !== cwd) process.chdir(target);
-    if (port > 0) openBrowser(`http://127.0.0.1:${port}`);
-    console.log(c.dim("\n  Starting the RepoOS web console…"));
-    await cmdServe(["--port", String(port)]);
+    if (port > 0) openBrowser(`http://${host}:${port}`);
+    if (dirHint) {
+      console.log(
+        c.dim("\n  Your shell is still in ") + c.cyan(cwd) +
+          c.dim(" — this new project lives in ") + c.cyan(target) +
+          c.dim("."),
+      );
+    }
+    console.log(c.dim("  Starting the RepoOS web console…"));
+    await cmdServe(["--port", String(port)], {
+      onShutdown: dirHint
+        ? () => console.log(c.dim("  cd into the project: ") + c.cyan(dirHint))
+        : undefined,
+    });
     return;
   }
 
