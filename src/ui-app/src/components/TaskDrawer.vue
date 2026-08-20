@@ -409,6 +409,10 @@ async function moveToDone(): Promise<void> {
   startDoneTimer();
   try {
     await repo.completeTask(ui.active);
+    // The close-out pipeline just started — show its live progress instead
+    // of a now-stale task drawer.
+    ui.close();
+    ui.expandIntegrationBar();
   } catch (err) {
     // Dirty-main guard (0204): pause and show the confirmation modal instead
     // of an inline failure — the task stays in review until the user decides.
@@ -444,6 +448,8 @@ async function confirmCommitDirty(): Promise<void> {
   startDoneTimer();
   try {
     await repo.completeTask(t, { commitDirty: true });
+    ui.close();
+    ui.expandIntegrationBar();
   } catch (err) {
     // Still dirty after commiting (e.g. a new file appeared) — keep asking.
     if (err instanceof Error && err.name === "DirtyMainError") {
