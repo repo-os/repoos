@@ -25,11 +25,16 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
-// supported Node versions and prints an ExperimentalWarning the first time
-// it's loaded. That's expected/stable usage here, not something a user needs
-// to see — suppress just that one warning, leaving everything else intact.
+// supported Node versions and prints a warning the first time it's loaded.
+// That's expected/stable usage here, not something a user needs to see —
+// suppress just that one warning, leaving everything else intact. Matched on
+// message content alone, not warning.name: which exact warning class/name
+// Node uses for this varies by version (confirmed — no warning fires on
+// instantiation at all on Node 24.19.0, but one does on Node 25.2.1), so a
+// name-based filter risks silently failing to match on some future/older
+// Node version and falling through to print it anyway.
 process.on("warning", (warning) => {
-  if (warning.name === "ExperimentalWarning" && /SQLite/i.test(warning.message)) return;
+  if (/\bsqlite\b/i.test(warning.message)) return;
   console.warn(warning);
 });
 
