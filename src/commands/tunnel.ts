@@ -571,7 +571,11 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
       timeout: 60_000,
     });
   } catch {
-    console.log(c.yellow("  ⚠ DNS routing failed — authorize the zone in `cloudflared tunnel login`, then re-run `repoos tunnel route dns <name> <hostname>` manually."));
+    console.log(
+      c.yellow("  ⚠ DNS routing failed — authorize the zone in `cloudflared tunnel login`, then run:") +
+        "\n    " +
+        c.cyan(`cloudflared tunnel route dns --overwrite-dns ${tunnel.name} ${hostname}`),
+    );
   }
 
   const derived = writeDerivedConfig(tunnel);
