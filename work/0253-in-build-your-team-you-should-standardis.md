@@ -2,14 +2,14 @@
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/standardise-build-your-team-styling-and-
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-18T15:36:51Z"
+updated_at: "2026-08-20T10:38:12Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 
 - 2026-08-18T15:36:17Z · status draft→inbox, title, area, body
 - 2026-08-18T15:36:51Z · status inbox→ready
+- 2026-08-20T10:38:12Z · status ready→active, branch
