@@ -12,7 +12,7 @@ branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
 pm_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-20T02:35:44Z"
+updated_at: "2026-08-20T10:44:30Z"
 review_rounds: 1
 ---
 ## Redo notice (2026-08-20)
@@ -39,6 +39,54 @@ the verification step in Acceptance criteria below). Two new `.vue` files
 (`AuthSettingsPanel.vue`, `LoginView.vue`) have also been added to the
 codebase since the original scope was written and are now in scope too —
 the file list below is the current, re-audited one (57 files, not 49).
+
+## Verification findings (2026-08-20)
+
+**Not done — sent back to `active` after direct verification found real gaps.**
+Status had drifted to `review` again despite the acceptance criteria's
+"run a completion check" and "run `repoos check`" boxes still being
+unchecked. Verified independently this time (raw CSS scan + a live browser
+render, not self-report):
+
+1. **Still incomplete.** Scanning actual `<style>` block contents (not just
+   which files were git-touched) shows **13 files still carry substantial
+   untouched raw CSS**: `ActivityIndicator.vue`, `BoardColumn.vue` (96
+   lines — never touched at all), `CTOPanel.vue`, `DebuggerChat.vue`,
+   `FloatingHeads.vue`, `IntegrationStatusBar.vue`, `RepoGuideChat.vue`,
+   `SystemResourcePanel.vue`, `TaskCard.vue`, `TaskDrawer.vue` (216 lines —
+   the largest file in the app, only partially converted),
+   `ToastPanel.vue`, `VoiceDictate.vue`, `ProductManagerView.vue`. ~35 of 57
+   files touched overall — real progress over the previous 8/57, but not
+   complete, and the two largest/most complex components are among the
+   files still mostly raw CSS.
+
+2. **A real crash slipped through, not just a styling gap.** Built this
+   branch and `main` into isolated fixture-rooted preview servers (same
+   technique as #0260) and screenshotted every route with Playwright. The
+   Dashboard (`/`) rendered **completely blank** on this branch — only the
+   sidebar/topbar showed. Root cause: `FeedPanel.vue`'s empty-state div was
+   missing its `class="..."` wrapper —
+   `<div v-if="!feed.length" p-4 text-center font-mono text-xs text-[var(--txt-faint)]>`
+   — so Vue parsed each Tailwind utility as a bare (invalid) attribute name,
+   and the browser threw `InvalidCharacterError` on mount, which took down
+   the whole page. **Fixed in this session** (commit `3dc3cbd1`) — verified
+   the Dashboard now renders identically to `main` with zero console errors.
+   This does not affect the completeness finding above.
+
+3. **Why `repoos check` didn't catch it (probably didn't run, or ran on
+   different code):** the UI smoke test does visit `/` and does check for
+   console errors, so a real run of `repoos check` against the crashing
+   commit should have caught this. The unchecked acceptance-criteria boxes
+   suggest it may not have actually been run before the last handoff attempt
+   — treat "Run `repoos check` before moving to review" as non-negotiable
+   before the next attempt, and don't trust a green run against stale
+   `dist/` (rebuild first).
+
+**Recommendation for the next pass:** finish the remaining 13 files (listed
+above) — prioritize `TaskDrawer.vue` and `BoardColumn.vue` since they're the
+largest and most load-bearing — then do a fresh completion check per the
+existing acceptance criteria, then actually run `repoos check`, before
+attempting review again.
 
 ## Problem
 
@@ -152,3 +200,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-19T19:04:48Z · status review→active
 - 2026-08-20T02:32:33Z · status active→review
 - 2026-08-20T02:35:43Z · status review→active
+- 2026-08-20T10:44:30Z · body
