@@ -170,10 +170,16 @@ your task files, and serves a JSON API plus a live event stream. It adds no new
 business logic — it's a transport layer over the same core the CLI uses.
 
 ```bash
-repoos serve                 # http://127.0.0.1:7171
+repoos serve                 # http://127.0.0.1:7171 (or your Tailscale IP, if detected)
 repoos serve --port 8080     # custom port
+repoos serve --host 0.0.0.0  # listen on all interfaces
 repoos serve --quiet         # no terminal activity log
 ```
+
+If Tailscale is running on the machine, `repoos serve` binds to its tailnet IP by
+default instead of localhost, so it's reachable from your other Tailscale devices
+with no extra flags. Pass `--host` explicitly to override (`127.0.0.1` for
+localhost-only, `0.0.0.0` for all interfaces).
 
 ### Endpoints
 
