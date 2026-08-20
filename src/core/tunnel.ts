@@ -19,8 +19,14 @@ export interface TunnelApp {
   hostname: string;
   /** Local origin, e.g. `http://localhost:3000`. */
   service: string;
-  /** Email allowlist enforced by a Cloudflare Access policy in front of the app. */
+  /** Email allowlist enforced by a Cloudflare Access policy in front of the app. Always empty when noAccess is true. */
   access: string[];
+  /**
+   * Created with `--no-access`: no Cloudflare Access policy exists for this
+   * app at all — it's fully public at Cloudflare's edge, relying solely on
+   * RepoOS's own native auth. Only ever set at creation time.
+   */
+  noAccess?: boolean;
 }
 
 /** The persisted `[tunnel]` state. Non-secret — never holds tokens or tunnel secrets. */
@@ -122,6 +128,7 @@ export function parseTunnelSection(text: string): TunnelConfig {
       hostname: String(a.hostname ?? ""),
       service: String(a.service ?? ""),
       access: Array.isArray(a.access) ? (a.access as unknown[]).map(String) : [],
+      ...(a.noAccess === true ? { noAccess: true } : {}),
     };
   }
   const cfg = emptyTunnelConfig();
@@ -153,6 +160,7 @@ export function serializeTunnelSection(cfg: TunnelConfig): string {
     lines.push(`hostname = ${tomlQuote(app.hostname)}`);
     lines.push(`service = ${tomlQuote(app.service)}`);
     lines.push(`access = [${app.access.map(tomlQuote).join(", ")}]`);
+    if (app.noAccess) lines.push(`noAccess = true`);
   }
   return lines.join("\n");
 }

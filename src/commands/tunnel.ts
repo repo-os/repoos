@@ -500,7 +500,9 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
 async function cmdTunnelCreate(args: string[]): Promise<void> {
   const { positionals, flags } = parseArgs(args);
   const name = positionals[0];
-  if (!name) fail("Usage: repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>]");
+  if (!name) {
+    fail("Usage: repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>] [--no-access]");
+  }
   if (!isValidAppName(name)) fail(`Invalid app name "${name}" — use letters, digits, hyphens and underscores only.`);
 
   const cfg = loadConfig();
@@ -524,7 +526,22 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   }
   if (hostname.includes("://") || hostname.includes("/")) fail(`Invalid hostname "${hostname}".`);
 
-  const emails = parseEmailList(flags.get("allow"));
+  // --no-access skips Cloudflare Access entirely: the app is fully public at
+  // Cloudflare's edge, relying solely on RepoOS's own native auth to reject
+  // unauthenticated requests. That's only safe if native auth is actually on
+  // — refuse otherwise rather than silently publish an unprotected app.
+  const noAccess = flags.has("no-access");
+  if (noAccess && flags.has("allow")) {
+    fail("--no-access and --allow are mutually exclusive — --no-access means there is no Access allowlist to configure.");
+  }
+  if (noAccess && cfg.auth?.enabled !== true) {
+    fail(
+      "--no-access requires RepoOS native auth to be on first (auth.enabled = true in repoos.toml) — " +
+        "without it OR Cloudflare Access, the app would be fully public with no login at all. See docs/native-auth.md.",
+    );
+  }
+
+  const emails = noAccess ? [] : parseEmailList(flags.get("allow"));
   for (const email of emails) {
     if (!isValidEmail(email)) fail(`Invalid email address "${email}".`);
   }
@@ -539,10 +556,11 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   }
 
   // Resolve Access credentials BEFORE mutating config so a missing token can't
-  // leave a half-configured (unprotected) app behind.
-  const { token, accountId } = await accessClient();
+  // leave a half-configured (unprotected) app behind. Skipped entirely for
+  // --no-access, which never touches Access at all.
+  const accessCreds = noAccess ? null : await accessClient();
 
-  tunnel.apps[name] = { hostname, service: `http://localhost:${portNum}`, access: emails };
+  tunnel.apps[name] = { hostname, service: `http://localhost:${portNum}`, access: emails, noAccess };
   writeTunnelConfig(cfg.root, tunnel);
   console.log(c.green("  ✔ configured ") + c.cyan(name) + c.dim(` → `) + hostname + c.dim(` → http://localhost:${portNum}`));
 
@@ -559,12 +577,18 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   const derived = writeDerivedConfig(tunnel);
   console.log(c.dim("  · wrote ingress config → ") + derived);
 
-  await reconcileAccessPolicy(token, accountId, hostname, emails);
-  console.log(c.green("  ✔ Access policy updated — ") + (emails.length ? emails.join(", ") : "deny all (no emails yet)"));
+  if (accessCreds) {
+    await reconcileAccessPolicy(accessCreds.token, accessCreds.accountId, hostname, emails);
+    console.log(c.green("  ✔ Access policy updated — ") + (emails.length ? emails.join(", ") : "deny all (no emails yet)"));
+  } else {
+    console.log(c.yellow("  ⚠ No Cloudflare Access policy — this app is fully public at the edge. RepoOS native auth is its only gate."));
+  }
 
   console.log("\n  " + c.green("✔ App published."));
   console.log(c.dim("  URL:     ") + c.cyan("https://" + hostname));
-  if (!emails.length) {
+  if (noAccess) {
+    console.log(c.dim("  access:  ") + c.yellow("none (--no-access) — native auth only"));
+  } else if (!emails.length) {
     console.log(c.dim("  allow:   ") + c.yellow("nobody yet — `repoos tunnel allow " + name + " <email>`") + c.dim(" to let someone in"));
   } else {
     console.log(c.dim("  allow:   ") + emails.join(", "));
@@ -589,6 +613,9 @@ async function mutateAllowlist(op: "allow" | "deny", args: string[]): Promise<vo
   const tunnel = readTunnelConfig(cfg.root);
   const app = tunnel.apps[name];
   if (!app) fail(`No app named "${name}" — see \`repoos tunnel list\`.`);
+  if (app.noAccess) {
+    fail(`"${name}" was created with --no-access — there is no Access allowlist to manage. It relies on RepoOS native auth only.`);
+  }
 
   const next = op === "allow" ? addEmail(app.access, email) : removeEmail(app.access, email);
   if (next.length === app.access.length) {
@@ -727,7 +754,11 @@ function cmdTunnelList(_args: string[]): void {
     console.log(
       "    " +
         c.dim("allow:    ") +
-        (app.access.length ? app.access.join(", ") : c.yellow("(none — deny all)")),
+        (app.noAccess
+          ? c.yellow("none (--no-access) — native auth only")
+          : app.access.length
+            ? app.access.join(", ")
+            : c.yellow("(none — deny all)")),
     );
   }
   console.log("");
@@ -829,7 +860,7 @@ function tunnelHelp(): void {
 
   ${c.bold("SUBCOMMANDS")}
     ${c.cyan("setup")}                 One-time machine setup: install/check cloudflared, log in, create the tunnel, store the API token
-    ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y"')}
+    ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y" | --no-access (requires auth.enabled)')}
     ${c.cyan("allow")} <name> <email>  Add an email to an app's allowlist
     ${c.cyan("deny")} <name> <email>   Remove an email from an app's allowlist
     ${c.cyan("start")}                 Run cloudflared in the foreground (dev)
