@@ -6,8 +6,8 @@
  * touched here — those update through the package manager itself.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
@@ -106,5 +106,29 @@ export async function cmdUpgrade(_args: string[]): Promise<void> {
   rmSync(displaced, { recursive: true, force: true });
   rmSync(dirname(tmpTar), { recursive: true, force: true });
 
+  regenerateLauncher(root);
+
   console.log(c.green(`  Upgraded to v${latest}.`));
+}
+
+/**
+ * Rewrite the `repoos` launcher script install.sh created, so an existing
+ * curl install picks up launcher-level fixes (e.g. Node flags) without
+ * needing to re-run install.sh. Matches install.sh's template exactly. Silent
+ * no-op if the launcher isn't where install.sh puts it — e.g. a custom setup
+ * that symlinks straight to cli/index.js instead.
+ */
+function regenerateLauncher(root: string): void {
+  const binDir = process.env.REPOOS_BIN_DIR || join(homedir(), ".local", "bin");
+  const launcherPath = join(binDir, "repoos");
+  if (!existsSync(launcherPath)) return;
+  try {
+    writeFileSync(
+      launcherPath,
+      `#!/usr/bin/env bash\nexec node --no-warnings "${join(root, "cli", "index.js")}" "$@"\n`,
+    );
+    chmodSync(launcherPath, 0o755);
+  } catch {
+    // Best-effort — an upgrade that fails to touch the launcher isn't worth failing over.
+  }
 }
