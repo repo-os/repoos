@@ -2,7 +2,7 @@
 id: "0243"
 title: Convert deterministic built-in scanners into configurable AI agents
 type: feature
-status: active
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/convert-deterministic-built-in-scanners-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-20T10:38:05Z"
+updated_at: "2026-08-20T11:49:27Z"
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
@@ -41,3 +41,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-18T03:08:16Z · model_override
 - 2026-08-18T03:08:17Z · pm_model_override
 - 2026-08-20T10:38:05Z · status ready→active, branch
+- 2026-08-20T11:49:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
