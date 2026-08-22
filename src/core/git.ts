@@ -401,6 +401,25 @@ export interface DiffResult {
 const MAX_DIFF_BYTES = 256_000;
 const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
 
+/** Parse `git diff --numstat` output into file/line counts (shared by the sync and async variants below). */
+function parseNumstat(statOutput: string): DiffStats {
+  let filesChanged = 0;
+  let additions = 0;
+  let deletions = 0;
+
+  // Parse output like: "278\t7\tsrc/file.ts" ("-\t-\tpath" for binary files)
+  for (const line of statOutput.split("\n")) {
+    const match = line.match(/^(\d+|-)\t(\d+|-)\t/);
+    if (match) {
+      filesChanged++;
+      if (match[1] !== "-") additions += parseInt(match[1]!, 10);
+      if (match[2] !== "-") deletions += parseInt(match[2]!, 10);
+    }
+  }
+
+  return { filesChanged, additions, deletions };
+}
+
 /**
  * Get diff statistics comparing a branch point to the current worktree.
  * This deliberately includes committed, staged, and unstaged source edits so
@@ -421,22 +440,30 @@ export function getDiffStats(
   // lossy and prone to drifting from the real totals, see 0248).
   const statOutput = git(worktree, ["diff", "--numstat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+  return parseNumstat(statOutput);
+}
 
-  let filesChanged = 0;
-  let additions = 0;
-  let deletions = 0;
+/**
+ * Non-blocking counterpart to `getDiffStats`, built on `runGit` (`spawn`)
+ * instead of `git`'s `execFileSync`. Every task card on the Work board fetches
+ * its diff stats on mount (`TaskCard.vue`), so a board with N cards fires N
+ * of these on every reload/tab-switch; the synchronous version froze the
+ * entire server's event loop for the duration of all of them serially —
+ * including whatever `GET /api/tasks/:id` a drawer-opening click was waiting
+ * on — which is what made the drawer take several seconds to appear.
+ */
+export async function getDiffStatsAsync(
+  worktree: string,
+  baseBranch: string,
+): Promise<DiffStats> {
+  const base = await runGit(worktree, ["merge-base", baseBranch, "HEAD"], 4000);
+  const baseFull = base.status === 0 && !base.timedOut ? base.stdout.trim() : null;
+  if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  // Parse output like: "278\t7\tsrc/file.ts" ("-\t-\tpath" for binary files)
-  for (const line of statOutput.split("\n")) {
-    const match = line.match(/^(\d+|-)\t(\d+|-)\t/);
-    if (match) {
-      filesChanged++;
-      if (match[1] !== "-") additions += parseInt(match[1]!, 10);
-      if (match[2] !== "-") deletions += parseInt(match[2]!, 10);
-    }
-  }
-
-  return { filesChanged, additions, deletions };
+  const diff = await runGit(worktree, ["diff", "--numstat", baseFull, ...DIFF_SOURCE_PATHS], 4000);
+  const statOutput = diff.status === 0 && !diff.timedOut ? diff.stdout.trim() : null;
+  if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+  return parseNumstat(statOutput);
 }
 
 /**

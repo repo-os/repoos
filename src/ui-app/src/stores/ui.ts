@@ -146,12 +146,22 @@ export const useUiStore = defineStore("ui", () => {
     activeTab.value = defaultTabFor(t);
   }
 
-  /** Open a task drawer, refreshing the task from the API first (fallback to local). */
+  /**
+   * Open a task drawer immediately with the already-loaded task (the board's
+   * own list), then refresh from the API in the background — the drawer's
+   * visibility must never wait on a network round trip, since a burst of
+   * other requests in flight (e.g. every card's diff-stats fetch on a board
+   * reload) can queue behind it.
+   */
   async function openTask(t: Task): Promise<void> {
+    open(t);
     try {
-      open(await api<Task>(`/api/tasks/${t.id}`));
+      const fresh = await api<Task>(`/api/tasks/${t.id}`);
+      // The user may have closed the drawer or opened a different task while
+      // this was in flight — only apply the refresh if it's still relevant.
+      if (active.value?.id === t.id) active.value = fresh;
     } catch {
-      open(t);
+      /* keep the locally-known task — refresh is best-effort */
     }
   }
 
