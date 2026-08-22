@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+pm_model_override: default
 created_at: "2026-08-20T11:39:46Z"
-updated_at: "2026-08-20T11:40:22Z"
+updated_at: "2026-08-22T16:53:10Z"
 ---
 ## Problem
 
@@ -88,3 +89,4 @@ to trust it.
 ## Activity
 
 - 2026-08-20T11:40:22Z · body
+- 2026-08-22T16:53:10Z · pm_model_override
