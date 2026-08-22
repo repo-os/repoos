@@ -945,10 +945,10 @@
   .agent-badge{font-size:9.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-faint);border:1px solid var(--border);border-radius:5px;padding:2px 6px}
   .agent-remove{color:var(--txt-faint)}
   .agent-remove:hover{color:var(--red)}
-  .agent-body{display:grid;grid-template-columns:200px 200px minmax(180px,1fr);align-items:end;gap:12px 16px;margin-top:12px}
+  .agent-body{display:grid;grid-template-columns:minmax(260px,1fr) auto;align-items:end;gap:12px 16px;margin-top:12px}
   .agent-field{display:flex;flex-direction:column;gap:5px}
   .agent-field label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--txt-faint);font-weight:600;font-family:'JetBrains Mono',monospace}
-  .agent-field{width:200px}
+  .agent-field{width:100%}
   .agent-field.agent-instr-field{grid-column:1/-1;width:100%;min-width:220px}
   .agent-test-result{width:auto}
   .agent-test-actions{display:flex;align-items:center;gap:8px;min-height:34px}

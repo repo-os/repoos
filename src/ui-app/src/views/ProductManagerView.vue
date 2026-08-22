@@ -13,7 +13,7 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
-import SelectSearchGroup from "../components/SelectSearchGroup.vue";
+import AgentModelControl from "../components/AgentModelControl.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 
@@ -59,14 +59,6 @@ const availableAgents = computed(() =>
 const effectiveAgent = computed(() => pmAgentOverride.value || pmAgent.value?.name || "pm");
 const effectiveCli = computed(() => pmCliOverride.value || pmAgent.value?.cli || "");
 const effectiveModel = computed(() => pmModelOverride.value || pmAgent.value?.model || "");
-
-const availableClis = computed(() => {
-  return (config.agentsMeta?.clis ?? []).map((cli: string) => ({
-    value: cli,
-    label: cli,
-    disabled: false,
-  }));
-});
 
 const availableModels = computed(() => {
   const cli = effectiveCli.value;
@@ -248,38 +240,15 @@ onMounted(() => {
               </Select>
             </div>
             <div class="pm-config-row">
-              <label>CLI</label>
-              <Select :model-value="pmCliOverride ?? ''" @update:model-value="(v) => (pmCliOverride = v || null)">
-                <SelectTrigger class="pm-select">
-                  <SelectValue :placeholder="effectiveCli" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectViewport>
-                    <SelectItem v-for="cli in availableClis" :key="cli.value" :value="cli.value" :disabled="cli.disabled">
-                      {{ cli.label }}
-                    </SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="pm-config-row">
-              <label>Model</label>
-              <Select :model-value="pmModelOverride ?? ''" @update:model-value="(v) => (pmModelOverride = v || null)">
-                <SelectTrigger class="pm-select">
-                  <SelectValue :placeholder="effectiveModel" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectViewport>
-                    <SelectSearchGroup :options="availableModels">
-                      <template #default="{ options }">
-                        <SelectItem v-for="model in options" :key="model.value" :value="model.value" :disabled="model.disabled">
-                          {{ model.label }}
-                        </SelectItem>
-                      </template>
-                    </SelectSearchGroup>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+              <label>Coding Agent + Model</label>
+              <AgentModelControl
+                :cli-options="config.agentsMeta?.clis ?? []"
+                :model-options="availableModels"
+                :cli="effectiveCli"
+                :model="effectiveModel"
+                @update:cli="(v) => (pmCliOverride = v)"
+                @update:model="(v) => (pmModelOverride = v)"
+              />
             </div>
           </div>
         </header>
