@@ -3108,6 +3108,18 @@ export class AgentRunner {
     }
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
+    // Any non-clean exit that isn't a deliberate human pause means the task is
+    // about to sit silently in its current status with nothing left running —
+    // flag it the moment the process ends rather than waiting for
+    // TaskWatchdog's staleness poll, which wouldn't even catch a fast
+    // crash-on-exit (an expired CLI auth session, say): the process isn't
+    // stalled, it's just done. Excludes `entry.handoffRequested`: that shape
+    // already has its own recovery path below ("retained for recovery" on
+    // next boot) and must not be double-flagged before that has a chance to
+    // run.
+    if (!exitedCleanly && !this.isPaused(taskId) && !entry.handoffRequested && taskForHandoff) {
+      this.escalateFailedExit(taskId, taskForHandoff, session);
+    }
     if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
       // Clean exit with handoff requested: clear the persisted request and fire finalization.
       this.clearPendingHandoff(taskId);
@@ -3396,6 +3408,53 @@ export class AgentRunner {
     } catch (err) {
       // Fail-soft: if we can't persist, just log — don't crash the runner
       console.error(`[repoos] failed to persist handoff failure for #${taskId}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Best-effort one-line summary of why a turn failed. Prefers the last
+   * non-empty stderr line (where CLI-level failures like an expired OAuth
+   * session land), falling back to the last `sys`/error line RepoOS itself
+   * parsed out of the CLI's own JSON stream, then a generic fallback.
+   */
+  private lastFailureLine(session: Session | undefined): string {
+    if (session) {
+      for (let i = session.lines.length - 1; i >= 0; i--) {
+        const line = session.lines[i];
+        if ("s" in line && line.s === "err" && line.d.trim()) return line.d.trim();
+      }
+      for (let i = session.lines.length - 1; i >= 0; i--) {
+        const line = session.lines[i];
+        const text =
+          "type" in line && line.type === "sys" ? line.d : "s" in line && line.s === "sys" ? line.d : undefined;
+        if (text?.trim()) return text.trim();
+      }
+    }
+    return "the agent process exited with an error — open the task to see the full output";
+  }
+
+  /**
+   * Flag a task for human attention the instant its agent turn ends non-
+   * cleanly (and isn't a deliberate pause or an in-flight handoff recovery —
+   * see the call site in cleanup()). Mirrors TaskWatchdog's own
+   * `needsInput` escalation, just fired immediately instead of waiting for
+   * the next staleness poll. Never overwrites an existing needsInput note.
+   */
+  private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (current.needsInput) return;
+      current.needsInput = true;
+      recordChange(current, `agent exited with an error · ${this.lastFailureLine(session)}`);
+      writeFileSync(task.absPath, serializeTask(current));
+    } catch (err) {
+      console.error(`[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`);
     }
   }
 

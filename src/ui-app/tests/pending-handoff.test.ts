@@ -174,6 +174,11 @@ describe("pending handoff persistence (#0235)", () => {
       const output = runner.output(fx.task.id)!;
       const sysLines = output.lines.map((l) => (l as { d?: string }).d ?? "");
       expect(sysLines.some((d) => d.includes("retained") || d.includes("recovery"))).toBe(true);
+      // The interrupted-exit escalation (agents.ts cleanup()) must not
+      // double-flag this task — it already has its own boot-time recovery
+      // path, so needsInput would be a false alarm ahead of that retry.
+      const body = readFileSync(fx.task.absPath, "utf8");
+      expect(body).not.toMatch(/needs_input:\s*true/);
     } finally {
       delete process.env.REPOOS_FAKEBIN_HANDOFF;
       delete process.env.REPOOS_FAKEBIN_FAIL;
