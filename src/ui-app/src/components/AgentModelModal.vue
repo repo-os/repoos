@@ -43,6 +43,10 @@ const filteredModels = computed(() => {
 function selectCli(cli: string): void {
   if (cli === props.cli) return;
   emit("update:cli", cli);
+  // The old model is very unlikely to be valid for the new CLI (and would
+  // otherwise linger in the list via modelsFor's "saved" fallback) — reset
+  // to default rather than carry over a value that doesn't belong to it.
+  emit("update:model", "default");
 }
 
 function selectModel(model: string): void {
