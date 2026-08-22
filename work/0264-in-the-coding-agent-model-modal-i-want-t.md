@@ -2,7 +2,7 @@
 id: "0264"
 title: Add favorites section to Coding Agent + Model Modal
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T17:58:58Z"
+updated_at: "2026-08-22T18:01:48Z"
 ---
 ## Overview
 
@@ -55,3 +55,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 ## Activity
 
 - 2026-08-22T17:58:58Z · body
+- 2026-08-22T18:01:48Z · status inbox→ready
