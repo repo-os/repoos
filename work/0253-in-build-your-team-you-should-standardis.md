@@ -2,7 +2,7 @@
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/standardise-build-your-team-styling-and-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-22T18:03:56Z"
+updated_at: "2026-08-22T18:04:01Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-20T12:59:39Z · status active→review
 - 2026-08-22T18:03:50Z · cli_override
 - 2026-08-22T18:03:56Z · model_override
+- 2026-08-22T18:04:01Z · status review→active
