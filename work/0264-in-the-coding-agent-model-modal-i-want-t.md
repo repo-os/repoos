@@ -10,12 +10,48 @@ created_by: hello@repoos.org
 branch: ""
 model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T17:24:38Z"
+updated_at: "2026-08-22T17:58:58Z"
 ---
-In the Coding Agent + Model Modal, add a favorites section. Make it a star in the first position of the Coding Agents selection row. When the user clicks on the star, show the favorited list (coding agent + model) below.
+## Overview
 
-To add items to the favorites list, add a star to the far right of each model row in the current model list UI. Users can toggle this star on/off to add or remove that coding agent + model from the favorites list.
+Add a favorites feature to the Coding Agent + Model Modal, allowing users to quickly access their most-used coding agent and model combinations.
+
+## User Experience
+
+### Favorites Section
+- Add a star icon in the first position of each Coding Agents selection row
+- Clicking the star toggles the favorite status for that agent + model combination
+- Display a dedicated "Favorites" section above the full list that shows only favorited combinations
+- When expanded, the favorites section shows all saved agent + model pairs in the same format as the main list
+
+### Adding/Removing Favorites
+- Add a star icon to the far right of each model row in the current model list UI
+- Star should be interactive (clickable toggle)
+- Visual feedback when a model is added to favorites (filled/highlighted star)
+- Visual feedback when a model is removed from favorites (empty/unhighlighted star)
+
+### Persistence
+- Favorites should persist across sessions (store in local storage or user preferences)
+- Maintain the order in which items were added to favorites
+
+## Acceptance Criteria
+
+- [ ] Star icon appears in the first position of each Coding Agents row
+- [ ] Star icon appears on the far right of each model row in the list
+- [ ] Clicking a star adds/removes the agent + model combination from favorites
+- [ ] Favorites section displays above the main list when favorites exist
+- [ ] Favorites section is collapsible/expandable
+- [ ] Clicking star in favorites section removes item from favorites
+- [ ] Favorite status persists across browser sessions
+- [ ] Visual distinction between favorited and non-favorited items
+- [ ] Works with all coding agent + model combinations
+- [ ] No performance degradation with large agent/model lists
+
+## Notes
+- Consider visual hierarchy: favorites should be prominent but not overwhelming
+- Star icon should have clear hover states and active states
+- Empty state messaging if no favorites have been selected
 
 ## Activity
 
-- 2026-08-22T17:24:38Z · body
+- 2026-08-22T17:58:58Z · body
