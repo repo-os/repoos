@@ -8,11 +8,11 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/convert-deterministic-built-in-scanners-
-cli_override: codex
+cli_override: github copilot
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-22T16:39:47Z"
+updated_at: "2026-08-22T16:39:48Z"
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
@@ -55,3 +55,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-22T16:39:45Z · cli_override
 - 2026-08-22T16:39:46Z · cli_override
 - 2026-08-22T16:39:47Z · cli_override
+- 2026-08-22T16:39:48Z · cli_override
