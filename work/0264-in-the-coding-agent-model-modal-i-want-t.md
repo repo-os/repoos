@@ -2,16 +2,16 @@
 id: "0264"
 title: Add favorites section to Coding Agent + Model Modal
 type: feature
-status: ready
+status: active
 priority: p2
 area: general
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-favorites-section-to-coding-agent-mo
 cli_override: claude code
 model_override: haiku
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T18:02:18Z"
+updated_at: "2026-08-22T18:02:26Z"
 ---
 ## Overview
 
@@ -61,3 +61,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-22T18:02:06Z · model_override
 - 2026-08-22T18:02:14Z · pm_model_override
 - 2026-08-22T18:02:18Z · pm_model_override
+- 2026-08-22T18:02:26Z · status ready→active, branch
