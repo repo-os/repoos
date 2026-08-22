@@ -8,9 +8,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
+cli_override: claude code
 model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-20T12:59:39Z"
+updated_at: "2026-08-22T18:03:50Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-20T11:49:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-20T12:23:45Z · status ready→active
 - 2026-08-20T12:59:39Z · status active→review
+- 2026-08-22T18:03:50Z · cli_override
