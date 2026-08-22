@@ -28,6 +28,10 @@ const modelQuery = ref("");
 const modelSearchEl = ref<HTMLInputElement | null>(null);
 const modelListEl = ref<HTMLElement | null>(null);
 
+const currentModelLabel = computed(() => {
+  return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
+});
+
 const filteredModels = computed(() => {
   const q = modelQuery.value.trim().toLowerCase();
   if (!q) return props.modelOptions;
@@ -70,7 +74,10 @@ watch(
     <DialogOverlay />
     <DialogContent class="am-modal">
       <div class="am-modal-head">
-        <DialogTitle>Coding Agent + Model</DialogTitle>
+        <div class="am-modal-head-text">
+          <DialogTitle>Coding Agent + Model</DialogTitle>
+          <div class="am-modal-current">{{ cli }} · {{ currentModelLabel }}</div>
+        </div>
         <DialogDescription class="sr-only">
           Choose a coding agent and model
         </DialogDescription>
@@ -93,18 +100,20 @@ watch(
       </div>
 
       <div class="am-model-search">
-        <Search
-          class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--txt-faint)]"
-        />
-        <input
-          ref="modelSearchEl"
-          v-model="modelQuery"
-          type="text"
-          role="combobox"
-          aria-label="Search models"
-          placeholder="Search models…"
-          class="am-model-search-input"
-        />
+        <div class="am-model-search-wrap">
+          <Search
+            class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--txt-faint)]"
+          />
+          <input
+            ref="modelSearchEl"
+            v-model="modelQuery"
+            type="text"
+            role="combobox"
+            aria-label="Search models"
+            placeholder="Search models…"
+            class="am-model-search-input"
+          />
+        </div>
       </div>
 
       <div ref="modelListEl" class="am-model-list" role="listbox" aria-label="Models">
