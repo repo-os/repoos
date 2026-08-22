@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: default
+pm_model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T17:08:34Z"
+updated_at: "2026-08-22T17:19:39Z"
 ---
 Failed to authenticate: OAuth session expired and could not be refreshed
 
@@ -21,3 +22,4 @@ In the "Coding Agent + Model" Modal I want to add a favorites section. Make it a
 ## Activity
 
 - 2026-08-22T17:08:34Z · status draft→inbox, title, body
+- 2026-08-22T17:19:39Z · pm_model_override
