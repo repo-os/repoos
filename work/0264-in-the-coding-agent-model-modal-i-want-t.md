@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: claude code
-model_override: default
+model_override: haiku
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T18:02:00Z"
+updated_at: "2026-08-22T18:02:06Z"
 ---
 ## Overview
 
@@ -58,3 +58,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-22T17:58:58Z · body
 - 2026-08-22T18:01:48Z · status inbox→ready
 - 2026-08-22T18:02:00Z · cli_override
+- 2026-08-22T18:02:06Z · model_override
