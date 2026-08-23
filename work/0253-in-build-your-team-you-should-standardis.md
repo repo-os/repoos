@@ -3,6 +3,7 @@ id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +12,7 @@ branch: feat/standardise-build-your-team-styling-and-
 cli_override: claude code
 model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-23T10:58:49Z"
+updated_at: "2026-08-23T10:58:50Z"
 ---
 ## Problem
 
@@ -72,3 +73,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-23T10:58:28Z · model_override
 - 2026-08-23T10:58:48Z · model_override
 - 2026-08-23T10:58:49Z · status active→review
+- 2026-08-23T10:58:50Z · needs_merge
