@@ -1646,6 +1646,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * - codex: `exec` alone — its default sandbox is already read-only, which is
  *   exactly the blast radius a reviewer should have.
  * - qwen code: plain `-p`, matching `promptCommand`.
+ * - opencode: `--format json`, matching the interactive runner (`cliCommand`
+ *   below). Without it, `run`'s plain-text stdout interleaves the model's
+ *   step-by-step narration ("Let me look at...") with its final answer, and
+ *   nothing separates the two — the whole transcript ends up as the review
+ *   report (0264 vs 0253). `extractOneShotReportText` below picks the final
+ *   text event back out of the JSON stream.
  */
 export function reviewCommand(
   agent: Agent,
@@ -1672,7 +1678,43 @@ export function reviewCommand(
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
-  return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
+  return { cmd: "opencode", args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt] };
+}
+
+/**
+ * Turn one line of a one-shot (review/CTO) agent's stdout into a transcript
+ * entry for live display. opencode's `--format json` stream needs the same
+ * parsing the interactive runner applies per line; every other CLI's one-shot
+ * stdout is already plain human-readable text, so it passes through as-is.
+ */
+export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry {
+  if (cli === "opencode") {
+    const parsed = parseJsonEvent(raw);
+    if (parsed) return parsed.entry;
+  }
+  return { s: "out", d: raw };
+}
+
+/**
+ * Isolate the final report/answer from a one-shot agent's full captured
+ * stdout. Every CLI except opencode already prints only the final answer in
+ * one-shot mode, so their raw output IS the report. opencode's `--format
+ * json` stream carries the model's whole narration as a sequence of `text`
+ * events interleaved with tool calls — the actual final answer is the LAST
+ * `text` event, so this discards the rest (0264 vs 0253). Falls back to the
+ * raw output if no text event parses, so a format change never yields an
+ * empty report.
+ */
+export function extractOneShotReportText(cli: string, rawOutput: string): string {
+  const trimmed = rawOutput.trim();
+  if (cli !== "opencode") return trimmed;
+  let last = "";
+  for (const line of trimmed.split("\n")) {
+    if (!line.trim()) continue;
+    const entry = parseJsonEvent(line)?.entry;
+    if (entry && "type" in entry && entry.type === "text") last = entry.text;
+  }
+  return (last || trimmed).trim();
 }
 
 /**

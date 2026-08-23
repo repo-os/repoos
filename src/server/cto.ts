@@ -27,7 +27,16 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveCto, runPrompt, reviewCommand, usageCostSource, type AgentRunner, type PromptResult } from "./agents.js";
+import {
+  extractOneShotReportText,
+  parseOneShotLine,
+  resolveCto,
+  runPrompt,
+  reviewCommand,
+  usageCostSource,
+  type AgentRunner,
+  type PromptResult,
+} from "./agents.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 import { patchTaskFile } from "./write.js";
 
@@ -198,7 +207,7 @@ export class CTOManager {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(line),
+        onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
     } finally {
       this.runs.delete("cto");
@@ -212,7 +221,7 @@ export class CTOManager {
     const state: CTOReport["state"] = result.ok && result.output ? "ok" : "failed";
     const body =
       state === "ok"
-        ? (result.output ?? "").trim()
+        ? extractOneShotReportText(agent.cli, result.output ?? "")
         : `The CTO produced no report: ${result.error ?? "unknown error"}`;
     const report: CTOReport = {
       id: "cto",
@@ -270,7 +279,7 @@ export class CTOManager {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(line),
+        onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
     } finally {
       this.runs.delete("cto");
@@ -614,8 +623,8 @@ ${body}
     this.scheduleSessionWrite();
   }
 
-  private appendSessionLine(line: string): void {
-    this.appendEntry({ s: "out", d: line });
+  private appendSessionLine(cli: string, line: string): void {
+    this.appendEntry(parseOneShotLine(cli, line));
   }
 
   private appendMarker(text: string): void {

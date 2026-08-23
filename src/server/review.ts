@@ -35,6 +35,8 @@ import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import {
+  extractOneShotReportText,
+  parseOneShotLine,
   resolveReviewer,
   reviewCommand,
   runPrompt,
@@ -528,7 +530,7 @@ export class ReviewManager {
           // A cancel that landed between spawn and this callback still kills.
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(task.id, line),
+        onLine: (line) => this.appendSessionLine(task.id, agent.cli, line),
       });
     } finally {
       this.runs.delete(task.id);
@@ -546,7 +548,7 @@ export class ReviewManager {
     const state: ReviewReport["state"] = result.ok && result.output ? "ok" : "failed";
     const body =
       state === "ok"
-        ? (result.output ?? "").trim()
+        ? extractOneShotReportText(agent.cli, result.output ?? "")
         : `The review agent produced no report: ${result.error ?? "unknown error"}`;
     const report: ReviewReport = {
       id: task.id,
@@ -696,7 +698,7 @@ export class ReviewManager {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(task.id, line),
+        onLine: (line) => this.appendSessionLine(task.id, agent.cli, line),
       });
     } finally {
       this.runs.delete(task.id);
@@ -1060,9 +1062,9 @@ export class ReviewManager {
     this.scheduleSessionWrite(taskId);
   }
 
-  /** Append a plain streamed line from the agent's stdout. */
-  private appendSessionLine(taskId: string, line: string): void {
-    this.appendEntry(taskId, { s: "out", d: line });
+  /** Append a streamed line from the agent's stdout, parsed per its CLI. */
+  private appendSessionLine(taskId: string, cli: string, line: string): void {
+    this.appendEntry(taskId, parseOneShotLine(cli, line));
   }
 
   /** Append a trusted system marker (run start / completion). */
