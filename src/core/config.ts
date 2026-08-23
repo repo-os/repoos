@@ -800,6 +800,8 @@ export function sanitizeBuiltInAgent(value: unknown): BuiltInAgentConfig | null 
   if (typeof raw.lastRunAt === "string" && !Number.isNaN(Date.parse(raw.lastRunAt))) {
     out.lastRunAt = raw.lastRunAt;
   }
+  if (typeof raw.cli === "string") out.cli = raw.cli;
+  if (typeof raw.model === "string") out.model = raw.model;
   return out;
 }
 

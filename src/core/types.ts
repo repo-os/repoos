@@ -315,6 +315,10 @@ export interface BuiltInAgentConfig {
   schedule?: BuiltInAgentSchedule;
   /** ISO timestamp of the last completed run, set by the server. */
   lastRunAt?: string;
+  /** Coding agent CLI to use for this built-in agent (e.g., "opencode", "gpt"). */
+  cli?: string;
+  /** Model to use for this built-in agent. */
+  model?: string;
 }
 
 /** Task watchdog configuration (#0180). */
