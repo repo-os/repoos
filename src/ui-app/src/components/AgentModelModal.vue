@@ -30,7 +30,7 @@ const modelSearchEl = ref<HTMLInputElement | null>(null);
 const modelListEl = ref<HTMLElement | null>(null);
 const favoritesExpanded = ref(true);
 
-const { isFavorite, toggleFavorite, getFavoritesForCli, hasFavorites } = useFavorites();
+const { isFavorite, toggleFavorite, getFavoritesForCli, hasFavorites: hasAnyFavorites } = useFavorites();
 
 const currentModelLabel = computed(() => {
   return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
@@ -43,6 +43,8 @@ const filteredModels = computed(() => {
     (m) => m.value === "default" || m.label.toLowerCase().includes(q),
   );
 });
+
+const hasFavoritesForCurrentCli = computed(() => getFavoritesForCli(props.cli).length > 0);
 
 const favoriteItems = computed(() => {
   const favorites = getFavoritesForCli(props.cli);
@@ -147,7 +149,7 @@ watch(
 
       <div ref="modelListEl" class="am-model-list" role="listbox" aria-label="Models">
         <!-- Favorites section -->
-        <div v-if="hasFavorites && !modelQuery" class="am-favorites-section">
+        <div v-if="hasFavoritesForCurrentCli && !modelQuery" class="am-favorites-section">
           <button
             type="button"
             class="am-favorites-header"
@@ -160,16 +162,15 @@ watch(
             </span>
           </button>
           <div v-if="favoritesExpanded" class="am-favorites-list">
-            <button
+            <div
               v-for="m in favoriteItems"
               :key="m.value"
-              type="button"
               class="am-model-item am-favorite-item"
               :class="{ active: m.value === model, disabled: m.disabled }"
-              :disabled="m.disabled"
+              :aria-disabled="m.disabled"
               role="option"
               :aria-selected="m.value === model"
-              @click="selectModel(m.value)"
+              @click="!m.disabled && selectModel(m.value)"
             >
               <span class="am-model-label">{{ m.label }}</span>
               <span v-if="m.disabled" class="am-model-disabled-hint">— unavailable</span>
@@ -184,25 +185,24 @@ watch(
                   <Star class="size-3.5" fill="currentColor" />
                 </button>
               </div>
-            </button>
+            </div>
           </div>
         </div>
 
         <!-- All models section -->
         <div v-if="filteredModels.length > 0" class="am-all-models-section">
-          <div v-if="hasFavorites && !modelQuery" class="am-all-models-header">
+          <div v-if="hasFavoritesForCurrentCli && !modelQuery" class="am-all-models-header">
             All Models
           </div>
-          <button
+          <div
             v-for="m in filteredModels"
             :key="m.value"
-            type="button"
             class="am-model-item"
             :class="{ active: m.value === model, disabled: m.disabled }"
-            :disabled="m.disabled"
+            :aria-disabled="m.disabled"
             role="option"
             :aria-selected="m.value === model"
-            @click="selectModel(m.value)"
+            @click="!m.disabled && selectModel(m.value)"
           >
             <span class="am-model-label">{{ m.label }}</span>
             <span v-if="m.disabled" class="am-model-disabled-hint">— unavailable</span>
@@ -218,11 +218,14 @@ watch(
                 <Star class="size-3.5" :fill="isFavorite(cli, m.value) ? 'currentColor' : 'none'" />
               </button>
             </div>
-          </button>
+          </div>
         </div>
 
         <div v-if="!filteredModels.length" class="am-model-empty">
           No models match "{{ modelQuery }}"
+        </div>
+        <div v-if="!hasAnyFavorites && !modelQuery" class="am-no-favorites-hint">
+          No favorites yet — click the star icon to save your favorite agent + model combinations
         </div>
       </div>
     </DialogContent>

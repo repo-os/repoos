@@ -20,8 +20,11 @@ function loadFavorites(): Favorite[] {
 function saveFavorites(favorites: Favorite[]): void {
   try {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
-  } catch {
-    // Silently fail if localStorage is not available
+  } catch (e) {
+    // localStorage quota exceeded or unavailable; data loss is silent but graceful
+    // (favs persist in memory for this session only)
+    const err = e instanceof Error ? e.message : String(e);
+    console.warn(`[useFavorites] Failed to persist favorites: ${err}`);
   }
 }
 
