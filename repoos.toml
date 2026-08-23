@@ -47,7 +47,6 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
-
 [[agents]]
 name = "engineer"
 cli = "opencode"
@@ -62,8 +61,8 @@ enabled = true
 instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Output ONE short markdown report under 400 words with exactly `"
 [[agents]]
 name = "pm"
-cli = "opencode"
-model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+cli = "claude code"
+model = "haiku"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]

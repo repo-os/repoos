@@ -3,6 +3,7 @@ id: "0243"
 title: Convert deterministic built-in scanners into configurable AI agents
 type: feature
 status: active
+needs_input: true
 priority: p1
 area: agent
 assigned_to: ai
@@ -12,7 +13,7 @@ cli_override: github copilot
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-23T08:21:34Z"
+updated_at: "2026-08-23T08:21:47Z"
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
@@ -56,3 +57,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-22T16:39:46Z · cli_override
 - 2026-08-22T16:39:47Z · cli_override
 - 2026-08-22T16:39:48Z · cli_override
+- 2026-08-23T08:21:47Z · agent exited with an error · error: You have exceeded your monthly quota (Request ID: 2411:1A2E2D:389116:5125A5:6A8AAD98)

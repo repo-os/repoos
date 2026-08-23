@@ -11,7 +11,8 @@ branch: feat/add-favorites-section-to-coding-agent-mo
 cli_override: claude code
 model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-23T08:21:47Z"
+updated_at: "2026-08-23T08:48:25Z"
+check_retry_count: 2
 review_rounds: 1
 ---
 ## Overview
@@ -68,3 +69,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-23T04:54:56Z · model_override
 - 2026-08-23T08:21:09Z · status active→review
 - 2026-08-23T08:21:47Z · status review→active
+- 2026-08-23T08:48:25Z · handoff failed · check failed after 2 automatic retries · repoos check failed: [preview] 2026-08-23T08:47:15.875Z #0001 started — url=http://127.0.0.1:53517 pid=3011 port=53517 · stderr | tests/release-agent.test.ts > release agent when a task leaves active (#0087) > stops the live agent when a direct task-file edit to review is picked up by the watcher · [preview] 2026-08-23T08:47:17.737Z #0001 exited — preview process 3011 exited on its own · stderr | tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer · [preview] 2026-08-23T08:47:38.291Z #0001 started — url=http://127.0.0.1:53608 pid=21491 port=53608 · stderr | tests/agent-review.test.ts > agent review before human sign-off (#0101) > routes reviewer chat to its own session and serves the conversation · [preview] 2026-08-23T08:47:53.021Z #0001 started — url=http://127.0.0.1:53628 pid=26549 port=53628 · error: script "test" exited with code 143
