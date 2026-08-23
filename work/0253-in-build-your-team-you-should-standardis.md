@@ -10,9 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
 model_override: default
-pm_model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-23T11:51:10Z"
+updated_at: "2026-08-23T11:51:38Z"
 ---
 ## Problem
 
@@ -76,3 +75,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-23T10:58:50Z · needs_merge
 - 2026-08-23T11:05:31Z · cli_override
 - 2026-08-23T11:51:10Z · pm_model_override
+- 2026-08-23T11:51:38Z · pm_model_override
