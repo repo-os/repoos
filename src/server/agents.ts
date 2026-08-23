@@ -2417,7 +2417,14 @@ export class AgentRunner {
     const fullText = opts.resumePreamble
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
-    const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
+    // session.sessionId is only meaningful to the CLI that produced it — if
+    // agent.cli has since changed (override edited/cleared between turns),
+    // reusing it would hand one CLI's session id to a different CLI's
+    // --resume flag (e.g. an opencode `ses_...` id passed to `claude
+    // --resume`, which requires a UUID and errors out). Drop it and let
+    // resumeCommand fall back to a fresh/most-recent-session start instead.
+    const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, session.workdir ?? this.config.root);
     return this.spawnTurn(
       taskId,
       cmd,
@@ -3493,7 +3500,8 @@ export class AgentRunner {
       });
       if (current.needsInput) return;
       current.needsInput = true;
-      recordChange(current, `agent exited with an error · ${this.lastFailureLine(session)}`);
+      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
+      recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);
       writeFileSync(task.absPath, serializeTask(current));
     } catch (err) {
       console.error(`[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`);

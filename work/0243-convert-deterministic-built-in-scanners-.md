@@ -3,6 +3,7 @@ id: "0243"
 title: Convert deterministic built-in scanners into configurable AI agents
 type: feature
 status: active
+needs_input: true
 priority: p1
 area: agent
 assigned_to: ai
@@ -11,7 +12,8 @@ branch: feat/convert-deterministic-built-in-scanners-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-23T11:00:25Z"
+updated_at: "2026-08-23T11:02:51Z"
+check_retry_count: 1
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
@@ -59,3 +61,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-23T11:00:07Z · cli_override
 - 2026-08-23T11:00:22Z · status active→ready
 - 2026-08-23T11:00:25Z · status ready→active, needs_input
+- 2026-08-23T11:02:51Z · agent exited with an error · Error: --resume requires a valid session ID or session title when used with --print. Usage: claude -p --resume <session-id|title>. Provided value "ses_fe1400856ffe1g1BbZRy2sD8Qf" is not a UUID and does not match any session title.
