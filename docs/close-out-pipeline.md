@@ -53,9 +53,22 @@ alongside it.
 To switch back to Option A later:
 
 ```bash
+launchctl enable gui/$(id -u)/com.repoos.serve
+launchctl enable gui/$(id -u)/com.repoos.watchdog
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.serve.plist
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoos.watchdog.plist
 ```
+
+**Update, 2026-08-23:** both LaunchAgents were found loaded and fighting the manual
+process despite this doc — `com.repoos.serve` was stuck silently crash-looping (no
+error output at all) every ~10-30s after each of a series of manual restarts during an
+active dev session, never reaching `listen()`. The same build runs fine started
+directly, so this is specific to running under launchd, not a code bug. Given how often
+main gets rebuilt and restarted during active development right now, `launchctl disable`
+was run for both agents (not just `bootout`, so it survives login/reboot — `enable` above
+undoes it) to stop them from re-launching and colliding with `just serve`/`just restart`.
+Root cause of the launchd-specific crash loop is still unknown — investigate before
+re-enabling Option A.
 
 ## The two state machines
 

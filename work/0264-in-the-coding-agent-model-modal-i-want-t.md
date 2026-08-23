@@ -2,16 +2,16 @@
 id: "0264"
 title: Add favorites section to Coding Agent + Model Modal
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-favorites-section-to-coding-agent-mo
 cli_override: claude code
-model_override: haiku
+model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-22T18:02:26Z"
+updated_at: "2026-08-23T08:21:09Z"
 ---
 ## Overview
 
@@ -62,3 +62,7 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-22T18:02:14Z · pm_model_override
 - 2026-08-22T18:02:18Z · pm_model_override
 - 2026-08-22T18:02:26Z · status ready→active, branch
+- 2026-08-22T19:19:47Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-22T19:19:48Z · status review→active
+- 2026-08-23T04:54:56Z · model_override
+- 2026-08-23T08:21:09Z · status active→review

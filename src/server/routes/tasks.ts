@@ -19,7 +19,7 @@ import {
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStatsAsync, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -1180,7 +1180,7 @@ export const getDailyTotals: RouteHandler = (ctx, _req, res) => {
 };
 
 // Diff stats endpoint
-export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
+export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) => {
   const { index, config } = ctx;
   const id = params.param1;
   const task = index.getTask(id);
@@ -1200,7 +1200,11 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
     }
     return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
   }
-  const stats = getDiffStats(worktreePath, "main");
+  // Async (spawn-based) rather than the sync/execFileSync getDiffStats: every
+  // card on the Work board fires this on mount, and the synchronous version
+  // blocked the whole event loop for each one serially — including whatever
+  // GET /api/tasks/:id a drawer-opening click was waiting behind.
+  const stats = await getDiffStatsAsync(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
 };
 
