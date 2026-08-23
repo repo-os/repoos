@@ -11,7 +11,7 @@ branch: feat/add-favorites-section-to-coding-agent-mo
 cli_override: claude code
 model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-23T08:21:09Z"
+updated_at: "2026-08-23T08:21:10Z"
 ---
 ## Overview
 
