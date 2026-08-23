@@ -1493,17 +1493,20 @@
   cursor: pointer; transition: .12s; text-align: left;
   font-family: 'JetBrains Mono', monospace;
 }
-.am-model-item:hover { background: var(--panel-solid); border-color: var(--border) }
+.am-model-item:not(.disabled):hover { background: var(--panel-solid); border-color: var(--border) }
 .am-model-item.active {
   background: var(--cyan-dim); border-color: var(--cyan); color: var(--txt);
 }
 .am-model-item.disabled { opacity: .45; cursor: not-allowed }
-.am-model-item.disabled:hover { background: transparent; border-color: transparent }
 .am-model-label { flex: 1; min-width: 0 }
-.am-model-disabled-hint { font-size: 11px; color: var(--txt-faint); margin-left: 8px }
-.am-model-check { color: var(--cyan); font-weight: 700; margin-left: 8px; flex-shrink: 0 }
+.am-model-disabled-hint { font-size: 11px; color: var(--txt-faint) }
+.am-model-check { color: var(--cyan); font-weight: 700; flex-shrink: 0 }
 .am-model-empty {
   padding: 28px 0; text-align: center; color: var(--txt-faint); font-size: 12.5px;
+}
+.am-no-favorites-hint {
+  padding: 20px 12px; text-align: center; color: var(--txt-faint); font-size: 12px;
+  line-height: 1.4;
 }
 
 /* Agent + Model control button */
@@ -1519,3 +1522,61 @@
 .am-control:disabled { opacity: .5; cursor: not-allowed }
 .am-control-icon { color: var(--txt-faint); flex-shrink: 0 }
 .am-control-label { min-width: 0; overflow: hidden; text-overflow: ellipsis }
+
+/* CLI Picker with favorites */
+.am-cli-btn-wrapper {
+  display: flex; align-items: center; gap: 4px;
+}
+.am-cli-star {
+  padding: 7px 8px; border-radius: 6px; border: 1px solid transparent;
+  background: transparent; color: var(--txt-faint); cursor: pointer;
+  transition: .15s; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.am-cli-star:hover { color: var(--txt-dim); background: rgba(120,140,200,0.05) }
+.am-cli-star.active { color: var(--amber); background: rgba(255,180,84,0.1) }
+
+/* Favorites section in model list */
+.am-favorites-section { margin-bottom: 8px }
+.am-favorites-header {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 12px; border-radius: 6px; border: none;
+  background: transparent; color: var(--txt-dim); font-size: 11px;
+  font-weight: 600; cursor: pointer; transition: .15s;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.am-favorites-header:hover { background: rgba(120,140,200,0.05); color: var(--txt) }
+.am-favorites-title { flex: 1 }
+.am-favorites-count {
+  color: var(--txt-faint); font-size: 10px; min-width: 16px; text-align: center;
+}
+.am-favorites-toggle {
+  color: var(--txt-faint); transition: transform .2s; display: inline-block;
+}
+.am-favorites-toggle.expanded { transform: rotate(0deg) }
+.am-favorites-list { margin-bottom: 12px; border-top: 1px solid var(--border) }
+.am-favorite-item { margin-top: 4px }
+.am-favorite-item:first-child { margin-top: 8px }
+
+/* All models section header */
+.am-all-models-section { margin-top: 8px }
+.am-all-models-header {
+  display: flex; align-items: center; width: 100%;
+  padding: 8px 12px; color: var(--txt-faint); font-size: 11px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  border-top: 1px solid var(--border);
+}
+
+/* Model item actions (check mark and star) */
+.am-model-actions {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  margin-left: 8px;
+}
+.am-star-btn {
+  padding: 4px; border-radius: 4px; border: none;
+  background: transparent; color: var(--txt-faint); cursor: pointer;
+  transition: .15s; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.am-star-btn:hover { color: var(--amber); background: rgba(255,180,84,0.08) }
+.am-star-btn.active { color: var(--amber) }
