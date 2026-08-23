@@ -2,7 +2,7 @@
 id: "0263"
 title: repoos mv / updateStatus never commits status changes to git
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-20T11:39:46Z"
-updated_at: "2026-08-23T04:55:24Z"
+updated_at: "2026-08-23T04:55:44Z"
 ---
 ## Problem
 
@@ -92,3 +92,4 @@ to trust it.
 - 2026-08-20T11:40:22Z · body
 - 2026-08-22T16:53:10Z · pm_model_override
 - 2026-08-23T04:55:24Z · model_override
+- 2026-08-23T04:55:44Z · status inbox→ready
