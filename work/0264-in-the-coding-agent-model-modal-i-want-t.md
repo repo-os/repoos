@@ -8,11 +8,10 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-favorites-section-to-coding-agent-mo
-cli_override: claude code
 model_override: default
 pm_model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-23T11:36:52Z"
+updated_at: "2026-08-23T17:58:18Z"
 ---
 ## Overview
 
@@ -69,3 +68,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-23T08:21:09Z · status active→review
 - 2026-08-23T11:36:31Z · status review→done, release:success
 - 2026-08-23T11:36:52Z · pm_model_override
+- 2026-08-23T17:58:18Z · cli_override
