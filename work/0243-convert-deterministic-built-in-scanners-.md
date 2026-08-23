@@ -12,7 +12,7 @@ cli_override: github copilot
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-22T16:39:48Z"
+updated_at: "2026-08-23T08:21:34Z"
 ---
 ## Problem
 Tech Debt, Performance, Architect, and Design are currently deterministic rule-based scanners. They are fast but cannot reason about repository intent, runtime behavior, or product context; their fixed heuristics also create false positives.
