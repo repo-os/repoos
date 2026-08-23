@@ -143,7 +143,26 @@ export function cmdShow(id?: string): void {
   console.log("");
 }
 
-/** `repoos mv <id> <status>` — change status (frontmatter edit). */
+/**
+ * `repoos mv <id> <status>` — change status (frontmatter edit).
+ *
+ * Deliberately does NOT run this transition through `guardReviewTransition`
+ * (#0263), even for a move into `review`. That gate lives in the HTTP PATCH
+ * path because it operates on the task's OWN branch worktree — staging and
+ * committing pending implementation changes there and rejecting a vacuous
+ * (zero-source-change) transition — which is an agent-handoff guarantee, not
+ * a board-write guarantee. `repoos mv` is the low-level, generic "edit this
+ * frontmatter field" tool (a human or script can move ANY task to ANY status,
+ * with or without a branch or worktree at all); forcing every review move
+ * through worktree resolution would turn a one-line status edit into a hard
+ * dependency on handoff plumbing that plenty of legitimate `mv` calls don't
+ * have. The bug this task fixes is narrower and applies to every status
+ * change here regardless of target: `updateStatus` (via `rewrite()` in
+ * core/repoos.ts) now always commits the task file in the main checkout, so
+ * the write itself is never left as an untrusted dirty file. Agents that want
+ * the full handoff guarantee (implementation committed + non-vacuous) should
+ * go through the trusted handoff/PATCH path, not this CLI shortcut.
+ */
 export function cmdMv(id?: string, status?: string): void {
   if (!id || !status) {
     console.error(
