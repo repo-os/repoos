@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: default
 created_at: "2026-08-19T18:02:58Z"
-updated_at: "2026-08-20T11:20:02Z"
+updated_at: "2026-08-23T08:13:33Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ In all the AI chats there should be timestamps on each message (e.g. PM, ross, c
 
 - 2026-08-19T18:02:58Z · created · hello@repoos.org
 - 2026-08-20T11:20:02Z · status draft→inbox
+- 2026-08-23T08:13:33Z · model_override
