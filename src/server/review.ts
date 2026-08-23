@@ -33,7 +33,7 @@ import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
-import type { RepoEvent } from "./live-index.js";
+import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   extractOneShotReportText,
   parseOneShotLine,
@@ -366,6 +366,15 @@ export class ReviewManager {
   /** AgentRunner to send auto-bounce messages to the engineer session. */
   private readonly runner?: AgentRunner;
   /**
+   * Reflects a trusted write straight into the index (see server.ts's other
+   * `applyFileChange(path, { guarded: true })` call sites). Without this the
+   * revert below is only ever seen by the async file watcher, which under
+   * load can fire the transition-into-review path twice for one write —
+   * `claimRevert` is single-use, so the second, spurious firing starts a
+   * second review the guard was supposed to prevent.
+   */
+  private readonly index?: LiveIndex;
+  /**
    * Own logger rather than a constructor param (0187 review): the only call
    * site is `startServer`, and every review event is a task-lifecycle event —
    * it belongs on the same per-task log stream `logger.task()` already
@@ -375,10 +384,16 @@ export class ReviewManager {
   /** Database for recording review sessions. */
   private readonly db: RepoOSDb | null;
 
-  constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void, runner?: AgentRunner) {
+  constructor(
+    config: RepoOSConfig,
+    emit: (e: RepoEvent) => void,
+    runner?: AgentRunner,
+    index?: LiveIndex,
+  ) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
+    this.index = index;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
@@ -1125,6 +1140,11 @@ export class ReviewManager {
       );
       return;
     }
+    // Reflect the revert into the index immediately (trusted write — see the
+    // constructor comment on `index`), instead of leaving it to the async
+    // file watcher, which can otherwise process the transition twice under
+    // load and burn the single-use revert claim on a spurious first firing.
+    void this.index?.applyFileChange(task.absPath, { guarded: true });
     const note =
       "the review agent moved this task to done — only a human signs a task off, " +
       "so it was put back in review";

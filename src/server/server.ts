@@ -1053,7 +1053,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
-  reviews = new ReviewManager(config, emitEvent, runner);
+  reviews = new ReviewManager(config, emitEvent, runner, index);
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
