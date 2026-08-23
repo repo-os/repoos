@@ -2,7 +2,7 @@
 id: "0264"
 title: Add favorites section to Coding Agent + Model Modal
 type: feature
-status: review
+status: done
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-favorites-section-to-coding-agent-mo
 cli_override: claude code
 model_override: default
 created_at: "2026-08-22T17:08:06Z"
-updated_at: "2026-08-23T08:21:10Z"
+updated_at: "2026-08-23T11:36:31Z"
 ---
 ## Overview
 
@@ -66,3 +66,4 @@ Add a favorites feature to the Coding Agent + Model Modal, allowing users to qui
 - 2026-08-22T19:19:48Z · status review→active
 - 2026-08-23T04:54:56Z · model_override
 - 2026-08-23T08:21:09Z · status active→review
+- 2026-08-23T11:36:31Z · status review→done, release:success
