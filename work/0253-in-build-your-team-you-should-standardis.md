@@ -8,10 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
-cli_override: claude code
 model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-23T04:56:27Z"
+updated_at: "2026-08-23T08:13:15Z"
 ---
 ## Problem
 
@@ -67,3 +66,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-22T18:03:56Z · model_override
 - 2026-08-22T18:04:01Z · status review→active
 - 2026-08-23T04:56:27Z · model_override
+- 2026-08-23T08:13:15Z · cli_override
