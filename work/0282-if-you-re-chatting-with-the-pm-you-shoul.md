@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-interrupt-stop-signal-to-ai-chat
+model_override: default
 created_at: "2026-08-24T17:34:28Z"
-updated_at: "2026-08-24T19:56:30Z"
+updated_at: "2026-08-24T20:13:23Z"
 ---
 ## Problem
 
@@ -79,3 +80,4 @@ If you're chatting with the PM you should be able to send an interrupt/stop sign
 - 2026-08-24T19:41:31Z · status active→review
 - 2026-08-24T19:51:24Z · status review→active
 - 2026-08-24T19:56:30Z · status active→review
+- 2026-08-24T20:13:23Z · model_override
