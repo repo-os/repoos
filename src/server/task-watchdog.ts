@@ -377,6 +377,8 @@ export class TaskWatchdog {
   private readonly reviews?: WatchdogReviewManager;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stalenessThresholdMs: number;
+  /** Re-entry guard: a scan already in flight is skipped by the next tick. */
+  private scanning = false;
 
   constructor(
     config: RepoOSConfig,
@@ -411,17 +413,29 @@ export class TaskWatchdog {
   /** Run one full scan now (used by the timer and by tests). */
   async checkNow(): Promise<void> {
     if (this.canRun && !this.canRun()) return;
-    // The `active` status is scanned for the dead/stalled ENGINEER shape
-    // (#0180). The `review` status is scanned too (#0286): a task whose
-    // REVIEWER session died silently sits in `review` forever with no report
-    // and no one to nudge it — the same failure mode as a dead engineer, just
-    // on the review side where the watchdog never looked before.
-    for (const status of ["active", "review"] as const) {
-      for (const task of this.index.getTasks(status)) {
-        if (this.isStuck(task)) {
-          await this.handleStuck(task);
+    // Re-entry guard: the timer fires every 60s and a scan is async; if an
+    // earlier scan somehow overlaps (a slow disk, a blocked write), a second
+    // would scan the same tasks concurrently. Skip it — the next tick covers
+    // anything new. The scan body itself only does fast file/state work: any
+    // long-lived work (a review run, a handoff retry) is fired fire-and-forget,
+    // so a scan never blocks on it.
+    if (this.scanning) return;
+    this.scanning = true;
+    try {
+      // The `active` status is scanned for the dead/stalled ENGINEER shape
+      // (#0180). The `review` status is scanned too (#0286): a task whose
+      // REVIEWER session died silently sits in `review` forever with no report
+      // and no one to nudge it — the same failure mode as a dead engineer, just
+      // on the review side where the watchdog never looked before.
+      for (const status of ["active", "review"] as const) {
+        for (const task of this.index.getTasks(status)) {
+          if (this.isStuck(task)) {
+            this.handleStuck(task);
+          }
         }
       }
+    } finally {
+      this.scanning = false;
     }
   }
 
@@ -483,12 +497,12 @@ export class TaskWatchdog {
     return true;
   }
 
-  private async handleStuck(task: Task): Promise<void> {
+  private handleStuck(task: Task): void {
     // Re-read fresh from disk (the index copy can lag the canonical board) and
     // re-check the guards against the on-disk reality.
     const current = this.readCurrent(task);
     if (current.status === "review") {
-      await this.handleStuckReview(current);
+      this.handleStuckReview(current);
       return;
     }
     if (current.status !== "active") return;
@@ -532,7 +546,7 @@ export class TaskWatchdog {
    * stuck — no report, no running review — it is escalated to `needsInput`
    * for a human instead of looping forever on a genuinely broken reviewer.
    */
-  private async handleStuckReview(task: Task): Promise<void> {
+  private handleStuckReview(task: Task): void {
     if (!this.reviews) return;
     const current = this.readCurrent(task);
     if (current.status !== "review") return;
@@ -564,7 +578,13 @@ export class TaskWatchdog {
       );
       return;
     }
-    await this.reviews.run(current);
+    // Fire-and-forget, never awaited: a review can run for up to REVIEW_TIMEOUT_MS
+    // (15 min), and `checkNow` is a background scan that must stay fast so it can
+    // keep detecting OTHER stuck tasks on the same sweep. The retry marker above
+    // already bounds it, and `ReviewManager.isRunning` short-circuits re-entry for
+    // this same task, so there is nothing to await. Mirrors how the route layer
+    // starts a review (`void reviews.run(...)`).
+    void this.reviews.run(current);
   }
 
   /**
