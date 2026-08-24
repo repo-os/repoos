@@ -2,14 +2,14 @@
 id: "0272"
 title: "Task card error UX: full-width fix button, move full error detail to the task panel"
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/task-card-error-ux-full-width-fix-button
 created_at: "2026-08-24T15:56:16Z"
-updated_at: "2026-08-24T21:22:25Z"
+updated_at: "2026-08-24T21:28:13Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ The hierarchy is inverted: the small card should stay compact (just signal + one
 - 2026-08-24T20:28:07Z · body
 - 2026-08-24T20:30:17Z · status inbox→ready
 - 2026-08-24T21:22:25Z · status ready→active, branch
+- 2026-08-24T21:28:13Z · status active→review
