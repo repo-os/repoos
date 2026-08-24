@@ -1,3 +1,11 @@
+/**
+ * Canary counter for the end-to-end flow smoke test (draft → inbox → ready →
+ * active → review → merge → done). The only thing a canary task does is bump
+ * this number, wrapping 9 back to 0 — see CANARY_PROMPT below, which is the
+ * exact, unchanging freeform explanation used to create that task every time.
+ * A trivial, single-line diff means any failure surfaced by the run is the
+ * pipeline's fault, not the change's.
+ */
 export const CANARY_COUNTER = 1;
 
 export const CANARY_PROMPT =

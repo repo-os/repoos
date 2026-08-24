@@ -106,6 +106,8 @@ export interface Health {
   buildAvailableAt: string | null;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
+  /** Canary flow-test counter (0-9) — see src/core/canary.ts. */
+  canaryCounter: number;
 }
 
 export interface Counts {
