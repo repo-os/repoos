@@ -676,21 +676,32 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   return { label: "waiting for human", cls: "rs-human" };
 });
 
-/** Compact lifecycle counts: initial dev pass is round one; each completed
- * review bounce starts the next dev pass. A task presently in review
- * is also in its next review pass unless the engineer is actively fixing it. */
+/** Compact lifecycle counts: D = dev passes, R = review passes. The server
+ * writes `review_passes` on EVERY completed review run (auto and manual alike),
+ * so these track the true round-trips rather than `review_rounds`, which is a
+ * separate auto-bounce bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS.
+ * Fall back to `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
   if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
     return { dev: 0, review: 0 };
   }
-  const bounced = task.extra?.review_rounds;
-  const completedReviews = typeof bounced === "number" && Number.isFinite(bounced)
-    ? Math.max(0, Math.floor(bounced))
-    : 0;
+  let completed = task.extra?.review_passes;
+  if (typeof completed !== "number" || !Number.isFinite(completed)) {
+    completed = task.extra?.review_rounds;
+  }
+  const passes =
+    typeof completed === "number" && Number.isFinite(completed)
+      ? Math.max(0, Math.floor(completed))
+      : 0;
+  // A task is mid-dev-pass when it's `active`, or back in `review` because the
+  // engineer is actively re-coding (post-handoff fix / resume). Otherwise the
+  // current dev round is already finished, so D trails R only by the live pass.
+  const inDevPass =
+    task.status === "active" || (task.status === "review" && repo.isRunning(task.id));
   return {
-    dev: completedReviews + 1,
-    review: completedReviews + (task.status === "review" && !repo.isRunning(task.id) ? 1 : 0),
+    dev: passes + (inDevPass ? 1 : 0),
+    review: passes,
   };
 });
 
@@ -2217,7 +2228,6 @@ function resetFreeformOverrides(): void {
             Dev
           </button>
           <button
-            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"

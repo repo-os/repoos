@@ -627,10 +627,36 @@ export class ReviewManager {
 
     // Record the review session to the database
     this.recordReviewSession(task.id, agent, result, report.at, state === "ok");
+    // Track every completed review pass (not just auto-bounces) so the badge
+    // D/R counters reflect reality. See review_rounds (auto-bounce bookkeeping,
+    // capped at MAX_AUTO_REVIEW_ROUNDS) vs review_passes (all passes).
+    this.bumpReviewPasses(task);
 
     return state === "ok"
       ? { ok: true, report }
       : { ok: false, reason: result.error ?? "the review agent failed", report };
+  }
+
+  /**
+   * Increment the `review_passes` frontmatter counter. Unlike `review_rounds`
+   * (which counts only auto-bounced rounds and caps at MAX_AUTO_REVIEW_ROUNDS),
+   * this counts every completed review pass — auto and manual ("Review again")
+   * alike — so the UI badge (`D# · R#`) matches the true number of review
+   * sessions. Best-effort, never fails.
+   */
+  private bumpReviewPasses(task: Task): void {
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      const current = doc.data.review_passes as number | undefined;
+      const passes = typeof current === "number" && Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0;
+      doc.data.review_passes = passes + 1;
+      const keys = Object.keys(doc.data).filter((k) => k !== "review_passes");
+      keys.unshift("review_passes");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+    } catch (err) {
+      console.error(`[repoos] could not update review_passes for #${task.id}: ${(err as Error).message}`);
+    }
   }
 
   /** Record a review session to the database. Best-effort, never fails. */
