@@ -2,7 +2,7 @@
 id: "0273"
 title: "Cost ledger: reviewer and PM missing tokens/cost, only time shown"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cost-ledger-reviewer-and-pm-missing-toke
 model_override: default
 created_at: "2026-08-24T15:56:39Z"
-updated_at: "2026-08-24T20:39:12Z"
+updated_at: "2026-08-24T20:40:24Z"
 ---
 ## Problem
 In the tokens tab, the reviewer has only elapsed time, no token counts or cost, despite all agents (including the reviewer) using the same model. The PM agent has no time/token/cost info at all.
@@ -29,3 +29,4 @@ See src/server/agents.ts and the cost/time ledger.
 - 2026-08-24T20:18:37Z · status review→active
 - 2026-08-24T20:34:30Z · status active→review
 - 2026-08-24T20:39:12Z · model_override
+- 2026-08-24T20:40:24Z · status review→done, release:success
