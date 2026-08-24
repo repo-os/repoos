@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-24T21:59:47Z"
+review_passes: 1
 id: "0289"
 title: Failed integration job never reconciled against an already-done task
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/failed-integration-job-never-reconciled-
 created_at: "2026-08-24T21:35:57Z"
-updated_at: "2026-08-24T21:56:58Z"
 ---
 ## Problem
 When a duplicate/stale close-out job gets enqueued against a task that already finished successfully through an earlier job (e.g. a duplicate "Move to done" trigger firing after the board hadn't yet caught up — see #0285), the resulting failure is never reconciled against the task's actual, already-`done` state. Two separate pieces of dead state persist indefinitely with nothing to clean them up:
@@ -40,3 +41,4 @@ Task #0270: closed out successfully at 2026-08-24T21:18:47Z (`status: done`, mer
 - 2026-08-24T21:47:21Z · status inbox→ready
 - 2026-08-24T21:47:27Z · status ready→active, branch
 - 2026-08-24T21:56:58Z · status active→review
+
