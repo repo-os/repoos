@@ -467,6 +467,8 @@ function toBoardTask(t: Task): BoardTask {
     git: t.git,
     preview: null,
     checkRetryCount: typeof t.extra?.check_retry_count === "number" ? t.extra.check_retry_count : 0,
+    mergeConflictRetryCount:
+      typeof t.extra?.merge_conflict_retry_count === "number" ? t.extra.merge_conflict_retry_count : 0,
   };
 }
 
