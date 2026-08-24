@@ -10,8 +10,16 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { ensureWorktree, worktreeStatus, resetWorktree, dirtyFiles, commitDirtyFiles, GitDirtyCheckError } from "../../core/git.js";
+import { join, dirname } from "node:path";
+import {
+  ensureWorktree,
+  worktreeStatus,
+  resetWorktree,
+  dirtyFiles,
+  commitDirtyFiles,
+  mergeBranch,
+  GitDirtyCheckError,
+} from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
 function git(root: string, args: string[]): string {
@@ -388,3 +396,113 @@ describe("dirtyFiles fails closed (#0211)", () => {
     }
   });
 });
+
+/**
+ * mergeBranch conflict reporting (#0271).
+ *
+ * A close-out merge into a candidate reset to main must never surface the
+ * task's own bookkeeping as a hard conflict, and when a REAL source conflict
+ * sits alongside that bookkeeping, the reported conflicts must name the real
+ * culprit — not the task file that the close-out is supposed to auto-resolve.
+ */
+function commitFile(dir: string, name: string, content: string, msg: string): void {
+  mkdirSync(dirname(join(dir, name)), { recursive: true });
+  writeFileSync(join(dir, name), content);
+  git(dir, ["add", "--", name]);
+  git(dir, ["commit", "-m", msg]);
+}
+
+describe("mergeBranch conflict reporting (#0271)", () => {
+  it("auto-resolves when the only divergence is the task file's own bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/task120");
+      expect(wt.ok).toBe(true);
+      const wtPath = wt.path!;
+
+      // Branch: real source change + the task's own file at review status.
+      commitFile(wtPath, "src/genuine.ts", "export const a = 1;\n", "branch: source change");
+      commitFile(
+        wtPath,
+        "work/0120-some-task.md",
+        "---\nid: '0120'\nstatus: review\n---\nbody\n",
+        "branch: task file",
+      );
+
+      // Main: the task file gains NEWER bookkeeping + a concurrent task edit.
+      commitFile(
+        root,
+        "work/0120-some-task.md",
+        "---\nid: '0120'\nstatus: done\n---\nbody\nupdated on main\n",
+        "main: task bookkeeping",
+      );
+      commitFile(root, "work/0099-other.md", "---\nid: '0099'\n---\nother\n", "main: concurrent edit");
+
+      // Candidate reset to main, mirroring validateCandidate's syncCandidate.
+      const candidate = ensureWorktree(root, "repoos/integrate/0120");
+      expect(candidate.ok).toBe(true);
+      const candPath = candidate.path!;
+      git(candPath, ["reset", "--hard", "main"]);
+
+      const result = await mergeBranch(candPath, "feat/task120", {
+        autoResolve: ["dist/", "screenshots/", "work/0120-some-task.md"],
+        autoResolveOurs: ["work/"],
+      });
+
+      expect(result.merged).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      // The branch's source change landed in the candidate.
+      expect(git(candPath, ["show", "HEAD:src/genuine.ts"])).toContain("a = 1");
+    } finally {
+      clean();
+    }
+  });
+
+  it("names only the real source culprit when a genuine conflict sits alongside task-file bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/task120");
+      expect(wt.ok).toBe(true);
+      const wtPath = wt.path!;
+
+      commitFile(wtPath, "src/genuine.ts", "export const a = 1;\n", "branch: source change");
+      commitFile(
+        wtPath,
+        "work/0120-some-task.md",
+        "---\nid: '0120'\nstatus: review\n---\nbody\n",
+        "branch: task file",
+      );
+
+      // Main: the task file gains bookkeeping AND a genuinely competing edit of
+      // the same source file the branch changed.
+      commitFile(
+        root,
+        "work/0120-some-task.md",
+        "---\nid: '0120'\nstatus: done\n---\nbody\nupdated on main\n",
+        "main: task bookkeeping",
+      );
+      commitFile(root, "src/genuine.ts", "export const b = 2;\n", "main: genuine competing change");
+
+      const candidate = ensureWorktree(root, "repoos/integrate/0120");
+      expect(candidate.ok).toBe(true);
+      const candPath = candidate.path!;
+      git(candPath, ["reset", "--hard", "main"]);
+
+      const result = await mergeBranch(candPath, "feat/task120", {
+        autoResolve: ["dist/", "screenshots/", "work/0120-some-task.md"],
+        autoResolveOurs: ["work/"],
+      });
+
+      expect(result.merged).toBe(false);
+      // The reported conflict is the REAL blocker, never the task file the
+      // close-out is meant to auto-resolve (#0271).
+      expect(result.conflicts).toEqual(["src/genuine.ts"]);
+      expect(result.reason).toMatch(/merge conflict/);
+      // The failed merge was aborted — nothing half-applied.
+      expect(git(candPath, ["status", "--porcelain"])).toBe("");
+    } finally {
+      clean();
+    }
+  });
+});
+
