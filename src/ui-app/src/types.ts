@@ -69,6 +69,10 @@ export interface Task {
   preview: PreviewInfo | null;
   /** Server-authoritative automatic-review activity, refreshed with the index. */
   automaticReview?: AutomaticReview;
+  /** Automatic check-failure retries used on this task's most recent handoff
+   *  (capped at 2) — distinguishes a post-handoff check-fix loop from
+   *  ordinary coding once a review-status task shows a running agent. */
+  checkRetryCount?: number;
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -157,6 +161,8 @@ export interface BoardTask {
   /** Always null from server — populated from SSE events on the client. */
   preview: PreviewInfo | null;
   automaticReview?: AutomaticReview;
+  /** See Task.checkRetryCount. */
+  checkRetryCount: number;
 }
 
 /** Board index response from GET /api/board. */

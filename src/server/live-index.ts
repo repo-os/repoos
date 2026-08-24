@@ -435,6 +435,7 @@ function toBoardTask(t: Task): BoardTask {
     absPath: t.absPath,
     git: t.git,
     preview: null,
+    checkRetryCount: typeof t.extra?.check_retry_count === "number" ? t.extra.check_retry_count : 0,
   };
 }
 

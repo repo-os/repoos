@@ -178,6 +178,32 @@ function codingOrStuckHint(taskId: string): CardHint {
   };
 }
 
+/** Mirrors handoff.ts's MAX_CHECK_RETRY_ATTEMPTS. */
+const MAX_CHECK_RETRY_ATTEMPTS = 2;
+
+/** A running agent on a review-status task is otherwise indistinguishable
+ *  from ordinary coding — but when `repoos check` fails right after a
+ *  handoff, the server silently resumes the same engineer to fix it
+ *  (handoff.ts's scheduleCheckFailureRetry) without ever leaving `review`.
+ *  Label that case distinctly so it doesn't look like the task regressed. */
+function checkRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `fixing check failure · active ${activity}` : `fixing check failure (retry ${retryCount}/${MAX_CHECK_RETRY_ATTEMPTS})`,
+    title: "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
+    cls: "tc-coding",
+  };
+}
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -192,7 +218,9 @@ const hint = computed<CardHint | null>(() => {
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
-    if (repo.isRunning(t.id)) return codingOrStuckHint(t.id);
+    if (repo.isRunning(t.id)) {
+      return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
+    }
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
   }
   if (t.status === "active") {

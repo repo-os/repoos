@@ -994,7 +994,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           task.id,
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
-        scheduleCheckFailureRetry(config, task, result, runner);
+        scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
+          index.applyFileChange(absPath, { guarded: true }),
+        );
       }
     },
     onPreviewRequest: async (request) => {

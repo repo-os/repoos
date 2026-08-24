@@ -492,7 +492,14 @@ export const useRepoStore = defineStore("repo", () => {
         prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
-      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null };
+      // checkRetryCount lives in `extra` on the full Task the SSE payload
+      // carries (unlike the board fetch, which has it as a first-class
+      // field) — derive it the same way toBoardTask() does server-side.
+      const checkRetryCount =
+        typeof e.task.extra?.check_retry_count === "number"
+          ? e.task.extra.check_retry_count
+          : (before?.checkRetryCount ?? 0);
+      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null, checkRetryCount };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
       const ui = useUiStore();

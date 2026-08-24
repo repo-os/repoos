@@ -442,6 +442,11 @@ export interface BoardTask {
   git: TaskGitInfo;
   /** Always null in the board response — set on the client from SSE events. */
   preview: null;
+  /** Automatic check-failure retries used on this task's most recent handoff
+   *  (see handoff.ts's scheduleCheckFailureRetry, capped at 2). Lets the board
+   *  distinguish "engineer patching a post-handoff check failure" from
+   *  ordinary coding once a review-status task shows a running agent. */
+  checkRetryCount: number;
 }
 
 /** Board index — like RepoIndex but with BoardTask[] instead of Task[]. */

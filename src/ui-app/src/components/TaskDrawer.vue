@@ -664,7 +664,15 @@ const review = computed<ReviewState | null>(() =>
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
-  if (repo.isRunning(ui.active.id)) return { label: "coding", cls: "rs-coding" };
+  if (repo.isRunning(ui.active.id)) {
+    // A running agent on an already-review task, outside auto-review, means
+    // the server silently resumed the engineer to fix a post-handoff
+    // `repoos check` failure (handoff.ts's scheduleCheckFailureRetry) —
+    // never that the task regressed to active. Label it distinctly.
+    return ui.active.checkRetryCount
+      ? { label: "fixing check failure", cls: "rs-coding" }
+      : { label: "coding", cls: "rs-coding" };
+  }
   return { label: "waiting for human", cls: "rs-human" };
 });
 

@@ -62,6 +62,27 @@ function samePath(a: string, b: string): boolean {
   }
 }
 
+/**
+ * Clears a stale `check_retry_count` once a handoff's `repoos check` step
+ * passes. The field exists only to cap `scheduleCheckFailureRetry`'s retries
+ * and to let the board show "fixing check failure" while a retry is in
+ * flight (0265) — left on the file after the check that mattered has passed,
+ * it would mislabel any later, unrelated resume of this task's engineer
+ * session as still fixing a check failure. Best-effort: never fails the
+ * handoff over a cosmetic field.
+ */
+function clearCheckRetryCount(absPath: string): void {
+  try {
+    const raw = readFileSync(absPath, "utf8");
+    const doc = parseDocument(raw);
+    if (doc.data.check_retry_count === undefined) return;
+    delete doc.data.check_retry_count;
+    writeFileSync(absPath, serializeDocument(doc.data, `\n${doc.body}\n`, Object.keys(doc.data)));
+  } catch (err) {
+    console.error(`[repoos] could not clear check_retry_count for ${absPath}: ${(err as Error).message}`);
+  }
+}
+
 function concise(run: RunResult): string {
   if (run.error) return run.error.message;
   return [run.stdout, run.stderr]
@@ -182,6 +203,7 @@ export async function handoffTask(
       if (check.status !== 0) {
         return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
       }
+      clearCheckRetryCount(task.absPath);
 
       onProgress?.("commit");
       const gate = await guardReviewTransition(config, worktreeTask);
@@ -287,6 +309,10 @@ export function scheduleCheckFailureRetry(
   task: Task,
   result: HandoffResult,
   runner: AgentRunner,
+  /** Called right after `check_retry_count` is persisted so the live index
+   *  (and its SSE `task.updated` event) picks up the new count immediately —
+   *  this write bypasses `patchTaskFile`, so nothing else refreshes it. */
+  onFileChange?: (absPath: string) => void,
 ): boolean {
   if (result.step !== "check") return false;
   let retries = task.extra?.check_retry_count as number | undefined;
@@ -326,6 +352,7 @@ export function scheduleCheckFailureRetry(
       const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count");
       keys.unshift("check_retry_count");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
     } catch (err) {
       console.error(`[repoos] could not persist check_retry_count for #${task.id}: ${(err as Error).message}`);
     }
