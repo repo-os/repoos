@@ -66,7 +66,7 @@ function help(): void {
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
     ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim('flags: --title --area --priority --type --body --branch --assigned-to')}
-    ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority')}
+    ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority --body')}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)

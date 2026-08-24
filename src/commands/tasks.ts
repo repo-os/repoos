@@ -272,19 +272,41 @@ export function cmdUpdate(args: string[]): void {
   }
 }
 
-/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p]` */
+const NEW_FLAGS = new Set(["ai", "type", "area", "priority", "body"]);
+
+/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p] [--body "..."|-]` */
 export function cmdNew(args: string[]): void {
+  const usage =
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1] [--body "..."|-]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === "--ai") flags.ai = true;
-    else if (a.startsWith("--")) flags[a.slice(2)] = args[++i];
-    else positional.push(a);
+    if (!a.startsWith("--")) {
+      positional.push(a);
+      continue;
+    }
+    const key = a.slice(2);
+    if (!NEW_FLAGS.has(key)) {
+      console.error(c.red(`  Unknown flag --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    if (key === "ai") {
+      flags.ai = true;
+      continue;
+    }
+    const raw = args[++i];
+    if (raw === undefined) {
+      console.error(c.red(`  Missing value for --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    flags[key] = key === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
   }
   const title = positional.join(" ").trim();
   if (!title) {
-    console.error(c.red('  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1]'));
+    console.error(c.red(usage));
     process.exitCode = 1;
     return;
   }
@@ -298,6 +320,7 @@ export function cmdNew(args: string[]): void {
     area: (flags.area as string) || undefined,
     priority: (flags.priority as string) || undefined,
     assignedTo: flags.ai ? "ai" : undefined,
+    body: (flags.body as string) || undefined,
   });
   console.log(
     "  " +

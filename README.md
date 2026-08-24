@@ -82,7 +82,7 @@ repoos check                   Definition-of-done gate (build, typecheck, tests,
 repoos tunnel [subcommand]     Cloudflare Tunnel + Zero Trust publishing
 ```
 
-**`repoos new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`.
+**`repoos new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`, `--body` (`-` reads from stdin). Unknown flags are rejected.
 
 ```bash
 repoos new "Add company dashboard" --ai --type feature --area web --priority p1
