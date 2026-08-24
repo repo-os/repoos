@@ -2,7 +2,7 @@
 id: "0266"
 title: Increment canary counter
 type: chore
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/increment-canary-counter
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T15:10:15Z"
-updated_at: "2026-08-24T15:15:59Z"
+updated_at: "2026-08-24T15:18:11Z"
 review_rounds: 1
 ---
 ## Problem
@@ -46,3 +46,4 @@ This is the repoos canary task: a deliberately trivial change used to smoke-test
 - 2026-08-24T15:12:18Z · status ready→active, branch
 - 2026-08-24T15:15:00Z · status active→review
 - 2026-08-24T15:15:59Z · status review→active
+- 2026-08-24T15:18:11Z · status active→review
