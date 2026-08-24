@@ -63,6 +63,12 @@ export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
  */
 export const PREVIEW_REQUEST_SIGNAL = "::repoos-preview-request::";
 
+/**
+ * The transcript marker appended when a user interrupts an in-flight AI chat
+ * response. Shared so the runner and the CTO manager (and tests) never drift.
+ */
+export const INTERRUPTED_MARKER = "— response interrupted —";
+
 /** A capability minted by the runner for one completed agent turn. */
 export interface AgentHandoffRequest {
   taskId: string;
@@ -3030,7 +3036,7 @@ export class AgentRunner {
     const wasRunning = this.entries.has(taskId);
     const result = this.stop(taskId);
     if (wasRunning && this.sessions.has(taskId)) {
-      this.system(taskId, "— response interrupted —");
+      this.system(taskId, INTERRUPTED_MARKER);
     }
     return result;
   }

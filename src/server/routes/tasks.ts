@@ -972,6 +972,12 @@ export const ctoMessage: RouteHandler = async (ctx, req, res) => {
   return json(res, 200, { ok: true });
 };
 
+/** Interrupt a running CTO response. Idempotent. */
+export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.cto.interrupt();
+  return json(res, 200, { ok: true, ...result });
+};
+
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner } = ctx;
   const id = params.param1;

@@ -185,6 +185,7 @@ import {
   reviewMessage,
   getCTO,
   ctoMessage,
+  ctoInterrupt,
   pmMessage,
   pmInterrupt,
   getScreenshot,
@@ -1465,6 +1466,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
+  router.register("POST", "/api/cto/interrupt", ctoInterrupt);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);

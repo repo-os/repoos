@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
-import { AgentRunner, type AgentHandoffRequest } from "../../server/agents";
+import { AgentRunner, INTERRUPTED_MARKER, type AgentHandoffRequest } from "../../server/agents";
+import { CTOManager } from "../../server/cto";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -234,13 +235,43 @@ setInterval(() => {}, 1000);
     // The running process is stopped and the transcript gets an explicit
     // "interrupted" marker so the response reads as user-stopped, not complete.
     await waitFor(() => !runner.isRunning(sessionId), "interrupted chat exit");
-    expect(runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === "— response interrupted —")).toBe(true);
+    expect(runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
   });
 
   it("interrupt is a no-op when nothing is running", async () => {
     const fx = fixture("done");
     const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
     expect(runner.interrupt("pm-task-v2:9999").stopped).toBe(false);
+  });
+
+  it("interrupts a running CTO response and marks it stopped", async () => {
+    const fx = fixture("active");
+    fx.config.agents = [{ name: "cto", cli: "qwen code", model: "default", enabled: true }];
+    // A qwen bin that holds until killed, so the CTO run stays in-flight until
+    // the interrupt lands (no short-exit race).
+    writeFileSync(
+      join(fx.root, "bin", "qwen"),
+      `#!/usr/bin/env node
+process.stdout.write("started\\n");
+setInterval(() => {}, 1000);
+`,
+      { mode: 0o755 },
+    );
+    const cto = new CTOManager(fx.config, () => {});
+    void cto.send("board status?"); // fire-and-forget, like the HTTP route
+    await waitFor(() => cto.isRunning(), "CTO run started");
+
+    const result = cto.interrupt();
+    expect(result.stopped).toBe(true);
+    await waitFor(() => !cto.isRunning(), "CTO interrupted");
+    expect(cto.session().some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
+  });
+
+  it("CTO interrupt is a no-op when nothing is running", () => {
+    const fx = fixture("active");
+    fx.config.agents = [{ name: "cto", cli: "qwen code", model: "default", enabled: true }];
+    const cto = new CTOManager(fx.config, () => {});
+    expect(cto.interrupt().stopped).toBe(false);
   });
 
   it.each(["claude", "copilot"] as const)(
