@@ -2,14 +2,14 @@
 id: "0280"
 title: Add dark-mode pastel repo colors and dynamic favicon/pwa icon
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-dark-mode-pastel-repo-colors-and-dyn
 created_at: "2026-08-24T17:01:54Z"
-updated_at: "2026-08-24T19:54:51Z"
+updated_at: "2026-08-24T20:03:19Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ Currently when you click the repo name it shows you 12 pastel colors you can cho
 - 2026-08-24T17:02:20Z · status draft→inbox, title, area, body
 - 2026-08-24T19:54:38Z · status inbox→ready
 - 2026-08-24T19:54:51Z · status ready→active, branch
+- 2026-08-24T20:03:19Z · status active→review
