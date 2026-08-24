@@ -2,14 +2,14 @@
 id: "0286"
 title: Watchdog never covers a dead reviewer session — only active tasks are scanned
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/watchdog-never-covers-a-dead-reviewer-se
 created_at: "2026-08-24T21:14:42Z"
-updated_at: "2026-08-24T21:33:36Z"
+updated_at: "2026-08-24T21:36:44Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -60,3 +60,4 @@ Hardcoded to the `active` status only. `isStuck()`'s own logic (no running proce
 - 2026-08-24T21:17:06Z · status ready→active, branch
 - 2026-08-24T21:31:43Z · status active→review
 - 2026-08-24T21:33:36Z · status review→active
+- 2026-08-24T21:36:44Z · status active→review
