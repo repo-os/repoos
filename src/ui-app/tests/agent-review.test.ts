@@ -456,6 +456,9 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       expect(served.review?.markdown).not.toContain("FIRST RUN MARKER");
       expect(served.lines.some((l) => l.d?.includes("FIRST RUN MARKER"))).toBe(false);
       expect(spawns(fx).filter((a) => a.includes("--dir")).length).toBe(2);
+      // Every completed review run (auto + manual "Review again") bumps the
+      // true per-pass counter used by the D# · R# badge.
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
   });
 
@@ -502,6 +505,8 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       const taskFile = readFileSync(task.absPath, "utf8");
       expect(taskFile).toMatch(/^status: active$/m);
       expect(taskFile).toMatch(/^review_rounds: 1$/m);
+      // The passing auto-review run also counted as one full review pass.
+      expect(taskFile).toMatch(/^review_passes: 1$/m);
       expect(taskFile).toContain("status review→active");
       expect(spawns(fx).some((args) => args.join(" ").includes("automated review found"))).toBe(true);
       await new Promise((resolve) => setTimeout(resolve, 250));

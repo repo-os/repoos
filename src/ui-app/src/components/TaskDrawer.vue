@@ -676,21 +676,35 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   return { label: "waiting for human", cls: "rs-human" };
 });
 
-/** Compact lifecycle counts: initial dev pass is round one; each completed
- * review bounce starts the next dev pass. A task presently in review
- * is also in its next review pass unless the engineer is actively fixing it. */
+/** Compact lifecycle counts: D = dev passes, R = review passes. The server
+ * writes `review_passes` on EVERY completed review run (auto and manual alike),
+ * so these track the true round-trips rather than `review_rounds`, which is a
+ * separate auto-bounce bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS.
+ * Fall back to `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
   if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
     return { dev: 0, review: 0 };
   }
-  const bounced = task.extra?.review_rounds;
-  const completedReviews = typeof bounced === "number" && Number.isFinite(bounced)
-    ? Math.max(0, Math.floor(bounced))
-    : 0;
+  let completed = task.extra?.review_passes;
+  if (typeof completed !== "number" || !Number.isFinite(completed)) {
+    completed = task.extra?.review_rounds;
+  }
+  const passes =
+    typeof completed === "number" && Number.isFinite(completed)
+      ? Math.max(0, Math.floor(completed))
+      : 0;
+  // A task is in (or about to start) a dev pass when it's `ready` or `active`,
+  // or back in `review` because the engineer is actively re-coding (post-handoff
+  // fix / resume). Otherwise the current dev round is finished: `done` and
+  // "waiting for human" review states show exactly the completed passes (D == R).
+  const inDevPass =
+    task.status === "ready" ||
+    task.status === "active" ||
+    (task.status === "review" && repo.isRunning(task.id));
   return {
-    dev: completedReviews + 1,
-    review: completedReviews + (task.status === "review" && !repo.isRunning(task.id) ? 1 : 0),
+    dev: passes + (inDevPass ? 1 : 0),
+    review: passes,
   };
 });
 
@@ -796,7 +810,7 @@ function scrollReviewToBottom(smooth = false): void {
 watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
-    if (!ui.active || ui.activeTab !== "review" || ui.active.status !== "review") return;
+    if (!ui.active || ui.activeTab !== "review") return;
     reviewStick.value = true;
     void repo.loadReview(ui.active.id).then(() => nextTick(() => scrollReviewToBottom()));
   },
@@ -867,11 +881,12 @@ async function sendToEngineer(): Promise<void> {
   }
 }
 
-/** Hydrate the report whenever the drawer shows a task in review. */
+/** Hydrate the report whenever the drawer shows a task (any status — the
+ * report stays relevant and viewable after sign-off). */
 watch(
   () => [ui.active?.id, ui.active?.status],
   () => {
-    if (ui.active?.status !== "review") return;
+    if (!ui.active) return;
     reviewPane.value = "report";
     void repo.loadReview(ui.active.id);
   },
@@ -2250,7 +2265,6 @@ function resetFreeformOverrides(): void {
             Dev
           </button>
           <button
-            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
@@ -2637,6 +2651,7 @@ function resetFreeformOverrides(): void {
               </button>
             </div>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running"
@@ -2648,6 +2663,7 @@ function resetFreeformOverrides(): void {
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="accent"
               size="sm"
               :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
