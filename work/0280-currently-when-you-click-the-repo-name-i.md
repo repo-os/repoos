@@ -2,7 +2,7 @@
 id: "0280"
 title: Add dark-mode pastel repo colors and dynamic favicon/pwa icon
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -57,3 +57,4 @@ Currently when you click the repo name it shows you 12 pastel colors you can cho
 - 2026-08-24T19:54:38Z · status inbox→ready
 - 2026-08-24T19:54:51Z · status ready→active, branch
 - 2026-08-24T20:03:19Z · status active→review
+- 2026-08-24T20:03:19Z · status review→active
