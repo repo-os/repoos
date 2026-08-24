@@ -807,7 +807,7 @@ function scrollReviewToBottom(smooth = false): void {
 watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
-    if (!ui.active || ui.activeTab !== "review" || ui.active.status !== "review") return;
+    if (!ui.active || ui.activeTab !== "review") return;
     reviewStick.value = true;
     void repo.loadReview(ui.active.id).then(() => nextTick(() => scrollReviewToBottom()));
   },
@@ -878,11 +878,12 @@ async function sendToEngineer(): Promise<void> {
   }
 }
 
-/** Hydrate the report whenever the drawer shows a task in review. */
+/** Hydrate the report whenever the drawer shows a task (any status — the
+ * report stays relevant and viewable after sign-off). */
 watch(
   () => [ui.active?.id, ui.active?.status],
   () => {
-    if (ui.active?.status !== "review") return;
+    if (!ui.active) return;
     reviewPane.value = "report";
     void repo.loadReview(ui.active.id);
   },
@@ -2614,6 +2615,7 @@ function resetFreeformOverrides(): void {
               </button>
             </div>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running"
@@ -2625,6 +2627,7 @@ function resetFreeformOverrides(): void {
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="accent"
               size="sm"
               :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
