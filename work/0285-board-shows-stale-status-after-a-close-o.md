@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: ui
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-24T20:48:22Z"
-updated_at: "2026-08-24T20:48:22Z"
+updated_at: "2026-08-24T21:02:23Z"
 ---
 ## Activity
 
@@ -31,3 +32,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-08-24T21:02:23Z · model_override
