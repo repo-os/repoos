@@ -259,7 +259,7 @@ function onDocBodyTranscribed(text: string): void {
           :class="{ active: newMode === 'manual' }"
           @click="newMode = 'manual'"
         >
-          Manual doc
+          Manual
         </button>
         <button
           type="button"
@@ -267,7 +267,7 @@ function onDocBodyTranscribed(text: string): void {
           :class="{ active: newMode === 'upload' }"
           @click="newMode = 'upload'"
         >
-          Upload docs
+          Upload
         </button>
       </div>
 
