@@ -9,9 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
-pm_model_override: default
 created_at: "2026-08-24T15:55:33Z"
-updated_at: "2026-08-24T17:31:01Z"
+updated_at: "2026-08-24T17:32:45Z"
 ---
 ## Problem
 Clicking "start preview" on a reviewed task failed with an unhelpful error (something about the preview server not becoming ready, suggesting a rebuild) with no actionable detail on why. Also, clicking the button gives no feedback for ~10 seconds before anything visibly happens.
@@ -28,3 +27,4 @@ See src/server/preview.ts and the task drawer's preview UI.
 - 2026-08-24T15:58:45Z · body
 - 2026-08-24T17:28:50Z · pm_model_override
 - 2026-08-24T17:31:01Z · model_override
+- 2026-08-24T17:32:45Z · pm_model_override
