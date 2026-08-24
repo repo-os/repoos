@@ -11,7 +11,7 @@ branch: feat/auto-handle-the-self-resolving-staleness
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T15:57:24Z"
-updated_at: "2026-08-24T23:45:15Z"
+updated_at: "2026-08-24T23:50:23Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -167,3 +167,4 @@ lives in the orchestrator's invocation, not in `cmdCheck`'s semantics.
 - 2026-08-24T19:53:22Z · pm_model_override
 - 2026-08-24T21:15:40Z · status review→active
 - 2026-08-24T23:45:15Z · status active→review
+- 2026-08-24T23:50:23Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
