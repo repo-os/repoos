@@ -255,9 +255,31 @@ function extractHandoffFailure(body: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
-/** Whether the task's Activity log already shows a watchdog surface/escalation. */
+/**
+ * Whether the task's Activity log already shows a watchdog surface/escalation
+ * SINCE the most recent `status →active` transition. Scoped the same way
+ * `isStuckActiveTask`/`lastActivityTime` already are — an unscoped whole-body
+ * match was a confirmed bug (#0271 follow-up, task #0243): a task surfaced
+ * once, then restarted to `active` again (by a human or a fresh run), can get
+ * stuck a second time — but the OLD marker from the first, already-resolved
+ * session never leaves the append-only Activity log, so an unscoped check
+ * permanently disables the watchdog for that task for the rest of its life.
+ * #0243 sat silently `active` for 4+ days this way. Scanning only entries
+ * after the current transition-into-active line fixes it: each active
+ * session gets its own fresh "not yet surfaced" state.
+ */
 function alreadySurfaced(body: string): boolean {
-  return SURFACED_ACTIVITY.test(body) || ESCALATED_ACTIVITY.test(body);
+  const lines = body.split("\n");
+  const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
+  if (activityIndex === -1) return false;
+  for (let i = lines.length - 1; i > activityIndex; i--) {
+    const line = lines[i];
+    if (SURFACED_ACTIVITY.test(line) || ESCALATED_ACTIVITY.test(line)) return true;
+    // The most recent transition INTO active bounds this session — anything
+    // above it (further back) belongs to an earlier, already-resolved one.
+    if (/^- \d{4}-\d{2}-\d{2}T\S+ · status [a-z_]+→active\b/.test(line)) return false;
+  }
+  return false;
 }
 
 export interface TaskWatchdogOptions {

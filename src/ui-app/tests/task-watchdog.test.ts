@@ -368,6 +368,58 @@ describe("TaskWatchdog", () => {
     fx.clean();
   });
 
+  it(
+    "re-surfaces a task that gets stuck a SECOND time, after an earlier surface + restart (#0271 follow-up, confirmed bug: task #0243)",
+    async () => {
+      const fx = makeFx(10_000);
+      // Simulate a task that was already surfaced once, then restarted to
+      // active again (by a human, or a fresh run) — and is now stuck a
+      // second time. The OLD marker from the first, already-resolved session
+      // must not permanently block the watchdog from ever catching this task
+      // again; before the #0271 fix it did, silently, forever (#0243 sat
+      // `active` for 4+ days this way).
+      const firstTransition = new Date(Date.now() - 3_600_000).toISOString(); // 1h ago
+      const surfaced = new Date(Date.now() - 3_500_000).toISOString();
+      const secondTransition = new Date(Date.now() - 10_000).toISOString(); // 10s ago, past the 1s threshold
+      const body = `---
+id: "0001"
+title: "Restarted after a prior surface"
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Stuck twice.
+
+## Activity
+
+- ${firstTransition} · status inbox→active
+- ${surfaced} · watchdog: auto-surfaced stuck task · status active→ready · agent never started · next step: resume manually
+- ${secondTransition} · status ready→active
+`;
+      writeFileSync(fx.taskPath, body);
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+      await watchdog.checkNow();
+
+      const after = readFileSync(fx.taskPath, "utf8");
+      const task = parseTaskAt(fx);
+      expect(task.status).toBe("ready"); // surfaced AGAIN, not silently left active
+      // Exactly one NEW surface marker after the second transition — the old
+      // one from the first session is still there too (append-only log), so
+      // this must count occurrences, not just presence.
+      const surfaceCount = (after.match(/watchdog: auto-surfaced stuck task/g) ?? []).length;
+      expect(surfaceCount).toBe(2);
+      fx.clean();
+    },
+  );
+
   it("surfaces a task whose agent was killed mid-turn → ready, showing why (acceptance 1)", async () => {
     const fx = makeFx(10_000);
     oldPath = process.env.PATH ?? "";
