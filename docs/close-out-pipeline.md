@@ -197,20 +197,34 @@ worktree/branch and the task's own feature worktree/branch, and marks the task `
 If a job fails here (rare — validation already passed), main was NOT touched; the repo
 lock guarantees that. Safe to just retry.
 
-## The reload-churn interaction (NOT YET FIXED — read this before troubleshooting flakiness)
+## The reload-churn interaction (SIGNIFICANTLY MITIGATED as of #0271, 2026-08-25 — read this before troubleshooting flakiness)
 
 Every `validating` phase's `bun run build` rewrites `dist/` on the **candidate**
 worktree, which is harmless. (Since 2026-08-15 a rebuild of unchanged source rewrites
 the marker with identical content, so a no-op rebuild no longer trips the auto-reload
-hash watcher at all — one input to the churn below is gone, but the interaction
-itself is not fixed.) But if a job is running close together with
-other repo activity (another agent's build landing on `main`, or you running `bun run
-build`/`repoos check` on `main` directly), the MAIN server process's own auto-reload
-(`src/server/reload.ts`) may attempt a handoff at the same time. As of 2026-08-14 this
-handoff frequently fails (`reload: replacement failed to become ready`), and the old
-process re-binds and keeps serving — no data loss, but the server is briefly
-unresponsive (curl connection-refused for a few seconds), and any in-flight job's
-in-memory state can be disrupted.
+hash watcher at all.) But if a job is running close together with other repo activity
+(another agent's build landing on `main`, or you running `bun run build`/`repoos check`
+on `main` directly), the MAIN server process's own auto-reload (`src/server/reload.ts`)
+may attempt a handoff at the same time.
+
+**#0271 update:** the original failure mode here was that `index.refreshAll()` ran
+hundreds of serial+redundant git spawns SYNCHRONOUSLY before `server.listen()` —
+20-30s at 260 tasks — which starved every replacement's health-handshake window, so
+handoffs almost always failed (`reload: replacement failed to become ready`) and the
+old process re-bound. That was confirmed live: 29 failed handoff attempts in a row in
+one incident, which eventually took the whole control plane down (not just "briefly
+unresponsive"). The fix (`buildIndexAsync`/`refreshAllAsync`, boot no longer blocks
+`listen()`) cut boot time to ~1s and, in live re-testing immediately after, produced
+two clean successful handoffs in a row (~6-7s spawn-to-confirmed each) where every
+prior attempt in the incident had failed. `reload.ts` also now backs off automatic
+retries after a failure (10s, doubling, capped at 5min) instead of retrying every
+~5s forever, so even a genuine failure can no longer thrash the server down the way
+the original incident did — see `src/server/reload.ts` and the #0271 task history for
+the full writeup.
+**Not proven eliminated under the original incident's exact load** (many concurrent
+agent/preview processes) — treat "still occasionally unresponsive for a few seconds
+during a handoff" as expected, and "server goes down and stays down" as the regression
+to actually worry about now.
 
 **What to do when you hit this:**
 - A `POST /api/tasks/:id/done` (or any API call) that returns nothing / times out: wait
@@ -224,10 +238,11 @@ in-memory state can be disrupted.
   (see next section) — this is a documented trap, not a hypothetical.
 - Do not run `bun run build` on `main` repeatedly in quick succession while a job is
   mid-`validating` — each one is an extra reload trigger stacked on top of the job's own.
-- This interaction itself is not fixed. It is tracked for `#0185` (always-on service
-  management). Do not attempt to fix `reload.ts`'s process-handoff model as a side quest
-  while chasing a stuck task — that file's design has already been hardened through
-  specific past incidents (`#0096`, `#0143`); read it in full first if you ever do touch it.
+- The remaining structural gap here is tracked for `#0185` (always-on service
+  management / crash supervision) — the server can still die outright (it did, in the
+  #0271 incident), and nothing currently auto-restarts it. `reload.ts`'s design has
+  been hardened through several specific past incidents (`#0096`, `#0143`, now
+  `#0271`); read it in full before touching it further.
 
 ## The `.repoos/serve.lock` trap (confirmed live during this session)
 
@@ -251,6 +266,15 @@ launchctl kickstart -k gui/$(id -u)/com.repoos.serve   # macOS, if using the Lau
 Prefer letting the existing reap logic handle it (it runs at boot and on conflict
 detection) over manual intervention — only intervene if the server has been down for
 more than ~2 minutes.
+
+**Related, not yet fixed (`#0284`):** the conflict check above trusts the lockfile
+alone and never actually probes the port. If the lockfile is missing/stale (not just
+"points at a dead PID" — genuinely absent) while a live process holds the port, or a
+new bind lands in the ~100ms window a reload handoff briefly releases its listener in,
+a second process can bind the port out from under a live one with no error from
+either side. Confirmed live during the #0271 investigation. Low-probability in normal
+operation (requires the lockfile to already be gone AND a bind landing in a narrow
+timing window) — see `#0284` for the full repro and fix proposal.
 
 ## Task file drift (confirmed live during this session)
 
