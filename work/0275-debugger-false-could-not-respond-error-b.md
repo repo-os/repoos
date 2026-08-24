@@ -2,14 +2,14 @@
 id: "0275"
 title: "Debugger false could-not-respond error, broken change-agent/model button, Agents page cant set model per agent"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:57:09Z"
-updated_at: "2026-08-24T15:59:55Z"
+updated_at: "2026-08-24T19:55:57Z"
 ---
 ## Problem
 Several related debugger/agent-selection issues seen on the same run:
@@ -25,3 +25,4 @@ Several related debugger/agent-selection issues seen on the same run:
 ## Activity
 
 - 2026-08-24T15:59:55Z · body
+- 2026-08-24T19:55:57Z · status inbox→ready
