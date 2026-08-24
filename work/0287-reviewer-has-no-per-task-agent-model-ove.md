@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/reviewer-has-no-per-task-agent-model-ove
 created_at: "2026-08-24T21:20:34Z"
-updated_at: "2026-08-24T21:30:59Z"
+updated_at: "2026-08-24T23:32:47Z"
 ---
 ## Problem
 Dev and PM both support per-task agent/CLI/model overrides, chosen from a selector in their respective TaskDrawer tabs. The Review tab has no equivalent — the reviewer is a single global agent/model chosen once on the Agents settings page and used for every task's review, with no way to override it per-task.
