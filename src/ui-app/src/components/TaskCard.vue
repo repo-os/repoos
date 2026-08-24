@@ -273,7 +273,7 @@ const hint = computed<CardHint | null>(() => {
       if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
       return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
     }
-    return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
+    return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
     if (repo.isRunning(t.id)) {
@@ -303,6 +303,21 @@ const action = computed<CardAction | null>(() => {
   if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
   return ACTIONS[t.status] ?? null;
 });
+
+/** True when the task is genuinely waiting on the human: automatic review
+ *  finished clean, the engineer is not coding/fixing, and no close-out job is
+ *  queued. This is the "review passed clean" trigger (0270) that highlights
+ *  the Move to done button and raises the card cue. It mirrors the
+ *  `waiting-for-human` card state — every condition must hold, so the button
+ *  is never highlighted while the review runs, the engineer works, or a
+ *  close-out is in flight. */
+const reviewReady = computed(
+  () =>
+    props.task.status === "review" &&
+    !inPipeline.value &&
+    !repo.reviewFor(props.task.id)?.running &&
+    !repo.isRunning(props.task.id),
+);
 
 /** Full-width footer colors retain the board's action/status language. */
 const actionFooterClass = computed(() => {
@@ -426,6 +441,7 @@ async function openAgent(): Promise<void> {
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human': task.status === 'review' && !inPipeline && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
+      'review-ready': reviewReady,
       'needs-input': task.needsInput,
       'done-needs-ack': ackPending,
       dragging,
@@ -477,7 +493,7 @@ async function openAgent(): Promise<void> {
     <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
         <button
           class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
-          :class="actionFooterClass"
+          :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
           :disabled="busy || inPipeline || (task.status === 'review' && (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))"
           :title="inPipeline ? action.title : task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : task.status === 'review' && repo.isRunning(task.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : action.title"
           @click.stop="runAction"
