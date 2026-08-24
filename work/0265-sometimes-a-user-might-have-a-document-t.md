@@ -2,14 +2,14 @@
 id: "0265"
 title: Add upload docs tab for direct file uploads
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-upload-docs-tab-for-direct-file-uplo
 created_at: "2026-08-24T07:50:37Z"
-updated_at: "2026-08-24T08:04:50Z"
+updated_at: "2026-08-24T16:35:49Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Sometimes a user might have a document that they just want to upload directly to
 - 2026-08-24T07:51:48Z · status inbox→ready
 - 2026-08-24T07:53:06Z · status ready→active, branch
 - 2026-08-24T08:04:39Z · status active→review
+- 2026-08-24T16:35:49Z · status review→done, release:success
