@@ -2,14 +2,14 @@
 id: "0281"
 title: Replace spec inline textarea with a dedicated edit modal
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/replace-spec-inline-textarea-with-a-dedi
 created_at: "2026-08-24T17:08:16Z"
-updated_at: "2026-08-24T20:27:53Z"
+updated_at: "2026-08-24T20:58:27Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ The spec text area is buggy, rather than changing the original pretty markdown v
 
 - 2026-08-24T17:08:37Z · status draft→inbox, title, area, body
 - 2026-08-24T20:27:53Z · status inbox→ready
+- 2026-08-24T20:58:27Z · status ready→active, branch
