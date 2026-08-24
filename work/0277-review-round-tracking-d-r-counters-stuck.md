@@ -8,9 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/review-round-tracking-d-r-counters-stuck
-model_override: default
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T17:49:49Z"
+updated_at: "2026-08-24T17:55:53Z"
 ---
 ## Problem
 Two related display bugs around review rounds.
@@ -54,3 +53,4 @@ The "Review" tab button in `TaskDrawer.vue` (~2219–2233) is gated behind `v-if
 - 2026-08-24T17:40:47Z · body
 - 2026-08-24T17:40:54Z · status inbox→ready
 - 2026-08-24T17:49:49Z · status ready→active, branch
+- 2026-08-24T17:55:53Z · model_override
