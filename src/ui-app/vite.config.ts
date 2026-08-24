@@ -79,6 +79,19 @@ export default defineConfig({
   build: {
     outDir: "../../dist/ui",
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Vue core changes far less often than app code and views, so
+            // split it out for cross-deploy caching.
+            { name: "vendor-vue", test: /\/node_modules\/(vue|@vue|vue-router|pinia)\// },
+            // UI primitives/icons: large and independent of app logic.
+            { name: "vendor-ui", test: /\/node_modules\/(radix-vue|lucide-vue-next)\// },
+          ],
+        },
+      },
+    },
   },
   server: {
     // Dev-server proxy so the app can talk to a locally running `repoos serve`.
