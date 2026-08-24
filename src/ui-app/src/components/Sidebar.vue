@@ -6,6 +6,7 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { relTime } from "../lib/time";
 import { CANARY_PROMPT } from "../../../core/canary.js";
+import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -13,11 +14,13 @@ const { connected, eventCount, total, backlogCount, health } = storeToRefs(repo)
 
 const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
 const canaryRunning = ref(false);
+const canaryOpen = ref(false);
 async function runCanary(): Promise<void> {
   if (canaryRunning.value) return;
   canaryRunning.value = true;
   try {
     await repo.createFreeformTask(CANARY_PROMPT);
+    canaryOpen.value = false;
     repo.pushToast("Canary task created — watch it move through the flow", "info");
   } catch {
     // createFreeformTask already surfaces a toast on failure
@@ -113,10 +116,17 @@ const buildTitle = computed(() =>
         :disabled="canaryRunning"
         title="Run the canary flow test — a trivial task that walks draft → inbox → ready → active → review → done"
         aria-label="Run canary flow test"
-        @click="runCanary"
+        @click="canaryOpen = true"
       >
         {{ canaryDigit }}
       </button>
     </div>
+
+    <CanaryConfirmDialog
+      :open="canaryOpen"
+      :busy="canaryRunning"
+      @update:open="canaryOpen = $event"
+      @confirm="runCanary"
+    />
   </div>
 </template>
