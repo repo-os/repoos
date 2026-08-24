@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/review-round-tracking-d-r-counters-stuck
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T17:55:55Z"
+updated_at: "2026-08-24T17:55:57Z"
 ---
 ## Problem
 Two related display bugs around review rounds.
