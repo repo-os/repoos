@@ -6,6 +6,10 @@
  * from the repo name: a rounded square in an instance hue with the RepoOS
  * diamond mark in the same hue. Pure zlib (node:zlib) PNG encoding — no
  * image libraries.
+ *
+ * When a `color` (hex) is supplied (e.g. the repo's chosen color from the
+ * color picker), it overrides the name-derived hue so the installed-app icon
+ * matches the tab favicon for the currently-selected repo color.
  */
 import { deflateSync } from "node:zlib";
 
@@ -28,6 +32,31 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   else if (h < 300) rgb = [x, 0, c];
   else rgb = [c, 0, x];
   return [(rgb[0] + m) * 255, (rgb[1] + m) * 255, (rgb[2] + m) * 255];
+}
+
+function hexToRgb(h: string): [number, number, number] | null {
+  const m = /^#([0-9a-f]{6})$/i.exec(h.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as [number, number, number];
+}
+
+/**
+ * Derive the icon's color scheme from an explicit hex color. The given color
+ * becomes the glowing diamond mark; the rounded-square background is a
+ * darkened version of the same hue so the mark stays legible against it.
+ * Returns null when the hex is invalid.
+ */
+function schemeForHex(hex: string): { glow: [number, number, number]; bgTop: [number, number, number]; bgBottom: [number, number, number] } | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb;
+  const scale = (v: number, f: number) => Math.min(255, Math.round(v * f));
+  return {
+    glow: [r, g, b],
+    bgTop: [scale(r, 0.18), scale(g, 0.18), scale(b, 0.22)],
+    bgBottom: [scale(r, 0.36), scale(g, 0.36), scale(b, 0.42)],
+  };
 }
 
 /** True if (x,y) is inside the convex polygon pts (screen coords). */
@@ -96,14 +125,17 @@ function encodePng(width: number, height: number, rgba: Uint8Array): Buffer {
  * Render the per-instance app icon as a PNG.
  * @param repoName instance name used to derive color/lettering
  * @param size icon dimensions (square)
+ * @param color optional hex color (e.g. the repo's chosen color) that
+ *        overrides the name-derived hue.
  */
-export function renderInstanceIcon(repoName: string, size: number): Buffer {
-  const hue = hueFor(repoName);
+export function renderInstanceIcon(repoName: string, size: number, color?: string): Buffer {
+  const chosen = color ? schemeForHex(color) : null;
+  const hue = chosen ? null : hueFor(repoName);
   const pad = size * 0.07;
   const r = size * 0.22; // rounded-corner radius
-  const glow = hslToRgb(hue, 0.7, 0.5);
-  const bgTop = hslToRgb(hue, 0.55, 0.14);
-  const bgBottom = hslToRgb(hue, 0.6, 0.26);
+  const glow: [number, number, number] = chosen ? chosen.glow : hslToRgb(hue as number, 0.7, 0.5);
+  const bgTop: [number, number, number] = chosen ? chosen.bgTop : hslToRgb(hue as number, 0.55, 0.14);
+  const bgBottom: [number, number, number] = chosen ? chosen.bgBottom : hslToRgb(hue as number, 0.6, 0.26);
   const inner = [7, 10, 18] as const; // --bg-2
 
   // Diamond mark, same geometry as the favicon (a square rotated 45°).
