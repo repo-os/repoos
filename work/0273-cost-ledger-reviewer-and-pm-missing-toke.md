@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cost-ledger-reviewer-and-pm-missing-toke
 model_override: default
 created_at: "2026-08-24T15:56:39Z"
-updated_at: "2026-08-24T20:40:24Z"
+updated_at: "2026-08-24T20:43:49Z"
 ---
 ## Problem
 In the tokens tab, the reviewer has only elapsed time, no token counts or cost, despite all agents (including the reviewer) using the same model. The PM agent has no time/token/cost info at all.
