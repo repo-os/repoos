@@ -2,7 +2,7 @@
 id: "0274"
 title: "Debugger/task panel UX: panels hide each other, offer implement fix directly on a diagnosed trivial fix"
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -27,3 +27,4 @@ Two related task-panel/debugger UX issues seen on the same run:
 - 2026-08-24T19:39:25Z · status inbox→ready
 - 2026-08-24T19:39:59Z · status ready→active, branch
 - 2026-08-24T19:45:54Z · status active→review
+- 2026-08-24T19:45:54Z · status review→active
