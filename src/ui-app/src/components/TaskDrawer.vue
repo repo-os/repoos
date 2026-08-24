@@ -694,11 +694,14 @@ const taskRounds = computed(() => {
     typeof completed === "number" && Number.isFinite(completed)
       ? Math.max(0, Math.floor(completed))
       : 0;
-  // A task is mid-dev-pass when it's `active`, or back in `review` because the
-  // engineer is actively re-coding (post-handoff fix / resume). Otherwise the
-  // current dev round is already finished, so D trails R only by the live pass.
+  // A task is in (or about to start) a dev pass when it's `ready` or `active`,
+  // or back in `review` because the engineer is actively re-coding (post-handoff
+  // fix / resume). Otherwise the current dev round is finished: `done` and
+  // "waiting for human" review states show exactly the completed passes (D == R).
   const inDevPass =
-    task.status === "active" || (task.status === "review" && repo.isRunning(task.id));
+    task.status === "ready" ||
+    task.status === "active" ||
+    (task.status === "review" && repo.isRunning(task.id));
   return {
     dev: passes + (inDevPass ? 1 : 0),
     review: passes,

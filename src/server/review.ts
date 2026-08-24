@@ -31,8 +31,8 @@ import {
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { currentBranch, worktreePathForBranch } from "../core/git.js";
-import { parseTask } from "../core/task.js";
+import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
+import { parseTask, utcTimestamp } from "../core/task.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   extractOneShotReportText,
@@ -627,10 +627,11 @@ export class ReviewManager {
 
     // Record the review session to the database
     this.recordReviewSession(task.id, agent, result, report.at, state === "ok");
-    // Track every completed review pass (not just auto-bounces) so the badge
-    // D/R counters reflect reality. See review_rounds (auto-bounce bookkeeping,
-    // capped at MAX_AUTO_REVIEW_ROUNDS) vs review_passes (all passes).
-    this.bumpReviewPasses(task);
+    // Track every COMPLETED review pass (a real report, not a failed/empty
+    // run) so the badge D/R counters reflect reality. See review_rounds
+    // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
+    // review_passes (all successful passes).
+    if (state === "ok") this.bumpReviewPasses(task);
 
     return state === "ok"
       ? { ok: true, report }
@@ -642,7 +643,12 @@ export class ReviewManager {
    * (which counts only auto-bounced rounds and caps at MAX_AUTO_REVIEW_ROUNDS),
    * this counts every completed review pass — auto and manual ("Review again")
    * alike — so the UI badge (`D# · R#`) matches the true number of review
-   * sessions. Best-effort, never fails.
+   * sessions.
+   *
+   * The write also bumps `updated_at` (a field the live index's `diff()`
+   * watches, since it omits `extra`) and commits the file, so the drawer's
+   * badge refreshes live and `main` stays clean/mergeable. Best-effort, never
+   * fails.
    */
   private bumpReviewPasses(task: Task): void {
     try {
@@ -651,9 +657,11 @@ export class ReviewManager {
       const current = doc.data.review_passes as number | undefined;
       const passes = typeof current === "number" && Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0;
       doc.data.review_passes = passes + 1;
-      const keys = Object.keys(doc.data).filter((k) => k !== "review_passes");
-      keys.unshift("review_passes");
+      doc.data.updated_at = utcTimestamp();
+      const keys = Object.keys(doc.data).filter((k) => k !== "review_passes" && k !== "updated_at");
+      keys.unshift("updated_at", "review_passes");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      commitTaskFile(this.config.root, task.absPath, `docs(${task.id}): update task`);
     } catch (err) {
       console.error(`[repoos] could not update review_passes for #${task.id}: ${(err as Error).message}`);
     }
