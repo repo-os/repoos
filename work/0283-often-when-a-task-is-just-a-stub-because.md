@@ -2,14 +2,14 @@
 id: "0283"
 title: "Show a canned \"flesh this out\" prompt above the chat input"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-a-canned-flesh-this-out-prompt-abov
 created_at: "2026-08-24T17:45:48Z"
-updated_at: "2026-08-24T17:47:14Z"
+updated_at: "2026-08-24T18:28:38Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ Often when a task is just a stub (because an it was a draft or an AI didn't full
 
 - 2026-08-24T17:46:50Z · status draft→inbox, title, area, body
 - 2026-08-24T17:47:14Z · status inbox→ready
+- 2026-08-24T18:28:38Z · status ready→active, branch
