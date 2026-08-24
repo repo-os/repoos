@@ -30,6 +30,9 @@ const KEY_ORDER = [
   "pm_agent_override",
   "pm_cli_override",
   "pm_model_override",
+  "review_agent_override",
+  "review_cli_override",
+  "review_model_override",
   "hotfix",
   "hotfix_target",
   "created_at",
@@ -166,6 +169,20 @@ export function parseTask(args: ParseTaskArgs): Task {
       ? data.pm_model_override
       : null;
 
+  // Per-task reviewer agent override fields
+  const reviewAgentOverride =
+    typeof data.review_agent_override === "string" && data.review_agent_override
+      ? data.review_agent_override
+      : null;
+  const reviewCliOverride =
+    typeof data.review_cli_override === "string" && data.review_cli_override
+      ? data.review_cli_override
+      : null;
+  const reviewModelOverride =
+    typeof data.review_model_override === "string" && data.review_model_override
+      ? data.review_model_override
+      : null;
+
   // read created_at with fallback to deprecated created
   const created_at = data.created_at
     ? String(data.created_at)
@@ -207,6 +224,9 @@ export function parseTask(args: ParseTaskArgs): Task {
     pmAgentOverride,
     pmCliOverride,
     pmModelOverride,
+    reviewAgentOverride,
+    reviewCliOverride,
+    reviewModelOverride,
     hotfix: data.hotfix === true ? true : undefined,
     hotfixTarget: data.hotfix === true
       ? (data.hotfix_target === "main" ? "main" : "branch")
@@ -240,6 +260,9 @@ export function serializeTask(task: Task): string {
   if (task.pmAgentOverride) data.pm_agent_override = task.pmAgentOverride;
   if (task.pmCliOverride) data.pm_cli_override = task.pmCliOverride;
   if (task.pmModelOverride) data.pm_model_override = task.pmModelOverride;
+  if (task.reviewAgentOverride) data.review_agent_override = task.reviewAgentOverride;
+  if (task.reviewCliOverride) data.review_cli_override = task.reviewCliOverride;
+  if (task.reviewModelOverride) data.review_model_override = task.reviewModelOverride;
   if (task.hotfix) {
     data.hotfix = true;
     data.hotfix_target = task.hotfixTarget ?? "branch";

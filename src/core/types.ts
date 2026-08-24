@@ -114,6 +114,12 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null when using the default. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null when using the agent's default. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null when using the agent's default. */
+  reviewModelOverride?: string | null;
 
   /** True when this task runs as a hotfix in the main checkout. */
   hotfix?: boolean;

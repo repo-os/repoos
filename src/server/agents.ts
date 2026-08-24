@@ -1162,6 +1162,33 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
 }
 
+/**
+ * Resolve the reviewer agent for a specific task, honoring per-task review
+ * overrides (set via the Review tab's selector, like Dev/PM overrides).
+ *
+ * When the task has no review override, this behaves exactly as the global
+ * `resolveReviewer` — the Agents-page reviewer. When a `reviewAgentOverride`
+ * is set, the enabled agent with that name is used (falling back to the global
+ * reviewer base when only CLI/model are overridden); `reviewCliOverride` /
+ * `reviewModelOverride` then replace the agent's CLI and model.
+ */
+export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent | null {
+  const hasOverride =
+    task.reviewAgentOverride || task.reviewCliOverride || task.reviewModelOverride;
+  if (!hasOverride) {
+    return resolveReviewer(config);
+  }
+  const list = agentsForConfig(config);
+  const baseName = task.reviewAgentOverride || "reviewer";
+  const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
+  if (!base) return null;
+  return {
+    ...base,
+    ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
+    ...(task.reviewModelOverride ? { model: task.reviewModelOverride } : {}),
+  };
+}
+
 export function resolveCto(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
   return list.find((a) => a.enabled && matchesRole(a, "cto")) ?? null;
