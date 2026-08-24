@@ -4,6 +4,7 @@ import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { sampleSystem } from "../system.js";
 import { resolveRepoGuide } from "../agents.js";
+import { CANARY_COUNTER } from "../../core/canary.js";
 
 const REPO_GUIDE_SESSION_ID = "__repoos-guide__";
 
@@ -39,6 +40,7 @@ export const health: RouteHandler = (ctx, req, res) => {
     buildAvailableHash: parked?.hash ?? null,
     buildAvailableAt: parked?.buildAt ?? null,
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
+    canaryCounter: CANARY_COUNTER,
     ...(handshake ? { reloadHandshake: true } : {}),
   });
 };

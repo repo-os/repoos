@@ -1389,6 +1389,13 @@
   .build-ver{color:var(--cyan);font-weight:600}
   .build-age{overflow:hidden;text-overflow:ellipsis}
 
+  /* canary flow-test easter egg: the counter digit doubles as its own trigger */
+  .canary-egg{flex:0 0 auto;width:15px;height:19px;margin-left:auto;border-radius:52% 52% 58% 58%/58% 58% 52% 52%;border:1px solid var(--border);background:var(--bg);color:var(--txt-faint);font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.45;transition:opacity .15s ease,border-color .15s ease,color .15s ease}
+  .canary-egg:hover{opacity:1;border-color:var(--cyan);color:var(--cyan)}
+  .canary-egg.busy{opacity:.85;color:var(--cyan);cursor:wait;animation:canary-pulse 1s ease-in-out infinite}
+  .canary-egg:disabled{cursor:wait}
+  @keyframes canary-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
   /* gentle cross-fade while switching themes (class toggled by the config store) */
   :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .build-widget,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .theme-toggle,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .nav-badge,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
 

@@ -5,10 +5,26 @@ import { NAV } from "../nav";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { relTime } from "../lib/time";
+import { CANARY_PROMPT } from "../../../core/canary.js";
 
 const repo = useRepoStore();
 const config = useConfigStore();
 const { connected, eventCount, total, backlogCount, health } = storeToRefs(repo);
+
+const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
+const canaryRunning = ref(false);
+async function runCanary(): Promise<void> {
+  if (canaryRunning.value) return;
+  canaryRunning.value = true;
+  try {
+    await repo.createFreeformTask(CANARY_PROMPT);
+    repo.pushToast("Canary task created — watch it move through the flow", "info");
+  } catch {
+    // createFreeformTask already surfaces a toast on failure
+  } finally {
+    canaryRunning.value = false;
+  }
+}
 
 function setUiTheme(t: string): void {
   void config.setUiTheme(t);
@@ -90,6 +106,17 @@ const buildTitle = computed(() =>
     <div class="build-widget" :title="buildTitle">
       <span v-if="version" class="build-ver">{{ version }}</span>
       <span class="build-age">{{ age }}</span>
+      <button
+        type="button"
+        class="canary-egg"
+        :class="{ busy: canaryRunning }"
+        :disabled="canaryRunning"
+        title="Run the canary flow test — a trivial task that walks draft → inbox → ready → active → review → done"
+        aria-label="Run canary flow test"
+        @click="runCanary"
+      >
+        {{ canaryDigit }}
+      </button>
     </div>
   </div>
 </template>
