@@ -517,17 +517,89 @@ export class CloseOutOrchestrator {
     // REPOOS_SKIP_BUILD so it skips it. Standalone `repoos check` never sets it.
     const skipBuildEnv = { ...process.env, REPOOS_SKIP_BUILD: "1" };
     const localCli = join(wtPath, "dist", "cli", "index.js");
-    let checkRes = existsSync(localCli)
-      ? await runProcess(process.execPath, [localCli, "check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv })
-      : { status: 1, stdout: "", stderr: "candidate dist/cli/index.js missing" };
-    if (checkRes.status !== 0) {
-      checkRes = await runProcess("repoos", ["check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
+    const localCliPresent = existsSync(localCli);
+    const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
+      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
+    // A check whose ONLY failure is a stale build marker: the same marker the
+    // close-out build above should have refreshed. This is the self-resolving
+    // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
+    // the identical check on the same tree passes. Cases that are NOT this (a
+    // genuine non-staleness failure, or the local CLI being absent entirely) must
+    // not be absorbed; see the branching below.
+    const isStalenessFailure = (res: ProcessRunResult): boolean =>
+      /stale build|no build found|build-info\.json|build is stale|cannot verify build freshness/i.test(
+        `${res.stdout}\n${res.stderr}`,
+      );
+
+    let checkRes: ProcessRunResult;
+    // Why the check result deviates from a plain local-CLI pass:
+    //   'local-ok'     — candidate's own CLI passed (common case)
+    //   'absorbed'     — local CLI reported staleness; marker refreshed and
+    //                    re-check passed on the same tree (self-resolving)
+    //   'fallback'     — local CLI failed for a genuine non-staleness reason;
+    //                    fell through to the global CLI fallback
+    //   'local-missing'— candidate's own CLI was absent; only the global CLI
+    //                    fallback could run (Flavour A, not self-resolving)
+    let outcome: "local-ok" | "absorbed" | "fallback" | "local-missing";
+
+    if (!localCliPresent) {
+      // Flavour A (#0276): no candidate-owned CLI to run. The global CLI
+      // fallback compares the candidate's src hash against a DIFFERENT
+      // install's marker — a guaranteed mismatch that reports "stale" no matter
+      // how fresh the candidate really is. That is the #0213/3fbbd707
+      // CLI-selection regression, not a self-resolving gap: never absorb it.
+      checkRes = await rawCheck("repoos", ["check"]);
+      outcome = "local-missing";
+      this.logger?.integration(
+        job.taskId,
+        "error",
+        "candidate dist/cli/index.js is missing — gate fell back to the globally linked repoos; any 'stale' result here is a CLI-selection regression (#0276 Flavour A), not self-resolving staleness",
+      );
+    } else {
+      checkRes = await rawCheck(process.execPath, [localCli, "check"]);
+      if (checkRes.status === 0) {
+        outcome = "local-ok";
+      } else if (isStalenessFailure(checkRes)) {
+        // Self-resolving build staleness: only the stale-marker report failed,
+        // and that same marker is what `bun run build` below refreshes. Refresh
+        // it provably for the current source (REPOOS_SKIP_BUILD only lets check
+        // skip its own build when the marker is already fresh), then re-run the
+        // SAME check on the same candidate tree. Bounded to this one re-check —
+        // it never loops, and it stays inside validateCandidate rather than
+        // triggering an extra orchestrator-level retry / re-sync / debugger.
+        this.logger?.integration(
+          job.taskId,
+          "info",
+          "check reported self-resolving build staleness — refreshing marker and re-checking the same tree in place (no debugger detour)",
+        );
+        await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
+        checkRes = await rawCheck(process.execPath, [localCli, "check"]);
+        if (checkRes.status !== 0) {
+          return {
+            ok: false,
+            reason: `check failed after in-place staleness re-check: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
+          };
+        }
+        outcome = "absorbed";
+      } else {
+        // Genuine non-staleness failure from the local CLI: preserve the prior
+        // fallback behaviour (retry via the global repoos, then bun run repoos).
+        outcome = "fallback";
+        checkRes = await rawCheck("repoos", ["check"]);
+        if (checkRes.status !== 0) {
+          checkRes = await rawCheck("bun", ["run", "repoos", "check"]);
+        }
+      }
     }
+
     if (checkRes.status !== 0) {
-      checkRes = await runProcess("bun", ["run", "repoos", "check"], { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
-    }
-    if (checkRes.status !== 0) {
-      return { ok: false, reason: `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}` };
+      return {
+        ok: false,
+        reason:
+          outcome === "local-missing"
+            ? `check failed: the candidate's own dist/cli/index.js was not used (CLI-selection regression — the globally linked repoos evaluates a different install's build marker). ${tailLine(checkRes.stdout, checkRes.stderr)}`
+            : `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
+      };
     }
 
     // Candidate is green. Capture its SHA.
