@@ -8,8 +8,9 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: default
 created_at: "2026-08-24T16:56:37Z"
-updated_at: "2026-08-24T16:57:03Z"
+updated_at: "2026-08-24T16:57:49Z"
 ---
 ```markdown
 ---
@@ -77,3 +78,4 @@ when someone runs the curl to install repoos I want them to be met with some use
 ## Activity
 
 - 2026-08-24T16:57:03Z · status draft→inbox, title, body
+- 2026-08-24T16:57:49Z · model_override
