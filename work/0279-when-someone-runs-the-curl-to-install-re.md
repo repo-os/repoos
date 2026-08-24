@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/polish-installer-output
 pm_model_override: default
 created_at: "2026-08-24T16:56:37Z"
-updated_at: "2026-08-24T21:48:17Z"
+updated_at: "2026-08-24T21:48:19Z"
 ---
 ```markdown
 ---
