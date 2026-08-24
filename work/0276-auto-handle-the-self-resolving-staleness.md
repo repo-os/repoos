@@ -11,7 +11,7 @@ branch: feat/auto-handle-the-self-resolving-staleness
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T15:57:24Z"
-updated_at: "2026-08-24T21:15:40Z"
+updated_at: "2026-08-24T23:45:11Z"
 review_rounds: 1
 review_passes: 1
 ---
