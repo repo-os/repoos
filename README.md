@@ -38,17 +38,7 @@ first-class participants, but humans always hold the gate.
 
 ## Install
 
-```bash
-# one-off, no install
-bunx repoos init
-npx  repoos init
-
-# or add to a repo
-bun add -d repoos
-npm i -D repoos
-```
-
-Or install a standalone `repoos` command straight from GitHub Releases (no npm registry, no repo devDependency):
+Install a standalone `repoos` command straight from GitHub Releases:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash

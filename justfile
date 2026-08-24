@@ -69,7 +69,7 @@ current-version:
         echo "note: package.json and latest tag disagree"
     fi
 
-# cut a release: bump version, tag, push, and publish to npm `just release 0.5.31`
+# cut a release: bump version, tag, and push `just release 0.5.31`
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -110,9 +110,6 @@ release version:
     echo "==> pushing main and tag"
     git push origin main
     git push origin "$tag"
-
-    echo "==> publishing to npm"
-    npm publish
 
     echo "==> done: $tag released"
     echo "    GitHub Actions will build dist and attach it to the GitHub Release: https://github.com/repo-os/repoos/actions/workflows/release.yml"
