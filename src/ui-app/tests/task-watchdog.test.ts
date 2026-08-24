@@ -20,6 +20,7 @@ import { LiveIndex } from "../../server/live-index";
 import {
   TaskWatchdog,
   isStuckActiveTask,
+  isStuckReviewTask,
   hasRecentWorktreeActivity,
   suggestNextStep,
   classifyDeadAgentReason,
@@ -28,6 +29,7 @@ import {
 import { parseTask } from "../../core/task";
 import { createRepoOS } from "../../core/repoos";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
+import type { ReviewReport } from "../../server/review";
 import { waitFor } from "./helpers";
 
 /** Fake `opencode`: records its argv, prints a line, exits (clean or not). */
@@ -94,6 +96,51 @@ Working.
 - ${transition} · status inbox→active
 - ${fresh} · some real work happened
 `;
+}
+
+/** A `review` task whose only Activity entry is the transition INTO review. */
+function reviewTaskMd(transitionAgeMs: number): string {
+  const ts = new Date(Date.now() - transitionAgeMs).toISOString();
+  return `---
+id: "0001"
+title: "Review-stuck task"
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Needs review.
+
+## Activity
+
+- ${ts} · status active→review
+`;
+}
+
+/** Minimal fake `ReviewManager` surface the watchdog depends on (#0286). */
+function makeFakeReviews(opts: { report?: ReviewReport | null; isRunning?: boolean } = {}) {
+  const runs: { task: Task; at: number }[] = [];
+  return {
+    reviews: {
+      isRunning: () => opts.isRunning ?? false,
+      read: () => opts.report ?? null,
+      run: async (task: Task) => {
+        runs.push({ task, at: Date.now() });
+        return { ok: true };
+      },
+    },
+    runs,
+  };
+}
+
+/** Fixture whose task file is a `review` task (overwrites makeFx's active one). */
+function makeReviewFx(transitionAgeMs: number): Fx {
+  const fx = makeFx(transitionAgeMs);
+  writeFileSync(fx.taskPath, reviewTaskMd(transitionAgeMs));
+  return fx;
 }
 
 interface GitFxOptions {
@@ -213,6 +260,31 @@ describe("stuck detection", () => {
       "\n- 2020-01-01T00:00:00Z · created\n",
     );
     expect(isStuckActiveTask(body, 5 * 60_000, now)).toBe(false);
+  });
+
+  it("flags a review task with no activity past its transition for the threshold (#0286)", () => {
+    const now = Date.now();
+    expect(isStuckReviewTask(reviewTaskMd(600_000), 5 * 60_000, now)).toBe(true);
+    // Sub-threshold staleness is not yet "stuck".
+    expect(isStuckReviewTask(reviewTaskMd(10_000), 60_000, now)).toBe(false);
+  });
+
+  it("does not flag a review task with no status→review transition in its Activity log", () => {
+    const now = Date.now();
+    // An activity entry that is NOT a status→review transition must not count.
+    const body = reviewTaskMd(600_000).replace(
+      /\n- .*?status active→review\n?/,
+      "\n- 2020-01-01T00:00:00Z · created\n",
+    );
+    expect(isStuckReviewTask(body, 5 * 60_000, now)).toBe(false);
+  });
+
+  it("does not flag a review task with recent activity after its transition", () => {
+    const now = Date.now();
+    const transition = new Date(Date.now() - 600_000).toISOString();
+    const fresh = new Date(Date.now() - 30_000).toISOString();
+    const body = `---\nid: "0001"\nstatus: review\n---\n## Activity\n\n- ${transition} · status active→review\n- ${fresh} · some real review work happened\n`;
+    expect(isStuckReviewTask(body, 5 * 60_000, now)).toBe(false);
   });
 });
 
@@ -703,5 +775,105 @@ Stuck twice.
     } finally {
       fx.clean();
     }
+  });
+
+  it("auto-retries a dead reviewer once, leaving a trail, and stays in review (#0286)", async () => {
+    const fx = makeReviewFx(10_000); // sat in review 10s past the 1s threshold
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews(); // no report, nothing running
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    // A fresh reviewer run was kicked off (the watchdog's recovery action) —
+    // the same "Review again" the human would click — and an Activity trail was
+    // left so the retry is visible and bounded.
+    expect(runs).toHaveLength(1);
+    expect(runs[0].task.id).toBe("0001");
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).toContain("watchdog: auto-retried dead reviewer session");
+    // Engineer state is untouched: the task stays in `review`.
+    expect(parseTaskAt(fx).status).toBe("review");
+    fx.clean();
+  });
+
+  it("does not touch a review task whose reviewer is legitimately running (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews({ isRunning: true });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
+  it("does not touch a review task that already has a report (its review completed) (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews({ report: { state: "ok", markdown: "# Verdict" } as ReviewReport });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
+  it("escalates to needsInput after the single auto-retry is exhausted with no recovery (#0286)", async () => {
+    // The review episode already shows one watchdog auto-retry (from an earlier
+    // scan) and the reviewer is still dead — no report. A second stuck episode
+    // must not retry forever: escalate to the human, tracked in the log.
+    const fx = makeReviewFx(10_000);
+    const retried = new Date(Date.now() - 60_000).toISOString();
+    writeFileSync(
+      fx.taskPath,
+      reviewTaskMd(10_000).replace(
+        /\n- .*?status active→review\n?/,
+        `\n- ${retried} · status active→review\n- ${retried} · watchdog: auto-retried dead reviewer session · starting a fresh review\n`,
+      ),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews(); // still no report
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0); // no further retry — bounded at one
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("review");
+    expect(task.needsInput).toBe(true);
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: escalated to needs_input");
+
+    // A second scan stays silent — the escalation is stable, not a transition loop.
+    await watchdog.checkNow();
+    expect(runs).toHaveLength(0);
+    expect(parseTaskAt(fx).needsInput).toBe(true);
+    fx.clean();
+  });
+
+  it("leaves a review task alone when no review manager is wired (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000); // no `reviews`
+
+    await watchdog.checkNow();
+
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    expect(parseTaskAt(fx).status).toBe("review");
+    fx.clean();
   });
 });
