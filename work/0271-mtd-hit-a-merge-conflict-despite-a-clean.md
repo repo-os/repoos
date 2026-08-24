@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:56:02Z"
-updated_at: "2026-08-24T17:33:51Z"
+updated_at: "2026-08-24T17:34:18Z"
 ---
 ## Problem
 Main was clean (verified before clicking Move to done), but the merge still hit a conflict on click.
@@ -44,7 +44,7 @@ Two concrete failure modes fit the report:
   *single* ordinary source file touching both sides turns the task-file bookkeeping staleness into a hard
   "merge conflict" card that routes to the debugger.
 - **Staleness-in-the-check (shared root cause with #0276).** `validateCandidate` runs `bun run build`
-  (line 500) and then `repoos check` with `REPOOS_SKIP_BUILD=1` (lines 518–528). `check.ts`'s staleness
+  (line 500) and then `repoos check` with `REPOOS_SKIP_BUILD=1` (lines 518-528). `check.ts`'s staleness
   check runs *before* its build step, so if the build marker (`dist/.build-info.json`) lags the source by
   one cycle the first check reports "build is stale" and fails the gate — which, because the close-out
   retries the whole pipeline (owner-restart), can ride along as the "conflict" the user sees. See #0276 for
@@ -72,7 +72,7 @@ Investigate and fix the root cause so a clean main never conflicts on merge. Exp
 - [ ] Move to done on a task whose only divergence from a clean main is its own/task-file bookkeeping
       completes (fast-forward or auto-resolved merge), never a "merge conflict" card.
 - [ ] A genuine competing source change on main still fails loudly, pinning the **real** conflicting path
-      (not the task file).`
+      (not the task file).
 - [ ] No regression in the #0130 already-integrated retry, #0204 dirty/lock guards, or #0211 dirty-main
       fail-closed checks.
 - [ ] `repoos check` passes after the fix.
@@ -87,4 +87,4 @@ Investigate and fix the root cause so a clean main never conflicts on merge. Exp
 
 - 2026-08-24T15:59:01Z · body
 - 2026-08-24T17:33:27Z · PM: fleshed out with root-cause analysis, reproduction, and acceptance criteria; linked to #0276.
-- 2026-08-24T17:33:51Z · body
+- 2026-08-24T17:34:18Z · body
