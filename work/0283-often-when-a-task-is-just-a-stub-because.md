@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-a-canned-flesh-this-out-prompt-abov
 model_override: default
 created_at: "2026-08-24T17:45:48Z"
-updated_at: "2026-08-24T19:30:45Z"
+updated_at: "2026-08-24T19:31:27Z"
 ---
 ## Problem
 
