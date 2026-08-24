@@ -730,7 +730,14 @@ export const useRepoStore = defineStore("repo", () => {
         // enqueues the job, so a later failure arrives here as an SSE event.
         // The job's failing `phase` (when known) and its `reason` drive the
         // message, so a `check failed` reason never reads like a conflict.
-        setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
+        //
+        // A failure for a task that is already `done` is moot (#0289): the
+        // task finished through an earlier close-out and this is a duplicate
+        // or stale job. Surfacing it would leave a permanent, misleading
+        // error badge on an already-finished task, so skip it.
+        if (tasks.value.find((t) => t.id === e.id)?.status !== "done") {
+          setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
+        }
       }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed

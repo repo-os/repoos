@@ -12,7 +12,7 @@ import { readFileSync, existsSync, symlinkSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
+import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
 import {
@@ -34,6 +34,7 @@ import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
+import { parseTask } from "../core/task.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -192,6 +193,74 @@ export class CloseOutOrchestrator {
   ) {}
 
   /**
+   * Whether the task is, on disk, already `done`. The live index is an
+   * in-memory cache that can lag the actual file (a duplicate/stale close-out
+   * — #0289 — can run right after the first successful publish, before the
+   * index rebuilds), so this reads the authoritative task file directly,
+   * falling back to the index only when the file cannot be located or parsed.
+   */
+  private taskIsDone(taskId: string): boolean {
+    const live = this.getTask?.(taskId);
+    const workDir = this.config.workDir;
+    const path =
+      live?.absPath ??
+      (workDir ? findTaskFileById(this.config.root, workDir, taskId) : null);
+    if (path && existsSync(path)) {
+      try {
+        const task = parseTask({
+          content: readFileSync(path, "utf8"),
+          absPath: path,
+          root: this.config.root,
+          defaultStatus: this.config.defaultStatus ?? "inbox",
+          defaultAssignee: this.config.defaultAssignee ?? "unassigned",
+        });
+        if (task.status === "done") return true;
+      } catch {
+        /* fall through to the index below */
+      }
+    }
+    return live?.status === "done";
+  }
+
+  /**
+   * Record a close-out job failure, OR reconcile it away when it is moot.
+   *
+   * A failure is moot when the task is already `done`: the failing job is a
+   * duplicate/stale enqueue against a task that already finished successfully
+   * through an earlier job (#0289). That earlier close-out's cleanup deleted
+   * the worktree/branch, which is exactly why a later redundant enqueue fails
+   * (e.g. "worktree not found"). There is no gate failure here needing a
+   * human's attention, and the failed job record would otherwise sit forever
+   * with no path to resolution, so it is dropped instead.
+   *
+   * Returns the `{ ok, reason }` the caller should return: `ok: true` for a
+   * reconciled (moot) failure so the pipeline treats it as a normal completion
+   * and never surfaces it as an actionable error; `ok: false` for a genuine
+   * failure, which is recorded as `failed` (and `onRecorded`, e.g. the merge-
+   * conflict retry, runs) so the UI and status bar can surface it.
+   */
+  private failOrReconcile(
+    job: IntegrationJob,
+    failedPhase: JobPhase,
+    reason: string | undefined,
+    onRecorded?: () => void,
+  ): { ok: boolean; reason?: string } {
+    if (this.taskIsDone(job.taskId)) {
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        "close-out failure is moot — task already done; dropping job",
+        { reason },
+      );
+      this.coordinator.removeJob(job.taskId);
+      return { ok: true };
+    }
+    this.coordinator.updateJob(job.taskId, { phase: PHASE_FAILED, failedPhase, reason });
+    onRecorded?.();
+    return { ok: false, reason };
+  }
+
+  /**
    * Process the next job in the queue: validate and publish it.
    * Phases are atomic; a retry at any phase resumes from that phase.
    * May return early if the job transitions back to an earlier phase (e.g., on main drift).
@@ -231,12 +300,7 @@ export class CloseOutOrchestrator {
         const syncRes = await this.syncCandidate(job);
         if (!syncRes.ok) {
           this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
-          this.coordinator.updateJob(job.taskId, {
-            phase: PHASE_FAILED,
-            failedPhase: "syncing",
-            reason: syncRes.reason,
-          });
-          return syncRes;
+          return this.failOrReconcile(job, "syncing", syncRes.reason);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "validating" })!;
       }
@@ -258,11 +322,6 @@ export class CloseOutOrchestrator {
           // Deterministic by construction — a second run proves nothing and
           // costs the user another full gate cycle.
           this.logger?.integration(job.taskId, "error", "validation failed (non-retryable)", { reason: validateRes.reason });
-          this.coordinator.updateJob(job.taskId, {
-            phase: PHASE_FAILED,
-            failedPhase: "validating",
-            reason: validateRes.reason,
-          });
           // A named, real conflict (not the task's own bookkeeping file or a
           // generated path — those auto-resolve inside validateCandidate and
           // never reach here) is the one non-retryable failure with an
@@ -270,10 +329,10 @@ export class CloseOutOrchestrator {
           // there. Give the engineer a shot at that automatically instead of
           // leaving the job sitting `failed` until a human notices (#0271
           // follow-up).
-          if (validateRes.reason?.startsWith("merge conflict in ")) {
-            this.onMergeConflict?.(job.taskId, validateRes.reason);
-          }
-          return validateRes;
+          const conflict = validateRes.reason?.startsWith("merge conflict in ");
+          return this.failOrReconcile(job, "validating", validateRes.reason, conflict
+            ? () => this.onMergeConflict?.(job.taskId, validateRes.reason!)
+            : undefined);
         }
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
@@ -283,12 +342,7 @@ export class CloseOutOrchestrator {
             const reason = firstReason === secondReason
               ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
               : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
-            this.coordinator.updateJob(job.taskId, {
-              phase: PHASE_FAILED,
-              failedPhase: "validating",
-              reason,
-            });
-            return { ok: false, reason };
+            return this.failOrReconcile(job, "validating", reason);
           }
         }
         job = this.coordinator.updateJob(job.taskId, {
@@ -312,12 +366,7 @@ export class CloseOutOrchestrator {
             return pubRes;
           }
           this.logger?.integration(job.taskId, "error", "publish failed", { reason: pubRes.reason });
-          this.coordinator.updateJob(job.taskId, {
-            phase: PHASE_FAILED,
-            failedPhase: "publishing",
-            reason: pubRes.reason,
-          });
-          return pubRes;
+          return this.failOrReconcile(job, "publishing", pubRes.reason);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "cleanup" })!;
       }
@@ -338,12 +387,7 @@ export class CloseOutOrchestrator {
     } catch (err) {
       const reason = err instanceof Error ? err.message : "unknown error";
       this.logger?.integration(job.taskId, "error", "orchestrator error", { reason });
-      this.coordinator.updateJob(job.taskId, {
-        phase: PHASE_FAILED,
-        failedPhase: job.phase ?? "unknown",
-        reason: `orchestrator error: ${reason}`,
-      });
-      return { ok: false, reason };
+      return this.failOrReconcile(job, job.phase ?? "unknown", `orchestrator error: ${reason}`);
     }
   }
 
