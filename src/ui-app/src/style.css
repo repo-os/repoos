@@ -389,6 +389,8 @@
     .task-card.transition-success{animation:none;box-shadow:inset 0 0 0 2px var(--cyan);transition:box-shadow .01ms}
     .task-card.transition-success::after{display:none}
     .task-card.done-needs-ack{animation:none;box-shadow:0 0 0 1px var(--green),0 0 18px var(--green-border-tint)}
+    .task-card.review-ready{animation:none;border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 14px var(--green-border-tint)}
+    .task-card .tc-actions button.review-ready{animation:none;box-shadow:0 0 0 1px var(--green);filter:none}
     .board-ghost{animation:none;opacity:1;border-color:var(--cyan);box-shadow:0 0 0 2px var(--cyan);transform:none}
     .drawer-body.transition-success{animation:none;box-shadow:inset 0 0 0 2px var(--cyan);transition:box-shadow .01ms}
     .drawer-body.transition-success::after{display:none}
@@ -436,6 +438,15 @@
   .task-card.done-needs-ack{border-color:var(--green);background:var(--green-tint);box-shadow:0 0 0 1px var(--green-border-tint),0 0 18px var(--green-border-tint);animation:done-needs-ack-pulse 2.6s ease-in-out infinite}
   @keyframes done-needs-ack-pulse{0%,100%{box-shadow:0 0 0 1px var(--green-border-tint),0 0 10px var(--green-border-tint)}50%{box-shadow:0 0 0 1px var(--green),0 0 22px var(--green)}}
   .task-card.done-needs-ack:hover{box-shadow:0 0 0 1px var(--green),0 0 22px var(--green)}
+  /* Review passed clean (0270): highlights the Move to done button + card the
+     moment the task is waiting on the human. A steady done-green ring and
+     outer glow with a slow breathing pulse — reads as "ready, click me,"
+     distinct from the one-shot flash/shimmer on every task update, and from
+     #0278's done-ack highlight (a different state/moment). */
+  .task-card.review-ready{border-color:var(--green);box-shadow:0 0 0 1px var(--green-border-tint),0 0 14px var(--green-border-tint);animation:review-ready-pulse 2.8s ease-in-out infinite}
+  @keyframes review-ready-pulse{0%,100%{box-shadow:0 0 0 1px var(--green-border-tint),0 0 12px var(--green-border-tint)}50%{box-shadow:0 0 0 1px var(--green),0 0 20px var(--green)}}
+  .task-card .tc-actions button.review-ready{animation:review-ready-btn-pulse 2s ease-in-out infinite}
+  @keyframes review-ready-btn-pulse{0%,100%{filter:brightness(1.05);box-shadow:0 0 0 1px var(--green)}50%{filter:brightness(1.25);box-shadow:0 0 0 1px var(--green),0 0 16px var(--green)}}
   .task-card[draggable="true"]{cursor:grab}
   .task-card[draggable="true"]:hover{cursor:grab}
   .task-card.dragging{opacity:.35;transform:scale(.97);cursor:grabbing;box-shadow:none}
