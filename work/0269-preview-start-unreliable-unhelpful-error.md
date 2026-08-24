@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T15:55:33Z"
-updated_at: "2026-08-24T17:32:57Z"
+updated_at: "2026-08-24T17:43:15Z"
 ---
 ## Problem
 Clicking "start preview" on a reviewed task failed with an unhelpful error (something about the preview server not becoming ready, suggesting a rebuild) with no actionable detail on why. Also, clicking the button gives no feedback for ~10 seconds before anything visibly happens.
