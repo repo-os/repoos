@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-24T23:39:56Z"
+review_passes: 1
 id: "0281"
 title: Replace spec inline textarea with a dedicated edit modal
 type: feature
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/replace-spec-inline-textarea-with-a-dedi
 model_override: default
 created_at: "2026-08-24T17:08:16Z"
-updated_at: "2026-08-24T23:38:24Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,3 +58,4 @@ The spec text area is buggy, rather than changing the original pretty markdown v
 - 2026-08-24T21:10:15Z · status active→review
 - 2026-08-24T21:31:20Z · model_override
 - 2026-08-24T23:38:24Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+
