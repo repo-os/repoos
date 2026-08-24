@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/debugger-task-panel-ux-panels-hide-each-
 model_override: default
+pm_model_override: default
 created_at: "2026-08-24T15:56:54Z"
-updated_at: "2026-08-24T20:20:33Z"
+updated_at: "2026-08-24T20:20:51Z"
 ---
 ## Problem
 Two related task-panel/debugger UX issues seen on the same run:
@@ -31,3 +32,4 @@ Two related task-panel/debugger UX issues seen on the same run:
 - 2026-08-24T19:45:54Z · status review→active
 - 2026-08-24T19:52:13Z · status active→done, release:success
 - 2026-08-24T20:20:33Z · model_override
+- 2026-08-24T20:20:51Z · pm_model_override
