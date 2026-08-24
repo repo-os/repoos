@@ -45,6 +45,12 @@ export interface TaskPatch {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null to clear. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null to clear. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null to clear. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null to clear. */
+  reviewModelOverride?: string | null;
   /** Set hotfix mode (true to enable, false to disable). */
   hotfix?: boolean;
   /** Hotfix merge target. */
@@ -163,6 +169,18 @@ export function patchTaskFile(
   if (patch.pmModelOverride !== undefined) {
     if (patch.pmModelOverride !== current.pmModelOverride) changes.push("pm_model_override");
     current.pmModelOverride = patch.pmModelOverride;
+  }
+  if (patch.reviewAgentOverride !== undefined) {
+    if (patch.reviewAgentOverride !== current.reviewAgentOverride) changes.push("review_agent_override");
+    current.reviewAgentOverride = patch.reviewAgentOverride;
+  }
+  if (patch.reviewCliOverride !== undefined) {
+    if (patch.reviewCliOverride !== current.reviewCliOverride) changes.push("review_cli_override");
+    current.reviewCliOverride = patch.reviewCliOverride;
+  }
+  if (patch.reviewModelOverride !== undefined) {
+    if (patch.reviewModelOverride !== current.reviewModelOverride) changes.push("review_model_override");
+    current.reviewModelOverride = patch.reviewModelOverride;
   }
   if (patch.hotfix !== undefined) {
     if (patch.hotfix !== current.hotfix) changes.push("hotfix");

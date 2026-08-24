@@ -908,6 +908,9 @@ export const useRepoStore = defineStore("repo", () => {
       pmAgentOverride: null,
       pmCliOverride: null,
       pmModelOverride: null,
+      reviewAgentOverride: null,
+      reviewCliOverride: null,
+      reviewModelOverride: null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review

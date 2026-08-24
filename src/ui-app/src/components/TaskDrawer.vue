@@ -1181,6 +1181,138 @@ async function resetPmOverrides(): Promise<void> {
   }
 }
 
+// ---- review agent override (task detail) ----
+
+/** The base reviewer agent from the Agents page. */
+const reviewBaseAgent = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name.toLowerCase() === "reviewer") ?? null;
+});
+
+/** Whether the current task has any persisted review override set. */
+const hasReviewOverride = computed(() => {
+  const t = ui.active;
+  return !!(t && (t.reviewAgentOverride || t.reviewCliOverride || t.reviewModelOverride));
+});
+
+/** Draft overrides for the Review tab, initialized from the task's persisted values. */
+const reviewOverrideDraft = reactive({ agent: "", cli: "", model: "" });
+
+/** Snapshot of the last-saved review override values. */
+const reviewOverrideSaved = reactive({ agent: "", cli: "", model: "" });
+
+/** Initialize the review override draft from the current task. */
+function initReviewOverrideDraft(t: Task | null): void {
+  const base = reviewBaseAgent.value;
+  reviewOverrideDraft.agent = t?.reviewAgentOverride || base?.name || "";
+  reviewOverrideDraft.cli = t?.reviewCliOverride || base?.cli || "";
+  reviewOverrideDraft.model = t?.reviewModelOverride || base?.model || "";
+  reviewOverrideSaved.agent = reviewOverrideDraft.agent;
+  reviewOverrideSaved.cli = reviewOverrideDraft.cli;
+  reviewOverrideSaved.model = reviewOverrideDraft.model;
+}
+
+/** True when the review override draft differs from the saved values. */
+const reviewOverrideDirty = computed(
+  () =>
+    reviewOverrideDraft.agent !== reviewOverrideSaved.agent ||
+    reviewOverrideDraft.cli !== reviewOverrideSaved.cli ||
+    reviewOverrideDraft.model !== reviewOverrideSaved.model,
+);
+
+/** True when the review overrides differ from the base reviewer agent defaults. */
+const reviewIsCustom = computed(() => {
+  const base = reviewBaseAgent.value;
+  if (!base) return false;
+  return (
+    reviewOverrideDraft.agent !== base.name ||
+    reviewOverrideDraft.cli !== base.cli ||
+    reviewOverrideDraft.model !== base.model
+  );
+});
+
+/** Model options for the Review tab's model select. */
+const reviewModelOptions = computed(() =>
+  config.modelsFor(reviewOverrideDraft.cli, reviewOverrideDraft.model || undefined),
+);
+
+/** Initialize review overrides when opening the Review tab, unless a draft is dirty. */
+watch(
+  () => [ui.active, ui.activeTab],
+  () => {
+    if (ui.activeTab !== "review") return;
+    if (!reviewOverrideDirty.value) initReviewOverrideDraft(ui.active);
+  },
+);
+
+/** Debounced auto-save of review overrides, mirroring the PM tab. */
+let reviewOverrideAutoSaveTimer: number | undefined;
+
+function scheduleReviewOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (reviewOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(reviewOverrideAutoSaveTimer);
+  }
+  reviewOverrideAutoSaveTimer = window.setTimeout(async () => {
+    reviewOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !reviewOverrideDirty.value) return;
+    const base = reviewBaseAgent.value;
+    const sent = {
+      agent: reviewOverrideDraft.agent,
+      cli: reviewOverrideDraft.cli,
+      model: reviewOverrideDraft.model,
+    };
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
+    try {
+      await repo.patchTask(taskId, {
+        reviewAgentOverride: agentVal,
+        reviewCliOverride: cliVal,
+        reviewModelOverride: modelVal,
+      });
+      reviewOverrideSaved.agent = sent.agent;
+      reviewOverrideSaved.cli = sent.cli;
+      reviewOverrideSaved.model = sent.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
+}
+
+/** Same CLI→model reset for the Review tab. */
+watch(
+  () => reviewOverrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    reviewOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
+watch(
+  () => [reviewOverrideDraft.agent, reviewOverrideDraft.cli, reviewOverrideDraft.model],
+  () => {
+    scheduleReviewOverrideSave();
+  },
+);
+
+/** Reset review overrides to the base reviewer agent defaults (persisted). */
+async function resetReviewOverrides(): Promise<void> {
+  if (!ui.active) return;
+  try {
+    await repo.patchTask(ui.active.id, {
+      reviewAgentOverride: null,
+      reviewCliOverride: null,
+      reviewModelOverride: null,
+    });
+    initReviewOverrideDraft(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  }
+}
+
 // ---- agent session tab ----
 
 /** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
@@ -2628,6 +2760,28 @@ function resetFreeformOverrides(): void {
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="reviewModelOptions"
+                  v-model:cli="reviewOverrideDraft.cli"
+                  v-model:model="reviewOverrideDraft.model"
+                  :disabled="ui.saving"
+                />
+              </div>
+               <div class="agent-field" style="padding-top:20px">
+                  <div v-if="reviewIsCustom || reviewOverrideDirty" class="agent-override-actions">
+                    <span v-if="reviewIsCustom" class="agent-custom-badge">custom</span>
+                    <span v-if="reviewOverrideDirty" class="agent-save-hint">saving…</span>
+                    <Button v-if="hasReviewOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetReviewOverrides" title="Reset to default">
+                      <RotateCcw class="size-3" />
+                    </Button>
+                  </div>
+              </div>
+            </div>
+          </div>
           <div class="review-toolbar">
             <div v-if="review?.report" class="review-pane-tabs" role="tablist" aria-label="Reviewer content">
               <button
