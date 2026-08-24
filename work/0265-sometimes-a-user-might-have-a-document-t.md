@@ -8,10 +8,8 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-upload-docs-tab-for-direct-file-uplo
-model_override: default
 created_at: "2026-08-24T07:50:37Z"
-updated_at: "2026-08-24T16:25:14Z"
-check_retry_count: 1
+updated_at: "2026-08-24T08:04:50Z"
 ---
 ## Problem
 
@@ -50,4 +48,3 @@ Sometimes a user might have a document that they just want to upload directly to
 - 2026-08-24T07:51:48Z · status inbox→ready
 - 2026-08-24T07:53:06Z · status ready→active, branch
 - 2026-08-24T08:04:39Z · status active→review
-- 2026-08-24T08:10:36Z · model_override
