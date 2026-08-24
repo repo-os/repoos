@@ -5,29 +5,20 @@ type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:56:39Z"
-updated_at: "2026-08-24T15:56:39Z"
+updated_at: "2026-08-24T15:59:39Z"
 ---
+## Problem
+In the tokens tab, the reviewer has only elapsed time, no token counts or cost, despite all agents (including the reviewer) using the same model. The PM agent has no time/token/cost info at all.
+
+## Fix
+Wire reviewer and PM turns into the same usage-extraction path used for the engineer (extractUsage / the ledger from #0175/#0176), so both show tokens and cost, not just time.
+
+See src/server/agents.ts and the cost/time ledger.
+
 ## Activity
 
-- 2026-08-24T15:56:39Z · created · unknown
-
-
-## Problem
-
-_What's broken or missing? Why does it matter?_
-
-## Desired UX
-
-_What should the end experience be?_
-
-## Acceptance criteria
-
-- [ ] ...
-
-## Notes for AI
-
-_Constraints, files to touch, things NOT to do._
+- 2026-08-24T15:59:39Z · body
