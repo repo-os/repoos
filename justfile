@@ -57,6 +57,49 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
-# git status
-status:
+# plain git status
+git-status:
     git status
+
+# health check: is 7171 alive, is main dirty, are multiple servers conflicting
+status:
+    #!/usr/bin/env bash
+    set -uo pipefail
+
+    echo "== port 7171 =="
+    pids=$(lsof -nP -iTCP:7171 -sTCP:LISTEN -t 2>/dev/null)
+    if [ -z "$pids" ]; then
+        echo "  nothing listening on 7171"
+    else
+        count=$(echo "$pids" | wc -l | tr -d ' ')
+        if [ "$count" -gt 1 ]; then
+            echo "  CONFLICT: $count processes listening on 7171"
+        else
+            echo "  1 process listening on 7171"
+        fi
+        lsof -nP -iTCP:7171 -sTCP:LISTEN
+    fi
+
+    echo
+    echo "== http check =="
+    code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://127.0.0.1:7171/api/system/logs 2>/dev/null)
+    if [ "$code" = "200" ]; then
+        echo "  alive: http://127.0.0.1:7171 responded 200"
+    else
+        echo "  not responding (got: ${code:-none})"
+    fi
+
+    echo
+    echo "== other node/repoos server processes =="
+    pgrep -fl "node.*dist/cli/index.js.*serve" || echo "  none found via pgrep"
+
+    echo
+    echo "== git =="
+    branch=$(git branch --show-current)
+    echo "  branch: $branch"
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "  dirty: yes"
+        git status --short
+    else
+        echo "  dirty: no"
+    fi
