@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0288"
 title: "Reviewer is not reload-durable, unlike engineer and PM — dies mid-review on every server reload"
 type: bug
@@ -11,7 +10,8 @@ created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
 model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-24T22:09:26Z"
+updated_at: "2026-08-24T23:28:13Z"
+handoff_signal_retry_count: 2
 check_retry_count: 1
 ---
 ## Problem
