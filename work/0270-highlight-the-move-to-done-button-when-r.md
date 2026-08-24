@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/highlight-the-move-to-done-button-when-r
+model_override: default
 created_at: "2026-08-24T15:55:48Z"
-updated_at: "2026-08-24T21:18:47Z"
+updated_at: "2026-08-24T21:36:57Z"
 ---
 ## Problem
 
@@ -74,3 +75,4 @@ Make the "Move to done" button (the `review` entry of `ACTIONS`, TaskCard.vue:11
 - 2026-08-24T20:44:17Z · status ready→active, branch
 - 2026-08-24T21:13:09Z · status active→review
 - 2026-08-24T21:18:47Z · status review→done, release:success
+- 2026-08-24T21:36:57Z · model_override
