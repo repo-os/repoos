@@ -265,6 +265,13 @@ setInterval(() => {}, 1000);
     expect(result.stopped).toBe(true);
     await waitFor(() => !cto.isRunning(), "CTO interrupted");
     expect(cto.session().some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
+
+    // The interrupted marker must be persisted, not just in-memory: a fresh
+    // manager (e.g. after a server reload) should still show the stop.
+    const file = join(fx.root, ".repoos", "cto", "session.json");
+    expect(existsSync(file)).toBe(true);
+    const persisted = JSON.parse(readFileSync(file, "utf8")) as { lines: { d?: string }[] };
+    expect(persisted.lines.some((l) => l.d === INTERRUPTED_MARKER)).toBe(true);
   });
 
   it("CTO interrupt is a no-op when nothing is running", () => {

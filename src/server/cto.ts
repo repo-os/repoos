@@ -216,6 +216,9 @@ export class CTOManager {
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -288,6 +291,9 @@ export class CTOManager {
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
