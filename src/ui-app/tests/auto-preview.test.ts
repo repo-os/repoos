@@ -1,15 +1,21 @@
 /**
- * #0198 integration test — previews auto-launch on `review` and are capped.
+ * On-demand preview integration test (#0271 follow-up).
  *
- * Drives a REAL main server against a fixture repo with linked worktrees, then
- * transitions tasks into `review` via the same PATCH the board/drawer use. It
+ * Previews used to auto-launch the moment a task entered `review` (#0198) —
+ * that made sense when spinning one up was slow enough to be annoying to
+ * wait for. Startup is fast now (#0271 follow-up), so auto-launching is no
+ * longer worth the CPU contention of N concurrent nested `repoos serve`
+ * children; previews are on-demand only (`POST /api/tasks/:id/preview`), and
+ * MAX_PREVIEWS is 1 — starting a new one evicts whatever was running.
+ *
+ * Drives a REAL main server against a fixture repo with linked worktrees and
  * asserts that:
  *
- *   - a preview auto-launches the moment a task lands in `review` (no button);
+ *   - moving a task into `review` does NOT auto-launch a preview;
+ *   - `POST /api/tasks/:id/preview` launches one on demand;
  *   - the preview closes when the task leaves the previewable states
  *     (active/review) — the exact `stopPreviewIfLeft` path `done` relies on;
- *   - at most `MAX_PREVIEWS` previews run concurrently; starting beyond the cap
- *     terminates the OLDEST running preview (FIFO) before a new one starts.
+ *   - starting a second task's preview evicts the first (cap of 1, FIFO).
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -111,47 +117,28 @@ async function previewUrl(server: ServerHandle, id: string): Promise<string | nu
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Poll a task's preview URL until it appears (auto-launch is async). */
-async function waitForPreview(server: ServerHandle, id: string): Promise<string> {
-  for (let i = 0; i < 60; i++) {
-    const url = await previewUrl(server, id);
-    if (url) return url;
-    await sleep(250);
-  }
-  throw new Error(`preview for #${id} never appeared`);
-}
-
-/** Count tasks that currently have a live (healthy) preview URL. */
-async function countLive(server: ServerHandle, ids: string[]): Promise<number> {
-  let n = 0;
-  for (const id of ids) {
-    const url = await previewUrl(server, id);
-    if (!url) continue;
-    try {
-      const res = await fetch(`${url}/api/health`);
-      if (res.ok) n++;
-    } catch {
-      /* not live */
-    }
-  }
-  return n;
-}
-
-describe("auto-launch previews on review (#0198)", () => {
+describe("on-demand previews (#0271 follow-up)", () => {
   it(
-    "launches a preview on transition to review and closes it when leaving review",
+    "does not auto-launch on transition to review, launches on request, and closes when leaving review",
     async () => {
       const fx = makeFixture(1);
       const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
       try {
-        // Before review, no preview exists.
         expect(await previewUrl(server, "0001")).toBeNull();
 
-        // Transition to review -> preview auto-launches.
+        // Transition to review -> NO auto-launch (unlike the old #0198 behavior).
         const moved = await api(server, "PATCH", "/api/tasks/0001", { status: "review" });
         expect(moved.status).toBe(200);
-        const url = await waitForPreview(server, "0001");
+        await sleep(500);
+        expect(await previewUrl(server, "0001")).toBeNull();
+
+        // On-demand launch.
+        const started = await api(server, "POST", "/api/tasks/0001/preview");
+        expect(started.status).toBe(200);
+        expect(started.body.ok).toBe(true);
+        const url = started.body.url as string;
         expect((await (await fetch(`${url}/api/health`)).json())).toMatchObject({ ok: true });
+        expect(await previewUrl(server, "0001")).toBe(url);
 
         // Leaving the previewable states closes it automatically. The real
         // trigger is `done`; it shares the exact `stopPreviewIfLeft` path a
@@ -174,38 +161,28 @@ describe("auto-launch previews on review (#0198)", () => {
   );
 
   it(
-    "caps concurrent previews at 4 and evicts the oldest (FIFO) when exceeded",
+    "caps concurrent previews at 1 and evicts the previous one when a new one starts",
     async () => {
-      const fx = makeFixture(5);
+      const fx = makeFixture(2);
       const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
       try {
-        // Move 4 tasks into review -> exactly 4 live previews.
-        const ids = ["0001", "0002", "0003", "0004"];
-        for (const id of ids) {
-          const moved = await api(server, "PATCH", `/api/tasks/${id}`, { status: "review" });
-          expect(moved.status).toBe(200);
-        }
-        for (let i = 0; i < 60; i++) {
-          if ((await countLive(server, ids)) === 4) break;
+        const first = await api(server, "POST", "/api/tasks/0001/preview");
+        expect(first.status).toBe(200);
+        const firstUrl = first.body.url as string;
+        expect((await (await fetch(`${firstUrl}/api/health`)).json())).toMatchObject({ ok: true });
+
+        // Starting a second task's preview evicts the first (cap of 1, FIFO).
+        const second = await api(server, "POST", "/api/tasks/0002/preview");
+        expect(second.status).toBe(200);
+        const secondUrl = second.body.url as string;
+        expect((await (await fetch(`${secondUrl}/api/health`)).json())).toMatchObject({ ok: true });
+
+        for (let i = 0; i < 40; i++) {
+          if (!(await previewUrl(server, "0001"))) break;
           await sleep(250);
         }
-        expect(await countLive(server, ids)).toBe(4);
-
-        // A 5th task enters review -> it must get a preview and one of the
-        // four (the oldest by start time) must be evicted, keeping the cap.
-        const fifth = await api(server, "PATCH", "/api/tasks/0005", { status: "review" });
-        expect(fifth.status).toBe(200);
-        const fifthUrl = await waitForPreview(server, "0005");
-        expect((await (await fetch(`${fifthUrl}/api/health`)).json())).toMatchObject({ ok: true });
-
-        // Exactly the cap is running once the 5th is up: 0005 plus 3 survivors.
-        const all = ["0001", "0002", "0003", "0004", "0005"];
-        for (let i = 0; i < 60; i++) {
-          if ((await countLive(server, all)) === 4) break;
-          await sleep(250);
-        }
-        expect(await countLive(server, all)).toBe(4);
-        expect(await previewUrl(server, "0005")).toBe(fifthUrl);
+        expect(await previewUrl(server, "0001")).toBeNull();
+        expect(await previewUrl(server, "0002")).toBe(secondUrl);
       } finally {
         await server.close();
         fx.clean();

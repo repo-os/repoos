@@ -57,6 +57,63 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
+# show the released version (package.json) vs the latest git tag
+current-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pkg=$(node -p "require('./package.json').version")
+    tag=$(git tag --sort=-v:refname | head -1)
+    echo "package.json: $pkg"
+    echo "latest tag:   ${tag:-none}"
+    if [ -n "$tag" ] && [ "v$pkg" != "$tag" ]; then
+        echo "note: package.json and latest tag disagree"
+    fi
+
+# cut a release: bump version, tag, and push `just release 0.5.31`
+release version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "error: working tree is dirty — commit or stash first" >&2
+        exit 1
+    fi
+
+    branch=$(git branch --show-current)
+    if [ "$branch" != "main" ]; then
+        echo "error: releases are cut from main (currently on $branch)" >&2
+        exit 1
+    fi
+
+    version="{{version}}"
+    tag="v$version"
+
+    if git rev-parse "$tag" >/dev/null 2>&1; then
+        echo "error: tag $tag already exists" >&2
+        exit 1
+    fi
+
+    echo "==> bumping package.json to $version"
+    node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.version='$version'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');"
+
+    echo "==> running checks"
+    bun run build
+    repoos check
+
+    echo "==> committing"
+    git add package.json
+    git commit -m "chore: release $tag"
+
+    echo "==> tagging"
+    git tag "$tag"
+
+    echo "==> pushing main and tag"
+    git push origin main
+    git push origin "$tag"
+
+    echo "==> done: $tag released"
+    echo "    GitHub Actions will build dist and attach it to the GitHub Release: https://github.com/repo-os/repoos/actions/workflows/release.yml"
+
 # plain git status
 git-status:
     git status

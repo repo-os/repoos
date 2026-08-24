@@ -5,6 +5,7 @@ import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
 import type { AgentOutputEntry } from "../types";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -20,6 +21,7 @@ const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const ui = useUiStore();
 const router = useRouter();
 const draft = ref("");
 const submitting = ref(false);
@@ -64,6 +66,13 @@ async function repair(): Promise<void> {
   try {
     await api("/api/debugger/repair", JSON_OPTS("POST", { taskId: repairTaskId.value, diagnosis: diagnosis.value }));
     repaired.value = true;
+    // The engineer now takes over: drop the Debugger panel and open the task
+    // drawer (agent session) so the human can watch the fix being carried out
+    // instead of staring at a panel stuck on "engineer repairing" (0274).
+    emit("close");
+    const task = await repo.fetchTask(repairTaskId.value);
+    await ui.openTask(task);
+    ui.activeTab = "agent";
   } catch (error) {
     repo.onError(error);
   } finally {
@@ -242,7 +251,7 @@ onMounted(() => {
         <button type="button" @click="configureDebugger">Change agent or model</button>
       </div>
       <div v-if="repairTaskId && !busy" class="debugger-repair">
-        <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Starting repair…" : repaired ? "Engineer repairing" : "Send repair to engineer" }}</button>
+        <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Implementing fix…" : repaired ? "Fix handed to engineer" : "Implement fix" }}</button>
       </div>
     </div>
     <button v-if="showScrollToBottom" type="button" class="debugger-scroll-bottom" aria-label="Scroll to latest messages" @click="scrollToLatest">

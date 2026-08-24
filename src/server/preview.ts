@@ -57,8 +57,14 @@ const PREVIEW_STATES: readonly Status[] = ["active", "review"];
 const HOST = "127.0.0.1";
 const HEALTH_TIMEOUT_MS = 10_000;
 const BUILD_TIMEOUT_MS = 240_000;
-/** Hard cap on concurrently running preview servers (#0198). */
-const MAX_PREVIEWS = 4;
+/**
+ * Hard cap on concurrently running preview servers (#0198). Lowered to 1
+ * (#0271 follow-up) now that previews are on-demand only, not auto-launched:
+ * a human starting a second preview means they're done with the first, so
+ * FIFO-evicting it is the right behavior, and one process is one fewer thing
+ * competing with the control plane (and any reload replacement) for CPU.
+ */
+const MAX_PREVIEWS = 1;
 /** Marks a spawned child so it skips its own boot-time orphan cleanup. */
 const CHILD_ENV = "REPOOS_PREVIEW_CHILD";
 

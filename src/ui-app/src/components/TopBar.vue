@@ -31,6 +31,17 @@ const PALETTE = [
   "#FFC8BA", "#E8BAFF", "#BAF2FF", "#C9FFBA",
 ];
 
+// 12 dark-mode pastels, paired by hue with the light palette above: the same
+// families, darkened/muted so they read as soft pastels against dark
+// backgrounds (and the favicon/PWA icon they drive).
+const DARK_PALETTE = [
+  "#E07A8A", "#E8A87C", "#E4C86B", "#7FD9A0",
+  "#6FB3E0", "#9E8FD0", "#D98BB0", "#6FD4C4",
+  "#E0946F", "#B58FD0", "#7FC4E0", "#8FCE76",
+];
+
+const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
+
 const COLOR_KEY_PREFIX = "repoos.repoColor.";
 
 const popoverOpen = ref(false);
@@ -43,6 +54,56 @@ function localStorageKey(name: string): string {
 function loadSavedColor(): void {
   if (!repoName.value) return;
   savedColor.value = localStorage.getItem(localStorageKey(repoName.value));
+  applyColorCues(savedColor.value);
+}
+
+/**
+ * Build a data-URI SVG favicon tinted with the chosen repo color: a rounded
+ * square in that color with the RepoOS diamond mark as a white outline — the
+ * same geometry as the default `/favicon.svg`, so switching repos gives an
+ * at-a-glance color cue in the tab bar.
+ */
+function faviconDataUri(color: string): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">` +
+    `<rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="${color}" stroke="rgba(255,255,255,0.7)" stroke-width="0.8"/>` +
+    `<path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.95"/>` +
+    `<path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>` +
+    `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+/** Point the browser tab icon at the chosen color (or the default when cleared). */
+function applyFavicon(color: string | null): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.type = "image/svg+xml";
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = color ? faviconDataUri(color) : "/favicon.svg";
+}
+
+/**
+ * Point the PWA manifest at a color-aware variant so the installed-app /
+ * homescreen icon matches the tab favicon. The server renders the icon in the
+ * requested color from the `c` query param (`/icons/icon-*.png?c=...`).
+ */
+function applyManifestColor(color: string | null): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "manifest";
+    document.head.appendChild(link);
+  }
+  link.href = color ? `/manifest.webmanifest?c=${encodeURIComponent(color)}` : "/manifest.webmanifest";
+}
+
+/** Apply the chosen color to the favicon + PWA manifest (null clears both). */
+function applyColorCues(color: string | null): void {
+  applyFavicon(color);
+  applyManifestColor(color);
 }
 
 function textColorFor(hex: string): string {
@@ -80,6 +141,7 @@ function selectColor(color: string): void {
     localStorage.setItem(key, color);
     savedColor.value = color;
   }
+  applyColorCues(savedColor.value);
   popoverOpen.value = false;
 }
 
@@ -87,6 +149,7 @@ function clearColor(): void {
   if (!repoName.value) return;
   localStorage.removeItem(localStorageKey(repoName.value));
   savedColor.value = null;
+  applyColorCues(null);
   popoverOpen.value = false;
 }
 
@@ -190,7 +253,7 @@ watch(repoName, () => {
       <div v-if="popoverOpen" class="repo-color-popover">
         <div class="repo-color-grid">
           <button
-            v-for="color in PALETTE"
+            v-for="color in ALL_COLORS"
             :key="color"
             type="button"
             class="repo-color-swatch"

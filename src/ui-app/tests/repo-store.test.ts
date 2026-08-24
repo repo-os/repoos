@@ -935,6 +935,73 @@ describe("default drawer tab (0080)", () => {
   });
 });
 
+describe("fresh-done acknowledgement (0278)", () => {
+  const now = () => new Date().toISOString();
+
+  it("flags a task that transitions review->done, and clears it on acknowledge", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", { type: "task.created", task: makeTask() });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "done", updated_at: now() }),
+      prev: { status: "review" },
+    });
+    expect(repo.tasks[0].status).toBe("done");
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+    expect(repo.doneAckCount).toBe(1);
+    repo.acknowledge("0001");
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    expect(repo.doneAckCount).toBe(0);
+  });
+
+  it("does not flag non-done statuses or tasks updated outside the window", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    // A done task updated >24h ago (archive/history) must NOT flag.
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "done", updated_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() }) });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    // An active task, however recent, must NOT flag.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "active", updated_at: now() }),
+      prev: { status: "ready" },
+    });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    expect(repo.doneAckCount).toBe(0);
+  });
+
+  it("flags a recently-done task on initial load but persists the ack across reloads", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const recentlyDone = makeTask({ status: "done", updated_at: new Date(Date.now() - 60 * 1000).toISOString() });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/board")) return json({ tasks: [recentlyDone], counts: { ...EMPTY_COUNTS, done: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    // First load: the freshly-done task flags.
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+    repo.acknowledge("0001");
+
+    // Reload (a fresh store) reads the persisted ack: stays cleared.
+    setActivePinia(createPinia());
+    const repo2 = useRepoStore();
+    await repo2.init();
+    expect(repo2.needsAck(repo2.tasks[0])).toBe(false);
+    expect(localStorage.getItem("repoos.done.acked")).toContain("0001");
+  });
+});
+
 describe("sync task branch with main (rebase-onto-main button)", () => {
   it("posts to /sync, reloads diff data, and toasts success", async () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });

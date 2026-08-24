@@ -2,14 +2,14 @@
 id: "0271"
 title: MTD hit a merge conflict despite a clean main before the click
 type: bug
-status: inbox
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/mtd-hit-a-merge-conflict-despite-a-clean
 created_at: "2026-08-24T15:56:02Z"
-updated_at: "2026-08-24T17:34:18Z"
+updated_at: "2026-08-24T17:59:56Z"
 ---
 ## Problem
 Main was clean (verified before clicking Move to done), but the merge still hit a conflict on click.
@@ -88,3 +88,7 @@ Investigate and fix the root cause so a clean main never conflicts on merge. Exp
 - 2026-08-24T15:59:01Z · body
 - 2026-08-24T17:33:27Z · PM: fleshed out with root-cause analysis, reproduction, and acceptance criteria; linked to #0276.
 - 2026-08-24T17:34:18Z · body
+- 2026-08-24T17:37:37Z · status inbox→ready
+- 2026-08-24T17:37:41Z · status ready→active, branch
+- 2026-08-24T17:53:55Z · status active→review
+- 2026-08-24T17:59:56Z · status review→done, release:success
