@@ -1363,7 +1363,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
-  setIconRenderer((size: number) => renderInstanceIcon(basename(config.root) || "repoos", size));
+  setIconRenderer((size: number, color?: string) => renderInstanceIcon(basename(config.root) || "repoos", size, color));
 
   // Create and register all routes with the router
   const router = new Router();
