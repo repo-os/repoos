@@ -9,9 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
-pm_model_override: default
 created_at: "2026-08-24T20:48:22Z"
-updated_at: "2026-08-24T21:05:28Z"
+updated_at: "2026-08-24T21:05:53Z"
 ---
 ## Problem
 After a task's close-out (`review → done`) completes, the UI board can keep showing the task in its old column (e.g. still `review`) even though the task file and `main` are already correctly updated — until the user does something that forces a fresh fetch (like opening the task drawer), at which point it snaps to the correct column.
@@ -49,3 +48,4 @@ But this is fire-and-forget with no retry. If the browser's EventSource reconnec
 - 2026-08-24T21:03:31Z · body
 - 2026-08-24T21:05:24Z · status inbox→ready
 - 2026-08-24T21:05:28Z · pm_model_override
+- 2026-08-24T21:05:53Z · pm_model_override
