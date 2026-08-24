@@ -67,6 +67,7 @@ function makeCtx(root: string, devBackdoorCode: string | undefined): RouteContex
   return {
     config,
     index: null as unknown as RouteContext["index"],
+    indexReady: Promise.resolve(),
     reviews: null as unknown as RouteContext["reviews"],
     runner: null as unknown as RouteContext["runner"],
     previews: null as unknown as RouteContext["previews"],

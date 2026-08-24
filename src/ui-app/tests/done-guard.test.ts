@@ -99,6 +99,7 @@ function makeCtx(
   return {
     config: { root } as any,
     index: { getTask: () => task } as any,
+    indexReady: Promise.resolve(),
     runner: { isRunning: () => false, stop: () => {} } as any,
     previews: { stop: async () => {} } as any,
     reviews: { isRunning: () => false, cancel: () => {} } as any,

@@ -1648,6 +1648,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         "Access-Control-Allow-Origin": "*",
       });
       res.write(`retry: 2000\n\n`);
+      // A reload handoff spawns the replacement already accepting connections
+      // while the full index build runs in the background (0285). Emit `hello`
+      // (which the client treats as "the server is ready to be asked about the
+      // index") only once that rebuild has actually completed, so its taskCount
+      // is truthful rather than a mid-build 0.
+      await indexReady;
       const hello: RepoEvent = {
         type: "hello",
         taskCount: index.snapshot().taskCount,
@@ -1697,6 +1703,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const routeContext: RouteContext = {
       config,
       index,
+      indexReady,
       runner,
       previews,
       reviews,
