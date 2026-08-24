@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T16:00:11Z"
+updated_at: "2026-08-24T16:45:21Z"
 ---
 ## Problem
 Two related display bugs around review rounds:
@@ -23,3 +24,4 @@ Two related display bugs around review rounds:
 ## Activity
 
 - 2026-08-24T16:00:11Z · body
+- 2026-08-24T16:45:21Z · model_override
