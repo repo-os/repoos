@@ -2,14 +2,14 @@
 id: "0276"
 title: Auto-handle the self-resolving staleness check in MTD instead of routing through the debugger
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/auto-handle-the-self-resolving-staleness
 created_at: "2026-08-24T15:57:24Z"
-updated_at: "2026-08-24T19:46:06Z"
+updated_at: "2026-08-24T19:46:09Z"
 ---
 ## Problem
 
@@ -157,3 +157,4 @@ lives in the orchestrator's invocation, not in `cmdCheck`'s semantics.
 - 2026-08-24T16:00:03Z · body
 - 2026-08-24T17:41:22Z · body
 - 2026-08-24T19:46:06Z · status inbox→ready
+- 2026-08-24T19:46:09Z · status ready→active, branch
