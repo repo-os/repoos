@@ -2,14 +2,14 @@
 id: "0274"
 title: "Debugger/task panel UX: panels hide each other, offer implement fix directly on a diagnosed trivial fix"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:56:54Z"
-updated_at: "2026-08-24T15:59:47Z"
+updated_at: "2026-08-24T19:39:25Z"
 ---
 ## Problem
 Two related task-panel/debugger UX issues seen on the same run:
@@ -24,3 +24,4 @@ Two related task-panel/debugger UX issues seen on the same run:
 ## Activity
 
 - 2026-08-24T15:59:47Z · body
+- 2026-08-24T19:39:25Z · status inbox→ready
