@@ -2,14 +2,14 @@
 id: "0282"
 title: Add interrupt/stop signal to AI chat
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-24T17:34:28Z"
-updated_at: "2026-08-24T17:34:46Z"
+updated_at: "2026-08-24T17:35:26Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ If you're chatting with the PM you should be able to send an interrupt/stop sign
 ## Activity
 
 - 2026-08-24T17:34:46Z · status draft→inbox, title, area, body
+- 2026-08-24T17:35:26Z · status inbox→ready
