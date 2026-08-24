@@ -429,6 +429,14 @@ async function openAgent(): Promise<void> {
   await ui.openTask(props.task);
   ui.activeTab = "agent";
 }
+
+/** Open the task panel and focus the error surface (0272): the card stays
+ *  compact, so clicking the error on the card surfaces the full detail in the
+ *  drawer instead of expanding inline. */
+async function openPanelFromError(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "details";
+}
 </script>
 
 <template>
@@ -544,6 +552,7 @@ async function openAgent(): Promise<void> {
       :hint="repo.doneErrorFor(task.id)!.hint"
       :task-id="task.id"
       :task-title="task.title"
+      @open-panel="openPanelFromError"
       @click.stop
     />
   </article>
