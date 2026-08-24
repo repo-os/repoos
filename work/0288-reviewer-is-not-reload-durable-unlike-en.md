@@ -8,8 +8,11 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
+model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-24T21:28:44Z"
+updated_at: "2026-08-24T22:09:26Z"
+check_retry_count: 1
+handoff_signal_retry_count: 1
 ---
 ## Problem
 Reviews are currently failing to complete at a high rate. Confirmed live right now: #0276, #0281, and #0285 all show a reviewer session starting, running for under 2 minutes, then dying with no report (.repoos/reviews/<id>.md never written), no "review completed" line in .repoos/logs/tasks/<id>.log, and no live process. This is not isolated — it is systemic and ongoing.
@@ -46,3 +49,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-24T21:27:29Z · created · unknown
 - 2026-08-24T21:28:43Z · status inbox→ready
 - 2026-08-24T21:28:44Z · status ready→active, branch
+- 2026-08-24T22:09:26Z · model_override
