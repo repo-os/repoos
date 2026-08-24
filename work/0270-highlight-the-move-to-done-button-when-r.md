@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-24T21:14:09Z"
+review_passes: 1
 id: "0270"
 title: Highlight the Move to done button when review passes
 type: feature
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/highlight-the-move-to-done-button-when-r
 pm_model_override: default
 created_at: "2026-08-24T15:55:48Z"
-updated_at: "2026-08-24T21:13:09Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -78,3 +79,4 @@ Make the "Move to done" button (the `review` entry of `ACTIONS`, TaskCard.vue:11
 - 2026-08-24T20:54:46Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-24T20:54:46Z · status review→active
 - 2026-08-24T21:13:09Z · status active→review
+
