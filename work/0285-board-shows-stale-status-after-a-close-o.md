@@ -2,14 +2,14 @@
 id: "0285"
 title: Board shows stale status after a close-out's server reload handoff
 type: bug
-status: ready
+status: active
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/board-shows-stale-status-after-a-close-o
 created_at: "2026-08-24T20:48:22Z"
-updated_at: "2026-08-24T21:05:58Z"
+updated_at: "2026-08-24T21:06:09Z"
 ---
 ## Problem
 After a task's close-out (`review → done`) completes, the UI board can keep showing the task in its old column (e.g. still `review`) even though the task file and `main` are already correctly updated — until the user does something that forces a fresh fetch (like opening the task drawer), at which point it snaps to the correct column.
@@ -49,3 +49,4 @@ But this is fire-and-forget with no retry. If the browser's EventSource reconnec
 - 2026-08-24T21:05:28Z · pm_model_override
 - 2026-08-24T21:05:53Z · pm_model_override
 - 2026-08-24T21:05:58Z · model_override
+- 2026-08-24T21:06:09Z · status ready→active, branch
