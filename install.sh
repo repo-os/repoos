@@ -4,7 +4,16 @@
 #
 # Downloads the latest prebuilt release tarball from GitHub Releases and
 # installs a `repoos` launcher on PATH. Requires Node.js >= 20.6.0.
-set -euo pipefail
+#
+# POSIX-safe body: runs under `bash`, `sh`, or `dash`, so
+# `curl -fsSL ... | sh` works on Linux and macOS alike.
+set -eu
+# `pipefail` is a bash/zsh extension; enable it only when the shell supports it
+# so the script also runs under POSIX-only shells such as dash (/bin/sh).
+case "${BASH_VERSION:-}${ZSH_VERSION:-}" in
+  '') ;;
+  *) set -o pipefail 2>/dev/null || true ;;
+esac
 
 REPO="repo-os/repoos"
 INSTALL_DIR="${REPOOS_INSTALL_DIR:-$HOME/.repoos}"
@@ -12,11 +21,16 @@ BIN_DIR="${REPOOS_BIN_DIR:-$HOME/.local/bin}"
 RELEASE_URL="https://github.com/${REPO}/releases/latest/download/repoos-dist.tar.gz"
 
 # --- Color / terminal helpers ------------------------------------------------
-if [ -t 1 ] && [ "${NO_COLOR:-}" != "1" ] && command -v tput >/dev/null 2>&1 &&
+# POSIX-safe ANSI codes (no $'...' quoting, which dash/bin/sh cannot parse).
+# Color is enabled only when output goes to a terminal and the terminfo has
+# color support; NO_COLOR=1 forces it off. Check both stdout and stderr, since
+# progress prints to stdout while errors print to stderr.
+if [ "${NO_COLOR:-}" != "1" ] && { [ -t 1 ] || [ -t 2 ]; } &&
+   command -v tput >/dev/null 2>&1 &&
    tput setaf 1 >/dev/null 2>&1 && [ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]; then
-  BOLD=$'\033[1m';  DIM=$'\033[2m';  RESET=$'\033[0m'
-  CYAN=$'\033[36m'; MAGENTA=$'\033[35m'; GREEN=$'\033[32m'; RED=$'\033[31m'
-  YELLOW=$'\033[33m'; BLUE=$'\033[34m'; GRAY=$'\033[90m'
+  BOLD=$(printf '\033[1m');  DIM=$(printf '\033[2m');  RESET=$(printf '\033[0m')
+  CYAN=$(printf '\033[36m'); MAGENTA=$(printf '\033[35m'); GREEN=$(printf '\033[32m')
+  RED=$(printf '\033[31m'); YELLOW=$(printf '\033[33m'); GRAY=$(printf '\033[90m')
 else
   BOLD=''; DIM=''; RESET=''; CYAN=''; MAGENTA=''; GREEN=''; RED=''
   YELLOW=''; BLUE=''; GRAY=''
@@ -68,14 +82,20 @@ esac
 banner
 step "detected ${CYAN}${os_label}/${arch_label}${RESET}"
 
-# --- Resolve the latest release version ---------------------------------------
+# --- Resolve the latest release version (best-effort, non-fatal) --------------
+# The version is purely cosmetic. If the GitHub API is unreachable or rate
+# limited, we still install via the direct redirect download URL.
+version=""
 step "fetching latest release manifest..."
-version=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-  | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
-[ -n "$version" ] || err "Could not determine the latest release version."
+if command -v sed >/dev/null 2>&1; then
+  version=$(curl -fsSL --max-time 10 \
+    "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' || true)
+fi
+[ -n "$version" ] || step "using latest release from GitHub Releases"
 
 # --- Download -----------------------------------------------------------------
-step "downloading ${CYAN}${version}${RESET}..."
+step "downloading${version:+ ${CYAN}${version}${RESET}}..."
 tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
 curl -fsSL "$RELEASE_URL" -o "$tmpfile" \
@@ -94,7 +114,7 @@ exec node --no-warnings "$INSTALL_DIR/cli/index.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/repoos"
 
-ok "installed ${BOLD}repoos${RESET} ${DIM}${version}${RESET} to ${BOLD}${BIN_DIR}/repoos${RESET}"
+ok "installed ${BOLD}repoos${RESET}${version:+ ${DIM}${version}${RESET}} to ${BOLD}${BIN_DIR}/repoos${RESET}"
 info "(runtime lives in ${DIM}${INSTALL_DIR}${RESET})"
 
 # --- PATH note -----------------------------------------------------------------
