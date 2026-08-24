@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/review-round-tracking-d-r-counters-stuck
 model_override: default
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T21:04:40Z"
+updated_at: "2026-08-24T21:08:44Z"
 ---
 ## Problem
 Two related display bugs around review rounds.
