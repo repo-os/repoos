@@ -4,36 +4,108 @@
 #
 # Downloads the latest prebuilt release tarball from GitHub Releases and
 # installs a `repoos` launcher on PATH. Requires Node.js >= 20.6.0.
-set -euo pipefail
+#
+# POSIX-safe body: runs under `bash`, `sh`, or `dash`, so
+# `curl -fsSL ... | sh` works on Linux and macOS alike.
+set -eu
+# `pipefail` is a bash/zsh extension; enable it only when the shell supports it
+# so the script also runs under POSIX-only shells such as dash (/bin/sh).
+case "${BASH_VERSION:-}${ZSH_VERSION:-}" in
+  '') ;;
+  *) set -o pipefail 2>/dev/null || true ;;
+esac
 
 REPO="repo-os/repoos"
 INSTALL_DIR="${REPOOS_INSTALL_DIR:-$HOME/.repoos}"
 BIN_DIR="${REPOOS_BIN_DIR:-$HOME/.local/bin}"
 RELEASE_URL="https://github.com/${REPO}/releases/latest/download/repoos-dist.tar.gz"
 
-info()  { printf '\033[1;34m==>\033[0m %s\n' "$1"; }
-error() { printf '\033[1;31merror:\033[0m %s\n' "$1" >&2; exit 1; }
-
-command -v node >/dev/null 2>&1 || error "Node.js is required but was not found on PATH. Install Node >= 20.6.0 and re-run."
-
-node_major=$(node -p 'process.versions.node.split(".")[0]')
-if [ "$node_major" -lt 20 ]; then
-  error "Node.js >= 20.6.0 is required (found $(node -v))."
+# --- Color / terminal helpers ------------------------------------------------
+# POSIX-safe ANSI codes (no $'...' quoting, which dash/bin/sh cannot parse).
+# Color is enabled only when output goes to a terminal and the terminfo has
+# color support; NO_COLOR=1 forces it off. Check both stdout and stderr, since
+# progress prints to stdout while errors print to stderr.
+if [ "${NO_COLOR:-}" != "1" ] && { [ -t 1 ] || [ -t 2 ]; } &&
+   command -v tput >/dev/null 2>&1 &&
+   tput setaf 1 >/dev/null 2>&1 && [ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]; then
+  BOLD=$(printf '\033[1m');  DIM=$(printf '\033[2m');  RESET=$(printf '\033[0m')
+  CYAN=$(printf '\033[36m'); MAGENTA=$(printf '\033[35m'); GREEN=$(printf '\033[32m')
+  RED=$(printf '\033[31m'); YELLOW=$(printf '\033[33m'); GRAY=$(printf '\033[90m')
+else
+  BOLD=''; DIM=''; RESET=''; CYAN=''; MAGENTA=''; GREEN=''; RED=''
+  YELLOW=''; BLUE=''; GRAY=''
 fi
 
-command -v curl >/dev/null 2>&1 || error "curl is required but was not found on PATH."
-command -v tar  >/dev/null 2>&1 || error "tar is required but was not found on PATH."
+step()  { printf '%s  %s%s%s\n' "${GRAY}›$RESET" "${BOLD}" "$1" "$RESET"; }
+ok()    { printf '%s  %s✔ %s%s%s\n' "${GRAY}›$RESET" "${GREEN}" "$1" "$RESET"; }
+info()  { printf '  %s%s%s%s\n' "${DIM}" "$1" "$RESET"; }
+warn()  { printf '%s  %s! %s%s%s\n' "${YELLOW}›$RESET" "$YELLOW" "$1" "$RESET"; }
+err()   { printf '\n%s  %s✖ %s%s\n' "${RED}›$RESET" "$RED" "$1" "$RESET" >&2; exit 1; }
+banner() {
+  printf '%s\n' \
+"${MAGENTA}
+   ██████╗ ███████╗██████╗  ██████╗  ██████╗ ███████╗
+   ██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔═══██╗██╔════╝
+   ██████╔╝█████╗  ██████╔╝██║   ██║██║   ██║███████╗
+   ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██║   ██║╚════██║
+   ██║  ██║███████╗██║  ██║╚██████╔╝╚██████╔╝███████║
+   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝${RESET}"
+  printf '%s  %srepoos installer%s\n\n' "${GRAY}   ›$RESET" "$CYAN" "$RESET"
+}
 
-info "Installing RepoOS to ${INSTALL_DIR}"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+# --- Preflight ---------------------------------------------------------------
+command -v node >/dev/null 2>&1 || \
+  err "Node.js is required but was not found on PATH. Install Node >= 20.6.0 and re-run."
+node_major=$(node -p 'process.versions.node.split(".")[0]')
+if [ "$node_major" -lt 20 ]; then
+  err "Node.js >= 20.6.0 is required (found $(node -v))."
+fi
+command -v curl >/dev/null 2>&1 || err "curl is required but was not found on PATH."
+command -v tar  >/dev/null 2>&1 || err "tar is required but was not found on PATH."
 
+# --- Detect OS / architecture ------------------------------------------------
+os=$(uname -s)
+case "$os" in
+  Linux)  os_label="linux" ;;
+  Darwin) os_label="macos" ;;
+  *)      os_label=$(printf '%s' "$os" | tr '[:upper:]' '[:lower:]') ;;
+esac
+
+arch=$(uname -m)
+case "$arch" in
+  x86_64|amd64)                 arch_label="x86_64" ;;
+  aarch64|arm64)                arch_label="aarch64" ;;
+  i386|i686|x86)                arch_label="i386" ;;
+  *)                            arch_label="$arch" ;;
+esac
+
+banner
+step "detected ${CYAN}${os_label}/${arch_label}${RESET}"
+
+# --- Resolve the latest release version (best-effort, non-fatal) --------------
+# The version is purely cosmetic. If the GitHub API is unreachable or rate
+# limited, we still install via the direct redirect download URL.
+version=""
+step "fetching latest release manifest..."
+if command -v sed >/dev/null 2>&1; then
+  version=$(curl -fsSL --max-time 10 \
+    "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' || true)
+fi
+[ -n "$version" ] || step "using latest release from GitHub Releases"
+
+# --- Download -----------------------------------------------------------------
+step "downloading${version:+ ${CYAN}${version}${RESET}}..."
 tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
+curl -fsSL "$RELEASE_URL" -o "$tmpfile" \
+  || err "Failed to download release from ${RELEASE_URL}"
 
-curl -fsSL "$RELEASE_URL" -o "$tmpfile" || error "Failed to download release from ${RELEASE_URL}"
+# --- Install ------------------------------------------------------------------
+step "installing to ${BOLD}${INSTALL_DIR}${RESET}..."
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 tar -xzf "$tmpfile" -C "$INSTALL_DIR"
-
 chmod +x "$INSTALL_DIR/cli/index.js"
 
 cat > "$BIN_DIR/repoos" <<EOF
@@ -42,14 +114,20 @@ exec node --no-warnings "$INSTALL_DIR/cli/index.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/repoos"
 
-info "Installed repoos -> ${BIN_DIR}/repoos"
+ok "installed ${BOLD}repoos${RESET}${version:+ ${DIM}${version}${RESET}} to ${BOLD}${BIN_DIR}/repoos${RESET}"
+info "(runtime lives in ${DIM}${INSTALL_DIR}${RESET})"
 
+# --- PATH note -----------------------------------------------------------------
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *)
-    printf '\n\033[1;33mNote:\033[0m %s is not on your PATH.\n' "$BIN_DIR"
-    printf 'Add this to your shell profile:\n\n  export PATH="%s:$PATH"\n\n' "$BIN_DIR"
+    warn "${BOLD}${BIN_DIR}${RESET} is not on your PATH."
+    printf '%s\n' \
+"  ${DIM}Add this line to your shell profile (e.g. ~/.bashrc or ~/.zshrc):${RESET}" \
+"  ${BOLD}export PATH=\"${BIN_DIR}:\$PATH\"${RESET}"
     ;;
 esac
 
-info "Run 'repoos init' to get started."
+# --- Ready ----------------------------------------------------------------------
+printf '\n%s\n' "${GREEN}   ready.${RESET} run ${BOLD}repoos${RESET} to get started."
+printf '%s\n' "   ${DIM}or ${BOLD}repoos init${RESET}${DIM} to set up a new workspace.${RESET}"
