@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/do-not-auto-request-previews-let-the-hum
 created_at: "2026-08-24T15:55:19Z"
-updated_at: "2026-08-24T20:51:47Z"
+updated_at: "2026-08-24T20:51:48Z"
 ---
 ## Problem
 Preview URLs can now spin up much faster, so auto-requesting a preview before handoff is no longer needed. The original intent (always have a verified preview ready at handoff) is obsolete.

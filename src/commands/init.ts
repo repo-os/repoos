@@ -122,10 +122,12 @@ Document stack-specific conventions here (framework, lint, test commands).
 
 Never run \`repoos serve\` yourself and never pick a port — RepoOS owns the
 control-plane port and every preview port, and direct serve attempts from agent
-processes are rejected. To verify a UI change, request this task's managed
-preview by emitting the exact signal line (idempotent, and no localhost or
-curl is required — your sandbox may have no network access to the control
-plane):
+processes are rejected. Preview requests are the human's to make — do NOT
+automatically request a preview before handoff or as a routine part of finishing
+a task. If the human explicitly asks you to verify a change the way a browser
+would see it, request this task's managed preview by emitting the exact signal
+line (idempotent, and no localhost or curl is required — your sandbox may have
+no network access to the control plane):
 
     ::repoos-preview-request::
 
