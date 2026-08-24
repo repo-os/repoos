@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-24T22:48:29Z"
-review_passes: 1
 id: "0292"
 title: Add optional glide animations when cards change state
 type: feature
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-optional-glide-animations-when-cards
 created_at: "2026-08-24T22:02:35Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-08-24T22:47:13Z"
 ---
 ## Problem
 
@@ -80,4 +78,3 @@ could we get better animations of when cards change state? like show them glidin
 - 2026-08-24T22:04:57Z · status inbox→ready
 - 2026-08-24T22:05:05Z · status ready→active, branch
 - 2026-08-24T22:47:13Z · status active→review
-

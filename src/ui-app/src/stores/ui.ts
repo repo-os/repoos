@@ -42,6 +42,29 @@ export const useUiStore = defineStore("ui", () => {
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
 
+  const GLIDE_PERSIST_KEY = "repoos.board.glide";
+  /** Off by default; when on, cards glide between columns on a status change
+   *  (FLIP animation). A purely client-local UI preference, so toggling it
+   *  takes effect immediately with no page reload. */
+  const glideAnimations = ref<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem(GLIDE_PERSIST_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function setGlideAnimations(value: boolean): void {
+    glideAnimations.value = value;
+    try {
+      localStorage.setItem(GLIDE_PERSIST_KEY, value ? "1" : "0");
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
   const INTEGRATION_BAR_PERSIST_KEY = "repoos.integrationBar.collapsed";
   /** True when the bottom integration bar is folded to a thin strip
    *  (persisted across reloads). Shared state — the task drawer expands it
@@ -222,5 +245,7 @@ export const useUiStore = defineStore("ui", () => {
     integrationBarCollapsed,
     setIntegrationBarCollapsed,
     expandIntegrationBar,
+    glideAnimations,
+    setGlideAnimations,
   };
 });
