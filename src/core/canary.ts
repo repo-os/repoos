@@ -6,7 +6,7 @@
  * A trivial, single-line diff means any failure surfaced by the run is the
  * pipeline's fault, not the change's.
  */
-export const CANARY_COUNTER = 0;
+export const CANARY_COUNTER = 1;
 
 export const CANARY_PROMPT =
   "This is the repoos canary task: a deliberately trivial change used to smoke-test the full flow " +
