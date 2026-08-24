@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: default
-pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+pm_model_override: default
 created_at: "2026-08-24T15:55:33Z"
-updated_at: "2026-08-24T17:52:36Z"
+updated_at: "2026-08-24T19:29:52Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ The "unreliable" symptom is very likely (2)+(3) interacting with (1): a child ei
 ## Activity
 
 - 2026-08-24T17:52:36Z · body
+- 2026-08-24T19:29:52Z · pm_model_override

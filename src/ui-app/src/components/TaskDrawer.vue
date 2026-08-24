@@ -914,6 +914,25 @@ const pmBusy = computed(
 
 const pmHasConversation = computed(() => pmLines.value.length > 0);
 
+/** Canned messages shown above the PM compose box for fresh draft/inbox stubs. */
+const pmCannedMessages = [
+  "Can you flesh this out?",
+  "Suggest how to turn this stub into a complete task.",
+];
+
+/** Whether to show the canned PM messages: draft/inbox task with no PM chat yet. */
+const showPmCanned = computed(() => {
+  const t = ui.active;
+  if (!t || (t.status !== "draft" && t.status !== "inbox")) return false;
+  return !pmHasConversation.value;
+});
+
+/** Send the chosen canned message to the PM agent, just like a typed send. */
+function pmSendCanned(text: string): void {
+  pmDraft.value = text;
+  void pmSend();
+}
+
 function pmLineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
     if (entry.type === "human") return "human";
@@ -2989,6 +3008,12 @@ function resetFreeformOverrides(): void {
             </template>
           </div>
 
+          <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
+            <div v-for="(msg, i) in pmCannedMessages" :key="i" class="pm-canned-item" role="button" tabindex="0" @click="pmSendCanned(msg)" @keydown.enter="pmSendCanned(msg)">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8 4 3 10l5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span>{{ msg }}</span>
+            </div>
+          </div>
           <form class="pm-compose" @submit.prevent="pmSend">
             <textarea
               v-model="pmDraft"
@@ -3268,6 +3293,42 @@ function resetFreeformOverrides(): void {
 .pm-compose button svg {
   width: 18px;
   height: 18px;
+}
+
+.pm-canned {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 12px 10px;
+}
+
+.pm-canned-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-size: 12.5px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pm-canned-item svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--violet);
+}
+
+.pm-canned-item:hover,
+.pm-canned-item:focus-visible {
+  border-color: var(--violet);
+  background: var(--violet-dim);
+  outline: none;
 }
 
 @keyframes pm-bounce {
