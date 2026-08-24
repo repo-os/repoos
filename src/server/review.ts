@@ -35,6 +35,7 @@ import { currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
+  estimateCostUsd,
   extractOneShotReportText,
   parseOneShotLine,
   resolveReviewer,
@@ -103,6 +104,25 @@ const SESSION_LINES_CAP = 2000;
 const SESSION_WRITE_DEBOUNCE_MS = 300;
 
 const now = (): string => new Date().toISOString();
+
+/**
+ * Compute the reviewer session's cost + source the same way the engineer's
+ * `recordSessionToDb` does (0273): a real CLI-reported figure wins outright,
+ * otherwise a token-count estimate (never fabricated), and Kiro credits are
+ * never passed off as US dollars.
+ */
+function reviewUsage(
+  agent: Agent,
+  usage: { costUsd?: number; totalTokens?: number },
+): { costUsd?: number; costSource: string } {
+  if (usage.costUsd) {
+    return { costUsd: usage.costUsd, costSource: usageCostSource(agent, usage) };
+  }
+  if (usage.totalTokens) {
+    return { costUsd: estimateCostUsd(usage.totalTokens), costSource: "estimate" };
+  }
+  return { costSource: "none" };
+}
 
 /** Frontmatter key order for the stored report file. */
 const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
@@ -645,8 +665,7 @@ export class ReviewManager {
     try {
       const sessionId = `review:${taskId}-${completedAt}`;
       const elapsedMs = result.elapsedMs ?? 0;
-      // Kiro reviewers report credits (its billing unit), never US dollars.
-      const costSource = usageCostSource(agent, result);
+      const { costUsd, costSource } = reviewUsage(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -660,7 +679,7 @@ export class ReviewManager {
         inputTokens: result.inputTokens ?? undefined,
         outputTokens: result.outputTokens ?? undefined,
         totalTokens: result.totalTokens ?? undefined,
-        costUsd: result.costUsd ?? undefined,
+        costUsd,
         costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
@@ -757,7 +776,7 @@ export class ReviewManager {
     try {
       const sessionId = `review:${taskId}-chat-${completedAt}`;
       const elapsedMs = result.elapsedMs ?? 0;
-      const costSource = usageCostSource(agent, result);
+      const { costUsd, costSource } = reviewUsage(agent, result);
       this.db.upsertSession({
         sessionId,
         sessionType: "reviewer",
@@ -771,7 +790,7 @@ export class ReviewManager {
         inputTokens: result.inputTokens ?? undefined,
         outputTokens: result.outputTokens ?? undefined,
         totalTokens: result.totalTokens ?? undefined,
-        costUsd: result.costUsd ?? undefined,
+        costUsd,
         costSource,
         status: success ? "finished" : "errored",
         lastActivityAt: completedAt,
@@ -1079,7 +1098,9 @@ export class ReviewManager {
 
   /** Append a streamed line from the agent's stdout, parsed per its CLI. */
   private appendSessionLine(taskId: string, cli: string, line: string): void {
-    this.appendEntry(taskId, parseOneShotLine(cli, line));
+    const entry = parseOneShotLine(cli, line);
+    if (!entry) return; // a recognized-but-voiceless structured event
+    this.appendEntry(taskId, entry);
   }
 
   /** Append a trusted system marker (run start / completion). */
