@@ -2,14 +2,14 @@
 id: "0278"
 title: Flash/highlight done tasks until the human acknowledges them
 type: feature
-status: ready
+status: active
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/flash-highlight-done-tasks-until-the-hum
 created_at: "2026-08-24T15:57:54Z"
-updated_at: "2026-08-24T17:57:10Z"
+updated_at: "2026-08-24T17:57:20Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ On a task card whose status is `done` and whose ack flag is set:
 - 2026-08-24T16:00:19Z · body
 - 2026-08-24T17:43:27Z · body
 - 2026-08-24T17:57:10Z · status inbox→ready
+- 2026-08-24T17:57:20Z · status ready→active, branch
