@@ -57,6 +57,18 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
+# show the released version (package.json) vs the latest git tag
+current-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pkg=$(node -p "require('./package.json').version")
+    tag=$(git tag --sort=-v:refname | head -1)
+    echo "package.json: $pkg"
+    echo "latest tag:   ${tag:-none}"
+    if [ -n "$tag" ] && [ "v$pkg" != "$tag" ]; then
+        echo "note: package.json and latest tag disagree"
+    fi
+
 # cut a release: bump version, tag, push, and publish to npm `just release 0.5.31`
 release version:
     #!/usr/bin/env bash
