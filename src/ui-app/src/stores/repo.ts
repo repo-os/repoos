@@ -1218,6 +1218,29 @@ export const useRepoStore = defineStore("repo", () => {
   /** Get the full diff for a task, or undefined if not yet fetched. */
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
+  /**
+   * Merge main into a review-status task's branch (the "rebase onto main"
+   * action). Reuses the same sync path the server already runs automatically
+   * on entry into review — this just lets the user trigger it again once the
+   * branch has drifted further. Refreshes diff stats/patch on success so the
+   * Changes tab reflects the merged state.
+   */
+  async function syncTaskBranch(id: string): Promise<void> {
+    const r = await api<{ ok: boolean; conflicts?: string[]; error?: string }>(
+      `/api/tasks/${id}/sync`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.conflicts?.length
+        ? `Rebase hit conflicts in: ${r.conflicts.join(", ")}`
+        : r.error ?? "could not sync with main";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    pushToast("Synced with main", "success");
+    await Promise.all([loadDiffStats(id), loadDiff(id)]);
+  }
+
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
     if (!outputs.value[id]) return;
@@ -1505,6 +1528,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    syncTaskBranch,
     sendMessage,
     reviewAgain,
     sendReviewMessage,

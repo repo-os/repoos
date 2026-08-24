@@ -1355,6 +1355,31 @@ const taskDiffStats = computed(() => {
   return ui.active ? repo.diffStatsFor(ui.active.id) : undefined;
 });
 
+/**
+ * A diff this size is almost never the task's own change — it's main having
+ * drifted out from under the branch since it was cut. Thresholds are
+ * deliberately generous (most real task diffs are well under this) so the
+ * warning only fires on genuine divergence.
+ */
+const diffLooksLikeDrift = computed(() => {
+  const s = taskDiffStats.value;
+  if (!s) return false;
+  return s.filesChanged > 50 || s.additions + s.deletions > 2000;
+});
+
+const syncBusy = ref(false);
+async function syncWithMain(): Promise<void> {
+  if (!ui.active || syncBusy.value) return;
+  syncBusy.value = true;
+  try {
+    await repo.syncTaskBranch(ui.active.id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    syncBusy.value = false;
+  }
+}
+
 /** Load diff stats when task changes or status changes. */
 watch(
   () => [ui.active?.id, ui.active?.status, ui.active?.branch],
@@ -2760,6 +2785,20 @@ function resetFreeformOverrides(): void {
                 </div>
               </div>
               <div v-else class="diff-stats-loading">Loading change summary…</div>
+              <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
+                This diff looks much bigger than the task — main has likely drifted since the branch was cut.
+                <template v-if="ui.active?.status === 'review'">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="diff-sync-btn"
+                    :disabled="syncBusy || ui.saving"
+                    @click="syncWithMain"
+                  >
+                    {{ syncBusy ? "Syncing…" : "Sync with main" }}
+                  </Button>
+                </template>
+              </div>
             </section>
             <div v-if="diffFiles.length > 0" class="diff-file-list">
               <button
@@ -3263,13 +3302,21 @@ function resetFreeformOverrides(): void {
 
 .diff-stat-warning {
   grid-column: 1 / -1;
-  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
   text-align: center;
   color: #ff6b6b;
   font-size: 11px;
   font-weight: 500;
   background: rgba(255, 107, 107, 0.1);
   border-radius: 4px;
+}
+
+.diff-sync-btn {
+  color: var(--txt);
 }
 
 .diff-stats-loading {

@@ -934,3 +934,54 @@ describe("default drawer tab (0080)", () => {
     expect(ui.activeTab).toBe("details");
   });
 });
+
+describe("sync task branch with main (rebase-onto-main button)", () => {
+  it("posts to /sync, reloads diff data, and toasts success", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const posts: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/sync")) {
+        posts.push("sync");
+        return json({ ok: true });
+      }
+      if (url.includes("/diff-stats"))
+        return json({ ok: true, stats: { filesChanged: 3, additions: 10, deletions: 2 } });
+      if (url.includes("/diff"))
+        return json({ ok: true, diff: { patch: "diff --git a b", truncated: false } });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.syncTaskBranch("0253");
+
+    expect(posts).toEqual(["sync"]);
+    expect(repo.diffStatsFor("0253")).toEqual({ filesChanged: 3, additions: 10, deletions: 2 });
+    expect(repo.diffFor("0253")).toEqual({ patch: "diff --git a b", truncated: false });
+    expect(repo.toasts.some((t) => t.message === "Synced with main" && t.type === "success")).toBe(true);
+  });
+
+  it("toasts the conflicting files and rethrows on failure", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/sync"))
+        return json({ ok: false, conflicts: ["src/foo.ts", "src/bar.ts"] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.syncTaskBranch("0253")).rejects.toThrow("src/foo.ts, src/bar.ts");
+    expect(repo.toasts.some((t) => t.type === "error" && t.message.includes("src/foo.ts"))).toBe(true);
+  });
+});
