@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-24T21:43:42Z"
-review_passes: 3
 id: "0286"
 title: Watchdog never covers a dead reviewer session — only active tasks are scanned
 type: bug
@@ -11,8 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/watchdog-never-covers-a-dead-reviewer-se
 created_at: "2026-08-24T21:14:42Z"
-review_rounds: 2
-handoff_signal_retry_count: 1
+updated_at: "2026-08-24T21:31:43Z"
 ---
 ## Problem
 `TaskWatchdog.checkNow()` (src/server/task-watchdog.ts) only scans `this.index.getTasks("active")` — it detects and auto-recovers a task stuck in `active` whose engineer session died (no output, no handoff), but it never looks at tasks sitting in `review`. If the *reviewer* agent session dies silently mid-review, there is currently zero automated recovery: the task sits in `review` forever with no report, no error, no watchdog note, and nothing to nudge it — the human has to notice on their own and manually re-trigger a review.
@@ -59,8 +56,3 @@ Hardcoded to the `active` status only. `isStuck()`'s own logic (no running proce
 - 2026-08-24T21:17:04Z · status inbox→ready
 - 2026-08-24T21:17:06Z · status ready→active, branch
 - 2026-08-24T21:31:43Z · status active→review
-- 2026-08-24T21:33:36Z · status review→active
-- 2026-08-24T21:36:44Z · status active→review
-- 2026-08-24T21:38:31Z · status review→active
-- 2026-08-24T21:41:00Z · status active→review
-

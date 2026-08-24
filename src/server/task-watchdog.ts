@@ -1,11 +1,13 @@
 /**
- * Background watchdog for `active` tasks whose agent session is dead or
- * stalled (#0180). Detects a task sitting silently in `active` — no live agent
- * process, no recent activity — records WHY it stopped in the task transcript
- * (agent crashed / exited without a handoff / never started), and surfaces it
- * by auto-transitioning it to a visible state.
+ * Background watchdog for `active` and `review` tasks whose agent session is
+ * dead or stalled (#0180/#0286).
  *
- * A task is considered stuck when:
+ * ACTIVE tasks (#0180): a task sitting silently in `active` — no live agent
+ * process, no recent activity — is detected, the reason it stopped is recorded
+ * in the task transcript (agent crashed / exited without a handoff / never
+ * started), and it is surfaced by auto-transitioning to a visible state.
+ *
+ * A task is considered stuck for the ACTIVE path when:
  * - status === 'active'
  * - No agent process is running (`runner.isRunning(id)` === false) and no
  *   server-side handoff is finalizing
@@ -14,7 +16,15 @@
  * - No activity since the most recent `status →active` transition (or no
  *   activity at all) for longer than the staleness threshold
  *
- * On detection the watchdog:
+ * REVIEW tasks (#0286): a task sitting in `review` whose REVIEWER agent session
+ * died silently — no report, no completion log entry, no running process — is
+ * detected the same way. The recovery differs: a fresh reviewer run is kicked
+ * off (the same action as the human's "Review again"), leaving an Activity
+ * trail. If the auto-retry is exhausted and the task is still stuck (no report,
+ * no running review), it is escalated to `needsInput` for a human rather than
+ * looped.
+ *
+ * On detection of an ACTIVE task the watchdog:
  * 1. Classifies the failure reason — `never-started` (no session ever began),
  *    `crashed` (the persisted handoff log shows an interrupted turn), or
  *    `exited-without-handoff` (a session ran, its process ended, but no clean
@@ -33,14 +43,16 @@
  * - Never fires while the server is mid-reload (`canRun` is observed every
  *   scan — the reload manager reports `isReloading()` during handover).
  * - Never marks a task whose agent is legitimately paused.
- * - Bounded: a task is surfaced at most once (persisted Activity marker, so
- *   the bound survives reloads; the in-memory set is only a fast path).
+ * - Bounded: a task is surfaced/retried at most once per stuck episode
+ *   (persisted Activity marker, so the bound survives reloads; the in-memory
+ *   set is only a fast path).
  */
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
+import type { ReviewReport, ReviewRunResult } from "./review.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
@@ -51,6 +63,8 @@ const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
 /** Activity-log marker the watchdog writes/reads to bound surfacing once. */
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
 const ESCALATED_ACTIVITY = /watchdog: escalated to needs_input/;
+/** Activity-log marker the watchdog writes/reads to bound reviewer retry once. */
+const REVIEW_RETRIED_ACTIVITY = /watchdog: auto-retried dead reviewer session/;
 const HANDOFF_FAILURE_ACTIVITY = /handoff failed · (.+)$/m;
 const HANDOFF_RETAINED = /handoff retained for recovery/;
 const HANDOFF_RECOVERY_ATTEMPTED = /handoff recovery attempted/;
@@ -106,6 +120,23 @@ export function suggestNextStep(reason: string): string {
  */
 export function isStuckActiveTask(body: string, stalenessMs: number, now: number): boolean {
   const transitionAt = lastStatusTransitionTime(body, "active");
+  if (transitionAt === null) return false;
+  return now - lastActivityTime(body, transitionAt) >= stalenessMs;
+}
+
+/**
+ * Pure stuck-detection over a task's Activity log for the `review` status.
+ * Mirrors `isStuckActiveTask` but bounds the episode by the most recent
+ * `status →review` transition: a review task is candidate-stuck when no
+ * Activity entry after it (or none at all) exists for at least `stalenessMs`.
+ *
+ * This is deliberately only the Activity-log staleness half of the decision.
+ * The "the review actually completed" half (a report file exists) and the
+ * "a review is genuinely in flight" half live in `isStuck`, because they need
+ * the `ReviewManager` and filesystem, not just the body string.
+ */
+export function isStuckReviewTask(body: string, stalenessMs: number, now: number): boolean {
+  const transitionAt = lastStatusTransitionTime(body, "review");
   if (transitionAt === null) return false;
   return now - lastActivityTime(body, transitionAt) >= stalenessMs;
 }
@@ -282,9 +313,47 @@ function alreadySurfaced(body: string): boolean {
   return false;
 }
 
+/**
+ * Whether the watchdog has already auto-retried a dead REVIEWER since the most
+ * recent `status →review` transition. Scoped exactly like `alreadySurfaced`:
+ * scanning only entries after the current transition-into-review keeps each
+ * review episode's retry budget (at most one) independent of earlier episodes
+ * the append-only Activity log never forgets.
+ */
+function alreadyRetriedReview(body: string): boolean {
+  const lines = body.split("\n");
+  const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
+  if (activityIndex === -1) return false;
+  for (let i = lines.length - 1; i > activityIndex; i--) {
+    const line = lines[i];
+    if (REVIEW_RETRIED_ACTIVITY.test(line)) return true;
+    // The most recent transition INTO review bounds this episode.
+    if (/^- \d{4}-\d{2}-\d{2}T\S+ · status [a-z_]+→review\b/.test(line)) return false;
+  }
+  return false;
+}
+
+/**
+ * Whether a stored review report belongs to the CURRENT review episode — i.e.
+ * its `at` timestamp post-dates the most recent `status →review` transition.
+ *
+ * The report file is never cleared when a new review round starts (only the
+ * session conversation is reset, #0110), so an old report from a PRIOR round
+ * still reads back and would otherwise mask a current dead reviewer. Comparing
+ * against the episode's transition time makes "a report exists" mean "this
+ * round's review really completed" instead of "some report ever existed".
+ */
+function isReportForCurrentEpisode(reportAt: string, body: string): boolean {
+  const transitionAt = lastStatusTransitionTime(body, "review");
+  if (transitionAt === null) return true; // no transition on record — assume current
+  const t = Date.parse(reportAt);
+  if (Number.isNaN(t)) return false;
+  return t >= transitionAt;
+}
+
 export interface TaskWatchdogOptions {
   /**
-   * Observerd each scan; when it returns false the scan is skipped entirely.
+   * Observed each scan; when it returns false the scan is skipped entirely.
    * The server uses this to make the watchdog never fire mid-reload (#0180).
    */
   canRun?: () => boolean;
@@ -294,6 +363,27 @@ export interface TaskWatchdogOptions {
    * task is escalated to `needsInput` and left `active`.
    */
   autoTransition?: boolean;
+  /**
+   * The review manager surface, when the watchdog should also recover dead
+   * REVIEWER sessions (#0286). Without it (or when a report already exists),
+   * review tasks are left alone entirely — the review is either complete or
+   * out of scope for this watchdog.
+   */
+  reviews?: WatchdogReviewManager;
+}
+
+/**
+ * The minimal `ReviewManager` surface the watchdog's reviewer-recovery path
+ * depends on. Kept structural (not the concrete class) so the watchdog only
+ * couples to what it acts on and tests can substitute a fake.
+ */
+export interface WatchdogReviewManager {
+  /** Whether a reviewer run is currently in flight for the task. */
+  isRunning(taskId: string): boolean;
+  /** The stored review report for the task, or null when none ever completed. */
+  read(taskId: string): ReviewReport | null;
+  /** Kick off a fresh review run (the same action the human's "Review again" does). */
+  run(task: Task): Promise<ReviewRunResult>;
 }
 
 export class TaskWatchdog {
@@ -302,8 +392,11 @@ export class TaskWatchdog {
   private runner: AgentRunner;
   private readonly autoTransition: boolean;
   private readonly canRun?: () => boolean;
+  private readonly reviews?: WatchdogReviewManager;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stalenessThresholdMs: number;
+  /** Re-entry guard: a scan already in flight is skipped by the next tick. */
+  private scanning = false;
 
   constructor(
     config: RepoOSConfig,
@@ -318,6 +411,7 @@ export class TaskWatchdog {
     this.stalenessThresholdMs = stalenessThresholdMs;
     this.autoTransition = opts.autoTransition !== false;
     this.canRun = opts.canRun;
+    this.reviews = opts.reviews;
   }
 
   start(): void {
@@ -337,10 +431,29 @@ export class TaskWatchdog {
   /** Run one full scan now (used by the timer and by tests). */
   async checkNow(): Promise<void> {
     if (this.canRun && !this.canRun()) return;
-    for (const task of this.index.getTasks("active")) {
-      if (this.isStuck(task)) {
-        await this.handleStuck(task);
+    // Re-entry guard: the timer fires every 60s and a scan is async; if an
+    // earlier scan somehow overlaps (a slow disk, a blocked write), a second
+    // would scan the same tasks concurrently. Skip it — the next tick covers
+    // anything new. The scan body itself only does fast file/state work: any
+    // long-lived work (a review run, a handoff retry) is fired fire-and-forget,
+    // so a scan never blocks on it.
+    if (this.scanning) return;
+    this.scanning = true;
+    try {
+      // The `active` status is scanned for the dead/stalled ENGINEER shape
+      // (#0180). The `review` status is scanned too (#0286): a task whose
+      // REVIEWER session died silently sits in `review` forever with no report
+      // and no one to nudge it — the same failure mode as a dead engineer, just
+      // on the review side where the watchdog never looked before.
+      for (const status of ["active", "review"] as const) {
+        for (const task of this.index.getTasks(status)) {
+          if (this.isStuck(task)) {
+            this.handleStuck(task);
+          }
+        }
       }
+    } finally {
+      this.scanning = false;
     }
   }
 
@@ -353,6 +466,10 @@ export class TaskWatchdog {
     if (this.runner.isHandoffInFlight(task.id)) return false;
     // A deliberately paused agent is legitimate — never disturb it (#0180).
     if (this.runner.isPaused(task.id)) return false;
+    const now = Date.now();
+    if (task.status === "review") {
+      return this.isStuckReview(task, now);
+    }
     // Bounded: never surface a task the watchdog already surfaced.
     if (alreadySurfaced(task.body)) return false;
     // A task whose handoff was retained for recovery (#0235) is not stuck —
@@ -362,7 +479,6 @@ export class TaskWatchdog {
     // "handoff recovery attempted" entry and the watchdog must be free to
     // surface/escalate the task again.
     if (HANDOFF_RETAINED.test(task.body) && !HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) return false;
-    const now = Date.now();
     if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
     // The Activity log looks stale, but `isRunning()` above only reflects the
     // in-memory registry, which is empty after every server restart with no
@@ -376,10 +492,43 @@ export class TaskWatchdog {
     return true;
   }
 
-  private async handleStuck(task: Task): Promise<void> {
+  /**
+   * The `review`-status half of stuck detection. A review task is stuck when
+   * its reviewer session ended without ever producing a report for THIS round
+   * and no review is in flight — the silent-death shape (#0286). A report that
+   * EXISTS for the current episode (written after the current `→review`
+   * transition) means the review already completed and surfaced itself, so it
+   * is not stuck even if it "failed"; only a round that produced nothing at all
+   * needs the watchdog.
+   */
+  private isStuckReview(task: Task, now: number): boolean {
+    if (!this.reviews) return false; // no review manager wired — nothing to do
+    if (this.reviews.isRunning(task.id)) return false;
+    // A report post-dating this episode's →review transition means this round's
+    // review completed. A report from a PRIOR round (older `at`) is stale — the
+    // report file is never cleared between rounds — and must not mask a current
+    // dead reviewer.
+    const report = this.reviews.read(task.id);
+    if (report && isReportForCurrentEpisode(report.at, task.body)) return false;
+    if (!isStuckReviewTask(task.body, this.stalenessThresholdMs, now)) return false;
+    // Durable on-disk worktree evidence a live agent (engineer) is still
+    // active; a registry reset can't erase mtimes (#0214/#0203). The
+    // completed-review `reviews.read` check above already ruled out the
+    // finished case, so this is only a false-suppression guard, never a mask.
+    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+      return false;
+    }
+    return true;
+  }
+
+  private handleStuck(task: Task): void {
     // Re-read fresh from disk (the index copy can lag the canonical board) and
     // re-check the guards against the on-disk reality.
     const current = this.readCurrent(task);
+    if (current.status === "review") {
+      this.handleStuckReview(current);
+      return;
+    }
     if (current.status !== "active") return;
     if (alreadySurfaced(current.body)) return;
 
@@ -405,6 +554,65 @@ export class TaskWatchdog {
     }
     // Fallback (#0156): keep the task active but flag it for the human.
     this.escalateToNeedsInput(current, reason);
+  }
+
+  /**
+   * Recover a task whose REVIEWER session died silently mid-review (#0286).
+   *
+   * Unlike the `active` path (which resumes/restarts the ENGINEER), a dead
+   * reviewer is recovered by kicking off a FRESH reviewer run — the same
+   * action the human takes manually via "Review again". It never touches
+   * engineer state: the task stays in `review` for a human to sign off.
+   *
+   * Bounded the same way the `active` path is bounded: one automatic retry per
+   * review episode (persisted Activity marker, scoped to the current
+   * `→review` transition). If the retry is exhausted and the task is still
+   * stuck — no report, no running review — it is escalated to `needsInput`
+   * for a human instead of looping forever on a genuinely broken reviewer.
+   */
+  private handleStuckReview(task: Task): void {
+    if (!this.reviews) return;
+    const current = this.readCurrent(task);
+    if (current.status !== "review") return;
+    if (current.needsInput) return;
+    if (this.reviews.isRunning(current.id)) return;
+    // This episode's review completed — only a stale report from a prior round
+    // would read back here, and that must not block recovery of a dead reviewer
+    // in the current round (#0286 review round 2 fix).
+    const report = this.reviews.read(current.id);
+    if (report && isReportForCurrentEpisode(report.at, current.body)) return;
+
+    // One automatic retry is the budget; a second stuck episode is a broken
+    // reviewer config, not bad luck — hand it to a human, tracked in the log.
+    if (alreadyRetriedReview(current.body)) {
+      this.escalateToNeedsInput(
+        current,
+        "reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured",
+      );
+      return;
+    }
+
+    // Record the retry (trail + bound) before kicking off a fresh run, so the
+    // attempt survives even a mid-run restart and the retry stays at most one.
+    const note =
+      "watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review";
+    try {
+      recordChange(current, note);
+      this.writeTask(current);
+      commitTaskFile(this.config.root, current.absPath, `docs(${current.id}): update task`);
+    } catch (err) {
+      console.error(
+        `[repoos] watchdog: failed to record review retry for #${task.id}: ${(err as Error).message}`,
+      );
+      return;
+    }
+    // Fire-and-forget, never awaited: a review can run for up to REVIEW_TIMEOUT_MS
+    // (15 min), and `checkNow` is a background scan that must stay fast so it can
+    // keep detecting OTHER stuck tasks on the same sweep. The retry marker above
+    // already bounds it, and `ReviewManager.isRunning` short-circuits re-entry for
+    // this same task, so there is nothing to await. Mirrors how the route layer
+    // starts a review (`void reviews.run(...)`).
+    void this.reviews.run(current);
   }
 
   /**

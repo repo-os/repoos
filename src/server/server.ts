@@ -2042,6 +2042,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           autoTransition: watchdogConfig.autoTransition !== false,
           canRun: () => !(reload?.isReloading ?? false),
+          reviews,
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
