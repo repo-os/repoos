@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from "vue";
+import { computed, ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
+import { recordOrigin, takeOrigin } from "../lib/flip";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -17,6 +18,70 @@ const repo = useRepoStore();
 
 const busy = ref(false);
 const dragging = ref(false);
+
+/** Root card element — needed to read/seed FLIP rects for the glide (#0292). */
+const rootEl = ref<HTMLElement | null>(null);
+
+/** Resolve the "reduce motion" system preference; true means animations off. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Whether the card should glide on this mount: the opt-in setting is on, the
+ *  system allows motion, and this card is actually mid-transition. */
+function shouldGlide(): boolean {
+  return (
+    ui.glideAnimations &&
+    !prefersReducedMotion() &&
+    repo.transitionState?.id === props.task.id
+  );
+}
+
+const GLIDE_DURATION_MS = 480;
+const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
+
+/**
+ * Optional glide (#0292): when this card mounted into its new column because
+ * its status changed, seed a transform that puts it at its old position
+ * (recorded before the source-card unmounted) and play it back to identity.
+ * Deliberately decoupled from the existing shimmer — it only fires for a card
+ * that genuinely moved, and only while the glide setting is on.
+ */
+onMounted(() => {
+  if (!shouldGlide()) return;
+  const origin = takeOrigin(props.task.id);
+  const el = rootEl.value;
+  if (!origin || !el) return;
+  const dest = el.getBoundingClientRect();
+  const dx = origin.left - dest.left;
+  const dy = origin.top - dest.top;
+  el.style.transformOrigin = "center";
+  el.style.transform = `translate(${dx}px, ${dy}px)`;
+  el.style.transition = "none";
+  // Force a reflow so the seeded (inverted) transform is the "first" paint,
+  // then play the transform to identity over the glide duration.
+  void el.offsetWidth;
+  el.style.transition = `transform ${GLIDE_DURATION_MS}ms ${GLIDE_EASING}`;
+  el.style.transform = "translate(0, 0)";
+  window.setTimeout(() => {
+    el.style.transition = "";
+    el.style.transform = "";
+  }, GLIDE_DURATION_MS);
+});
+
+/** A card leaving its column (status changed) records its old position so the
+ *  destination card can glide from it. Only when a transition for this very
+ *  task is in flight and the glide is enabled. */
+onBeforeUnmount(() => {
+  if (!shouldGlide()) return;
+  const el = rootEl.value;
+  if (!el) return;
+  recordOrigin(props.task.id, el.getBoundingClientRect());
+});
 
 /**
  * A running agent process can go silent (hung network call, dead stream)
@@ -433,6 +498,7 @@ async function openAgent(): Promise<void> {
 
 <template>
   <article
+    ref="rootEl"
     class="task-card group flex shrink-0 cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
     :class="{
       flash: repo.flashId === task.id,
