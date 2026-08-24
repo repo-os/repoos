@@ -43,6 +43,7 @@
  *                                        records a `## Screenshots` section in the task body
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
@@ -198,6 +199,7 @@ import {
   testModel,
   // Agents routes
   runningAgents,
+  queuedAgents,
   detectInstalledAgents,
   getAgentLogs,
   // Notifications
@@ -1495,6 +1497,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {

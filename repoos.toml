@@ -16,6 +16,13 @@ defaultTaskMode = "freeform"
 autoEngineeringMode = false
 maxActiveTasks = 3
 
+# Max agent CLI processes (start/send/chat) running at once — extras queue
+# and spawn automatically as running agents exit (#0293). Computed for this
+# machine (10 cores: floor(10/2), capped at 8) — bump it up if the machine
+# still looks idle under load, or down if it's straining. See
+# src/core/config.ts defaultMaxConcurrentAgents() for the formula and why.
+maxConcurrentAgents = 5
+
 # CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
 ctoMonitorIntervalMs = 300000
 

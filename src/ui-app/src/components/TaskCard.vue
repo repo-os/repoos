@@ -255,6 +255,14 @@ function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
   };
 }
 
+/** An accepted start/send is waiting for a free maxConcurrentAgents slot
+ *  (#0293) — it will spawn on its own once a running agent exits. */
+const QUEUED_HINT: CardHint = {
+  label: "queued",
+  title: "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",
+  cls: "tc-queued",
+};
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -269,6 +277,7 @@ const hint = computed<CardHint | null>(() => {
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
+    if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
       if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
       return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
@@ -276,6 +285,7 @@ const hint = computed<CardHint | null>(() => {
     return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
+    if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
       if (t.handoffSignalRetryCount) return handoffSignalRetryHint(t.id, t.handoffSignalRetryCount);
       return codingOrStuckHint(t.id);

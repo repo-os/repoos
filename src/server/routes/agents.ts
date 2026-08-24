@@ -7,6 +7,12 @@ export const runningAgents: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { tasks: runner.running() });
 };
 
+/** Tasks/chats waiting for a free maxConcurrentAgents slot (#0293) — reconciliation source alongside the agent.queued/agent.dequeued SSE events. */
+export const queuedAgents: RouteHandler = (ctx, _req, res) => {
+  const { runner } = ctx;
+  return json(res, 200, { tasks: runner.queued() });
+};
+
 export const detectInstalledAgents: RouteHandler = async (_ctx, _req, res) => {
   let agents: DetectedAgent[] = [];
   try {

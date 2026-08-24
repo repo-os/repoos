@@ -262,6 +262,8 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
+  /** Ids waiting for a free maxConcurrentAgents slot (#0293) — will spawn automatically. */
+  const queuedIds = ref<string[]>([]);
   /** Server-authoritative start time for a live agent turn, keyed by task id. */
   const runningSince = ref<Record<string, string>>({});
   /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
@@ -542,6 +544,7 @@ export const useRepoStore = defineStore("repo", () => {
       // “coding…” indicators after a reload.
       void reconcileVersion();
       void fetchRunning();
+      void fetchQueued();
       return;
     }
     if (e.type === "build.available") {
@@ -650,6 +653,12 @@ export const useRepoStore = defineStore("repo", () => {
       runningSince.value = { ...runningSince.value, [e.id]: e.at };
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
+    } else if (e.type === "agent.queued") {
+      if (!queuedIds.value.includes(e.id)) {
+        queuedIds.value = [...queuedIds.value, e.id];
+      }
+    } else if (e.type === "agent.dequeued") {
+      queuedIds.value = queuedIds.value.filter((x) => x !== e.id);
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
         // CTO board-monitor conversation output — routed to the CTO panel's
@@ -863,6 +872,7 @@ export const useRepoStore = defineStore("repo", () => {
       // connection so a missed `agent.running` frame can never leave a review
       // card saying "waiting for human" while its engineer is still working.
       void fetchRunning();
+      void fetchQueued();
     };
     es.onerror = () => {
       connected.value = false;
@@ -1046,6 +1056,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
+  const isQueued = (id: string): boolean => queuedIds.value.includes(id);
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
   async function startWork(
@@ -1390,6 +1401,16 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Hydrate the queued marker on reload (#0293) — mirrors fetchRunning() above. */
+  async function fetchQueued(): Promise<void> {
+    try {
+      const r = await api<{ tasks: { id: string; queuedAt: string }[] }>("/api/agents/queued");
+      queuedIds.value = r.tasks.map((t) => t.id);
+    } catch {
+      /* endpoint unavailable — queued state is best-effort */
+    }
+  }
+
   /** Start a read-only preview of the task's worktree on its own port. */
   async function startPreview(t: Task): Promise<{ port: number; url: string }> {
     return api<{ port: number; url: string }>(`/api/tasks/${t.id}/preview`, {
@@ -1522,6 +1543,7 @@ export const useRepoStore = defineStore("repo", () => {
       await refresh();
       initRefreshAt = Date.now();
       await fetchRunning();
+      await fetchQueued();
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
       void reconcileVersion();
@@ -1545,6 +1567,7 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     transitionState,
     runningIds,
+    queuedIds,
     runningSince,
     agentActivityAt,
     agentExitedAt,
@@ -1597,6 +1620,7 @@ export const useRepoStore = defineStore("repo", () => {
     createDocument,
     createFreeformDocument,
     isRunning,
+    isQueued,
     startWork,
     pauseWork,
     activateHotfix,
@@ -1623,6 +1647,7 @@ export const useRepoStore = defineStore("repo", () => {
     reviewAgain,
     sendReviewMessage,
     fetchRunning,
+    fetchQueued,
     startPreview,
     stopPreview,
     onError,

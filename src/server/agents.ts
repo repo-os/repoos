@@ -37,6 +37,10 @@ import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 export type AgentEvent =
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot (#0293). */
+  | { type: "agent.queued"; id: string; at: string }
+  /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
+  | { type: "agent.dequeued"; id: string; at: string }
   | {
       type: "agent.output";
       id: string;
@@ -1915,8 +1919,8 @@ export class AgentRunner {
    * machine's CPU count so the same repo behaves on a laptop and a desktop.
    */
   private readonly maxConcurrentAgents: number;
-  /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot. */
-  private readonly queuedIds = new Set<string>();
+  /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot, mapped to when they were queued. */
+  private readonly queuedIds = new Map<string, string>();
   /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
   private readonly startQueue: (() => void)[] = [];
   private readonly emit: (e: AgentEvent) => void;
@@ -2558,9 +2562,10 @@ export class AgentRunner {
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
-    this.queuedIds.add(id);
+    this.queuedIds.set(id, now());
     this.startQueue.push(() => {
       this.queuedIds.delete(id);
+      this.emit({ type: "agent.dequeued", id, at: now() });
       this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     });
     this.logger?.agent(
@@ -2568,7 +2573,13 @@ export class AgentRunner {
       "info",
       `Queued — ${this.entries.size}/${this.maxConcurrentAgents} agent processes already running.`,
     );
+    this.emit({ type: "agent.queued", id, at: now() });
     return { ok: true, queued: true };
+  }
+
+  /** Tasks/chats currently waiting for a free maxConcurrentAgents slot (#0293). */
+  queued(): { id: string; queuedAt: string }[] {
+    return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
   }
 
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */

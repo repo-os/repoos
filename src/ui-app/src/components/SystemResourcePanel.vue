@@ -7,7 +7,7 @@ import Card from "./ui/card.vue";
 import type { SystemStats } from "../types";
 
 const repo = useRepoStore();
-const { systemStats } = storeToRefs(repo);
+const { systemStats, runningIds, queuedIds } = storeToRefs(repo);
 const killingPid = ref<number | null>(null);
 
 async function killProcess(pid: number): Promise<void> {
@@ -144,6 +144,17 @@ const serveMessage = computed(() => {
           </svg>
         </div>
 
+        <div class="metric">
+          <div class="metric-label">Agents (#0293)</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ runningIds.length }}</span>
+            <span class="metric-sub">running{{ queuedIds.length ? ` · ${queuedIds.length} queued` : "" }}</span>
+          </div>
+          <div v-if="queuedIds.length" class="metric-extra">
+            <span>Waiting for a free slot — starts automatically as agents finish.</span>
+          </div>
+        </div>
+
         <div v-if="memUsed !== null" class="metric">
           <div class="metric-label">Machine</div>
           <div class="metric-val">
@@ -258,7 +269,7 @@ const serveMessage = computed(() => {
 
 .headlines {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -541,6 +552,12 @@ const serveMessage = computed(() => {
   color: var(--amber);
   background: rgba(255, 180, 84, 0.14);
   border-radius: 3px;
+}
+
+@media (max-width: 1100px) {
+  .headlines {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {

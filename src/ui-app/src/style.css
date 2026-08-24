@@ -463,6 +463,8 @@
   .tc-moving{color:var(--cyan)}
   .tc-needs-input{color:var(--amber)}
   .tc-stalled{color:var(--txt-dim)}
+  .tc-queued{color:var(--txt-dim)}
+  .tc-queued::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--txt-dim)}
   .tc-stuck{color:var(--red)}
   .tc-stuck::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
   .task-card .tc-stuck::before{display:none}

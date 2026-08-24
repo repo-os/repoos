@@ -34,6 +34,10 @@ export type RepoEvent =
   | { type: "task.deleted"; id: string; path: string; at: string }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot (#0293). */
+  | { type: "agent.queued"; id: string; at: string }
+  /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
+  | { type: "agent.dequeued"; id: string; at: string }
   | {
       type: "agent.output";
       id: string;
