@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-08-24T21:15:39Z"
-review_passes: 1
 id: "0276"
 title: Auto-handle the self-resolving staleness check in MTD instead of routing through the debugger
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/auto-handle-the-self-resolving-staleness
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T15:57:24Z"
+updated_at: "2026-08-24T21:15:40Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -164,4 +165,4 @@ lives in the orchestrator's invocation, not in `cmdCheck`'s semantics.
 - 2026-08-24T19:50:34Z · status active→review
 - 2026-08-24T19:53:09Z · model_override
 - 2026-08-24T19:53:22Z · pm_model_override
-
+- 2026-08-24T21:15:40Z · status review→active
