@@ -2,14 +2,14 @@
 id: "0267"
 title: Confirm-before-run modal for the canary trigger
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:55:05Z"
-updated_at: "2026-08-24T20:25:53Z"
+updated_at: "2026-08-24T20:28:15Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ Add styles for the dialog (`ui/dialog` classes already provide the overlay/porta
 
 - 2026-08-24T15:58:30Z · body
 - 2026-08-24T20:25:53Z · body
+- 2026-08-24T20:28:15Z · status inbox→ready
