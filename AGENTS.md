@@ -136,6 +136,12 @@ cannot tell from the code alone:
   the preview URL and probe result in your task transcript. Direct `repoos
   serve` attempts from agent processes are rejected; the preview is reaped when
   the task leaves active/review.
+  **Previews are on-demand only, capped at ONE running at a time (#0271).**
+  Nothing auto-launches a preview anymore — not on a task entering `review`,
+  not at server boot for tasks already in review. Requesting yours may evict
+  whatever preview was running for a different task (FIFO); that's expected,
+  not a bug — if you need to re-verify something you checked earlier and the
+  slot has since moved on, just emit the signal again.
   **This server-side probe is a plain HTTP health check (`/api/health` then the
   root page) — it does not open a browser and does not require login.** Auth
   being enabled is not a reason to skip verification or fall back to a

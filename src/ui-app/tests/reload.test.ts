@@ -425,6 +425,39 @@ describe("ReloadManager", () => {
     }
   });
 
+  it("#0271: backs off automatic retries after a failed handoff, but a manual restart bypasses it", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.deadCli,
+      handshakeTimeoutMs: 1000,
+    });
+    try {
+      manager.start();
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      expect(manager.requestReload("test").state).toBe("reloading");
+      await waitFor(() => calls.failed > 0, "first reload failure reported");
+      expect(spawns(fx).length).toBe(1);
+
+      // Automatic trigger (no `manual`), same as the poll/self-heal path:
+      // still stale, but the just-armed backoff defers it — no second spawn.
+      const deferred = manager.requestReload("build changed (poll)");
+      expect(deferred.state).toBe("deferred");
+      expect(deferred.reason).toMatch(/backing off/);
+      await sleep(150);
+      expect(spawns(fx).length).toBe(1);
+
+      // A human explicitly retrying (POST /api/server/restart) bypasses it.
+      const manual = manager.requestReload("manual restart", { manual: true });
+      expect(manual.state).toBe("reloading");
+      await waitFor(() => calls.failed > 1, "second reload failure reported");
+      expect(spawns(fx).length).toBe(2);
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
   it("0143: parks a build that lands while a close-out holds the lock (no auto-reload, notice emitted)", async () => {
     const fx = await makeFixture();
     process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;

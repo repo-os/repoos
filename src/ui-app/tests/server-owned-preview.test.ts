@@ -7,10 +7,15 @@
  *
  *   - each task receives its own OS-allocated port serving ITS worktree;
  *   - repeated requests are idempotent (same URL);
- *   - a "rebuild" of one worktree is served live and does not disturb the
- *     others;
+ *   - a "rebuild" of one worktree is served live and does not disturb it;
  *   - the main `/api/health` stays reachable on its ORIGINAL port continuously
  *     across all preview starts, the rebuild, and the re-requests.
+ *
+ * MAX_PREVIEWS is 1 (#0271 follow-up: previews are on-demand only, so at most
+ * one runs at a time — starting a new one evicts the last), so unlike the
+ * original version of this test, only ONE task's preview is live at a time;
+ * this drives all three tasks through the SAME preview slot sequentially
+ * rather than asserting three concurrent ports.
  *
  * This exercises the real `PreviewManager` spawning real `repoos serve`
  * children (the trusted runner owns process/port lifecycle — ADR-0005), so it
@@ -161,56 +166,56 @@ describe("server-owned previews (#0096 integration)", () => {
         expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });
 
         const ids = ["0001", "0002", "0003"];
-        const urls = new Set<string>();
-        const ports = new Set<number>();
+        const branches = ["feat/preview-a", "feat/preview-b", "feat/preview-c"];
 
-        for (const id of ids) {
+        // Cap of 1: each task gets its own OS-allocated port, but starting
+        // the next one evicts the previous — only one is ever live.
+        const urlById: Record<string, string> = {};
+        for (let i = 0; i < ids.length; i++) {
+          const id = ids[i];
           const res = await api(server, "POST", `/api/tasks/${id}/preview`);
           expect(res.status).toBe(200);
           expect(res.body.ok).toBe(true);
           const url = res.body.url as string;
           const port = res.body.port as number;
           expect(url).toBe(`http://127.0.0.1:${port}`);
-          urls.add(url);
-          ports.add(port);
-        }
+          urlById[id] = url;
 
-        // Three tasks -> three DISTINCT OS-allocated ports, all live at once.
-        expect(ports.size).toBe(3);
-
-        // Idempotency: repeat requests return the existing healthy URL.
-        const again = await api(server, "POST", "/api/tasks/0001/preview");
-        expect(again.status).toBe(200);
-        expect(again.body.url).toBe([...urls][0]);
-
-        // Each preview serves ITS OWN worktree build (a unique marker file).
-        const branches = ["feat/preview-a", "feat/preview-b", "feat/preview-c"];
-        const markers: Record<string, string> = {};
-        for (let i = 0; i < branches.length; i++) {
-          const branch = branches[i];
-          const url = [...urls][i];
+          // Serves ITS OWN worktree build (a unique marker file).
           expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
           const body = await (await fetch(`${url}/notes.md`)).text();
-          markers[branch] = `marker-${i + 1}-${branch}`;
-          expect(body).toContain(markers[branch]);
+          expect(body).toContain(`marker-${i + 1}-${branches[i]}`);
+
+          // The previous task's preview (if any) was evicted to hold the cap.
+          if (i > 0) {
+            const prevTask = await api(server, "GET", `/api/tasks/${ids[i - 1]}`);
+            expect(prevTask.body.preview).toBeNull();
+          }
         }
 
-        // Rebuild one worktree (content change) — re-request is still the same
-        // URL and the preview serves the updated build live.
-        const rebuiltBranch = branches[0];
+        // Idempotency: repeat requests for the CURRENTLY live task return the
+        // existing healthy URL rather than evicting-and-restarting itself.
+        const currentId = ids[ids.length - 1];
+        const again = await api(server, "POST", `/api/tasks/${currentId}/preview`);
+        expect(again.status).toBe(200);
+        expect(again.body.url).toBe(urlById[currentId]);
+
+        // Rebuild the live worktree (content change) — re-request is still
+        // the same URL and the preview serves the updated build live.
+        const rebuiltBranch = branches[branches.length - 1];
         const wt = ensureWorktree(fx.root, rebuiltBranch);
         const newMarker = "rebuilt-content-42";
         writeFileSync(join(wt.path, "notes.md"), `# ${rebuiltBranch}\n\n${newMarker}\n`);
 
-        const reRequest = await api(server, "POST", "/api/tasks/0001/preview");
+        const reRequest = await api(server, "POST", `/api/tasks/${currentId}/preview`);
         expect(reRequest.status).toBe(200);
-        expect(reRequest.body.url).toBe([...urls][0]);
-        const body = await (await fetch(`${[...urls][0]}/notes.md`)).text();
+        expect(reRequest.body.url).toBe(urlById[currentId]);
+        const body = await (await fetch(`${urlById[currentId]}/notes.md`)).text();
         expect(body).toContain(newMarker);
 
         // The task endpoint surfaces the live preview URL.
-        const task = await api(server, "GET", "/api/tasks/0001");
-        expect((task.body.preview as { url?: string } | null)?.url).toBe([...urls][0]);
+        const task = await api(server, "GET", `/api/tasks/${currentId}`);
+        expect((task.body.preview as { url?: string } | null)?.url).toBe(urlById[currentId]);
 
         // The main server never flinched: same port, zero failed probes.
         expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });

@@ -697,7 +697,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   }
   const logger = createLogger(config.root);
   const index = new LiveIndex(config);
-  index.refreshAll();
+  // Non-blocking: with 200+ tasks, the git-heavy full index build can take
+  // several seconds even after parallelizing it (buildIndexAsync). Kicking it
+  // off here without awaiting lets `server.listen()` bind immediately instead
+  // of waiting behind it — the previous synchronous `refreshAll()` was most of
+  // RepoOS's 20-30s boot time and, worse, ate into the ~30-40s window a reload
+  // replacement has to answer its health handshake (#0271 follow-up). Anything
+  // that needs the populated index (the boot-time preview relaunch below, the
+  // resolved ServerHandle) awaits `indexReady` explicitly instead.
+  const indexReady = index.refreshAllAsync();
 
   const requestedPort = opts.port ?? 7171;
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
@@ -1244,31 +1252,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     void reviews.run(task);
   };
 
-  /**
-   * Auto-launch a read-only preview the moment a task lands in `review` (#0198).
-   * The whole point of automation is that no one clicks a button: the preview
-   * is up before the reviewer looks. `PreviewManager.start` enforces the
-   * concurrency cap (FIFO eviction of the oldest) and returns a structured
-   * result, so a failed launch is logged and never crashes the server. The
-   * preview closes automatically when the task leaves review (see
-   * `stopPreviewIfLeft`).
-   */
-  const autoLaunchPreview = async (task: Task): Promise<void> => {
-    try {
-      const result = await previews.start(task);
-      if (!result.ok) {
-        console.error(
-          `[preview] ${new Date().toISOString()} #${task.id} auto-launch failed — ${result.error ?? "unknown error"}`,
-        );
-      }
-    } catch (err) {
-      // Never let a failed launch take the server down.
-      console.error(
-        `[preview] ${new Date().toISOString()} #${task.id} auto-launch threw — ${(err as Error)?.message ?? err}`,
-      );
-    }
-  };
-
   // The file-watcher path (a direct task-file edit on disk) bypasses
   // patchTaskFile, so it never fires `onStatusChange`. The index's own event
   // stream sees EVERY status change from every route (HTTP PATCH, /done,
@@ -1293,16 +1276,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // review needs to hang off.
     if (e.task.status === "review") {
       startReview(e.task);
-      void autoLaunchPreview(e.task);
     }
   });
 
-  // Preview state is process-local. Recreate previews for tasks that were
-  // already in review when this control-plane process started, otherwise a
-  // server restart leaves review tasks without their expected preview URL.
-  for (const task of index.getTasks()) {
-    if (task.status === "review") void autoLaunchPreview(task);
-  }
+  // Previews are on-demand only (POST /api/tasks/:id/preview), not
+  // auto-launched on entering `review` or relaunched at boot. They used to be
+  // (#0198) because spinning one up was slow enough to be annoying to wait
+  // for; now that startup itself is fast (#0271 follow-up), auto-launching
+  // N previews at once — at boot, or as N tasks land in review in quick
+  // succession — is no longer worth the CPU contention it causes (each
+  // preview is a full nested `repoos serve`). MAX_PREVIEWS is 1 (preview.ts)
+  // so only one is ever running; starting a new one evicts the last.
 
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {
@@ -2015,6 +1999,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
 
+      // The port is already bound and accepting connections above; this only
+      // delays the resolved handle (and the CLI's own "watching N tasks"
+      // banner, which reads handle.index.snapshot()) until the background
+      // index build finishes, so it reports an accurate count instead of 0.
+      await indexReady;
       resolve(handle);
     })().catch((e) => reject(e as Error));
   });

@@ -48,7 +48,7 @@ export const health: RouteHandler = (ctx, req, res) => {
 export const restart: RouteHandler = (ctx, _req, res) => {
   const reload = ctx.reload;
   const state =
-    reload?.requestReload("manual restart") ??
+    reload?.requestReload("manual restart", { manual: true }) ??
     ({
       state: "not-stale",
       reason: "auto-reload unavailable",

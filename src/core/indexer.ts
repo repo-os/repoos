@@ -30,8 +30,11 @@ import {
   isGitRepo,
   localBranches,
   lastCommitForFile,
+  lastCommitForFileAsync,
   worktreeStatus,
+  worktreeStatusAsync,
   worktreePaths,
+  currentBranch,
   emptyGitInfo,
 } from "./git.js";
 
@@ -67,6 +70,12 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
   const useGit = isGitRepo(config.root);
   const branches = useGit ? localBranches(config.root) : new Set<string>();
   const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
+  // Fetched once and passed to every `worktreeStatus` call below — otherwise
+  // each of the N tasks with a branch re-runs `git worktree list` and
+  // `git rev-parse HEAD` itself, turning a 260-task index build into
+  // hundreds of redundant git spawns (#0271 follow-up: this was a large
+  // share of RepoOS's 20-30s boot time).
+  const baseBranch = useGit ? currentBranch(config.root) : null;
 
   let skippedTaskFiles = 0;
   const tasks: Task[] = files.flatMap((absPath) => {
@@ -90,7 +99,7 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
     if (useGit) {
       const { subject, date } = lastCommitForFile(config.root, base.path);
       const wt = base.branch
-        ? worktreeStatus(config.root, base.branch)
+        ? worktreeStatus(config.root, base.branch, { worktrees, baseBranch })
         : { path: null, dirty: false };
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
@@ -108,6 +117,113 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
       `[repoos] skipped ${skippedTaskFiles} task file(s) with no \`id\` in frontmatter — ` +
         `use the API (POST /api/tasks or PATCH /api/tasks/:id) instead of writing work/*.md directly`,
     );
+  }
+
+  tasks.sort((a, b) => {
+    const s = statusRank(a.status) - statusRank(b.status);
+    if (s !== 0) return s;
+    const p = priorityRank(a.priority) - priorityRank(b.priority);
+    if (p !== 0) return p;
+    return a.id.localeCompare(b.id);
+  });
+
+  const counts = Object.fromEntries(
+    STATUSES.map((s) => [s, 0]),
+  ) as Record<Status, number>;
+  for (const t of tasks) counts[t.status]++;
+
+  return {
+    version: INDEX_VERSION,
+    generatedAt: new Date().toISOString(),
+    root: config.root,
+    taskCount: tasks.length,
+    tasks,
+    counts,
+  };
+}
+
+/** Run `fn` over `items` with at most `concurrency` promises in flight. */
+async function runBounded<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  const queue = [...items];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+      await fn(next);
+    }
+  });
+  await Promise.all(workers);
+}
+
+/** Concurrency cap for the per-task git enrichment below. */
+const GIT_ENRICH_CONCURRENCY = 16;
+
+/**
+ * Async counterpart of `buildIndex`. Identical result, but the per-task git
+ * enrichment (last commit + worktree status) runs CONCURRENTLY instead of one
+ * task at a time on the main thread — `buildIndex`'s synchronous git spawns
+ * each block the event loop for a full OS round-trip, so N tasks cost N
+ * serial round-trips no matter how idle the machine is. With 260+ tasks that
+ * was several seconds of RepoOS's slow boot on top of the redundant spawns
+ * fixed above (#0271 follow-up). Used by the server's startup path, which can
+ * let `listen()` proceed while this populates the index in the background;
+ * `buildIndex` remains for callers (the CLI) that want a synchronous result.
+ */
+export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> {
+  const workPath = join(config.root, config.workDir);
+  const files = walkFiles(workPath, config.taskExtensions);
+
+  const useGit = isGitRepo(config.root);
+  const branches = useGit ? localBranches(config.root) : new Set<string>();
+  const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
+  const baseBranch = useGit ? currentBranch(config.root) : null;
+
+  let skippedTaskFiles = 0;
+  const tasks: Task[] = [];
+  for (const absPath of files) {
+    const content = readFileSync(absPath, "utf8");
+    const { data } = parseDocument(content);
+    if (!("id" in data)) {
+      skippedTaskFiles++;
+      continue;
+    }
+    tasks.push(
+      parseTask({
+        content,
+        absPath,
+        root: config.root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+        git: emptyGitInfo(),
+      }),
+    );
+  }
+  if (skippedTaskFiles > 0) {
+    console.warn(
+      `[repoos] skipped ${skippedTaskFiles} task file(s) with no \`id\` in frontmatter — ` +
+        `use the API (POST /api/tasks or PATCH /api/tasks/:id) instead of writing work/*.md directly`,
+    );
+  }
+
+  if (useGit) {
+    await runBounded(tasks, GIT_ENRICH_CONCURRENCY, async (base) => {
+      const [{ subject, date }, wt] = await Promise.all([
+        lastCommitForFileAsync(config.root, base.path),
+        base.branch
+          ? worktreeStatusAsync(config.root, base.branch, { worktrees, baseBranch })
+          : Promise.resolve({ path: null, dirty: false }),
+      ]);
+      base.git = {
+        branchExists: base.branch ? branches.has(base.branch) : false,
+        worktreeExists: base.branch ? worktrees.has(base.branch) : false,
+        lastCommit: subject,
+        lastCommitAt: date,
+        worktreePath: wt.path,
+        dirty: wt.dirty,
+      };
+    });
   }
 
   tasks.sort((a, b) => {

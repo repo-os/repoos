@@ -3,7 +3,7 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
-import { execFileSync, spawn, spawnSync } from "node:child_process";
+import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
@@ -20,6 +20,26 @@ function git(root: string, args: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Non-blocking counterpart of `git()`. Lets a caller enriching many tasks
+ * (e.g. `buildIndexAsync`) run their git spawns concurrently instead of
+ * one at a time on the main thread — each `execFileSync` call above blocks
+ * the event loop for the OS round-trip, so N tasks in a `for` loop costs N
+ * full serial round-trips no matter how idle the machine is.
+ */
+function gitAsync(root: string, args: string[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      args,
+      { cwd: root, encoding: "utf8", timeout: 4000 },
+      (error, stdout) => {
+        resolve(error ? null : stdout.trim());
+      },
+    );
+  });
 }
 
 export interface GitRun {
@@ -89,6 +109,23 @@ export function lastCommitForFile(
   relPath: string,
 ): { subject: string | null; date: string | null } {
   const out = git(root, [
+    "log",
+    "-1",
+    "--format=%s%x00%cI",
+    "--",
+    relPath,
+  ]);
+  if (!out) return { subject: null, date: null };
+  const [subject, date] = out.split("\u0000");
+  return { subject: subject || null, date: date || null };
+}
+
+/** Async counterpart of lastCommitForFile - see gitAsync. */
+export async function lastCommitForFileAsync(
+  root: string,
+  relPath: string,
+): Promise<{ subject: string | null; date: string | null }> {
+  const out = await gitAsync(root, [
     "log",
     "-1",
     "--format=%s%x00%cI",
@@ -289,9 +326,21 @@ export interface WorktreeStatus {
  * Best-effort facts about a task's worktree, derived from `git worktree list`
  * plus a status check inside the worktree. Fail-soft: any git failure yields
  * a safe `{ path: null, dirty: false }`.
+ *
+ * `opts.worktrees`/`opts.baseBranch` let a caller looping over many tasks
+ * against the same repo (e.g. `buildIndex`) pass in a `worktreePaths`/
+ * `currentBranch` result it already fetched once, instead of this function
+ * re-running those two `git` spawns on every single task (#0271 follow-up:
+ * this redundancy was a large share of RepoOS's slow boot with 260+ tasks).
+ * Omit them and behavior is unchanged — each call fetches fresh.
  */
-export function worktreeStatus(root: string, branch: string): WorktreeStatus {
-  const path = worktreePaths(root).get(branch) ?? null;
+export function worktreeStatus(
+  root: string,
+  branch: string,
+  opts: { worktrees?: Map<string, string>; baseBranch?: string | null } = {},
+): WorktreeStatus {
+  const worktrees = opts.worktrees ?? worktreePaths(root);
+  const path = worktrees.get(branch) ?? null;
   if (!path) return { path: null, dirty: false };
   // git reports the main checkout as a worktree too; only a LINKED worktree
   // counts, otherwise the whole repo's dirt would mark tasks dirty.
@@ -311,10 +360,45 @@ export function worktreeStatus(root: string, branch: string): WorktreeStatus {
 
   const status = git(path, ["status", "--porcelain"]);
   const uncommitted = status !== null && status !== "";
-  const base = currentBranch(root);
+  const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
   const count = base && base !== branch
     ? git(root, ["rev-list", "--count", `${base}..${branch}`])
     : null;
+  const ahead = count !== null && Number(count) > 0;
+  return { path, dirty: uncommitted || ahead };
+}
+
+/** Async counterpart of `worktreeStatus` — see `gitAsync`. */
+export async function worktreeStatusAsync(
+  root: string,
+  branch: string,
+  opts: { worktrees?: Map<string, string>; baseBranch?: string | null } = {},
+): Promise<WorktreeStatus> {
+  const worktrees = opts.worktrees ?? worktreePaths(root);
+  const path = worktrees.get(branch) ?? null;
+  if (!path) return { path: null, dirty: false };
+  let realRoot = root;
+  let realPath = path;
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    /* keep the composed path */
+  }
+  try {
+    realPath = realpathSync(path);
+  } catch {
+    /* keep the reported path */
+  }
+  if (realPath === realRoot) return { path: null, dirty: false };
+
+  const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
+  const [status, count] = await Promise.all([
+    gitAsync(path, ["status", "--porcelain"]),
+    base && base !== branch
+      ? gitAsync(root, ["rev-list", "--count", `${base}..${branch}`])
+      : Promise.resolve(null),
+  ]);
+  const uncommitted = status !== null && status !== "";
   const ahead = count !== null && Number(count) > 0;
   return { path, dirty: uncommitted || ahead };
 }
