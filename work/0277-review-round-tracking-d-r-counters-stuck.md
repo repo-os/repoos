@@ -2,14 +2,14 @@
 id: "0277"
 title: "Review round tracking: D#/R# counters stuck, review tab disappears in done state"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/review-round-tracking-d-r-counters-stuck
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T20:03:57Z"
+updated_at: "2026-08-24T20:03:58Z"
 review_rounds: 1
 ---
 ## Problem
@@ -62,3 +62,4 @@ The "Review" tab button in `TaskDrawer.vue` (~2219–2233) is gated behind `v-if
 - 2026-08-24T19:42:25Z · model_override
 - 2026-08-24T19:49:00Z · status review→active
 - 2026-08-24T20:03:57Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-24T20:03:58Z · status review→active
