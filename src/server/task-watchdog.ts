@@ -333,6 +333,24 @@ function alreadyRetriedReview(body: string): boolean {
   return false;
 }
 
+/**
+ * Whether a stored review report belongs to the CURRENT review episode — i.e.
+ * its `at` timestamp post-dates the most recent `status →review` transition.
+ *
+ * The report file is never cleared when a new review round starts (only the
+ * session conversation is reset, #0110), so an old report from a PRIOR round
+ * still reads back and would otherwise mask a current dead reviewer. Comparing
+ * against the episode's transition time makes "a report exists" mean "this
+ * round's review really completed" instead of "some report ever existed".
+ */
+function isReportForCurrentEpisode(reportAt: string, body: string): boolean {
+  const transitionAt = lastStatusTransitionTime(body, "review");
+  if (transitionAt === null) return true; // no transition on record — assume current
+  const t = Date.parse(reportAt);
+  if (Number.isNaN(t)) return false;
+  return t >= transitionAt;
+}
+
 export interface TaskWatchdogOptions {
   /**
    * Observed each scan; when it returns false the scan is skipped entirely.
@@ -476,16 +494,22 @@ export class TaskWatchdog {
 
   /**
    * The `review`-status half of stuck detection. A review task is stuck when
-   * its reviewer session ended without ever producing a report and no review is
-   * in flight — the silent-death shape (#0286). A report that EXISTS (ok or
-   * failed) means the review already completed and surfaced itself, so it is
-   * not stuck even if it "failed"; only a session that produced nothing at all
+   * its reviewer session ended without ever producing a report for THIS round
+   * and no review is in flight — the silent-death shape (#0286). A report that
+   * EXISTS for the current episode (written after the current `→review`
+   * transition) means the review already completed and surfaced itself, so it
+   * is not stuck even if it "failed"; only a round that produced nothing at all
    * needs the watchdog.
    */
   private isStuckReview(task: Task, now: number): boolean {
     if (!this.reviews) return false; // no review manager wired — nothing to do
     if (this.reviews.isRunning(task.id)) return false;
-    if (this.reviews.read(task.id)) return false; // a report exists — review completed
+    // A report post-dating this episode's →review transition means this round's
+    // review completed. A report from a PRIOR round (older `at`) is stale — the
+    // report file is never cleared between rounds — and must not mask a current
+    // dead reviewer.
+    const report = this.reviews.read(task.id);
+    if (report && isReportForCurrentEpisode(report.at, task.body)) return false;
     if (!isStuckReviewTask(task.body, this.stalenessThresholdMs, now)) return false;
     // Durable on-disk worktree evidence a live agent (engineer) is still
     // active; a registry reset can't erase mtimes (#0214/#0203). The
@@ -552,7 +576,11 @@ export class TaskWatchdog {
     if (current.status !== "review") return;
     if (current.needsInput) return;
     if (this.reviews.isRunning(current.id)) return;
-    if (this.reviews.read(current.id)) return; // a report exists — review completed
+    // This episode's review completed — only a stale report from a prior round
+    // would read back here, and that must not block recovery of a dead reviewer
+    // in the current round (#0286 review round 2 fix).
+    const report = this.reviews.read(current.id);
+    if (report && isReportForCurrentEpisode(report.at, current.body)) return;
 
     // One automatic retry is the budget; a second stuck episode is a broken
     // reviewer config, not bad luck — hand it to a human, tracked in the log.

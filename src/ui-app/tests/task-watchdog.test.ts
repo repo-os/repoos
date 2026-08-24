@@ -814,18 +814,48 @@ Stuck twice.
     fx.clean();
   });
 
-  it("does not touch a review task that already has a report (its review completed) (#0286)", async () => {
+  it("does not touch a review task that already has a report for THIS round (its review completed) (#0286)", async () => {
     const fx = makeReviewFx(10_000);
     const index = new LiveIndex(fx.config);
     index.refreshAll();
     runner = new AgentRunner(fx.config, () => {});
-    const { reviews, runs } = makeFakeReviews({ report: { state: "ok", markdown: "# Verdict" } as ReviewReport });
+    // A report written AFTER the current →review transition means this round's
+    // review completed — not stuck, even a failed one already surfaces itself.
+    const completedAt = new Date(Date.now() - 5_000).toISOString(); // post-transition (10s ago)
+    const { reviews, runs } = makeFakeReviews({
+      report: { id: "0001", at: completedAt, state: "ok", markdown: "# Verdict" } as ReviewReport,
+    });
     const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
 
     await watchdog.checkNow();
 
     expect(runs).toHaveLength(0);
     expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
+  it("recovers a dead reviewer even when a STALE report from a PRIOR round exists (#0286 round 2)", async () => {
+    // The report file is never cleared between review rounds (#0110 resets only
+    // the conversation, not the report). So a task that re-entered `review`
+    // after an earlier completed round will still read back that old report —
+    // it must NOT be taken as evidence this round's review completed, or the
+    // watchdog could never recover a second dead reviewer for the same task.
+    const fx = makeReviewFx(10_000);
+    // The stale report's `at` precedes the current →review transition.
+    const staleAt = new Date(Date.now() - 3_600_000).toISOString();
+    const { reviews, runs } = makeFakeReviews({
+      report: { id: "0001", at: staleAt, state: "ok", markdown: "# Old verdict" } as ReviewReport,
+    });
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    // A stale report is ignored — the current dead reviewer is retried once.
+    expect(runs).toHaveLength(1);
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: auto-retried dead reviewer session");
     fx.clean();
   });
 
