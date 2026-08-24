@@ -1617,3 +1617,52 @@
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 24px; margin-top: 8px;
 }
+
+/* Spec edit modal - centred overlay mirroring cc-modal, sized for a markdown editor */
+.sm-modal.drawer-wrap.drawer {
+  top: 50%; left: 50%; right: auto; bottom: auto;
+  width: min(680px, 92vw); height: auto; max-height: 86vh;
+  transform: translate(-50%, -50%);
+  border-radius: 16px; border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px var(--border);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  animation: cc-modal-in .22s cubic-bezier(.2,.8,.2,1);
+}
+.sm-modal-head {
+  padding: 20px 24px 0; display: flex; align-items: flex-start; gap: 12px;
+}
+.sm-modal-head-text { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.sm-modal-head .close-x { margin-left: auto; flex-shrink: 0 }
+.sm-modal-desc {
+  font-size: 12.5px; line-height: 1.5; color: var(--txt-dim);
+}
+.sm-modal-body {
+  padding: 16px 24px 0; display: flex; flex-direction: column; min-height: 0;
+  flex: 1;
+}
+.sm-modal-editor {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+.sm-modal-editor-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; gap: 8px;
+}
+.sm-modal-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--txt-faint);
+}
+.sm-modal-textarea {
+  flex: 1; min-height: 220px; width: 100%;
+  padding: 12px 14px; border-radius: 11px;
+  border: 1px solid var(--border); background: var(--md-body-bg);
+  color: var(--txt); font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.65; resize: none;
+  overflow-y: auto; box-sizing: border-box;
+}
+.sm-modal-textarea:focus { outline: none; border-color: var(--border-bright) }
+.sm-modal-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 24px; margin-top: 8px;
+}

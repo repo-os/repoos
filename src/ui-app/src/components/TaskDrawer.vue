@@ -16,6 +16,7 @@ import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -93,19 +94,12 @@ const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
 
 const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
-const specTextareaEl = ref<HTMLTextAreaElement | null>(null);
 const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
     insertTextAtCursor(freeformTextarea.value, text);
-  }
-}
-
-function onSpecTranscribed(text: string): void {
-  if (specTextareaEl.value) {
-    insertTextAtCursor(specTextareaEl.value, text);
   }
 }
 
@@ -532,28 +526,23 @@ const slugify = (title: string): string =>
 const derivedBranch = computed(() => `feat/${slugify(draft.title)}`);
 const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value);
 
-/** Spec body is a readable card that expands into a large textarea on click. */
-const specEditing = ref(false);
-const specTextarea = ref<HTMLTextAreaElement | null>(null);
 /** Whether the spec card body is expanded. Collapsed shows just the header. */
 const specExpanded = ref(true);
+
+/** True while the spec edit modal is open. */
+const specModalOpen = ref(false);
 
 /** Rendered (safe) Markdown for the read-mode spec card. */
 const specHtml = computed(() => renderMarkdown(draft.body));
 
-/** Grow the spec textarea to fit its content so editing never feels cramped. */
-function autoGrowSpec(): void {
-  const el = specTextarea.value;
-  if (!el) return;
-  // scrollHeight excludes the border (box-sizing: border-box); add it back so
-  // the box exactly fits its content and never shows an internal scrollbar.
-  el.style.height = "auto";
-  el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+function openSpecModal(): void {
+  specModalOpen.value = true;
 }
 
-watch(specEditing, (editing) => {
-  if (editing) nextTick(autoGrowSpec);
-});
+function applySpec(markdown: string): void {
+  draft.body = markdown;
+  specModalOpen.value = false;
+}
 
 let draftFromId = "";
 watch(
@@ -567,7 +556,7 @@ watch(
       // Different task (or drawer just reopened): load a fresh draft.
       initDraft(t);
       draftFromId = t.id;
-      specEditing.value = false;
+      specModalOpen.value = false;
       return;
     }
     // Same task got updated (SSE task.updated). Resync only when the user has
@@ -594,7 +583,6 @@ async function saveDraft(): Promise<void> {
   try {
     await repo.patchTask(ui.active.id, patch);
     baseline();
-    specEditing.value = false;
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -604,7 +592,6 @@ async function saveDraft(): Promise<void> {
 
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
-  specEditing.value = false;
 }
 
 // ---- read-only worktree preview ----
@@ -2369,31 +2356,16 @@ function resetFreeformOverrides(): void {
           </div>
           <div v-if="specExpanded">
             <div
-              v-if="!specEditing"
               class="md-card"
               role="button"
               tabindex="0"
-              @click="specEditing = true"
-              @keydown.enter="specEditing = true"
-              @keydown.space.prevent="specEditing = true"
+              @click="openSpecModal"
+              @keydown.enter="openSpecModal"
+              @keydown.space.prevent="openSpecModal"
             >
               <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
               <div v-else class="md-card-body">No spec yet — click to add.</div>
             </div>
-            <template v-else>
-              <div class="spec-textarea-wrapper">
-                <textarea
-                  ref="specTextareaEl"
-                  class="md-edit"
-                  v-model="draft.body"
-                  rows="12"
-                  placeholder="Markdown body"
-                  @input="autoGrowSpec"
-                ></textarea>
-                <VoiceDictate @transcribed="onSpecTranscribed" />
-              </div>
-              <div class="spec-hint">Click Save to apply the spec.</div>
-            </template>
           </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
           <div class="meta-grid">
@@ -3092,6 +3064,13 @@ function resetFreeformOverrides(): void {
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
+  />
+
+  <SpecEditModal
+    :open="specModalOpen"
+    :body="draft.body"
+    @update:open="(v) => (specModalOpen = v)"
+    @save="applySpec"
   />
 </template>
 
