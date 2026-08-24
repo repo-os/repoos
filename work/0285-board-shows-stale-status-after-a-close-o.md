@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-24T21:43:06Z"
+review_passes: 1
 id: "0285"
 title: Board shows stale status after a close-out's server reload handoff
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/board-shows-stale-status-after-a-close-o
 created_at: "2026-08-24T20:48:22Z"
-updated_at: "2026-08-24T21:17:17Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -52,3 +53,4 @@ But this is fire-and-forget with no retry. If the browser's EventSource reconnec
 - 2026-08-24T21:05:58Z · model_override
 - 2026-08-24T21:06:09Z · status ready→active, branch
 - 2026-08-24T21:17:17Z · status active→review
+
