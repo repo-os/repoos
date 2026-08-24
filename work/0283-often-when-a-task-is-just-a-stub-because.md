@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-a-canned-flesh-this-out-prompt-abov
+model_override: default
 created_at: "2026-08-24T17:45:48Z"
-updated_at: "2026-08-24T18:48:50Z"
+updated_at: "2026-08-24T19:29:18Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ Often when a task is just a stub (because an it was a draft or an AI didn't full
 - 2026-08-24T17:47:14Z · status inbox→ready
 - 2026-08-24T18:28:38Z · status ready→active, branch
 - 2026-08-24T18:48:50Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-24T19:29:18Z · model_override
