@@ -1585,3 +1585,35 @@
 }
 .am-star-btn:hover { color: var(--amber); background: rgba(255,180,84,0.08) }
 .am-star-btn.active { color: var(--amber) }
+
+/* Canary confirm modal (radix dialog centred like AgentModelModal) */
+.cc-modal.drawer-wrap.drawer {
+  top: 50%; left: 50%; right: auto; bottom: auto;
+  width: min(520px, 92vw); height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px; border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in .22s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes cc-modal-in { from { opacity: 0; transform: translate(-50%,-48%) scale(.97) } to { opacity: 1; transform: translate(-50%,-50%) scale(1) } }
+.cc-modal-head {
+  padding: 20px 24px 0; display: flex; align-items: flex-start; gap: 12px;
+}
+.cc-modal-head .close-x { margin-left: auto; flex-shrink: 0 }
+.cc-modal-desc {
+  padding: 12px 24px 0; font-size: 13px; line-height: 1.5;
+}
+.cc-modal-body { padding: 16px 24px 0; display: flex; flex-direction: column; gap: 10px }
+.cc-modal-body p { font-size: 13px; line-height: 1.55; color: var(--txt-dim) }
+.cc-modal-body strong { color: var(--txt); font-weight: 600 }
+.cc-modal-body code {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  background: var(--panel-solid); border: 1px solid var(--border);
+  border-radius: 5px; padding: 1px 5px; color: var(--txt);
+}
+.cc-modal-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 24px; margin-top: 8px;
+}
