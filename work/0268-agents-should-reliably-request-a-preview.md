@@ -2,14 +2,14 @@
 id: "0268"
 title: Do not auto-request previews; let the human request manually
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:55:19Z"
-updated_at: "2026-08-24T20:26:47Z"
+updated_at: "2026-08-24T20:30:47Z"
 ---
 ## Problem
 Preview URLs can now spin up much faster, so auto-requesting a preview before handoff is no longer needed. The original intent (always have a verified preview ready at handoff) is obsolete.
@@ -20,3 +20,4 @@ Do the opposite of the original task: stop automatically requesting a preview be
 ## Activity
 
 - 2026-08-24T20:26:47Z · title, body
+- 2026-08-24T20:30:47Z · status inbox→ready
