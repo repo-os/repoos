@@ -496,6 +496,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       spawn: {
         ok: spawnRes.ok,
         pid: spawnRes.pid,
+        queued: spawnRes.queued,
         reason: spawnRes.reason,
       },
       bootstrap: {

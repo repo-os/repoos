@@ -4,6 +4,7 @@
  * to avoid a runtime dependency.
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { cpus } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
@@ -97,6 +98,18 @@ export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
     ...migrated.map((agent) => ({ ...agent })),
     ...(guide && !names.has(REPO_GUIDE_NAME.toLowerCase()) ? [{ ...guide }] : []),
   ];
+}
+
+/**
+ * "Auto" default for `maxConcurrentAgents` (#0293): each agent CLI process may
+ * itself spawn a build/test worker pool sized to the machine's core count, so
+ * running several agents at once multiplies, not adds, CPU demand. Dividing
+ * by 4 and capping at 4 keeps that product roughly bounded to one machine's
+ * worth of work on everything from a small laptop to a many-core desktop,
+ * without needing per-machine tuning in repoos.toml.
+ */
+export function defaultMaxConcurrentAgents(): number {
+  return Math.max(1, Math.min(4, Math.floor(cpus().length / 4)));
 }
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
@@ -349,6 +362,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     // recover, while the API now writes new values as numbers.
     if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
       cfg.maxActiveTasks = Number(maxActiveTasks);
+    const maxConcurrentAgents = get("maxConcurrentAgents");
+    if (
+      typeof maxConcurrentAgents === "number" &&
+      maxConcurrentAgents >= 1 &&
+      maxConcurrentAgents <= 16
+    )
+      cfg.maxConcurrentAgents = maxConcurrentAgents as number;
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
@@ -619,6 +639,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       }),
       description:
         "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
+    {
+      key: "maxConcurrentAgents",
+      label: "Maximum concurrent agent processes",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: defaultMaxConcurrentAgents(),
+      options: Array.from({ length: 16 }, (_, i) => {
+        const val = i + 1;
+        return { value: String(val), label: String(val) };
+      }),
+      description:
+        `How many agent CLI processes (start/send/chat) may run at once; extras queue. ` +
+        `Default (${defaultMaxConcurrentAgents()}) is computed from this machine's CPU count.`,
     },
     {
       key: "whisper.provider",

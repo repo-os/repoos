@@ -292,6 +292,14 @@ export interface RepoOSConfig {
   /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */
   maxActiveTasks?: number;
   /**
+   * Maximum number of agent CLI processes (each with its own build/test
+   * footprint) the runner will spawn at once, across all tasks and chats.
+   * Extra `start`/`send` calls queue and spawn as running agents finish.
+   * Unset means "auto" — computed from the host's CPU count at boot so the
+   * same repo behaves on a small machine and a big one without tuning.
+   */
+  maxConcurrentAgents?: number;
+  /**
    * Per-agent state for built-in agents (Tech Debt Agent, …), keyed by agent
    * id: whether it's enabled, its run schedule, and when it last ran. Stored
    * as a JSON sidecar under the cache dir — runtime state, not human-edited

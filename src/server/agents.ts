@@ -24,7 +24,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
-import { agentsForConfig } from "../core/config.js";
+import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
@@ -92,6 +92,8 @@ export interface StartResult {
   pid?: number;
   /** True when the request was rejected because a turn is already running. */
   busy?: boolean;
+  /** True when accepted but held for a free slot under maxConcurrentAgents (#0293) — it will spawn once one frees. */
+  queued?: boolean;
   reason?: string;
 }
 
@@ -1905,6 +1907,18 @@ export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
+  /**
+   * Cap on simultaneously-spawned agent CLI processes (#0293) — each one may
+   * itself run a build/test worker pool sized to the host's core count, so
+   * unlimited concurrent agents oversubscribe the machine. Configurable via
+   * `maxConcurrentAgents` in repoos.toml; "auto" (unset) sizes it to this
+   * machine's CPU count so the same repo behaves on a laptop and a desktop.
+   */
+  private readonly maxConcurrentAgents: number;
+  /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot. */
+  private readonly queuedIds = new Set<string>();
+  /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
+  private readonly startQueue: (() => void)[] = [];
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
@@ -1964,6 +1978,7 @@ export class AgentRunner {
     opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
+    this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
     this.emit = emit;
     this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
@@ -2379,7 +2394,7 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id)) {
+    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id) || this.queuedIds.has(task.id)) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
@@ -2396,7 +2411,7 @@ export class AgentRunner {
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
+    return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
   }
 
   /** Start a persistent, non-task conversation with an explicit role mission. */
@@ -2407,7 +2422,7 @@ export class AgentRunner {
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
-    if (this.entries.has(sessionId)) {
+    if (this.entries.has(sessionId) || this.queuedIds.has(sessionId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
     if (this.sessions.has(sessionId)) {
@@ -2431,7 +2446,7 @@ export class AgentRunner {
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
-    return this.spawnTurn(sessionId, cmd, args, this.config.root);
+    return this.spawnOrQueue(sessionId, cmd, args, this.config.root);
   }
 
   /**
@@ -2452,7 +2467,7 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
+    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId) || this.queuedIds.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     this.sessions.set(taskId, session);
@@ -2485,7 +2500,7 @@ export class AgentRunner {
     // resumeCommand fall back to a fresh/most-recent-session start instead.
     const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
     const { cmd, args } = resumeCommand(agent, fullText, sessionId, session.workdir ?? this.config.root);
-    return this.spawnTurn(
+    return this.spawnOrQueue(
       taskId,
       cmd,
       args,
@@ -2521,6 +2536,47 @@ export class AgentRunner {
   /** Flush all debounced transcript writes before shutdown/reload handover. */
   flushAll(): void {
     for (const taskId of this.writeTimers.keys()) this.persist(taskId);
+  }
+
+  /**
+   * Gate for every spawnTurn call site (#0293): at capacity, defer the spawn
+   * instead of oversubscribing the machine. The caller still gets `ok: true`
+   * immediately — `queued: true` distinguishes "will run shortly" from
+   * "running now" without changing callers' happy-path handling. `id` is
+   * marked busy via queuedIds so a second start/send for the same task/chat
+   * while queued is rejected the same way an already-running one would be.
+   */
+  private spawnOrQueue(
+    id: string,
+    cmd: string,
+    args: string[],
+    cwd: string,
+    task?: Task,
+    branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
+  ): StartResult {
+    if (this.entries.size < this.maxConcurrentAgents) {
+      return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    }
+    this.queuedIds.add(id);
+    this.startQueue.push(() => {
+      this.queuedIds.delete(id);
+      this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    });
+    this.logger?.agent(
+      id,
+      "info",
+      `Queued — ${this.entries.size}/${this.maxConcurrentAgents} agent processes already running.`,
+    );
+    return { ok: true, queued: true };
+  }
+
+  /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
+  private drainQueue(): void {
+    while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+      const next = this.startQueue.shift();
+      next?.();
+    }
   }
 
   /**
@@ -3217,6 +3273,7 @@ export class AgentRunner {
     }
     if (session) session.stalledEmitted = false;
     this.entries.delete(taskId);
+    this.drainQueue();
     // Kiro CLI does not print a session ID during the run. Capture it now by
     // querying the CLI's session list in the same cwd. Best-effort: if the
     // probe fails, sessionId stays undefined and the next turn falls back to
