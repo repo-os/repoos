@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/auto-handle-the-self-resolving-staleness
+review_model_override: default
 created_at: "2026-08-24T15:57:24Z"
-updated_at: "2026-08-24T23:55:38Z"
+updated_at: "2026-08-24T23:56:53Z"
 ---
 ## Problem
 
@@ -160,3 +161,4 @@ lives in the orchestrator's invocation, not in `cmdCheck`'s semantics.
 - 2026-08-24T19:46:09Z · status ready→active, branch
 - 2026-08-24T19:50:34Z · status active→review
 - 2026-08-24T23:55:38Z · status review→done, release:success
+- 2026-08-24T23:56:53Z · review_model_override
