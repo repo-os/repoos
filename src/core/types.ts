@@ -460,6 +460,12 @@ export interface BoardTask {
    *  at 2, #0271 follow-up). Same purpose as checkRetryCount, one step
    *  earlier in the pipeline. */
   mergeConflictRetryCount: number;
+  /** Automatic retries after the task-watchdog detected a dead session that
+   *  exited without a clean handoff (see handoff.ts's
+   *  scheduleHandoffSignalRetry, capped at 2, #0271 follow-up). The task
+   *  stays `active` throughout, unlike the other two which stay `review` —
+   *  lets the board distinguish this from ordinary active-status coding. */
+  handoffSignalRetryCount: number;
 }
 
 /** Board index — like RepoIndex but with BoardTask[] instead of Task[]. */

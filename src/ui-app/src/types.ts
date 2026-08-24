@@ -77,6 +77,10 @@ export interface Task {
    *  close-out attempt (capped at 2, #0271 follow-up) — same purpose as
    *  checkRetryCount, one step earlier in the pipeline. */
   mergeConflictRetryCount?: number;
+  /** Automatic retries after the watchdog detected a dead session that
+   *  exited without a clean handoff (capped at 2, #0271 follow-up). Unlike
+   *  the other two, the task stays `active` throughout. */
+  handoffSignalRetryCount?: number;
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -171,6 +175,8 @@ export interface BoardTask {
   checkRetryCount: number;
   /** See Task.mergeConflictRetryCount. */
   mergeConflictRetryCount: number;
+  /** See Task.handoffSignalRetryCount. */
+  handoffSignalRetryCount: number;
 }
 
 /** Board index response from GET /api/board. */

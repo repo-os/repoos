@@ -469,6 +469,8 @@ function toBoardTask(t: Task): BoardTask {
     checkRetryCount: typeof t.extra?.check_retry_count === "number" ? t.extra.check_retry_count : 0,
     mergeConflictRetryCount:
       typeof t.extra?.merge_conflict_retry_count === "number" ? t.extra.merge_conflict_retry_count : 0,
+    handoffSignalRetryCount:
+      typeof t.extra?.handoff_signal_retry_count === "number" ? t.extra.handoff_signal_retry_count : 0,
   };
 }
 

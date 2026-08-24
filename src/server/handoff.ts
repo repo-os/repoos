@@ -456,3 +456,79 @@ export function scheduleMergeConflictRetry(
 
   return true;
 }
+
+/** Cap mirrors the other two retry schedulers — same reasoning, different failure step. */
+const MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS = 2;
+const HANDOFF_SIGNAL_RETRY_DELAY_MS = 3_000;
+
+/**
+ * Third instance of the same pattern (#0271 follow-up), for the task-watchdog's
+ * `exited-without-handoff` classification (task-watchdog.ts): a session ran to
+ * completion but its final line wasn't exactly `::repoos-handoff-ready::`, so no
+ * handoff ever fired. Previously the watchdog could only surface this — move
+ * the task to `review`/`ready` and leave a human to notice and click Restart
+ * (task #0268 sat this way until someone asked "why hasn't this recovered on
+ * its own").
+ *
+ * Unlike the other two, this failure has no specific diagnostic to hand back —
+ * "you didn't finish right" is vaguer than a named conflict or check output —
+ * so it's a strictly weaker signal, which is exactly why the watchdog didn't
+ * already do this: auto-resuming on a vague prompt risks looping on genuine
+ * confusion, not just fixing a rendering hiccup. The cap bounds that risk the
+ * same way it bounds the other two; on exhaustion this returns false and the
+ * caller (task-watchdog.ts) falls through to its EXISTING surface behavior —
+ * there is no separate give-up path here, unlike the other two schedulers,
+ * because surfacing already IS the correct terminal state the watchdog was
+ * built for.
+ *
+ * Returns true when a retry was scheduled; false means "give up, surface it
+ * the normal way" — either the cap was hit or no engineer is configured.
+ */
+export function scheduleHandoffSignalRetry(
+  config: RepoOSConfig,
+  task: Task,
+  runner: AgentRunner,
+  onFileChange?: (absPath: string) => void,
+): boolean {
+  let retries = task.extra?.handoff_signal_retry_count as number | undefined;
+  if (typeof retries !== "number") retries = 0;
+  if (retries >= MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS) return false;
+
+  const engineer = resolveAgentForTask(config, task);
+  if (!engineer) return false;
+
+  const persistAttempt = (): void => {
+    // Persisted on EVERY attempt, success or failure of `send()` — otherwise a
+    // structural send failure (e.g. the runner reports busy every time) would
+    // never advance the counter and this could retry forever every watchdog
+    // scan instead of respecting the cap.
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.handoff_signal_retry_count = attempt;
+      const keys = Object.keys(doc.data).filter((k) => k !== "handoff_signal_retry_count");
+      keys.unshift("handoff_signal_retry_count");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
+    } catch (err) {
+      console.error(`[repoos] could not persist handoff_signal_retry_count for #${task.id}: ${(err as Error).message}`);
+    }
+  };
+
+  const attempt = retries + 1;
+  setTimeout(() => {
+    const message = [
+      `Automatic recovery (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS}): your previous turn on this task ended without the server detecting a clean handoff.`,
+      "",
+      "The handoff signal must be exactly `::repoos-handoff-ready::` on its own line — a rendering quirk can occasionally mangle it (see #0154/#0155).",
+      "",
+      "Check your last output and the current state of your worktree. If the work is actually complete and `repoos check` passes: emit the signal line correctly this time. If it is NOT complete: finish it, verify `repoos check` passes, then emit the signal.",
+    ].join("\n");
+    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    persistAttempt();
+    if (!sent.ok) return; // capped; the watchdog's next scan surfaces it normally
+    runner.system(task.id, `↻ automatically resuming after a missed handoff signal (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`);
+  }, HANDOFF_SIGNAL_RETRY_DELAY_MS);
+
+  return true;
+}

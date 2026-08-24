@@ -43,6 +43,7 @@ import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
+import { scheduleHandoffSignalRetry } from "./handoff.js";
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
@@ -360,7 +361,22 @@ export class TaskWatchdog {
     if (current.status !== "active") return;
     if (alreadySurfaced(current.body)) return;
 
-    const { reason } = classifyDeadAgentReason(current, this.runner);
+    const { kind, reason } = classifyDeadAgentReason(current, this.runner);
+    // #0271 follow-up: `exited-without-handoff` is the one dead-session shape
+    // with a plausible quick fix — the agent may have simply mis-emitted the
+    // signal line (#0154/#0155) or just needs a nudge to finish. Give the
+    // SAME session a bounded number of automatic nudges before falling back
+    // to surfacing (which is still the correct outcome for `never-started` —
+    // nothing to resume — and `crashed`, which already has its own recovery
+    // path via the persisted-handoff-failure machinery).
+    if (kind === "exited-without-handoff" && scheduleHandoffSignalRetry(
+      this.config,
+      current,
+      this.runner,
+      (absPath) => this.index.applyFileChange(absPath, { guarded: true }),
+    )) {
+      return;
+    }
     if (this.autoTransition) {
       this.surfaceTask(current, autoTransitionTarget(this.config, current), reason);
       return;

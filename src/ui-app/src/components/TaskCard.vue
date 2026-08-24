@@ -229,6 +229,32 @@ function mergeConflictRetryHint(taskId: string, retryCount: number): CardHint {
   };
 }
 
+/** Mirrors handoff.ts's MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS (#0271 follow-up). */
+const MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS = 2;
+
+/** Same purpose as the other two retry hints, but for `active` status: the
+ *  task-watchdog detected a dead session that ended without emitting the
+ *  handoff signal, and the engineer was automatically resumed to check its
+ *  own work and either finish or re-emit the signal correctly
+ *  (handoff.ts's scheduleHandoffSignalRetry). */
+function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent was auto-resumed after a missed handoff signal but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `confirming handoff · active ${activity}` : `confirming handoff (retry ${retryCount}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
+    title: "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
+    cls: "tc-coding",
+  };
+}
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -250,7 +276,10 @@ const hint = computed<CardHint | null>(() => {
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
-    if (repo.isRunning(t.id)) return codingOrStuckHint(t.id);
+    if (repo.isRunning(t.id)) {
+      if (t.handoffSignalRetryCount) return handoffSignalRetryHint(t.id, t.handoffSignalRetryCount);
+      return codingOrStuckHint(t.id);
+    }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
     }
