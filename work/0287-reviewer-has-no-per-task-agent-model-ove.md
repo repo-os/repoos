@@ -8,6 +8,7 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/reviewer-has-no-per-task-agent-model-ove
+model_override: default
 created_at: "2026-08-24T21:20:34Z"
 updated_at: "2026-08-24T23:32:47Z"
 ---
@@ -50,3 +51,4 @@ Dev and PM both support per-task agent/CLI/model overrides, chosen from a select
 - 2026-08-24T21:21:17Z · status inbox→ready
 - 2026-08-24T21:21:20Z · status ready→active, branch
 - 2026-08-24T21:30:59Z · status active→review
+- 2026-08-24T23:32:47Z · model_override
