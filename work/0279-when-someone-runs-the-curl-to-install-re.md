@@ -2,7 +2,7 @@
 id: "0279"
 title: Polish installer output
 type: feature
-status: active
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/polish-installer-output
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T16:56:37Z"
-updated_at: "2026-08-24T20:46:31Z"
+updated_at: "2026-08-24T23:41:14Z"
 ---
 ```markdown
 ---
@@ -84,3 +84,4 @@ when someone runs the curl to install repoos I want them to be met with some use
 - 2026-08-24T16:58:32Z · title
 - 2026-08-24T19:55:07Z · status inbox→ready
 - 2026-08-24T20:46:31Z · status ready→active, branch
+- 2026-08-24T23:41:14Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
