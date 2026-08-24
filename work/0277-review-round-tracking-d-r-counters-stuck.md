@@ -2,7 +2,7 @@
 id: "0277"
 title: "Review round tracking: D#/R# counters stuck, review tab disappears in done state"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-24T15:57:39Z"
-updated_at: "2026-08-24T17:40:47Z"
+updated_at: "2026-08-24T17:40:54Z"
 ---
 ## Problem
 Two related display bugs around review rounds.
@@ -52,3 +52,4 @@ The "Review" tab button in `TaskDrawer.vue` (~2219–2233) is gated behind `v-if
 - 2026-08-24T16:45:21Z · model_override
 - 2026-08-25T00:50:00Z · body — fleshed out by PM with root-cause leads, expected behaviour, investigation checklist, and acceptance criteria.
 - 2026-08-24T17:40:47Z · body
+- 2026-08-24T17:40:54Z · status inbox→ready
