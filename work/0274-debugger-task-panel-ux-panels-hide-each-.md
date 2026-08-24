@@ -2,14 +2,14 @@
 id: "0274"
 title: "Debugger/task panel UX: panels hide each other, offer implement fix directly on a diagnosed trivial fix"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/debugger-task-panel-ux-panels-hide-each-
 created_at: "2026-08-24T15:56:54Z"
-updated_at: "2026-08-24T19:39:59Z"
+updated_at: "2026-08-24T19:45:54Z"
 ---
 ## Problem
 Two related task-panel/debugger UX issues seen on the same run:
@@ -26,3 +26,4 @@ Two related task-panel/debugger UX issues seen on the same run:
 - 2026-08-24T15:59:47Z · body
 - 2026-08-24T19:39:25Z · status inbox→ready
 - 2026-08-24T19:39:59Z · status ready→active, branch
+- 2026-08-24T19:45:54Z · status active→review
