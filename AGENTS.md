@@ -114,6 +114,11 @@ cannot tell from the code alone:
 ## Conventions
 
 - Runtime: Bun (the package also runs under Node ≥ 20 once built).
+- Tests: `bun run test` (vitest), never bare `bun test`. Bun's own test runner
+  will pick up the same `*.test.ts` files and mostly work, but its `vi` shim is
+  missing pieces like `vi.stubGlobal`/`vi.unstubAllGlobals` — those tests then
+  fail with `TypeError: vi.stubGlobal is not a function`, which looks like a
+  real regression but is just the wrong runner.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
@@ -131,6 +136,19 @@ cannot tell from the code alone:
   the preview URL and probe result in your task transcript. Direct `repoos
   serve` attempts from agent processes are rejected; the preview is reaped when
   the task leaves active/review.
+  **This server-side probe is a plain HTTP health check (`/api/health` then the
+  root page) — it does not open a browser and does not require login.** Auth
+  being enabled is not a reason to skip verification or fall back to a
+  component-level unit test instead: emitting the signal and reading the probe
+  result from your transcript already satisfies "verify with a browser probe
+  before reporting done," with no OTP involved.
+  If a task genuinely needs deeper interactive verification — actually clicking
+  through the logged-in UI, not just confirming it serves — log into the
+  preview with the dev backdoor code (`config.auth.devBackdoorCode`, set via
+  `REPOOS_AUTH_DEV_BACKDOOR_CODE`, non-production only) instead of requesting a
+  real email OTP you have no inbox for. It only replaces the OTP step: the
+  email you enter must already be an allowlisted user (e.g. the configured
+  `bootstrapAdmin`) — it does not let you log in as an arbitrary address.
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse

@@ -241,6 +241,14 @@ export interface AuthConfig {
   };
   /** Bootstrap admin email (set on first enable, cleared after bootstrap). */
   bootstrapAdmin?: string;
+  /**
+   * Static OTP override for local development: `verifyOtp` accepts this code
+   * for any allowlisted user instead of requiring the real emailed OTP.
+   * Sourced only from `REPOOS_AUTH_DEV_BACKDOOR_CODE` (never from a git-tracked
+   * repoos.toml) and only ever honored when `NODE_ENV !== "production"` — see
+   * `src/server/routes/auth.ts` `verifyOtp`.
+   */
+  devBackdoorCode?: string;
 }
 
 /** Resolved configuration (after defaults + repoos.toml merge). */

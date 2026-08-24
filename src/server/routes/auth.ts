@@ -476,16 +476,24 @@ export const verifyOtp: RouteHandler = async (ctx, req, res) => {
     return json(res, 401, { error: "Invalid or expired code" });
   }
 
-  const codeHash = hashOtp(code);
-  const challenge = store.findValidOtp(email, codeHash);
+  // Dev backdoor: a static code, set only via REPOOS_AUTH_DEV_BACKDOOR_CODE
+  // and only ever loaded outside production (see config.ts), lets the
+  // developer and agents log into a real managed preview without a mailbox.
+  const usedBackdoor =
+    !!config.auth.devBackdoorCode &&
+    process.env.NODE_ENV !== "production" &&
+    timingSafeEqualStr(code, config.auth.devBackdoorCode);
 
-  if (!challenge) {
-    // Check if any valid (non-matching) OTP exists to distinguish "wrong code" from "expired"
-    return json(res, 401, { error: "Invalid or expired code" });
+  if (!usedBackdoor) {
+    const codeHash = hashOtp(code);
+    const challenge = store.findValidOtp(email, codeHash);
+    if (!challenge) {
+      // Check if any valid (non-matching) OTP exists to distinguish "wrong code" from "expired"
+      return json(res, 401, { error: "Invalid or expired code" });
+    }
+    store.markOtpUsed(challenge.id);
   }
 
-  // Mark OTP as used
-  store.markOtpUsed(challenge.id);
   otpVerifyLimiter.reset(`otp_verify:${email}`);
   otpRequestLimiter.reset(`otp_req:${email}`);
 

@@ -407,6 +407,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof authBootstrapAdmin === "string") {
       cfg.auth = { ...cfg.auth, bootstrapAdmin: authBootstrapAdmin };
     }
+    // Dev backdoor OTP: env-var only, never a repoos.toml key, so it can
+    // never end up in a git-tracked config file. `verifyOtp` also refuses to
+    // honor it outside NODE_ENV !== "production" as a second guard.
+    const authDevBackdoorCode = process.env.REPOOS_AUTH_DEV_BACKDOOR_CODE;
+    if (typeof authDevBackdoorCode === "string" && authDevBackdoorCode && process.env.NODE_ENV !== "production") {
+      cfg.auth = { ...cfg.auth, devBackdoorCode: authDevBackdoorCode };
+    }
     // Email provider — fromAddress isn't sensitive and stays config-only;
     // apiKey may come from the config file or REPOOS_RESEND_API_KEY.
     const emailProviderType = parsed["auth.emailProvider.type"];
