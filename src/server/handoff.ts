@@ -361,3 +361,98 @@ export function scheduleCheckFailureRetry(
 
   return true;
 }
+
+/** Cap mirrors MAX_CHECK_RETRY_ATTEMPTS — same reasoning, different failure step. */
+const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
+const MERGE_CONFLICT_RETRY_DELAY_MS = 3_000;
+
+/**
+ * On a close-out `validating`-phase failure caused by a REAL merge conflict
+ * (the candidate's merge of the feature branch into itself failed with named
+ * conflicting paths — not the task's own bookkeeping file or `dist/`/
+ * `screenshots/`, which auto-resolve, and not an infra failure), automatically
+ * resume the task's engineer session and ask it to merge main into ITS OWN
+ * branch and resolve the conflict there — the exact manual recovery
+ * docs/close-out-pipeline.md prescribes (#0271 follow-up: this was
+ * previously always a human/agent-operator manual step, discovered when
+ * task #0282 sat failed until someone noticed).
+ *
+ * Unlike `scheduleCheckFailureRetry`, this does NOT ask the engineer to
+ * re-emit the handoff signal — the task is already `review`, and a fresh
+ * handoff attempt against an already-`review` task just short-circuits as
+ * "already finalized" (see the check near the top of `handoffTask`) without
+ * re-running the close-out. Instead, server.ts's `agent.exited` handler
+ * watches for this exact session ending while its job is still the
+ * failed-on-this-conflict record, and re-enqueues the close-out itself —
+ * the same action a human clicking "Move to done" again performs. The
+ * engineer's job is just to fix the branch and end its turn.
+ *
+ * Otherwise mirrors `scheduleCheckFailureRetry` closely: same retry cap
+ * shape, same give-up-to-persistHandoffFailure fallback, same
+ * do-not-flip-status behavior (the task stays in `review` — TaskCard.vue can
+ * label this state the same way it labels a check-failure retry). Capped,
+ * because a conflict that survives two resolve attempts is very likely the
+ * agent resolving it WRONG in a way that reintroduces the same conflict, not
+ * something a third attempt fixes — same logic `MAX_CHECK_RETRY_ATTEMPTS`
+ * already encodes.
+ *
+ * Returns true when a retry was scheduled.
+ */
+export function scheduleMergeConflictRetry(
+  config: RepoOSConfig,
+  task: Task,
+  reason: string,
+  runner: AgentRunner,
+  /** Same purpose as in `scheduleCheckFailureRetry` — let the live index pick
+   *  up the new retry count immediately via its own SSE event. */
+  onFileChange?: (absPath: string) => void,
+): boolean {
+  let retries = task.extra?.merge_conflict_retry_count as number | undefined;
+  if (typeof retries !== "number") retries = 0;
+
+  if (retries >= MAX_MERGE_CONFLICT_RETRY_ATTEMPTS) {
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      `merge conflict unresolved after ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS} automatic retries · ${reason}`,
+    );
+    return false;
+  }
+
+  const engineer = resolveAgentForTask(config, task);
+  if (!engineer) {
+    runner.persistHandoffFailure(task.id, task, `merge conflict and no engineer is configured to retry · ${reason}`);
+    return false;
+  }
+
+  const attempt = retries + 1;
+  setTimeout(() => {
+    const message = [
+      `Close-out validation failed (automatic retry ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS}): your branch has a real merge conflict with main.`,
+      "",
+      reason,
+      "",
+      "In YOUR OWN branch's worktree (not the candidate — the candidate is discarded and rebuilt from your branch on every attempt): merge main into your branch, resolve the conflict by understanding what BOTH sides were trying to do — do not blindly prefer one side over the other unless one is genuinely obsolete — verify `repoos check` passes, and commit the merge. The task is already in `review`, so do NOT re-emit the handoff signal (it will just report \"already finalized\" and do nothing) — simply end your turn once the merge is committed and verified. The close-out retries automatically the moment your turn ends.",
+    ].join("\n");
+    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    if (!sent.ok) {
+      runner.system(task.id, `✗ automatic merge-conflict retry could not resume: ${sent.reason ?? "unknown error"}`);
+      runner.persistHandoffFailure(task.id, task, `could not auto-retry after merge conflict · ${sent.reason ?? "unknown error"}`);
+      return;
+    }
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.merge_conflict_retry_count = attempt;
+      const keys = Object.keys(doc.data).filter((k) => k !== "merge_conflict_retry_count");
+      keys.unshift("merge_conflict_retry_count");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
+    } catch (err) {
+      console.error(`[repoos] could not persist merge_conflict_retry_count for #${task.id}: ${(err as Error).message}`);
+    }
+    runner.system(task.id, `↻ automatically resuming after merge conflict (attempt ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`);
+  }, MERGE_CONFLICT_RETRY_DELAY_MS);
+
+  return true;
+}

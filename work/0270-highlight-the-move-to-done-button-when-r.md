@@ -2,14 +2,15 @@
 id: "0270"
 title: Highlight the Move to done button when review passes
 type: feature
-status: inbox
+status: active
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/highlight-the-move-to-done-button-when-r
+pm_model_override: default
 created_at: "2026-08-24T15:55:48Z"
-updated_at: "2026-08-24T20:28:20Z"
+updated_at: "2026-08-24T20:44:22Z"
 ---
 ## Problem
 
@@ -70,3 +71,6 @@ Make the "Move to done" button (the `review` entry of `ACTIONS`, TaskCard.vue:11
 ## Activity
 
 - 2026-08-24T20:28:20Z · body
+- 2026-08-24T20:31:33Z · status inbox→ready
+- 2026-08-24T20:44:17Z · status ready→active, branch
+- 2026-08-24T20:44:22Z · pm_model_override

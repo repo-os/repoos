@@ -204,6 +204,31 @@ function checkRetryHint(taskId: string, retryCount: number): CardHint {
   };
 }
 
+/** Mirrors handoff.ts's MAX_MERGE_CONFLICT_RETRY_ATTEMPTS (#0271 follow-up). */
+const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
+
+/** Same purpose as checkRetryHint, one step earlier: the close-out's
+ *  `validating` phase hit a real merge conflict with main, and the engineer
+ *  was automatically resumed to merge main into its own branch and resolve
+ *  it (handoff.ts's scheduleMergeConflictRetry). */
+function mergeConflictRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `fixing merge conflict · active ${activity}` : `fixing merge conflict (retry ${retryCount}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
+    title: "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
+    cls: "tc-coding",
+  };
+}
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -219,6 +244,7 @@ const hint = computed<CardHint | null>(() => {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
     if (repo.isRunning(t.id)) {
+      if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
       return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
     }
     return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };

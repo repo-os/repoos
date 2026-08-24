@@ -73,6 +73,10 @@ export interface Task {
    *  (capped at 2) — distinguishes a post-handoff check-fix loop from
    *  ordinary coding once a review-status task shows a running agent. */
   checkRetryCount?: number;
+  /** Automatic merge-conflict retries used on this task's most recent
+   *  close-out attempt (capped at 2, #0271 follow-up) — same purpose as
+   *  checkRetryCount, one step earlier in the pipeline. */
+  mergeConflictRetryCount?: number;
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -165,6 +169,8 @@ export interface BoardTask {
   automaticReview?: AutomaticReview;
   /** See Task.checkRetryCount. */
   checkRetryCount: number;
+  /** See Task.mergeConflictRetryCount. */
+  mergeConflictRetryCount: number;
 }
 
 /** Board index response from GET /api/board. */

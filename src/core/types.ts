@@ -455,6 +455,11 @@ export interface BoardTask {
    *  distinguish "engineer patching a post-handoff check failure" from
    *  ordinary coding once a review-status task shows a running agent. */
   checkRetryCount: number;
+  /** Automatic merge-conflict retries used on this task's most recent
+   *  close-out attempt (see handoff.ts's scheduleMergeConflictRetry, capped
+   *  at 2, #0271 follow-up). Same purpose as checkRetryCount, one step
+   *  earlier in the pipeline. */
+  mergeConflictRetryCount: number;
 }
 
 /** Board index — like RepoIndex but with BoardTask[] instead of Task[]. */

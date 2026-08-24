@@ -109,7 +109,7 @@ import { createJobCoordinator, type JobCoordinator } from "./integration-job.js"
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
-import { handoffTask, scheduleCheckFailureRetry } from "./handoff.js";
+import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -860,6 +860,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           },
           logger,
+          (taskId, reason) => {
+            const task = index.getTask(taskId);
+            if (!task) return;
+            scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
+              index.applyFileChange(absPath, { guarded: true }),
+            );
+          },
         );
         const jobBefore = jobCoordinator.peekNext();
         const result = await orchestrator.processNext();
@@ -966,9 +973,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     config,
     (e) => {
       emitEvent(e);
-      if (e.type !== "agent.exited" || !pendingReview.delete(e.id)) return;
-      const task = index.getTask(e.id);
-      if (task?.status === "review") void reviews.run(task);
+      if (e.type !== "agent.exited") return;
+      if (pendingReview.delete(e.id)) {
+        const task = index.getTask(e.id);
+        if (task?.status === "review") void reviews.run(task);
+      }
+      // #0271 follow-up: when the engineer session `scheduleMergeConflictRetry`
+      // resumed finishes its turn, automatically re-enqueue the close-out —
+      // the same action "Move to done" performs, so a fixed conflict doesn't
+      // sit waiting for a human to notice and re-click. Gated on the job
+      // itself still being the failed-on-this-exact-conflict record (not
+      // just "task has a nonzero retry count somewhere"), so an unrelated
+      // resume of the same task's engineer for something else never
+      // mis-triggers a close-out. `enqueue` is idempotent/no-op if the job
+      // already moved on (e.g. a human already retried manually).
+      const failedJob = jobCoordinator.getJob(e.id);
+      if (failedJob?.phase === "failed" && failedJob.reason?.startsWith("merge conflict in ")) {
+        const task = index.getTask(e.id);
+        if (task?.status === "review" && task.branch) {
+          const requeued = jobCoordinator.enqueue(task);
+          if (requeued) {
+            emitIntegration();
+            triggerJobProcessing();
+          }
+        }
+      }
     },
     { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {

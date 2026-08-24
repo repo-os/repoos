@@ -181,6 +181,14 @@ export class CloseOutOrchestrator {
     private getTask?: (taskId: string) => Task | null,
     private onProgress?: (step: DoneStep) => void,
     private logger?: Logger,
+    /**
+     * Fired when `validating` fails on a REAL, named merge conflict (never
+     * for the task's own bookkeeping file or generated paths, which
+     * auto-resolve; never for infra failures). The job itself is still
+     * marked `failed` as before — this is a separate, best-effort trigger
+     * to auto-resume the engineer to fix it and resubmit (#0271 follow-up).
+     */
+    private onMergeConflict?: (taskId: string, reason: string) => void,
   ) {}
 
   /**
@@ -255,6 +263,16 @@ export class CloseOutOrchestrator {
             failedPhase: "validating",
             reason: validateRes.reason,
           });
+          // A named, real conflict (not the task's own bookkeeping file or a
+          // generated path — those auto-resolve inside validateCandidate and
+          // never reach here) is the one non-retryable failure with an
+          // actionable fix: merge main into the FEATURE branch and resolve it
+          // there. Give the engineer a shot at that automatically instead of
+          // leaving the job sitting `failed` until a human notices (#0271
+          // follow-up).
+          if (validateRes.reason?.startsWith("merge conflict in ")) {
+            this.onMergeConflict?.(job.taskId, validateRes.reason);
+          }
           return validateRes;
         }
         if (!validateRes.ok) {

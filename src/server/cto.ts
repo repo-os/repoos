@@ -647,7 +647,9 @@ ${body}
   }
 
   private appendSessionLine(cli: string, line: string): void {
-    this.appendEntry(parseOneShotLine(cli, line));
+    const entry = parseOneShotLine(cli, line);
+    if (!entry) return; // a recognized-but-voiceless structured event
+    this.appendEntry(entry);
   }
 
   private appendMarker(text: string): void {
