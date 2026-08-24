@@ -36,6 +36,8 @@ import {
   usageCostSource,
   type AgentRunner,
   type PromptResult,
+  type StopResult,
+  INTERRUPTED_MARKER,
 } from "./agents.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 import { patchTaskFile } from "./write.js";
@@ -214,6 +216,9 @@ export class CTOManager {
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -286,6 +291,9 @@ export class CTOManager {
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -325,6 +333,21 @@ export class CTOManager {
 
   cancelAll(): void {
     this.cancel();
+  }
+
+  /**
+   * Interrupt an in-progress CTO run/response. Stops the in-flight agent process
+   * and appends a persistent "response interrupted" marker to the board
+   * conversation so it reads as user-stopped rather than completed normally.
+   * Idempotent — safe to call when nothing is running.
+   */
+  interrupt(): StopResult {
+    const wasRunning = this.runs.has("cto");
+    this.cancel();
+    if (wasRunning) {
+      this.appendMarker(INTERRUPTED_MARKER);
+    }
+    return { stopped: wasRunning };
   }
 
   // ---- Guard-railed actions ----

@@ -2,7 +2,7 @@
 id: "0279"
 title: Polish installer output
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: default
 pm_model_override: default
 created_at: "2026-08-24T16:56:37Z"
-updated_at: "2026-08-24T16:58:32Z"
+updated_at: "2026-08-24T19:55:07Z"
 ---
 ```markdown
 ---
@@ -82,3 +82,4 @@ when someone runs the curl to install repoos I want them to be met with some use
 - 2026-08-24T16:57:49Z · model_override
 - 2026-08-24T16:57:50Z · pm_model_override
 - 2026-08-24T16:58:32Z · title
+- 2026-08-24T19:55:07Z · status inbox→ready

@@ -2,7 +2,7 @@
 id: "0259"
 title: Preview links should inherit main auth or be auth-free
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 model_override: default
 created_at: "2026-08-19T18:46:11Z"
-updated_at: "2026-08-24T17:27:42Z"
+updated_at: "2026-08-24T19:54:32Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ preview links shouldn't use auth if possible, or it should inherit the auth of t
 
 - 2026-08-19T18:48:33Z · status draft→inbox, title, area, body
 - 2026-08-24T17:27:42Z · model_override
+- 2026-08-24T19:54:32Z · status inbox→ready

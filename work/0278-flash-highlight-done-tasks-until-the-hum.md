@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/flash-highlight-done-tasks-until-the-hum
+model_override: default
 created_at: "2026-08-24T15:57:54Z"
-updated_at: "2026-08-24T19:34:51Z"
+updated_at: "2026-08-24T19:50:55Z"
 ---
 ## Problem
 
@@ -65,3 +66,4 @@ On a task card whose status is `done` and whose ack flag is set:
 - 2026-08-24T17:57:20Z · status ready→active, branch
 - 2026-08-24T18:09:13Z · status active→review
 - 2026-08-24T19:34:51Z · status review→done, release:success
+- 2026-08-24T19:50:55Z · model_override

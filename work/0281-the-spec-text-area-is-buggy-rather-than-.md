@@ -2,14 +2,14 @@
 id: "0281"
 title: Replace spec inline textarea with a dedicated edit modal
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-24T17:08:16Z"
-updated_at: "2026-08-24T17:08:37Z"
+updated_at: "2026-08-24T20:27:53Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ The spec text area is buggy, rather than changing the original pretty markdown v
 ## Activity
 
 - 2026-08-24T17:08:37Z · status draft→inbox, title, area, body
+- 2026-08-24T20:27:53Z · status inbox→ready

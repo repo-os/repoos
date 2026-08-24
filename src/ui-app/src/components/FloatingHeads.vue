@@ -2,12 +2,14 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useUiStore } from "../stores/ui";
 import RepoGuideChat from "./RepoGuideChat.vue";
 import CTOPanel from "./CTOPanel.vue";
 import DebuggerChat from "./DebuggerChat.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const ui = useUiStore();
 
 function agentEnabled(head: string): boolean {
   if (head === "cto") {
@@ -30,7 +32,14 @@ function toggle(head: string) {
   activeHead.value = activeHead.value === head ? null : head;
 }
 
-const openDebugger = () => { activeHead.value = "debugger"; };
+const openDebugger = () => {
+  // The task drawer sits in a higher stacking context than this floating panel
+  // (drawer z-index 100 vs this container's 70), so an open drawer renders on
+  // top of the Debugger and hides it. Close it so the Debugger is visible
+  // (0274).
+  ui.close();
+  activeHead.value = "debugger";
+};
 onMounted(() => window.addEventListener("repoos:open-debugger", openDebugger));
 onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDebugger));
 </script>
