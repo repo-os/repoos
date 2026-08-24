@@ -652,6 +652,12 @@
   .done-error-fix{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:5px 9px;border:1px solid var(--red-border-tint);border-radius:7px;background:var(--panel);color:var(--red);font:600 11px var(--font-sans);cursor:pointer}
   .done-error-fix:hover:not(:disabled){border-color:var(--red);background:var(--red-tint)}
   .done-error-fix:disabled{opacity:.65;cursor:default}
+  /* Card mode (0272): the fix button is a full-width, prominent primary
+     action; the panel mode keeps it inline. */
+  .done-error--card .done-error-fix{display:flex;width:100%;justify-content:center;padding:8px 12px;font-size:12px}
+  /* Panel mode (0272): the full detail is always rendered; let long check
+     output scroll inside a taller box. */
+  .done-error--panel .done-error-pre{max-height:min(55vh,480px)}
   .tc-done-error{margin-top:10px}
   .drawer-done-error{margin-top:12px}
   .review-running{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
