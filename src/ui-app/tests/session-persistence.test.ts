@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
-import { AgentRunner, type AgentHandoffRequest } from "../../server/agents";
+import { AgentRunner, INTERRUPTED_MARKER, type AgentHandoffRequest } from "../../server/agents";
+import { CTOManager } from "../../server/cto";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -209,6 +210,75 @@ describe("agent session persistence", () => {
         { s: "out", d: "persisted output" },
       ]),
     );
+  });
+
+  it("interrupts a running chat and marks the response as stopped", async () => {
+    const fx = fixture("done");
+    // A long-running fixture that holds until killed, so the interrupt always
+    // lands mid-response (no 800 ms short-exit race under load).
+    writeFileSync(
+      join(fx.root, "bin", "qwen"),
+      `#!/usr/bin/env node
+process.stdout.write("started\\n");
+setInterval(() => {}, 1000);
+`,
+      { mode: 0o755 },
+    );
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    const sessionId = "pm-task-v2:0001";
+    expect(runner.startChat(sessionId, "Write a long report", agent, "Task context").ok).toBe(true);
+    await waitFor(() => runner.isRunning(sessionId), "chat turn running");
+
+    const result = runner.interrupt(sessionId);
+    expect(result.stopped).toBe(true);
+
+    // The running process is stopped and the transcript gets an explicit
+    // "interrupted" marker so the response reads as user-stopped, not complete.
+    await waitFor(() => !runner.isRunning(sessionId), "interrupted chat exit");
+    expect(runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
+  });
+
+  it("interrupt is a no-op when nothing is running", async () => {
+    const fx = fixture("done");
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    expect(runner.interrupt("pm-task-v2:9999").stopped).toBe(false);
+  });
+
+  it("interrupts a running CTO response and marks it stopped", async () => {
+    const fx = fixture("active");
+    fx.config.agents = [{ name: "cto", cli: "qwen code", model: "default", enabled: true }];
+    // A qwen bin that holds until killed, so the CTO run stays in-flight until
+    // the interrupt lands (no short-exit race).
+    writeFileSync(
+      join(fx.root, "bin", "qwen"),
+      `#!/usr/bin/env node
+process.stdout.write("started\\n");
+setInterval(() => {}, 1000);
+`,
+      { mode: 0o755 },
+    );
+    const cto = new CTOManager(fx.config, () => {});
+    void cto.send("board status?"); // fire-and-forget, like the HTTP route
+    await waitFor(() => cto.isRunning(), "CTO run started");
+
+    const result = cto.interrupt();
+    expect(result.stopped).toBe(true);
+    await waitFor(() => !cto.isRunning(), "CTO interrupted");
+    expect(cto.session().some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
+
+    // The interrupted marker must be persisted, not just in-memory: a fresh
+    // manager (e.g. after a server reload) should still show the stop.
+    const file = join(fx.root, ".repoos", "cto", "session.json");
+    expect(existsSync(file)).toBe(true);
+    const persisted = JSON.parse(readFileSync(file, "utf8")) as { lines: { d?: string }[] };
+    expect(persisted.lines.some((l) => l.d === INTERRUPTED_MARKER)).toBe(true);
+  });
+
+  it("CTO interrupt is a no-op when nothing is running", () => {
+    const fx = fixture("active");
+    fx.config.agents = [{ name: "cto", cli: "qwen code", model: "default", enabled: true }];
+    const cto = new CTOManager(fx.config, () => {});
+    expect(cto.interrupt().stopped).toBe(false);
   });
 
   it.each(["claude", "copilot"] as const)(

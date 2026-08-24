@@ -6,7 +6,10 @@ import { sampleSystem } from "../system.js";
 import { resolveRepoGuide } from "../agents.js";
 import { CANARY_COUNTER } from "../../core/canary.js";
 
-const REPO_GUIDE_SESSION_ID = "__repoos-guide__";
+// Must match the id the guide client subscribes to and persists under
+// (RepoGuideChat.vue uses "repoos-guide"); a previous refactor drifted this to
+// "__repoos-guide__", which hid the guide's running/stop state from the UI.
+const REPO_GUIDE_SESSION_ID = "repoos-guide";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -166,6 +169,12 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: result.reason ?? "could not send message" });
   }
   return json(res, 200, { ok: true });
+};
+
+/** Interrupt a running RepoOS guide (Ross) response. Idempotent. */
+export const interruptChatMessage: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.runner.interrupt(REPO_GUIDE_SESSION_ID);
+  return json(res, 200, { ok: true, ...result });
 };
 
 export const getSystemLogs: RouteHandler = (ctx, _req, res) => {
