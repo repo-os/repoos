@@ -168,6 +168,12 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
   return json(res, 200, { ok: true });
 };
 
+/** Interrupt a running RepoOS guide (Ross) response. Idempotent. */
+export const interruptChatMessage: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.runner.interrupt(REPO_GUIDE_SESSION_ID);
+  return json(res, 200, { ok: true, ...result });
+};
+
 export const getSystemLogs: RouteHandler = (ctx, _req, res) => {
   const { logger } = ctx;
   const limit = 1000;

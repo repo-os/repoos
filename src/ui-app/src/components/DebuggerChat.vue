@@ -167,6 +167,19 @@ function onDraftTranscribed(text: string): void {
   }
 }
 
+/**
+ * Interrupt the Debugger's in-flight response. The server stops the running
+ * agent turn and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function interrupt(): Promise<void> {
+  try {
+    await api("/api/debugger/interrupt", { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 watch(() => lines.value.length, () => {
   if (props.open) scrollToLatest();
 });
@@ -249,7 +262,17 @@ onMounted(() => {
         @keydown="onKeydown"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
-      <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Diagnose">
+      <button
+        v-if="busy"
+        type="button"
+        class="debugger-stop"
+        aria-label="Stop response"
+        title="Stop response"
+        @click="interrupt"
+      >
+        <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+      </button>
+      <button v-else type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Diagnose">
         Diagnose
       </button>
     </form>
@@ -310,6 +333,8 @@ onMounted(() => {
 .debugger-compose textarea::placeholder{color:var(--txt-faint)}
 .debugger-compose button{width:auto;padding:0 11px;height:31px;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .debugger-compose button:disabled{opacity:.4;cursor:default}
+.debugger-compose button.debugger-stop{width:31px;padding:0;display:grid;place-items:center;color:var(--red,#ef5b5b);background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg))}
+.debugger-compose button.debugger-stop svg{width:16px;height:16px}
 .debugger-footnote{padding:7px 14px 10px;text-align:center;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace}
 @keyframes debugger-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes debugger-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}

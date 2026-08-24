@@ -1059,6 +1059,25 @@ ${existing.body || "(no description)"}`;
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
 };
 
+/**
+ * Interrupt a running PM response about a task. Resolves the same per-user PM
+ * session id as `pmMessage` and stops the in-flight agent turn. Idempotent.
+ */
+export const pmInterrupt: RouteHandler = (ctx, req, res, params) => {
+  const { config, index, runner } = ctx;
+  const id = params.param1;
+  const existing = index.getTask(id);
+  if (!existing) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const currentUserEmail = getCurrentUser(req, config)?.email;
+  const pmSessionId = currentUserEmail
+    ? `pm-task-v2:${id}::${currentUserEmail}`
+    : `pm-task-v2:${id}`;
+  const result = runner.interrupt(pmSessionId);
+  return json(res, 200, { ok: true, ...result });
+};
+
 export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
   const { jobCoordinator } = ctx;
   const id = params.param1;

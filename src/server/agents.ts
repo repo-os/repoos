@@ -3016,6 +3016,25 @@ export class AgentRunner {
     return { stopped: true };
   }
 
+  /**
+   * Interrupt a running AI chat response (PM, guide, debugger, …). Stops the
+   * in-flight agent process via {@link stop} and appends a persistent marker to
+   * the chat's transcript so the user sees the response was user-stopped rather
+   * than completed normally. Idempotent — safe to call when nothing is running.
+   *
+   * The marker is emitted server-side (so it survives a client hydrate, not just
+   * the live SSE stream) as a `sys` entry on the session. The agent's own exit
+   * also triggers the generic `agent.exited` "stopped" notice client-side.
+   */
+  interrupt(taskId: string): StopResult {
+    const wasRunning = this.entries.has(taskId);
+    const result = this.stop(taskId);
+    if (wasRunning && this.sessions.has(taskId)) {
+      this.system(taskId, "— response interrupted —");
+    }
+    return result;
+  }
+
   /** Record a session to the database. Best-effort, never fails the server. */
   private recordSessionToDb(sessionId: string | undefined, session: Session, taskKey: string, exitedCleanly: boolean): void {
     if (!this.db || !session) return;

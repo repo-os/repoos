@@ -211,6 +211,38 @@ describe("agent session persistence", () => {
     );
   });
 
+  it("interrupts a running chat and marks the response as stopped", async () => {
+    const fx = fixture("done");
+    // A long-running fixture that holds until killed, so the interrupt always
+    // lands mid-response (no 800 ms short-exit race under load).
+    writeFileSync(
+      join(fx.root, "bin", "qwen"),
+      `#!/usr/bin/env node
+process.stdout.write("started\\n");
+setInterval(() => {}, 1000);
+`,
+      { mode: 0o755 },
+    );
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    const sessionId = "pm-task-v2:0001";
+    expect(runner.startChat(sessionId, "Write a long report", agent, "Task context").ok).toBe(true);
+    await waitFor(() => runner.isRunning(sessionId), "chat turn running");
+
+    const result = runner.interrupt(sessionId);
+    expect(result.stopped).toBe(true);
+
+    // The running process is stopped and the transcript gets an explicit
+    // "interrupted" marker so the response reads as user-stopped, not complete.
+    await waitFor(() => !runner.isRunning(sessionId), "interrupted chat exit");
+    expect(runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === "— response interrupted —")).toBe(true);
+  });
+
+  it("interrupt is a no-op when nothing is running", async () => {
+    const fx = fixture("done");
+    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    expect(runner.interrupt("pm-task-v2:9999").stopped).toBe(false);
+  });
+
   it.each(["claude", "copilot"] as const)(
     "reloads a persisted %s session with its resumable session id",
     (engine) => {

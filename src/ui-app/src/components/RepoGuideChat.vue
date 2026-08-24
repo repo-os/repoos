@@ -126,6 +126,19 @@ function onDraftTranscribed(text: string): void {
   }
 }
 
+/**
+ * Interrupt Ross's in-flight response. The server stops the running agent turn
+ * and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function interrupt(): Promise<void> {
+  try {
+    await api("/api/chat/interrupt", { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 watch(() => lines.value.length, () => {
   if (props.open) scrollToLatest();
 });
@@ -187,7 +200,17 @@ onMounted(() => void hydrate());
         @keydown="onKeydown"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
-      <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
+      <button
+        v-if="busy"
+        type="button"
+        class="guide-stop"
+        aria-label="Stop response"
+        title="Stop response"
+        @click="interrupt"
+      >
+        <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+      </button>
+      <button v-else type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
         <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
       </button>
     </form>
@@ -243,6 +266,7 @@ onMounted(() => void hydrate());
 .guide-compose button{width:31px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer}
 .guide-compose button:disabled{opacity:.4;cursor:default}
 .guide-compose button svg{width:18px;height:18px}
+.guide-compose button.guide-stop{background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg));color:var(--red,#ef5b5b)}
 .guide-footnote{padding:7px 14px 10px;text-align:center;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace}
 @keyframes guide-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes guide-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}

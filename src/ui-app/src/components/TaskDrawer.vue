@@ -990,6 +990,20 @@ function pmOnKeydown(event: KeyboardEvent): void {
   void pmSend();
 }
 
+/**
+ * Interrupt the PM's in-flight response. The server stops the running agent
+ * turn and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function pmInterrupt(): Promise<void> {
+  if (!ui.active) return;
+  try {
+    await api(`/api/tasks/${ui.active.id}/pm/interrupt`, { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 watch(
   () => ui.active?.id,
   () => {
@@ -2998,7 +3012,17 @@ function resetFreeformOverrides(): void {
               aria-label="Message PM"
               @keydown="pmOnKeydown"
             ></textarea>
-            <button type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
+            <button
+              v-if="pmBusy"
+              type="button"
+              class="pm-stop"
+              aria-label="Stop PM response"
+              title="Stop response"
+              @click="pmInterrupt"
+            >
+              <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+            </button>
+            <button v-else type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
               <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
             </button>
           </form>
@@ -3268,6 +3292,11 @@ function resetFreeformOverrides(): void {
 .pm-compose button svg {
   width: 18px;
   height: 18px;
+}
+
+.pm-compose button.pm-stop {
+  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
+  color: var(--red, #ef5b5b);
 }
 
 @keyframes pm-bounce {

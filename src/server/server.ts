@@ -149,9 +149,11 @@ import {
   getTunnelStatus,
   getChat,
   sendChatMessage,
+  interruptChatMessage,
   initInfoHandlers,
   getDebugger,
   sendDebuggerMessage,
+  interruptDebugger,
   repairWithDebugger,
   // Docs routes
   createDoc,
@@ -184,6 +186,7 @@ import {
   getCTO,
   ctoMessage,
   pmMessage,
+  pmInterrupt,
   getScreenshot,
   uploadScreenshot,
   // Config routes
@@ -1399,8 +1402,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("POST", "/api/chat/interrupt", interruptChatMessage);
   router.register("GET", "/api/debugger", getDebugger);
   router.register("POST", "/api/debugger/message", sendDebuggerMessage);
+  router.register("POST", "/api/debugger/interrupt", interruptDebugger);
   router.register("POST", "/api/debugger/repair", repairWithDebugger);
 
   // Session stats routes
@@ -1461,6 +1466,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
 
