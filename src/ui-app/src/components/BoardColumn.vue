@@ -179,6 +179,25 @@ const toggle = () => {
     /* ignore quota / privacy-mode failures */
   }
 };
+
+/** 0278: a fresh-done task must be visible, not hidden behind a collapsed cap.
+ *  The moment the done column first holds an unacked done task, expand it
+ *  automatically even if it was collapsed (empty-at-load default). A task the
+ *  human already acknowledged, or an old done task, does not trigger this. */
+watch(
+  () => repo.doneAckCount,
+  (n, prev) => {
+    if (props.col.id === "done" && n > 0 && prev === 0 && collapsed.value) {
+      toggle();
+    }
+  },
+);
+
+/** 0278: when the done column stays collapsed by preference, draw attention to
+ *  the unacked fresh-done tasks on the cap count with a done-green badge. */
+const unackedBadge = computed(() =>
+  props.col.id === "done" && repo.doneAckCount > 0 ? repo.doneAckCount : null,
+);
 </script>
 
 <template>
@@ -201,6 +220,7 @@ const toggle = () => {
     >
       <div v-if="collapsed" class="col-cap" :style="{ background: collapsedColor, color: barTextColor }">
         <span class="col-cap-count">{{ repo.byStatus(col.id).length }}</span>
+        <span v-if="unackedBadge" class="col-cap-ack" :title="`${unackedBadge} fresh done task${unackedBadge === 1 ? '' : 's'} to acknowledge`">{{ unackedBadge }}</span>
       </div>
       <span v-else class="cdot" :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"></span>
       <span class="col-label">{{ col.label }}</span>
