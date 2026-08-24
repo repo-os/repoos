@@ -2,14 +2,14 @@
 id: "0267"
 title: Confirm-before-run modal for the canary trigger
 type: feature
-status: review
+status: done
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/confirm-before-run-modal-for-the-canary-
 created_at: "2026-08-24T15:55:05Z"
-updated_at: "2026-08-24T20:47:25Z"
+updated_at: "2026-08-24T20:52:44Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Add styles for the dialog (`ui/dialog` classes already provide the overlay/porta
 - 2026-08-24T20:28:15Z · status inbox→ready
 - 2026-08-24T20:36:50Z · status ready→active, branch
 - 2026-08-24T20:47:25Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-08-24T20:52:44Z · status review→done, release:success
