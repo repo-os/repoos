@@ -829,6 +829,7 @@ export async function mergeBranch(
       (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
     const keepOurs = (p: string): boolean =>
       (opts.autoResolveOurs ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+    const blocking = conflicts.filter((p) => !autoResolvable(p) && !keepOurs(p));
     if (conflicts.every((p) => autoResolvable(p) || keepOurs(p))) {
       // Task metadata may be updated concurrently. The closing task's branch
       // copy is authoritative, while unrelated task files must retain main's
@@ -844,10 +845,27 @@ export async function mergeBranch(
         return { merged: true, ff: false, conflicts: [] };
       }
       await runGit(root, ["merge", "--abort"], 4000);
+      // Every conflicted path was auto-resolvable, but the resolution itself
+      // failed to commit. Report that explicitly rather than a generic failure —
+      // the auto-resolvable paths are not the real culprit, so they are excluded
+      // from `conflicts` (nothing there genuinely blocks a hand-led resolution).
+      return {
+        merged: false,
+        ff: false,
+        conflicts: [],
+        reason: `auto-resolve failed for ${conflicts.join(", ")}`,
+      };
     }
+    // A genuine, non-auto-resolvable conflict (or a mix of one with auto-
+    // resolvable bookkeeping, e.g. the task's own file). Return ONLY the paths
+    // that genuinely block the merge so a hand-led resolution — and the debugger
+    // the user is routed to — sees the real culprit, never the task-file
+    // bookkeeping that the close-out is supposed to auto-resolve anyway (#0271).
+    // This is consistent with `preflightMerge`, which already filters to the
+    // unresolved (non-auto-resolvable) paths.
     // Nothing may be left half-applied: back out of the merge entirely.
     await runGit(root, ["merge", "--abort"], 4000);
-    return { merged: false, ff: false, conflicts, reason: "merge conflict" };
+    return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
   }
   return {
     merged: false,
