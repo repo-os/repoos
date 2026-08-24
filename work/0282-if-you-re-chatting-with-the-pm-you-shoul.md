@@ -2,7 +2,7 @@
 id: "0282"
 title: Add interrupt/stop signal to AI chat
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -79,3 +79,4 @@ If you're chatting with the PM you should be able to send an interrupt/stop sign
 - 2026-08-24T19:41:31Z · status active→review
 - 2026-08-24T19:51:24Z · status review→active
 - 2026-08-24T20:03:58Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-24T20:03:58Z · status review→active
