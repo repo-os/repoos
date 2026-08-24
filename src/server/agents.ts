@@ -1660,11 +1660,35 @@ export function reviewCommand(
 ): { cmd: string; args: string[] } {
   const extra = modelArgs(agent.cli, agent.model);
   if (agent.cli === "claude code") {
-    return { cmd: "claude", args: ["-p", prompt, ...extra, "--dangerously-skip-permissions"] };
+    // stream-json — same structured usage output the engineer's `cliCommand`
+    // uses — so `runPrompt`'s extractUsage/foldUsage sees real tokens/cost and
+    // the reviewer lands in the ledger (0273). The review stays read-only
+    // (no codex-style write sandbox is involved for claude).
+    return {
+      cmd: "claude",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+        "--verbose",
+        "--dangerously-skip-permissions",
+      ],
+    };
   }
-  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
-  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "qwen code") {
+    // Mirrors the engineer's claude-compatible stream-json so usage is captured.
+    return { cmd: "qwen", args: ["-p", prompt, ...extra, "--output-format", "stream-json", "--include-partial-messages"] };
+  }
+  if (agent.cli === "codex") {
+    // `--json` streams usage events; the default (read-only) sandbox is exactly
+    // the blast radius a reviewer should have — no `--sandbox workspace-write`.
+    return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
+  }
   if (agent.cli === "github copilot") {
+    // copilotArgs already emits `--output-format json`, so usage is captured.
     return {
       cmd: "copilot",
       args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
@@ -1683,35 +1707,63 @@ export function reviewCommand(
 
 /**
  * Turn one line of a one-shot (review/CTO) agent's stdout into a transcript
- * entry for live display. opencode's `--format json` stream needs the same
- * parsing the interactive runner applies per line; every other CLI's one-shot
- * stdout is already plain human-readable text, so it passes through as-is.
+ * entry for live display. Structured event streams (opencode `--format json`,
+ * claude/qwen stream-json, codex `--json`, copilot json) get the same per-line
+ * parsing the interactive runner applies, so the review transcript reads
+ * cleanly instead of dumping raw JSON. A recognized-but-voiceless structured
+ * event (claude `result`, `system/init`, a thinking-only assistant message …)
+ * returns null so the caller can swallow it; a non-JSON line (warnings, plain
+ * text from kiro) passes through as a plain `{s, d}` entry.
  */
-export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry {
+export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | null {
+  let isJson = false;
+  try {
+    isJson = raw.trim().startsWith("{");
+    void JSON.parse(raw);
+  } catch {
+    return { s: "out", d: raw };
+  }
+  if (!isJson) return { s: "out", d: raw };
   if (cli === "opencode") {
     const parsed = parseJsonEvent(raw);
-    if (parsed) return parsed.entry;
+    return parsed ? parsed.entry : null;
+  }
+  if (cli === "claude code") {
+    const parsed = parseClaudeEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "qwen code") {
+    const parsed = parseQwenEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "codex") {
+    const parsed = parseCodexEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "github copilot") {
+    const parsed = parseCopilotEvent(raw);
+    return parsed?.entry ?? null;
   }
   return { s: "out", d: raw };
 }
 
 /**
  * Isolate the final report/answer from a one-shot agent's full captured
- * stdout. Every CLI except opencode already prints only the final answer in
- * one-shot mode, so their raw output IS the report. opencode's `--format
- * json` stream carries the model's whole narration as a sequence of `text`
- * events interleaved with tool calls — the actual final answer is the LAST
- * `text` event, so this discards the rest (0264 vs 0253). Falls back to the
- * raw output if no text event parses, so a format change never yields an
- * empty report.
+ * stdout. Structured JSONL engines (opencode `--format json`, claude/qwen
+ * stream-json, codex `--json`, copilot json) carry the model's whole narration
+ * as a sequence of `text` events interleaved with tool calls — the actual final
+ * answer is the LAST `text` event, so this discards the rest (0264 vs 0253).
+ * Non-JSON one-shot CLIs (kiro) print only the final answer, so their raw
+ * output IS the report. Falls back to the raw output if no text event parses,
+ * so a format change never yields an empty report.
  */
 export function extractOneShotReportText(cli: string, rawOutput: string): string {
   const trimmed = rawOutput.trim();
-  if (cli !== "opencode") return trimmed;
+  if (!trimmed) return trimmed;
   let last = "";
   for (const line of trimmed.split("\n")) {
     if (!line.trim()) continue;
-    const entry = parseJsonEvent(line)?.entry;
+    const entry = parseOneShotLine(cli, line);
     if (entry && "type" in entry && entry.type === "text") last = entry.text;
   }
   return (last || trimmed).trim();
