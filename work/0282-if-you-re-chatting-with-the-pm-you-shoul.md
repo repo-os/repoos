@@ -2,14 +2,14 @@
 id: "0282"
 title: Add interrupt/stop signal to AI chat
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-interrupt-stop-signal-to-ai-chat
 created_at: "2026-08-24T17:34:28Z"
-updated_at: "2026-08-24T19:34:58Z"
+updated_at: "2026-08-24T19:47:29Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ If you're chatting with the PM you should be able to send an interrupt/stop sign
 - 2026-08-24T17:35:46Z · status ready→active, branch
 - 2026-08-24T18:04:43Z · status active→review
 - 2026-08-24T19:34:58Z · status review→active
+- 2026-08-24T19:47:29Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
