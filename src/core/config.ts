@@ -101,15 +101,17 @@ export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
 }
 
 /**
- * "Auto" default for `maxConcurrentAgents` (#0293): each agent CLI process may
- * itself spawn a build/test worker pool sized to the machine's core count, so
- * running several agents at once multiplies, not adds, CPU demand. Dividing
- * by 4 and capping at 4 keeps that product roughly bounded to one machine's
- * worth of work on everything from a small laptop to a many-core desktop,
- * without needing per-machine tuning in repoos.toml.
+ * "Auto" default for `maxConcurrentAgents` (#0293). An agent's own test pool
+ * is capped separately (vite.config.ts `test.poolOptions.forks.maxForks: 2`),
+ * so one agent's worst-case footprint is bounded rather than "the whole
+ * machine" — this can size off total cores directly instead of dividing them
+ * away defensively. `cores / 2` leaves headroom for that ~2-worker pool plus
+ * the agent process's own overhead per concurrent agent; capped at 8 so a
+ * many-core desktop doesn't queue dozens of agents whose non-test work (tool
+ * calls, I/O) still contends over shared resources like the git index.
  */
 export function defaultMaxConcurrentAgents(): number {
-  return Math.max(1, Math.min(4, Math.floor(cpus().length / 4)));
+  return Math.max(2, Math.min(8, Math.floor(cpus().length / 2)));
 }
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
