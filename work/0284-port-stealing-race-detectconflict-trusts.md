@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-24T19:31:09Z"
-updated_at: "2026-08-24T19:31:09Z"
+updated_at: "2026-08-24T21:35:43Z"
 ---
 ## Problem
 
@@ -31,3 +32,4 @@ Found while diagnosing and fixing the reload-storm crash (#0271) — see that ta
 ## Activity
 
 - 2026-08-24T19:31:09Z · created · unknown
+- 2026-08-24T21:35:43Z · model_override
