@@ -5,29 +5,22 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-24T15:55:33Z"
-updated_at: "2026-08-24T15:55:33Z"
+updated_at: "2026-08-24T15:58:45Z"
 ---
+## Problem
+Clicking "start preview" on a reviewed task failed with an unhelpful error (something about the preview server not becoming ready, suggesting a rebuild) with no actionable detail on why. Also, clicking the button gives no feedback for ~10 seconds before anything visibly happens.
+
+## Fix
+- Make preview start failures return an actionable, specific error (what failed, what to do).
+- Investigate why preview start is unreliable in the first place — it should work consistently.
+- Add a loading indicator (spinner/animation) immediately on click, since the operation visibly takes ~10s.
+
+See src/server/preview.ts and the task drawer's preview UI.
+
 ## Activity
 
-- 2026-08-24T15:55:33Z · created · unknown
-
-
-## Problem
-
-_What's broken or missing? Why does it matter?_
-
-## Desired UX
-
-_What should the end experience be?_
-
-## Acceptance criteria
-
-- [ ] ...
-
-## Notes for AI
-
-_Constraints, files to touch, things NOT to do._
+- 2026-08-24T15:58:45Z · body
