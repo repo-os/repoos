@@ -8,9 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
-pm_model_override: default
 created_at: "2026-08-24T21:14:42Z"
-updated_at: "2026-08-24T21:16:25Z"
+updated_at: "2026-08-24T21:16:47Z"
 ---
 ## Problem
 `TaskWatchdog.checkNow()` (src/server/task-watchdog.ts) only scans `this.index.getTasks("active")` — it detects and auto-recovers a task stuck in `active` whose engineer session died (no output, no handoff), but it never looks at tasks sitting in `review`. If the *reviewer* agent session dies silently mid-review, there is currently zero automated recovery: the task sits in `review` forever with no report, no error, no watchdog note, and nothing to nudge it — the human has to notice on their own and manually re-trigger a review.
@@ -53,3 +52,4 @@ Hardcoded to the `active` status only. `isStuck()`'s own logic (no running proce
 
 - 2026-08-24T21:14:42Z · created · unknown
 - 2026-08-24T21:16:25Z · pm_model_override
+- 2026-08-24T21:16:47Z · pm_model_override
