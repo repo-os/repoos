@@ -8,10 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-timestamps-to-all-ai-chat-panels
-model_override: default
 pm_model_override: default
 created_at: "2026-08-19T18:02:58Z"
-updated_at: "2026-08-24T21:46:44Z"
+updated_at: "2026-08-24T21:46:56Z"
 ---
 ## Problem
 
@@ -74,3 +73,4 @@ In all the AI chats there should be timestamps on each message (e.g. PM, ross, c
 - 2026-08-24T20:29:43Z · status inbox→ready
 - 2026-08-24T20:56:41Z · status ready→active, branch
 - 2026-08-24T21:46:44Z · pm_model_override
+- 2026-08-24T21:46:56Z · model_override
