@@ -1782,7 +1782,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: newMode === 'manual' }"
             @click="newMode = 'manual'"
           >
-            Manual form
+            Manual
           </button>
         </div>
         <div class="drawer-body">

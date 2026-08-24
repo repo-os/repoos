@@ -1532,19 +1532,6 @@
 .am-control-icon { color: var(--txt-faint); flex-shrink: 0 }
 .am-control-label { min-width: 0; overflow: hidden; text-overflow: ellipsis }
 
-/* CLI Picker with favorites */
-.am-cli-btn-wrapper {
-  display: flex; align-items: center; gap: 4px;
-}
-.am-cli-star {
-  padding: 7px 8px; border-radius: 6px; border: 1px solid transparent;
-  background: transparent; color: var(--txt-faint); cursor: pointer;
-  transition: .15s; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.am-cli-star:hover { color: var(--txt-dim); background: rgba(120,140,200,0.05) }
-.am-cli-star.active { color: var(--amber); background: rgba(255,180,84,0.1) }
-
 /* Favorites section in model list */
 .am-favorites-section { margin-bottom: 8px }
 .am-favorites-header {

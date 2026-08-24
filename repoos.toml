@@ -49,8 +49,8 @@ service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
 [[agents]]
 name = "engineer"
-cli = "claude code"
-model = "haiku"
+cli = "opencode"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 [[agents]]

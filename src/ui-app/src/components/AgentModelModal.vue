@@ -109,25 +109,16 @@ watch(
       </div>
 
       <div class="am-cli-picker">
-        <div class="am-cli-btn-wrapper" v-for="c in cliOptions" :key="c">
-          <button
-            type="button"
-            class="am-cli-star"
-            :class="{ active: isFavorite(c, model) }"
-            @click="(e) => toggleFavoriteForModel(c, model, e)"
-            title="Add to favorites"
-          >
-            <Star class="size-3.5" :fill="isFavorite(c, model) ? 'currentColor' : 'none'" />
-          </button>
-          <button
-            type="button"
-            class="am-cli-btn"
-            :class="{ active: c === cli }"
-            @click="selectCli(c)"
-          >
-            {{ c }}
-          </button>
-        </div>
+        <button
+          v-for="c in cliOptions"
+          :key="c"
+          type="button"
+          class="am-cli-btn"
+          :class="{ active: c === cli }"
+          @click="selectCli(c)"
+        >
+          {{ c }}
+        </button>
       </div>
 
       <div class="am-model-search">
