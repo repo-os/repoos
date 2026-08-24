@@ -268,6 +268,18 @@ const isLaunchAction = computed(
   () => props.task.status === "ready" || (props.task.status === "active" && !repo.isRunning(props.task.id)),
 );
 
+/** True when this fresh-done card still needs the human to acknowledge it (0278). */
+const ackPending = computed(() => repo.needsAck(props.task));
+
+/** Footer styling for the Acknowledge button — the same done-green language as
+ *  the Move-to-done action footer, so it reads as a success-acknowledgement. */
+const ackFooterClass =
+  "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110";
+
+function acknowledge(): void {
+  repo.acknowledge(props.task.id);
+}
+
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
@@ -360,6 +372,7 @@ async function openAgent(): Promise<void> {
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human': task.status === 'review' && !inPipeline && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
       'needs-input': task.needsInput,
+      'done-needs-ack': ackPending,
       dragging,
       'has-action': !!action,
     }"
@@ -424,6 +437,28 @@ async function openAgent(): Promise<void> {
             />
           </svg>
           {{ busy ? "Working…" : action.label }}
+        </button>
+    </div>
+    <!-- Fresh-done acknowledgement (0278): a steady Acknowledge footer that
+         clears the persistent highlight. Done cards have no move action, so
+         this footer only appears for unacked fresh-done tasks. -->
+    <div v-else-if="ackPending" class="tc-foot tc-actions !ml-0 w-full">
+        <button
+          class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+          :class="ackFooterClass"
+          title="Acknowledge this task is done — clears the highlight"
+          @click.stop="acknowledge"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+            <path
+              d="M4 12l5 5L20 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Acknowledge
         </button>
     </div>
     <!-- A failed move-to-done stays with the card that triggered it, directly

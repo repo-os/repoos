@@ -185,6 +185,40 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const NEW_VERSION_KEY = "repoos.newVersion";
 
+/**
+ * Done-task acknowledgement (0278). A task that just landed in `done` keeps a
+ * persistent highlight + "Acknowledge" button until the human clicks it. The
+ * acked ids are persisted so a reload doesn't re-flag tasks already
+ * acknowledged.
+ *
+ * The window bounds which already-done tasks flag on a fresh load: only ones
+ * whose done-transition happened recently, so archive/history done cards never
+ * permanently highlight. Slide in through `updated_at`, which the server writes
+ * on every transition (and is the done time for a task that was finished while
+ * the tab was closed).
+ */
+const DONE_ACKED_KEY = "repoos.done.acked";
+const DONE_ACK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function readDoneAcked(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DONE_ACKED_KEY);
+    if (raw === null) return new Set();
+    const v = JSON.parse(raw);
+    return new Set(Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDoneAcked(ids: Set<string>): void {
+  try {
+    localStorage.setItem(DONE_ACKED_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
 function readSortOrder(): SortOrder {
   try {
     const raw = localStorage.getItem(SORT_ORDER_KEY);
@@ -279,6 +313,9 @@ export const useRepoStore = defineStore("repo", () => {
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
+  /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
+   *  id is here stays un-highlighted across reloads. */
+  const doneAcked = ref<Set<string>>(readDoneAcked());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
   /**
@@ -358,6 +395,48 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* ignore quota / privacy-mode failures */
     }
+  }
+
+  /**
+   * True when a `done` task's highlight should still show: it became done
+   * recently enough to be "fresh" AND the human hasn't acknowledged it.
+   * Only ever true for `done` status.
+   */
+  function doneRecently(t: Pick<Task, "status" | "updated_at">): boolean {
+    if (t.status !== "done") return false;
+    const at = t.updated_at;
+    if (!at || Number.isNaN(Date.parse(at))) return false;
+    return Date.now() - Date.parse(at) < DONE_ACK_WINDOW_MS;
+  }
+
+  /** True when the task card should render the persistent "just done" highlight. */
+  function needsAck(t: Pick<Task, "id" | "status" | "updated_at">): boolean {
+    return doneRecently(t) && !doneAcked.value.has(t.id);
+  }
+
+  /** The number of unacked fresh-done tasks, for the Done column cap badge. */
+  const doneAckCount = computed(() => {
+    let n = 0;
+    for (const t of tasks.value) if (needsAck(t)) n++;
+    return n;
+  });
+
+  /** Clear the persistent highlight for a done task (human clicked Acknowledge). */
+  function acknowledge(id: string): void {
+    if (doneAcked.value.has(id)) return;
+    const next = new Set(doneAcked.value);
+    next.add(id);
+    doneAcked.value = next;
+    writeDoneAcked(next);
+  }
+
+  // Keep the in-memory ack set in sync across tabs (0278): another tab
+  // acknowledging a done task must clear its highlight here too.
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", (ev) => {
+      if (ev.key !== DONE_ACKED_KEY) return;
+      doneAcked.value = readDoneAcked();
+    });
   }
 
   function recount(): void {
@@ -1479,6 +1558,10 @@ export const useRepoStore = defineStore("repo", () => {
     clearDirtyMain,
     reviews,
     sortOrder,
+    doneAcked,
+    doneAckCount,
+    needsAck,
+    acknowledge,
     toasts,
     systemStats,
     autoEng,
