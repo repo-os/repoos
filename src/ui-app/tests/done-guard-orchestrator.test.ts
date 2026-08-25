@@ -170,7 +170,104 @@ describe("publish-time dirty-main guard (#0211)", () => {
         // top of it — main advanced past its pre-publish SHA either way.
         expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
         expect(git(root, ["status", "--porcelain"])).toBe("");
-        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint task bookkeeping/);
+        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      } finally {
+        clean();
+      }
+    },
+  );
+
+  it(
+    "auto-checkpoints and publishes when the only dirty file is repoos.toml",
+    async () => {
+      // Same reasoning, one file over: repoos.toml is always written whole by
+      // the settings API, never hand-edited mid-change — a dirty moment there
+      // is the same class of routine, server-written churn as a task file.
+      const { root, clean } = makeRepo();
+      try {
+        const branch = "repoos/integrate/T4";
+        const wt = ensureWorktree(root, branch);
+        expect(wt.ok).toBe(true);
+        writeFileSync(join(wt.path, "feature.txt"), "new\n");
+        git(wt.path, ["add", "feature.txt"]);
+        git(wt.path, ["commit", "-m", "candidate work"]);
+        const mainSha = git(root, ["rev-parse", "main"]);
+        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+        const coordinator = createJobCoordinator(root);
+        coordinator.enqueue({ id: "T4", branch } as any);
+        coordinator.updateJob("T4", {
+          phase: "publishing",
+          startedAt: new Date().toISOString(),
+          baseMainSha: mainSha,
+          branchSha: candidateSha,
+          candidateSha,
+        });
+
+        // A settings save landed on main mid-validation.
+        writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(true);
+        expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+        expect(git(root, ["status", "--porcelain"])).toBe("");
+        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      } finally {
+        clean();
+      }
+    },
+  );
+
+  it(
+    "still refuses when repoos.toml is dirty ALONGSIDE a non-bookkeeping file",
+    async () => {
+      // The allowlist is per-file, not "any dirty set that happens to include
+      // an allowed file" — a genuinely ambiguous file riding along with
+      // repoos.toml must still block.
+      const { root, clean } = makeRepo();
+      try {
+        const branch = "repoos/integrate/T5";
+        const wt = ensureWorktree(root, branch);
+        expect(wt.ok).toBe(true);
+        writeFileSync(join(wt.path, "feature.txt"), "new\n");
+        git(wt.path, ["add", "feature.txt"]);
+        git(wt.path, ["commit", "-m", "candidate work"]);
+        const mainSha = git(root, ["rev-parse", "main"]);
+        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+        const coordinator = createJobCoordinator(root);
+        coordinator.enqueue({ id: "T5", branch } as any);
+        coordinator.updateJob("T5", {
+          phase: "publishing",
+          startedAt: new Date().toISOString(),
+          baseMainSha: mainSha,
+          branchSha: candidateSha,
+          candidateSha,
+        });
+
+        writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+        writeFileSync(join(root, "src-file.ts"), "export const x = 1;\n");
+
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(false);
+        expect(result.reason).toMatch(/uncommitted file/i);
+        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
       } finally {
         clean();
       }
