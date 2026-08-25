@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: default
 created_at: "2026-08-25T11:26:17Z"
-updated_at: "2026-08-25T11:26:38Z"
+updated_at: "2026-08-25T16:21:44Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ sounds like a good option to have, can you add it as a new task? seems like a ge
 ## Activity
 
 - 2026-08-25T11:26:38Z · status draft→inbox, title, area, body
+- 2026-08-25T16:21:44Z · model_override
