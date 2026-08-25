@@ -9,9 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
 model_override: default
-pm_model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T00:11:03Z"
+updated_at: "2026-08-25T00:11:07Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 ---
@@ -52,3 +51,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-24T21:28:44Z · status ready→active, branch
 - 2026-08-24T22:09:26Z · model_override
 - 2026-08-25T00:11:03Z · pm_model_override
+- 2026-08-25T00:11:07Z · pm_model_override
