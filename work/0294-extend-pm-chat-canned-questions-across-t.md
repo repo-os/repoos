@@ -8,6 +8,7 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/extend-pm-chat-canned-questions-across-t
+model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-25T05:55:32Z"
@@ -91,3 +92,4 @@ None yet — this is a net-new UX affordance, not a bugfix.
 - 2026-08-25T06:26:28Z · status ready→active, branch
 - 2026-08-25T06:41:32Z · status active→review
 - 2026-08-25T06:45:34Z · review_model_override
+- 2026-08-25T06:45:34Z · model_override
