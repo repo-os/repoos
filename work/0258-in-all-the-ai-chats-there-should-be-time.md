@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T00:04:13Z"
+review_passes: 1
 id: "0258"
 title: Add timestamps to all AI chat panels
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-timestamps-to-all-ai-chat-panels
 created_at: "2026-08-19T18:02:58Z"
-updated_at: "2026-08-25T00:03:14Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -76,3 +77,4 @@ In all the AI chats there should be timestamps on each message (e.g. PM, ross, c
 - 2026-08-24T21:46:56Z · model_override
 - 2026-08-24T21:47:00Z · pm_model_override
 - 2026-08-25T00:03:14Z · status active→review
+
