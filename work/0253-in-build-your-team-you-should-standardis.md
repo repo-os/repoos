@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T09:59:00Z"
+review_passes: 1
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
@@ -12,7 +14,6 @@ branch: feat/standardise-build-your-team-styling-and-
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 pm_model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T09:56:21Z"
 ---
 ## Problem
 
@@ -83,3 +84,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T05:47:41Z · status active→review
 - 2026-08-25T09:56:11Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-25T09:56:21Z · pm_model_override
+
