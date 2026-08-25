@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
@@ -90,3 +91,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T09:36:19Z · status active→review
 - 2026-08-25T12:45:25Z · review_model_override
 - 2026-08-25T12:45:26Z · model_override
+
