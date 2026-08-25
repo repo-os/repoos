@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+pm_model_override: default
 created_at: "2026-08-25T05:55:32Z"
-updated_at: "2026-08-25T06:26:00Z"
+updated_at: "2026-08-25T06:26:16Z"
 ---
 ## Problem
 
@@ -83,3 +84,4 @@ None yet — this is a net-new UX affordance, not a bugfix.
 
 - 2026-08-25T05:55:32Z · created · unknown
 - 2026-08-25T06:26:00Z · status inbox→ready
+- 2026-08-25T06:26:16Z · pm_model_override
