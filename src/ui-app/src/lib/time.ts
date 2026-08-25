@@ -17,3 +17,15 @@ export function relTime(buildAt: string | null | undefined, now: Date = new Date
   const day = Math.floor(hr / 24);
   return day === 1 ? "1 day ago" : `${day} days ago`;
 }
+
+/**
+ * Local clock time of an ISO timestamp for chat message bubbles, e.g.
+ * "3:42 PM". Returns an empty string when the input is missing or unparseable
+ * so the UI can hide the timestamp gracefully (legacy transcripts have none).
+ */
+export function fmtTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return "";
+  return t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}

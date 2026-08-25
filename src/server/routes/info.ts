@@ -64,8 +64,9 @@ export const getCounts: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, index.counts());
 };
 
-export const getIndex: RouteHandler = (ctx, _req, res) => {
-  const { index, reviews } = ctx;
+export const getIndex: RouteHandler = async (ctx, _req, res) => {
+  const { index, reviews, indexReady } = ctx;
+  await indexReady;
   const snapshot = index.snapshot();
   const withReviewStatus = (t: any) => ({
     ...t,
@@ -81,8 +82,13 @@ export const getIndex: RouteHandler = (ctx, _req, res) => {
 };
 
 /** Lightweight board endpoint — returns only the fields TaskCard.vue needs. */
-export const getBoard: RouteHandler = (ctx, _req, res) => {
-  const { index, reviews } = ctx;
+export const getBoard: RouteHandler = async (ctx, _req, res) => {
+  const { index, reviews, indexReady } = ctx;
+  // A reload handoff spawns the replacement with the listener already accepting
+  // connections while the full index build runs in the background (0285). Await
+  // boot readiness so a sharp reconnect can never be answered from a stale or
+  // partially-built index — the snap must reflect disk before it is served.
+  await indexReady;
   const snapshot = index.boardSnapshot();
   const withReviewStatus = (t: any) => ({
     ...t,

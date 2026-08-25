@@ -143,8 +143,8 @@ describe("agent session persistence", () => {
     expect(disk.engine).toBe("qwen");
     expect(disk.workdir).toBe(fx.root);
     expect(disk.lines).toEqual([
-      { s: "out", d: "persisted output" },
-      { s: "out", d: '{"session_id":"session-persisted"}' },
+      { s: "out", d: "persisted output", at: expect.any(String) },
+      { s: "out", d: '{"session_id":"session-persisted"}', at: expect.any(String) },
     ]);
 
     const rebooted = new AgentRunner(fx.config, () => {});
@@ -163,8 +163,8 @@ describe("agent session persistence", () => {
     await waitFor(() => !runner.isRunning(fx.task.id), "cold-session agent exit");
     expect(runner.output(fx.task.id)?.lines).toEqual(
       expect.arrayContaining([
-        { s: "out", d: "from disk" },
-        { s: "out", d: "persisted output" },
+        expect.objectContaining({ s: "out", d: "from disk" }),
+        expect.objectContaining({ s: "out", d: "persisted output" }),
       ]),
     );
   });
@@ -186,9 +186,9 @@ describe("agent session persistence", () => {
     await waitFor(() => !runner.isRunning("repoos-guide"), "guide follow-up exit");
     expect(runner.output("repoos-guide")?.lines).toEqual(
       expect.arrayContaining([
-        { s: "out", d: "from guide" },
-        { type: "human", text: "What changed?" },
-        { s: "out", d: "persisted output" },
+        expect.objectContaining({ s: "out", d: "from guide" }),
+        expect.objectContaining({ type: "human", text: "What changed?" }),
+        expect.objectContaining({ s: "out", d: "persisted output" }),
       ]),
     );
   });
@@ -206,8 +206,8 @@ describe("agent session persistence", () => {
     const rebooted = new AgentRunner(fx.config, () => {});
     expect(rebooted.output(sessionId)?.lines).toEqual(
       expect.arrayContaining([
-        { type: "human", text: "Please revise this task" },
-        { s: "out", d: "persisted output" },
+        expect.objectContaining({ type: "human", text: "Please revise this task" }),
+        expect.objectContaining({ s: "out", d: "persisted output" }),
       ]),
     );
   });

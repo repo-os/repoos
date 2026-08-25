@@ -43,6 +43,7 @@
  *                                        records a `## Screenshots` section in the task body
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
@@ -198,6 +199,7 @@ import {
   testModel,
   // Agents routes
   runningAgents,
+  queuedAgents,
   detectInstalledAgents,
   getAgentLogs,
   // Notifications
@@ -1514,6 +1516,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
@@ -1667,6 +1670,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         "Access-Control-Allow-Origin": "*",
       });
       res.write(`retry: 2000\n\n`);
+      // A reload handoff spawns the replacement already accepting connections
+      // while the full index build runs in the background (0285). Emit `hello`
+      // (which the client treats as "the server is ready to be asked about the
+      // index") only once that rebuild has actually completed, so its taskCount
+      // is truthful rather than a mid-build 0.
+      await indexReady;
       const hello: RepoEvent = {
         type: "hello",
         taskCount: index.snapshot().taskCount,
@@ -1716,6 +1725,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const routeContext: RouteContext = {
       config,
       index,
+      indexReady,
       runner,
       previews,
       reviews,
@@ -2062,6 +2072,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           autoTransition: watchdogConfig.autoTransition !== false,
           canRun: () => !(reload?.isReloading ?? false),
+          reviews,
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();

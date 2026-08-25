@@ -1,6 +1,7 @@
 /**
- * Canned PM messages above the PM compose box (0283): shown only for fresh
- * draft/inbox stubs (no PM conversation yet), hidden after the first send.
+ * Canned PM messages above the PM compose box (0283, extended by 0294): shown
+ * for any task status with a defined set (draft/inbox, active, review), remains
+ * visible/askable even after a PM conversation exists.
  */
 import { describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
@@ -105,7 +106,7 @@ async function mountPmTab(task: Task): Promise<{ wrapper: VueWrapper; sent: stri
   return { wrapper, sent };
 }
 
-describe("canned PM messages above the compose box (0283)", () => {
+describe("canned PM messages above the compose box", () => {
   it("shows the canned list for a fresh draft task with no PM conversation", async () => {
     const { wrapper } = await mountPmTab(makeTask());
     const list = wrapper.find(".pm-canned");
@@ -118,14 +119,31 @@ describe("canned PM messages above the compose box (0283)", () => {
     expect(wrapper.find(".pm-canned").exists()).toBe(true);
   });
 
-  it("does not show the canned list for non-draft/inbox states", async () => {
-    for (const status of ["active", "review", "done", "ready"] as const) {
+  it("shows the active-stage canned questions for an active task", async () => {
+    const { wrapper } = await mountPmTab(makeTask({ status: "active" }));
+    const list = wrapper.find(".pm-canned");
+    expect(list.exists()).toBe(true);
+    expect(list.text()).toContain("going on with this task");
+    expect(list.text()).toContain("What's wrong?");
+    expect(list.text()).toContain("What should I do next?");
+  });
+
+  it("shows the review-stage canned questions for a review task", async () => {
+    const { wrapper } = await mountPmTab(makeTask({ status: "review" }));
+    const list = wrapper.find(".pm-canned");
+    expect(list.exists()).toBe(true);
+    expect(list.text()).toContain("blocking this from being done");
+    expect(list.text()).toContain("actually ready");
+  });
+
+  it("does not show the canned list for statuses without a defined set", async () => {
+    for (const status of ["ready", "done"] as const) {
       const { wrapper } = await mountPmTab(makeTask({ status }));
       expect(wrapper.find(".pm-canned").exists(), `status=${status}`).toBe(false);
     }
   });
 
-  it("does not show the canned list once a PM conversation already exists", async () => {
+  it("still shows the canned list once a PM conversation already exists", async () => {
     const { wrapper } = await mountPmTab(makeTask());
     // Seed an existing conversation, reloading the transcript from fetch.
     vi.stubGlobal(
@@ -149,10 +167,10 @@ describe("canned PM messages above the compose box (0283)", () => {
     repo.outputs["pm-task-v2:0001"] = [{ type: "human", text: "already chatted" }];
     await flush();
 
-    expect(wrapper.find(".pm-canned").exists()).toBe(false);
+    expect(wrapper.find(".pm-canned").exists()).toBe(true);
   });
 
-  it("clicking a canned message sends it to the PM and hides the list", async () => {
+  it("clicking a canned message sends it to the PM immediately", async () => {
     const { wrapper, sent } = await mountPmTab(makeTask());
     const items = wrapper.findAll(".pm-canned-item");
     expect(items.length).toBeGreaterThan(0);
@@ -162,8 +180,5 @@ describe("canned PM messages above the compose box (0283)", () => {
     // The clicked message was sent to the PM endpoint.
     expect(sent).toHaveLength(1);
     expect(sent[0]).toBe("Can you flesh this out?");
-
-    // The canned list is hidden after the send.
-    expect(wrapper.find(".pm-canned").exists()).toBe(false);
   });
 });

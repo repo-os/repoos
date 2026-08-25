@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 
@@ -116,6 +117,7 @@ onMounted(() => {
 
       <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
         {{ lineText(entry) }}
+        <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
       </div>
 
       <div v-if="busy" class="cto-thinking" aria-label="CTO is thinking">
@@ -166,6 +168,7 @@ onMounted(() => {
 .cto-line.human{color:var(--txt);font-weight:500;background:var(--btn-primary-bg);align-self:flex-end;border-bottom-right-radius:3px}
 .cto-line.assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:3px}
 .cto-line.status{color:var(--txt-faint);font-style:italic;font-size:11px;text-align:center}
+.msg-time{display:block;margin-top:3px;text-align:right;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace;opacity:.8}
 .cto-thinking{display:flex;gap:4px;align-self:flex-start;padding:9px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
 .cto-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:cto-bounce 1.2s infinite}
 .cto-thinking span:nth-child(2){animation-delay:.15s}.cto-thinking span:nth-child(3){animation-delay:.3s}

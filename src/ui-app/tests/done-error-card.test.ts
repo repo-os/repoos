@@ -9,7 +9,7 @@ const original = {
 };
 
 /** jsdom does no layout, so scrollHeight/clientHeight are always 0 — stub them
- *  so the component's own overflow detection is exercised deterministically. */
+ *  deterministically where layout matters. */
 function stubOverflow(overflowing: boolean): void {
   Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
     configurable: true,
@@ -33,114 +33,93 @@ afterEach(() => {
   }
 });
 
-describe("DoneErrorCard", () => {
-  it("renders a short message without implying expansion", async () => {
-    stubOverflow(false);
-    const wrapper = mount(DoneErrorCard, {
-      props: { message: "merge conflict: src/a.ts" },
-    });
-    await flush();
-
-    expect(wrapper.text()).toContain("merge conflict: src/a.ts");
-    expect(wrapper.find("button").exists()).toBe(false);
-    expect(wrapper.find('[aria-expanded]').exists()).toBe(false);
-    expect(wrapper.find(".done-error-static").exists()).toBe(true);
-  });
-
-  it("clamps an overflowing message and expands/collapses it", async () => {
+describe("DoneErrorCard (card mode — the compact board surface)", () => {
+  it("clamps the message and never expands inline", async () => {
     stubOverflow(true);
     const long = "conflict in src/components/ReallyLongComponentName.ts ".repeat(12);
     const wrapper = mount(DoneErrorCard, { props: { message: long } });
-    await flush();
 
     const btn = wrapper.find("button.done-error-toggle");
     expect(btn.exists()).toBe(true);
     // Native button → keyboard operable (Enter/Space).
     expect(btn.element.tagName).toBe("BUTTON");
-    expect(btn.attributes("aria-expanded")).toBe("false");
-    expect(btn.attributes("aria-controls")).toBeTruthy();
-    expect(btn.attributes("title")).toBe("Show more");
-    // Collapsed message is clamped to two lines.
-    expect(wrapper.find(".done-error-msg").classes()).toContain("clamped");
-
-    await btn.trigger("click");
-    await flush();
-    expect(wrapper.find("button.done-error-toggle").attributes("aria-expanded")).toBe("true");
-    expect(wrapper.find(".done-error-msg").classes()).not.toContain("clamped");
-    expect(wrapper.find(".done-error-detail").exists()).toBe(true);
-    expect(wrapper.find("button.done-error-toggle").attributes("title")).toBe("Show less");
-
-    await wrapper.find("button.done-error-toggle").trigger("click");
-    await flush();
-    expect(wrapper.find("button.done-error-toggle").attributes("aria-expanded")).toBe("false");
+    // Card mode keeps the message clamped and compact — no inline detail.
     expect(wrapper.find(".done-error-msg").classes()).toContain("clamped");
     expect(wrapper.find(".done-error-detail").exists()).toBe(false);
   });
 
+  it("emits open-panel when the collapsed error is clicked, without expanding", async () => {
+    stubOverflow(true);
+    const wrapper = mount(DoneErrorCard, {
+      props: { message: "conflict in src/a.ts" },
+      attrs: { onClick: () => {} },
+    });
+    await flush();
+
+    const btn = wrapper.find("button.done-error-toggle");
+    await btn.trigger("click");
+    await flush();
+
+    expect(wrapper.emitted("open-panel")).toHaveLength(1);
+    // No inline expansion remains on the card.
+    expect(wrapper.find(".done-error-detail").exists()).toBe(false);
+    expect(wrapper.find(".done-error-msg").classes()).toContain("clamped");
+  });
+
   it("announces the error as a live alert region", async () => {
-    stubOverflow(false);
     const wrapper = mount(DoneErrorCard, { props: { message: "boom" } });
     await flush();
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
   });
 
-  it("shows step, conflicting files, and guidance once expanded", async () => {
-    stubOverflow(true);
+  it("renders the fix button at full width of its container", async () => {
+    const wrapper = mount(DoneErrorCard, {
+      props: { message: "merge conflict: src/a.ts", taskId: "0123", taskTitle: "T" },
+    });
+    await flush();
+    const fix = wrapper.find("button.done-error-fix");
+    expect(fix.exists()).toBe(true);
+    expect(fix.classes()).toContain("done-error-fix");
+    // Card mode: the parent styles the fix button to span the full width.
+    expect(wrapper.find(".done-error--card").exists()).toBe(true);
+  });
+});
+
+describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
+  it("renders the full detail always, scrollable, without a collapse toggle", async () => {
     const wrapper = mount(DoneErrorCard, {
       props: {
+        mode: "panel",
         message: "merge conflict: src/a.ts, src/b.ts",
         step: "check",
         conflicts: ["src/a.ts", "src/b.ts"],
-      },
-    });
-    await flush();
-    await wrapper.find("button").trigger("click");
-    await flush();
-
-    expect(wrapper.text()).toContain("Move to done failed");
-    expect(wrapper.text()).toContain("at check");
-    expect(wrapper.text()).toContain("Conflicting files");
-    expect(wrapper.text()).toContain("src/a.ts");
-    expect(wrapper.text()).toContain("src/b.ts");
-  });
-
-  it("renders the per-phase hint and check-output excerpt instead of conflict guidance (0215)", async () => {
-    stubOverflow(true);
-    const wrapper = mount(DoneErrorCard, {
-      props: {
-        message: "The validation check failed — deletion detected by watcher",
-        step: "check",
-        hint: "The build or check gate failed on the merged branch. Fix the failure in the feature branch's worktree, commit, and retry the close-out.",
+        hint: "Fix the failure in the feature branch's worktree, commit, and retry the close-out.",
         detail: "deletion detected by watcher\n  at tests/x.test.ts:12",
       },
     });
     await flush();
-    await wrapper.find("button").trigger("click");
-    await flush();
 
+    // No collapse toggle — the detail is always present.
+    expect(wrapper.find(".done-error-toggle").exists()).toBe(false);
+    // Message is not clamped — the full error is shown.
+    expect(wrapper.find(".done-error-msg").classes()).not.toContain("clamped");
+    expect(wrapper.find(".done-error-detail").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Move to done failed");
+    expect(wrapper.text()).toContain("at check");
     expect(wrapper.text()).toContain("Check output");
     expect(wrapper.text()).toContain("tests/x.test.ts:12");
+    expect(wrapper.text()).toContain("Conflicting files");
+    expect(wrapper.text()).toContain("src/a.ts");
     expect(wrapper.text()).toContain("Fix the failure in the feature branch's worktree");
-    // No conflict guidance for a check failure.
-    expect(wrapper.text()).not.toContain("resolve the conflicting files");
-    expect(wrapper.find(".done-error-files").exists()).toBe(false);
+    expect(wrapper.find(".done-error--panel").exists()).toBe(true);
   });
 
-  it("collapses onto the fresh message when a retry replaces it", async () => {
-    stubOverflow(true);
+  it("renders full detail without needing any interaction (0272)", async () => {
     const wrapper = mount(DoneErrorCard, {
-      props: { message: "first failure message ".repeat(10) },
+      props: { mode: "panel", message: "boom", detail: "long stack trace\nline2" },
     });
     await flush();
-    await wrapper.find("button").trigger("click");
-    await flush();
-    expect(wrapper.find("button").attributes("aria-expanded")).toBe("true");
-
-    wrapper.setProps({ message: "second failure message ".repeat(10) });
-    await flush();
-    expect(wrapper.find("button").attributes("aria-expanded")).toBe("false");
-    expect(wrapper.find(".done-error-msg").classes()).toContain("clamped");
-    expect(wrapper.text()).toContain("second failure message");
-    expect(wrapper.find(".done-error-detail").exists()).toBe(false);
+    expect(wrapper.find(".done-error-detail").exists()).toBe(true);
+    expect(wrapper.text()).toContain("long stack trace");
   });
 });

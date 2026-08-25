@@ -68,6 +68,7 @@ function makeCtx(root: string, bootstrapAdminEmail: string | undefined): RouteCo
   return {
     config,
     index: null as unknown as RouteContext["index"],
+    indexReady: Promise.resolve(),
     reviews: null as unknown as RouteContext["reviews"],
     runner: null as unknown as RouteContext["runner"],
     previews: null as unknown as RouteContext["previews"],

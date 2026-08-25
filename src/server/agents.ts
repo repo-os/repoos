@@ -24,7 +24,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
-import { agentsForConfig } from "../core/config.js";
+import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
@@ -37,6 +37,10 @@ import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 export type AgentEvent =
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
+  | { type: "agent.queued"; id: string; at: string }
+  /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
+  | { type: "agent.dequeued"; id: string; at: string }
   | {
       type: "agent.output";
       id: string;
@@ -92,6 +96,8 @@ export interface StartResult {
   pid?: number;
   /** True when the request was rejected because a turn is already running. */
   busy?: boolean;
+  /** True when accepted but held for a free slot under maxConcurrentAgents — it will spawn once one frees. */
+  queued?: boolean;
   reason?: string;
 }
 
@@ -524,6 +530,10 @@ interface PersistedSession {
   createdAt?: string;
   completedAt?: string;
   updatedAt: string;
+  /** Agent config name (e.g. "engineer", "reviewer") — see Session.agent. */
+  agent?: string;
+  /** Model name — see Session.model. */
+  model?: string;
 }
 
 export interface AgentRunnerOptions {
@@ -1177,6 +1187,33 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
 }
 
+/**
+ * Resolve the reviewer agent for a specific task, honoring per-task review
+ * overrides (set via the Review tab's selector, like Dev/PM overrides).
+ *
+ * When the task has no review override, this behaves exactly as the global
+ * `resolveReviewer` — the Agents-page reviewer. When a `reviewAgentOverride`
+ * is set, the enabled agent with that name is used (falling back to the global
+ * reviewer base when only CLI/model are overridden); `reviewCliOverride` /
+ * `reviewModelOverride` then replace the agent's CLI and model.
+ */
+export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent | null {
+  const modelPinned = isModelOverridePinned(task.reviewModelOverride);
+  const hasOverride = task.reviewAgentOverride || task.reviewCliOverride || modelPinned;
+  if (!hasOverride) {
+    return resolveReviewer(config);
+  }
+  const list = agentsForConfig(config);
+  const baseName = task.reviewAgentOverride || "reviewer";
+  const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
+  if (!base) return null;
+  return {
+    ...base,
+    ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
+    ...(modelPinned ? { model: task.reviewModelOverride as string } : {}),
+  };
+}
+
 export function resolveCto(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
   return list.find((a) => a.enabled && matchesRole(a, "cto")) ?? null;
@@ -1196,13 +1233,33 @@ export function resolveCto(config: RepoOSConfig): Agent | null {
  * @param role    The role to resolve when no agent override is set (default: "engineer").
  * @returns A merged Agent, or null when no matching enabled agent exists.
  */
+/**
+ * True when a model-override field carries a real pin, not the "default"
+ * sentinel `AGENT_MODELS` offers for "use the base agent's own configured
+ * model, whatever that is" (config.ts). Every per-task model-override
+ * resolver (this file's `resolveAgentForTask`/`resolveReviewerForTask`, and
+ * routes/tasks.ts's inline PM-override logic) MUST run the override string
+ * through this before treating it as active — bare truthiness treats the
+ * literal string `"default"` as a real pin and force-overwrites the base
+ * agent's actual configured model with the string `"default"`, which then
+ * skips `--model` entirely (see `modelArgs` below) and falls back to the
+ * underlying CLI's own raw default — NOT the model configured on the
+ * Agents page. Confirmed live: tasks kept ending up running
+ * opencode+(no model flag) instead of the configured model every time a
+ * Dev/Review/PM override dropdown was left on (or reset to) "Default".
+ */
+export function isModelOverridePinned(model: string | null | undefined): boolean {
+  return !!model && model !== "default";
+}
+
 export function resolveAgentForTask(
   config: RepoOSConfig,
   task: Task,
   role: string = "engineer",
 ): Agent | null {
   const list = agentsForConfig(config);
-  const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
+  const modelPinned = isModelOverridePinned(task.modelOverride);
+  const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
   }
@@ -1216,7 +1273,7 @@ export function resolveAgentForTask(
   return {
     ...base,
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
-    ...(task.modelOverride ? { model: task.modelOverride } : {}),
+    ...(modelPinned ? { model: task.modelOverride as string } : {}),
   };
 }
 
@@ -1920,6 +1977,18 @@ export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
+  /**
+   * Cap on simultaneously-spawned agent CLI processes — each one may
+   * itself run a build/test worker pool sized to the host's core count, so
+   * unlimited concurrent agents oversubscribe the machine. Configurable via
+   * `maxConcurrentAgents` in repoos.toml; "auto" (unset) sizes it to this
+   * machine's CPU count so the same repo behaves on a laptop and a desktop.
+   */
+  private readonly maxConcurrentAgents: number;
+  /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot, mapped to when they were queued. */
+  private readonly queuedIds = new Map<string, string>();
+  /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
+  private readonly startQueue: (() => void)[] = [];
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
@@ -1989,6 +2058,7 @@ export class AgentRunner {
     opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
+    this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
     this.emit = emit;
     this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
@@ -2447,7 +2517,7 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id)) {
+    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id) || this.queuedIds.has(task.id)) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
@@ -2464,7 +2534,7 @@ export class AgentRunner {
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
+    return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
   }
 
   /** Start a persistent, non-task conversation with an explicit role mission. */
@@ -2475,13 +2545,13 @@ export class AgentRunner {
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
-    if (this.entries.has(sessionId)) {
+    if (this.entries.has(sessionId) || this.queuedIds.has(sessionId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
     }
-    const human: AgentOutputEntry = { type: "human", text };
+    const human: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     const session: Session = {
       lines: [human],
       pending: "",
@@ -2499,7 +2569,7 @@ export class AgentRunner {
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
-    return this.spawnTurn(sessionId, cmd, args, this.config.root);
+    return this.spawnOrQueue(sessionId, cmd, args, this.config.root);
   }
 
   /**
@@ -2581,11 +2651,11 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
+    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId) || this.queuedIds.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     this.sessions.set(taskId, session);
-    const entry: AgentOutputEntry = { type: "human", text };
+    const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
     while (session.bytes > OUTPUT_CAP_BYTES) {
@@ -2614,7 +2684,7 @@ export class AgentRunner {
     // resumeCommand fall back to a fresh/most-recent-session start instead.
     const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
     const { cmd, args } = resumeCommand(agent, fullText, sessionId, session.workdir ?? this.config.root);
-    return this.spawnTurn(
+    return this.spawnOrQueue(
       taskId,
       cmd,
       args,
@@ -2668,6 +2738,54 @@ export class AgentRunner {
   /** Flush all debounced transcript writes before shutdown/reload handover. */
   flushAll(): void {
     for (const taskId of this.writeTimers.keys()) this.persist(taskId);
+  }
+
+  /**
+   * Gate for every spawnTurn call site: at capacity, defer the spawn
+   * instead of oversubscribing the machine. The caller still gets `ok: true`
+   * immediately — `queued: true` distinguishes "will run shortly" from
+   * "running now" without changing callers' happy-path handling. `id` is
+   * marked busy via queuedIds so a second start/send for the same task/chat
+   * while queued is rejected the same way an already-running one would be.
+   */
+  private spawnOrQueue(
+    id: string,
+    cmd: string,
+    args: string[],
+    cwd: string,
+    task?: Task,
+    branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
+  ): StartResult {
+    if (this.entries.size < this.maxConcurrentAgents) {
+      return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    }
+    this.queuedIds.set(id, now());
+    this.startQueue.push(() => {
+      this.queuedIds.delete(id);
+      this.emit({ type: "agent.dequeued", id, at: now() });
+      this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    });
+    this.logger?.agent(
+      id,
+      "info",
+      `Queued — ${this.entries.size}/${this.maxConcurrentAgents} agent processes already running.`,
+    );
+    this.emit({ type: "agent.queued", id, at: now() });
+    return { ok: true, queued: true };
+  }
+
+  /** Tasks/chats currently waiting for a free maxConcurrentAgents slot. */
+  queued(): { id: string; queuedAt: string }[] {
+    return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
+  }
+
+  /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
+  private drainQueue(): void {
+    while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+      const next = this.startQueue.shift();
+      next?.();
+    }
   }
 
   /**
@@ -2882,12 +3000,15 @@ export class AgentRunner {
     stream: "out" | "err" | "sys",
     entry: AgentOutputEntry,
   ): void {
-    session.lines.push(entry);
-    session.bytes += entryBytes(entry);
+    const stamped: AgentOutputEntry = entry.at
+      ? entry
+      : { ...entry, at: new Date().toISOString() };
+    session.lines.push(stamped);
+    session.bytes += entryBytes(stamped);
     this.emit({
       type: "agent.output",
       id: taskId,
-      entry,
+      entry: stamped,
       stream: stream === "sys" ? "out" : stream,
       at: now(),
     });
@@ -3382,6 +3503,7 @@ export class AgentRunner {
     }
     if (session) session.stalledEmitted = false;
     this.entries.delete(taskId);
+    this.drainQueue();
     // Kiro CLI does not print a session ID during the run. Capture it now by
     // querying the CLI's session list in the same cwd. Best-effort: if the
     // probe fails, sessionId stays undefined and the next turn falls back to
@@ -3548,7 +3670,9 @@ export class AgentRunner {
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
-        (value.completedAt !== undefined && typeof value.completedAt !== "string")
+        (value.completedAt !== undefined && typeof value.completedAt !== "string") ||
+        (value.agent !== undefined && typeof value.agent !== "string") ||
+        (value.model !== undefined && typeof value.model !== "string")
       )
         return null;
       return value as PersistedSession;
@@ -3568,6 +3692,8 @@ export class AgentRunner {
       sessionId: saved.sessionId,
       workdir: saved.workdir,
       createdAt: saved.createdAt,
+      agent: saved.agent,
+      model: saved.model,
       accumulatedMs: 0,
       stalledEmitted: false,
     };
@@ -3621,6 +3747,8 @@ export class AgentRunner {
         engine: session.engine,
         workdir: session.workdir,
         createdAt: session.createdAt,
+        agent: session.agent,
+        model: session.model,
         completedAt,
         updatedAt: this.clock().toISOString(),
       };
@@ -3745,6 +3873,15 @@ export class AgentRunner {
    * see the call site in cleanup()). Mirrors TaskWatchdog's own
    * `needsInput` escalation, just fired immediately instead of waiting for
    * the next staleness poll. Never overwrites an existing needsInput note.
+   *
+   * Also bumps `dev_error_count` — unlike the needsInput note, this always
+   * increments, even on a repeat error before a human clears the flag,
+   * because it counts real dev attempts, not distinct escalations (#0271
+   * follow-up: confirmed live on #0291 — an engineer session that errors out
+   * before ever reaching a review pass left `review_passes` at 0, so the
+   * board's `D# · R#` badge showed nothing for a task that genuinely had one
+   * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
+   * `dev` so D can exceed R when a round errored without being reviewed.)
    */
   private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
     try {
@@ -3755,7 +3892,15 @@ export class AgentRunner {
         defaultStatus: this.config.defaultStatus,
         defaultAssignee: this.config.defaultAssignee,
       });
-      if (current.needsInput) return;
+      const errCount = current.extra?.dev_error_count;
+      current.extra = {
+        ...current.extra,
+        dev_error_count: (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
+      };
+      if (current.needsInput) {
+        writeFileSync(task.absPath, serializeTask(current));
+        return;
+      }
       current.needsInput = true;
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);

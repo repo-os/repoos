@@ -43,6 +43,7 @@ import {
   estimateCostUsd,
   extractOneShotReportText,
   resolveReviewer,
+  resolveReviewerForTask,
   usageCostSource,
   type AgentRunner,
   type PromptResult,
@@ -558,7 +559,7 @@ export class ReviewManager {
     if (task.hotfix) {
       return { ok: false, reason: "hotfix tasks skip diff-based review" };
     }
-    const agent = resolveReviewer(this.config);
+    const agent = resolveReviewerForTask(this.config, task);
     if (!agent) {
       return { ok: false, reason: "the review agent is disabled on the Agents page" };
     }
@@ -597,7 +598,7 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
-    const agent = resolveReviewer(this.config);
+    const agent = resolveReviewerForTask(this.config, task);
     if (!agent) {
       this.logger.task(task.id, "info", "review skipped — agent disabled");
       return { ok: false, skipped: true, reason: "the review agent is disabled" };
@@ -927,7 +928,7 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
-    const agent = resolveReviewer(this.config);
+    const agent = resolveReviewerForTask(this.config, task);
     if (!agent) {
       return { ok: false, reason: "the review agent is disabled" };
     }
@@ -1220,7 +1221,7 @@ export class ReviewManager {
     // Move to done is blocked by a real engineer process that the board still
     // presents as sign-off-ready (#0239).
     try {
-      const agent = resolveReviewer(this.config);
+      const agent = resolveReviewerForTask(this.config, task);
       if (!agent) return;
 
       // Get the engineer agent

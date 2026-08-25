@@ -384,6 +384,7 @@ describe("automatic review state", () => {
       if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/board") || url.includes("/api/index")) return json({ tasks: [indexReads++ === 0 ? idle : running], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review")) return json({ ok: true, running: false, enabled: true, review: null });
       throw new Error("unexpected fetch: " + url);
     }));
 
@@ -400,6 +401,62 @@ describe("automatic review state", () => {
     FakeEventSource.instances[0].onopen?.();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(repo.reviewFor("0001")).toMatchObject({ running: true, enabled: true });
+  });
+
+  it("re-fetches the authoritative report for in-review tasks on reconnect (0291)", async () => {
+    // Simulate #0291: a review completed but its SSE completion event was
+    // dropped during a reload gap, so the card is left showing the previous
+    // round's verdict. On reconnect, refresh() must pull the fresh report for
+    // tasks still in `review` — no drawer open required.
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const task = makeTask({ status: "review", automaticReview: { running: false, enabled: true } });
+    let report = {
+      id: "r2",
+      at: "2026-08-24T21:36:00Z",
+      agent: "reviewer",
+      cli: "opencode",
+      model: "default",
+      state: "ok" as const,
+      markdown: "Verdict: needs some work",
+    };
+    let reviewReads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review")) {
+        reviewReads++;
+        return json({ ok: true, running: false, enabled: true, review: report });
+      }
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    // The initial connection hydrates the earlier round's verdict.
+    await vi.waitFor(() => expect(repo.reviewFor("0001")?.report?.id).toBe("r2"));
+
+    // The authoritative latest round is now "good to go" on the server, but the
+    // SSE completion event for it was dropped. Simulate the reconnect: the
+    // server now reports the fresh report, and refresh() must pull it in.
+    report = {
+      id: "r3",
+      at: "2026-08-24T21:50:00Z",
+      agent: "reviewer",
+      cli: "opencode",
+      model: "default",
+      state: "ok",
+      markdown: "Verdict: good to go",
+    };
+    // The first manual open after init() is the "reusable" one (init() fetched
+    // moments ago) and does not refresh; the SECOND is a true reconnect that
+    // must refetch the report for the in-review task.
+    FakeEventSource.instances[0].onopen?.();
+    FakeEventSource.instances[0].onopen?.();
+    await vi.waitFor(() => expect(repo.reviewFor("0001")?.report?.id).toBe("r3"));
+    expect(repo.reviewFor("0001")?.report?.markdown).toContain("good to go");
+    expect(reviewReads).toBeGreaterThanOrEqual(2);
   });
 });
 

@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -142,7 +143,7 @@ async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
   submitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
@@ -239,6 +240,7 @@ onMounted(() => {
           <div class="debugger-bubble" :class="`debugger-bubble-${lineKind(entry)}`">
             <div v-if="lineKind(entry) === 'assistant'" class="debugger-markdown" v-html="renderMarkdown(lineText(entry))"></div>
             <span v-else>{{ lineText(entry) }}</span>
+            <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
           </div>
         </div>
       </template>
@@ -323,6 +325,7 @@ onMounted(() => {
 .debugger-bubble{max-width:84%;padding:9px 11px;border-radius:13px;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
 .debugger-bubble-human{color:var(--btn-primary-color);background:var(--btn-primary-bg);border:1px solid var(--border-bright);border-bottom-right-radius:4px}
 .debugger-bubble-assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-time{display:block;margin-top:3px;text-align:right;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace;opacity:.8}
 .debugger-row-status{justify-content:center}
 .debugger-bubble-status{padding:4px 8px;background:transparent;color:var(--txt-faint);font:500 9.5px 'JetBrains Mono',monospace;text-align:center}
 .debugger-markdown :deep(p){margin:0 0 7px}

@@ -9,10 +9,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/convert-deterministic-built-in-scanners-
-model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-24T17:20:58Z"
+updated_at: "2026-08-25T05:58:07Z"
 check_retry_count: 1
 ---
 ## Problem
@@ -67,3 +66,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-24T17:20:56Z · cli_override
 - 2026-08-24T17:20:57Z · cli_override
 - 2026-08-24T17:20:58Z · cli_override
+- 2026-08-25T05:58:07Z · model_override

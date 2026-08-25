@@ -150,6 +150,7 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
   return {
     config: fx.config,
     index,
+    indexReady: Promise.resolve(),
     reviews: { isRunning: () => false } as unknown as RouteContext["reviews"],
     runner: { isRunning: () => false } as unknown as RouteContext["runner"],
     previews: null as unknown as RouteContext["previews"],

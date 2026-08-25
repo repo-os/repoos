@@ -53,6 +53,12 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null when using the default. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null when using the agent's default. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null when using the agent's default. */
+  reviewModelOverride?: string | null;
   /** True when this task runs as a hotfix in the main checkout. */
   hotfix?: boolean;
   /** Hotfix merge target: "branch" or "main". */
@@ -195,18 +201,26 @@ export interface BoardIndex {
  * opencode's `--format json` stream carry a `type` discriminator.
  */
 export type AgentOutputEntry =
-  | { type: "text"; text: string }
-  | { type: "human"; text: string }
-  | {
-      type: "tool";
-      tool: string;
-      input?: string;
-      output?: string;
-      state?: string;
-    }
-  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
-  | { type: "sys"; d: string }
-  | { s: "out" | "err" | "sys"; d: string };
+  (
+    | { type: "text"; text: string }
+    | { type: "human"; text: string }
+    | {
+        type: "tool";
+        tool: string;
+        input?: string;
+        output?: string;
+        state?: string;
+      }
+    | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
+    | { type: "sys"; d: string }
+    | { s: "out" | "err" | "sys"; d: string }
+  ) & {
+    /**
+     * ISO timestamp of when the entry was created (0258). Populated by the
+     * server on every entry it creates; absent on persisted legacy transcripts.
+     */
+    at?: string;
+  };
 
 /**
 /**
@@ -294,6 +308,8 @@ export interface SessionUsage {
   sessionType: string;
   agent: string;
   model: string;
+  /** The actual coding CLI/engine (e.g. "opencode", "claude") — distinct from `agent`, which is the config role name. */
+  codingAgent: string;
   startedAt: string;
   endedAt: string | null;
   elapsedMs: number;
@@ -364,6 +380,8 @@ export type RepoEvent =
     }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  | { type: "agent.queued"; id: string; at: string }
+  | { type: "agent.dequeued"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats }

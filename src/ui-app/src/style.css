@@ -463,6 +463,8 @@
   .tc-moving{color:var(--cyan)}
   .tc-needs-input{color:var(--amber)}
   .tc-stalled{color:var(--txt-dim)}
+  .tc-queued{color:var(--txt-dim)}
+  .tc-queued::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--txt-dim)}
   .tc-stuck{color:var(--red)}
   .tc-stuck::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
   .task-card .tc-stuck::before{display:none}
@@ -652,6 +654,12 @@
   .done-error-fix{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:5px 9px;border:1px solid var(--red-border-tint);border-radius:7px;background:var(--panel);color:var(--red);font:600 11px var(--font-sans);cursor:pointer}
   .done-error-fix:hover:not(:disabled){border-color:var(--red);background:var(--red-tint)}
   .done-error-fix:disabled{opacity:.65;cursor:default}
+  /* Card mode (0272): the fix button is a full-width, prominent primary
+     action; the panel mode keeps it inline. */
+  .done-error--card .done-error-fix{display:flex;width:100%;justify-content:center;padding:8px 12px;font-size:12px}
+  /* Panel mode (0272): the full detail is always rendered; let long check
+     output scroll inside a taller box. */
+  .done-error--panel .done-error-pre{max-height:min(55vh,480px)}
   .tc-done-error{margin-top:10px}
   .drawer-done-error{margin-top:12px}
   .review-running{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);font-family:'JetBrains Mono',monospace}
@@ -812,7 +820,6 @@
    .agent-override-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
    .agent-pick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
    .agent-override-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-   .agent-custom-badge{font-size:10px;font-weight:600;color:var(--violet);background:rgba(157,123,255,0.12);border:1px solid rgba(157,123,255,0.3);border-radius:6px;padding:1px 6px;text-transform:uppercase;letter-spacing:0.5px}
    .agent-save-hint{font-size:10px;font-weight:600;color:var(--txt-faint);text-transform:uppercase;letter-spacing:0.5px;animation:agent-save-pulse 1s ease-in-out infinite}
    @keyframes agent-save-pulse{50%{opacity:.4}}
   .agent-log{flex:1;min-height:0;overflow-y:auto;background:var(--md-body-bg);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;max-height:none}
@@ -875,14 +882,20 @@
   .task-usage-title{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-faint);margin-bottom:8px}
   .task-usage-grid{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .task-usage-roles{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
-  .task-usage-role-list{display:flex;flex-direction:column;gap:4px;margin-top:6px}
-  .task-usage-role{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--txt-dim)}
-  .task-usage-role-name{text-transform:capitalize;color:var(--cyan);min-width:70px}
+  .task-usage-table-wrap{margin-top:6px;overflow-x:auto}
+  .task-usage-table{width:100%;border-collapse:collapse;font-size:11px;color:var(--txt-dim);white-space:nowrap}
+  .task-usage-table th,.task-usage-table td{padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);vertical-align:middle}
+  .task-usage-table td:first-child,.task-usage-table th:first-child{padding-left:0}
+  .task-usage-table th{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-faint);font-weight:600}
+  .task-usage-table td{color:var(--txt-dim)}
+  .ta-left{text-align:left!important}
+  .ta-right{text-align:right!important}
+  .task-usage-role-name{text-transform:capitalize;color:var(--cyan)}
   .task-usage-sessions{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
-  .task-usage-session-list{display:flex;flex-direction:column;gap:3px;margin-top:6px;overflow-x:auto}
-  .task-usage-session-row{display:grid;grid-template-columns:76px 1fr 96px 96px 56px 56px 72px;gap:8px;font-size:11px;color:var(--txt-dim);white-space:nowrap;align-items:center}
-  .task-usage-session-head{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-faint)}
   .task-usage-session-type{text-transform:capitalize;color:var(--cyan)}
+  .task-usage-session-agent{cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+  .task-usage-session-agent:hover{color:var(--txt)}
+  .task-usage-session-model{font-size:9.5px;color:var(--txt-faint);white-space:normal;word-break:break-all}
   .task-usage-session-active{color:var(--txt)}
   .task-usage-session-active .task-usage-session-type{color:var(--green)}
   .branch-note{margin-left:8px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
@@ -1625,6 +1638,55 @@
   border-radius: 5px; padding: 1px 5px; color: var(--txt);
 }
 .cc-modal-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 24px; margin-top: 8px;
+}
+
+/* Spec edit modal - centred overlay mirroring cc-modal, sized for a markdown editor */
+.sm-modal.drawer-wrap.drawer {
+  top: 50%; left: 50%; right: auto; bottom: auto;
+  width: min(680px, 92vw); height: auto; max-height: 86vh;
+  transform: translate(-50%, -50%);
+  border-radius: 16px; border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px var(--border);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  animation: cc-modal-in .22s cubic-bezier(.2,.8,.2,1);
+}
+.sm-modal-head {
+  padding: 20px 24px 0; display: flex; align-items: flex-start; gap: 12px;
+}
+.sm-modal-head-text { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.sm-modal-head .close-x { margin-left: auto; flex-shrink: 0 }
+.sm-modal-desc {
+  font-size: 12.5px; line-height: 1.5; color: var(--txt-dim);
+}
+.sm-modal-body {
+  padding: 16px 24px 0; display: flex; flex-direction: column; min-height: 0;
+  flex: 1;
+}
+.sm-modal-editor {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+.sm-modal-editor-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; gap: 8px;
+}
+.sm-modal-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--txt-faint);
+}
+.sm-modal-textarea {
+  flex: 1; min-height: 220px; width: 100%;
+  padding: 12px 14px; border-radius: 11px;
+  border: 1px solid var(--border); background: var(--md-body-bg);
+  color: var(--txt); font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.65; resize: none;
+  overflow-y: auto; box-sizing: border-box;
+}
+.sm-modal-textarea:focus { outline: none; border-color: var(--border-bright) }
+.sm-modal-actions {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 24px; margin-top: 8px;
 }
