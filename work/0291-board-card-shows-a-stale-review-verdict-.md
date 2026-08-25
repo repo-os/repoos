@@ -9,6 +9,7 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/board-card-shows-a-stale-review-verdict-
+model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
 updated_at: "2026-08-25T00:03:29Z"
@@ -59,3 +60,4 @@ Task #0286 went through 3 review rounds (2026-08-24T21:31-21:33, 21:36-21:38, 21
 - 2026-08-24T23:35:31Z · pm_model_override
 - 2026-08-24T23:35:38Z · status active→review
 - 2026-08-25T00:03:29Z · review_model_override
+- 2026-08-25T00:03:29Z · model_override
