@@ -1,5 +1,5 @@
 /**
- * Concurrency gate on agent spawns (#0293): with maxConcurrentAgents set,
+ * Concurrency gate on agent spawns: with maxConcurrentAgents set,
  * extra start()/send() calls queue instead of spawning immediately, and are
  * drained one at a time as running agents exit.
  */

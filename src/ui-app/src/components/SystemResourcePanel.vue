@@ -145,7 +145,7 @@ const serveMessage = computed(() => {
         </div>
 
         <div class="metric">
-          <div class="metric-label">Agents (#0293)</div>
+          <div class="metric-label">Agents</div>
           <div class="metric-val">
             <span class="metric-big">{{ runningIds.length }}</span>
             <span class="metric-sub">running{{ queuedIds.length ? ` · ${queuedIds.length} queued` : "" }}</span>

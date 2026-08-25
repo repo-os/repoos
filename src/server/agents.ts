@@ -37,7 +37,7 @@ import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 export type AgentEvent =
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
-  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot (#0293). */
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
   | { type: "agent.queued"; id: string; at: string }
   /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
   | { type: "agent.dequeued"; id: string; at: string }
@@ -96,7 +96,7 @@ export interface StartResult {
   pid?: number;
   /** True when the request was rejected because a turn is already running. */
   busy?: boolean;
-  /** True when accepted but held for a free slot under maxConcurrentAgents (#0293) — it will spawn once one frees. */
+  /** True when accepted but held for a free slot under maxConcurrentAgents — it will spawn once one frees. */
   queued?: boolean;
   reason?: string;
 }
@@ -1959,7 +1959,7 @@ export class AgentRunner {
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   /**
-   * Cap on simultaneously-spawned agent CLI processes (#0293) — each one may
+   * Cap on simultaneously-spawned agent CLI processes — each one may
    * itself run a build/test worker pool sized to the host's core count, so
    * unlimited concurrent agents oversubscribe the machine. Configurable via
    * `maxConcurrentAgents` in repoos.toml; "auto" (unset) sizes it to this
@@ -2590,7 +2590,7 @@ export class AgentRunner {
   }
 
   /**
-   * Gate for every spawnTurn call site (#0293): at capacity, defer the spawn
+   * Gate for every spawnTurn call site: at capacity, defer the spawn
    * instead of oversubscribing the machine. The caller still gets `ok: true`
    * immediately — `queued: true` distinguishes "will run shortly" from
    * "running now" without changing callers' happy-path handling. `id` is
@@ -2624,7 +2624,7 @@ export class AgentRunner {
     return { ok: true, queued: true };
   }
 
-  /** Tasks/chats currently waiting for a free maxConcurrentAgents slot (#0293). */
+  /** Tasks/chats currently waiting for a free maxConcurrentAgents slot. */
   queued(): { id: string; queuedAt: string }[] {
     return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
   }

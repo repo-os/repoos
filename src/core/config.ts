@@ -101,7 +101,7 @@ export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
 }
 
 /**
- * "Auto" default for `maxConcurrentAgents` (#0293). An agent's own test pool
+ * "Auto" default for `maxConcurrentAgents`. An agent's own test pool
  * is capped separately (vite.config.ts `test.poolOptions.forks.maxForks: 2`),
  * so one agent's worst-case footprint is bounded rather than "the whole
  * machine" — this can size off total cores directly instead of dividing them

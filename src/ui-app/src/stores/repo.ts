@@ -262,7 +262,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
-  /** Ids waiting for a free maxConcurrentAgents slot (#0293) — will spawn automatically. */
+  /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
   /** Server-authoritative start time for a live agent turn, keyed by task id. */
   const runningSince = ref<Record<string, string>>({});
@@ -1425,7 +1425,7 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  /** Hydrate the queued marker on reload (#0293) — mirrors fetchRunning() above. */
+  /** Hydrate the queued marker on reload — mirrors fetchRunning() above. */
   async function fetchQueued(): Promise<void> {
     try {
       const r = await api<{ tasks: { id: string; queuedAt: string }[] }>("/api/agents/queued");

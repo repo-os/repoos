@@ -320,8 +320,8 @@ function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
   };
 }
 
-/** An accepted start/send is waiting for a free maxConcurrentAgents slot
- *  (#0293) — it will spawn on its own once a running agent exits. */
+/** An accepted start/send is waiting for a free maxConcurrentAgents slot —
+ *  it will spawn on its own once a running agent exits. */
 const QUEUED_HINT: CardHint = {
   label: "queued",
   title: "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",

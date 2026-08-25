@@ -117,8 +117,8 @@ export default defineConfig({
     hookTimeout: 15_000,
     // Vitest's default forks pool sizes itself to (CPU cores - 1) per run —
     // fine for one run alone, but repoos routinely has several agent-driven
-    // `bun run test`/`repoos check` runs happening at once across worktrees
-    // (#0293), and each one's pool multiplies against the others rather than
+    // `bun run test`/`repoos check` runs happening at once across worktrees,
+    // and each one's pool multiplies against the others rather than
     // sharing the machine. Capping a single run's own pool bounds that
     // multiplier so maxConcurrentAgents (src/core/config.ts) can be sized off
     // total cores instead of assuming any one run might claim all of them.
