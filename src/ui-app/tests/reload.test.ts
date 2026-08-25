@@ -1114,6 +1114,11 @@ ${extra}
       expect(reviews.isRunning("0001")).toBe(true);
       reviews.armAdoptedTimeouts();
 
+      // ...and is counted EXACTLY once in runningCount(): armAdoptedTimeouts
+      // registered it in this.runs, so it must not ALSO be counted separately
+      // from runner.running() (0288 review — the old code double-counted).
+      expect(reviews.runningCount()).toBe(1);
+
       // ...and gets a Run record whose timer stops the child if it fires.
       // REVIEW_TIMEOUT_MS is 900s, so instead of waiting, verify the wiring by
       // simulating a cancelled adopted turn via cancel(), which the Run now

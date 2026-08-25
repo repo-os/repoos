@@ -113,6 +113,26 @@ interface Run {
   cancelled: boolean;
 }
 
+/**
+ * The CTO manager (0174).
+ *
+ * Reload-durability note (0288 "Also check"): unlike the reviewer, the CTO is
+ * INTENTIONALLY kept on the one-shot `runPrompt` path and is NOT durable. Both
+ * roles share the same `runPrompt` reload-death exposure, but the blast radius
+ * differs fundamentally:
+ *
+ * - The review produces a ONE-TIME sign-off artifact (.repoos/reviews/<id>.md)
+ *   that is permanently lost if the process reloads mid-run — hence #0288 made
+ *   it durable.
+ * - The CTO is a PERIODIC board monitor (default 5-min cadence). A run lost to
+ *   a reload merely delays the next sweep; the monitor simply re-runs on its
+ *   own next tick and self-heals. It never produces a one-of-a-kind artifact.
+ *
+ * So the CTO's `runPrompt` exposure is accepted (and it is force-cancelled on
+ * reload/close, which is correct *because* it is non-durable). If the CTO ever
+ * needs to guarantee a specific run survives a reload, it should be moved onto
+ * the same durable `AgentRunner` path (#0288) — but that is out of scope here.
+ */
 export class CTOManager {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;

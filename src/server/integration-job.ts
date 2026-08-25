@@ -7,7 +7,7 @@
  * Failures retain phase and recovery action; retry resumes safely from where it was interrupted.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Task } from "../core/types.js";
 
@@ -197,9 +197,8 @@ export function createJobCoordinator(root: string): JobCoordinator {
     removeJob(taskId: string): void {
       const path = jobPath(root, taskId);
       try {
-        const fs = require("fs");
-        if (fs.existsSync(path)) {
-          fs.unlinkSync(path);
+        if (existsSync(path)) {
+          unlinkSync(path);
         }
       } catch {
         /* best-effort cleanup */

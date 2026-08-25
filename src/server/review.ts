@@ -486,14 +486,18 @@ export class ReviewManager {
     return this.runs.has(taskId) || !!this.runner?.isRunning(this.reviewKey(taskId));
   }
 
-  /** How many reviews are in flight (the server's idle check). */
+  /**
+   * How many reviews are in flight (the server's idle check).
+   *
+   * `this.runs` is the single source of truth for running reviews: fresh turns
+   * register in `run()`/`send()`, and adopted turns (re-attached after a reload)
+   * are registered by `armAdoptedTimeouts()` at boot. So counting `this.runs`
+   * already covers every in-flight review, including adopted ones — adding a
+   * separate count of `runner.running()` review sessions here would DOUBLE-count
+   * each adopted review (0288 review round 2).
+   */
   runningCount(): number {
-    const adopted = this.runner
-      ? this.runner
-          .running()
-          .filter((r) => r.id.startsWith(REVIEW_SESSION_ID_PREFIX)).length
-      : 0;
-    return this.runs.size + adopted;
+    return this.runs.size;
   }
 
   /**
