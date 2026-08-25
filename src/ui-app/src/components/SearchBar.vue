@@ -185,9 +185,17 @@ function onGlobalKey(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener("keydown", onGlobalKey);
-  loadDocContents();
 });
 onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
+
+// docList loads asynchronously (App.vue awaits docs.loadDocs() on boot), so a
+// one-shot call at mount ran against an empty list and never fired again —
+// doc body content was never fetched, so full-text doc search silently only
+// ever matched on title/path. Watching re-fires once the list actually
+// arrives (and again if new docs get created later).
+watch(docList, () => {
+  void loadDocContents();
+}, { immediate: true });
 </script>
 
 <template>
