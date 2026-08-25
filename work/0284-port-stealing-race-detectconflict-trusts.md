@@ -2,15 +2,15 @@
 id: "0284"
 title: "Port-stealing race: detectConflict trusts the lockfile alone, never probes the port"
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/port-stealing-race-detectconflict-trusts
 model_override: default
 created_at: "2026-08-24T19:31:09Z"
-updated_at: "2026-08-24T21:35:57Z"
+updated_at: "2026-08-25T00:56:52Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Found while diagnosing and fixing the reload-storm crash (#0271) — see that ta
 - 2026-08-24T19:31:09Z · created · unknown
 - 2026-08-24T21:35:43Z · model_override
 - 2026-08-24T21:35:57Z · status inbox→ready
+- 2026-08-25T00:56:52Z · status ready→active, branch
