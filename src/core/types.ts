@@ -173,27 +173,35 @@ export interface Agent {
  * a flat wall of text.
  */
 export type AgentOutputEntry =
-  /** A complete assistant text part (opencode `text` event). */
-  | { type: "text"; text: string }
-  /** A message sent by the human from the Agent tab follow-up input. */
-  | { type: "human"; text: string }
-  /** A finished tool call (opencode `tool_use` event). */
-  | {
-      type: "tool";
-      tool: string;
-      /** Rendered input (bash -> its command, objects -> pretty JSON). */
-      input?: string;
-      /** Rendered output, or the error message when the call failed. */
-      output?: string;
-      /** Tool state: "completed" | "error" (absent when unknown). */
-      state?: string;
-    }
-  /** A step boundary (opencode `step_start` / `step_finish`). */
-  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
-  /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
-  | { type: "sys"; d: string }
-  /** A legacy plain line, kept for compatibility and unknown CLI warnings. */
-  | { s: "out" | "err" | "sys"; d: string };
+  (
+    /** A complete assistant text part (opencode `text` event). */
+    | { type: "text"; text: string }
+    /** A message sent by the human from the Agent tab follow-up input. */
+    | { type: "human"; text: string }
+    /** A finished tool call (opencode `tool_use` event). */
+    | {
+        type: "tool";
+        tool: string;
+        /** Rendered input (bash -> its command, objects -> pretty JSON). */
+        input?: string;
+        /** Rendered output, or the error message when the call failed. */
+        output?: string;
+        /** Tool state: "completed" | "error" (absent when unknown). */
+        state?: string;
+      }
+    /** A step boundary (opencode `step_start` / `step_finish`). */
+    | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
+    /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
+    | { type: "sys"; d: string }
+    /** A legacy plain line, kept for compatibility and unknown CLI warnings. */
+    | { s: "out" | "err" | "sys"; d: string }
+  ) & {
+    /**
+     * ISO timestamp of when the entry was created (0258). Populated by the
+     * server on every entry it creates; absent on persisted legacy transcripts.
+     */
+    at?: string;
+  };
 
 /**
  * Live run telemetry for one task's agent session (0080). Best-effort and

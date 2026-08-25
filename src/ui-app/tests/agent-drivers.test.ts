@@ -407,8 +407,8 @@ describe("claude code driver", () => {
 
         expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
         expect(runner.output("0001")!.lines).toEqual(expect.arrayContaining([
-          { type: "text", text: "Copilot response" },
-          { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+          expect.objectContaining({ type: "text", text: "Copilot response" }),
+          expect.objectContaining({ type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" }),
         ]));
         const [run] = spawns(fx);
         expect(run.args).toEqual(expect.arrayContaining([

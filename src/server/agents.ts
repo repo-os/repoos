@@ -2459,7 +2459,7 @@ export class AgentRunner {
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
     }
-    const human: AgentOutputEntry = { type: "human", text };
+    const human: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     const session: Session = {
       lines: [human],
       pending: "",
@@ -2502,7 +2502,7 @@ export class AgentRunner {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     this.sessions.set(taskId, session);
-    const entry: AgentOutputEntry = { type: "human", text };
+    const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
     while (session.bytes > OUTPUT_CAP_BYTES) {
@@ -2814,12 +2814,15 @@ export class AgentRunner {
     stream: "out" | "err" | "sys",
     entry: AgentOutputEntry,
   ): void {
-    session.lines.push(entry);
-    session.bytes += entryBytes(entry);
+    const stamped: AgentOutputEntry = entry.at
+      ? entry
+      : { ...entry, at: new Date().toISOString() };
+    session.lines.push(stamped);
+    session.bytes += entryBytes(stamped);
     this.emit({
       type: "agent.output",
       id: taskId,
-      entry,
+      entry: stamped,
       stream: stream === "sys" ? "out" : stream,
       at: now(),
     });
