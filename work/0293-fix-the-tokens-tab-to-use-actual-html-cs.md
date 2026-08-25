@@ -8,10 +8,11 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-the-tokens-tab-to-use-actual-html-cs
+model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-25T00:16:03Z"
-updated_at: "2026-08-25T05:29:03Z"
+updated_at: "2026-08-25T05:29:04Z"
 handoff_signal_retry_count: 1
 ---
 Fix the tokens tab to use actual HTML tables (with proper table semantics) so tabular data is displayed correctly and legibly, and apply the same fix to the other surfaces that render token/usage tabular data.
@@ -57,3 +58,4 @@ Also update the matching styles — `src/ui-app/src/components/UsagePanel.vue` s
 - 2026-08-25T04:33:35Z · review_model_override
 - 2026-08-25T05:08:33Z · model_override
 - 2026-08-25T05:27:12Z · status active→review
+- 2026-08-25T05:29:04Z · model_override
