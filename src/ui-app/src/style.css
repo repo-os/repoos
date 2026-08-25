@@ -318,14 +318,22 @@
   .filter-clear{font-size:12px;font-weight:600;color:var(--cyan);text-decoration:none}
   .filter-clear:hover{text-decoration:underline}
 
-  .board{display:flex;gap:13px;align-items:stretch}
+  /* Column-gap (2nd value) is 0 on purpose: the visual gap between
+     side-by-side columns comes entirely from .col-body's left/right padding
+     instead (8px each side = the same 16px total the old gap:13px +
+     padding-right:3px produced), so the hover glow/lift has room to render
+     there rather than being clipped by .col-body's own overflow:auto
+     boundary sitting flush with the old gap. Row-gap (1st value) stays 13px
+     — it separates wrapped rows of columns at narrow widths, where there's
+     no adjacent padding to lean on instead. */
+  .board{display:flex;gap:13px 0;align-items:stretch}
   .board-col{display:flex;flex-direction:column;min-width:0;flex:1 1 0;height:calc(100vh - 211px);position:relative}
   .col-head{display:flex;align-items:center;gap:8px;padding:0 4px 11px;font-size:12px;font-weight:600;color:var(--txt-dim);cursor:pointer;user-select:none;flex-shrink:0;border-radius:11px}
   .col-head .cdot{width:8px;height:8px;border-radius:50%}
   .col-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .col-count{margin-left:auto;font-size:10.5px;color:var(--txt-faint);background:var(--panel);padding:1px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
   .col-chev{width:11px;height:11px;margin-left:10px;color:var(--txt-faint);flex-shrink:0;transition:transform .15s}
-  .col-body{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0;padding:8px 16px 20px;scrollbar-width:none}
+  .col-body{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0;padding:4px 8px 10px;scrollbar-width:none}
   .col-body::-webkit-scrollbar{display:none}
   .board-col.scrollable::after{content:"";position:absolute;left:0;right:3px;bottom:0;height:38px;pointer-events:none;background:linear-gradient(to top,var(--bg),transparent);z-index:1}
   .board-col.collapsed::after{display:none}
@@ -350,7 +358,9 @@
 
   @media(max-width:1250px){
     .board{flex-wrap:wrap}
-    .board-col{flex:1 1 calc((100% - 26px)/3)}
+    /* No column-gap to subtract here anymore (see .board) — the columns'
+       own padding provides the horizontal spacing, so three fit exactly. */
+    .board-col{flex:1 1 calc(100%/3)}
     .board-col.collapsed{flex:0 0 38px;width:38px}
   }
   @media(max-width:760px){
@@ -1144,9 +1154,11 @@
   [data-ui-theme="clear"] .sidebar{padding:16px 12px}
   [data-ui-theme="clear"] .nav-item{padding:10px 12px}
   [data-ui-theme="clear"] .side-foot{padding:13px}
-  [data-ui-theme="clear"] .board{gap:16px}
+  [data-ui-theme="clear"] .board{gap:16px 0}
   [data-ui-theme="clear"] .col-head{padding-bottom:14px}
-  [data-ui-theme="clear"] .col-body{gap:12px}
+  /* Side padding bumped to 9.5px (vs the base theme's 8px) to match clear's
+     larger original column-gap (16px vs 13px) now that gap owns none of it. */
+  [data-ui-theme="clear"] .col-body{gap:12px;padding-left:9.5px;padding-right:9.5px}
   [data-ui-theme="clear"] .task-card{padding:0}
   [data-ui-theme="clear"] .task-card > :first-child{padding:16px}
   [data-ui-theme="clear"] .tc-top{margin-bottom:11px}

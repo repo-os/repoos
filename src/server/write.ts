@@ -252,6 +252,13 @@ export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
 
   const previousStatus = task.status;
   task.status = "done";
+  // A finished task is never "waiting on human input" — leaving a stale flag
+  // here (e.g. from an earlier failed review that got fixed on retry) makes a
+  // completed task show a permanent "needs input" badge for no reason (#0293
+  // follow-up: confirmed live on #0253, which released with needs_input still
+  // set from a since-resolved merge conflict retry).
+  task.needsInput = false;
+  task.needsInputReason = undefined;
   recordChange(task, `status ${previousStatus}→done, release:success`);
   writeFileSync(absPath, serializeTask(task));
   commitTaskFile(config.root, absPath, `docs(${task.id}): set status done`);
