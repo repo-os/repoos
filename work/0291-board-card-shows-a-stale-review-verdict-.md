@@ -11,9 +11,8 @@ created_by: ""
 branch: feat/board-card-shows-a-stale-review-verdict-
 model_override: default
 pm_model_override: default
-review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T05:02:07Z"
+updated_at: "2026-08-25T05:05:22Z"
 ---
 ## Problem
 The board card's review-verdict badge can show an outdated verdict (e.g. "needs some work" from an earlier round) even though the actual, current review report already says something different (e.g. "good to go" from the latest round) — confirmed live on #0286 itself.
@@ -65,3 +64,4 @@ Task #0286 went through 3 review rounds (2026-08-24T21:31-21:33, 21:36-21:38, 21
 - 2026-08-25T00:58:35Z · pm_model_override
 - 2026-08-25T00:59:28Z · pm_model_override
 - 2026-08-25T05:02:07Z · pm_model_override
+- 2026-08-25T05:05:22Z · review_model_override
