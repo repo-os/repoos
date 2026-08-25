@@ -12,7 +12,7 @@ model_override: default
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T11:18:21Z"
+updated_at: "2026-08-25T11:18:39Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -73,7 +73,14 @@ Gmail/GitHub-style: `j` / `k` for vertical movement, `h` / `l` for horizontal mo
 - Confirm the exact list component(s) and whether they share a common keyboard/focus layer before implementing, to avoid duplicating handlers.
 - For horizontal nav (`h`/`l`), the board columns are the likely grouping; if a list view has no horizontal dimension, document that it degrades gracefully (highlight moves to adjacent item or is a no-op).
 
+## Reviewer feedback (round 2)
+
+Three requested changes from human review of the preview:
+
+1. **Add horizontal navigation.** Support `h`/`l` and `Left`/`Right` to move between columns/groups, not just vertical `j`/`k`.
+2. **Fix `Esc` semantics.** When a task panel is open, `Esc` must close the panel and keep the card highlighted — not unselect the card. Only a second `Esc` (no panel open) clears the highlight.
+3. **Add a Settings toggle.** Keyboard nav should be opt-in (default off) for power users, not forced on everyone.
+
 ## Activity
 
-- 2026-08-25T11:18:12Z · title, body
-- 2026-08-25T11:18:21Z · status review→active
+- 2026-08-25T11:18:39Z · body
