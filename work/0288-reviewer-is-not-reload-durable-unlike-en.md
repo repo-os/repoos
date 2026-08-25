@@ -13,7 +13,7 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T08:09:40Z"
+updated_at: "2026-08-25T08:09:55Z"
 ---
 ## Problem
 Reviews are currently failing to complete at a high rate. Confirmed live right now: #0276, #0281, and #0285 all show a reviewer session starting, running for under 2 minutes, then dying with no report (.repoos/reviews/<id>.md never written), no "review completed" line in .repoos/logs/tasks/<id>.log, and no live process. This is not isolated — it is systemic and ongoing.
