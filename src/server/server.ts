@@ -1078,6 +1078,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       } else {
         runner.system(request.taskId, `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`);
       }
+    },
+    // A durable review turn completed (0288), possibly re-attached after a
+    // reload. The ReviewManager finalizes the report from its own durable
+    // session rather than a post-`runPrompt` continuation that would have died
+    // with the old process. `reviews` is assigned below but the callback only
+    // fires asynchronously after completion, so the closure is safe.
+    onReviewDone: (sessionKey) => {
+      if (!reviews) return;
+      try {
+        reviews.handleReviewDone(sessionKey);
+      } catch (err) {
+        console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
+      }
     } },
   );
 
@@ -1918,11 +1931,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
-          // orphan `repoos serve` process is left behind. Same for review
-          // agents — a one-shot child must not outlive the server that
-          // launched it and wait 15 minutes to write a report nobody reads.
-          reviews.cancelAll();
+          // orphan `repoos serve` process is left behind.
+          //
+          // Review agents differ (0288): on a RELOAD handover they must NOT be
+          // cancelled — they are durable (registered in the runner's durable
+          // registry + log files) and the replacement process re-attaches and
+          // finalizes their reports. Cancelling here would kill every in-flight
+          // review on every reload, re-introducing the mid-review death this
+          // task fixes. Only a REAL shutdown (not a reload) reaps them: a
+          // one-shot child must not outlive the server that launched it and
+          // wait 15 minutes to write a report nobody reads. The CTO monitor is
+          // still always cancelled (it is NOT durable), so it is reaped even on
+          // a reload rather than left as an un-adoptable orphan.
           cto.cancelAll();
+          if (!(reload?.isReloading ?? false)) {
+            reviews.cancelAll();
+          }
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {

@@ -776,6 +776,87 @@ branch: feat/adopt-test
   });
 });
 
+describe("Review reload durability (0288)", () => {
+  it("finalizes a dead review entry on adoption (process finished during handoff)", async () => {
+    const { AgentRunner } = await import("../../server/agents");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-adopt-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0001-review.md"), `---
+id: "0001"
+title: Review adopt
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review-adopt
+---
+## Test
+`);
+
+      // A registry entry for a REVIEW whose PID is long dead (its process
+      // finished during the reload handoff before the new server could adopt).
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "run" },
+          ],
+        }),
+      );
+      // Its durable stdout log still holds the report.
+      writeFileSync(
+        join(fullCacheDir, "agent-logs", "review:0001.out.log"),
+        "## Verdict\n`good to go` — durability works.\n",
+      );
+
+      let doneKey: string | null = null;
+      const runner = new AgentRunner(configForRoot(root, cacheDir) as any, () => {}, {
+        onReviewDone: (sessionKey) => {
+          doneKey = sessionKey;
+        },
+      });
+      runner.adoptRunningAgents();
+
+      // The completion hook is deferred so the server has built its
+      // ReviewManager before it fires; wait for it here.
+      const deadline = Date.now() + 5000;
+      while (!doneKey && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      expect(doneKey).toBe("review:0001");
+      const session = runner.output("review:0001");
+      // The report text was replayed into the durable session.
+      expect(session?.lines.some((l: any) => l.d?.includes("good to go"))).toBe(true);
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/** Shared config helper for the review-adoption test above. */
+function configForRoot(root: string, cacheDir: string) {
+  return {
+    root,
+    workDir: "work",
+    docsDir: "docs",
+    skillsDir: "skills",
+    taskExtensions: [".md"],
+    defaultStatus: "inbox" as const,
+    defaultAssignee: "unassigned" as const,
+    cacheDir,
+  };
+}
+
 describe("POST /api/server/restart", () => {
   it.skip("returns a reload state from the running server",
     async () => {
