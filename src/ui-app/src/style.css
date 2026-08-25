@@ -209,7 +209,7 @@
     flex-shrink:0}
   .search-overlay-header .search-ico{color:var(--txt-faint);flex-shrink:0}
   .search-overlay-input{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:16px;
-    font-family:inherit;font-weight:400;border-radius:8px;transition:box-shadow .15s ease}
+    font-family:inherit;font-weight:400;padding:6px;margin:-6px;border-radius:8px;transition:box-shadow .15s ease}
   .search-overlay-input:focus{box-shadow:0 0 0 3px var(--cyan-dim)}
   .search-overlay-input::placeholder{color:var(--txt-faint)}
   .search-overlay-close{display:flex;align-items:center;justify-content:center;width:28px;height:28px;
