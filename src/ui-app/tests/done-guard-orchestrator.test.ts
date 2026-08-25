@@ -27,8 +27,13 @@ function makeRepo(): { root: string; clean: () => void } {
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   git(root, ["config", "init.defaultBranch", "main"]);
+  // .repoos/ is gitignored in the real repo (job/lock files live there and
+  // must never show up as "dirty main") — match that here so this fixture's
+  // dirty-file checks reflect production, not an artifact of a bare `git
+  // init` with no .gitignore.
+  writeFileSync(join(root, ".gitignore"), ".repoos/\n");
   writeFileSync(join(root, "README.md"), "hi\n");
-  git(root, ["add", "README.md"]);
+  git(root, ["add", "README.md", ".gitignore"]);
   git(root, ["commit", "-m", "init"]);
   git(root, ["branch", "-M", "main"]);
   return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
@@ -114,4 +119,61 @@ describe("publish-time dirty-main guard (#0211)", () => {
       clean();
     }
   });
+
+  it(
+    "auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)",
+    async () => {
+      // Confirmed live: #0293's close-out was refused at publish time because
+      // an UNRELATED task's work/*.md file — a routine activity-log stamp —
+      // was dirty on main. That's the same class of write commitTaskFile
+      // makes constantly elsewhere in the system; blocking a merge on it
+      // just to require a human retry is unnecessary friction, unlike a
+      // dirty file OUTSIDE work/ (still refused above), which is genuinely
+      // ambiguous.
+      const { root, clean } = makeRepo();
+      try {
+        mkdirSync(join(root, "work"), { recursive: true });
+        const branch = "repoos/integrate/T3";
+        const wt = ensureWorktree(root, branch);
+        expect(wt.ok).toBe(true);
+        writeFileSync(join(wt.path, "feature.txt"), "new\n");
+        git(wt.path, ["add", "feature.txt"]);
+        git(wt.path, ["commit", "-m", "candidate work"]);
+        const mainSha = git(root, ["rev-parse", "main"]);
+        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+        const coordinator = createJobCoordinator(root);
+        coordinator.enqueue({ id: "T3", branch } as any);
+        coordinator.updateJob("T3", {
+          phase: "publishing",
+          startedAt: new Date().toISOString(),
+          baseMainSha: mainSha,
+          branchSha: candidateSha,
+          candidateSha,
+        });
+
+        // An UNRELATED task file dirty on main at publish time — the exact
+        // #0293 shape.
+        writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
+
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(true);
+        // The checkpoint commit landed on main, and the candidate merged on
+        // top of it — main advanced past its pre-publish SHA either way.
+        expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+        expect(git(root, ["status", "--porcelain"])).toBe("");
+        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint task bookkeeping/);
+      } finally {
+        clean();
+      }
+    },
+  );
 });

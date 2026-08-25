@@ -24,6 +24,7 @@ import {
   deleteBranch,
   isGitRepo,
   commitTaskFile,
+  commitDirtyFiles,
   mergeBranch,
   dirtyFiles,
   getDiff,
@@ -774,10 +775,36 @@ export class CloseOutOrchestrator {
         throw err;
       }
       if (dirtyOnMain.length > 0) {
-        return {
-          ok: false,
-          reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
-        };
+        // Auto-checkpoint routine task-bookkeeping churn instead of blocking
+        // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
+        // was refused because an UNRELATED task's `work/*.md` file — an
+        // activity-log stamp from a normal status/override change — was
+        // dirty on main at publish time). Every routine task write already
+        // auto-commits this exact way via `commitTaskFile`/`recordChange`
+        // elsewhere in the system; a task file being dirty for a moment
+        // between that write and this check is expected traffic on a busy
+        // board, not a signal something risky is in flight. Scoped narrowly:
+        // only when EVERY dirty path is under the work dir — anything else
+        // (source, config, a stray build artifact) still fails closed exactly
+        // as before, since that's genuinely ambiguous and worth a human's
+        // attention rather than a blind auto-commit.
+        const workPrefix = `${this.config.workDir}/`;
+        const onlyTaskFiles = dirtyOnMain.every((p) => p.startsWith(workPrefix));
+        if (onlyTaskFiles) {
+          try {
+            await commitDirtyFiles(root, "chore: checkpoint task bookkeeping before publish");
+          } catch {
+            return {
+              ok: false,
+              reason: `main has ${dirtyOnMain.length} uncommitted task file${dirtyOnMain.length === 1 ? "" : "s"} at publish time and the automatic checkpoint commit failed: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main and retry.`,
+            };
+          }
+        } else {
+          return {
+            ok: false,
+            reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+          };
+        }
       }
 
       // Merge candidate to live main using FF when possible.
