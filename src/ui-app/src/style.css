@@ -647,6 +647,9 @@
   .done-error-step{font-weight:400;font-family:'JetBrains Mono',monospace;color:var(--txt-dim);font-size:11px}
   .done-error-files{margin-bottom:8px}
   .done-error-output{margin-bottom:8px}
+  .done-error-output-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    padding:0;border:none;background:none;cursor:pointer;font:inherit;color:inherit;border-radius:4px}
+  .done-error-output-toggle:focus-visible{outline:2px solid var(--red);outline-offset:2px}
   .done-error-pre{margin:6px 0 0;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.28);color:var(--txt-dim);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}
   .done-error-files ul{margin:4px 0 0 16px;color:var(--txt-dim);font-size:11px}
   .done-error-sub{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);font-family:'JetBrains Mono',monospace}
@@ -657,8 +660,8 @@
   /* Card mode (0272): the fix button is a full-width, prominent primary
      action; the panel mode keeps it inline. */
   .done-error--card .done-error-fix{display:flex;width:100%;justify-content:center;padding:8px 12px;font-size:12px}
-  /* Panel mode (0272): the full detail is always rendered; let long check
-     output scroll inside a taller box. */
+  /* Panel mode (0272): the detail is open by default (collapsible — 0253);
+     let long check output scroll inside a taller box while it's open. */
   .done-error--panel .done-error-pre{max-height:min(55vh,480px)}
   .tc-done-error{margin-top:10px}
   .drawer-done-error{margin-top:12px}

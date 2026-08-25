@@ -35,6 +35,9 @@ async function fix(): Promise<void> {
         `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
         `Phase: ${props.step ?? "unknown"}.`,
         `Error: ${props.message}`,
+        // `message` is a capped headline (0253) — the full output, when there
+        // is one, only lives in `detail`.
+        ...(props.detail ? [`Full output:\n${props.detail}`] : []),
         "Identify the concrete cause and the smallest safe repair so the task can be retried.",
       ].join("\n"),
     }));
@@ -59,6 +62,11 @@ function showMore(): void {
 // card's when several move-to-done errors are visible at once.
 const detailId = `done-error-detail-${useId().replaceAll(":", "-")}`;
 const msgEl = ref<HTMLElement | null>(null);
+
+// The raw output is shown open by default (it's the reason the panel exists),
+// but it can run to hundreds of lines — collapsible so it doesn't dominate
+// the task panel once you've seen enough of it (0253).
+const outputOpen = ref(true);
 </script>
 
 <template>
@@ -85,8 +93,16 @@ const msgEl = ref<HTMLElement | null>(null);
         <span v-if="step" class="done-error-step">at {{ step }}</span>
       </div>
       <div v-if="detail" class="done-error-output">
-        <div class="done-error-sub">Check output</div>
-        <pre class="done-error-pre mono">{{ detail }}</pre>
+        <button
+          type="button"
+          class="done-error-output-toggle"
+          :aria-expanded="outputOpen"
+          @click="outputOpen = !outputOpen"
+        >
+          <span class="done-error-sub">Check output</span>
+          <ChevronDown class="done-error-chev" :class="{ open: outputOpen }" aria-hidden="true" />
+        </button>
+        <pre v-if="outputOpen" class="done-error-pre mono">{{ detail }}</pre>
       </div>
       <div v-if="conflicts?.length" class="done-error-files">
         <div class="done-error-sub">Conflicting files</div>

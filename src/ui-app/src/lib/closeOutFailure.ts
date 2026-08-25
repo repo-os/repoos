@@ -45,6 +45,18 @@ function flatten(s: string): string {
   return s.replace(/\s*\n\s*/g, " · ").trim();
 }
 
+/** Longest a headline may run before the full text has to live in `detail`
+ *  instead — a raw failure reason (a merge-conflict listing, a build log tail)
+ *  can be thousands of characters, and the headline renders unclamped in the
+ *  task panel, so an uncapped one turns into an unscrollable wall of text. */
+const MAX_HEADLINE = 240;
+
+/** Flatten + cap `s` for use as a headline; the untruncated text belongs in `detail`. */
+function headline(s: string): string {
+  const flat = flatten(s);
+  return flat.length > MAX_HEADLINE ? flat.slice(0, MAX_HEADLINE - 1) + "…" : flat;
+}
+
 /** What the failure actually was, derived from phase + reason. */
 export type CloseOutFailureKind =
   | "conflict" // a genuine merge conflict: list files + resolve-then-retry
@@ -98,20 +110,27 @@ export function describeCloseOutFailure(
   const kind = classifyFailure(phase, clean, conflicts);
 
   switch (kind) {
-    case "conflict":
+    case "conflict": {
+      const summary = conflicts.length
+        ? `Merge conflict in ${conflicts.length} file${conflicts.length === 1 ? "" : "s"}.`
+        : clean
+          ? headline(clean)
+          : CONFLICT_HINT;
       return {
-        message: clean || CONFLICT_HINT,
+        message: summary,
         conflicts,
         step: "merge",
+        detail: clean || undefined,
         hint: CONFLICT_HINT,
       };
+    }
     case "validating": {
       // `check failed: <tail>` / `build failed: <tail>` — the tail IS the
-      // readable excerpt. Flatten it for the clamped card message; the
-      // expanded panel shows the newline-preserving version.
+      // readable excerpt. Flatten+cap it for the headline; the expanded
+      // panel shows the full newline-preserving version.
       const excerpt = clean.replace(/^(?:repoos\s+)?(?:check|build) failed:\s*/i, "").trim();
       return {
-        message: `The validation check failed${excerpt ? ` — ${flatten(excerpt)}` : "."}`,
+        message: `The validation check failed${excerpt ? ` — ${headline(excerpt)}` : "."}`,
         conflicts: [],
         step: "check",
         detail: excerpt || undefined,
@@ -120,32 +139,36 @@ export function describeCloseOutFailure(
     }
     case "dirty":
       return {
-        message: clean,
+        message: clean ? headline(clean) : "Main's working tree has uncommitted changes.",
         conflicts: [],
         step: "publish",
+        detail: clean || undefined,
         hint: "Main's working tree has uncommitted changes that the merge would overwrite. Commit or stash them on main, then retry.",
       };
     case "syncing":
       return {
         message: clean
-          ? `The branch could not be brought up to date with main — ${flatten(clean)}`
+          ? `The branch could not be brought up to date with main — ${headline(clean)}`
           : "The branch could not be brought up to date with main.",
         conflicts: [],
         step: "sync",
+        detail: clean || undefined,
         hint: "The branch could not be brought up to date with main. Fix the issue in the feature branch's worktree, then retry.",
       };
     case "publishing":
       return {
-        message: clean,
+        message: clean ? headline(clean) : "The merge to main failed at publish time.",
         conflicts: [],
         step: "publish",
+        detail: clean || undefined,
         hint: "The merge to main failed at publish time. Retry the close-out.",
       };
     default:
       return {
-        message: clean || "The close-out failed.",
+        message: clean ? headline(clean) : "The close-out failed.",
         conflicts,
         step: "merge",
+        detail: clean || undefined,
         hint: "Retry the close-out. If it keeps failing, check the feature branch's worktree for issues.",
       };
   }
