@@ -12,7 +12,7 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T14:15:47Z"
+updated_at: "2026-08-25T14:17:10Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
