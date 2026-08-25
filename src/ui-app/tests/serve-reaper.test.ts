@@ -1,10 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { spawn } from "node:child_process";
-import { ServeReaper, isOrphanRoot, isOrphanServeCommand } from "../../server/serve-reaper.js";
+import { ServeReaper, isOrphanRoot, isOrphanServeCommand, isPortListening } from "../../server/serve-reaper.js";
 import { shouldReapStrayServeProcesses } from "../../server/server.js";
 import { existsSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir, tmpdir } from "node:os";
+import net from "node:net";
+
+/** Bind a bare HTTP server on loopback so the port is genuinely listening. */
+function serveOn(port: number): Promise<net.Server> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.listen({ port, host: "127.0.0.1" }, () => resolve(server));
+  });
+}
+
+/** Close a server, awaiting the underlying socket release so a port frees promptly. */
+function closeServer(server: net.Server): Promise<void> {
+  return new Promise((resolve) => server.close(() => resolve()));
+}
 
 describe("ServeReaper", () => {
   let tmpDir: string;
@@ -64,27 +78,73 @@ describe("ServeReaper", () => {
     expect(readFileSync(lockPath, "utf8")).toBe(controlLock);
   });
 
-  it("detects conflict when a live process is registered for the same port", () => {
+  it("detects conflict when a live process is registered for the same port", async () => {
     reaper.register(7171, "127.0.0.1");
-    const conflict = reaper.detectConflict(7171, "127.0.0.1");
+    const conflict = await reaper.detectConflict(7171, "127.0.0.1");
 
     expect(conflict).toBeDefined();
     expect(conflict).toContain("Port 7171 is already bound");
     expect(conflict).toContain(String(process.pid));
   });
 
-  it("does not detect conflict for different ports", () => {
-    reaper.register(7171, "127.0.0.1");
-    const conflict = reaper.detectConflict(7172, "127.0.0.1");
+  it("does not detect conflict for different ports", async () => {
+    reaper.register(43111, "127.0.0.1");
+    const conflict = await reaper.detectConflict(43112, "127.0.0.1");
 
     expect(conflict).toBeNull();
   });
 
-  it("does not detect conflict for different hosts", () => {
-    reaper.register(7171, "127.0.0.1");
-    const conflict = reaper.detectConflict(7171, "0.0.0.0");
+  it("does not detect conflict for different hosts", async () => {
+    reaper.register(43111, "127.0.0.1");
+    const conflict = await reaper.detectConflict(43111, "0.0.0.0");
 
     expect(conflict).toBeNull();
+  });
+
+  it("detects a live listener even when the lockfile is missing (#0284)", async () => {
+    const probePort = 39817;
+    const server = await serveOn(probePort);
+
+    try {
+      // A live process owns probePort but there is NO lockfile — a deleted/corrupt
+      // lockfile must not mask the live listener.
+      expect(existsSync(join(tmpDir, ".repoos", "serve.lock"))).toBe(false);
+      const conflict = await reaper.detectConflict(probePort, "127.0.0.1");
+      expect(conflict).toBeDefined();
+      expect(conflict).toContain(`Port ${probePort} is already in use`);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  it("detects a live listener even when the lockfile points at a dead PID (#0284)", async () => {
+    const probePort = 39817;
+    const server = await serveOn(probePort);
+    mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
+    require("node:fs").writeFileSync(
+      join(tmpDir, ".repoos", "serve.lock"),
+      JSON.stringify({
+        pid: 999999999,
+        port: probePort,
+        host: "127.0.0.1",
+        startedAt: new Date().toISOString(),
+      }),
+    );
+
+    try {
+      // The lockfile names a dead PID, but a live process actually holds the
+      // port — the stale lockfile must not mask it.
+      const conflict = await reaper.detectConflict(probePort, "127.0.0.1");
+      expect(conflict).toBeDefined();
+      expect(conflict).toContain(`Port ${probePort} is already in use`);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  it("isPortListening is false when nothing is listening", async () => {
+    expect(await isPortListening(1, "127.0.0.1")).toBe(false);
+    expect(await isPortListening(0, "127.0.0.1")).toBe(false);
   });
 
   it("cleans up stale lockfiles without removing current process lockfile", () => {
@@ -211,7 +271,7 @@ describe("ServeReaper", () => {
     }
   });
 
-  it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", () => {
+  it("is fully inert for a preview child (REPOOS_PREVIEW_CHILD=1) (#0183)", async () => {
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
 
@@ -234,7 +294,7 @@ describe("ServeReaper", () => {
       expect(existsSync(lockPath)).toBe(true); // not reaped
 
       // detectConflict never refuses to bind (no false positive on reused ports)
-      expect(preview.detectConflict(12345, "127.0.0.1")).toBeNull();
+      expect(await preview.detectConflict(12345, "127.0.0.1")).toBeNull();
 
       // register never writes the lockfile (no cross-preview collision)
       preview.register(54321, "127.0.0.1");

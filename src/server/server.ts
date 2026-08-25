@@ -1846,8 +1846,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (!bound)
             throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
         } else {
-          // Check for port conflicts before binding (0168)
-          const conflict = reaper.detectConflict(port, host);
+          // Check for port conflicts before binding (0168). detectConflict is
+          // async: it probes the port for a live listener so a missing/stale
+          // lockfile can't mask a process that already owns this port (#0284).
+          const conflict = await reaper.detectConflict(port, host);
           if (conflict) throw new Error(conflict);
           await bindOnce(false);
         }
