@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-25T05:59:30Z"
-review_passes: 1
 id: "0293"
 title: Fix the tokens tab to use actual html/css/tailwind tables…
 type: feature
@@ -12,7 +10,10 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-the-tokens-tab-to-use-actual-html-cs
 pm_model_override: default
+review_model_override: default
 created_at: "2026-08-25T00:16:03Z"
+updated_at: "2026-08-25T06:23:23Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 Fix the tokens tab to use actual HTML tables (with proper table semantics) so tabular data is displayed correctly and legibly, and apply the same fix to the other surfaces that render token/usage tabular data.
@@ -69,4 +70,4 @@ Also update the matching styles — `src/ui-app/src/components/UsagePanel.vue` s
 - 2026-08-25T05:54:44Z · review_cli_override
 - 2026-08-25T05:54:49Z · review_model_override
 - 2026-08-25T05:55:41Z · model_override
-
+- 2026-08-25T06:23:23Z · review_model_override
