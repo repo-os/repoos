@@ -8,8 +8,9 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: default
 created_at: "2026-08-25T00:16:03Z"
-updated_at: "2026-08-25T00:21:15Z"
+updated_at: "2026-08-25T00:56:33Z"
 ---
 Fix the tokens tab to use actual HTML tables (with proper table semantics) so tabular data is displayed correctly and legibly, and apply the same fix to the other surfaces that render token/usage tabular data.
 
@@ -47,3 +48,4 @@ Also update the matching styles — `src/ui-app/src/components/UsagePanel.vue` s
 
 - 2026-08-25T00:20:58Z · body
 - 2026-08-25T00:21:15Z · status draft→inbox
+- 2026-08-25T00:56:33Z · model_override
