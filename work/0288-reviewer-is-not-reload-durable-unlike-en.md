@@ -3,7 +3,6 @@ id: "0288"
 title: "Reviewer is not reload-durable, unlike engineer and PM — dies mid-review on every server reload"
 type: bug
 status: active
-needs_input: true
 needs_merge: true
 priority: p1
 area: server
@@ -69,3 +68,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T05:30:10Z · status active→review
 - 2026-08-25T05:46:51Z · model_override
 - 2026-08-25T05:47:01Z · status review→active
+- 2026-08-25T05:47:01Z · needs_input
