@@ -921,10 +921,11 @@ export const useRepoStore = defineStore("repo", () => {
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
-    // was running. Reports remain lazy-loaded by the drawer, but cards get
-    // their live activity state immediately.
+    // was running. Cards get their live activity state immediately; reports
+    // would otherwise lazy-load from the drawer on open (0291).
     const hydratedReviews: Record<string, ReviewState> = {};
     for (const task of idx.tasks) {
+      if (task.status !== "review") continue;
       if (!task.automaticReview) continue;
       hydratedReviews[task.id] = {
         running: task.automaticReview.running,
@@ -934,6 +935,19 @@ export const useRepoStore = defineStore("repo", () => {
       };
     }
     reviews.value = { ...reviews.value, ...hydratedReviews };
+    // 0291: a completed review's SSE event can be lost when the server reloads
+    // in the middle of it. Events are not replayed across an EventSource
+    // reconnect, so the board card's verdict badge would show the previous
+    // round's verdict indefinitely. Recovery: for every task still in `review`
+    // and NOT currently being reviewed after a reconnect, pull the
+    // authoritative report again (bounded — only completed reviews, never the
+    // whole history, and never while a review is live). Fire-and-forget so
+    // hydration isn't blocked; the verdict badge updates when the fetch lands.
+    for (const task of idx.tasks) {
+      if (task.status === "review" && task.automaticReview?.enabled && !task.automaticReview.running) {
+        void loadReview(task.id);
+      }
+    }
     Object.assign(counts, idx.counts);
   }
 
