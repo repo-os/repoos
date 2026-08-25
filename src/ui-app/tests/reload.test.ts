@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createServer as createTcpServer } from "node:net";
+import { createServer as createHttpServer } from "node:http";
 import {
   mkdtempSync,
   mkdirSync,
@@ -122,6 +123,17 @@ descendant.unref();
 setInterval(() => {}, 1000);
 `;
 
+/** Stays alive without binding the control port (used to model a replacement
+ *  that survives long enough for the old process to drain, while a foreign
+ *  process already holds the port). */
+const FAKEBIN_IDLE = `#!/usr/bin/env node
+const fs = require("node:fs");
+fs.appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({
+  pid: process.pid, idle: true,
+}) + "\\n");
+setInterval(() => {}, 1000);
+`;
+
 interface SpawnRecord {
   pid?: number;
   args?: string[];
@@ -139,6 +151,7 @@ interface Fixture {
   flashCli: string;
   descendantCli: string;
   neverConfirmCli: string;
+  idleCli: string;
   log: string;
   port: number;
   clean: () => void;
@@ -176,6 +189,7 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-never-confirm"), FAKEBIN_NEVER_CONFIRM, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-idle"), FAKEBIN_IDLE, { mode: 0o755 });
   const port = await reservePort();
   return {
     repo,
@@ -185,6 +199,7 @@ async function makeFixture(): Promise<Fixture> {
     flashCli: join(bin, "repoos-flash"),
     descendantCli: join(bin, "repoos-descendant"),
     neverConfirmCli: join(bin, "repoos-never-confirm"),
+    idleCli: join(bin, "repoos-idle"),
     log: join(root, "spawns.log"),
     port,
     clean: () => rmSync(root, { recursive: true, force: true }),
@@ -244,6 +259,7 @@ interface Calls {
   failed: number;
   drained: number;
   reListen: number;
+  failedReason?: string;
 }
 
 function makeManager(
@@ -269,8 +285,9 @@ function makeManager(
     onReloadConfirmed: async () => {
       calls.confirmed++;
     },
-    onReloadFailed: () => {
+    onReloadFailed: (reason) => {
       calls.failed++;
+      calls.failedReason = reason;
     },
     pollMs: 50,
     retryMs: 50,
@@ -631,6 +648,63 @@ describe("ReloadManager", () => {
     }
   });
 
+  it("#0284: reports a loud \"port stolen\" reason when a foreign process grabs the port during the drain", async () => {
+    if (process.platform === "win32") return;
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    // A foreign HTTP listener holds the port from before the reload (an HTTP
+    // server so the handshake probe's GET completes cleanly rather than hanging
+    // on a bare TCP accept). Once the old process drains (releases its
+    // listener), this foreign process is what `isPortListening` finds — the
+    // reload must say the port was STOLEN, not merely "could not re-bind".
+    const foreign = createHttpServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    await new Promise<void>((resolve, reject) => {
+      foreign.once("error", reject);
+      foreign.listen(fx.port, "127.0.0.1", () => resolve());
+    });
+    // listen() must fail for the whole re-bind window (the foreign server holds
+    // the port), which is exactly what a stolen port does to a real process:
+    // every re-bind attempt EADDRINUSEs. We model that with a rejecting bind.
+    const listen = async (): Promise<void> => {
+      await new Promise<void>((resolve, reject) => {
+        const srv = createTcpServer();
+        srv.once("error", (e) => {
+          srv.close();
+          reject(e);
+        });
+        srv.listen({ port: fx.port, host: "127.0.0.1" }, () => {
+          srv.close();
+          resolve();
+        });
+      });
+    };
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.idleCli, // stays alive, never confirms → drain then failure branch
+      listen,
+      rebindTimeoutMs: 300,
+      graceMs: 20,
+      handshakeTimeoutMs: 1000,
+    });
+    try {
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      manager.requestReload("test drain-window steal");
+
+      await waitFor(() => calls.failed > 0, "reload failure reported");
+      expect(calls.failedReason).toMatch(/stolen by another process/);
+    } finally {
+      manager.stop();
+      await killReplacement(fx);
+      await new Promise<void>((resolve) => {
+        foreign.closeAllConnections?.();
+        foreign.close(() => resolve());
+      });
+      fx.clean();
+    }
+  });
+
   it("terminates the full failed-replacement process group", async () => {
     if (process.platform === "win32") return;
     const fx = await makeFixture();
@@ -639,8 +713,7 @@ describe("ReloadManager", () => {
       cliEntry: () => fx.descendantCli,
       graceMs: 20,
       handshakeTimeoutMs: 500,
-    });
-    try {
+    });    try {
       writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
       manager.requestReload("test descendant cleanup");
       await waitFor(() => calls.failed > 0, "descendant replacement failure");

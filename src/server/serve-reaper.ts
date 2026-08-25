@@ -16,6 +16,7 @@ import { existsSync, realpathSync, readFileSync, writeFileSync, rmSync, mkdirSyn
 import { join, dirname, sep } from "node:path";
 import { execFile, execSync, execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
+import net from "node:net";
 
 export interface ServeLockInfo {
   pid: number;
@@ -233,33 +234,79 @@ export class ServeReaper {
   /**
    * Detect if a port is already bound by a live serve process.
    * Returns a human-readable error message if there's a conflict, null otherwise.
+   *
+   * Two independent signals are consulted:
+   *   1. The live port probe (new): is *something* actually listening? Consulted
+   *      first so a missing/stale/corrupt lockfile can no longer mask a live
+   *      listener — the single source of truth for "is the port taken" is the
+   *      port itself, not the lockfile (#0284).
+   *   2. The lockfile (existing): when it names a live process for this exact
+   *      port/host, that yields the most specific conflict (PID + start time).
+   *
+   * The probe matters because binding a port a lockfile-less-but-live process
+   * owns would otherwise either EADDRINUSE with a confusing error or, worse,
+   * silently steal a port mid-drain during another process's reload.
    */
-  detectConflict(port: number, host: string): string | null {
+  async detectConflict(port: number, host: string): Promise<string | null> {
     if (!this.enabled) return null;
     // Preview children bind distinct ephemeral ports; the control-plane
     // conflict check (which reads the shared per-worktree lockfile) does not
     // apply and can false-positive on a reused port (see `previewChild`).
     if (this.previewChild) return null;
-    if (!existsSync(this.lockPath)) return null;
+
+    // "0.0.0.0" is a valid bind address but not a connectable one — probe the
+    // loopback interface instead. Ephemeral (port 0) means "pick a free port",
+    // so there is never a listener to probe.
+    const probeHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+    const listening = port !== 0 ? await isPortListening(port, probeHost) : false;
 
     let info: ServeLockInfo | null = null;
-    try {
-      info = JSON.parse(readFileSync(this.lockPath, "utf8")) as ServeLockInfo;
-    } catch {
-      return null; // Can't read the lockfile — assume no conflict
+    if (existsSync(this.lockPath)) {
+      try {
+        info = JSON.parse(readFileSync(this.lockPath, "utf8")) as ServeLockInfo;
+      } catch {
+        info = null; // corrupt — fall through to the probe result
+      }
     }
 
-    if (!info || info.port !== port || info.host !== host) return null;
-
-    if (this.isProcessAlive(info.pid, port)) {
+    // A lockfile that names a live process for this exact port/host is the most
+    // specific conflict: we can point the user at the offending PID.
+    if (info && info.port === port && info.host === host && this.isProcessAlive(info.pid, port)) {
       return (
         `Port ${port} is already bound by another repoos serve process (PID ${info.pid} started at ${info.startedAt}). ` +
         `Use 'kill ${info.pid}' to stop it, or choose a different port with --port.`
       );
     }
 
-    // Stale lockfile for this port — clean it up
-    this.removeLock();
+    // A lockfile that exists for this exact port/host but names a dead process
+    // is stale — clear it so a later startup (and our own register below)
+    // starts from a clean slate. Only when the process is actually gone.
+    if (info && info.port === port && info.host === host) {
+      this.removeLock();
+    }
+
+    // A live listener the lockfile doesn't explain is still a conflict: binding
+    // would either EADDRINUSE or steal a port some live process — possibly
+    // another serve — already holds (#0284). The message distinguishes the two
+    // reasons the lockfile can differ from reality so a present-and-valid
+    // lockfile (for a different port/host) isn't dismissed as "missing/stale".
+    if (listening) {
+      // We reach here only when the lockfile couldn't explain the live listener.
+      // Same endpoint + live PID was handled above; same endpoint + dead PID was
+      // just reaped (stale). Anything else means the lockfile points elsewhere,
+      // or is absent — so say which, rather than blanket-claiming "missing/stale".
+      const lockAccounted =
+        info === null
+          ? "the serve lockfile is missing or corrupt"
+          : info.port === port && info.host === host
+            ? "the serve lockfile names a dead process on this port"
+            : `the serve lockfile names a different endpoint (${info.host}:${info.port})`;
+      return (
+        `Port ${port} is already in use by a live process on ${probeHost}, but ${lockAccounted}. ` +
+        `Refusing to bind rather than steal a port a live process owns — choose a different port with --port.`
+      );
+    }
+
     return null;
   }
 
@@ -359,6 +406,34 @@ export class ServeReaper {
       }
     }, 100);
   }
+}
+
+/**
+ * True when a TCP connection can be established to host:port — i.e. some
+ * process is actually listening there. This is the ground truth for "is the
+ * port taken", consulted alongside the lockfile so a missing/stale/corrupt
+ * lockfile can't mask a live listener (#0284). Best-effort and async: any
+ * connect error (connection refused, timeout, unroutable host) resolves false,
+ * and an invalid port resolves false immediately.
+ */
+export function isPortListening(port: number, host: string, timeoutMs = 1000): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+      resolve(false);
+      return;
+    }
+    const socket = net.connect({ port, host });
+    let settled = false;
+    const done = (ok: boolean): void => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs, () => done(false));
+    socket.once("connect", () => done(true));
+    socket.once("error", () => done(false));
+  });
 }
 
 /**
