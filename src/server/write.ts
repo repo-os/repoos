@@ -31,6 +31,8 @@ export interface TaskPatch {
   body?: string;
   /** Clear (false) or set (true) the waiting-on-human flag. */
   needsInput?: boolean;
+  /** Machine-readable reason `needsInput` was set, or null to clear it. Only meaningful alongside `needsInput: true`. */
+  needsInputReason?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /** Per-task agent name override, or null to clear. */
@@ -111,6 +113,13 @@ export function patchTaskFile(
   if (patch.needsInput !== undefined) {
     if (patch.needsInput !== current.needsInput) changes.push("needs_input");
     current.needsInput = patch.needsInput;
+    // A cleared flag has no reason to carry forward — serializeTask would drop
+    // it anyway (only written while needsInput is true), but clearing it here
+    // too keeps the in-memory Task consistent with what gets written.
+    if (!patch.needsInput) current.needsInputReason = undefined;
+  }
+  if (patch.needsInputReason !== undefined) {
+    current.needsInputReason = patch.needsInputReason ?? undefined;
   }
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");

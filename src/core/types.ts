@@ -29,6 +29,24 @@ export type UiTheme = "classic" | "clear" | "gen z" | "jelly";
 export type TaskMode = "freeform" | "manual";
 
 /**
+ * Machine-readable reasons `needsInput` gets set, one per escalation call
+ * site. Stored alongside the flag so a later automated success (e.g. a
+ * review that finally completes cleanly) can tell whether IT is what the
+ * human was waited on for, and clear the flag itself rather than leaving it
+ * stuck forever once the underlying problem resolves. A boolean alone can't
+ * make that call safely — clearing on every success would just as happily
+ * wipe out an unrelated flag (e.g. a CTO policy question) that happened to
+ * still be pending.
+ */
+export const NEEDS_INPUT_REASONS = [
+  "review-failed",
+  "dev-error",
+  "watchdog-stuck",
+  "cto-escalation",
+] as const;
+export type NeedsInputReason = (typeof NEEDS_INPUT_REASONS)[number];
+
+/**
  * The frontmatter we recognise. Unknown keys are preserved in `extra` so we
  * never destroy fields a user (or another tool) added.
  */
@@ -40,6 +58,8 @@ export interface TaskFrontmatter {
   priority?: Priority | string;
   /** True when the agent is waiting on the human and the task stays `active`. */
   needs_input?: boolean;
+  /** Machine-readable reason `needs_input` was set (e.g. "review-failed"), for auto-clearing and UI display. Only meaningful while needs_input is true. */
+  needs_input_reason?: string;
   /** True when the task branch has drifted from main and needs a manual merge. */
   needs_merge?: boolean;
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
@@ -77,6 +97,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`, never a status. */
   needsInput: boolean;
+  /** Machine-readable reason `needsInput` was set — see {@link NeedsInputReason}. Only meaningful while needsInput is true. */
+  needsInputReason?: string;
   /** True when the task branch has drifted from main. Layered on `review`, never a status. */
   needsMerge: boolean;
   /** True when a no-op task opts out of the vacuous-handoff rejection. */
@@ -453,6 +475,7 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  needsInputReason?: string;
   needsMerge: boolean;
   priority: Priority | string;
   area: string;

@@ -629,6 +629,7 @@ export class TaskWatchdog {
       const note = `watchdog: auto-surfaced stuck task · status active→${target} · ${reason} · next step: ${suggestNextStep(reason)}`;
       current.status = target;
       current.needsInput = false;
+      current.needsInputReason = undefined;
       recordChange(current, note);
       this.writeTask(current);
       commitTaskFile(this.config.root, current.absPath, `docs(${current.id}): update task`);
@@ -661,6 +662,7 @@ export class TaskWatchdog {
     const note = `watchdog: escalated to needs_input · ${reason} · next step: ${suggestNextStep(reason)}`;
     try {
       current.needsInput = true;
+      current.needsInputReason = "watchdog-stuck";
       recordChange(current, note);
       this.writeTask(current);
     } catch (err) {

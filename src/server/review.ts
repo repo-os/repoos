@@ -820,7 +820,7 @@ export class ReviewManager {
     // human, same as the relevance-flag escalation below.
     if (state === "failed" && !task.needsInput) {
       try {
-        patchTaskFile(this.config, task.absPath, { needsInput: true });
+        patchTaskFile(this.config, task.absPath, { needsInput: true, needsInputReason: "review-failed" });
         this.emit({
           type: "task.corrected",
           id: task.id,
@@ -830,6 +830,20 @@ export class ReviewManager {
         });
       } catch (err) {
         console.error(`[repoos] could not escalate failed review for #${task.id}: ${(err as Error).message}`);
+      }
+    }
+
+    // A review that finally comes back clean resolves the exact problem that
+    // escalated this task to needsInput in the first place (the reviewer
+    // crashing/timing out) — clear it so the task doesn't sit flagged forever
+    // on a stale failure. Scoped to reason "review-failed" specifically: an
+    // unrelated needsInput (e.g. a CTO policy question) must survive a review
+    // that happens to succeed around the same time.
+    if (state === "ok" && task.needsInput && task.needsInputReason === "review-failed") {
+      try {
+        patchTaskFile(this.config, task.absPath, { needsInput: false, needsInputReason: null });
+      } catch (err) {
+        console.error(`[repoos] could not clear stale needs_input for #${task.id}: ${(err as Error).message}`);
       }
     }
 

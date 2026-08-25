@@ -1436,6 +1436,18 @@ function fmtSessionTime(iso: string | null): string {
   return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+/** Human-readable text for why `needsInput` was set — see core/types.ts's NeedsInputReason. */
+const NEEDS_INPUT_REASON_LABELS: Record<string, string> = {
+  "review-failed": "The reviewer crashed or timed out without producing a report.",
+  "dev-error": "The agent exited with an error.",
+  "watchdog-stuck": "The task went quiet with no agent running.",
+  "cto-escalation": "The CTO agent flagged this for a human decision.",
+};
+
+function needsInputReasonText(reason: string | undefined): string {
+  return (reason && NEEDS_INPUT_REASON_LABELS[reason]) || "The agent needs your input — reply below to continue.";
+}
+
 watch(displayEntries, () => {
   if (stick.value) {
     nextTick(() => {
@@ -2083,7 +2095,11 @@ watch(
               >
                 {{ ui.active.status }}
               </span>
-              <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
+              <span
+                v-if="ui.active.needsInput"
+                class="tc-waiting"
+                :title="needsInputReasonText(ui.active.needsInputReason)"
+              >needs input</span>
               <span
                 v-if="reviewSubstate"
                 class="rs-chip"
@@ -2517,7 +2533,7 @@ watch(
             <span class="agent-waiting-dot"></span>
             <div>
               <div class="agent-waiting-title">waiting for you</div>
-              <div class="agent-waiting-sub">The agent needs your input — reply below to continue.</div>
+              <div class="agent-waiting-sub">{{ needsInputReasonText(ui.active.needsInputReason) }}</div>
             </div>
           </div>
           <div class="agent-log-wrap">

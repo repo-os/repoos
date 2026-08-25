@@ -16,6 +16,7 @@ const KEY_ORDER = [
   "type",
   "status",
   "needs_input",
+  "needs_input_reason",
   "needs_merge",
   "no_source_change",
   "priority",
@@ -202,6 +203,7 @@ export function parseTask(args: ParseTaskArgs): Task {
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,
+    needsInputReason: typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
@@ -251,7 +253,13 @@ export function serializeTask(task: Task): string {
   if (task.tags.length) data.tags = task.tags;
   // Only ever write `needs_input` / `needs_merge` when true — false is the
   // default and is never persisted, so clearing the flag removes the key.
-  if (task.needsInput) data.needs_input = true;
+  // The reason is only ever meaningful alongside the flag itself — clearing
+  // needsInput (or never setting a reason) must never leave a stale reason
+  // behind to be misread on a later re-escalation.
+  if (task.needsInput) {
+    data.needs_input = true;
+    if (task.needsInputReason) data.needs_input_reason = task.needsInputReason;
+  }
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
   if (task.agentOverride) data.agent_override = task.agentOverride;

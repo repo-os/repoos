@@ -24,6 +24,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`. */
   needsInput: boolean;
+  /** Machine-readable reason `needsInput` was set (e.g. "review-failed"). Only meaningful while needsInput is true. */
+  needsInputReason?: string;
   /** True when the task branch has drifted from main. Layered on `review`. */
   needsMerge: boolean;
   priority: string;
@@ -150,6 +152,7 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  needsInputReason?: string;
   needsMerge: boolean;
   priority: string;
   area: string;

@@ -3902,6 +3902,7 @@ export class AgentRunner {
         return;
       }
       current.needsInput = true;
+      current.needsInputReason = "dev-error";
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);
       writeFileSync(task.absPath, serializeTask(current));
@@ -3954,7 +3955,10 @@ export class AgentRunner {
 
     const patch: TaskPatch = {};
     if (wantsReview) patch.status = "review";
-    if (wantsInput) patch.needsInput = true;
+    if (wantsInput) {
+      patch.needsInput = true;
+      patch.needsInputReason = wt.needsInputReason;
+    }
     try {
       patchTaskFile(this.config, task.absPath, patch);
     } catch (err) {

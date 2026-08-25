@@ -485,6 +485,7 @@ export class CTOManager {
 
       recordChange(task, `CTO action: ${reason}`);
       task.needsInput = true;
+      task.needsInputReason = "cto-escalation";
       writeFileSync(taskAbsPath, serializeTask(task));
       return true;
     } catch {
