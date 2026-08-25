@@ -2,7 +2,7 @@
 id: "0290"
 title: Add keyboard shortcuts to navigate task list (j/k) and open a task (Enter)
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T09:43:44Z"
+updated_at: "2026-08-25T09:50:21Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -78,3 +78,4 @@ Keep the arrows (`Up`/`Down`) as an equivalent to `j`/`k` for users who prefer t
 - 2026-08-25T09:43:36Z · model_override
 - 2026-08-25T09:43:40Z · review_model_override
 - 2026-08-25T09:43:44Z · pm_model_override
+- 2026-08-25T09:50:21Z · status active→review
