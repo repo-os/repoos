@@ -440,15 +440,6 @@ export class ReviewManager {
   private readonly runs = new Map<string, Run>();
   /** Tasks the status guard just put back in `review`, by timestamp. */
   private readonly reverted = new Map<string, number>();
-  /**
-   * The reviewer conversation per task is owned by the durable AgentRunner
-   * session (keyed `review:<taskId>`), not by this map — see `session()`.
-   * Kept apart from the engineer session (which lives in the same runner under
-   * the plain task id) so reviewer chat stays isolated in both UI state and
-   * message routing (0110). This map only buffers the human's own follow-up
-   * text before the durable turn starts.
-   */
-  private readonly pendingHuman = new Map<string, string>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
   private readonly runner?: AgentRunner;
   /**
@@ -671,6 +662,10 @@ export class ReviewManager {
       this.logger.task(taskId, "error", "review failed to start", { error: started?.reason ?? "unknown" });
       return;
     }
+    // A fresh spawn expresses fresh intent — drop any cancellation recorded by
+    // an earlier (possibly pre-reload) abandon, so the new turn is not
+    // instantly treated as cancelled.
+    this.clearCancelled(taskId);
     run.timer = setTimeout(() => {
       run.timedOut = true;
       this.runner?.stop(this.reviewKey(taskId));
@@ -678,12 +673,42 @@ export class ReviewManager {
     run.timer.unref?.();
   }
 
+  /**
+   * Re-arm the hard review timeout for durable review sessions re-attached
+   * from the previous server (0288). The spawning process's timer died with the
+   * reload, so without this an adopted review could hang forever. Also registers
+   * each adopted turn as a `Run` so cancellation and the run/chat mode keep
+   * working across the handoff. Called once at boot, after the runner has
+   * adopted still-alive review children.
+   */
+  armAdoptedTimeouts(): void {
+    for (const r of this.runner?.running() ?? []) {
+      if (!r.id.startsWith(REVIEW_SESSION_ID_PREFIX)) continue;
+      const taskId = taskIdFromReviewKey(r.id);
+      if (this.runs.has(taskId)) continue;
+      const run: Run = {
+        cancelled: this.isCancelled(taskId),
+        mode: this.runner?.reviewKindOf(r.id) ?? "run",
+      };
+      run.timer = setTimeout(() => {
+        run.timedOut = true;
+        this.runner?.stop(r.id);
+      }, REVIEW_TIMEOUT_MS);
+      run.timer.unref?.();
+      this.runs.set(taskId, run);
+    }
+  }
+
   /** Durable review-turn completion hook (0288). */
-  handleReviewDone(sessionKey: string): void {
+  handleReviewDone(sessionKey: string, exitedCleanly = false, reviewKind?: "run" | "chat"): void {
     const taskId = taskIdFromReviewKey(sessionKey);
     const run = this.runs.get(taskId);
-    const mode = run?.mode ?? "run";
-    const cancelled = run?.cancelled ?? false;
+    // The run/chat distinction and cancel state are persisted (reviewKind in
+    // the durable registry, cancellation in the cancelled-marker file), so an
+    // ADOPTED turn — whose `Run` record died with the previous process — is
+    // finalized in the right mode and honoured if it was cancelled.
+    const mode = reviewKind ?? run?.mode ?? "run";
+    const cancelled = run?.cancelled ?? this.isCancelled(taskId);
     const timedOut = run?.timedOut ?? false;
     if (run) {
       if (run.timer) clearTimeout(run.timer);
@@ -691,6 +716,7 @@ export class ReviewManager {
     }
 
     if (cancelled) {
+      this.clearCancelled(taskId);
       this.logger.task(taskId, "info", "review cancelled — task left review");
       this.emit({ type: "review", id: taskId, state: "cancelled", at: now() });
       return;
@@ -909,7 +935,6 @@ export class ReviewManager {
 
     // The human's message starts the turn and streams into the reviewer
     // conversation under `review:<taskId>`.
-    this.pendingHuman.set(task.id, text);
     this.emitHumanEntry(task.id, { type: "human", text });
 
     const run: Run = { cancelled: false, mode: "chat" };
@@ -1023,6 +1048,10 @@ export class ReviewManager {
     const key = this.reviewKey(taskId);
     if (!run && !this.runner?.isRunning(key)) return;
     if (run) run.cancelled = true;
+    // Persist the cancellation so it survives a reload: an adopted review whose
+    // `Run` record died with the previous process must still finalize as
+    // "cancelled", never as a spurious failed report (0288).
+    this.markCancelled(taskId);
     // Stop the durable child by PID (works for adopted, proc-less, entries too).
     try {
       this.runner?.stop(key);
@@ -1039,6 +1068,55 @@ export class ReviewManager {
     for (const r of this.runner?.running() ?? []) {
       if (r.id.startsWith(REVIEW_SESSION_ID_PREFIX)) this.cancel(r.id.slice(REVIEW_SESSION_ID_PREFIX.length));
     }
+  }
+
+  // ---- Durable "cancelled review" marker (0288) ----
+  //
+  // `this.runs` is per-server-process bookkeeping that dies on a reload. A
+  // human abandoning a review (task leaving `review`, server shutdown) records
+  // the task in a small durable marker file so that even an ADOPTED review —
+  // re-attached by the next process with no `Run` record — finalizes as
+  // cancelled rather than writing a spurious failed report.
+
+  private cancelledFilePath(): string {
+    return join(this.config.root, this.config.cacheDir, "reviews", ".cancelled.json");
+  }
+
+  private readCancelled(): Set<string> {
+    try {
+      const raw = readFileSync(this.cancelledFilePath(), "utf8");
+      const parsed = JSON.parse(raw) as { taskIds?: string[] };
+      return new Set(Array.isArray(parsed.taskIds) ? parsed.taskIds : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  private writeCancelled(ids: Set<string>): void {
+    try {
+      const file = this.cancelledFilePath();
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify({ taskIds: [...ids] }));
+    } catch {
+      /* best-effort — a lost marker only risks a spurious failed report */
+    }
+  }
+
+  private isCancelled(taskId: string): boolean {
+    return this.readCancelled().has(taskId);
+  }
+
+  private markCancelled(taskId: string): void {
+    const ids = this.readCancelled();
+    ids.add(taskId);
+    this.writeCancelled(ids);
+  }
+
+  private clearCancelled(taskId: string): void {
+    const ids = this.readCancelled();
+    if (!ids.has(taskId)) return;
+    ids.delete(taskId);
+    this.writeCancelled(ids);
   }
 
   /**
@@ -1224,7 +1302,6 @@ export class ReviewManager {
   /** Drop the task's durable conversation, in memory and on disk. */
   private resetReviewSession(taskId: string): void {
     this.runner?.clearSession(this.reviewKey(taskId));
-    this.pendingHuman.delete(taskId);
   }
 
   /**
@@ -1241,7 +1318,6 @@ export class ReviewManager {
       stream: "out",
       at: now(),
     });
-    this.pendingHuman.set(taskId, String((entry as { text?: unknown }).text ?? ""));
   }
 
   /** Append a trusted system marker into the durable review transcript. */

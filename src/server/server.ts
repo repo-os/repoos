@@ -1084,10 +1084,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // session rather than a post-`runPrompt` continuation that would have died
     // with the old process. `reviews` is assigned below but the callback only
     // fires asynchronously after completion, so the closure is safe.
-    onReviewDone: (sessionKey) => {
+    onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
       if (!reviews) return;
       try {
-        reviews.handleReviewDone(sessionKey);
+        reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
       } catch (err) {
         console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
       }
@@ -1110,6 +1110,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner, index);
+
+  // Re-arm the hard review timeout for any durable review sessions re-attached
+  // from the previous server (0288): the spawner's timer died with it, so an
+  // adopted review would otherwise run without a deadline. Also registers the
+  // adopted turns in `reviews` so cancellation and run/chat mode work for them.
+  reviews.armAdoptedTimeouts();
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.

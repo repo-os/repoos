@@ -1950,9 +1950,12 @@ export class AgentRunner {
    * Fired on completion of a durable REVIEW turn (0288) — including for an
    * entry re-attached after a reload, whose process finishes on the new
    * server. The owning ReviewManager finalizes the report from this hook
-   * rather than a post-spawn continuation that would die with the old process.
-   */
-  private readonly onReviewDone?: (sessionKey: string, exitedCleanly: boolean) => void;
+    * rather than a post-spawn continuation that would die with the old process.
+    * `reviewKind` (run vs chat) and `exitedCleanly` are threaded through so the
+    * ReviewManager can finalize an adopted turn in the right mode and decide
+    * whether it finished cleanly.
+    */
+  private readonly onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void;
 
   /**
    * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
@@ -1983,7 +1986,7 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean) => void; logger?: Logger } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.emit = emit;
@@ -2075,7 +2078,7 @@ export class AgentRunner {
         // Defer so `reviews` (and safe handler wiring) exists before we finalize.
         setTimeout(() => {
           try {
-            this.onReviewDone?.(rec.taskId, false);
+            this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
           } catch {
             /* best-effort */
           }
@@ -2356,6 +2359,16 @@ export class AgentRunner {
 
   isRunning(taskId: string): boolean {
     return this.entries.has(taskId);
+  }
+
+  /**
+   * The review turn kind ("run" | "chat") of a durable review session, if the
+   * entry is one (0288). Used by ReviewManager to finalize an ADOPTED turn in
+   * the right mode — the session's own `Run` record is not carried across a
+   * reload, but its review kind is (persisted in the registry).
+   */
+  reviewKindOf(sessionKey: string): "run" | "chat" | undefined {
+    return this.entries.get(sessionKey)?.reviewKind;
   }
 
   /**
@@ -3460,7 +3473,7 @@ export class AgentRunner {
     // completion is only observed here (0288).
     if (wasReview) {
       try {
-        this.onReviewDone?.(taskId, exitedCleanly);
+        this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
       } catch (err) {
         this.logger?.agent(taskId, "error", `Review completion handler failed: ${(err as Error).message}`);
       }

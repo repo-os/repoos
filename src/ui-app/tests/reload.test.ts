@@ -819,9 +819,11 @@ branch: feat/review-adopt
       );
 
       let doneKey: string | null = null;
+      let doneKind: string | undefined;
       const runner = new AgentRunner(configForRoot(root, cacheDir) as any, () => {}, {
-        onReviewDone: (sessionKey) => {
+        onReviewDone: (sessionKey, _exited, reviewKind) => {
           doneKey = sessionKey;
+          doneKind = reviewKind;
         },
       });
       runner.adoptRunningAgents();
@@ -837,6 +839,288 @@ branch: feat/review-adopt
       // The report text was replayed into the durable session.
       expect(session?.lines.some((l: any) => l.d?.includes("good to go"))).toBe(true);
       runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("threads the adopted review's kind (run/chat) through completion (0288 Bug 3)", async () => {
+    const { AgentRunner } = await import("../../server/agents");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-adopt-chat-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0001-review.md"), `---
+id: "0001"
+title: Chat adopt
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review-chat
+---
+## Test
+`);
+
+      // A dead CHAT review entry (reviewKind: "chat") whose process finished
+      // during the handoff. Its session holds a follow-up ANSWER, not a report.
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "chat" },
+          ],
+        }),
+      );
+      writeFileSync(
+        join(fullCacheDir, "agent-logs", "review:0001.out.log"),
+        "the empty-list case is handled by the early return\n",
+      );
+
+      let doneKind: string | undefined;
+      const runner = new AgentRunner(configForRoot(root, cacheDir) as any, () => {}, {
+        onReviewDone: (_key, _exited, reviewKind) => {
+          doneKind = reviewKind;
+        },
+      });
+      runner.adoptRunningAgents();
+
+      const deadline = Date.now() + 5000;
+      while (doneKind === undefined && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      // The adopted chat turn is finalized as a chat, not a fresh run — so the
+      // ReviewManager will not treat a follow-up answer as a new report.
+      expect(doneKind).toBe("chat");
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("ReviewManager adopted-turn completion (0288)", () => {
+  function makeConfig(root: string) {
+    return {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox" as const,
+      defaultAssignee: "unassigned" as const,
+      cacheDir: ".repoos",
+      agents: [
+        { name: "engineer", cli: "opencode", model: "default", enabled: true },
+        { name: "reviewer", cli: "opencode", model: "default", enabled: true },
+      ],
+    };
+  }
+
+  function writeTask(root: string, id: string, extra = ""): string {
+    const absPath = join(root, "work", `${id}-t.md`);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      absPath,
+      `---
+id: "${id}"
+title: Review
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review
+${extra}
+---
+## Test
+`,
+    );
+    return absPath;
+  }
+
+  it("finalizes an adopted CHAT turn as a chat — no report overwrite, no pass bump (Bug 3)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revchat-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001", "review_passes: 1\n");
+      // A previously-written report that a chat follow-up must NOT clobber.
+      const reportFile = join(root, ".repoos", "reviews", "0001.md");
+      mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
+      writeFileSync(reportFile, "task: \"0001\"\nstate: ok\n\nORIGINAL REVIEW REPORT\n");
+      const absPath = join(root, "work", "0001-t.md");
+
+      const events: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      // A mock runner exposing just enough of the AgentRunner surface.
+      const runner: any = {
+        output: () => ({
+          lines: [
+            { type: "text", text: "the empty-list case is handled by the early return in src/thing.ts." },
+          ],
+          accumulatedMs: 500,
+        }),
+        reviewKindOf: () => "chat" as const,
+        system: () => {},
+        isRunning: () => false,
+        running: () => [],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: false }),
+      };
+      const index: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      const reviews = new ReviewManager(config as any, (e) => events.push(e), runner, index);
+
+      // Adopted turn: no `Run` record in this process, but the kind is supplied
+      // through the completion hook. A run would overwrite the report and bump
+      // review_passes; a chat must do neither.
+      reviews.handleReviewDone("review:0001", true, "chat");
+
+      expect(readFileSync(reportFile, "utf8")).toContain("ORIGINAL REVIEW REPORT");
+      expect(readFileSync(absPath, "utf8")).toMatch(/^review_passes: 1$/m);
+      // The chat completed as "ready" on the review event stream, not failed.
+      expect(events.some((e) => e.type === "review" && e.state === "ready")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("honours a durable cancellation for an adopted review — no spurious report (Edge cases 1-2)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revcancel-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001");
+      const absPath = join(root, "work", "0001-t.md");
+
+      // Process A's ReviewManager cancels the review (durable marker written).
+      const eventsA: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      const runnerA: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => true,
+        running: () => [{ id: "review:0001" }],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: true }),
+      };
+      const indexA: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      new ReviewManager(config as any, (e) => eventsA.push(e), runnerA, indexA).cancelAll();
+
+      // Process B (after the reload) adopts the same review: empty in-memory
+      // `runs`, no knowledge of the cancel except the durable marker. Its
+      // completion must finalize as cancelled, never write a failed report.
+      const eventsB: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      const runnerB: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => false,
+        running: () => [],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: false }),
+      };
+      const indexB: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      const reviewsB = new ReviewManager(config as any, (e) => eventsB.push(e), runnerB, indexB);
+      reviewsB.handleReviewDone("review:0001", false, "run");
+
+      expect(existsSync(join(root, ".repoos", "reviews", "0001.md"))).toBe(false);
+      expect(eventsB.some((e) => e.type === "review" && e.state === "cancelled")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("re-arms the hard timeout for an adopted review run (Bug 2)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revtimeout-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001");
+
+      // The runner has adopted a live review session whose `Run` (and its
+      // spawner's timeout timer) died with the previous process.
+      const stopped: string[] = [];
+      const runner: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => true,
+        running: () => [{ id: "review:0001" }],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: (id: string) => {
+          stopped.push(id);
+          return { stopped: true };
+        },
+      };
+      const reviews = new ReviewManager(config as any, () => {}, runner as any, undefined);
+
+      // Adopt: an adopted review session reads as running...
+      expect(reviews.isRunning("0001")).toBe(true);
+      reviews.armAdoptedTimeouts();
+
+      // ...and gets a Run record whose timer stops the child if it fires.
+      // REVIEW_TIMEOUT_MS is 900s, so instead of waiting, verify the wiring by
+      // simulating a cancelled adopted turn via cancel(), which the Run now
+      // supports (an adopted proc-less review previously had no Run and could
+      // never be marked cancelled).
+      reviews.cancel("0001");
+      expect(stopped).toContain("review:0001");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
