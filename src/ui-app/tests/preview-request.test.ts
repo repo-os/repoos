@@ -474,7 +474,10 @@ describe("sandboxed preview request E2E (#0121)", () => {
         expect((task.body.preview as { url?: string } | null)?.url).toBe(url);
 
         // Cleanup: leaving `active` reaps the preview and it becomes unreachable.
-        const patch = await api(server, "PATCH", "/api/tasks/0001", { status: "ready" });
+        // active -> ready now requires the Abandon action (#0296) rather than a
+        // bare PATCH — the transition stops the agent, which a raw status write
+        // never did (that gap was the point of gating it).
+        const patch = await api(server, "POST", "/api/tasks/0001/abandon");
         expect(patch.status).toBe(200);
         await waitForAsync(async () => {
           try {

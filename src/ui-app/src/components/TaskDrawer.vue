@@ -47,12 +47,24 @@ const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
   ...COLUMNS,
 ]);
-// Done is a protected close-out workflow, not an ordinary status mutation.
-// Keep it visible for already-completed tasks, but do not offer a selector
-// choice that the server must reject for every other status.
-const selectableStatuses = computed(() =>
-  allStatuses.value.filter((status) => status.id !== "done" || ui.active?.status === "done"),
-);
+/** Mirrors task-transitions.ts's GENERIC_PATCH_EDGES on the server — the six
+ *  bare-status-write edges with no side effect requiring a dedicated action.
+ *  Everything else needs its own action (Start work, Move to done, Abandon
+ *  work, Reopen) instead of a raw dropdown pick the server would reject. */
+const GENERIC_PATCH_TARGETS: Record<string, string[]> = {
+  draft: ["inbox"],
+  inbox: ["draft", "ready"],
+  ready: ["inbox"],
+  active: ["review"],
+  review: ["active"],
+  done: [],
+};
+
+const selectableStatuses = computed(() => {
+  const current = ui.active?.status;
+  const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];
+  return allStatuses.value.filter((status) => status.id === current || reachable.includes(status.id));
+});
 
 const open = computed(() => ui.active !== null || ui.isNew);
 function setOpen(v: boolean): void {
@@ -313,6 +325,32 @@ async function pauseWork(): Promise<void> {
   ui.saving = true;
   try {
     await repo.pauseWork(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function abandonWork(): Promise<void> {
+  if (!ui.active) return;
+  if (!confirm("Abandon this task's current work and send it back to ready? The worktree is kept, not deleted.")) return;
+  ui.saving = true;
+  try {
+    await repo.abandonWork(ui.active);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function reopenTask(): Promise<void> {
+  if (!ui.active) return;
+  if (!confirm("Reopen this done task? It goes back to ready with a fresh branch on the next Start work.")) return;
+  ui.saving = true;
+  try {
+    await repo.reopenTask(ui.active);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -2186,6 +2224,26 @@ watch(
             >
               <Pause class="size-3.5" />
               Pause work
+            </Button>
+            <Button
+              v-if="ui.active.status === 'active' || ui.active.status === 'review'"
+              variant="outline"
+              :disabled="ui.saving"
+              title="Send this task back to ready — stops the agent/review, keeps the worktree"
+              @click="abandonWork"
+            >
+              <Square class="size-3.5" />
+              Abandon work
+            </Button>
+            <Button
+              v-if="ui.active.status === 'done'"
+              variant="outline"
+              :disabled="ui.saving"
+              title="Send this task back to ready with a fresh branch on the next Start work"
+              @click="reopenTask"
+            >
+              <RotateCcw class="size-3.5" />
+              Reopen
             </Button>
             <Button
               v-if="ui.active.status === 'review'"

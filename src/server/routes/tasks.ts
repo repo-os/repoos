@@ -22,6 +22,7 @@ import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStatsAsync, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
+import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
@@ -263,6 +264,19 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, {
       error: `Use POST /api/tasks/${existing.id}/done to complete a review task`,
     });
+  }
+
+  if (body.status && body.status !== prevStatus) {
+    // The lifecycle audit's transition table: a bare status write may only
+    // perform the six edges with no side effect requiring a dedicated
+    // action endpoint (start/pause/done/abandon/reopen). Rejects every other
+    // pair outright — including every skip-a-step jump and unreviewed
+    // backward move — regardless of whether the request came from the task
+    // drawer's dropdown, board drag-drop, or a direct API call.
+    const check = checkGenericStatusPatch(prevStatus, body.status);
+    if (!check.ok) {
+      return json(res, 400, { error: `Cannot move task #${existing.id} from ${prevStatus} to ${body.status}: ${check.reason}` });
+    }
   }
 
   if (body.status === "review" && prevStatus !== "review") {
@@ -771,6 +785,59 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       stopped: stopRes.stopped,
       reason: stopRes.reason,
     });
+  }
+
+  // Abandon (lifecycle audit, task-transitions.ts): active or review -> ready,
+  // stopping any live agent/review first. Unlike pause (which stays active,
+  // preserving the in-progress turn to resume later), abandon is a deliberate
+  // "start this task's dev pass over" — the worktree is kept, not deleted, so
+  // Start work can still resume from it, but the task no longer reads as
+  // in-flight.
+  if (action === "abandon") {
+    if (existing.status !== "active" && existing.status !== "review") {
+      return json(res, 400, {
+        error: `Only active or review tasks can be abandoned (#${id} is ${existing.status})`,
+      });
+    }
+    if (existing.status === "review") {
+      reviews.cancel(id);
+    }
+    await previews.stop(id);
+    const stopRes = runner.stop(id);
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      { status: "ready", needsInput: false },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      stopped: stopRes.stopped,
+      reason: stopRes.reason,
+    });
+  }
+
+  // Reopen (lifecycle audit, task-transitions.ts): done -> ready. Close-out's
+  // cleanup() deletes the task's branch and worktree, so re-provisioning them
+  // here would just duplicate what Start work (ready -> active) already does
+  // — clear the now-stale branch reference and land on ready instead, so the
+  // next Start work derives a fresh branch exactly like a brand-new task.
+  if (action === "reopen") {
+    if (existing.status !== "done") {
+      return json(res, 400, {
+        error: `Only done tasks can be reopened (#${id} is ${existing.status})`,
+      });
+    }
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      { status: "ready", branch: "", needsInput: false },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, { ok: true, task: index.getTask(updated.id) });
   }
 
   if (action === "hotfix") {

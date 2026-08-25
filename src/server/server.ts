@@ -1492,7 +1492,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
-  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix)$/, taskAction);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);

@@ -144,8 +144,9 @@ describe("on-demand previews (#0271 follow-up)", () => {
         // trigger is `done`; it shares the exact `stopPreviewIfLeft` path a
         // move to a non-previewable status takes, so we move to `ready` (the
         // light equivalent — the PATCH `done` route is guarded behind the
-        // heavy close-out flow).
-        const back = await api(server, "PATCH", "/api/tasks/0001", { status: "ready" });
+        // heavy close-out flow). review -> ready now requires the Abandon
+        // action (#0296) rather than a bare PATCH.
+        const back = await api(server, "POST", "/api/tasks/0001/abandon");
         expect(back.status).toBe(200);
         for (let i = 0; i < 40; i++) {
           if (!(await previewUrl(server, "0001"))) break;

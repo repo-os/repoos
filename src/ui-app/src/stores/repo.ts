@@ -1137,6 +1137,31 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Active/review -> ready: stop any live agent/review, keep the worktree. */
+  async function abandonWork(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/abandon`, {
+      method: "POST",
+    });
+    if (!r.ok) {
+      const message = r.reason ?? "could not abandon work";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
+  /** Done -> ready: clears the stale branch reference so the next Start work
+   *  derives a fresh one, since close-out already deleted the old branch. */
+  async function reopenTask(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${t.id}/reopen`, {
+      method: "POST",
+    });
+    if (!r.ok) {
+      const message = r.reason ?? "could not reopen task";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
   async function activateHotfix(
     t: Task,
     hotfixTarget: "branch" | "main" = "branch",
@@ -1674,6 +1699,8 @@ export const useRepoStore = defineStore("repo", () => {
     isQueued,
     startWork,
     pauseWork,
+    abandonWork,
+    reopenTask,
     activateHotfix,
     completeTask,
     loadOutput,
