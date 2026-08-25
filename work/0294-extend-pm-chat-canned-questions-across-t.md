@@ -2,14 +2,14 @@
 id: "0294"
 title: Extend PM chat canned questions across the task lifecycle
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-25T05:55:32Z"
-updated_at: "2026-08-25T05:55:32Z"
+updated_at: "2026-08-25T06:26:00Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ None yet — this is a net-new UX affordance, not a bugfix.
 ## Activity
 
 - 2026-08-25T05:55:32Z · created · unknown
+- 2026-08-25T06:26:00Z · status inbox→ready
