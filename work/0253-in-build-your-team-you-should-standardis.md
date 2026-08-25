@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T05:51:43Z"
+review_passes: 1
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
@@ -11,7 +13,6 @@ created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T05:47:41Z"
 ---
 ## Problem
 
@@ -80,3 +81,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T01:00:11Z · status review→active
 - 2026-08-25T05:47:35Z · model_override
 - 2026-08-25T05:47:41Z · status active→review
+
