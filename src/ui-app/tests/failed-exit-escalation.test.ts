@@ -136,6 +136,34 @@ describe("failed-exit escalation to needs_input", () => {
     expect(body).toMatch(/needs_input:\s*true/);
     expect(body).toContain("agent exited with an error");
     expect(body).toContain("OAuth session expired");
+    // #0271 follow-up: counted even though this task never reaches a review
+    // pass, so the D#/R# badge (TaskDrawer.vue's taskRounds) has evidence a
+    // real dev attempt happened instead of showing D0 · R0 and hiding
+    // entirely (confirmed live on #0291).
+    expect(body).toMatch(/dev_error_count:\s*1/);
+  });
+
+  it("bumps dev_error_count on every error exit, even repeats before the flag is cleared", async () => {
+    const fx = fixture();
+    const runner = new AgentRunner(fx.config, () => {}, {
+      writeDelayMs: 5,
+      getTask: (id: string) => (id === fx.task.id ? fx.task : null),
+    });
+    runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
+    await waitFor(() => !runner.isRunning(fx.task.id), "first non-clean exit");
+    await waitFor(() => readFileSync(fx.taskFile, "utf8").includes("dev_error_count"), "first escalation written");
+    expect(readFileSync(fx.taskFile, "utf8")).toMatch(/dev_error_count:\s*1/);
+
+    // needs_input is already true — the SECOND error must still increment
+    // the count (it's a real second attempt), even though the human-facing
+    // note isn't overwritten.
+    runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
+    await waitFor(() => !runner.isRunning(fx.task.id), "second non-clean exit");
+    await waitFor(
+      () => /dev_error_count:\s*2/.test(readFileSync(fx.taskFile, "utf8")),
+      "second escalation written",
+    );
+    expect(readFileSync(fx.taskFile, "utf8")).toMatch(/dev_error_count:\s*2/);
   });
 
   it("does not flag a task the human deliberately paused", async () => {

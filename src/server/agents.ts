@@ -1179,8 +1179,8 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
  * `reviewModelOverride` then replace the agent's CLI and model.
  */
 export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent | null {
-  const hasOverride =
-    task.reviewAgentOverride || task.reviewCliOverride || task.reviewModelOverride;
+  const modelPinned = isModelOverridePinned(task.reviewModelOverride);
+  const hasOverride = task.reviewAgentOverride || task.reviewCliOverride || modelPinned;
   if (!hasOverride) {
     return resolveReviewer(config);
   }
@@ -1191,7 +1191,7 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
   return {
     ...base,
     ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
-    ...(task.reviewModelOverride ? { model: task.reviewModelOverride } : {}),
+    ...(modelPinned ? { model: task.reviewModelOverride as string } : {}),
   };
 }
 
@@ -1214,13 +1214,33 @@ export function resolveCto(config: RepoOSConfig): Agent | null {
  * @param role    The role to resolve when no agent override is set (default: "engineer").
  * @returns A merged Agent, or null when no matching enabled agent exists.
  */
+/**
+ * True when a model-override field carries a real pin, not the "default"
+ * sentinel `AGENT_MODELS` offers for "use the base agent's own configured
+ * model, whatever that is" (config.ts). Every per-task model-override
+ * resolver (this file's `resolveAgentForTask`/`resolveReviewerForTask`, and
+ * routes/tasks.ts's inline PM-override logic) MUST run the override string
+ * through this before treating it as active — bare truthiness treats the
+ * literal string `"default"` as a real pin and force-overwrites the base
+ * agent's actual configured model with the string `"default"`, which then
+ * skips `--model` entirely (see `modelArgs` below) and falls back to the
+ * underlying CLI's own raw default — NOT the model configured on the
+ * Agents page. Confirmed live: tasks kept ending up running
+ * opencode+(no model flag) instead of the configured model every time a
+ * Dev/Review/PM override dropdown was left on (or reset to) "Default".
+ */
+export function isModelOverridePinned(model: string | null | undefined): boolean {
+  return !!model && model !== "default";
+}
+
 export function resolveAgentForTask(
   config: RepoOSConfig,
   task: Task,
   role: string = "engineer",
 ): Agent | null {
   const list = agentsForConfig(config);
-  const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
+  const modelPinned = isModelOverridePinned(task.modelOverride);
+  const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
   }
@@ -1234,7 +1254,7 @@ export function resolveAgentForTask(
   return {
     ...base,
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
-    ...(task.modelOverride ? { model: task.modelOverride } : {}),
+    ...(modelPinned ? { model: task.modelOverride as string } : {}),
   };
 }
 
@@ -3665,6 +3685,15 @@ export class AgentRunner {
    * see the call site in cleanup()). Mirrors TaskWatchdog's own
    * `needsInput` escalation, just fired immediately instead of waiting for
    * the next staleness poll. Never overwrites an existing needsInput note.
+   *
+   * Also bumps `dev_error_count` — unlike the needsInput note, this always
+   * increments, even on a repeat error before a human clears the flag,
+   * because it counts real dev attempts, not distinct escalations (#0271
+   * follow-up: confirmed live on #0291 — an engineer session that errors out
+   * before ever reaching a review pass left `review_passes` at 0, so the
+   * board's `D# · R#` badge showed nothing for a task that genuinely had one
+   * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
+   * `dev` so D can exceed R when a round errored without being reviewed.)
    */
   private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
     try {
@@ -3675,7 +3704,15 @@ export class AgentRunner {
         defaultStatus: this.config.defaultStatus,
         defaultAssignee: this.config.defaultAssignee,
       });
-      if (current.needsInput) return;
+      const errCount = current.extra?.dev_error_count;
+      current.extra = {
+        ...current.extra,
+        dev_error_count: (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
+      };
+      if (current.needsInput) {
+        writeFileSync(task.absPath, serializeTask(current));
+        return;
+      }
       current.needsInput = true;
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);

@@ -2,8 +2,7 @@
 id: "0291"
 title: Board card shows a stale review verdict after a missed SSE event during reload
 type: bug
-status: review
-needs_input: true
+status: done
 priority: p1
 area: ui
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/board-card-shows-a-stale-review-verdict-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T00:03:29Z"
+updated_at: "2026-08-25T06:02:30Z"
+review_passes: 1
 ---
 ## Problem
 The board card's review-verdict badge can show an outdated verdict (e.g. "needs some work" from an earlier round) even though the actual, current review report already says something different (e.g. "good to go" from the latest round) — confirmed live on #0286 itself.
@@ -61,3 +61,11 @@ Task #0286 went through 3 review rounds (2026-08-24T21:31-21:33, 21:36-21:38, 21
 - 2026-08-24T23:35:38Z · status active→review
 - 2026-08-25T00:03:29Z · review_model_override
 - 2026-08-25T00:03:29Z · model_override
+- 2026-08-25T00:58:35Z · pm_model_override
+- 2026-08-25T00:59:28Z · pm_model_override
+- 2026-08-25T05:02:07Z · pm_model_override
+- 2026-08-25T05:05:22Z · review_model_override
+- 2026-08-25T05:15:03Z · updated needsInput
+- 2026-08-25T05:27:51Z · review_model_override
+- 2026-08-25T05:34:16Z · pm_model_override
+- 2026-08-25T06:02:30Z · status review→done, release:success

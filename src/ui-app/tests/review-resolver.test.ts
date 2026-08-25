@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
-import { resolveReviewer, resolveReviewerForTask } from "../../server/agents";
+import { resolveReviewer, resolveReviewerForTask, resolveAgentForTask } from "../../server/agents";
 
 const baseReviewer: Agent = { name: "reviewer", cli: "claude code", model: "sonnet", enabled: true };
 const codex: Agent = { name: "codex", cli: "codex", model: "gpt-5", enabled: true };
@@ -96,5 +96,55 @@ describe("resolveReviewerForTask", () => {
     expect(
       resolveReviewerForTask(disabled, task({ reviewAgentOverride: "codex" })),
     ).toBeNull();
+  });
+
+  it(
+    "#0271 follow-up: reviewModelOverride: \"default\" keeps the configured reviewer model, " +
+      "never overwrites it with the literal string \"default\"",
+    () => {
+      // AGENT_MODELS offers "default" in the per-task model dropdown to mean
+      // "use whatever's configured on the Agents page" — confirmed live bug:
+      // bare truthiness treated that sentinel as a real pin and force-set
+      // model to the STRING "default", which then skips --model entirely
+      // (agents.ts's modelArgs) and silently falls back to the CLI's own raw
+      // default instead of the configured "big pickle"/etc.
+      const cfg = config([baseReviewer]);
+      const resolved = resolveReviewerForTask(cfg, task({ reviewModelOverride: "default" }))!;
+      expect(resolved.model).toBe(baseReviewer.model);
+      expect(resolved.model).not.toBe("default");
+    },
+  );
+
+  it(
+    "#0271 follow-up: reviewModelOverride: \"default\" still lets reviewAgentOverride switch agents",
+    () => {
+      // A real override (agent name) alongside the "default" model sentinel
+      // must still take effect — only the model half of hasOverride is
+      // special-cased, not the whole override mechanism.
+      const cfg = config([baseReviewer, codex]);
+      const resolved = resolveReviewerForTask(
+        cfg,
+        task({ reviewAgentOverride: "codex", reviewModelOverride: "default" }),
+      )!;
+      expect(resolved.name).toBe("codex");
+      expect(resolved.model).toBe(codex.model);
+    },
+  );
+});
+
+describe("resolveAgentForTask (#0271 follow-up)", () => {
+  const engineer: Agent = { name: "engineer", cli: "opencode", model: "big pickle", enabled: true };
+
+  it('modelOverride: "default" keeps the configured engineer model, never the literal string "default"', () => {
+    const cfg = config([engineer]);
+    const resolved = resolveAgentForTask(cfg, task({ modelOverride: "default" }), "engineer")!;
+    expect(resolved.model).toBe("big pickle");
+    expect(resolved.model).not.toBe("default");
+  });
+
+  it("a real modelOverride still pins the model as before", () => {
+    const cfg = config([engineer]);
+    const resolved = resolveAgentForTask(cfg, task({ modelOverride: "gpt-5" }), "engineer")!;
+    expect(resolved.model).toBe("gpt-5");
   });
 });

@@ -49,6 +49,7 @@
  */
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
@@ -266,7 +267,7 @@ export function autoTransitionTarget(config: RepoOSConfig, task: Task): "ready" 
   if (!task.branch) return "ready";
   if (task.hotfix) {
     try {
-      const out = require("node:child_process").execFileSync("git", ["status", "--porcelain"], {
+      const out = execFileSync("git", ["status", "--porcelain"], {
         cwd: config.root,
         encoding: "utf8",
         timeout: 4000,

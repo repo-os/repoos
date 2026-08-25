@@ -15,6 +15,7 @@ import {
   taskPmPrompt,
   runPrompt,
   deriveBranch,
+  isModelOverridePinned,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
@@ -130,7 +131,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     typeof body?.modelOverride === "string" && body.modelOverride
       ? body.modelOverride
       : undefined;
-  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
+  // "default" is the sentinel for "use the configured pm agent's own
+  // model" — not a real pin (same bug class as resolveAgentForTask /
+  // resolveReviewerForTask / the PM-message override above).
+  const freeformModelPinned = isModelOverridePinned(freeformModel);
+  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModelPinned;
 
   let pm: Agent | null;
   if (hasFreeformOverride) {
@@ -141,7 +146,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       ? {
           ...base,
           ...(freeformCli ? { cli: freeformCli } : {}),
-          ...(freeformModel ? { model: freeformModel } : {}),
+          ...(freeformModelPinned ? { model: freeformModel as string } : {}),
         }
       : null;
   } else {
@@ -332,7 +337,7 @@ export const getScreenshot: RouteHandler = (ctx, _req, res, params) => {
     "Cache-Control": "no-cache",
     "Access-Control-Allow-Origin": "*",
   });
-  res.end(require("fs").readFileSync(abs));
+  res.end(readFileSync(abs));
 };
 
 export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
@@ -1016,7 +1021,15 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     typeof body?.modelOverride === "string" && body.modelOverride
       ? body.modelOverride
       : existing.pmModelOverride || undefined;
-  const hasPmOverride = pmAgentName || pmCli || pmModel;
+  // "default" is the sentinel the PM tab's model dropdown offers for "use
+  // the configured pm agent's own model" — NOT a real pin. Treating it as
+  // truthy here force-overwrites the base agent's actual configured model
+  // with the literal string "default", which then skips --model entirely
+  // and falls back to the CLI's own raw default instead of what's
+  // configured on the Agents page (same bug fixed in resolveAgentForTask /
+  // resolveReviewerForTask).
+  const pmModelPinned = isModelOverridePinned(pmModel);
+  const hasPmOverride = pmAgentName || pmCli || pmModelPinned;
 
   // Resolve the PM agent, applying any one-shot override
   let pm: Agent | null;
@@ -1028,7 +1041,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
       ? {
           ...base,
           ...(pmCli ? { cli: pmCli } : {}),
-          ...(pmModel ? { model: pmModel } : {}),
+          ...(pmModelPinned ? { model: pmModel as string } : {}),
         }
       : null;
   } else {

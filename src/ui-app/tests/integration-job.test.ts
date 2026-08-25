@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
@@ -66,6 +66,32 @@ describe("integration jobs (0118)", () => {
     expect(job1!.enqueuedAt).toBe(job1Again!.enqueuedAt);
     expect(coordinator.allJobs()).toHaveLength(1);
   });
+
+  it(
+    "removeJob actually deletes the job file from disk (#0271 follow-up, confirmed live bug: task #0258)",
+    () => {
+      // removeJob() used a bare require("fs") — this package is "type":
+      // "module", so require is undefined at runtime in the compiled dist/
+      // output; the ReferenceError was silently swallowed by the try/catch,
+      // so the file was NEVER actually deleted. A moot close-out job (task
+      // already done, branch/worktree gone) kept getting re-picked-up and
+      // re-processed forever — a live, CPU-burning infinite loop in
+      // production (task #0258) until someone noticed. This test asserts
+      // the actual on-disk effect, not just that the call doesn't throw —
+      // that's what let the bug ship silently in the first place (vitest's
+      // own module loader provides a working require(), so calling
+      // removeJob() under test never reproduced the ReferenceError itself).
+      const coordinator = createJobCoordinator(testRepo);
+      coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
+      const path = join(testRepo, ".repoos", "integration-jobs", "task1.json");
+      expect(existsSync(path)).toBe(true);
+
+      coordinator.removeJob("task1");
+
+      expect(existsSync(path)).toBe(false);
+      expect(coordinator.getJob("task1")).toBeNull();
+    },
+  );
 
   it("re-enqueues fresh when a DONE job's task is no longer done (0195)", async () => {
     // Nothing blocks a task leaving `done` via a plain PATCH (e.g. a manual
