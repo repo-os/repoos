@@ -87,5 +87,5 @@ instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, an
 [[agents]]
 name = "data analyst"
 cli = "opencode"
-model = "big pickle"
+model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
