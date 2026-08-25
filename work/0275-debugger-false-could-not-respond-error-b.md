@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-24T15:57:09Z"
-updated_at: "2026-08-25T15:11:13Z"
+updated_at: "2026-08-25T16:16:30Z"
 ---
 ## Problem
 Several related debugger/agent-selection issues seen on the same run:
