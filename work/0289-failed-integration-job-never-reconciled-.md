@@ -8,6 +8,7 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/failed-integration-job-never-reconciled-
+model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:35:57Z"
 updated_at: "2026-08-25T00:03:39Z"
@@ -43,3 +44,4 @@ Task #0270: closed out successfully at 2026-08-24T21:18:47Z (`status: done`, mer
 - 2026-08-24T21:56:58Z · status active→review
 - 2026-08-24T23:59:22Z · status review→done, release:success
 - 2026-08-25T00:03:39Z · review_model_override
+- 2026-08-25T00:03:39Z · model_override
