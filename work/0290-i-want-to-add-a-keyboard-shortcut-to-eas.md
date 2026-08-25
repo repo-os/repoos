@@ -2,7 +2,7 @@
 id: "0290"
 title: Add keyboard shortcuts to navigate task list (j/k) and open a task (Enter)
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-keyboard-shortcuts-to-navigate-task-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T09:55:36Z"
+updated_at: "2026-08-25T15:00:44Z"
 ---
 ## Goal
 
@@ -72,3 +72,4 @@ Keep the arrows (`Up`/`Down`) as an equivalent to `j`/`k` for users who prefer t
 - 2026-08-25T09:39:17Z · status active→review
 - 2026-08-25T09:55:36Z · review_model_override
 - 2026-08-25T09:55:36Z · model_override
+- 2026-08-25T15:00:44Z · status review→done, release:success
