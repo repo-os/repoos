@@ -1520,12 +1520,11 @@ watch(
 /** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
 const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
 
-/** Session IDs whose "agent / model" cell is expanded to show the full model name (collapsed by default). */
-const expandedSessionAgents = reactive(new Set<string>());
+/** Whether the "agent / model" column shows the model name under the agent, for every session row (collapsed by default). Clicking any cell in the column toggles all rows together. */
+const sessionAgentsExpanded = ref(false);
 
-function toggleSessionAgentExpand(sessionId: string): void {
-  if (expandedSessionAgents.has(sessionId)) expandedSessionAgents.delete(sessionId);
-  else expandedSessionAgents.add(sessionId);
+function toggleSessionAgentExpand(): void {
+  sessionAgentsExpanded.value = !sessionAgentsExpanded.value;
 }
 
 /** Load the task's durable usage totals when the drawer opens or the task changes. */
@@ -3017,11 +3016,11 @@ watch(
                       <td class="task-usage-session-type ta-left">{{ s.sessionType }}</td>
                       <td
                         class="ta-left task-usage-session-agent"
-                        :title="expandedSessionAgents.has(s.sessionId) ? 'Click to collapse' : 'Click to show model'"
-                        @click="toggleSessionAgentExpand(s.sessionId)"
+                        :title="sessionAgentsExpanded ? 'Click to collapse' : 'Click to show model'"
+                        @click="toggleSessionAgentExpand()"
                       >
-                        <span v-if="expandedSessionAgents.has(s.sessionId)">{{ s.codingAgent }} · {{ s.model }}</span>
-                        <span v-else>{{ s.codingAgent }}</span>
+                        <div>{{ s.codingAgent }}</div>
+                        <div v-if="sessionAgentsExpanded" class="task-usage-session-model">{{ s.model }}</div>
                       </td>
                       <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
                       <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>

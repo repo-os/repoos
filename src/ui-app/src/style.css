@@ -893,8 +893,9 @@
   .task-usage-role-name{text-transform:capitalize;color:var(--cyan)}
   .task-usage-sessions{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
   .task-usage-session-type{text-transform:capitalize;color:var(--cyan)}
-  .task-usage-session-agent{cursor:pointer;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+  .task-usage-session-agent{cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis}
   .task-usage-session-agent:hover{color:var(--txt)}
+  .task-usage-session-model{font-size:9.5px;color:var(--txt-faint);white-space:normal;word-break:break-all}
   .task-usage-session-active{color:var(--txt)}
   .task-usage-session-active .task-usage-session-type{color:var(--green)}
   .branch-note{margin-left:8px;font-size:11px;color:var(--txt-faint);font-family:'JetBrains Mono',monospace}
