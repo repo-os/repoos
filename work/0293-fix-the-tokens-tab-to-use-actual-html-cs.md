@@ -3,19 +3,14 @@ id: "0293"
 title: Fix the tokens tab to use actual html/css/tailwind tables…
 type: feature
 status: review
-needs_input: true
 priority: p2
 area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-the-tokens-tab-to-use-actual-html-cs
 model_override: default
-pm_model_override: default
-review_model_override: default
 created_at: "2026-08-25T00:16:03Z"
-updated_at: "2026-08-25T06:23:24Z"
-review_passes: 1
-handoff_signal_retry_count: 1
+updated_at: "2026-08-25T05:27:12Z"
 ---
 Fix the tokens tab to use actual HTML tables (with proper table semantics) so tabular data is displayed correctly and legibly, and apply the same fix to the other surfaces that render token/usage tabular data.
 
@@ -56,20 +51,4 @@ Also update the matching styles — `src/ui-app/src/components/UsagePanel.vue` s
 - 2026-08-25T00:56:33Z · model_override
 - 2026-08-25T00:56:35Z · status inbox→ready
 - 2026-08-25T00:56:47Z · status ready→active, branch
-- 2026-08-25T04:33:03Z · pm_model_override
-- 2026-08-25T04:33:35Z · review_model_override
-- 2026-08-25T05:08:33Z · model_override
 - 2026-08-25T05:27:12Z · status active→review
-- 2026-08-25T05:29:04Z · model_override
-- 2026-08-25T05:36:50Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
-- 2026-08-25T05:45:04Z · review_model_override
-- 2026-08-25T05:51:50Z · needs_input
-- 2026-08-25T05:54:25Z · review_model_override
-- 2026-08-25T05:54:37Z · review_cli_override
-- 2026-08-25T05:54:38Z · review_cli_override
-- 2026-08-25T05:54:41Z · review_cli_override
-- 2026-08-25T05:54:44Z · review_cli_override
-- 2026-08-25T05:54:49Z · review_model_override
-- 2026-08-25T05:55:41Z · model_override
-- 2026-08-25T06:23:23Z · review_model_override
-- 2026-08-25T06:23:24Z · model_override

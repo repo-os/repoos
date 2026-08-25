@@ -2963,41 +2963,59 @@ watch(
             </div>
             <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
               <span class="agent-stat-label">by role</span>
-              <div class="task-usage-role-list">
-                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
-                  <span class="task-usage-role-name">{{ r.role }}</span>
-                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
-                  <span>{{ fmtTokens(r.totalTokens) }}</span>
-                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
-                </span>
+              <div class="task-usage-table-wrap">
+                <table class="task-usage-table">
+                  <thead>
+                    <tr>
+                      <th class="ta-left">role</th>
+                      <th class="ta-right">time</th>
+                      <th class="ta-right">tokens</th>
+                      <th class="ta-right">cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                      <td class="task-usage-role-name ta-left">{{ r.role }}</td>
+                      <td class="ta-right">{{ fmtElapsed(r.totalElapsedMs) }}</td>
+                      <td class="ta-right">{{ fmtTokens(r.totalTokens) }}</td>
+                      <td class="ta-right">{{ fmtCost(r.totalCostUsd, r.costSource) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
             <div v-if="taskUsage.sessions && taskUsage.sessions.length > 0" class="task-usage-sessions">
               <div class="task-usage-title">individual sessions</div>
-              <div class="task-usage-session-list">
-                <div class="task-usage-session-row task-usage-session-head">
-                  <span>type</span>
-                  <span>agent / model</span>
-                  <span>started</span>
-                  <span>ended</span>
-                  <span>time</span>
-                  <span>tokens</span>
-                  <span>cost</span>
-                </div>
-                <div
-                  v-for="s in taskUsage.sessions"
-                  :key="s.sessionId"
-                  class="task-usage-session-row"
-                  :class="{ 'task-usage-session-active': s.status === 'active' }"
-                >
-                  <span class="task-usage-session-type">{{ s.sessionType }}</span>
-                  <span>{{ s.agent }} · {{ s.model }}</span>
-                  <span>{{ fmtSessionTime(s.startedAt) }}</span>
-                  <span>{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</span>
-                  <span>{{ fmtElapsed(s.elapsedMs) }}</span>
-                  <span>{{ fmtTokens(s.totalTokens) }}</span>
-                  <span>{{ fmtCost(s.costUsd, s.costSource) }}</span>
-                </div>
+              <div class="task-usage-table-wrap">
+                <table class="task-usage-table">
+                  <thead>
+                    <tr class="task-usage-session-head">
+                      <th class="ta-left">type</th>
+                      <th class="ta-left">agent / model</th>
+                      <th class="ta-left">started</th>
+                      <th class="ta-left">ended</th>
+                      <th class="ta-right">time</th>
+                      <th class="ta-right">tokens</th>
+                      <th class="ta-right">cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="s in taskUsage.sessions"
+                      :key="s.sessionId"
+                      class="task-usage-session-row"
+                      :class="{ 'task-usage-session-active': s.status === 'active' }"
+                    >
+                      <td class="task-usage-session-type ta-left">{{ s.sessionType }}</td>
+                      <td class="ta-left">{{ s.agent }} · {{ s.model }}</td>
+                      <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
+                      <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>
+                      <td class="ta-right">{{ fmtElapsed(s.elapsedMs) }}</td>
+                      <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
+                      <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
