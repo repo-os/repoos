@@ -8,11 +8,10 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-keyboard-shortcuts-to-navigate-task-
-model_override: default
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T13:47:15Z"
+updated_at: "2026-08-25T14:01:27Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -84,3 +83,4 @@ Three requested changes from human review of the preview:
 ## Activity
 
 - 2026-08-25T11:18:39Z · body
+- 2026-08-25T14:01:27Z · model_override
