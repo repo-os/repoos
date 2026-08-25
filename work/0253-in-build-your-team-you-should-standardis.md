@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T09:39:18Z"
+review_passes: 2
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
@@ -12,9 +14,7 @@ created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T09:36:19Z"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -87,3 +87,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T05:51:43Z · status review→active
 - 2026-08-25T09:36:19Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
 - 2026-08-25T09:36:19Z · status active→review
+
