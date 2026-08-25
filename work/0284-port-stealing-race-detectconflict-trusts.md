@@ -8,9 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/port-stealing-race-detectconflict-trusts
-model_override: default
 created_at: "2026-08-24T19:31:09Z"
-updated_at: "2026-08-25T00:56:52Z"
+updated_at: "2026-08-25T05:06:35Z"
 ---
 ## Problem
 
@@ -35,3 +34,4 @@ Found while diagnosing and fixing the reload-storm crash (#0271) — see that ta
 - 2026-08-24T21:35:43Z · model_override
 - 2026-08-24T21:35:57Z · status inbox→ready
 - 2026-08-25T00:56:52Z · status ready→active, branch
+- 2026-08-25T05:06:35Z · model_override
