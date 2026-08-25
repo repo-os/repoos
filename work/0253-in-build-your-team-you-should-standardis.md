@@ -2,7 +2,7 @@
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
-status: review
+status: active
 needs_merge: true
 priority: p2
 area: web
@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
 model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-24T23:41:14Z"
+updated_at: "2026-08-25T01:00:11Z"
 ---
 ## Problem
 
@@ -77,3 +77,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-23T11:51:10Z · pm_model_override
 - 2026-08-23T11:51:38Z · pm_model_override
 - 2026-08-24T23:41:14Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-08-25T01:00:11Z · status review→active
