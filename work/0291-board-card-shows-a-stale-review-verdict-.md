@@ -13,7 +13,7 @@ model_override: default
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T00:59:28Z"
+updated_at: "2026-08-25T05:01:59Z"
 ---
 ## Problem
 The board card's review-verdict badge can show an outdated verdict (e.g. "needs some work" from an earlier round) even though the actual, current review report already says something different (e.g. "good to go" from the latest round) — confirmed live on #0286 itself.
