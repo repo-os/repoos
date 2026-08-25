@@ -37,6 +37,7 @@
  *   the bound survives reloads; the in-memory set is only a fast path).
  */
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
@@ -235,7 +236,7 @@ export function autoTransitionTarget(config: RepoOSConfig, task: Task): "ready" 
   if (!task.branch) return "ready";
   if (task.hotfix) {
     try {
-      const out = require("node:child_process").execFileSync("git", ["status", "--porcelain"], {
+      const out = execFileSync("git", ["status", "--porcelain"], {
         cwd: config.root,
         encoding: "utf8",
         timeout: 4000,
