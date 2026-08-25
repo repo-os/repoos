@@ -1179,8 +1179,8 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
  * `reviewModelOverride` then replace the agent's CLI and model.
  */
 export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent | null {
-  const hasOverride =
-    task.reviewAgentOverride || task.reviewCliOverride || task.reviewModelOverride;
+  const modelPinned = isModelOverridePinned(task.reviewModelOverride);
+  const hasOverride = task.reviewAgentOverride || task.reviewCliOverride || modelPinned;
   if (!hasOverride) {
     return resolveReviewer(config);
   }
@@ -1191,7 +1191,7 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
   return {
     ...base,
     ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
-    ...(task.reviewModelOverride ? { model: task.reviewModelOverride } : {}),
+    ...(modelPinned ? { model: task.reviewModelOverride as string } : {}),
   };
 }
 
@@ -1214,13 +1214,33 @@ export function resolveCto(config: RepoOSConfig): Agent | null {
  * @param role    The role to resolve when no agent override is set (default: "engineer").
  * @returns A merged Agent, or null when no matching enabled agent exists.
  */
+/**
+ * True when a model-override field carries a real pin, not the "default"
+ * sentinel `AGENT_MODELS` offers for "use the base agent's own configured
+ * model, whatever that is" (config.ts). Every per-task model-override
+ * resolver (this file's `resolveAgentForTask`/`resolveReviewerForTask`, and
+ * routes/tasks.ts's inline PM-override logic) MUST run the override string
+ * through this before treating it as active — bare truthiness treats the
+ * literal string `"default"` as a real pin and force-overwrites the base
+ * agent's actual configured model with the string `"default"`, which then
+ * skips `--model` entirely (see `modelArgs` below) and falls back to the
+ * underlying CLI's own raw default — NOT the model configured on the
+ * Agents page. Confirmed live: tasks kept ending up running
+ * opencode+(no model flag) instead of the configured model every time a
+ * Dev/Review/PM override dropdown was left on (or reset to) "Default".
+ */
+export function isModelOverridePinned(model: string | null | undefined): boolean {
+  return !!model && model !== "default";
+}
+
 export function resolveAgentForTask(
   config: RepoOSConfig,
   task: Task,
   role: string = "engineer",
 ): Agent | null {
   const list = agentsForConfig(config);
-  const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
+  const modelPinned = isModelOverridePinned(task.modelOverride);
+  const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
   }
@@ -1234,7 +1254,7 @@ export function resolveAgentForTask(
   return {
     ...base,
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
-    ...(task.modelOverride ? { model: task.modelOverride } : {}),
+    ...(modelPinned ? { model: task.modelOverride as string } : {}),
   };
 }
 
