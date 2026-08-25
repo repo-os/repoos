@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-keyboard-shortcuts-to-navigate-task-
+model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T09:40:40Z"
+updated_at: "2026-08-25T09:43:36Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -72,3 +73,4 @@ Keep the arrows (`Up`/`Down`) as an equivalent to `j`/`k` for users who prefer t
 - 2026-08-25T05:49:52Z · status ready→active, branch
 - 2026-08-25T09:39:17Z · status active→review
 - 2026-08-25T09:40:40Z · status review→active
+- 2026-08-25T09:43:36Z · model_override
