@@ -2,7 +2,7 @@
 id: "0253"
 title: "Standardise \"build your team\" styling and make agent models editable"
 type: feature
-status: review
+status: done
 needs_input: true
 needs_merge: true
 priority: p2
@@ -13,7 +13,7 @@ branch: feat/standardise-build-your-team-styling-and-
 model_override: default
 review_model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T14:16:59Z"
+updated_at: "2026-08-25T14:45:51Z"
 merge_conflict_retry_count: 1
 review_passes: 2
 review_rounds: 1
@@ -91,4 +91,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T09:36:19Z · status active→review
 - 2026-08-25T12:45:25Z · review_model_override
 - 2026-08-25T12:45:26Z · model_override
-
+- 2026-08-25T14:45:51Z · status review→done, release:success
