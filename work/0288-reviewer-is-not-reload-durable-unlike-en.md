@@ -2,7 +2,7 @@
 id: "0288"
 title: "Reviewer is not reload-durable, unlike engineer and PM — dies mid-review on every server reload"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_merge: true
 priority: p1
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T05:46:51Z"
+updated_at: "2026-08-25T05:47:01Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -68,3 +68,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T05:09:28Z · status review→active
 - 2026-08-25T05:30:10Z · status active→review
 - 2026-08-25T05:46:51Z · model_override
+- 2026-08-25T05:47:01Z · status review→active
