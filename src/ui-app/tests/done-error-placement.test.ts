@@ -75,32 +75,41 @@ async function flush(): Promise<void> {
 }
 
 describe("move-to-done inline error placement", () => {
-  it("renders on the Work card, below the button, inside the task card", async () => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const repo = await repoWithDoneError("0042");
-    expect(repo.doneErrorFor("0042")).not.toBeNull();
+  it(
+    "renders on the Work card, and replaces the Move to done button (#0271 follow-up) " +
+      "rather than sitting below it — a failed attempt shouldn't invite clicking straight " +
+      "back into the same failure from the card; the drawer keeps its own retry button",
+    async () => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const repo = await repoWithDoneError("0042");
+      expect(repo.doneErrorFor("0042")).not.toBeNull();
 
-    const wrapper = mount(TaskCard, {
-      props: { task: makeTask({ id: "0042" }) },
-      global: {
-        plugins: [pinia],
-        stubs: { RestartTaskDialog: true, ActivityIndicator: true },
-      },
-    });
-    await flush();
+      const wrapper = mount(TaskCard, {
+        props: { task: makeTask({ id: "0042" }) },
+        global: {
+          plugins: [pinia],
+          stubs: { RestartTaskDialog: true, ActivityIndicator: true },
+        },
+      });
+      await flush();
 
-    const err = wrapper.find(".tc-done-error");
-    expect(err.exists()).toBe(true);
-    expect(err.element.classList.contains("done-error")).toBe(true);
-    // Inside the card, after the button row (.tc-foot).
-    const card = wrapper.find(".task-card");
-    expect(card.element.contains(err.element)).toBe(true);
-    const foot = wrapper.find(".tc-foot").element;
-    expect(foot.compareDocumentPosition(err.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // The raw server message is preserved, not genericized.
-    expect(err.text()).toContain("merge conflict: src/a.ts, src/b.ts");
-  });
+      const err = wrapper.find(".tc-done-error");
+      expect(err.exists()).toBe(true);
+      expect(err.element.classList.contains("done-error")).toBe(true);
+      // Inside the card.
+      const card = wrapper.find(".task-card");
+      expect(card.element.contains(err.element)).toBe(true);
+      // No Move to done button on the card while the error is showing.
+      expect(wrapper.find(".tc-foot").exists()).toBe(false);
+      expect(wrapper.text()).not.toContain("Move to done");
+      // No "review passed · ready to finish" hint either — it would read as
+      // contradictory right next to a failure banner.
+      expect(wrapper.text()).not.toContain("ready to finish");
+      // The raw server message is preserved, not genericized.
+      expect(err.text()).toContain("merge conflict: src/a.ts, src/b.ts");
+    },
+  );
 
   it("does not render an error on the card when the store has none", async () => {
     const pinia = createPinia();
@@ -156,5 +165,9 @@ describe("move-to-done inline error placement", () => {
     expect(err.text()).toContain("merge conflict: src/a.ts, src/b.ts");
     // Sits inside the quickbar, which is where the Move to done button lives.
     expect(wrapper.find(".drawer-quickbar").element.contains(err.element)).toBe(true);
+    // Unlike the card (which hides its Move to done button on error, above),
+    // the drawer keeps its own — a failed attempt is still one click from
+    // retrying once the human has looked at (or fixed) the cause.
+    expect(wrapper.text()).toContain("Move to done");
   });
 });

@@ -347,6 +347,10 @@ const hint = computed<CardHint | null>(() => {
       if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
       return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
     }
+    // A failed Move to done shows its own error banner below (DoneErrorCard)
+    // — "review passed · ready to finish" right above it reads as
+    // contradictory once that attempt already failed.
+    if (repo.doneErrorFor(t.id)) return null;
     return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
@@ -375,6 +379,11 @@ const IN_PIPELINE: CardAction = {
 const action = computed<CardAction | null>(() => {
   const t = props.task;
   if (t.status === "review" && inPipeline.value) return IN_PIPELINE;
+  // A failed Move to done leaves its error banner + Fix button on the card
+  // (below) — showing "Move to done" here too just invites clicking straight
+  // back into the same failure. The task drawer keeps its own Move to done
+  // button, so retrying is still one click away, just not from the card.
+  if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
   if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
   return ACTIONS[t.status] ?? null;
 });
