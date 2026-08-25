@@ -3,7 +3,7 @@ import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
-import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
+import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
@@ -932,18 +932,17 @@ const pmBusy = computed(
 
 const pmHasConversation = computed(() => pmLines.value.length > 0);
 
-/** Canned messages shown above the PM compose box for fresh draft/inbox stubs. */
-const pmCannedMessages = [
-  "Can you flesh this out?",
-  "Suggest how to turn this stub into a complete task.",
-];
-
-/** Whether to show the canned PM messages: draft/inbox task with no PM chat yet. */
-const showPmCanned = computed(() => {
+/**
+ * Canned messages shown above the PM compose box, keyed by task status.
+ * Empty (no chips) for statuses without a defined set.
+ */
+const pmCannedMessages = computed(() => {
   const t = ui.active;
-  if (!t || (t.status !== "draft" && t.status !== "inbox")) return false;
-  return !pmHasConversation.value;
+  return t ? pmCannedMessagesFor(t.status) : [];
 });
+
+/** Whether to show the canned PM messages: any status with a defined set. */
+const showPmCanned = computed(() => pmCannedMessages.value.length > 0);
 
 /** Send the chosen canned message to the PM agent, just like a typed send. */
 function pmSendCanned(text: string): void {

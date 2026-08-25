@@ -139,6 +139,33 @@ export const STATUS_COLORS: Record<string, string> = {
 export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
 
 /**
+ * PM chat "canned questions" offered above the compose box, keyed by task
+ * status. Only statuses with a defined set show chips; others show none.
+ */
+export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
+  draft: [
+    "Can you flesh this out?",
+    "Suggest how to turn this stub into a complete task.",
+  ],
+  inbox: [
+    "Can you flesh this out?",
+    "Suggest how to turn this stub into a complete task.",
+  ],
+  active: [
+    "What's going on with this task?",
+    "What's wrong?",
+    "What should I do next?",
+  ],
+  review: [
+    "What's blocking this from being done?",
+    "Is this actually ready?",
+  ],
+};
+
+export const pmCannedMessagesFor = (s: string): string[] =>
+  PM_CANNED_MESSAGES[s as Status] ?? [];
+
+/**
  * The human-action reasons a task earns on the "Needs your attention" panel,
  * in display order. Empty when the task needs nothing from a human. Reasons
  * dedupe upstream: a task is listed once even when it matches several.
