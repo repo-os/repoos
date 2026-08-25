@@ -65,6 +65,29 @@ export const useUiStore = defineStore("ui", () => {
     }
   }
 
+  const KEYBOARD_NAV_PERSIST_KEY = "repoos.board.keyboardNav";
+  /** Keyboard navigation over the board (j/k/h/l, arrows, Enter, Esc). Off by
+   *  default — an opt-in power-user setting (see #0290). A purely client-local
+   *  UI preference, so toggling it takes effect immediately. */
+  const keyboardNavEnabled = ref<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem(KEYBOARD_NAV_PERSIST_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function setKeyboardNavEnabled(value: boolean): void {
+    keyboardNavEnabled.value = value;
+    try {
+      localStorage.setItem(KEYBOARD_NAV_PERSIST_KEY, value ? "1" : "0");
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
   const INTEGRATION_BAR_PERSIST_KEY = "repoos.integrationBar.collapsed";
   /** True when the bottom integration bar is folded to a thin strip
    *  (persisted across reloads). Shared state — the task drawer expands it
@@ -247,5 +270,7 @@ export const useUiStore = defineStore("ui", () => {
     expandIntegrationBar,
     glideAnimations,
     setGlideAnimations,
+    keyboardNavEnabled,
+    setKeyboardNavEnabled,
   };
 });

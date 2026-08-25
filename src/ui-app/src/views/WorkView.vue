@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { COLUMNS, SORT_ORDER_OPTIONS, useRepoStore } from "../stores/repo";
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
+import { isColumnCollapsed } from "../lib/boardCollapse";
 import BoardColumn from "../components/BoardColumn.vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
@@ -14,6 +16,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
+import type { Task } from "../types";
 
 const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
@@ -34,6 +37,35 @@ const statusFilter = computed<string | null>(() => {
 const filterCol = computed<Column | null>(() => {
   if (statusFilter.value === "draft") return DRAFT_COL;
   return COLUMNS.find((c) => c.id === statusFilter.value) ?? null;
+});
+
+// ── #0290 Keyboard navigation over the board ─────────────────────────────
+// The board is the primary task list. Reconstruct the flat, DOM-ordered list
+// of visible cards (columns render top-to-bottom in this same order) so the
+// keyboard highlight index mirrors exactly what is on screen. Collapsed
+// columns are skipped so the highlight never lands on a hidden row (req 3).
+const visibleTasks = computed<Task[]>(() => {
+  const order = statusFilter.value
+    ? [filterCol.value!]
+    : [DRAFT_COL, ...COLUMNS];
+  const out: Task[] = [];
+  for (const col of order) {
+    // In the filtered single-column view the column is force-expanded, so it is
+    // always on screen even if its id sits in the persisted collapse set.
+    if (!statusFilter.value && isColumnCollapsed(col.id)) continue;
+    out.push(...repo.byStatus(col.id));
+  }
+  return out;
+});
+
+const boardEl = ref<HTMLElement | null>(null);
+const boardKey = useBoardKeyboardNav({
+  containerRef: boardEl,
+  tasks: visibleTasks,
+  open: ui.openTask,
+  enabled: computed(() => ui.keyboardNavEnabled),
+  panelOpen: computed(() => !!ui.active),
+  closePanel: ui.close,
 });
 </script>
 
@@ -93,7 +125,7 @@ const filterCol = computed<Column | null>(() => {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
-    <div class="board">
+    <div ref="boardEl" class="board">
       <template v-if="statusFilter">
         <BoardColumn
           :col="filterCol!"
@@ -101,11 +133,12 @@ const filterCol = computed<Column | null>(() => {
           :empty-text="filterCol!.id === 'draft' ? DRAFT_EMPTY : '—'"
           force-expand
           :drag-enabled="false"
+          :highlight-id="boardKey.highlightId.value"
         />
       </template>
       <template v-else>
-        <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" />
-        <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" />
+        <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" :highlight-id="boardKey.highlightId.value" />
+        <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" :highlight-id="boardKey.highlightId.value" />
       </template>
     </div>
 

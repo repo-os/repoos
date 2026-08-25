@@ -4,8 +4,7 @@ import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
-
-const COLLAPSE_KEY = "repoos.board.collapsed";
+import { applyCollapseDefaults, isColumnCollapsed, toggleColumnCollapsed } from "../lib/boardCollapse";
 
 const GENZ_EMPTY: Record<string, string> = {
   draft: "no drafts yet — agent ideas land here",
@@ -15,38 +14,14 @@ const GENZ_EMPTY: Record<string, string> = {
   done: "nothing shipped yet — send it",
 };
 
-function readSaved(): { ids: string[]; exists: boolean } {
-  try {
-    const raw = localStorage.getItem(COLLAPSE_KEY);
-    if (raw === null) return { ids: [], exists: false };
-    return { ids: JSON.parse(raw) ?? [], exists: true };
-  } catch {
-    return { ids: [], exists: false };
-  }
-}
-
-const saved = readSaved();
-const collapsedIds = ref<Set<string>>(new Set(saved.ids));
-
-let defaultsApplied = false;
-const hasSavedState = saved.exists;
-
-function applyDefaults(repo: ReturnType<typeof useRepoStore>) {
-  if (defaultsApplied) return;
-  defaultsApplied = true;
-  if (hasSavedState) return;
-  const ids = ["draft", ...COLUMNS.map((c) => c.id)];
-  collapsedIds.value = new Set(ids.filter((id) => repo.byStatus(id).length === 0));
-}
-
 const props = withDefaults(
-  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean }>(),
-  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true }
+  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean; highlightId?: string | null }>(),
+  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true, highlightId: null }
 );
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const collapsed = computed(() => !props.forceExpand && collapsedIds.value.has(props.col.id));
+const collapsed = computed(() => !props.forceExpand && isColumnCollapsed(props.col.id));
 
 const displayEmpty = computed(() =>
   config.uiTheme === "gen z"
@@ -57,7 +32,7 @@ const displayEmpty = computed(() =>
 watch(
   () => repo.loading,
   (loading) => {
-    if (!loading) applyDefaults(repo);
+    if (!loading) applyCollapseDefaults({ byStatus: repo.byStatus, columns: COLUMNS });
   },
   { immediate: true }
 );
@@ -146,7 +121,7 @@ async function onDrop(e: DragEvent): Promise<void> {
     } else {
       await repo.setStatus(task, props.col.id);
     }
-    if (collapsedIds.value.has(props.col.id)) toggle();
+    if (isColumnCollapsed(props.col.id)) toggle();
   } catch (err) {
     repo.onError(err);
   }
@@ -168,17 +143,7 @@ const barTextColor = computed(() => {
   return 0.299 * r + 0.587 * g + 0.114 * b > 140 ? "#0e1220" : "#ffffff";
 });
 
-const toggle = () => {
-  const s = new Set(collapsedIds.value);
-  if (s.has(props.col.id)) s.delete(props.col.id);
-  else s.add(props.col.id);
-  collapsedIds.value = s;
-  try {
-    localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...s]));
-  } catch {
-    /* ignore quota / privacy-mode failures */
-  }
-};
+const toggle = () => toggleColumnCollapsed(props.col.id);
 
 /** 0278: a fresh-done task must be visible, not hidden behind a collapsed cap.
  *  The moment the done column first holds an unacked done task, expand it
@@ -239,7 +204,13 @@ const unackedBadge = computed(() =>
       <div v-if="leavingTaskName" class="board-ghost" :key="'ghost-' + repo.transitionState?.id">
         Moved to {{ repo.transitionState?.to }}
       </div>
-      <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" :drag-enabled="dragEnabled" />
+      <TaskCard
+        v-for="t in repo.byStatus(col.id)"
+        :key="t.id"
+        :task="t"
+        :drag-enabled="dragEnabled"
+        :highlighted="props.highlightId === t.id"
+      />
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
