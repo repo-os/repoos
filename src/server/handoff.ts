@@ -62,6 +62,27 @@ function samePath(a: string, b: string): boolean {
   }
 }
 
+/**
+ * Clears a stale `check_retry_count` once a handoff's `repoos check` step
+ * passes. The field exists only to cap `scheduleCheckFailureRetry`'s retries
+ * and to let the board show "fixing check failure" while a retry is in
+ * flight (0265) — left on the file after the check that mattered has passed,
+ * it would mislabel any later, unrelated resume of this task's engineer
+ * session as still fixing a check failure. Best-effort: never fails the
+ * handoff over a cosmetic field.
+ */
+function clearCheckRetryCount(absPath: string): void {
+  try {
+    const raw = readFileSync(absPath, "utf8");
+    const doc = parseDocument(raw);
+    if (doc.data.check_retry_count === undefined) return;
+    delete doc.data.check_retry_count;
+    writeFileSync(absPath, serializeDocument(doc.data, `\n${doc.body}\n`, Object.keys(doc.data)));
+  } catch (err) {
+    console.error(`[repoos] could not clear check_retry_count for ${absPath}: ${(err as Error).message}`);
+  }
+}
+
 function concise(run: RunResult): string {
   if (run.error) return run.error.message;
   return [run.stdout, run.stderr]
@@ -182,6 +203,7 @@ export async function handoffTask(
       if (check.status !== 0) {
         return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
       }
+      clearCheckRetryCount(task.absPath);
 
       onProgress?.("commit");
       const gate = await guardReviewTransition(config, worktreeTask);
@@ -287,6 +309,10 @@ export function scheduleCheckFailureRetry(
   task: Task,
   result: HandoffResult,
   runner: AgentRunner,
+  /** Called right after `check_retry_count` is persisted so the live index
+   *  (and its SSE `task.updated` event) picks up the new count immediately —
+   *  this write bypasses `patchTaskFile`, so nothing else refreshes it. */
+  onFileChange?: (absPath: string) => void,
 ): boolean {
   if (result.step !== "check") return false;
   let retries = task.extra?.check_retry_count as number | undefined;
@@ -326,11 +352,183 @@ export function scheduleCheckFailureRetry(
       const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count");
       keys.unshift("check_retry_count");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
     } catch (err) {
       console.error(`[repoos] could not persist check_retry_count for #${task.id}: ${(err as Error).message}`);
     }
     runner.system(task.id, `↻ automatically resuming after check failure (attempt ${attempt} of ${MAX_CHECK_RETRY_ATTEMPTS})`);
   }, CHECK_RETRY_DELAY_MS);
+
+  return true;
+}
+
+/** Cap mirrors MAX_CHECK_RETRY_ATTEMPTS — same reasoning, different failure step. */
+const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
+const MERGE_CONFLICT_RETRY_DELAY_MS = 3_000;
+
+/**
+ * On a close-out `validating`-phase failure caused by a REAL merge conflict
+ * (the candidate's merge of the feature branch into itself failed with named
+ * conflicting paths — not the task's own bookkeeping file or `dist/`/
+ * `screenshots/`, which auto-resolve, and not an infra failure), automatically
+ * resume the task's engineer session and ask it to merge main into ITS OWN
+ * branch and resolve the conflict there — the exact manual recovery
+ * docs/close-out-pipeline.md prescribes (#0271 follow-up: this was
+ * previously always a human/agent-operator manual step, discovered when
+ * task #0282 sat failed until someone noticed).
+ *
+ * Unlike `scheduleCheckFailureRetry`, this does NOT ask the engineer to
+ * re-emit the handoff signal — the task is already `review`, and a fresh
+ * handoff attempt against an already-`review` task just short-circuits as
+ * "already finalized" (see the check near the top of `handoffTask`) without
+ * re-running the close-out. Instead, server.ts's `agent.exited` handler
+ * watches for this exact session ending while its job is still the
+ * failed-on-this-conflict record, and re-enqueues the close-out itself —
+ * the same action a human clicking "Move to done" again performs. The
+ * engineer's job is just to fix the branch and end its turn.
+ *
+ * Otherwise mirrors `scheduleCheckFailureRetry` closely: same retry cap
+ * shape, same give-up-to-persistHandoffFailure fallback, same
+ * do-not-flip-status behavior (the task stays in `review` — TaskCard.vue can
+ * label this state the same way it labels a check-failure retry). Capped,
+ * because a conflict that survives two resolve attempts is very likely the
+ * agent resolving it WRONG in a way that reintroduces the same conflict, not
+ * something a third attempt fixes — same logic `MAX_CHECK_RETRY_ATTEMPTS`
+ * already encodes.
+ *
+ * Returns true when a retry was scheduled.
+ */
+export function scheduleMergeConflictRetry(
+  config: RepoOSConfig,
+  task: Task,
+  reason: string,
+  runner: AgentRunner,
+  /** Same purpose as in `scheduleCheckFailureRetry` — let the live index pick
+   *  up the new retry count immediately via its own SSE event. */
+  onFileChange?: (absPath: string) => void,
+): boolean {
+  let retries = task.extra?.merge_conflict_retry_count as number | undefined;
+  if (typeof retries !== "number") retries = 0;
+
+  if (retries >= MAX_MERGE_CONFLICT_RETRY_ATTEMPTS) {
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      `merge conflict unresolved after ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS} automatic retries · ${reason}`,
+    );
+    return false;
+  }
+
+  const engineer = resolveAgentForTask(config, task);
+  if (!engineer) {
+    runner.persistHandoffFailure(task.id, task, `merge conflict and no engineer is configured to retry · ${reason}`);
+    return false;
+  }
+
+  const attempt = retries + 1;
+  setTimeout(() => {
+    const message = [
+      `Close-out validation failed (automatic retry ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS}): your branch has a real merge conflict with main.`,
+      "",
+      reason,
+      "",
+      "In YOUR OWN branch's worktree (not the candidate — the candidate is discarded and rebuilt from your branch on every attempt): merge main into your branch, resolve the conflict by understanding what BOTH sides were trying to do — do not blindly prefer one side over the other unless one is genuinely obsolete — verify `repoos check` passes, and commit the merge. The task is already in `review`, so do NOT re-emit the handoff signal (it will just report \"already finalized\" and do nothing) — simply end your turn once the merge is committed and verified. The close-out retries automatically the moment your turn ends.",
+    ].join("\n");
+    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    if (!sent.ok) {
+      runner.system(task.id, `✗ automatic merge-conflict retry could not resume: ${sent.reason ?? "unknown error"}`);
+      runner.persistHandoffFailure(task.id, task, `could not auto-retry after merge conflict · ${sent.reason ?? "unknown error"}`);
+      return;
+    }
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.merge_conflict_retry_count = attempt;
+      const keys = Object.keys(doc.data).filter((k) => k !== "merge_conflict_retry_count");
+      keys.unshift("merge_conflict_retry_count");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
+    } catch (err) {
+      console.error(`[repoos] could not persist merge_conflict_retry_count for #${task.id}: ${(err as Error).message}`);
+    }
+    runner.system(task.id, `↻ automatically resuming after merge conflict (attempt ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`);
+  }, MERGE_CONFLICT_RETRY_DELAY_MS);
+
+  return true;
+}
+
+/** Cap mirrors the other two retry schedulers — same reasoning, different failure step. */
+const MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS = 2;
+const HANDOFF_SIGNAL_RETRY_DELAY_MS = 3_000;
+
+/**
+ * Third instance of the same pattern (#0271 follow-up), for the task-watchdog's
+ * `exited-without-handoff` classification (task-watchdog.ts): a session ran to
+ * completion but its final line wasn't exactly `::repoos-handoff-ready::`, so no
+ * handoff ever fired. Previously the watchdog could only surface this — move
+ * the task to `review`/`ready` and leave a human to notice and click Restart
+ * (task #0268 sat this way until someone asked "why hasn't this recovered on
+ * its own").
+ *
+ * Unlike the other two, this failure has no specific diagnostic to hand back —
+ * "you didn't finish right" is vaguer than a named conflict or check output —
+ * so it's a strictly weaker signal, which is exactly why the watchdog didn't
+ * already do this: auto-resuming on a vague prompt risks looping on genuine
+ * confusion, not just fixing a rendering hiccup. The cap bounds that risk the
+ * same way it bounds the other two; on exhaustion this returns false and the
+ * caller (task-watchdog.ts) falls through to its EXISTING surface behavior —
+ * there is no separate give-up path here, unlike the other two schedulers,
+ * because surfacing already IS the correct terminal state the watchdog was
+ * built for.
+ *
+ * Returns true when a retry was scheduled; false means "give up, surface it
+ * the normal way" — either the cap was hit or no engineer is configured.
+ */
+export function scheduleHandoffSignalRetry(
+  config: RepoOSConfig,
+  task: Task,
+  runner: AgentRunner,
+  onFileChange?: (absPath: string) => void,
+): boolean {
+  let retries = task.extra?.handoff_signal_retry_count as number | undefined;
+  if (typeof retries !== "number") retries = 0;
+  if (retries >= MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS) return false;
+
+  const engineer = resolveAgentForTask(config, task);
+  if (!engineer) return false;
+
+  const persistAttempt = (): void => {
+    // Persisted on EVERY attempt, success or failure of `send()` — otherwise a
+    // structural send failure (e.g. the runner reports busy every time) would
+    // never advance the counter and this could retry forever every watchdog
+    // scan instead of respecting the cap.
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.handoff_signal_retry_count = attempt;
+      const keys = Object.keys(doc.data).filter((k) => k !== "handoff_signal_retry_count");
+      keys.unshift("handoff_signal_retry_count");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      onFileChange?.(task.absPath);
+    } catch (err) {
+      console.error(`[repoos] could not persist handoff_signal_retry_count for #${task.id}: ${(err as Error).message}`);
+    }
+  };
+
+  const attempt = retries + 1;
+  setTimeout(() => {
+    const message = [
+      `Automatic recovery (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS}): your previous turn on this task ended without the server detecting a clean handoff.`,
+      "",
+      "The handoff signal must be exactly `::repoos-handoff-ready::` on its own line — a rendering quirk can occasionally mangle it (see #0154/#0155).",
+      "",
+      "Check your last output and the current state of your worktree. If the work is actually complete and `repoos check` passes: emit the signal line correctly this time. If it is NOT complete: finish it, verify `repoos check` passes, then emit the signal.",
+    ].join("\n");
+    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    persistAttempt();
+    if (!sent.ok) return; // capped; the watchdog's next scan surfaces it normally
+    runner.system(task.id, `↻ automatically resuming after a missed handoff signal (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`);
+  }, HANDOFF_SIGNAL_RETRY_DELAY_MS);
 
   return true;
 }

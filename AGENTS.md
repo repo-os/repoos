@@ -114,23 +114,54 @@ cannot tell from the code alone:
 ## Conventions
 
 - Runtime: Bun (the package also runs under Node ≥ 20 once built).
+- Tests: `bun run test` (vitest), never bare `bun test`. Bun's own test runner
+  will pick up the same `*.test.ts` files and mostly work, but its `vi` shim is
+  missing pieces like `vi.stubGlobal`/`vi.unstubAllGlobals` — those tests then
+  fail with `TypeError: vi.stubGlobal is not a function`, which looks like a
+  real regression but is just the wrong runner.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
   `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
-  and verify with a browser probe before reporting done.
+  so the worktree build is fresh. Do NOT automatically request a preview to
+  verify it — previews are on request from the human, not something you spin up
+  as a routine part of finishing a task (#0268).
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
-  the control-plane port and every preview port. To verify a UI change, request
-  this task's managed preview by emitting the exact signal line (idempotent —
-  repeat requests return the same task preview, and no localhost/curl is
-  needed):
+  the control-plane port and every preview port. Preview requests are the
+  human's to make: the human requests a preview manually from the UI when they
+  want to see a change. The engineer agent does NOT auto-request one before
+  handoff. If the human explicitly asks you to verify something the way a
+  browser would see it, request this task's managed preview by emitting the
+  exact signal line (idempotent — repeat requests return the same task preview,
+  and no localhost/curl is needed):
   `::repoos-preview-request::`. RepoOS validates the request against your live
   run, starts the preview from your worktree, probes it server-side, and records
   the preview URL and probe result in your task transcript. Direct `repoos
   serve` attempts from agent processes are rejected; the preview is reaped when
   the task leaves active/review.
+  **Previews are on-demand only, capped at ONE running at a time (#0271).**
+  Nothing auto-launches a preview anymore — not on a task entering `review`,
+  not at server boot for tasks already in review. Requesting yours may evict
+  whatever preview was running for a different task (FIFO); that's expected,
+  not a bug — if you need to re-verify something you checked earlier and the
+  slot has since moved on, just emit the signal again.
+  **This server-side probe is a plain HTTP health check (`/api/health` then the
+  root page) — it does not open a browser and does not require login.** Auth
+  being enabled is not a reason to skip verification or fall back to a
+  component-level unit test instead: emitting the signal and reading the probe
+  result from your transcript confirms the change serves, with no OTP involved.
+  If a task genuinely needs deeper interactive verification — actually clicking
+  through the logged-in UI, not just confirming it serves — log into the
+  preview with the dev backdoor code (`config.auth.devBackdoorCode`, set via
+  `REPOOS_AUTH_DEV_BACKDOOR_CODE`, non-production only) instead of requesting a
+  real email OTP you have no inbox for. It only replaces the OTP step: the
+  email you enter must already be an allowlisted user (e.g. the configured
+  `bootstrapAdmin`) — it does not let you log in as an arbitrary address. This
+  same backdoor works against any locally-served instance, not just managed
+  task previews — e.g. a `repoos serve` a human is already running for manual
+  dev/testing (see `docs/native-auth.md`).
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse

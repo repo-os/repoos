@@ -79,6 +79,19 @@ export default defineConfig({
   build: {
     outDir: "../../dist/ui",
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Vue core changes far less often than app code and views, so
+            // split it out for cross-deploy caching.
+            { name: "vendor-vue", test: /\/node_modules\/(vue|@vue|vue-router|pinia)\// },
+            // UI primitives/icons: large and independent of app logic.
+            { name: "vendor-ui", test: /\/node_modules\/(radix-vue|lucide-vue-next)\// },
+          ],
+        },
+      },
+    },
   },
   server: {
     // Dev-server proxy so the app can talk to a locally running `repoos serve`.
@@ -102,5 +115,13 @@ export default defineConfig({
     // breakage (waitFor throws well before these caps).
     testTimeout: 15_000,
     hookTimeout: 15_000,
+    // Vitest's default forks pool sizes itself to (CPU cores - 1) per run —
+    // fine for one run alone, but repoos routinely has several agent-driven
+    // `bun run test`/`repoos check` runs happening at once across worktrees,
+    // and each one's pool multiplies against the others rather than
+    // sharing the machine. Capping a single run's own pool bounds that
+    // multiplier so maxConcurrentAgents (src/core/config.ts) can be sized off
+    // total cores instead of assuming any one run might claim all of them.
+    maxWorkers: 2,
   },
 });

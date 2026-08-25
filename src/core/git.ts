@@ -3,7 +3,7 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
-import { execFileSync, spawn, spawnSync } from "node:child_process";
+import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
@@ -20,6 +20,26 @@ function git(root: string, args: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Non-blocking counterpart of `git()`. Lets a caller enriching many tasks
+ * (e.g. `buildIndexAsync`) run their git spawns concurrently instead of
+ * one at a time on the main thread — each `execFileSync` call above blocks
+ * the event loop for the OS round-trip, so N tasks in a `for` loop costs N
+ * full serial round-trips no matter how idle the machine is.
+ */
+function gitAsync(root: string, args: string[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      args,
+      { cwd: root, encoding: "utf8", timeout: 4000 },
+      (error, stdout) => {
+        resolve(error ? null : stdout.trim());
+      },
+    );
+  });
 }
 
 export interface GitRun {
@@ -89,6 +109,23 @@ export function lastCommitForFile(
   relPath: string,
 ): { subject: string | null; date: string | null } {
   const out = git(root, [
+    "log",
+    "-1",
+    "--format=%s%x00%cI",
+    "--",
+    relPath,
+  ]);
+  if (!out) return { subject: null, date: null };
+  const [subject, date] = out.split("\u0000");
+  return { subject: subject || null, date: date || null };
+}
+
+/** Async counterpart of lastCommitForFile - see gitAsync. */
+export async function lastCommitForFileAsync(
+  root: string,
+  relPath: string,
+): Promise<{ subject: string | null; date: string | null }> {
+  const out = await gitAsync(root, [
     "log",
     "-1",
     "--format=%s%x00%cI",
@@ -289,9 +326,21 @@ export interface WorktreeStatus {
  * Best-effort facts about a task's worktree, derived from `git worktree list`
  * plus a status check inside the worktree. Fail-soft: any git failure yields
  * a safe `{ path: null, dirty: false }`.
+ *
+ * `opts.worktrees`/`opts.baseBranch` let a caller looping over many tasks
+ * against the same repo (e.g. `buildIndex`) pass in a `worktreePaths`/
+ * `currentBranch` result it already fetched once, instead of this function
+ * re-running those two `git` spawns on every single task (#0271 follow-up:
+ * this redundancy was a large share of RepoOS's slow boot with 260+ tasks).
+ * Omit them and behavior is unchanged — each call fetches fresh.
  */
-export function worktreeStatus(root: string, branch: string): WorktreeStatus {
-  const path = worktreePaths(root).get(branch) ?? null;
+export function worktreeStatus(
+  root: string,
+  branch: string,
+  opts: { worktrees?: Map<string, string>; baseBranch?: string | null } = {},
+): WorktreeStatus {
+  const worktrees = opts.worktrees ?? worktreePaths(root);
+  const path = worktrees.get(branch) ?? null;
   if (!path) return { path: null, dirty: false };
   // git reports the main checkout as a worktree too; only a LINKED worktree
   // counts, otherwise the whole repo's dirt would mark tasks dirty.
@@ -311,10 +360,45 @@ export function worktreeStatus(root: string, branch: string): WorktreeStatus {
 
   const status = git(path, ["status", "--porcelain"]);
   const uncommitted = status !== null && status !== "";
-  const base = currentBranch(root);
+  const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
   const count = base && base !== branch
     ? git(root, ["rev-list", "--count", `${base}..${branch}`])
     : null;
+  const ahead = count !== null && Number(count) > 0;
+  return { path, dirty: uncommitted || ahead };
+}
+
+/** Async counterpart of `worktreeStatus` — see `gitAsync`. */
+export async function worktreeStatusAsync(
+  root: string,
+  branch: string,
+  opts: { worktrees?: Map<string, string>; baseBranch?: string | null } = {},
+): Promise<WorktreeStatus> {
+  const worktrees = opts.worktrees ?? worktreePaths(root);
+  const path = worktrees.get(branch) ?? null;
+  if (!path) return { path: null, dirty: false };
+  let realRoot = root;
+  let realPath = path;
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    /* keep the composed path */
+  }
+  try {
+    realPath = realpathSync(path);
+  } catch {
+    /* keep the reported path */
+  }
+  if (realPath === realRoot) return { path: null, dirty: false };
+
+  const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
+  const [status, count] = await Promise.all([
+    gitAsync(path, ["status", "--porcelain"]),
+    base && base !== branch
+      ? gitAsync(root, ["rev-list", "--count", `${base}..${branch}`])
+      : Promise.resolve(null),
+  ]);
+  const uncommitted = status !== null && status !== "";
   const ahead = count !== null && Number(count) > 0;
   return { path, dirty: uncommitted || ahead };
 }
@@ -401,6 +485,25 @@ export interface DiffResult {
 const MAX_DIFF_BYTES = 256_000;
 const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
 
+/** Parse `git diff --numstat` output into file/line counts (shared by the sync and async variants below). */
+function parseNumstat(statOutput: string): DiffStats {
+  let filesChanged = 0;
+  let additions = 0;
+  let deletions = 0;
+
+  // Parse output like: "278\t7\tsrc/file.ts" ("-\t-\tpath" for binary files)
+  for (const line of statOutput.split("\n")) {
+    const match = line.match(/^(\d+|-)\t(\d+|-)\t/);
+    if (match) {
+      filesChanged++;
+      if (match[1] !== "-") additions += parseInt(match[1]!, 10);
+      if (match[2] !== "-") deletions += parseInt(match[2]!, 10);
+    }
+  }
+
+  return { filesChanged, additions, deletions };
+}
+
 /**
  * Get diff statistics comparing a branch point to the current worktree.
  * This deliberately includes committed, staged, and unstaged source edits so
@@ -421,22 +524,30 @@ export function getDiffStats(
   // lossy and prone to drifting from the real totals, see 0248).
   const statOutput = git(worktree, ["diff", "--numstat", baseFull, ...DIFF_SOURCE_PATHS]);
   if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+  return parseNumstat(statOutput);
+}
 
-  let filesChanged = 0;
-  let additions = 0;
-  let deletions = 0;
+/**
+ * Non-blocking counterpart to `getDiffStats`, built on `runGit` (`spawn`)
+ * instead of `git`'s `execFileSync`. Every task card on the Work board fetches
+ * its diff stats on mount (`TaskCard.vue`), so a board with N cards fires N
+ * of these on every reload/tab-switch; the synchronous version froze the
+ * entire server's event loop for the duration of all of them serially —
+ * including whatever `GET /api/tasks/:id` a drawer-opening click was waiting
+ * on — which is what made the drawer take several seconds to appear.
+ */
+export async function getDiffStatsAsync(
+  worktree: string,
+  baseBranch: string,
+): Promise<DiffStats> {
+  const base = await runGit(worktree, ["merge-base", baseBranch, "HEAD"], 4000);
+  const baseFull = base.status === 0 && !base.timedOut ? base.stdout.trim() : null;
+  if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
-  // Parse output like: "278\t7\tsrc/file.ts" ("-\t-\tpath" for binary files)
-  for (const line of statOutput.split("\n")) {
-    const match = line.match(/^(\d+|-)\t(\d+|-)\t/);
-    if (match) {
-      filesChanged++;
-      if (match[1] !== "-") additions += parseInt(match[1]!, 10);
-      if (match[2] !== "-") deletions += parseInt(match[2]!, 10);
-    }
-  }
-
-  return { filesChanged, additions, deletions };
+  const diff = await runGit(worktree, ["diff", "--numstat", baseFull, ...DIFF_SOURCE_PATHS], 4000);
+  const statOutput = diff.status === 0 && !diff.timedOut ? diff.stdout.trim() : null;
+  if (!statOutput) return { filesChanged: 0, additions: 0, deletions: 0 };
+  return parseNumstat(statOutput);
 }
 
 /**
@@ -802,6 +913,7 @@ export async function mergeBranch(
       (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
     const keepOurs = (p: string): boolean =>
       (opts.autoResolveOurs ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+    const blocking = conflicts.filter((p) => !autoResolvable(p) && !keepOurs(p));
     if (conflicts.every((p) => autoResolvable(p) || keepOurs(p))) {
       // Task metadata may be updated concurrently. The closing task's branch
       // copy is authoritative, while unrelated task files must retain main's
@@ -817,10 +929,27 @@ export async function mergeBranch(
         return { merged: true, ff: false, conflicts: [] };
       }
       await runGit(root, ["merge", "--abort"], 4000);
+      // Every conflicted path was auto-resolvable, but the resolution itself
+      // failed to commit. Report that explicitly rather than a generic failure —
+      // the auto-resolvable paths are not the real culprit, so they are excluded
+      // from `conflicts` (nothing there genuinely blocks a hand-led resolution).
+      return {
+        merged: false,
+        ff: false,
+        conflicts: [],
+        reason: `auto-resolve failed for ${conflicts.join(", ")}`,
+      };
     }
+    // A genuine, non-auto-resolvable conflict (or a mix of one with auto-
+    // resolvable bookkeeping, e.g. the task's own file). Return ONLY the paths
+    // that genuinely block the merge so a hand-led resolution — and the debugger
+    // the user is routed to — sees the real culprit, never the task-file
+    // bookkeeping that the close-out is supposed to auto-resolve anyway (#0271).
+    // This is consistent with `preflightMerge`, which already filters to the
+    // unresolved (non-auto-resolvable) paths.
     // Nothing may be left half-applied: back out of the merge entirely.
     await runGit(root, ["merge", "--abort"], 4000);
-    return { merged: false, ff: false, conflicts, reason: "merge conflict" };
+    return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
   }
   return {
     merged: false,

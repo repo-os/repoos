@@ -4,6 +4,8 @@
  * orchestration remains server-owned with proper safeguards against
  * oversubscription and stale state.
  */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { resolvePmAgent, runPrompt } from "./agents.js";
 
@@ -115,11 +117,9 @@ export class AutoEngineeringOrchestrator {
   /** Store the latest decision for recovery after server restart. */
   private persistDecision(decision: AutoEngineeringDecision): void {
     try {
-      const fs = require("fs");
-      const path = require("path");
-      const filePath = path.join(this.cacheDir, "auto-engineering-decision.json");
-      fs.mkdirSync(this.cacheDir, { recursive: true });
-      fs.writeFileSync(filePath, JSON.stringify(decision, null, 2));
+      const filePath = join(this.cacheDir, "auto-engineering-decision.json");
+      mkdirSync(this.cacheDir, { recursive: true });
+      writeFileSync(filePath, JSON.stringify(decision, null, 2));
     } catch {
       // Persistence is best-effort — failures don't block reconciliation
     }
@@ -128,11 +128,9 @@ export class AutoEngineeringOrchestrator {
   /** Load the last persisted decision from disk (for browser refresh recovery). */
   loadPersistedDecision(): void {
     try {
-      const fs = require("fs");
-      const path = require("path");
-      const filePath = path.join(this.cacheDir, "auto-engineering-decision.json");
-      if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, "utf8");
+      const filePath = join(this.cacheDir, "auto-engineering-decision.json");
+      if (existsSync(filePath)) {
+        const data = readFileSync(filePath, "utf8");
         this.lastDecision = JSON.parse(data) as AutoEngineeringDecision;
       }
     } catch {

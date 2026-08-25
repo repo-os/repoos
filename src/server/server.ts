@@ -43,6 +43,7 @@
  *                                        records a `## Screenshots` section in the task body
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
@@ -109,7 +110,7 @@ import { createJobCoordinator, type JobCoordinator } from "./integration-job.js"
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
-import { handoffTask, scheduleCheckFailureRetry } from "./handoff.js";
+import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
@@ -126,7 +127,7 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, reapStrayServeProcesses, type SystemStats } from "./system.js";
+import { sampleSystem, psAvailable, reapStrayServeProcesses, killTrackedProcess, type SystemStats } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
@@ -149,9 +150,11 @@ import {
   getTunnelStatus,
   getChat,
   sendChatMessage,
+  interruptChatMessage,
   initInfoHandlers,
   getDebugger,
   sendDebuggerMessage,
+  interruptDebugger,
   repairWithDebugger,
   // Docs routes
   createDoc,
@@ -183,7 +186,9 @@ import {
   reviewMessage,
   getCTO,
   ctoMessage,
+  ctoInterrupt,
   pmMessage,
+  pmInterrupt,
   getScreenshot,
   uploadScreenshot,
   // Config routes
@@ -194,6 +199,7 @@ import {
   testModel,
   // Agents routes
   runningAgents,
+  queuedAgents,
   detectInstalledAgents,
   getAgentLogs,
   // Notifications
@@ -697,7 +703,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   }
   const logger = createLogger(config.root);
   const index = new LiveIndex(config);
-  index.refreshAll();
+  // Non-blocking: with 200+ tasks, the git-heavy full index build can take
+  // several seconds even after parallelizing it (buildIndexAsync). Kicking it
+  // off here without awaiting lets `server.listen()` bind immediately instead
+  // of waiting behind it — the previous synchronous `refreshAll()` was most of
+  // RepoOS's 20-30s boot time and, worse, ate into the ~30-40s window a reload
+  // replacement has to answer its health handshake (#0271 follow-up). Anything
+  // that needs the populated index (the boot-time preview relaunch below, the
+  // resolved ServerHandle) awaits `indexReady` explicitly instead.
+  const indexReady = index.refreshAllAsync();
 
   const requestedPort = opts.port ?? 7171;
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
@@ -848,6 +862,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           },
           logger,
+          (taskId, reason) => {
+            const task = index.getTask(taskId);
+            if (!task) return;
+            scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
+              index.applyFileChange(absPath, { guarded: true }),
+            );
+          },
         );
         const jobBefore = jobCoordinator.peekNext();
         const result = await orchestrator.processNext();
@@ -954,9 +975,31 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     config,
     (e) => {
       emitEvent(e);
-      if (e.type !== "agent.exited" || !pendingReview.delete(e.id)) return;
-      const task = index.getTask(e.id);
-      if (task?.status === "review") void reviews.run(task);
+      if (e.type !== "agent.exited") return;
+      if (pendingReview.delete(e.id)) {
+        const task = index.getTask(e.id);
+        if (task?.status === "review") void reviews.run(task);
+      }
+      // #0271 follow-up: when the engineer session `scheduleMergeConflictRetry`
+      // resumed finishes its turn, automatically re-enqueue the close-out —
+      // the same action "Move to done" performs, so a fixed conflict doesn't
+      // sit waiting for a human to notice and re-click. Gated on the job
+      // itself still being the failed-on-this-exact-conflict record (not
+      // just "task has a nonzero retry count somewhere"), so an unrelated
+      // resume of the same task's engineer for something else never
+      // mis-triggers a close-out. `enqueue` is idempotent/no-op if the job
+      // already moved on (e.g. a human already retried manually).
+      const failedJob = jobCoordinator.getJob(e.id);
+      if (failedJob?.phase === "failed" && failedJob.reason?.startsWith("merge conflict in ")) {
+        const task = index.getTask(e.id);
+        if (task?.status === "review" && task.branch) {
+          const requeued = jobCoordinator.enqueue(task);
+          if (requeued) {
+            emitIntegration();
+            triggerJobProcessing();
+          }
+        }
+      }
     },
     { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
       if (!runner.consumeHandoff(request)) {
@@ -994,7 +1037,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           task.id,
           `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
         );
-        scheduleCheckFailureRetry(config, task, result, runner);
+        scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
+          index.applyFileChange(absPath, { guarded: true }),
+        );
       }
     },
     onPreviewRequest: async (request) => {
@@ -1035,6 +1080,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       } else {
         runner.system(request.taskId, `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`);
       }
+    },
+    // A durable review turn completed (0288), possibly re-attached after a
+    // reload. The ReviewManager finalizes the report from its own durable
+    // session rather than a post-`runPrompt` continuation that would have died
+    // with the old process. `reviews` is assigned below but the callback only
+    // fires asynchronously after completion, so the closure is safe.
+    onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
+      if (!reviews) return;
+      try {
+        reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
+      } catch (err) {
+        console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
+      }
     } },
   );
 
@@ -1053,7 +1111,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
-  reviews = new ReviewManager(config, emitEvent, runner);
+  reviews = new ReviewManager(config, emitEvent, runner, index);
+
+  // Re-arm the hard review timeout for any durable review sessions re-attached
+  // from the previous server (0288): the spawner's timer died with it, so an
+  // adopted review would otherwise run without a deadline. Also registers the
+  // adopted turns in `reviews` so cancellation and run/chat mode work for them.
+  reviews.armAdoptedTimeouts();
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
@@ -1242,31 +1306,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     void reviews.run(task);
   };
 
-  /**
-   * Auto-launch a read-only preview the moment a task lands in `review` (#0198).
-   * The whole point of automation is that no one clicks a button: the preview
-   * is up before the reviewer looks. `PreviewManager.start` enforces the
-   * concurrency cap (FIFO eviction of the oldest) and returns a structured
-   * result, so a failed launch is logged and never crashes the server. The
-   * preview closes automatically when the task leaves review (see
-   * `stopPreviewIfLeft`).
-   */
-  const autoLaunchPreview = async (task: Task): Promise<void> => {
-    try {
-      const result = await previews.start(task);
-      if (!result.ok) {
-        console.error(
-          `[preview] ${new Date().toISOString()} #${task.id} auto-launch failed — ${result.error ?? "unknown error"}`,
-        );
-      }
-    } catch (err) {
-      // Never let a failed launch take the server down.
-      console.error(
-        `[preview] ${new Date().toISOString()} #${task.id} auto-launch threw — ${(err as Error)?.message ?? err}`,
-      );
-    }
-  };
-
   // The file-watcher path (a direct task-file edit on disk) bypasses
   // patchTaskFile, so it never fires `onStatusChange`. The index's own event
   // stream sees EVERY status change from every route (HTTP PATCH, /done,
@@ -1291,16 +1330,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // review needs to hang off.
     if (e.task.status === "review") {
       startReview(e.task);
-      void autoLaunchPreview(e.task);
     }
   });
 
-  // Preview state is process-local. Recreate previews for tasks that were
-  // already in review when this control-plane process started, otherwise a
-  // server restart leaves review tasks without their expected preview URL.
-  for (const task of index.getTasks()) {
-    if (task.status === "review") void autoLaunchPreview(task);
-  }
+  // Previews are on-demand only (POST /api/tasks/:id/preview), not
+  // auto-launched on entering `review` or relaunched at boot. They used to be
+  // (#0198) because spinning one up was slow enough to be annoying to wait
+  // for; now that startup itself is fast (#0271 follow-up), auto-launching
+  // N previews at once — at boot, or as N tasks land in review in quick
+  // succession — is no longer worth the CPU contention it causes (each
+  // preview is a full nested `repoos serve`). MAX_PREVIEWS is 1 (preview.ts)
+  // so only one is ever running; starting a new one evicts the last.
 
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {
@@ -1377,7 +1417,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
-  setIconRenderer((size: number) => renderInstanceIcon(basename(config.root) || "repoos", size));
+  setIconRenderer((size: number, color?: string) => renderInstanceIcon(basename(config.root) || "repoos", size, color));
 
   // Create and register all routes with the router
   const router = new Router();
@@ -1397,14 +1437,44 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
+  router.register("POST", "/api/chat/interrupt", interruptChatMessage);
   router.register("GET", "/api/debugger", getDebugger);
   router.register("POST", "/api/debugger/message", sendDebuggerMessage);
+  router.register("POST", "/api/debugger/interrupt", interruptDebugger);
   router.register("POST", "/api/debugger/repair", repairWithDebugger);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);
   router.register("GET", "/api/stats/by-type", getSessionTypeStats);
   router.register("GET", "/api/stats/daily", getDailyTotals);
+
+  // System resource routes
+  router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {
+    const body = (await readBody(req)) as { pid?: unknown };
+    const pid = body.pid;
+    if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) {
+      return json(res, 400, { error: "pid must be a positive integer" });
+    }
+    if (pid === process.pid) {
+      return json(res, 400, { error: "refusing to kill the control-plane process itself" });
+    }
+    // Only ever kill a PID RepoOS itself is currently tracking — a fresh
+    // sample, not the client's say-so, is what authorizes the kill. This is
+    // the same trust boundary reapStrayServeProcesses already uses.
+    const stats = sampleSystem({
+      serverPid: process.pid,
+      cacheDir: join(config.root, config.cacheDir),
+      runningAgents: runner.running(),
+      knownServePids: previews.knownPids(),
+    });
+    const known = new Set(stats.processes.map((p) => p.pid));
+    for (const p of stats.serve?.processes ?? []) known.add(p.pid);
+    if (!known.has(pid)) {
+      return json(res, 404, { error: `pid ${pid} is not a RepoOS-tracked process` });
+    }
+    const ok = killTrackedProcess(pid);
+    return json(res, ok ? 200 : 404, ok ? { ok: true } : { error: "process was already gone" });
+  });
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
@@ -1430,7 +1500,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
+  router.register("POST", "/api/cto/interrupt", ctoInterrupt);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
 
@@ -1444,6 +1516,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
@@ -1597,6 +1670,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         "Access-Control-Allow-Origin": "*",
       });
       res.write(`retry: 2000\n\n`);
+      // A reload handoff spawns the replacement already accepting connections
+      // while the full index build runs in the background (0285). Emit `hello`
+      // (which the client treats as "the server is ready to be asked about the
+      // index") only once that rebuild has actually completed, so its taskCount
+      // is truthful rather than a mid-build 0.
+      await indexReady;
       const hello: RepoEvent = {
         type: "hello",
         taskCount: index.snapshot().taskCount,
@@ -1646,6 +1725,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const routeContext: RouteContext = {
       config,
       index,
+      indexReady,
       runner,
       previews,
       reviews,
@@ -1785,8 +1865,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (!bound)
             throw new Error(`EADDRINUSE: port ${port} never freed for the reload replacement`);
         } else {
-          // Check for port conflicts before binding (0168)
-          const conflict = reaper.detectConflict(port, host);
+          // Check for port conflicts before binding (0168). detectConflict is
+          // async: it probes the port for a live listener so a missing/stale
+          // lockfile can't mask a process that already owns this port (#0284).
+          const conflict = await reaper.detectConflict(port, host);
           if (conflict) throw new Error(conflict);
           await bindOnce(false);
         }
@@ -1820,7 +1902,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
 
       const actualPort = (server.address() as { port: number }).port;
-      const url = `http://${host}:${actualPort}`;
+      // "0.0.0.0" is a valid bind address but not a connectable one — anything
+      // that needs to actually call back into this server (spawned agents via
+      // runner.apiUrl, the URL handed to callers below) must use localhost
+      // instead, regardless of which interfaces are actually bound.
+      const connectHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+      const url = `http://${connectHost}:${actualPort}`;
       logger.system("info", "RepoOS server listening", {
         pid: process.pid,
         port: actualPort,
@@ -1862,11 +1949,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
-          // orphan `repoos serve` process is left behind. Same for review
-          // agents — a one-shot child must not outlive the server that
-          // launched it and wait 15 minutes to write a report nobody reads.
-          reviews.cancelAll();
+          // orphan `repoos serve` process is left behind.
+          //
+          // Review agents differ (0288): on a RELOAD handover they must NOT be
+          // cancelled — they are durable (registered in the runner's durable
+          // registry + log files) and the replacement process re-attaches and
+          // finalizes their reports. Cancelling here would kill every in-flight
+          // review on every reload, re-introducing the mid-review death this
+          // task fixes. Only a REAL shutdown (not a reload) reaps them: a
+          // one-shot child must not outlive the server that launched it and
+          // wait 15 minutes to write a report nobody reads. The CTO monitor is
+          // still always cancelled (it is NOT durable), so it is reaped even on
+          // a reload rather than left as an un-adoptable orphan.
           cto.cancelAll();
+          if (!(reload?.isReloading ?? false)) {
+            reviews.cancelAll();
+          }
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {
@@ -1976,10 +2074,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           autoTransition: watchdogConfig.autoTransition !== false,
           canRun: () => !(reload?.isReloading ?? false),
+          reviews,
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
 
+      // The port is already bound and accepting connections above; this only
+      // delays the resolved handle (and the CLI's own "watching N tasks"
+      // banner, which reads handle.index.snapshot()) until the background
+      // index build finishes, so it reports an accurate count instead of 0.
+      await indexReady;
       resolve(handle);
     })().catch((e) => reject(e as Error));
   });

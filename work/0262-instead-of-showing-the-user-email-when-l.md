@@ -2,7 +2,7 @@
 id: "0262"
 title: "User avatar popover: replace email display with icon + dropdown menu"
 type: feature
-status: ready
+status: done
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/user-avatar-popover-replace-email-displa
 model_override: default
 pm_model_override: default
 created_at: "2026-08-19T19:06:38Z"
-updated_at: "2026-08-20T13:00:48Z"
+updated_at: "2026-08-20T12:24:46Z"
 ---
 ## Goal
 
@@ -61,5 +61,4 @@ Replace the always-visible email text + inline logout button in the top-right co
 - 2026-08-20T05:21:09Z · status inbox→ready
 - 2026-08-20T09:27:57Z · status ready→active, branch
 - 2026-08-20T09:31:40Z · status active→review
-- 2026-08-20T10:37:11Z · status review→active
-- 2026-08-20T13:00:48Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-20T12:24:46Z · status review→done, release:success

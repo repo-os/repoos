@@ -407,8 +407,8 @@ describe("claude code driver", () => {
 
         expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
         expect(runner.output("0001")!.lines).toEqual(expect.arrayContaining([
-          { type: "text", text: "Copilot response" },
-          { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+          expect.objectContaining({ type: "text", text: "Copilot response" }),
+          expect.objectContaining({ type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" }),
         ]));
         const [run] = spawns(fx);
         expect(run.args).toEqual(expect.arrayContaining([
@@ -735,6 +735,11 @@ describe("server-owned previews in the mission and spawn env (#0096/#0121)", () 
       expect(mission).toMatch(/do NOT launch `repoos serve` directly/i);
       // One sandbox-compatible, task-scoped preview request: the signal line.
       expect(mission).toContain(PREVIEW_REQUEST_SIGNAL);
+      // The engineer agent must NOT auto-request a preview before handoff —
+      // previews are the human's to request manually (#0268).
+      expect(mission).toMatch(/do NOT automatically request a preview before handoff/i);
+      expect(mission).toMatch(/preview requests are the human's to make/i);
+      expect(mission).not.toContain("To verify a UI change, request THIS task's managed preview");
       // The old mandatory localhost curl is gone from the mission — the signal
       // replaces it, so an agent is never told to reach the control plane.
       expect(mission).not.toContain('curl -s -X POST');

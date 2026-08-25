@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["src/cli/index.ts", "serve", "--port", "8765"],
       "port": 8765
+    },
+    {
+      "name": "repoos-ui-dev",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": ["vite", "--config", "src/ui-app/vite.config.ts"],
+      "port": 5173
     }
   ]
 }

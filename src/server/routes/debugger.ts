@@ -62,6 +62,12 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
   return json(res, 200, { ok: true });
 };
 
+/** Interrupt a running Debugger response. Idempotent. */
+export const interruptDebugger: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.runner.interrupt(debuggerSessionId);
+  return json(res, 200, { ok: true, ...result });
+};
+
 /** Hand an explicit debugger diagnosis to the task's existing engineering session. */
 export const repairWithDebugger: RouteHandler = async (ctx, req, res) => {
   const { config, index, runner } = ctx;

@@ -38,15 +38,13 @@ first-class participants, but humans always hold the gate.
 
 ## Install
 
-```bash
-# one-off, no install
-bunx repoos init
-npx  repoos init
+Install a standalone `repoos` command straight from GitHub Releases:
 
-# or add to a repo
-bun add -d repoos
-npm i -D repoos
+```bash
+curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
 ```
+
+Requires Node.js >= 20.6.0. Installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
 
 Then in any repo:
 
@@ -84,7 +82,7 @@ repoos check                   Definition-of-done gate (build, typecheck, tests,
 repoos tunnel [subcommand]     Cloudflare Tunnel + Zero Trust publishing
 ```
 
-**`repoos new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`.
+**`repoos new` flags:** `--ai` (assign to AI), `--type`, `--area`, `--priority`, `--body` (`-` reads from stdin). Unknown flags are rejected.
 
 ```bash
 repoos new "Add company dashboard" --ai --type feature --area web --priority p1
@@ -162,10 +160,17 @@ your task files, and serves a JSON API plus a live event stream. It adds no new
 business logic — it's a transport layer over the same core the CLI uses.
 
 ```bash
-repoos serve                 # http://127.0.0.1:7171
+repoos serve                 # http://127.0.0.1:7171 (or your Tailscale IP, if detected)
 repoos serve --port 8080     # custom port
+repoos serve --host 0.0.0.0  # listen on all interfaces
 repoos serve --quiet         # no terminal activity log
 ```
+
+If Tailscale is running on the machine, `repoos serve` binds to `0.0.0.0` (all
+interfaces) by default instead of localhost-only, so it's reachable both from
+your other Tailscale devices and from localhost-only tools on the same machine
+(e.g. a Cloudflare Tunnel's local origin). Pass `--host 127.0.0.1` explicitly
+to restrict it to localhost only.
 
 ### Endpoints
 
@@ -262,4 +267,6 @@ For live status and what's in progress, run `repoos list`. The task files in
 
 ## License
 
-MIT
+[FSL-1.1-MIT](LICENSE.md) — free to use, self-host, and modify. The only
+restriction is offering it as a competing commercial product/service. Each
+version converts to plain MIT two years after release.

@@ -142,8 +142,19 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   // Auth config patching — handle auth-specific fields that live in [auth]
-  // section of repoos.toml. Secrets (sessionSecret, apiKey, clientSecret)
-  // are never accepted from the browser.
+  // section of repoos.toml. Secrets (sessionSecret, emailProvider.apiKey,
+  // google.clientSecret) are never written to repoos.toml — that file is
+  // git-tracked. They're rejected here even if a client sends them, and must
+  // be set via REPOOS_RESEND_API_KEY / REPOOS_GOOGLE_CLIENT_SECRET in .env
+  // instead (see docs/native-auth.md and the tracked .env.example).
+  if (body["auth.emailProvider.apiKey"] !== undefined || body["auth.google.clientSecret"] !== undefined) {
+    return json(res, 400, {
+      error:
+        "auth.emailProvider.apiKey and auth.google.clientSecret can't be set here — repoos.toml is git-tracked. " +
+        "Set REPOOS_RESEND_API_KEY / REPOOS_GOOGLE_CLIENT_SECRET in .env instead (see .env.example).",
+    });
+  }
+
   let authEnabledChanged = false;
   if (body["auth.enabled"] !== undefined) {
     const val = body["auth.enabled"];
@@ -165,10 +176,6 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   if (body["auth.emailProvider.type"] !== undefined) {
     patch["auth.emailProvider.type"] = "resend";
   }
-  if (body["auth.emailProvider.apiKey"] !== undefined) {
-    const val = typeof body["auth.emailProvider.apiKey"] === "string" ? body["auth.emailProvider.apiKey"].trim() : "";
-    if (val) patch["auth.emailProvider.apiKey"] = val;
-  }
   if (body["auth.emailProvider.fromAddress"] !== undefined) {
     const val = typeof body["auth.emailProvider.fromAddress"] === "string" ? body["auth.emailProvider.fromAddress"].trim() : "";
     if (val) patch["auth.emailProvider.fromAddress"] = val;
@@ -177,20 +184,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = typeof body["auth.google.clientId"] === "string" ? body["auth.google.clientId"].trim() : "";
     if (val) patch["auth.google.clientId"] = val;
   }
-  if (body["auth.google.clientSecret"] !== undefined) {
-    const val = typeof body["auth.google.clientSecret"] === "string" ? body["auth.google.clientSecret"].trim() : "";
-    if (val) patch["auth.google.clientSecret"] = val;
-  }
 
-  // Guard: enabling auth requires a login provider to be configured.
+  // Guard: enabling auth requires a login provider to be configured. Secrets
+  // only ever come from repoos.config (env-var-sourced), never from the
+  // request body — see the rejection above.
   const enablingAuth = patch["auth.enabled"] === true;
   if (enablingAuth) {
     const hasEmailProvider =
-      !!(body["auth.emailProvider.apiKey"] && body["auth.emailProvider.fromAddress"]) ||
       !!(repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress);
-    const hasGoogle =
-      !!(body["auth.google.clientId"] && body["auth.google.clientSecret"]) ||
-      !!(repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret);
+    const hasGoogle = !!(repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret);
     if (!hasEmailProvider && !hasGoogle) {
       return json(res, 400, {
         error: "Cannot enable auth: configure at least one login provider (email OTP or Google OAuth) first",
@@ -228,10 +230,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           error: `${field.label} must be one of: ${valid.join(", ")}`,
         });
       }
-      // Native/select components submit strings. This one setting is a number
-      // in the runtime config, so persist it as TOML numeric syntax rather
+      // Native/select components submit strings. These settings are numbers
+      // in the runtime config, so persist them as TOML numeric syntax rather
       // than `maxActiveTasks = "5"`, which loadConfig intentionally rejects.
-      patch[field.key] = field.key === "maxActiveTasks" ? Number(val) : val;
+      patch[field.key] =
+        field.key === "maxActiveTasks" || field.key === "maxConcurrentAgents"
+          ? Number(val)
+          : val;
     } else if (field.type === "array") {
       if (!Array.isArray(val) || !val.length) {
         return json(res, 400, { error: `${field.label} must be a non-empty array` });

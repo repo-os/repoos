@@ -1,33 +1,21 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
 import { INTEGRATION_STAGES, type IntegrationPipelineSnapshot } from "../types";
-
-const PERSIST_KEY = "repoos.integrationBar.collapsed";
 
 const repo = useRepoStore();
 const { integration } = storeToRefs(repo);
+const ui = useUiStore();
 
-/** True when the bar is folded to a thin strip (persisted across reloads). */
-const collapsed = ref<boolean>(
-  (() => {
-    try {
-      return localStorage.getItem(PERSIST_KEY) === "1";
-    } catch {
-      return false;
-    }
-  })(),
-);
-
-// Keep the strip's summary truthful even when collapsed.
-watch(collapsed, (c) => {
-  try {
-    localStorage.setItem(PERSIST_KEY, c ? "1" : "0");
-  } catch {
-    /* ignore quota / privacy-mode failures */
-  }
+/** True when the bar is folded to a thin strip (persisted across reloads).
+ *  Lives in the ui store, not a local ref, so "Move to done" can expand it
+ *  from the task drawer. */
+const collapsed = computed<boolean>({
+  get: () => ui.integrationBarCollapsed,
+  set: (v) => ui.setIntegrationBarCollapsed(v),
 });
 
 const snapshot = computed<IntegrationPipelineSnapshot | null>(() => integration.value ?? null);

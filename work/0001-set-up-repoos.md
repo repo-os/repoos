@@ -8,7 +8,7 @@ area: infra
 assigned_to: ai
 created_by: human
 branch: ""
-updated_at: "2026-05-29T00:00:00Z"
+updated_at: "2026-08-23T11:03:13Z"
 ---
 ## Problem
 
@@ -34,3 +34,5 @@ small. Read AGENTS.md before starting any task.
 ## Activity
 
 - 2026-05-29T00:00:00Z · created · (migrated)
+- 2026-08-23T11:03:13Z · status done→review
+- 2026-08-23T11:03:13Z · status review→done

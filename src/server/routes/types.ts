@@ -21,6 +21,15 @@ export interface SyncResult {
 export interface RouteContext {
   config: RepoOSConfig;
   index: LiveIndex;
+  /**
+   * Resolves once the full background index build finishes on server boot
+   * (the `refreshAllAsync` kicked off in `startServer`). Index-reading routes
+   * (board, tasks, index) await this so a request racing the boot-time
+   * asynchronous reindex — the exact shape that left the board showing a
+   * stale/partial snapshot after a reload handoff (0285) — can never answer
+   * against a half-built index.
+   */
+  indexReady: Promise<void>;
   runner: AgentRunner;
   previews: PreviewManager;
   reviews: ReviewManager;

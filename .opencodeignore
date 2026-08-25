@@ -1,0 +1,32 @@
+# Dependencies & Build Artifacts
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# Environment & Data files
+*.json
+*.csv
+*.tsv
+*.pkl
+*.sqlite
+*.db
+.env*
+
+# Media & Assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.pdf
+
+# Lockfiles (Massive token hogs)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+Gemfile.lock
+

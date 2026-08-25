@@ -3,8 +3,10 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
 import type { AgentOutputEntry } from "../types";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -20,6 +22,7 @@ const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const ui = useUiStore();
 const router = useRouter();
 const draft = ref("");
 const submitting = ref(false);
@@ -64,6 +67,13 @@ async function repair(): Promise<void> {
   try {
     await api("/api/debugger/repair", JSON_OPTS("POST", { taskId: repairTaskId.value, diagnosis: diagnosis.value }));
     repaired.value = true;
+    // The engineer now takes over: drop the Debugger panel and open the task
+    // drawer (agent session) so the human can watch the fix being carried out
+    // instead of staring at a panel stuck on "engineer repairing" (0274).
+    emit("close");
+    const task = await repo.fetchTask(repairTaskId.value);
+    await ui.openTask(task);
+    ui.activeTab = "agent";
   } catch (error) {
     repo.onError(error);
   } finally {
@@ -133,7 +143,7 @@ async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
   submitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
@@ -164,6 +174,19 @@ function onKeydown(event: KeyboardEvent): void {
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
     insertTextAtCursor(draftTextarea.value, text);
+  }
+}
+
+/**
+ * Interrupt the Debugger's in-flight response. The server stops the running
+ * agent turn and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function interrupt(): Promise<void> {
+  try {
+    await api("/api/debugger/interrupt", { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
   }
 }
 
@@ -217,6 +240,7 @@ onMounted(() => {
           <div class="debugger-bubble" :class="`debugger-bubble-${lineKind(entry)}`">
             <div v-if="lineKind(entry) === 'assistant'" class="debugger-markdown" v-html="renderMarkdown(lineText(entry))"></div>
             <span v-else>{{ lineText(entry) }}</span>
+            <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
           </div>
         </div>
       </template>
@@ -229,7 +253,7 @@ onMounted(() => {
         <button type="button" @click="configureDebugger">Change agent or model</button>
       </div>
       <div v-if="repairTaskId && !busy" class="debugger-repair">
-        <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Starting repair…" : repaired ? "Engineer repairing" : "Send repair to engineer" }}</button>
+        <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Implementing fix…" : repaired ? "Fix handed to engineer" : "Implement fix" }}</button>
       </div>
     </div>
     <button v-if="showScrollToBottom" type="button" class="debugger-scroll-bottom" aria-label="Scroll to latest messages" @click="scrollToLatest">
@@ -249,7 +273,17 @@ onMounted(() => {
         @keydown="onKeydown"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
-      <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Diagnose">
+      <button
+        v-if="busy"
+        type="button"
+        class="debugger-stop"
+        aria-label="Stop response"
+        title="Stop response"
+        @click="interrupt"
+      >
+        <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+      </button>
+      <button v-else type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Diagnose">
         Diagnose
       </button>
     </form>
@@ -291,6 +325,7 @@ onMounted(() => {
 .debugger-bubble{max-width:84%;padding:9px 11px;border-radius:13px;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
 .debugger-bubble-human{color:var(--btn-primary-color);background:var(--btn-primary-bg);border:1px solid var(--border-bright);border-bottom-right-radius:4px}
 .debugger-bubble-assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-time{display:block;margin-top:3px;text-align:right;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace;opacity:.8}
 .debugger-row-status{justify-content:center}
 .debugger-bubble-status{padding:4px 8px;background:transparent;color:var(--txt-faint);font:500 9.5px 'JetBrains Mono',monospace;text-align:center}
 .debugger-markdown :deep(p){margin:0 0 7px}
@@ -310,6 +345,8 @@ onMounted(() => {
 .debugger-compose textarea::placeholder{color:var(--txt-faint)}
 .debugger-compose button{width:auto;padding:0 11px;height:31px;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .debugger-compose button:disabled{opacity:.4;cursor:default}
+.debugger-compose button.debugger-stop{width:31px;padding:0;display:grid;place-items:center;color:var(--red,#ef5b5b);background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg))}
+.debugger-compose button.debugger-stop svg{width:16px;height:16px}
 .debugger-footnote{padding:7px 14px 10px;text-align:center;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace}
 @keyframes debugger-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes debugger-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}

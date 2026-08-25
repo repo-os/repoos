@@ -447,6 +447,27 @@ onUnmounted(() => {
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="setting-group">
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Board
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Glide animations</div>
+              <div class="setting-desc">
+                When a card changes state, animate it gliding between columns to show where it
+                came from and where it went. Off by default; when off, cards change state
+                instantly as before.
+              </div>
+            </div>
+            <div class="setting-input">
+              <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
             <span
               style="cursor: pointer; user-select: none"
               @click="config.showAdvanced = !config.showAdvanced"

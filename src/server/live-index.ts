@@ -22,9 +22,10 @@ import {
   lastCommitForFile,
   worktreeStatus,
   worktreePaths,
+  currentBranch,
   emptyGitInfo,
 } from "../core/git.js";
-import { buildIndex } from "../core/indexer.js";
+import { buildIndex, buildIndexAsync } from "../core/indexer.js";
 import { patchTaskFile } from "./write.js";
 
 export type RepoEvent =
@@ -33,6 +34,10 @@ export type RepoEvent =
   | { type: "task.deleted"; id: string; path: string; at: string }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
+  | { type: "agent.queued"; id: string; at: string }
+  /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
+  | { type: "agent.dequeued"; id: string; at: string }
   | {
       type: "agent.output";
       id: string;
@@ -144,6 +149,35 @@ export class LiveIndex {
   /** Build from scratch. Safe to call any time; always authoritative. */
   refreshAll(): void {
     const idx = buildIndex(this.config);
+    this.byId.clear();
+    this.pathToId.clear();
+    this.useGit = isGitRepo(this.config.root);
+    this.branchCache = this.useGit
+      ? localBranches(this.config.root)
+      : new Set();
+    for (const t of idx.tasks) {
+      this.byId.set(t.id, t);
+      this.pathToId.set(t.absPath, t.id);
+    }
+    this.emit({
+      type: "index.rebuilt",
+      taskCount: this.byId.size,
+      at: now(),
+    });
+  }
+
+  /**
+   * Async counterpart of `refreshAll`, used only at server startup: it lets
+   * `listen()` proceed while the (git-heavy, otherwise multi-second with
+   * 200+ tasks) index build runs in the background — see `buildIndexAsync`.
+   * Not a drop-in replacement for `refreshAll` in general: a file-watcher
+   * update landing mid-build is overwritten by this call's final swap-in,
+   * same as it would be by a concurrent `refreshAll`, but this call's window
+   * is wider. Fine for the one-shot boot case; callers that need to
+   * interleave safely with live updates should keep using `refreshAll`.
+   */
+  async refreshAllAsync(): Promise<void> {
+    const idx = await buildIndexAsync(this.config);
     this.byId.clear();
     this.pathToId.clear();
     this.useGit = isGitRepo(this.config.root);
@@ -320,9 +354,10 @@ export class LiveIndex {
       ? localBranches(this.config.root)
       : new Set();
     const worktrees = this.useGit ? worktreePaths(this.config.root) : new Map<string, string>();
+    const baseBranch = this.useGit ? currentBranch(this.config.root) : null;
     for (const [id, t] of this.byId) {
       const wt = t.branch
-        ? worktreeStatus(this.config.root, t.branch)
+        ? worktreeStatus(this.config.root, t.branch, { worktrees, baseBranch })
         : { path: null, dirty: false };
       this.byId.set(id, {
         ...t,
@@ -419,6 +454,7 @@ function toBoardTask(t: Task): BoardTask {
     type: t.type,
     status: t.status,
     needsInput: t.needsInput,
+    needsInputReason: t.needsInputReason,
     needsMerge: t.needsMerge,
     priority: t.priority,
     area: t.area,
@@ -435,6 +471,11 @@ function toBoardTask(t: Task): BoardTask {
     absPath: t.absPath,
     git: t.git,
     preview: null,
+    checkRetryCount: typeof t.extra?.check_retry_count === "number" ? t.extra.check_retry_count : 0,
+    mergeConflictRetryCount:
+      typeof t.extra?.merge_conflict_retry_count === "number" ? t.extra.merge_conflict_retry_count : 0,
+    handoffSignalRetryCount:
+      typeof t.extra?.handoff_signal_retry_count === "number" ? t.extra.handoff_signal_retry_count : 0,
   };
 }
 
@@ -450,6 +491,7 @@ function diff(a: Task, b: Task): Partial<Task> {
     "branch",
     "type",
     "needsInput",
+    "needsInputReason",
     "needsMerge",
     "agentOverride",
     "cliOverride",
@@ -457,6 +499,9 @@ function diff(a: Task, b: Task): Partial<Task> {
     "pmAgentOverride",
     "pmCliOverride",
     "pmModelOverride",
+    "reviewAgentOverride",
+    "reviewCliOverride",
+    "reviewModelOverride",
     "created_at",
     "updated_at",
   ];

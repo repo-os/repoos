@@ -16,11 +16,41 @@ import { cmdNewDoc } from "../commands/docs.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdServe } from "../commands/serve.js";
 import { cmdTunnel } from "../commands/tunnel.js";
+import { cmdUpgrade } from "../commands/upgrade.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { c } from "./colors.js";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const VERSION = "0.1.0";
+// node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
+// supported Node versions and prints a warning the first time it's loaded.
+// That's expected/stable usage here, not something a user needs to see —
+// suppress just that one warning, leaving everything else intact. Matched on
+// message content alone, not warning.name: which exact warning class/name
+// Node uses for this varies by version (confirmed — no warning fires on
+// instantiation at all on Node 24.19.0, but one does on Node 25.2.1), so a
+// name-based filter risks silently failing to match on some future/older
+// Node version and falling through to print it anyway.
+process.on("warning", (warning) => {
+  if (/\bsqlite\b/i.test(warning.message)) return;
+  console.warn(warning);
+});
+
+/** Reads the version stamped into .build-info.json at build time; falls back for dev/source runs. */
+function readVersion(): string {
+  try {
+    const root = dirname(dirname(fileURLToPath(import.meta.url)));
+    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as { version?: string };
+    if (info.version) return info.version;
+  } catch {
+    /* fall through */
+  }
+  return "0.0.0-dev";
+}
+
+const VERSION = readVersion();
 
 function help(): void {
   console.log(`
@@ -36,11 +66,12 @@ function help(): void {
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
     ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim('flags: --title --area --priority --type --body --branch --assigned-to')}
-    ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority')}
+    ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority --body')}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
     ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
+    ${c.cyan("upgrade")}              Self-update a standalone (curl-installed) repoos to the latest release
 
   ${c.bold("EXAMPLES")}
     ${c.dim("$")} repoos init
@@ -59,7 +90,7 @@ function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
 
   // Staleness check — skip for version/help since those read no source.
-  const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h"]);
+  const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h", "upgrade"]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
     if (result.stale) {
@@ -112,6 +143,9 @@ function main(): void {
       break;
     case "tunnel":
       void cmdTunnel(rest);
+      break;
+    case "upgrade":
+      void cmdUpgrade(rest);
       break;
     case "version":
     case "--version":

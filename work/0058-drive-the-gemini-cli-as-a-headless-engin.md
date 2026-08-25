@@ -3,13 +3,14 @@ id: "0058"
 title: Drive Antigravity CLI (agy) as a headless engineer agent and retire Gemini CLI
 type: feature
 status: inbox
-priority: p1
+priority: p3
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/0058-antigravity-cli-driver
+pm_model_override: default
 created_at: "2026-08-10T23:03:19Z"
-updated_at: "2026-08-12T17:51:28Z"
+updated_at: "2026-08-25T09:10:06Z"
 ---
 ## Problem
 
@@ -53,3 +54,5 @@ Use Antigravity CLI, not the Antigravity desktop orchestration application; Repo
 
 - 2026-08-12T03:44:17Z · title, priority, area, branch, body
 - 2026-08-12T17:51:28Z · status ready→inbox
+- 2026-08-24T17:28:12Z · priority
+- 2026-08-25T09:10:06Z · pm_model_override

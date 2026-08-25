@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 
@@ -66,6 +67,20 @@ async function send(): Promise<void> {
   }
 }
 
+/**
+ * Interrupt the CTO's in-flight response. The server cancels the running agent
+ * turn and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a no-op when nothing is running is harmless.
+ */
+async function interrupt(): Promise<void> {
+  try {
+    await api("/api/cto/interrupt", { method: "POST" });
+    await repo.loadCTO();
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 onMounted(() => {
   void repo.loadCTO();
 });
@@ -102,6 +117,7 @@ onMounted(() => {
 
       <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
         {{ lineText(entry) }}
+        <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
       </div>
 
       <div v-if="busy" class="cto-thinking" aria-label="CTO is thinking">
@@ -117,7 +133,10 @@ onMounted(() => {
         :disabled="busy || !enabled"
         @keydown.enter="send"
       />
-      <button type="submit" :disabled="busy || !enabled || !draft.trim()">Send</button>
+      <button v-if="busy" type="button" class="cto-stop" aria-label="Stop response" title="Stop response" @click="interrupt">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+      </button>
+      <button v-else type="submit" :disabled="busy || !enabled || !draft.trim()">Send</button>
     </form>
   </aside>
 </template>
@@ -149,6 +168,7 @@ onMounted(() => {
 .cto-line.human{color:var(--txt);font-weight:500;background:var(--btn-primary-bg);align-self:flex-end;border-bottom-right-radius:3px}
 .cto-line.assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:3px}
 .cto-line.status{color:var(--txt-faint);font-style:italic;font-size:11px;text-align:center}
+.msg-time{display:block;margin-top:3px;text-align:right;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace;opacity:.8}
 .cto-thinking{display:flex;gap:4px;align-self:flex-start;padding:9px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
 .cto-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:cto-bounce 1.2s infinite}
 .cto-thinking span:nth-child(2){animation-delay:.15s}.cto-thinking span:nth-child(3){animation-delay:.3s}
@@ -157,6 +177,8 @@ onMounted(() => {
 .cto-compose input::placeholder{color:var(--txt-faint)}
 .cto-compose button{width:auto;padding:0 12px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .cto-compose button:disabled{opacity:.4;cursor:default}
+.cto-compose button.cto-stop{width:31px;padding:0;display:grid;place-items:center;color:var(--red,#ef5b5b);background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg))}
+.cto-compose button.cto-stop svg{width:16px;height:16px}
 @keyframes cto-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes cto-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
 @media(max-width:600px){.cto-panel{left:0;right:0;width:100vw!important}}

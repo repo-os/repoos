@@ -1,6 +1,6 @@
 {
   "name": "repoos",
-  "version": "0.3.0",
+  "version": "0.5.30",
   "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
   "type": "module",
   "bin": {
@@ -32,6 +32,7 @@
     "fmt": "oxfmt src/ui-app/src src/ui-app/vite.config.ts src/ui-app/tests",
     "test": "vitest run --config src/ui-app/vite.config.ts",
     "screenshots": "bun run build && node scripts/capture-screenshots.mjs",
+    "dev:preview": "bun run build && node scripts/dev-preview.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -46,7 +47,7 @@
   "engines": {
     "node": ">=20.6.0"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE.md",
   "devDependencies": {
     "@playwright/test": "1.40.0",
     "@tailwindcss/vite": "^4.3.3",

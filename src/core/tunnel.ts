@@ -19,8 +19,14 @@ export interface TunnelApp {
   hostname: string;
   /** Local origin, e.g. `http://localhost:3000`. */
   service: string;
-  /** Email allowlist enforced by a Cloudflare Access policy in front of the app. */
+  /** Email allowlist enforced by a Cloudflare Access policy in front of the app. Always empty when noAccess is true. */
   access: string[];
+  /**
+   * Created with `--no-access`: no Cloudflare Access policy exists for this
+   * app at all — it's fully public at Cloudflare's edge, relying solely on
+   * RepoOS's own native auth. Only ever set at creation time.
+   */
+  noAccess?: boolean;
 }
 
 /** The persisted `[tunnel]` state. Non-secret — never holds tokens or tunnel secrets. */
@@ -122,6 +128,7 @@ export function parseTunnelSection(text: string): TunnelConfig {
       hostname: String(a.hostname ?? ""),
       service: String(a.service ?? ""),
       access: Array.isArray(a.access) ? (a.access as unknown[]).map(String) : [],
+      ...(a.noAccess === true ? { noAccess: true } : {}),
     };
   }
   const cfg = emptyTunnelConfig();
@@ -153,6 +160,7 @@ export function serializeTunnelSection(cfg: TunnelConfig): string {
     lines.push(`hostname = ${tomlQuote(app.hostname)}`);
     lines.push(`service = ${tomlQuote(app.service)}`);
     lines.push(`access = [${app.access.map(tomlQuote).join(", ")}]`);
+    if (app.noAccess) lines.push(`noAccess = true`);
   }
   return lines.join("\n");
 }
@@ -243,6 +251,16 @@ export function isValidAppName(name: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(name);
 }
 
+/**
+ * Shape check for a base domain like `repoos.org` — requires at least one dot
+ * and a plausible TLD, so a plain word (an app name typed into the wrong
+ * prompt, e.g. "celleris") is rejected rather than silently stored and only
+ * surfacing later as a confusing "deeper than one label" hostname warning.
+ */
+export function isValidBaseDomain(domain: string): boolean {
+  return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain.toLowerCase());
+}
+
 /** Basic email shape check for `--allow` / `allow` / `deny` args. */
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -304,7 +322,10 @@ export function buildAccessAppBody(hostname: string): Record<string, unknown> {
     domain: hostname,
     type: "self_hosted",
     session_duration: "24h",
-    auto_redirect_to_identity: true,
+    // auto_redirect_to_identity requires allowed_idps to name exactly one
+    // identity provider, which RepoOS never configures — Cloudflare's API
+    // rejects the app outright when it's true without that. Omitting it just
+    // shows the standard identity-provider picker instead of auto-redirecting.
   };
 }
 

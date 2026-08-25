@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
+import { recordOrigin, takeOrigin } from "../lib/flip";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -18,9 +19,108 @@ const repo = useRepoStore();
 const busy = ref(false);
 const dragging = ref(false);
 
-function formatActivity(at: string | undefined): string | null {
+/** Root card element — needed to read/seed FLIP rects for the glide (#0292). */
+const rootEl = ref<HTMLElement | null>(null);
+
+/** Resolve the "reduce motion" system preference; true means animations off. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Whether the card should glide on this mount: the opt-in setting is on, the
+ *  system allows motion, and this card is actually mid-transition. */
+function shouldGlide(): boolean {
+  return (
+    ui.glideAnimations &&
+    !prefersReducedMotion() &&
+    repo.transitionState?.id === props.task.id
+  );
+}
+
+const GLIDE_DURATION_MS = 480;
+const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
+
+/**
+ * Optional glide (#0292): when this card mounted into its new column because
+ * its status changed, seed a transform that puts it at its old position
+ * (recorded before the source-card unmounted) and play it back to identity.
+ * Deliberately decoupled from the existing shimmer — it only fires for a card
+ * that genuinely moved, and only while the glide setting is on.
+ */
+onMounted(() => {
+  if (!shouldGlide()) return;
+  const origin = takeOrigin(props.task.id);
+  const el = rootEl.value;
+  if (!origin || !el) return;
+  const dest = el.getBoundingClientRect();
+  const dx = origin.left - dest.left;
+  const dy = origin.top - dest.top;
+  el.style.transformOrigin = "center";
+  el.style.transform = `translate(${dx}px, ${dy}px)`;
+  el.style.transition = "none";
+  // Force a reflow so the seeded (inverted) transform is the "first" paint,
+  // then play the transform to identity over the glide duration.
+  void el.offsetWidth;
+  el.style.transition = `transform ${GLIDE_DURATION_MS}ms ${GLIDE_EASING}`;
+  el.style.transform = "translate(0, 0)";
+  window.setTimeout(() => {
+    el.style.transition = "";
+    el.style.transform = "";
+  }, GLIDE_DURATION_MS);
+});
+
+/** A card leaving its column (status changed) records its old position so the
+ *  destination card can glide from it. Only when a transition for this very
+ *  task is in flight and the glide is enabled. */
+onBeforeUnmount(() => {
+  if (!shouldGlide()) return;
+  const el = rootEl.value;
+  if (!el) return;
+  recordOrigin(props.task.id, el.getBoundingClientRect());
+});
+
+/**
+ * A running agent process can go silent (hung network call, dead stream)
+ * without ever exiting, so `repo.isRunning()` alone can't tell "coding right
+ * now" apart from "stuck." `now` ticks so the staleness check below stays
+ * live without needing any store event to fire.
+ */
+const now = ref(Date.now());
+let nowTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = Date.now();
+  }, 15_000);
+});
+onUnmounted(() => {
+  clearInterval(nowTimer);
+});
+
+/** Mirrors the task watchdog's default staleness window (task-watchdog.ts) — a
+ *  reasonable heuristic even though the server-configured value can differ. */
+const STUCK_SILENCE_MS = 5 * 60 * 1000;
+
+function silentMs(at: string | undefined): number | null {
   if (!at || Number.isNaN(Date.parse(at))) return null;
-  return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return now.value - Date.parse(at);
+}
+
+function formatDuration(ms: number): string {
+  const mins = Math.round(ms / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return rem ? `${hours}h ${rem}m` : `${hours}h`;
+}
+
+function formatActivity(at: string | undefined): string | null {
+  const ms = silentMs(at);
+  return ms === null ? null : `${formatDuration(ms)} ago`;
 }
 
 /** Diff stats for this task. */
@@ -123,6 +223,111 @@ const pipelineStage = computed(() => {
   return snap?.active?.taskId === props.task.id ? snap.active.stage : null;
 });
 
+/** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
+ *  normal "coding" hint when it's still producing output. */
+function codingOrStuckHint(taskId: string): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent process is still running but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `coding · active ${activity}` : "coding",
+    title: "agent is making code changes — click to watch the session",
+    cls: "tc-coding",
+  };
+}
+
+/** Mirrors handoff.ts's MAX_CHECK_RETRY_ATTEMPTS. */
+const MAX_CHECK_RETRY_ATTEMPTS = 2;
+
+/** A running agent on a review-status task is otherwise indistinguishable
+ *  from ordinary coding — but when `repoos check` fails right after a
+ *  handoff, the server silently resumes the same engineer to fix it
+ *  (handoff.ts's scheduleCheckFailureRetry) without ever leaving `review`.
+ *  Label that case distinctly so it doesn't look like the task regressed. */
+function checkRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `fixing check failure · active ${activity}` : `fixing check failure (retry ${retryCount}/${MAX_CHECK_RETRY_ATTEMPTS})`,
+    title: "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
+    cls: "tc-coding",
+  };
+}
+
+/** Mirrors handoff.ts's MAX_MERGE_CONFLICT_RETRY_ATTEMPTS (#0271 follow-up). */
+const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
+
+/** Same purpose as checkRetryHint, one step earlier: the close-out's
+ *  `validating` phase hit a real merge conflict with main, and the engineer
+ *  was automatically resumed to merge main into its own branch and resolve
+ *  it (handoff.ts's scheduleMergeConflictRetry). */
+function mergeConflictRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `fixing merge conflict · active ${activity}` : `fixing merge conflict (retry ${retryCount}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
+    title: "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
+    cls: "tc-coding",
+  };
+}
+
+/** Mirrors handoff.ts's MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS (#0271 follow-up). */
+const MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS = 2;
+
+/** Same purpose as the other two retry hints, but for `active` status: the
+ *  task-watchdog detected a dead session that ended without emitting the
+ *  handoff signal, and the engineer was automatically resumed to check its
+ *  own work and either finish or re-emit the signal correctly
+ *  (handoff.ts's scheduleHandoffSignalRetry). */
+function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
+  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  const ms = silentMs(lastActivity);
+  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    return {
+      label: `stuck · silent ${formatDuration(ms)}`,
+      title: "agent was auto-resumed after a missed handoff signal but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      cls: "tc-stuck",
+    };
+  }
+  const activity = formatActivity(lastActivity);
+  return {
+    label: activity ? `confirming handoff · active ${activity}` : `confirming handoff (retry ${retryCount}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
+    title: "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
+    cls: "tc-coding",
+  };
+}
+
+/** An accepted start/send is waiting for a free maxConcurrentAgents slot —
+ *  it will spawn on its own once a running agent exits. */
+const QUEUED_HINT: CardHint = {
+  label: "queued",
+  title: "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",
+  cls: "tc-queued",
+};
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -137,24 +342,22 @@ const hint = computed<CardHint | null>(() => {
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
+    if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
-      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
-      return {
-        label: activity ? `coding · active ${activity}` : "coding",
-        title: "agent is making code changes — click to watch the session",
-        cls: "tc-coding",
-      };
+      if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
+      return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
     }
-    return { label: "waiting for human", title: "review passed — approve and merge to finish", cls: "tc-human" };
+    // A failed Move to done shows its own error banner below (DoneErrorCard)
+    // — "review passed · ready to finish" right above it reads as
+    // contradictory once that attempt already failed.
+    if (repo.doneErrorFor(t.id)) return null;
+    return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
+    if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
-      const activity = formatActivity(repo.agentActivityAt[t.id] ?? repo.runningSince[t.id]);
-      return {
-        label: activity ? `coding · active ${activity}` : "coding",
-        title: "agent is making code changes — click to watch the session",
-        cls: "tc-coding",
-      };
+      if (t.handoffSignalRetryCount) return handoffSignalRetryHint(t.id, t.handoffSignalRetryCount);
+      return codingOrStuckHint(t.id);
     }
     if (t.needsInput) {
       return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
@@ -176,9 +379,29 @@ const IN_PIPELINE: CardAction = {
 const action = computed<CardAction | null>(() => {
   const t = props.task;
   if (t.status === "review" && inPipeline.value) return IN_PIPELINE;
+  // A failed Move to done leaves its error banner + Fix button on the card
+  // (below) — showing "Move to done" here too just invites clicking straight
+  // back into the same failure. The task drawer keeps its own Move to done
+  // button, so retrying is still one click away, just not from the card.
+  if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
   if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
   return ACTIONS[t.status] ?? null;
 });
+
+/** True when the task is genuinely waiting on the human: automatic review
+ *  finished clean, the engineer is not coding/fixing, and no close-out job is
+ *  queued. This is the "review passed clean" trigger (0270) that highlights
+ *  the Move to done button and raises the card cue. It mirrors the
+ *  `waiting-for-human` card state — every condition must hold, so the button
+ *  is never highlighted while the review runs, the engineer works, or a
+ *  close-out is in flight. */
+const reviewReady = computed(
+  () =>
+    props.task.status === "review" &&
+    !inPipeline.value &&
+    !repo.reviewFor(props.task.id)?.running &&
+    !repo.isRunning(props.task.id),
+);
 
 /** Full-width footer colors retain the board's action/status language. */
 const actionFooterClass = computed(() => {
@@ -198,6 +421,18 @@ const actionFooterClass = computed(() => {
 const isLaunchAction = computed(
   () => props.task.status === "ready" || (props.task.status === "active" && !repo.isRunning(props.task.id)),
 );
+
+/** True when this fresh-done card still needs the human to acknowledge it (0278). */
+const ackPending = computed(() => repo.needsAck(props.task));
+
+/** Footer styling for the Acknowledge button — the same done-green language as
+ *  the Move-to-done action footer, so it reads as a success-acknowledgement. */
+const ackFooterClass =
+  "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110";
+
+function acknowledge(): void {
+  repo.acknowledge(props.task.id);
+}
 
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
@@ -278,10 +513,19 @@ async function openAgent(): Promise<void> {
   await ui.openTask(props.task);
   ui.activeTab = "agent";
 }
+
+/** Open the task panel and focus the error surface (0272): the card stays
+ *  compact, so clicking the error on the card surfaces the full detail in the
+ *  drawer instead of expanding inline. */
+async function openPanelFromError(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "details";
+}
 </script>
 
 <template>
   <article
+    ref="rootEl"
     class="task-card group flex shrink-0 cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
     :class="{
       flash: repo.flashId === task.id,
@@ -290,7 +534,9 @@ async function openAgent(): Promise<void> {
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human': task.status === 'review' && !inPipeline && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
+      'review-ready': reviewReady,
       'needs-input': task.needsInput,
+      'done-needs-ack': ackPending,
       dragging,
       'has-action': !!action,
     }"
@@ -323,7 +569,7 @@ async function openAgent(): Promise<void> {
       </div>
 
       <div v-if="hint || (isLaunchAction && task.git?.dirty)" class="mt-[13px]">
-        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' ? openAgent() : undefined">
+        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined">
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
@@ -340,7 +586,7 @@ async function openAgent(): Promise<void> {
     <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
         <button
           class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
-          :class="actionFooterClass"
+          :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
           :disabled="busy || inPipeline || (task.status === 'review' && (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))"
           :title="inPipeline ? action.title : task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : task.status === 'review' && repo.isRunning(task.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : action.title"
           @click.stop="runAction"
@@ -357,6 +603,28 @@ async function openAgent(): Promise<void> {
           {{ busy ? "Working…" : action.label }}
         </button>
     </div>
+    <!-- Fresh-done acknowledgement (0278): a steady Acknowledge footer that
+         clears the persistent highlight. Done cards have no move action, so
+         this footer only appears for unacked fresh-done tasks. -->
+    <div v-else-if="ackPending" class="tc-foot tc-actions !ml-0 w-full">
+        <button
+          class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+          :class="ackFooterClass"
+          title="Acknowledge this task is done — clears the highlight"
+          @click.stop="acknowledge"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+            <path
+              d="M4 12l5 5L20 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Acknowledge
+        </button>
+    </div>
     <!-- A failed move-to-done stays with the card that triggered it, directly
          below the button, instead of detaching into a global toast. -->
     <DoneErrorCard
@@ -369,6 +637,7 @@ async function openAgent(): Promise<void> {
       :hint="repo.doneErrorFor(task.id)!.hint"
       :task-id="task.id"
       :task-title="task.title"
+      @open-panel="openPanelFromError"
       @click.stop
     />
   </article>

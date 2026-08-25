@@ -24,6 +24,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`. */
   needsInput: boolean;
+  /** Machine-readable reason `needsInput` was set (e.g. "review-failed"). Only meaningful while needsInput is true. */
+  needsInputReason?: string;
   /** True when the task branch has drifted from main. Layered on `review`. */
   needsMerge: boolean;
   priority: string;
@@ -53,6 +55,12 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null when using the default. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null when using the agent's default. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null when using the agent's default. */
+  reviewModelOverride?: string | null;
   /** True when this task runs as a hotfix in the main checkout. */
   hotfix?: boolean;
   /** Hotfix merge target: "branch" or "main". */
@@ -69,6 +77,18 @@ export interface Task {
   preview: PreviewInfo | null;
   /** Server-authoritative automatic-review activity, refreshed with the index. */
   automaticReview?: AutomaticReview;
+  /** Automatic check-failure retries used on this task's most recent handoff
+   *  (capped at 2) — distinguishes a post-handoff check-fix loop from
+   *  ordinary coding once a review-status task shows a running agent. */
+  checkRetryCount?: number;
+  /** Automatic merge-conflict retries used on this task's most recent
+   *  close-out attempt (capped at 2, #0271 follow-up) — same purpose as
+   *  checkRetryCount, one step earlier in the pipeline. */
+  mergeConflictRetryCount?: number;
+  /** Automatic retries after the watchdog detected a dead session that
+   *  exited without a clean handoff (capped at 2, #0271 follow-up). Unlike
+   *  the other two, the task stays `active` throughout. */
+  handoffSignalRetryCount?: number;
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -102,6 +122,8 @@ export interface Health {
   buildAvailableAt: string | null;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
+  /** Canary flow-test counter (0-9) — see src/core/canary.ts. */
+  canaryCounter: number;
 }
 
 export interface Counts {
@@ -130,6 +152,7 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  needsInputReason?: string;
   needsMerge: boolean;
   priority: string;
   area: string;
@@ -157,6 +180,12 @@ export interface BoardTask {
   /** Always null from server — populated from SSE events on the client. */
   preview: PreviewInfo | null;
   automaticReview?: AutomaticReview;
+  /** See Task.checkRetryCount. */
+  checkRetryCount: number;
+  /** See Task.mergeConflictRetryCount. */
+  mergeConflictRetryCount: number;
+  /** See Task.handoffSignalRetryCount. */
+  handoffSignalRetryCount: number;
 }
 
 /** Board index response from GET /api/board. */
@@ -175,18 +204,26 @@ export interface BoardIndex {
  * opencode's `--format json` stream carry a `type` discriminator.
  */
 export type AgentOutputEntry =
-  | { type: "text"; text: string }
-  | { type: "human"; text: string }
-  | {
-      type: "tool";
-      tool: string;
-      input?: string;
-      output?: string;
-      state?: string;
-    }
-  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
-  | { type: "sys"; d: string }
-  | { s: "out" | "err" | "sys"; d: string };
+  (
+    | { type: "text"; text: string }
+    | { type: "human"; text: string }
+    | {
+        type: "tool";
+        tool: string;
+        input?: string;
+        output?: string;
+        state?: string;
+      }
+    | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
+    | { type: "sys"; d: string }
+    | { s: "out" | "err" | "sys"; d: string }
+  ) & {
+    /**
+     * ISO timestamp of when the entry was created (0258). Populated by the
+     * server on every entry it creates; absent on persisted legacy transcripts.
+     */
+    at?: string;
+  };
 
 /**
 /**
@@ -274,6 +311,8 @@ export interface SessionUsage {
   sessionType: string;
   agent: string;
   model: string;
+  /** The actual coding CLI/engine (e.g. "opencode", "claude") — distinct from `agent`, which is the config role name. */
+  codingAgent: string;
   startedAt: string;
   endedAt: string | null;
   elapsedMs: number;
@@ -344,6 +383,8 @@ export type RepoEvent =
     }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  | { type: "agent.queued"; id: string; at: string }
+  | { type: "agent.dequeued"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
   | { type: "system.stats"; stats: SystemStats }

@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: feat/isolate-the-ui-smoke-test-from-the-live-
+pm_model_override: default
 created_at: "2026-08-19T18:55:42Z"
-updated_at: "2026-08-20T02:30:03Z"
+updated_at: "2026-08-20T11:20:35Z"
 ---
 ## Problem
 
@@ -90,3 +91,4 @@ unrelated job-recovery and preview-auto-launch overhead.
 - 2026-08-19T19:00:28Z · status ready→active, branch
 - 2026-08-19T20:47:23Z · status active→review
 - 2026-08-20T02:30:03Z · status review→done, release:success
+- 2026-08-20T11:20:35Z · pm_model_override

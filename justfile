@@ -57,6 +57,106 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
-# git status
-status:
+# show the released version (package.json) vs the latest git tag
+current-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pkg=$(node -p "require('./package.json').version")
+    tag=$(git tag --sort=-v:refname | head -1)
+    echo "package.json: $pkg"
+    echo "latest tag:   ${tag:-none}"
+    if [ -n "$tag" ] && [ "v$pkg" != "$tag" ]; then
+        echo "note: package.json and latest tag disagree"
+    fi
+
+# cut a release: bump version, tag, and push `just release 0.5.31`
+release version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "error: working tree is dirty — commit or stash first" >&2
+        exit 1
+    fi
+
+    branch=$(git branch --show-current)
+    if [ "$branch" != "main" ]; then
+        echo "error: releases are cut from main (currently on $branch)" >&2
+        exit 1
+    fi
+
+    version="{{version}}"
+    tag="v$version"
+
+    if git rev-parse "$tag" >/dev/null 2>&1; then
+        echo "error: tag $tag already exists" >&2
+        exit 1
+    fi
+
+    echo "==> bumping package.json to $version"
+    node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.version='$version'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');"
+
+    echo "==> running checks"
+    bun run build
+    repoos check
+
+    echo "==> committing"
+    git add package.json
+    git commit -m "chore: release $tag"
+
+    echo "==> tagging"
+    git tag "$tag"
+
+    echo "==> pushing main and tag"
+    git push origin main
+    git push origin "$tag"
+
+    echo "==> done: $tag released"
+    echo "    GitHub Actions will build dist and attach it to the GitHub Release: https://github.com/repo-os/repoos/actions/workflows/release.yml"
+
+# plain git status
+git-status:
     git status
+
+# health check: is 7171 alive, is main dirty, are multiple servers conflicting
+status:
+    #!/usr/bin/env bash
+    set -uo pipefail
+
+    echo "== port 7171 =="
+    pids=$(lsof -nP -iTCP:7171 -sTCP:LISTEN -t 2>/dev/null)
+    if [ -z "$pids" ]; then
+        echo "  nothing listening on 7171"
+    else
+        count=$(echo "$pids" | wc -l | tr -d ' ')
+        if [ "$count" -gt 1 ]; then
+            echo "  CONFLICT: $count processes listening on 7171"
+        else
+            echo "  1 process listening on 7171"
+        fi
+        lsof -nP -iTCP:7171 -sTCP:LISTEN
+    fi
+
+    echo
+    echo "== http check =="
+    code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://127.0.0.1:7171/api/system/logs 2>/dev/null)
+    if [ "$code" = "200" ]; then
+        echo "  alive: http://127.0.0.1:7171 responded 200"
+    else
+        echo "  not responding (got: ${code:-none})"
+    fi
+
+    echo
+    echo "== other node/repoos server processes =="
+    pgrep -fl "node.*dist/cli/index.js.*serve" || echo "  none found via pgrep"
+
+    echo
+    echo "== git =="
+    branch=$(git branch --show-current)
+    echo "  branch: $branch"
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "  dirty: yes"
+        git status --short
+    else
+        echo "  dirty: no"
+    fi

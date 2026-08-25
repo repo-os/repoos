@@ -14,39 +14,51 @@ import { join } from "node:path";
 
 let Database: any;
 let dbAvailable = false;
+let sqliteLoadAttempted = false;
 // RepoOS is ESM, so the CommonJS global `require` is not available. Create a
 // local resolver for optional runtime builtins instead; otherwise telemetry
 // silently degrades even on Node versions that provide `node:sqlite`.
 const runtimeRequire = createRequire(import.meta.url);
 
-// Try to load SQLite. Both Bun and Node 22+ have builtin sqlite support.
-// We try Bun first, then fall back to node:sqlite, and gracefully degrade
-// if neither is available.
-try {
-  const global = globalThis as any;
-  if (global.Bun && typeof global.Bun === "object") {
-    // Running in Bun — use bun:sqlite if available
-    try {
-      const sqlite = runtimeRequire("bun:sqlite");
-      Database = sqlite.Database;
-      dbAvailable = true;
-    } catch {
-      // bun:sqlite not available, try node:sqlite below
+/**
+ * Load SQLite on first actual use, not at module import time. Node prints an
+ * ExperimentalWarning the moment `node:sqlite` is required on some Node
+ * versions — since this module is reachable from nearly every command's
+ * import graph, requiring it eagerly at the top of the file would fire that
+ * warning before the CLI even dispatches to a command, before anything has
+ * a chance to suppress it. Both Bun and Node 22+ have builtin sqlite support;
+ * we try Bun first, then fall back to node:sqlite, and gracefully degrade if
+ * neither is available.
+ */
+function loadSqlite(): void {
+  if (sqliteLoadAttempted) return;
+  sqliteLoadAttempted = true;
+  try {
+    const global = globalThis as any;
+    if (global.Bun && typeof global.Bun === "object") {
+      // Running in Bun — use bun:sqlite if available
+      try {
+        const sqlite = runtimeRequire("bun:sqlite");
+        Database = sqlite.Database;
+        dbAvailable = true;
+      } catch {
+        // bun:sqlite not available, try node:sqlite below
+      }
     }
-  }
 
-  // Fallback to node:sqlite (Node 22+)
-  if (!dbAvailable) {
-    try {
-      const sqlite = runtimeRequire("node:sqlite");
-      Database = sqlite.DatabaseSync;
-      dbAvailable = true;
-    } catch {
-      // node:sqlite not available — degrade gracefully
+    // Fallback to node:sqlite (Node 22+)
+    if (!dbAvailable) {
+      try {
+        const sqlite = runtimeRequire("node:sqlite");
+        Database = sqlite.DatabaseSync;
+        dbAvailable = true;
+      } catch {
+        // node:sqlite not available — degrade gracefully
+      }
     }
+  } catch {
+    // Any error during initialization — degrade gracefully
   }
-} catch {
-  // Any error during initialization — degrade gracefully
 }
 
 /** Migration definition: version → SQL. */
@@ -252,6 +264,7 @@ export class RepoOSDb {
    */
   constructor(repoRoot: string) {
     this.available = false;
+    loadSqlite();
     if (!dbAvailable || !Database) return;
 
     try {

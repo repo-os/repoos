@@ -4,8 +4,12 @@ import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { sampleSystem } from "../system.js";
 import { resolveRepoGuide } from "../agents.js";
+import { CANARY_COUNTER } from "../../core/canary.js";
 
-const REPO_GUIDE_SESSION_ID = "__repoos-guide__";
+// Must match the id the guide client subscribes to and persists under
+// (RepoGuideChat.vue uses "repoos-guide"); a previous refactor drifted this to
+// "__repoos-guide__", which hid the guide's running/stop state from the UI.
+const REPO_GUIDE_SESSION_ID = "repoos-guide";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -39,6 +43,7 @@ export const health: RouteHandler = (ctx, req, res) => {
     buildAvailableHash: parked?.hash ?? null,
     buildAvailableAt: parked?.buildAt ?? null,
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
+    canaryCounter: CANARY_COUNTER,
     ...(handshake ? { reloadHandshake: true } : {}),
   });
 };
@@ -46,7 +51,7 @@ export const health: RouteHandler = (ctx, req, res) => {
 export const restart: RouteHandler = (ctx, _req, res) => {
   const reload = ctx.reload;
   const state =
-    reload?.requestReload("manual restart") ??
+    reload?.requestReload("manual restart", { manual: true }) ??
     ({
       state: "not-stale",
       reason: "auto-reload unavailable",
@@ -59,8 +64,9 @@ export const getCounts: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, index.counts());
 };
 
-export const getIndex: RouteHandler = (ctx, _req, res) => {
-  const { index, reviews } = ctx;
+export const getIndex: RouteHandler = async (ctx, _req, res) => {
+  const { index, reviews, indexReady } = ctx;
+  await indexReady;
   const snapshot = index.snapshot();
   const withReviewStatus = (t: any) => ({
     ...t,
@@ -76,8 +82,13 @@ export const getIndex: RouteHandler = (ctx, _req, res) => {
 };
 
 /** Lightweight board endpoint — returns only the fields TaskCard.vue needs. */
-export const getBoard: RouteHandler = (ctx, _req, res) => {
-  const { index, reviews } = ctx;
+export const getBoard: RouteHandler = async (ctx, _req, res) => {
+  const { index, reviews, indexReady } = ctx;
+  // A reload handoff spawns the replacement with the listener already accepting
+  // connections while the full index build runs in the background (0285). Await
+  // boot readiness so a sharp reconnect can never be answered from a stale or
+  // partially-built index — the snap must reflect disk before it is served.
+  await indexReady;
   const snapshot = index.boardSnapshot();
   const withReviewStatus = (t: any) => ({
     ...t,
@@ -164,6 +175,12 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: result.reason ?? "could not send message" });
   }
   return json(res, 200, { ok: true });
+};
+
+/** Interrupt a running RepoOS guide (Ross) response. Idempotent. */
+export const interruptChatMessage: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.runner.interrupt(REPO_GUIDE_SESSION_ID);
+  return json(res, 200, { ok: true, ...result });
 };
 
 export const getSystemLogs: RouteHandler = (ctx, _req, res) => {

@@ -4,6 +4,7 @@
  * to avoid a runtime dependency.
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { cpus } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
   Agent,
@@ -97,6 +98,20 @@ export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
     ...migrated.map((agent) => ({ ...agent })),
     ...(guide && !names.has(REPO_GUIDE_NAME.toLowerCase()) ? [{ ...guide }] : []),
   ];
+}
+
+/**
+ * "Auto" default for `maxConcurrentAgents`. An agent's own test pool
+ * is capped separately (vite.config.ts `test.poolOptions.forks.maxForks: 2`),
+ * so one agent's worst-case footprint is bounded rather than "the whole
+ * machine" — this can size off total cores directly instead of dividing them
+ * away defensively. `cores / 2` leaves headroom for that ~2-worker pool plus
+ * the agent process's own overhead per concurrent agent; capped at 8 so a
+ * many-core desktop doesn't queue dozens of agents whose non-test work (tool
+ * calls, I/O) still contends over shared resources like the git index.
+ */
+export function defaultMaxConcurrentAgents(): number {
+  return Math.max(2, Math.min(8, Math.floor(cpus().length / 2)));
 }
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
@@ -349,6 +364,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     // recover, while the API now writes new values as numbers.
     if (typeof maxActiveTasks === "string" && /^(?:[1-9]|1\d|20)$/.test(maxActiveTasks))
       cfg.maxActiveTasks = Number(maxActiveTasks);
+    const maxConcurrentAgents = get("maxConcurrentAgents");
+    if (
+      typeof maxConcurrentAgents === "number" &&
+      maxConcurrentAgents >= 1 &&
+      maxConcurrentAgents <= 16
+    )
+      cfg.maxConcurrentAgents = maxConcurrentAgents as number;
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
@@ -406,6 +428,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const authBootstrapAdmin = parsed["auth.bootstrapAdmin"];
     if (typeof authBootstrapAdmin === "string") {
       cfg.auth = { ...cfg.auth, bootstrapAdmin: authBootstrapAdmin };
+    }
+    // Dev backdoor OTP: env-var only, never a repoos.toml key, so it can
+    // never end up in a git-tracked config file. `verifyOtp` also refuses to
+    // honor it outside NODE_ENV !== "production" as a second guard.
+    const authDevBackdoorCode = process.env.REPOOS_AUTH_DEV_BACKDOOR_CODE;
+    if (typeof authDevBackdoorCode === "string" && authDevBackdoorCode && process.env.NODE_ENV !== "production") {
+      cfg.auth = { ...cfg.auth, devBackdoorCode: authDevBackdoorCode };
     }
     // Email provider — fromAddress isn't sensitive and stays config-only;
     // apiKey may come from the config file or REPOOS_RESEND_API_KEY.
@@ -612,6 +641,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       }),
       description:
         "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
+    {
+      key: "maxConcurrentAgents",
+      label: "Maximum concurrent agent processes",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: defaultMaxConcurrentAgents(),
+      options: Array.from({ length: 16 }, (_, i) => {
+        const val = i + 1;
+        return { value: String(val), label: String(val) };
+      }),
+      description:
+        `How many agent CLI processes (start/send/chat) may run at once; extras queue. ` +
+        `Default (${defaultMaxConcurrentAgents()}) is computed from this machine's CPU count.`,
     },
     {
       key: "whisper.provider",

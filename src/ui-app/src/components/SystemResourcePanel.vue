@@ -1,12 +1,27 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { api, JSON_OPTS } from "../api";
 import { useRepoStore } from "../stores/repo";
 import Card from "./ui/card.vue";
 import type { SystemStats } from "../types";
 
 const repo = useRepoStore();
-const { systemStats } = storeToRefs(repo);
+const { systemStats, runningIds, queuedIds } = storeToRefs(repo);
+const killingPid = ref<number | null>(null);
+
+async function killProcess(pid: number): Promise<void> {
+  if (killingPid.value !== null) return;
+  if (!confirm(`Kill process ${pid}? This cannot be undone.`)) return;
+  killingPid.value = pid;
+  try {
+    await api("/api/system/kill-process", JSON_OPTS("POST", { pid }));
+  } catch (err) {
+    repo.pushToast(err instanceof Error ? err.message : `Could not kill process ${pid}`, "error");
+  } finally {
+    killingPid.value = null;
+  }
+}
 
 const HISTORY_MAX = 60;
 
@@ -129,6 +144,17 @@ const serveMessage = computed(() => {
           </svg>
         </div>
 
+        <div class="metric">
+          <div class="metric-label">Agents</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ runningIds.length }}</span>
+            <span class="metric-sub">running{{ queuedIds.length ? ` · ${queuedIds.length} queued` : "" }}</span>
+          </div>
+          <div v-if="queuedIds.length" class="metric-extra">
+            <span>Waiting for a free slot — starts automatically as agents finish.</span>
+          </div>
+        </div>
+
         <div v-if="memUsed !== null" class="metric">
           <div class="metric-label">Machine</div>
           <div class="metric-val">
@@ -155,6 +181,13 @@ const serveMessage = computed(() => {
         <div class="serve-alert-list">
           <span v-for="p in strayList" :key="p.pid" class="serve-chip" :class="{ dead: !p.rootExists }">
             {{ p.pid }}<template v-if="p.port">:{{ p.port }}</template>
+            <button
+              type="button"
+              class="chip-kill"
+              :disabled="killingPid === p.pid"
+              title="Kill this stray process"
+              @click="killProcess(p.pid)"
+            >×</button>
           </span>
           <span v-if="serve.strays > strayList.length" class="serve-more">
             +{{ serve.strays - strayList.length }} more
@@ -169,6 +202,7 @@ const serveMessage = computed(() => {
           <span class="col-cpu">CPU</span>
           <span class="col-mem">Memory</span>
           <span class="col-time">Runtime</span>
+          <span class="col-kill"></span>
         </div>
         <div
           v-for="p in systemStats!.processes"
@@ -194,6 +228,16 @@ const serveMessage = computed(() => {
           <span class="col-cpu">{{ fmtPct(p.cpuPercent) }}%</span>
           <span class="col-mem">{{ fmtBytes(p.memBytes) }}</span>
           <span class="col-time">{{ fmtElapsed(p.elapsed) }}</span>
+          <span class="col-kill">
+            <button
+              v-if="p.pid !== systemStats!.serverPid"
+              type="button"
+              class="kill-btn"
+              :disabled="killingPid === p.pid"
+              title="Kill this process"
+              @click="killProcess(p.pid)"
+            >{{ killingPid === p.pid ? "…" : "kill" }}</button>
+          </span>
         </div>
       </div>
     </template>
@@ -225,7 +269,7 @@ const serveMessage = computed(() => {
 
 .headlines {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -306,6 +350,30 @@ const serveMessage = computed(() => {
   border-radius: 5px;
   background: var(--chip-bg, rgba(255, 255, 255, 0.06));
   color: var(--txt-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip-kill {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+
+.chip-kill:hover:not(:disabled) {
+  opacity: 1;
+  color: var(--red, #f31260);
+}
+
+.chip-kill:disabled {
+  cursor: default;
+  opacity: 0.3;
 }
 
 .serve-chip.dead {
@@ -368,7 +436,7 @@ const serveMessage = computed(() => {
 
 .process-table-header {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr;
+  grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
   gap: 6px;
   padding: 4px 4px 6px;
   font-size: 10px;
@@ -380,7 +448,7 @@ const serveMessage = computed(() => {
 
 .process-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr;
+  grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr 0.6fr;
   gap: 6px;
   padding: 6px 4px;
   font-size: 12px;
@@ -411,6 +479,33 @@ const serveMessage = computed(() => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
+}
+
+.col-kill {
+  text-align: right;
+}
+
+.kill-btn {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--red-border-tint, rgba(255, 107, 125, 0.25));
+  background: transparent;
+  color: var(--red, #f31260);
+  cursor: pointer;
+}
+
+.kill-btn:hover:not(:disabled) {
+  background: var(--red-tint, rgba(255, 107, 125, 0.14));
+}
+
+.kill-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .pid-chip.orphan {
@@ -457,6 +552,12 @@ const serveMessage = computed(() => {
   color: var(--amber);
   background: rgba(255, 180, 84, 0.14);
   border-radius: 3px;
+}
+
+@media (max-width: 1100px) {
+  .headlines {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {

@@ -2,7 +2,7 @@
 id: "0202"
 title: Convert Vue SFCs from raw CSS to Tailwind utility classes
 type: chore
-status: active
+status: review
 needs_merge: true
 priority: p3
 area: ui
@@ -11,8 +11,9 @@ created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
 pm_model_override: default
+review_model_override: default
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-08-20T02:35:44Z"
+updated_at: "2026-08-25T13:36:53Z"
 review_rounds: 1
 ---
 ## Redo notice (2026-08-20)
@@ -39,6 +40,118 @@ the verification step in Acceptance criteria below). Two new `.vue` files
 (`AuthSettingsPanel.vue`, `LoginView.vue`) have also been added to the
 codebase since the original scope was written and are now in scope too —
 the file list below is the current, re-audited one (57 files, not 49).
+
+## Verification findings, round 2 (2026-08-20, later same day)
+
+**Still not done. A chat transcript claimed "Task #0202 is now in `review`"
+— it wasn't, and isn't.** The board correctly stayed on `active` throughout,
+but for the wrong reason at first (see below) — worth understanding both.
+
+1. **Why the board didn't move to `review` despite the agent's claim:**
+   `repoos mv 0202 review`, run from inside this task's own worktree, wrote
+   `status: review` into the WORKTREE's own copy of this file — a completely
+   separate file from the one the live board reads (the main checkout's
+   copy). Root cause: the CLI's board-write commands resolved their root
+   from `cwd` (nearest `.git` upward — a worktree has its own), not from the
+   board root. **This is now fixed** (main commit `c5e39773`, this session)
+   — `repoos mv`/`update`/`new` now always target the main checkout, same as
+   the read commands already did.
+   A second, independent gap compounds this even after the fix: `repoos mv`
+   never commits the status change to git, only writes the file. That's why
+   the board's own self-heal safety net (designed for exactly this
+   divergence shape) correctly declined to auto-correct anything — it only
+   trusts a worktree state backed by a real commit, and this one wasn't.
+   Filed as #0263 rather than folded in here.
+
+2. **Actual scope progress this round:** commit `23d518d9` converted
+   `BoardColumn.vue` and (most of) `TaskCard.vue`, plus part of
+   `TunnelDrawer.vue` and one badge in `TaskDrawer.vue`. Re-scanning actual
+   `<style>` block contents (not git-touched-file lists) on the current
+   commit: **14 files still carry substantial untouched raw CSS** —
+   `ActivityIndicator.vue`, `BoardColumn.vue` (still 41 non-keyframe lines —
+   base layout moved to Tailwind, but plenty of raw CSS relocated into a
+   scoped block rather than converted), `CTOPanel.vue`, `DebuggerChat.vue`,
+   `FloatingHeads.vue`, `IntegrationStatusBar.vue`, `RepoGuideChat.vue`,
+   `SystemResourcePanel.vue`, `TaskCard.vue` (74 lines — went up, not down;
+   see note below), `TaskDrawer.vue` (206 lines — essentially untouched
+   despite being listed as addressed), `ToastPanel.vue`, `TunnelDrawer.vue`
+   (52 lines remaining), `VoiceDictate.vue`, `ProductManagerView.vue`.
+
+3. **A process concern, not just a completeness one:** this round's
+   "conversion" for `BoardColumn.vue`/`TaskCard.vue` largely moved classes
+   from the shared `style.css` into per-component `<style scoped>` blocks
+   that are NOT keyframes-only — which reduces global CSS (a real,
+   measurable win: -133 lines) but does not actually satisfy this task's own
+   acceptance criteria ("Keep `<style scoped>` only for `@keyframes`
+   animations... genuinely custom overrides"). Relocating raw CSS into a
+   scoped block is not the same as converting it to Tailwind utilities.
+   Worth being explicit about this distinction with whoever picks this up
+   next, since "moved" and "converted" can look identical in a diffstat.
+
+4. **One genuinely good, unprompted fix this round:** `check.ts`'s UI smoke
+   test had a blanket `if (text.includes("InvalidCharacterError")) return;`
+   suppression (predating this task), intended to ignore a cosmetic WebKit
+   `classList` parsing quirk with Tailwind arbitrary-value classes — but it
+   was broad enough to also swallow the FeedPanel.vue crash found and fixed
+   earlier today (round 1 of these findings). This round narrowed it to
+   `InvalidCharacterError` messages that also mention `classList`, which
+   correctly lets a real bug like that one through while still suppressing
+   the actual cosmetic case. Good catch — keep this.
+
+**Recommendation, unchanged in substance:** finish the 14 files above,
+prioritizing `TaskDrawer.vue` (by far the largest, and barely touched) and
+`TunnelDrawer.vue`/`BoardColumn.vue`/`TaskCard.vue` (finish converting what
+got relocated into scoped blocks instead, per point 3). Then re-run the same
+raw-CSS audit before claiming done — self-report has now been wrong on this
+task three times in a row (8/57, then a blank Dashboard page, now this).
+
+## Verification findings (2026-08-20)
+
+**Not done — sent back to `active` after direct verification found real gaps.**
+Status had drifted to `review` again despite the acceptance criteria's
+"run a completion check" and "run `repoos check`" boxes still being
+unchecked. Verified independently this time (raw CSS scan + a live browser
+render, not self-report):
+
+1. **Still incomplete.** Scanning actual `<style>` block contents (not just
+   which files were git-touched) shows **13 files still carry substantial
+   untouched raw CSS**: `ActivityIndicator.vue`, `BoardColumn.vue` (96
+   lines — never touched at all), `CTOPanel.vue`, `DebuggerChat.vue`,
+   `FloatingHeads.vue`, `IntegrationStatusBar.vue`, `RepoGuideChat.vue`,
+   `SystemResourcePanel.vue`, `TaskCard.vue`, `TaskDrawer.vue` (216 lines —
+   the largest file in the app, only partially converted),
+   `ToastPanel.vue`, `VoiceDictate.vue`, `ProductManagerView.vue`. ~35 of 57
+   files touched overall — real progress over the previous 8/57, but not
+   complete, and the two largest/most complex components are among the
+   files still mostly raw CSS.
+
+2. **A real crash slipped through, not just a styling gap.** Built this
+   branch and `main` into isolated fixture-rooted preview servers (same
+   technique as #0260) and screenshotted every route with Playwright. The
+   Dashboard (`/`) rendered **completely blank** on this branch — only the
+   sidebar/topbar showed. Root cause: `FeedPanel.vue`'s empty-state div was
+   missing its `class="..."` wrapper —
+   `<div v-if="!feed.length" p-4 text-center font-mono text-xs text-[var(--txt-faint)]>`
+   — so Vue parsed each Tailwind utility as a bare (invalid) attribute name,
+   and the browser threw `InvalidCharacterError` on mount, which took down
+   the whole page. **Fixed in this session** (commit `3dc3cbd1`) — verified
+   the Dashboard now renders identically to `main` with zero console errors.
+   This does not affect the completeness finding above.
+
+3. **Why `repoos check` didn't catch it (probably didn't run, or ran on
+   different code):** the UI smoke test does visit `/` and does check for
+   console errors, so a real run of `repoos check` against the crashing
+   commit should have caught this. The unchecked acceptance-criteria boxes
+   suggest it may not have actually been run before the last handoff attempt
+   — treat "Run `repoos check` before moving to review" as non-negotiable
+   before the next attempt, and don't trust a green run against stale
+   `dist/` (rebuild first).
+
+**Recommendation for the next pass:** finish the remaining 13 files (listed
+above) — prioritize `TaskDrawer.vue` and `BoardColumn.vue` since they're the
+largest and most load-bearing — then do a fresh completion check per the
+existing acceptance criteria, then actually run `repoos check`, before
+attempting review again.
 
 ## Problem
 
@@ -152,3 +265,8 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-19T19:04:48Z · status review→active
 - 2026-08-20T02:32:33Z · status active→review
 - 2026-08-20T02:35:43Z · status review→active
+- 2026-08-20T10:44:30Z · body
+- 2026-08-20T11:40:55Z · body
+- 2026-08-20T13:44:56Z · status active→review
+- 2026-08-24T23:41:14Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-08-25T13:36:53Z · review_model_override

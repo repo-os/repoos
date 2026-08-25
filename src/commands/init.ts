@@ -30,7 +30,7 @@ import {
   isGitRepo,
 } from "../core/git.js";
 import { c } from "../cli/colors.js";
-import { cmdServe } from "./serve.js";
+import { cmdServe, resolveServeHost } from "./serve.js";
 
 const SAMPLE_TASK = (description: string) => `---
 id: "0001"
@@ -122,10 +122,12 @@ Document stack-specific conventions here (framework, lint, test commands).
 
 Never run \`repoos serve\` yourself and never pick a port — RepoOS owns the
 control-plane port and every preview port, and direct serve attempts from agent
-processes are rejected. To verify a UI change, request this task's managed
-preview by emitting the exact signal line (idempotent, and no localhost or
-curl is required — your sandbox may have no network access to the control
-plane):
+processes are rejected. Preview requests are the human's to make — do NOT
+automatically request a preview before handoff or as a routine part of finishing
+a task. If the human explicitly asks you to verify a change the way a browser
+would see it, request this task's managed preview by emitting the exact signal
+line (idempotent, and no localhost or curl is required — your sandbox may have
+no network access to the control plane):
 
     ::repoos-preview-request::
 
@@ -141,8 +143,50 @@ function repoosToml(layout: "root" | "repoos"): string {
 
 ${ns}defaultStatus = "inbox"
 defaultAssignee = "unassigned"
+
+# Optional features, off by default — uncomment to turn them on. Real
+# secrets (API keys, client secrets) go in .env, never here (this file is
+# git-tracked); see .env.example for the matching variables.
+
+# [auth]                                # require login (email OTP / Google) — docs/native-auth.md
+# enabled = true
+# bootstrapAdmin = "you@example.com"    # only this email can claim the first admin account
+#
+# [auth.emailProvider]
+# type = "resend"
+# fromAddress = "noreply@yourdomain.com"
+#
+# [auth.google]                         # optional — adds a "Sign in with Google" button
+# clientId = "..."                      # clientSecret goes in .env, not here
+
+# [whisper]                             # voice-to-text in text areas
+# provider = "groq"                     # or "openai"
+
+# ntfyEnabled = true                    # push notifications on task lifecycle events
+# ntfyTopic = "repoos_myproject"
+# ntfyBaseUrl = "https://ntfy.sh"       # or your self-hosted ntfy server
 `;
 }
+
+const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
+# tracked so the repo documents which secrets a full setup expects.
+# repoos serve auto-loads .env at startup; real shell/process-supervisor env
+# vars still take precedence over it.
+
+# --- Auth (docs/native-auth.md) — only used when [auth].enabled = true ---
+# REPOOS_RESEND_API_KEY=re_...
+# REPOOS_GOOGLE_CLIENT_SECRET=...
+# REPOOS_AUTH_SESSION_SECRET=...          # auto-generated on first boot if omitted
+
+# --- Voice-to-text transcription (only used when [whisper] is configured) ---
+# REPOOS_WHISPER_KEY=...                  # or GROQ_API_KEY / OPENAI_API_KEY directly
+
+# --- repoos tunnel (Cloudflare Tunnel + Access) ---
+# CLOUDFLARE_API_TOKEN=...
+
+# --- ntfy.sh push notifications ---
+# NTFY_BASE_URL=https://ntfy.sh          # or your self-hosted ntfy server
+`;
 
 const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
@@ -185,20 +229,23 @@ function scaffoldInto(
   ensureDir(config.docsDir);
   ensureFile("AGENTS.md", AGENTS_MD);
   ensureFile(join(config.workDir, "0001-set-up-repoos.md"), SAMPLE_TASK(description));
+  ensureFile(".env.example", ENV_EXAMPLE);
 
-  // gitignore the derived cache
+  // gitignore the derived cache and local secrets
   const giPath = join(root, ".gitignore");
-  const ignoreLine = `${config.cacheDir}/`;
-  if (existsSync(giPath)) {
-    const gi = readFileSync(giPath, "utf8");
-    if (!gi.split(/\r?\n/).some((l) => l.trim() === ignoreLine)) {
-      appendFileSync(giPath, `\n# RepoOS derived index cache\n${ignoreLine}\n`);
-      created.push(".gitignore (+entry)");
-    } else {
-      skipped.push(".gitignore");
-    }
+  const ignoreLines = [
+    { comment: "# RepoOS derived index cache", line: `${config.cacheDir}/` },
+    { comment: "# Local secrets — see .env.example", line: ".env" },
+  ];
+  const existingLines = existsSync(giPath) ? readFileSync(giPath, "utf8").split(/\r?\n/) : [];
+  const toAdd = ignoreLines.filter((l) => !existingLines.some((e) => e.trim() === l.line));
+  if (toAdd.length === 0) {
+    skipped.push(".gitignore");
+  } else if (existsSync(giPath)) {
+    appendFileSync(giPath, "\n" + toAdd.map((l) => `${l.comment}\n${l.line}`).join("\n\n") + "\n");
+    created.push(".gitignore (+entry)");
   } else {
-    writeFileSync(giPath, `# RepoOS derived index cache\n${ignoreLine}\n`);
+    writeFileSync(giPath, toAdd.map((l) => `${l.comment}\n${l.line}`).join("\n\n") + "\n");
     created.push(".gitignore");
   }
 
@@ -476,10 +523,25 @@ async function guidedNewRepo(args: string[]): Promise<void> {
         port = free;
       }
     }
+    const { host } = resolveServeHost();
+    const dirHint = target === cwd ? null : `cd ${target}`;
     if (target !== cwd) process.chdir(target);
-    if (port > 0) openBrowser(`http://127.0.0.1:${port}`);
-    console.log(c.dim("\n  Starting the RepoOS web console…"));
-    await cmdServe(["--port", String(port)]);
+    // "0.0.0.0" (the Tailscale-detected bind) isn't openable in a browser —
+    // localhost is always reachable regardless of what's actually bound.
+    if (port > 0) openBrowser(`http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
+    if (dirHint) {
+      console.log(
+        c.dim("\n  Your shell is still in ") + c.cyan(cwd) +
+          c.dim(" — this new project lives in ") + c.cyan(target) +
+          c.dim("."),
+      );
+    }
+    console.log(c.dim("  Starting the RepoOS web console…"));
+    await cmdServe(["--port", String(port)], {
+      onShutdown: dirHint
+        ? () => console.log(c.dim("  cd into the project: ") + c.cyan(dirHint))
+        : undefined,
+    });
     return;
   }
 

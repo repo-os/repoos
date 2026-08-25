@@ -1,6 +1,10 @@
 /**
- * Read and mutate commands. All go through the createRepoOS() facade so the
- * file remains the single source of truth.
+ * Read and mutate commands. Every command that touches the board — reads and
+ * writes alike — goes through boardRepoOS(), which resolves to the MAIN
+ * checkout even when run from inside a task's linked worktree. Task files
+ * are the single source of truth, and there is only one copy of that source
+ * of truth: the main checkout's. Never call createRepoOS() directly from a
+ * board command (see boardRepoOS()'s own comment for why).
  */
 import { readFileSync } from "node:fs";
 import { createRepoOS } from "../core/repoos.js";
@@ -139,7 +143,26 @@ export function cmdShow(id?: string): void {
   console.log("");
 }
 
-/** `repoos mv <id> <status>` — change status (frontmatter edit). */
+/**
+ * `repoos mv <id> <status>` — change status (frontmatter edit).
+ *
+ * Deliberately does NOT run this transition through `guardReviewTransition`
+ * (#0263), even for a move into `review`. That gate lives in the HTTP PATCH
+ * path because it operates on the task's OWN branch worktree — staging and
+ * committing pending implementation changes there and rejecting a vacuous
+ * (zero-source-change) transition — which is an agent-handoff guarantee, not
+ * a board-write guarantee. `repoos mv` is the low-level, generic "edit this
+ * frontmatter field" tool (a human or script can move ANY task to ANY status,
+ * with or without a branch or worktree at all); forcing every review move
+ * through worktree resolution would turn a one-line status edit into a hard
+ * dependency on handoff plumbing that plenty of legitimate `mv` calls don't
+ * have. The bug this task fixes is narrower and applies to every status
+ * change here regardless of target: `updateStatus` (via `rewrite()` in
+ * core/repoos.ts) now always commits the task file in the main checkout, so
+ * the write itself is never left as an untrusted dirty file. Agents that want
+ * the full handoff guarantee (implementation committed + non-vacuous) should
+ * go through the trusted handoff/PATCH path, not this CLI shortcut.
+ */
 export function cmdMv(id?: string, status?: string): void {
   if (!id || !status) {
     console.error(
@@ -149,7 +172,12 @@ export function cmdMv(id?: string, status?: string): void {
     process.exitCode = 1;
     return;
   }
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202): an agent running this from inside
+  // its own task worktree must still land the status change on the MAIN
+  // checkout's task file — the only copy the live board ever reads. Writing
+  // to the worktree's own copy (findRepoRoot() stops at the worktree's own
+  // .git) is a silent no-op from the board's perspective.
+  const repoos = boardRepoOS();
   try {
     const t = repoos.updateStatus(id, status as Status);
     console.log(
@@ -225,7 +253,8 @@ export function cmdUpdate(args: string[]): void {
     return;
   }
 
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why.
+  const repoos = boardRepoOS();
   const task = repoos.getTask(id);
   if (!task) {
     console.error(c.red(`  Task #${id} not found.`));
@@ -243,29 +272,55 @@ export function cmdUpdate(args: string[]): void {
   }
 }
 
-/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p]` */
+const NEW_FLAGS = new Set(["ai", "type", "area", "priority", "body"]);
+
+/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p] [--body "..."|-]` */
 export function cmdNew(args: string[]): void {
+  const usage =
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1] [--body "..."|-]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === "--ai") flags.ai = true;
-    else if (a.startsWith("--")) flags[a.slice(2)] = args[++i];
-    else positional.push(a);
+    if (!a.startsWith("--")) {
+      positional.push(a);
+      continue;
+    }
+    const key = a.slice(2);
+    if (!NEW_FLAGS.has(key)) {
+      console.error(c.red(`  Unknown flag --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    if (key === "ai") {
+      flags.ai = true;
+      continue;
+    }
+    const raw = args[++i];
+    if (raw === undefined) {
+      console.error(c.red(`  Missing value for --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    flags[key] = key === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
   }
   const title = positional.join(" ").trim();
   if (!title) {
-    console.error(c.red('  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1]'));
+    console.error(c.red(usage));
     process.exitCode = 1;
     return;
   }
-  const repoos = createRepoOS();
+  // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why. Otherwise a
+  // task created from inside a worktree lands in that worktree's own work/
+  // dir and is invisible to the real board entirely.
+  const repoos = boardRepoOS();
   const t = repoos.createTask({
     title,
     type: (flags.type as string) || undefined,
     area: (flags.area as string) || undefined,
     priority: (flags.priority as string) || undefined,
     assignedTo: flags.ai ? "ai" : undefined,
+    body: (flags.body as string) || undefined,
   });
   console.log(
     "  " +

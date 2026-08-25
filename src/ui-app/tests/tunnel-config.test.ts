@@ -7,6 +7,7 @@ import {
   hostnameWarning,
   inferHostname,
   isValidAppName,
+  isValidBaseDomain,
   isValidEmail,
   parseEmailList,
   parseTunnelSection,
@@ -151,6 +152,12 @@ describe("hostname inference + validation", () => {
     expect(isValidEmail("not-an-email")).toBe(false);
   });
 
+  it("validates base domains — rejects a bare word like an app name typed into the wrong prompt", () => {
+    expect(isValidBaseDomain("repoos.org")).toBe(true);
+    expect(isValidBaseDomain("celleris")).toBe(false);
+    expect(isValidBaseDomain("")).toBe(false);
+  });
+
   it("parses comma-separated allowlists, trims and dedupes", () => {
     expect(parseEmailList("a@x.com, b@y.com,a@x.com")).toEqual(["a@x.com", "b@y.com"]);
     expect(parseEmailList(undefined)).toEqual([]);
@@ -197,7 +204,10 @@ describe("Cloudflare Access payloads", () => {
     const body = buildAccessAppBody("dashboard.repoos.org");
     expect(body.type).toBe("self_hosted");
     expect(body.domain).toBe("dashboard.repoos.org");
-    expect(body.auto_redirect_to_identity).toBe(true);
+    // auto_redirect_to_identity requires allowed_idps to name exactly one
+    // provider, which RepoOS never sets — Cloudflare's API rejects the app
+    // outright when it's true without that (a real 400 error hit in the wild).
+    expect(body.auto_redirect_to_identity).toBeUndefined();
   });
 
   it("builds an allow policy whose include list is exactly the emails", () => {

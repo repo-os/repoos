@@ -27,7 +27,18 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
-import { resolveCto, runPrompt, reviewCommand, usageCostSource, type AgentRunner, type PromptResult } from "./agents.js";
+import {
+  extractOneShotReportText,
+  parseOneShotLine,
+  resolveCto,
+  runPrompt,
+  reviewCommand,
+  usageCostSource,
+  type AgentRunner,
+  type PromptResult,
+  type StopResult,
+  INTERRUPTED_MARKER,
+} from "./agents.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 import { patchTaskFile } from "./write.js";
 
@@ -102,6 +113,26 @@ interface Run {
   cancelled: boolean;
 }
 
+/**
+ * The CTO manager (0174).
+ *
+ * Reload-durability note (0288 "Also check"): unlike the reviewer, the CTO is
+ * INTENTIONALLY kept on the one-shot `runPrompt` path and is NOT durable. Both
+ * roles share the same `runPrompt` reload-death exposure, but the blast radius
+ * differs fundamentally:
+ *
+ * - The review produces a ONE-TIME sign-off artifact (.repoos/reviews/<id>.md)
+ *   that is permanently lost if the process reloads mid-run — hence #0288 made
+ *   it durable.
+ * - The CTO is a PERIODIC board monitor (default 5-min cadence). A run lost to
+ *   a reload merely delays the next sweep; the monitor simply re-runs on its
+ *   own next tick and self-heals. It never produces a one-of-a-kind artifact.
+ *
+ * So the CTO's `runPrompt` exposure is accepted (and it is force-cancelled on
+ * reload/close, which is correct *because* it is non-durable). If the CTO ever
+ * needs to guarantee a specific run survives a reload, it should be moved onto
+ * the same durable `AgentRunner` path (#0288) — but that is out of scope here.
+ */
 export class CTOManager {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
@@ -198,13 +229,16 @@ export class CTOManager {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(line),
+        onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
     } finally {
       this.runs.delete("cto");
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -212,7 +246,7 @@ export class CTOManager {
     const state: CTOReport["state"] = result.ok && result.output ? "ok" : "failed";
     const body =
       state === "ok"
-        ? (result.output ?? "").trim()
+        ? extractOneShotReportText(agent.cli, result.output ?? "")
         : `The CTO produced no report: ${result.error ?? "unknown error"}`;
     const report: CTOReport = {
       id: "cto",
@@ -270,13 +304,16 @@ export class CTOManager {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
-        onLine: (line) => this.appendSessionLine(line),
+        onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
     } finally {
       this.runs.delete("cto");
     }
 
     if (run.cancelled) {
+      // Persist the in-memory lines (including the interrupted marker appended
+      // by `interrupt()`) so a user-initiated stop survives reload/restart.
+      this.persistSession();
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -316,6 +353,21 @@ export class CTOManager {
 
   cancelAll(): void {
     this.cancel();
+  }
+
+  /**
+   * Interrupt an in-progress CTO run/response. Stops the in-flight agent process
+   * and appends a persistent "response interrupted" marker to the board
+   * conversation so it reads as user-stopped rather than completed normally.
+   * Idempotent — safe to call when nothing is running.
+   */
+  interrupt(): StopResult {
+    const wasRunning = this.runs.has("cto");
+    this.cancel();
+    if (wasRunning) {
+      this.appendMarker(INTERRUPTED_MARKER);
+    }
+    return { stopped: wasRunning };
   }
 
   // ---- Guard-railed actions ----
@@ -433,6 +485,7 @@ export class CTOManager {
 
       recordChange(task, `CTO action: ${reason}`);
       task.needsInput = true;
+      task.needsInputReason = "cto-escalation";
       writeFileSync(taskAbsPath, serializeTask(task));
       return true;
     } catch {
@@ -602,6 +655,7 @@ ${body}
       lines = [];
       this.sessions.set("cto", lines);
     }
+    if (!entry.at) entry = { ...entry, at: new Date().toISOString() };
     lines.push(entry);
     if (lines.length > SESSION_LINES_CAP) lines.splice(0, lines.length - SESSION_LINES_CAP);
     this.emit({
@@ -614,8 +668,10 @@ ${body}
     this.scheduleSessionWrite();
   }
 
-  private appendSessionLine(line: string): void {
-    this.appendEntry({ s: "out", d: line });
+  private appendSessionLine(cli: string, line: string): void {
+    const entry = parseOneShotLine(cli, line);
+    if (!entry) return; // a recognized-but-voiceless structured event
+    this.appendEntry(entry);
   }
 
   private appendMarker(text: string): void {

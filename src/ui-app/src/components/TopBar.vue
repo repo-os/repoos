@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import { computed, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
-import { LogOut, Moon, RefreshCw, RotateCcw, Sun } from "lucide-vue-next";
+import { LogOut, Moon, RefreshCw, RotateCcw, Sun, User } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
@@ -31,6 +31,17 @@ const PALETTE = [
   "#FFC8BA", "#E8BAFF", "#BAF2FF", "#C9FFBA",
 ];
 
+// 12 dark-mode pastels, paired by hue with the light palette above: the same
+// families, darkened/muted so they read as soft pastels against dark
+// backgrounds (and the favicon/PWA icon they drive).
+const DARK_PALETTE = [
+  "#E07A8A", "#E8A87C", "#E4C86B", "#7FD9A0",
+  "#6FB3E0", "#9E8FD0", "#D98BB0", "#6FD4C4",
+  "#E0946F", "#B58FD0", "#7FC4E0", "#8FCE76",
+];
+
+const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
+
 const COLOR_KEY_PREFIX = "repoos.repoColor.";
 
 const popoverOpen = ref(false);
@@ -43,6 +54,56 @@ function localStorageKey(name: string): string {
 function loadSavedColor(): void {
   if (!repoName.value) return;
   savedColor.value = localStorage.getItem(localStorageKey(repoName.value));
+  applyColorCues(savedColor.value);
+}
+
+/**
+ * Build a data-URI SVG favicon tinted with the chosen repo color: a rounded
+ * square in that color with the RepoOS diamond mark as a white outline — the
+ * same geometry as the default `/favicon.svg`, so switching repos gives an
+ * at-a-glance color cue in the tab bar.
+ */
+function faviconDataUri(color: string): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">` +
+    `<rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="${color}" stroke="rgba(255,255,255,0.7)" stroke-width="0.8"/>` +
+    `<path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.95"/>` +
+    `<path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>` +
+    `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+/** Point the browser tab icon at the chosen color (or the default when cleared). */
+function applyFavicon(color: string | null): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.type = "image/svg+xml";
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = color ? faviconDataUri(color) : "/favicon.svg";
+}
+
+/**
+ * Point the PWA manifest at a color-aware variant so the installed-app /
+ * homescreen icon matches the tab favicon. The server renders the icon in the
+ * requested color from the `c` query param (`/icons/icon-*.png?c=...`).
+ */
+function applyManifestColor(color: string | null): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "manifest";
+    document.head.appendChild(link);
+  }
+  link.href = color ? `/manifest.webmanifest?c=${encodeURIComponent(color)}` : "/manifest.webmanifest";
+}
+
+/** Apply the chosen color to the favicon + PWA manifest (null clears both). */
+function applyColorCues(color: string | null): void {
+  applyFavicon(color);
+  applyManifestColor(color);
 }
 
 function textColorFor(hex: string): string {
@@ -80,6 +141,7 @@ function selectColor(color: string): void {
     localStorage.setItem(key, color);
     savedColor.value = color;
   }
+  applyColorCues(savedColor.value);
   popoverOpen.value = false;
 }
 
@@ -87,22 +149,83 @@ function clearColor(): void {
   if (!repoName.value) return;
   localStorage.removeItem(localStorageKey(repoName.value));
   savedColor.value = null;
+  applyColorCues(null);
   popoverOpen.value = false;
 }
+
+const userMenuOpen = ref(false);
+const userMenuTrigger = ref<InstanceType<typeof HTMLButtonElement> | null>(null);
+const userMenuPopover = ref<InstanceType<typeof HTMLDivElement> | null>(null);
+
+function toggleUserMenu(): void {
+  userMenuOpen.value = !userMenuOpen.value;
+}
+
+function closeAndFocusTrigger(): void {
+  userMenuOpen.value = false;
+  nextTick(() => {
+    userMenuTrigger.value?.focus();
+  });
+}
+
+function onUserMenuKeyDown(e: KeyboardEvent): void {
+  if (e.key !== "Tab") return;
+  const popover = userMenuPopover.value;
+  if (!popover) return;
+  const focusable = popover.querySelectorAll<HTMLElement>("button, [href], [tabindex]:not([tabindex='-1'])");
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+}
+
+watch(userMenuOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      const popover = userMenuPopover.value;
+      if (!popover) return;
+      const first = popover.querySelector<HTMLElement>("button");
+      first?.focus();
+    });
+  }
+});
 
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
   if (target.closest(".repo-pill-wrapper")) return;
   popoverOpen.value = false;
+  if (target.closest(".user-menu-wrapper")) return;
+  userMenuOpen.value = false;
+}
+
+function onDocumentKeyDown(e: KeyboardEvent): void {
+  if (e.key === "Escape") {
+    popoverOpen.value = false;
+    if (userMenuOpen.value) {
+      closeAndFocusTrigger();
+    }
+  }
 }
 
 onMounted(() => {
   loadSavedColor();
   document.addEventListener("mousedown", onDocumentMouseDown);
+  document.addEventListener("keydown", onDocumentKeyDown);
 });
 
 onUnmounted(() => {
   document.removeEventListener("mousedown", onDocumentMouseDown);
+  document.removeEventListener("keydown", onDocumentKeyDown);
 });
 
 watch(repoName, () => {
@@ -130,7 +253,7 @@ watch(repoName, () => {
       <div v-if="popoverOpen" class="repo-color-popover">
         <div class="repo-color-grid">
           <button
-            v-for="color in PALETTE"
+            v-for="color in ALL_COLORS"
             :key="color"
             type="button"
             class="repo-color-swatch"
@@ -171,11 +294,24 @@ watch(repoName, () => {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
-    <div v-if="auth.authEnabled && auth.authenticated" class="user-chip" :title="auth.email ?? undefined">
-      <span class="user-chip-email mono hidden sm:inline">{{ auth.email }}</span>
-      <button class="logout-btn" type="button" aria-label="Log out" title="Log out" @click="auth.logout()">
-        <LogOut :size="14" :stroke-width="1.8" />
+    <div v-if="auth.authEnabled && auth.authenticated" class="user-menu-wrapper">
+      <button
+        class="user-menu-trigger"
+        type="button"
+        aria-label="User menu"
+        aria-haspopup="menu"
+        :aria-expanded="userMenuOpen"
+        @click="toggleUserMenu"
+      >
+        <User :size="15" :stroke-width="1.8" />
       </button>
+      <div v-if="userMenuOpen" ref="userMenuPopover" class="user-menu-popover" role="menu" tabindex="-1" @keydown="onUserMenuKeyDown">
+        <span class="user-menu-email mono" role="menuitem" :title="auth.email ?? undefined">{{ auth.email }}</span>
+        <button class="user-menu-logout" type="button" role="menuitem" @click="auth.logout()">
+          <LogOut :size="13" :stroke-width="1.8" />
+          <span>Log out</span>
+        </button>
+      </div>
     </div>
     <div
       class="conn"
@@ -242,5 +378,72 @@ watch(repoName, () => {
 .repo-color-default:hover {
   color: var(--txt);
   border-color: var(--txt-dim);
+}
+.user-menu-wrapper {
+  position: relative;
+}
+.user-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: .15s;
+}
+.user-menu-trigger:hover {
+  color: var(--txt);
+  border-color: var(--border-bright);
+  background: var(--panel-solid);
+}
+.user-menu-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  width: max-content;
+  min-width: 160px;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.user-menu-email {
+  display: block;
+  font-size: 12px;
+  color: var(--txt-dim);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.user-menu-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--red);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: .15s;
+}
+.user-menu-logout:hover {
+  background: var(--red-tint);
+  color: var(--txt);
+  border-color: transparent;
 }
 </style>

@@ -139,6 +139,33 @@ export const STATUS_COLORS: Record<string, string> = {
 export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
 
 /**
+ * PM chat "canned questions" offered above the compose box, keyed by task
+ * status. Only statuses with a defined set show chips; others show none.
+ */
+export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
+  draft: [
+    "Can you flesh this out?",
+    "Suggest how to turn this stub into a complete task.",
+  ],
+  inbox: [
+    "Can you flesh this out?",
+    "Suggest how to turn this stub into a complete task.",
+  ],
+  active: [
+    "What's going on with this task?",
+    "What's wrong?",
+    "What should I do next?",
+  ],
+  review: [
+    "What's blocking this from being done?",
+    "Is this actually ready?",
+  ],
+};
+
+export const pmCannedMessagesFor = (s: string): string[] =>
+  PM_CANNED_MESSAGES[s as Status] ?? [];
+
+/**
  * The human-action reasons a task earns on the "Needs your attention" panel,
  * in display order. Empty when the task needs nothing from a human. Reasons
  * dedupe upstream: a task is listed once even when it matches several.
@@ -185,6 +212,40 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const NEW_VERSION_KEY = "repoos.newVersion";
 
+/**
+ * Done-task acknowledgement (0278). A task that just landed in `done` keeps a
+ * persistent highlight + "Acknowledge" button until the human clicks it. The
+ * acked ids are persisted so a reload doesn't re-flag tasks already
+ * acknowledged.
+ *
+ * The window bounds which already-done tasks flag on a fresh load: only ones
+ * whose done-transition happened recently, so archive/history done cards never
+ * permanently highlight. Slide in through `updated_at`, which the server writes
+ * on every transition (and is the done time for a task that was finished while
+ * the tab was closed).
+ */
+const DONE_ACKED_KEY = "repoos.done.acked";
+const DONE_ACK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function readDoneAcked(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DONE_ACKED_KEY);
+    if (raw === null) return new Set();
+    const v = JSON.parse(raw);
+    return new Set(Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDoneAcked(ids: Set<string>): void {
+  try {
+    localStorage.setItem(DONE_ACKED_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
 function readSortOrder(): SortOrder {
   try {
     const raw = localStorage.getItem(SORT_ORDER_KEY);
@@ -228,6 +289,8 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const transitionState = ref<TransitionState | null>(null);
   const runningIds = ref<string[]>([]);
+  /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
+  const queuedIds = ref<string[]>([]);
   /** Server-authoritative start time for a live agent turn, keyed by task id. */
   const runningSince = ref<Record<string, string>>({});
   /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
@@ -279,6 +342,9 @@ export const useRepoStore = defineStore("repo", () => {
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
   const sortOrder = ref<SortOrder>(readSortOrder());
+  /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
+   *  id is here stays un-highlighted across reloads. */
+  const doneAcked = ref<Set<string>>(readDoneAcked());
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
   /**
@@ -358,6 +424,48 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* ignore quota / privacy-mode failures */
     }
+  }
+
+  /**
+   * True when a `done` task's highlight should still show: it became done
+   * recently enough to be "fresh" AND the human hasn't acknowledged it.
+   * Only ever true for `done` status.
+   */
+  function doneRecently(t: Pick<Task, "status" | "updated_at">): boolean {
+    if (t.status !== "done") return false;
+    const at = t.updated_at;
+    if (!at || Number.isNaN(Date.parse(at))) return false;
+    return Date.now() - Date.parse(at) < DONE_ACK_WINDOW_MS;
+  }
+
+  /** True when the task card should render the persistent "just done" highlight. */
+  function needsAck(t: Pick<Task, "id" | "status" | "updated_at">): boolean {
+    return doneRecently(t) && !doneAcked.value.has(t.id);
+  }
+
+  /** The number of unacked fresh-done tasks, for the Done column cap badge. */
+  const doneAckCount = computed(() => {
+    let n = 0;
+    for (const t of tasks.value) if (needsAck(t)) n++;
+    return n;
+  });
+
+  /** Clear the persistent highlight for a done task (human clicked Acknowledge). */
+  function acknowledge(id: string): void {
+    if (doneAcked.value.has(id)) return;
+    const next = new Set(doneAcked.value);
+    next.add(id);
+    doneAcked.value = next;
+    writeDoneAcked(next);
+  }
+
+  // Keep the in-memory ack set in sync across tabs (0278): another tab
+  // acknowledging a done task must clear its highlight here too.
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", (ev) => {
+      if (ev.key !== DONE_ACKED_KEY) return;
+      doneAcked.value = readDoneAcked();
+    });
   }
 
   function recount(): void {
@@ -463,6 +571,7 @@ export const useRepoStore = defineStore("repo", () => {
       // “coding…” indicators after a reload.
       void reconcileVersion();
       void fetchRunning();
+      void fetchQueued();
       return;
     }
     if (e.type === "build.available") {
@@ -492,7 +601,14 @@ export const useRepoStore = defineStore("repo", () => {
         prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
-      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null };
+      // checkRetryCount lives in `extra` on the full Task the SSE payload
+      // carries (unlike the board fetch, which has it as a first-class
+      // field) — derive it the same way toBoardTask() does server-side.
+      const checkRetryCount =
+        typeof e.task.extra?.check_retry_count === "number"
+          ? e.task.extra.check_retry_count
+          : (before?.checkRetryCount ?? 0);
+      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null, checkRetryCount };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
       const ui = useUiStore();
@@ -564,6 +680,12 @@ export const useRepoStore = defineStore("repo", () => {
       runningSince.value = { ...runningSince.value, [e.id]: e.at };
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
+    } else if (e.type === "agent.queued") {
+      if (!queuedIds.value.includes(e.id)) {
+        queuedIds.value = [...queuedIds.value, e.id];
+      }
+    } else if (e.type === "agent.dequeued") {
+      queuedIds.value = queuedIds.value.filter((x) => x !== e.id);
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
         // CTO board-monitor conversation output — routed to the CTO panel's
@@ -644,7 +766,14 @@ export const useRepoStore = defineStore("repo", () => {
         // enqueues the job, so a later failure arrives here as an SSE event.
         // The job's failing `phase` (when known) and its `reason` drive the
         // message, so a `check failed` reason never reads like a conflict.
-        setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
+        //
+        // A failure for a task that is already `done` is moot (#0289): the
+        // task finished through an earlier close-out and this is a duplicate
+        // or stale job. Surfacing it would leave a permanent, misleading
+        // error badge on an already-finished task, so skip it.
+        if (tasks.value.find((t) => t.id === e.id)?.status !== "done") {
+          setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
+        }
       }
     } else if (e.type === "task.corrected") {
       // The server patched the main copy to match the worktree's committed
@@ -777,6 +906,7 @@ export const useRepoStore = defineStore("repo", () => {
       // connection so a missed `agent.running` frame can never leave a review
       // card saying "waiting for human" while its engineer is still working.
       void fetchRunning();
+      void fetchQueued();
     };
     es.onerror = () => {
       connected.value = false;
@@ -812,13 +942,17 @@ export const useRepoStore = defineStore("repo", () => {
       pmAgentOverride: null,
       pmCliOverride: null,
       pmModelOverride: null,
+      reviewAgentOverride: null,
+      reviewCliOverride: null,
+      reviewModelOverride: null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
-    // was running. Reports remain lazy-loaded by the drawer, but cards get
-    // their live activity state immediately.
+    // was running. Cards get their live activity state immediately; reports
+    // would otherwise lazy-load from the drawer on open (0291).
     const hydratedReviews: Record<string, ReviewState> = {};
     for (const task of idx.tasks) {
+      if (task.status !== "review") continue;
       if (!task.automaticReview) continue;
       hydratedReviews[task.id] = {
         running: task.automaticReview.running,
@@ -828,6 +962,19 @@ export const useRepoStore = defineStore("repo", () => {
       };
     }
     reviews.value = { ...reviews.value, ...hydratedReviews };
+    // 0291: a completed review's SSE event can be lost when the server reloads
+    // in the middle of it. Events are not replayed across an EventSource
+    // reconnect, so the board card's verdict badge would show the previous
+    // round's verdict indefinitely. Recovery: for every task still in `review`
+    // and NOT currently being reviewed after a reconnect, pull the
+    // authoritative report again (bounded — only completed reviews, never the
+    // whole history, and never while a review is live). Fire-and-forget so
+    // hydration isn't blocked; the verdict badge updates when the fetch lands.
+    for (const task of idx.tasks) {
+      if (task.status === "review" && task.automaticReview?.enabled && !task.automaticReview.running) {
+        void loadReview(task.id);
+      }
+    }
     Object.assign(counts, idx.counts);
   }
 
@@ -960,6 +1107,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
+  const isQueued = (id: string): boolean => queuedIds.value.includes(id);
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
   async function startWork(
@@ -1218,6 +1366,29 @@ export const useRepoStore = defineStore("repo", () => {
   /** Get the full diff for a task, or undefined if not yet fetched. */
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
+  /**
+   * Merge main into a review-status task's branch (the "rebase onto main"
+   * action). Reuses the same sync path the server already runs automatically
+   * on entry into review — this just lets the user trigger it again once the
+   * branch has drifted further. Refreshes diff stats/patch on success so the
+   * Changes tab reflects the merged state.
+   */
+  async function syncTaskBranch(id: string): Promise<void> {
+    const r = await api<{ ok: boolean; conflicts?: string[]; error?: string }>(
+      `/api/tasks/${id}/sync`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.conflicts?.length
+        ? `Rebase hit conflicts in: ${r.conflicts.join(", ")}`
+        : r.error ?? "could not sync with main";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    pushToast("Synced with main", "success");
+    await Promise.all([loadDiffStats(id), loadDiff(id)]);
+  }
+
   /** Drop a retained transcript buffer (e.g. a finished freeform run). */
   function clearOutput(id: string): void {
     if (!outputs.value[id]) return;
@@ -1278,6 +1449,16 @@ export const useRepoStore = defineStore("repo", () => {
       };
     } catch {
       /* endpoint unavailable — running state is best-effort */
+    }
+  }
+
+  /** Hydrate the queued marker on reload — mirrors fetchRunning() above. */
+  async function fetchQueued(): Promise<void> {
+    try {
+      const r = await api<{ tasks: { id: string; queuedAt: string }[] }>("/api/agents/queued");
+      queuedIds.value = r.tasks.map((t) => t.id);
+    } catch {
+      /* endpoint unavailable — queued state is best-effort */
     }
   }
 
@@ -1413,6 +1594,7 @@ export const useRepoStore = defineStore("repo", () => {
       await refresh();
       initRefreshAt = Date.now();
       await fetchRunning();
+      await fetchQueued();
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
       void reconcileVersion();
@@ -1436,6 +1618,7 @@ export const useRepoStore = defineStore("repo", () => {
     flashId,
     transitionState,
     runningIds,
+    queuedIds,
     runningSince,
     agentActivityAt,
     agentExitedAt,
@@ -1449,6 +1632,10 @@ export const useRepoStore = defineStore("repo", () => {
     clearDirtyMain,
     reviews,
     sortOrder,
+    doneAcked,
+    doneAckCount,
+    needsAck,
+    acknowledge,
     toasts,
     systemStats,
     autoEng,
@@ -1484,6 +1671,7 @@ export const useRepoStore = defineStore("repo", () => {
     createDocument,
     createFreeformDocument,
     isRunning,
+    isQueued,
     startWork,
     pauseWork,
     activateHotfix,
@@ -1505,10 +1693,12 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    syncTaskBranch,
     sendMessage,
     reviewAgain,
     sendReviewMessage,
     fetchRunning,
+    fetchQueued,
     startPreview,
     stopPreview,
     onError,

@@ -384,6 +384,7 @@ describe("automatic review state", () => {
       if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/board") || url.includes("/api/index")) return json({ tasks: [indexReads++ === 0 ? idle : running], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review")) return json({ ok: true, running: false, enabled: true, review: null });
       throw new Error("unexpected fetch: " + url);
     }));
 
@@ -400,6 +401,62 @@ describe("automatic review state", () => {
     FakeEventSource.instances[0].onopen?.();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(repo.reviewFor("0001")).toMatchObject({ running: true, enabled: true });
+  });
+
+  it("re-fetches the authoritative report for in-review tasks on reconnect (0291)", async () => {
+    // Simulate #0291: a review completed but its SSE completion event was
+    // dropped during a reload gap, so the card is left showing the previous
+    // round's verdict. On reconnect, refresh() must pull the fresh report for
+    // tasks still in `review` — no drawer open required.
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const task = makeTask({ status: "review", automaticReview: { running: false, enabled: true } });
+    let report = {
+      id: "r2",
+      at: "2026-08-24T21:36:00Z",
+      agent: "reviewer",
+      cli: "opencode",
+      model: "default",
+      state: "ok" as const,
+      markdown: "Verdict: needs some work",
+    };
+    let reviewReads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/review")) {
+        reviewReads++;
+        return json({ ok: true, running: false, enabled: true, review: report });
+      }
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    // The initial connection hydrates the earlier round's verdict.
+    await vi.waitFor(() => expect(repo.reviewFor("0001")?.report?.id).toBe("r2"));
+
+    // The authoritative latest round is now "good to go" on the server, but the
+    // SSE completion event for it was dropped. Simulate the reconnect: the
+    // server now reports the fresh report, and refresh() must pull it in.
+    report = {
+      id: "r3",
+      at: "2026-08-24T21:50:00Z",
+      agent: "reviewer",
+      cli: "opencode",
+      model: "default",
+      state: "ok",
+      markdown: "Verdict: good to go",
+    };
+    // The first manual open after init() is the "reusable" one (init() fetched
+    // moments ago) and does not refresh; the SECOND is a true reconnect that
+    // must refetch the report for the in-review task.
+    FakeEventSource.instances[0].onopen?.();
+    FakeEventSource.instances[0].onopen?.();
+    await vi.waitFor(() => expect(repo.reviewFor("0001")?.report?.id).toBe("r3"));
+    expect(repo.reviewFor("0001")?.report?.markdown).toContain("good to go");
+    expect(reviewReads).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -932,5 +989,123 @@ describe("default drawer tab (0080)", () => {
     expect(ui.activeTab).toBe("agent");
     ui.close();
     expect(ui.activeTab).toBe("details");
+  });
+});
+
+describe("fresh-done acknowledgement (0278)", () => {
+  const now = () => new Date().toISOString();
+
+  it("flags a task that transitions review->done, and clears it on acknowledge", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", { type: "task.created", task: makeTask() });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "done", updated_at: now() }),
+      prev: { status: "review" },
+    });
+    expect(repo.tasks[0].status).toBe("done");
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+    expect(repo.doneAckCount).toBe(1);
+    repo.acknowledge("0001");
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    expect(repo.doneAckCount).toBe(0);
+  });
+
+  it("does not flag non-done statuses or tasks updated outside the window", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    // A done task updated >24h ago (archive/history) must NOT flag.
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "done", updated_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() }) });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    // An active task, however recent, must NOT flag.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "active", updated_at: now() }),
+      prev: { status: "ready" },
+    });
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    expect(repo.doneAckCount).toBe(0);
+  });
+
+  it("flags a recently-done task on initial load but persists the ack across reloads", async () => {
+    localStorage.removeItem("repoos.done.acked");
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const recentlyDone = makeTask({ status: "done", updated_at: new Date(Date.now() - 60 * 1000).toISOString() });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health")) return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+      if (url.includes("/api/board")) return json({ tasks: [recentlyDone], counts: { ...EMPTY_COUNTS, done: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    // First load: the freshly-done task flags.
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+    repo.acknowledge("0001");
+
+    // Reload (a fresh store) reads the persisted ack: stays cleared.
+    setActivePinia(createPinia());
+    const repo2 = useRepoStore();
+    await repo2.init();
+    expect(repo2.needsAck(repo2.tasks[0])).toBe(false);
+    expect(localStorage.getItem("repoos.done.acked")).toContain("0001");
+  });
+});
+
+describe("sync task branch with main (rebase-onto-main button)", () => {
+  it("posts to /sync, reloads diff data, and toasts success", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    const posts: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/sync")) {
+        posts.push("sync");
+        return json({ ok: true });
+      }
+      if (url.includes("/diff-stats"))
+        return json({ ok: true, stats: { filesChanged: 3, additions: 10, deletions: 2 } });
+      if (url.includes("/diff"))
+        return json({ ok: true, diff: { patch: "diff --git a b", truncated: false } });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.syncTaskBranch("0253");
+
+    expect(posts).toEqual(["sync"]);
+    expect(repo.diffStatsFor("0253")).toEqual({ filesChanged: 3, additions: 10, deletions: 2 });
+    expect(repo.diffFor("0253")).toEqual({ patch: "diff --git a b", truncated: false });
+    expect(repo.toasts.some((t) => t.message === "Synced with main" && t.type === "success")).toBe(true);
+  });
+
+  it("toasts the conflicting files and rethrows on failure", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/sync"))
+        return json({ ok: false, conflicts: ["src/foo.ts", "src/bar.ts"] });
+      throw new Error("unexpected fetch: " + url);
+    }));
+
+    const repo = useRepoStore();
+    await repo.init();
+    await expect(repo.syncTaskBranch("0253")).rejects.toThrow("src/foo.ts, src/bar.ts");
+    expect(repo.toasts.some((t) => t.type === "error" && t.message.includes("src/foo.ts"))).toBe(true);
   });
 });

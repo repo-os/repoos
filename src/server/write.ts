@@ -31,6 +31,8 @@ export interface TaskPatch {
   body?: string;
   /** Clear (false) or set (true) the waiting-on-human flag. */
   needsInput?: boolean;
+  /** Machine-readable reason `needsInput` was set, or null to clear it. Only meaningful alongside `needsInput: true`. */
+  needsInputReason?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /** Per-task agent name override, or null to clear. */
@@ -45,6 +47,12 @@ export interface TaskPatch {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null to clear. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null to clear. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null to clear. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null to clear. */
+  reviewModelOverride?: string | null;
   /** Set hotfix mode (true to enable, false to disable). */
   hotfix?: boolean;
   /** Hotfix merge target. */
@@ -105,6 +113,13 @@ export function patchTaskFile(
   if (patch.needsInput !== undefined) {
     if (patch.needsInput !== current.needsInput) changes.push("needs_input");
     current.needsInput = patch.needsInput;
+    // A cleared flag has no reason to carry forward — serializeTask would drop
+    // it anyway (only written while needsInput is true), but clearing it here
+    // too keeps the in-memory Task consistent with what gets written.
+    if (!patch.needsInput) current.needsInputReason = undefined;
+  }
+  if (patch.needsInputReason !== undefined) {
+    current.needsInputReason = patch.needsInputReason ?? undefined;
   }
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");
@@ -163,6 +178,18 @@ export function patchTaskFile(
   if (patch.pmModelOverride !== undefined) {
     if (patch.pmModelOverride !== current.pmModelOverride) changes.push("pm_model_override");
     current.pmModelOverride = patch.pmModelOverride;
+  }
+  if (patch.reviewAgentOverride !== undefined) {
+    if (patch.reviewAgentOverride !== current.reviewAgentOverride) changes.push("review_agent_override");
+    current.reviewAgentOverride = patch.reviewAgentOverride;
+  }
+  if (patch.reviewCliOverride !== undefined) {
+    if (patch.reviewCliOverride !== current.reviewCliOverride) changes.push("review_cli_override");
+    current.reviewCliOverride = patch.reviewCliOverride;
+  }
+  if (patch.reviewModelOverride !== undefined) {
+    if (patch.reviewModelOverride !== current.reviewModelOverride) changes.push("review_model_override");
+    current.reviewModelOverride = patch.reviewModelOverride;
   }
   if (patch.hotfix !== undefined) {
     if (patch.hotfix !== current.hotfix) changes.push("hotfix");

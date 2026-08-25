@@ -15,11 +15,12 @@ import {
   taskPmPrompt,
   runPrompt,
   deriveBranch,
+  isModelOverridePinned,
 } from "../agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStats, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
+import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStatsAsync, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -130,7 +131,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     typeof body?.modelOverride === "string" && body.modelOverride
       ? body.modelOverride
       : undefined;
-  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModel;
+  // "default" is the sentinel for "use the configured pm agent's own
+  // model" — not a real pin (same bug class as resolveAgentForTask /
+  // resolveReviewerForTask / the PM-message override above).
+  const freeformModelPinned = isModelOverridePinned(freeformModel);
+  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModelPinned;
 
   let pm: Agent | null;
   if (hasFreeformOverride) {
@@ -141,7 +146,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       ? {
           ...base,
           ...(freeformCli ? { cli: freeformCli } : {}),
-          ...(freeformModel ? { model: freeformModel } : {}),
+          ...(freeformModelPinned ? { model: freeformModel as string } : {}),
         }
       : null;
   } else {
@@ -332,7 +337,7 @@ export const getScreenshot: RouteHandler = (ctx, _req, res, params) => {
     "Cache-Control": "no-cache",
     "Access-Control-Allow-Origin": "*",
   });
-  res.end(require("fs").readFileSync(abs));
+  res.end(readFileSync(abs));
 };
 
 export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
@@ -496,6 +501,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       spawn: {
         ok: spawnRes.ok,
         pid: spawnRes.pid,
+        queued: spawnRes.queued,
         reason: spawnRes.reason,
       },
       bootstrap: {
@@ -972,6 +978,12 @@ export const ctoMessage: RouteHandler = async (ctx, req, res) => {
   return json(res, 200, { ok: true });
 };
 
+/** Interrupt a running CTO response. Idempotent. */
+export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
+  const result = ctx.cto.interrupt();
+  return json(res, 200, { ok: true, ...result });
+};
+
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner } = ctx;
   const id = params.param1;
@@ -981,8 +993,13 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   }
 
   // v2 deliberately starts a clean PM conversation: older PM chats were
-  // incorrectly launched with Ross's read-only mission.
-  const pmSessionId = `pm-task-v2:${id}`;
+  // incorrectly launched with Ross's read-only mission. When auth is on,
+  // each user gets their own PM conversation per task (0248) — otherwise
+  // teammates sharing one instance would all read and post into the same
+  // thread. Falls back to the unscoped id when auth is off, matching every
+  // existing single-user setup exactly as before.
+  const currentUserEmail = getCurrentUser(req, config)?.email;
+  const pmSessionId = currentUserEmail ? `pm-task-v2:${id}::${currentUserEmail}` : `pm-task-v2:${id}`;
   const body = (await readBody(req)) as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) {
@@ -1004,7 +1021,15 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     typeof body?.modelOverride === "string" && body.modelOverride
       ? body.modelOverride
       : existing.pmModelOverride || undefined;
-  const hasPmOverride = pmAgentName || pmCli || pmModel;
+  // "default" is the sentinel the PM tab's model dropdown offers for "use
+  // the configured pm agent's own model" — NOT a real pin. Treating it as
+  // truthy here force-overwrites the base agent's actual configured model
+  // with the literal string "default", which then skips --model entirely
+  // and falls back to the CLI's own raw default instead of what's
+  // configured on the Agents page (same bug fixed in resolveAgentForTask /
+  // resolveReviewerForTask).
+  const pmModelPinned = isModelOverridePinned(pmModel);
+  const hasPmOverride = pmAgentName || pmCli || pmModelPinned;
 
   // Resolve the PM agent, applying any one-shot override
   let pm: Agent | null;
@@ -1016,7 +1041,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
       ? {
           ...base,
           ...(pmCli ? { cli: pmCli } : {}),
-          ...(pmModel ? { model: pmModel } : {}),
+          ...(pmModelPinned ? { model: pmModel as string } : {}),
         }
       : null;
   } else {
@@ -1052,6 +1077,25 @@ ${existing.body || "(no description)"}`;
     return json(res, 400, { error: result.reason ?? "could not send message to PM" });
   }
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+};
+
+/**
+ * Interrupt a running PM response about a task. Resolves the same per-user PM
+ * session id as `pmMessage` and stops the in-flight agent turn. Idempotent.
+ */
+export const pmInterrupt: RouteHandler = (ctx, req, res, params) => {
+  const { config, index, runner } = ctx;
+  const id = params.param1;
+  const existing = index.getTask(id);
+  if (!existing) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const currentUserEmail = getCurrentUser(req, config)?.email;
+  const pmSessionId = currentUserEmail
+    ? `pm-task-v2:${id}::${currentUserEmail}`
+    : `pm-task-v2:${id}`;
+  const result = runner.interrupt(pmSessionId);
+  return json(res, 200, { ok: true, ...result });
 };
 
 export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
@@ -1175,7 +1219,7 @@ export const getDailyTotals: RouteHandler = (ctx, _req, res) => {
 };
 
 // Diff stats endpoint
-export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
+export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) => {
   const { index, config } = ctx;
   const id = params.param1;
   const task = index.getTask(id);
@@ -1195,7 +1239,11 @@ export const getDiffStatsForTask: RouteHandler = (ctx, _req, res, params) => {
     }
     return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
   }
-  const stats = getDiffStats(worktreePath, "main");
+  // Async (spawn-based) rather than the sync/execFileSync getDiffStats: every
+  // card on the Work board fires this on mount, and the synchronous version
+  // blocked the whole event loop for each one serially — including whatever
+  // GET /api/tasks/:id a drawer-opening click was waiting behind.
+  const stats = await getDiffStatsAsync(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
 };
 

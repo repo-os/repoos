@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
-import { X, RotateCcw } from "lucide-vue-next";
+import { X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -38,17 +38,28 @@ function onOpenAutoFocus(e: Event): void {
   if (ui.isNewDoc) {
     e.preventDefault();
     requestAnimationFrame(() => {
-      const id = newMode.value === "freeform" ? "nd-freeform" : "nd-path";
+      let id: string;
+      if (newMode.value === "freeform") {
+        id = "nd-freeform";
+      } else if (newMode.value === "upload") {
+        id = "nd-upload-path";
+      } else {
+        id = "nd-path";
+      }
       document.getElementById(id)?.focus();
     });
   }
 }
 
-const newMode = ref<"freeform" | "manual">("freeform");
+const newMode = ref<"freeform" | "manual" | "upload">("freeform");
 const freeformText = ref("");
 const freeformError = ref("");
 const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
+
+const uploadFile = ref<File | null>(null);
+const uploadPath = ref("");
+const uploadError = ref("");
 
 const pmAgentReady = computed(() => {
   if (!config.loaded) return true;
@@ -62,6 +73,9 @@ watch(
     newMode.value = config.form.defaultTaskMode === "manual" ? "manual" : "freeform";
     freeformText.value = "";
     freeformError.value = "";
+    uploadFile.value = null;
+    uploadPath.value = "";
+    uploadError.value = "";
     initFreeformOverrides();
   },
 );
@@ -112,6 +126,35 @@ async function createDoc(): Promise<void> {
   }
 }
 
+async function uploadDoc(): Promise<void> {
+  if (!uploadFile.value || !uploadPath.value.trim()) return;
+  ui.saving = true;
+  uploadError.value = "";
+  try {
+    const path = uploadPath.value.trim();
+    const content = await uploadFile.value.text();
+    await repo.createDocument({ path, content });
+    ui.close();
+    uploadFile.value = null;
+    uploadPath.value = "";
+    await repo.refresh();
+    await docs.loadDocs();
+    await docs.loadDoc(path);
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+function onUploadFileSelected(e: Event): void {
+  const target = e.target as HTMLInputElement;
+  const files = target.files;
+  if (files && files.length > 0) {
+    uploadFile.value = files[0];
+  }
+}
+
 const enabledAgents = computed(() => (config.agents ?? []).filter((a) => a.enabled));
 const cliOptions = computed(() => config.agentsMeta.clis ?? []);
 const modelOptions = computed(() =>
@@ -145,10 +188,6 @@ const freeformIsCustom = computed(() => {
     freeformOverride.model !== base.model
   );
 });
-
-function resetFreeformOverrides(): void {
-  initFreeformOverrides();
-}
 
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
   const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
@@ -216,7 +255,15 @@ function onDocBodyTranscribed(text: string): void {
           :class="{ active: newMode === 'manual' }"
           @click="newMode = 'manual'"
         >
-          Manual doc
+          Manual
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          :class="{ active: newMode === 'upload' }"
+          @click="newMode = 'upload'"
+        >
+          Upload
         </button>
       </div>
 
@@ -263,18 +310,6 @@ function onDocBodyTranscribed(text: string): void {
                 />
               </div>
             </div>
-            <div v-if="freeformIsCustom" class="agent-override-actions">
-              <span class="agent-custom-badge">custom</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                :disabled="freeformRunning"
-                @click="resetFreeformOverrides"
-                title="Reset to PM defaults"
-              >
-                <RotateCcw class="size-3" />
-              </Button>
-            </div>
           </div>
           <div v-if="!pmAgentReady" class="ff-notice">
             No PM agent is configured.
@@ -312,7 +347,7 @@ function onDocBodyTranscribed(text: string): void {
             </div>
           </div>
         </template>
-        <template v-else>
+        <template v-else-if="newMode === 'manual'">
           <div class="field">
             <label for="nd-path">File path</label>
             <Input
@@ -340,6 +375,35 @@ function onDocBodyTranscribed(text: string): void {
             <Button variant="outline" @click="ui.close()">Cancel</Button>
             <Button variant="default" @click="createDoc" :disabled="ui.saving || !ui.nd.path || !ui.nd.content">
               Create
+            </Button>
+          </div>
+        </template>
+        <template v-else-if="newMode === 'upload'">
+          <div class="field">
+            <label for="nd-upload-path">File path</label>
+            <Input
+              id="nd-upload-path"
+              v-model="uploadPath"
+              placeholder="docs/my-document.md"
+            />
+          </div>
+          <div class="field">
+            <label for="nd-upload-file">Select file</label>
+            <input
+              id="nd-upload-file"
+              type="file"
+              class="upload-input"
+              @change="onUploadFileSelected"
+            />
+            <div v-if="uploadFile" class="upload-file-info">
+              {{ uploadFile.name }} ({{ (uploadFile.size / 1024).toFixed(1) }} KB)
+            </div>
+          </div>
+          <div v-if="uploadError" class="ff-error">{{ uploadError }}</div>
+          <div class="btn-row" style="margin-top: 20px">
+            <Button variant="outline" @click="ui.close()">Cancel</Button>
+            <Button variant="default" @click="uploadDoc" :disabled="ui.saving || !uploadFile || !uploadPath.trim()">
+              Upload
             </Button>
           </div>
         </template>
@@ -388,21 +452,6 @@ function onDocBodyTranscribed(text: string): void {
   font-size: 12px;
   font-weight: 500;
   color: var(--txt-secondary);
-}
-
-.agent-override-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.agent-custom-badge {
-  font-size: 11px;
-  padding: 2px 6px;
-  background: var(--accent-alpha);
-  color: var(--accent);
-  border-radius: 4px;
-  font-weight: 600;
 }
 
 .ff-notice {
@@ -485,6 +534,29 @@ function onDocBodyTranscribed(text: string): void {
 .field label {
   font-size: 13px;
   font-weight: 500;
+  color: var(--txt-secondary);
+}
+
+.upload-input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.upload-input:hover {
+  border-color: var(--border-focus);
+}
+
+.upload-file-info {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 12px;
   color: var(--txt-secondary);
 }
 </style>

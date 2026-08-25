@@ -64,6 +64,25 @@ From there, **Settings → Authentication & Users** manages everyone else:
 add allowed emails, change roles (admin/member), revoke access, and view
 the audit log. The last admin can't be demoted or removed.
 
+## Dev backdoor: skip the email step for local dev/testing
+
+For local development, CI, or a browser-driving agent — anywhere there's no
+real mailbox to receive the OTP — set `REPOOS_AUTH_DEV_BACKDOOR_CODE` (e.g. in
+`.env`) to a code of your choosing. On `/login`, an already-allowlisted user
+can then type that code in place of the real one-time code to sign in without
+an email round-trip at all.
+
+- Only ever loaded when `NODE_ENV !== "production"` — the server ignores it
+  entirely in production, regardless of whether the env var is set.
+- It only replaces the OTP step: the email must already be an allowlisted
+  user (or `bootstrapAdmin`, if you're bootstrapping the very first account)
+  — it does not let you sign in as an arbitrary address.
+- Env var only, deliberately — there's no `repoos.toml` field for it, so it
+  can never end up committed alongside the rest of `[auth]`.
+- This isn't specific to managed task previews — it works against any
+  locally-served instance, including a plain `repoos serve` you're running
+  yourself for manual testing.
+
 ## What "enabled" actually protects
 
 Every UI route, API route, and the SSE stream require a valid session once
@@ -93,6 +112,18 @@ layers:
 You don't need Access to use native auth safely, and turning on native auth
 doesn't require touching your tunnel or Access configuration at all — they
 compose independently.
+
+By default, `repoos tunnel create` **always** sets up a Cloudflare Access
+policy for every app (an empty allowlist denies everyone — there's no way to
+end up with a publicly reachable app through the normal flow). To actually
+skip Access and rely on native auth alone, pass `--no-access` explicitly:
+
+```bash
+repoos tunnel create dev --port 7171 --domain dev.example.com --no-access
+```
+
+This refuses to run unless `auth.enabled = true` is already set — otherwise
+the app would have no login at all, from either layer.
 
 ## Troubleshooting
 

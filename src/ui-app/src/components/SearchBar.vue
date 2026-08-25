@@ -185,9 +185,17 @@ function onGlobalKey(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener("keydown", onGlobalKey);
-  loadDocContents();
 });
 onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
+
+// docList loads asynchronously (App.vue awaits docs.loadDocs() on boot), so a
+// one-shot call at mount ran against an empty list and never fired again —
+// doc body content was never fetched, so full-text doc search silently only
+// ever matched on title/path. Watching re-fires once the list actually
+// arrives (and again if new docs get created later).
+watch(docList, () => {
+  void loadDocContents();
+}, { immediate: true });
 </script>
 
 <template>
@@ -205,70 +213,76 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
       <kbd>⌘K</kbd>
     </button>
 
-    <div v-if="overlayOpen" class="search-overlay-backdrop" @click="handleBackdropClick">
-      <div class="search-overlay">
-        <div class="search-overlay-header">
-          <svg class="search-ico" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
-            <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-          <input
-            ref="inputEl"
-            v-model="query"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Search tasks, docs, settings…"
-            class="search-overlay-input"
-            @keydown="onKey"
-          />
-          <button
-            class="search-overlay-close"
-            type="button"
-            @click="closeOverlay"
-            aria-label="Close search"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    <Teleport to="body">
+      <!-- Teleported out of .topbar: that element's backdrop-filter (kept in
+           the classic and jelly themes, dropped in clear/gen z) makes it a
+           containing block for position:fixed descendants, which clipped
+           this overlay to the topbar's own box instead of the viewport. -->
+      <div v-if="overlayOpen" class="search-overlay-backdrop" @click="handleBackdropClick">
+        <div class="search-overlay">
+          <div class="search-overlay-header">
+            <svg class="search-ico" width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-          </button>
-        </div>
+            <input
+              ref="inputEl"
+              v-model="query"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search tasks, docs, settings…"
+              class="search-overlay-input"
+              @keydown="onKey"
+            />
+            <button
+              class="search-overlay-close"
+              type="button"
+              @click="closeOverlay"
+              aria-label="Close search"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
 
-        <div class="search-overlay-body">
-          <template v-if="displayItems.length">
-            <div v-for="g in groups" :key="g.kind" class="search-group">
-              <div class="search-group-label">{{ g.label }}</div>
-              <div
-                v-for="item in g.items"
-                :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
-                class="search-row"
-                :class="{ hi: item.idx === highlight }"
-                @mousedown.prevent
-                @click="handleRowClick(item.r as any)"
-              >
-                <div class="search-row-content">
-                  <template v-if="(g.kind as string) === 'task'">
-                    <span class="cdot" :style="{ backgroundColor: statusColor((item.r as any).task.status) }"></span>
-                  </template>
-                  <div class="search-row-text">
-                    <div class="search-row-title">{{ item.r.title }}</div>
-                    <div class="search-row-sub">{{ item.r.subtitle }}</div>
-                    <div v-if="(item.r as any).snippet" class="search-row-snippet">
-                      <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
-                        <span v-html="(item.r as any).snippet.html"></span>
-                      </template>
-                      <template v-else>
-                        {{ (item.r as any).snippet }}
-                      </template>
+          <div class="search-overlay-body">
+            <template v-if="displayItems.length">
+              <div v-for="g in groups" :key="g.kind" class="search-group">
+                <div class="search-group-label">{{ g.label }}</div>
+                <div
+                  v-for="item in g.items"
+                  :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
+                  class="search-row"
+                  :class="{ hi: item.idx === highlight }"
+                  @mousedown.prevent
+                  @click="handleRowClick(item.r as any)"
+                >
+                  <div class="search-row-content">
+                    <template v-if="(g.kind as string) === 'task'">
+                      <span class="cdot" :style="{ backgroundColor: statusColor((item.r as any).task.status) }"></span>
+                    </template>
+                    <div class="search-row-text">
+                      <div class="search-row-title">{{ item.r.title }}</div>
+                      <div class="search-row-sub">{{ item.r.subtitle }}</div>
+                      <div v-if="(item.r as any).snippet" class="search-row-snippet">
+                        <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
+                          <span v-html="(item.r as any).snippet.html"></span>
+                        </template>
+                        <template v-else>
+                          {{ (item.r as any).snippet }}
+                        </template>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </template>
-          <div v-else class="search-empty">No results</div>
+            </template>
+            <div v-else class="search-empty">No results</div>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>

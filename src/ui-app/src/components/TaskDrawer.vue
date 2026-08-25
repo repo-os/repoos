@@ -3,10 +3,12 @@ import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
-import { COLUMNS, statusColor, useRepoStore } from "../stores/repo";
+import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
@@ -15,6 +17,7 @@ import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "./ui/dialog/root.vue";
@@ -34,6 +37,7 @@ import AgentModelControl from "./AgentModelControl.vue";
 const repo = useRepoStore();
 const ui = useUiStore();
 const config = useConfigStore();
+const auth = useAuthStore();
 const router = useRouter();
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
@@ -91,19 +95,12 @@ const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
 
 const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
-const specTextareaEl = ref<HTMLTextAreaElement | null>(null);
 const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
     insertTextAtCursor(freeformTextarea.value, text);
-  }
-}
-
-function onSpecTranscribed(text: string): void {
-  if (specTextareaEl.value) {
-    insertTextAtCursor(specTextareaEl.value, text);
   }
 }
 
@@ -409,6 +406,10 @@ async function moveToDone(): Promise<void> {
   startDoneTimer();
   try {
     await repo.completeTask(ui.active);
+    // The close-out pipeline just started — show its live progress instead
+    // of a now-stale task drawer.
+    ui.close();
+    ui.expandIntegrationBar();
   } catch (err) {
     // Dirty-main guard (0204): pause and show the confirmation modal instead
     // of an inline failure — the task stays in review until the user decides.
@@ -444,6 +445,8 @@ async function confirmCommitDirty(): Promise<void> {
   startDoneTimer();
   try {
     await repo.completeTask(t, { commitDirty: true });
+    ui.close();
+    ui.expandIntegrationBar();
   } catch (err) {
     // Still dirty after commiting (e.g. a new file appeared) — keep asking.
     if (err instanceof Error && err.name === "DirtyMainError") {
@@ -524,28 +527,23 @@ const slugify = (title: string): string =>
 const derivedBranch = computed(() => `feat/${slugify(draft.title)}`);
 const effectiveBranch = computed(() => ui.active?.branch || derivedBranch.value);
 
-/** Spec body is a readable card that expands into a large textarea on click. */
-const specEditing = ref(false);
-const specTextarea = ref<HTMLTextAreaElement | null>(null);
 /** Whether the spec card body is expanded. Collapsed shows just the header. */
 const specExpanded = ref(true);
+
+/** True while the spec edit modal is open. */
+const specModalOpen = ref(false);
 
 /** Rendered (safe) Markdown for the read-mode spec card. */
 const specHtml = computed(() => renderMarkdown(draft.body));
 
-/** Grow the spec textarea to fit its content so editing never feels cramped. */
-function autoGrowSpec(): void {
-  const el = specTextarea.value;
-  if (!el) return;
-  // scrollHeight excludes the border (box-sizing: border-box); add it back so
-  // the box exactly fits its content and never shows an internal scrollbar.
-  el.style.height = "auto";
-  el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+function openSpecModal(): void {
+  specModalOpen.value = true;
 }
 
-watch(specEditing, (editing) => {
-  if (editing) nextTick(autoGrowSpec);
-});
+function applySpec(markdown: string): void {
+  draft.body = markdown;
+  specModalOpen.value = false;
+}
 
 let draftFromId = "";
 watch(
@@ -559,7 +557,7 @@ watch(
       // Different task (or drawer just reopened): load a fresh draft.
       initDraft(t);
       draftFromId = t.id;
-      specEditing.value = false;
+      specModalOpen.value = false;
       return;
     }
     // Same task got updated (SSE task.updated). Resync only when the user has
@@ -586,7 +584,6 @@ async function saveDraft(): Promise<void> {
   try {
     await repo.patchTask(ui.active.id, patch);
     baseline();
-    specEditing.value = false;
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -596,7 +593,6 @@ async function saveDraft(): Promise<void> {
 
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
-  specEditing.value = false;
 }
 
 // ---- read-only worktree preview ----
@@ -656,25 +652,62 @@ const review = computed<ReviewState | null>(() =>
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
-  if (repo.isRunning(ui.active.id)) return { label: "coding", cls: "rs-coding" };
+  if (repo.isRunning(ui.active.id)) {
+    // A running agent on an already-review task, outside auto-review, means
+    // the server silently resumed the engineer to fix a post-handoff
+    // `repoos check` failure (handoff.ts's scheduleCheckFailureRetry) —
+    // never that the task regressed to active. Label it distinctly.
+    return ui.active.checkRetryCount
+      ? { label: "fixing check failure", cls: "rs-coding" }
+      : { label: "coding", cls: "rs-coding" };
+  }
   return { label: "waiting for human", cls: "rs-human" };
 });
 
-/** Compact lifecycle counts: initial dev pass is round one; each completed
- * review bounce starts the next dev pass. A task presently in review
- * is also in its next review pass unless the engineer is actively fixing it. */
+/** Compact lifecycle counts: D = dev passes, R = review passes. The server
+ * writes `review_passes` on EVERY completed review run (auto and manual alike),
+ * so these track the true round-trips rather than `review_rounds`, which is a
+ * separate auto-bounce bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS.
+ * Fall back to `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
   if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
     return { dev: 0, review: 0 };
   }
-  const bounced = task.extra?.review_rounds;
-  const completedReviews = typeof bounced === "number" && Number.isFinite(bounced)
-    ? Math.max(0, Math.floor(bounced))
-    : 0;
+  let completed = task.extra?.review_passes;
+  if (typeof completed !== "number" || !Number.isFinite(completed)) {
+    completed = task.extra?.review_rounds;
+  }
+  const passes =
+    typeof completed === "number" && Number.isFinite(completed)
+      ? Math.max(0, Math.floor(completed))
+      : 0;
+  // Dev rounds that errored out before ever reaching a review pass (#0271
+  // follow-up, confirmed live on #0291): an engineer session that crashes
+  // never bumps review_passes, so without this a task with a genuine failed
+  // dev attempt showed D0 · R0 — the badge simply didn't render at all
+  // (`v-if="taskRounds.dev > 0"` below), even though a real, token-spending
+  // session happened. See agents.ts's escalateFailedExit for where this is
+  // counted.
+  let errors = task.extra?.dev_error_count;
+  const devErrors =
+    typeof errors === "number" && Number.isFinite(errors) ? Math.max(0, Math.floor(errors)) : 0;
+  // A task is in (or about to start) a dev pass when it's `ready` or `active`,
+  // or back in `review` because the engineer is actively re-coding (post-handoff
+  // fix / resume). Otherwise the current dev round is finished: `done` and
+  // "waiting for human" review states show exactly the completed passes (D == R).
+  // Excluded while `needsInput` is set from a fresh error: that flag marks the
+  // SAME round `devErrors` already counted as still open/unresumed, not a new
+  // one starting — resuming clears `needsInput`, which is when this becomes
+  // eligible again for that (now genuinely new) attempt.
+  const inDevPass =
+    !task.needsInput &&
+    (task.status === "ready" ||
+      task.status === "active" ||
+      (task.status === "review" && repo.isRunning(task.id)));
   return {
-    dev: completedReviews + 1,
-    review: completedReviews + (task.status === "review" && !repo.isRunning(task.id) ? 1 : 0),
+    dev: passes + devErrors + (inDevPass ? 1 : 0),
+    review: passes,
   };
 });
 
@@ -780,7 +813,7 @@ function scrollReviewToBottom(smooth = false): void {
 watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
-    if (!ui.active || ui.activeTab !== "review" || ui.active.status !== "review") return;
+    if (!ui.active || ui.activeTab !== "review") return;
     reviewStick.value = true;
     void repo.loadReview(ui.active.id).then(() => nextTick(() => scrollReviewToBottom()));
   },
@@ -851,11 +884,12 @@ async function sendToEngineer(): Promise<void> {
   }
 }
 
-/** Hydrate the report whenever the drawer shows a task in review. */
+/** Hydrate the report whenever the drawer shows a task (any status — the
+ * report stays relevant and viewable after sign-off). */
 watch(
   () => [ui.active?.id, ui.active?.status],
   () => {
-    if (ui.active?.status !== "review") return;
+    if (!ui.active) return;
     reviewPane.value = "report";
     void repo.loadReview(ui.active.id);
   },
@@ -864,9 +898,13 @@ watch(
 
 // ---- PM tab ----
 
-/** Generate session ID for PM chat on a specific task. */
+/**
+ * Generate session ID for PM chat on a specific task. Per-user when auth is
+ * on (0248), so teammates sharing one instance each get their own PM
+ * conversation per task. Matches the server's pmMessage route.
+ */
 function pmSessionId(taskId: string): string {
-  return `pm-task-v2:${taskId}`;
+  return auth.email ? `pm-task-v2:${taskId}::${auth.email}` : `pm-task-v2:${taskId}`;
 }
 
 const pmDraft = ref("");
@@ -893,6 +931,24 @@ const pmBusy = computed(
 );
 
 const pmHasConversation = computed(() => pmLines.value.length > 0);
+
+/**
+ * Canned messages shown above the PM compose box, keyed by task status.
+ * Empty (no chips) for statuses without a defined set.
+ */
+const pmCannedMessages = computed(() => {
+  const t = ui.active;
+  return t ? pmCannedMessagesFor(t.status) : [];
+});
+
+/** Whether to show the canned PM messages: any status with a defined set. */
+const showPmCanned = computed(() => pmCannedMessages.value.length > 0);
+
+/** Send the chosen canned message to the PM agent, just like a typed send. */
+function pmSendCanned(text: string): void {
+  pmDraft.value = text;
+  void pmSend();
+}
 
 function pmLineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
@@ -932,7 +988,7 @@ async function pmSend(): Promise<void> {
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
   pmSubmitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
@@ -970,6 +1026,20 @@ function pmOnKeydown(event: KeyboardEvent): void {
   void pmSend();
 }
 
+/**
+ * Interrupt the PM's in-flight response. The server stops the running agent
+ * turn and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function pmInterrupt(): Promise<void> {
+  if (!ui.active) return;
+  try {
+    await api(`/api/tasks/${ui.active.id}/pm/interrupt`, { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 watch(
   () => ui.active?.id,
   () => {
@@ -985,12 +1055,6 @@ watch(
 const pmBaseAgent = computed(() => {
   const list = config.agents?.length ? config.agents : [];
   return list.find((a) => a.enabled && a.name === "pm") ?? null;
-});
-
-/** Whether the current task has any persisted PM override set. */
-const hasPmOverride = computed(() => {
-  const t = ui.active;
-  return !!(t && (t.pmAgentOverride || t.pmCliOverride || t.pmModelOverride));
 });
 
 /** Draft overrides for the PM tab, initialized from the task's persisted values. */
@@ -1017,17 +1081,6 @@ const pmOverrideDirty = computed(
     pmOverrideDraft.cli !== pmOverrideSaved.cli ||
     pmOverrideDraft.model !== pmOverrideSaved.model,
 );
-
-/** True when the PM overrides differ from the base PM agent defaults. */
-const pmIsCustom = computed(() => {
-  const base = pmBaseAgent.value;
-  if (!base) return false;
-  return (
-    pmOverrideDraft.agent !== base.name ||
-    pmOverrideDraft.cli !== base.cli ||
-    pmOverrideDraft.model !== base.model
-  );
-});
 
 /** Model options for the PM tab's model select. */
 const pmModelOptions = computed(() =>
@@ -1098,20 +1151,105 @@ watch(
   },
 );
 
-/** Reset PM overrides to the base PM agent defaults (persisted). */
-async function resetPmOverrides(): Promise<void> {
-  if (!ui.active) return;
-  try {
-    await repo.patchTask(ui.active.id, {
-      pmAgentOverride: null,
-      pmCliOverride: null,
-      pmModelOverride: null,
-    });
-    initPmOverrideDraft(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  }
+// ---- review agent override (task detail) ----
+
+/** The base reviewer agent from the Agents page. */
+const reviewBaseAgent = computed(() => {
+  const list = config.agents?.length ? config.agents : [];
+  return list.find((a) => a.enabled && a.name.toLowerCase() === "reviewer") ?? null;
+});
+
+/** Draft overrides for the Review tab, initialized from the task's persisted values. */
+const reviewOverrideDraft = reactive({ agent: "", cli: "", model: "" });
+
+/** Snapshot of the last-saved review override values. */
+const reviewOverrideSaved = reactive({ agent: "", cli: "", model: "" });
+
+/** Initialize the review override draft from the current task. */
+function initReviewOverrideDraft(t: Task | null): void {
+  const base = reviewBaseAgent.value;
+  reviewOverrideDraft.agent = t?.reviewAgentOverride || base?.name || "";
+  reviewOverrideDraft.cli = t?.reviewCliOverride || base?.cli || "";
+  reviewOverrideDraft.model = t?.reviewModelOverride || base?.model || "";
+  reviewOverrideSaved.agent = reviewOverrideDraft.agent;
+  reviewOverrideSaved.cli = reviewOverrideDraft.cli;
+  reviewOverrideSaved.model = reviewOverrideDraft.model;
 }
+
+/** True when the review override draft differs from the saved values. */
+const reviewOverrideDirty = computed(
+  () =>
+    reviewOverrideDraft.agent !== reviewOverrideSaved.agent ||
+    reviewOverrideDraft.cli !== reviewOverrideSaved.cli ||
+    reviewOverrideDraft.model !== reviewOverrideSaved.model,
+);
+
+/** Model options for the Review tab's model select. */
+const reviewModelOptions = computed(() =>
+  config.modelsFor(reviewOverrideDraft.cli, reviewOverrideDraft.model || undefined),
+);
+
+/** Initialize review overrides when opening the Review tab, unless a draft is dirty. */
+watch(
+  () => [ui.active, ui.activeTab],
+  () => {
+    if (ui.activeTab !== "review") return;
+    if (!reviewOverrideDirty.value) initReviewOverrideDraft(ui.active);
+  },
+);
+
+/** Debounced auto-save of review overrides, mirroring the PM tab. */
+let reviewOverrideAutoSaveTimer: number | undefined;
+
+function scheduleReviewOverrideSave(): void {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  if (reviewOverrideAutoSaveTimer !== undefined) {
+    window.clearTimeout(reviewOverrideAutoSaveTimer);
+  }
+  reviewOverrideAutoSaveTimer = window.setTimeout(async () => {
+    reviewOverrideAutoSaveTimer = undefined;
+    if (ui.active?.id !== taskId || !reviewOverrideDirty.value) return;
+    const base = reviewBaseAgent.value;
+    const sent = {
+      agent: reviewOverrideDraft.agent,
+      cli: reviewOverrideDraft.cli,
+      model: reviewOverrideDraft.model,
+    };
+    const agentVal = sent.agent !== (base?.name ?? "") ? sent.agent : null;
+    const cliVal = sent.cli !== (base?.cli ?? "") ? sent.cli : null;
+    const modelVal = sent.model !== (base?.model ?? "") ? sent.model : null;
+    try {
+      await repo.patchTask(taskId, {
+        reviewAgentOverride: agentVal,
+        reviewCliOverride: cliVal,
+        reviewModelOverride: modelVal,
+      });
+      reviewOverrideSaved.agent = sent.agent;
+      reviewOverrideSaved.cli = sent.cli;
+      reviewOverrideSaved.model = sent.model;
+    } catch (err) {
+      repo.onError(err);
+    }
+  }, 500);
+}
+
+/** Same CLI→model reset for the Review tab. */
+watch(
+  () => reviewOverrideDraft.cli,
+  (newCli, oldCli) => {
+    if (!newCli || newCli === oldCli) return;
+    const opts = config.modelsFor(newCli);
+    reviewOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+  },
+);
+
+watch(
+  () => [reviewOverrideDraft.agent, reviewOverrideDraft.cli, reviewOverrideDraft.model],
+  () => {
+    scheduleReviewOverrideSave();
+  },
+);
 
 // ---- agent session tab ----
 
@@ -1298,6 +1436,18 @@ function fmtSessionTime(iso: string | null): string {
   return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+/** Human-readable text for why `needsInput` was set — see core/types.ts's NeedsInputReason. */
+const NEEDS_INPUT_REASON_LABELS: Record<string, string> = {
+  "review-failed": "The reviewer crashed or timed out without producing a report.",
+  "dev-error": "The agent exited with an error.",
+  "watchdog-stuck": "The task went quiet with no agent running.",
+  "cto-escalation": "The CTO agent flagged this for a human decision.",
+};
+
+function needsInputReasonText(reason: string | undefined): string {
+  return (reason && NEEDS_INPUT_REASON_LABELS[reason]) || "The agent needs your input — reply below to continue.";
+}
+
 watch(displayEntries, () => {
   if (stick.value) {
     nextTick(() => {
@@ -1343,6 +1493,31 @@ const taskDiffStats = computed(() => {
   return ui.active ? repo.diffStatsFor(ui.active.id) : undefined;
 });
 
+/**
+ * A diff this size is almost never the task's own change — it's main having
+ * drifted out from under the branch since it was cut. Thresholds are
+ * deliberately generous (most real task diffs are well under this) so the
+ * warning only fires on genuine divergence.
+ */
+const diffLooksLikeDrift = computed(() => {
+  const s = taskDiffStats.value;
+  if (!s) return false;
+  return s.filesChanged > 50 || s.additions + s.deletions > 2000;
+});
+
+const syncBusy = ref(false);
+async function syncWithMain(): Promise<void> {
+  if (!ui.active || syncBusy.value) return;
+  syncBusy.value = true;
+  try {
+    await repo.syncTaskBranch(ui.active.id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    syncBusy.value = false;
+  }
+}
+
 /** Load diff stats when task changes or status changes. */
 watch(
   () => [ui.active?.id, ui.active?.status, ui.active?.branch],
@@ -1355,6 +1530,13 @@ watch(
 
 /** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
 const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
+
+/** Whether the "agent / model" column shows the model name under the agent, for every session row (collapsed by default). Clicking any cell in the column toggles all rows together. */
+const sessionAgentsExpanded = ref(false);
+
+function toggleSessionAgentExpand(): void {
+  sessionAgentsExpanded.value = !sessionAgentsExpanded.value;
+}
 
 /** Load the task's durable usage totals when the drawer opens or the task changes. */
 watch(
@@ -1497,12 +1679,6 @@ const baseAgent = computed(() => {
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 });
 
-/** Whether the current task has any override set. */
-const hasAgentOverride = computed(() => {
-  const t = ui.active;
-  return !!(t && (t.agentOverride || t.cliOverride || t.modelOverride));
-});
-
 /** Draft overrides for the agent tab. These are the values the user is editing
  *  but haven't saved yet. They are initialized from the task's current overrides
  *  (or the base agent's defaults when none are set). */
@@ -1537,17 +1713,6 @@ const overrideDirty = computed(
     overrideDraft.cli !== overrideSaved.cli ||
     overrideDraft.model !== overrideSaved.model,
 );
-
-/** True when the overrides differ from the base agent defaults. */
-const isCustom = computed(() => {
-  const base = baseAgent.value;
-  if (!base) return false;
-  return (
-    overrideDraft.agent !== base.name ||
-    overrideDraft.cli !== base.cli ||
-    overrideDraft.model !== base.model
-  );
-});
 
 watch(
   () => ui.active,
@@ -1626,30 +1791,6 @@ onUnmounted(() => {
   }
 });
 
-/** Reset overrides to the base agent defaults. */
-async function resetOverrides(): Promise<void> {
-  if (!ui.active) return;
-  ui.saving = true;
-  try {
-    await repo.patchTask(ui.active.id, {
-      agentOverride: null,
-      cliOverride: null,
-      modelOverride: null,
-    });
-    const base = baseAgent.value;
-    overrideDraft.agent = base?.name || "";
-    overrideDraft.cli = base?.cli || "";
-    overrideDraft.model = base?.model || "";
-    overrideSaved.agent = overrideDraft.agent;
-    overrideSaved.cli = overrideDraft.cli;
-    overrideSaved.model = overrideDraft.model;
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
-}
-
 // ---- freeform agent override (one-shot) ----
 
 /** The PM agent's base config, for the freeform readout. */
@@ -1694,10 +1835,6 @@ watch(
   },
 );
 
-/** Reset freeform overrides to the PM agent defaults. */
-function resetFreeformOverrides(): void {
-  initFreeformOverrides();
-}
 </script>
 
 <template>
@@ -1737,7 +1874,7 @@ function resetFreeformOverrides(): void {
             :class="{ active: newMode === 'manual' }"
             @click="newMode = 'manual'"
           >
-            Manual form
+            Manual
           </button>
         </div>
         <div class="drawer-body">
@@ -1814,20 +1951,6 @@ function resetFreeformOverrides(): void {
                     :disabled="freeformRunning"
                   />
                 </div>
-                   <div class="agent-field">
-                       <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
-                         <span class="agent-custom-badge">custom</span>
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           :disabled="freeformRunning"
-                           @click="resetFreeformOverrides"
-                           title="Reset to PM defaults"
-                         >
-                           <RotateCcw class="size-3" />
-                         </Button>
-                       </div>
-                   </div>
               </div>
             </div>
             <div v-if="!pmAgentReady" class="ff-notice">
@@ -1972,7 +2095,11 @@ function resetFreeformOverrides(): void {
               >
                 {{ ui.active.status }}
               </span>
-              <span v-if="ui.active.needsInput" class="tc-waiting">needs input</span>
+              <span
+                v-if="ui.active.needsInput"
+                class="tc-waiting"
+                :title="needsInputReasonText(ui.active.needsInputReason)"
+              >needs input</span>
               <span
                 v-if="reviewSubstate"
                 class="rs-chip"
@@ -2082,6 +2209,7 @@ function resetFreeformOverrides(): void {
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
             class="drawer-done-error"
+            mode="panel"
             :message="repo.doneErrorFor(ui.active.id)!.message"
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
@@ -2172,7 +2300,6 @@ function resetFreeformOverrides(): void {
             Dev
           </button>
           <button
-            v-if="ui.active.status === 'review' || ui.active.status === 'active'"
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
@@ -2291,31 +2418,16 @@ function resetFreeformOverrides(): void {
           </div>
           <div v-if="specExpanded">
             <div
-              v-if="!specEditing"
               class="md-card"
               role="button"
               tabindex="0"
-              @click="specEditing = true"
-              @keydown.enter="specEditing = true"
-              @keydown.space.prevent="specEditing = true"
+              @click="openSpecModal"
+              @keydown.enter="openSpecModal"
+              @keydown.space.prevent="openSpecModal"
             >
               <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
               <div v-else class="md-card-body">No spec yet — click to add.</div>
             </div>
-            <template v-else>
-              <div class="spec-textarea-wrapper">
-                <textarea
-                  ref="specTextareaEl"
-                  class="md-edit"
-                  v-model="draft.body"
-                  rows="12"
-                  placeholder="Markdown body"
-                  @input="autoGrowSpec"
-                ></textarea>
-                <VoiceDictate @transcribed="onSpecTranscribed" />
-              </div>
-              <div class="spec-hint">Click Save to apply the spec.</div>
-            </template>
           </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
           <div class="meta-grid">
@@ -2401,12 +2513,8 @@ function resetFreeformOverrides(): void {
                 />
               </div>
               <div class="agent-field">
-                  <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
-                    <span v-if="isCustom" class="agent-custom-badge">custom</span>
-                    <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
-                    <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
-                      <RotateCcw class="size-3" />
-                    </Button>
+                  <div v-if="overrideDirty" class="agent-override-actions" style='padding-top:20px'>
+                    <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
             </div>
@@ -2425,7 +2533,7 @@ function resetFreeformOverrides(): void {
             <span class="agent-waiting-dot"></span>
             <div>
               <div class="agent-waiting-title">waiting for you</div>
-              <div class="agent-waiting-sub">The agent needs your input — reply below to continue.</div>
+              <div class="agent-waiting-sub">{{ needsInputReasonText(ui.active.needsInputReason) }}</div>
             </div>
           </div>
           <div class="agent-log-wrap">
@@ -2535,6 +2643,24 @@ function resetFreeformOverrides(): void {
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="reviewModelOptions"
+                  v-model:cli="reviewOverrideDraft.cli"
+                  v-model:model="reviewOverrideDraft.model"
+                  :disabled="ui.saving"
+                />
+              </div>
+               <div class="agent-field" style="padding-top:20px">
+                  <div v-if="reviewOverrideDirty" class="agent-override-actions">
+                    <span class="agent-save-hint">saving…</span>
+                  </div>
+              </div>
+            </div>
+          </div>
           <div class="review-toolbar">
             <div v-if="review?.report" class="review-pane-tabs" role="tablist" aria-label="Reviewer content">
               <button
@@ -2559,6 +2685,7 @@ function resetFreeformOverrides(): void {
               </button>
             </div>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running"
@@ -2570,6 +2697,7 @@ function resetFreeformOverrides(): void {
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
             <Button
+              v-if="ui.active.status === 'review'"
               variant="accent"
               size="sm"
               :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
@@ -2748,6 +2876,20 @@ function resetFreeformOverrides(): void {
                 </div>
               </div>
               <div v-else class="diff-stats-loading">Loading change summary…</div>
+              <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
+                This diff looks much bigger than the task — main has likely drifted since the branch was cut.
+                <template v-if="ui.active?.status === 'review'">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="diff-sync-btn"
+                    :disabled="syncBusy || ui.saving"
+                    @click="syncWithMain"
+                  >
+                    {{ syncBusy ? "Syncing…" : "Sync with main" }}
+                  </Button>
+                </template>
+              </div>
             </section>
             <div v-if="diffFiles.length > 0" class="diff-file-list">
               <button
@@ -2843,41 +2985,66 @@ function resetFreeformOverrides(): void {
             </div>
             <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
               <span class="agent-stat-label">by role</span>
-              <div class="task-usage-role-list">
-                <span v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
-                  <span class="task-usage-role-name">{{ r.role }}</span>
-                  <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
-                  <span>{{ fmtTokens(r.totalTokens) }}</span>
-                  <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
-                </span>
+              <div class="task-usage-table-wrap">
+                <table class="task-usage-table">
+                  <thead>
+                    <tr>
+                      <th class="ta-left">role</th>
+                      <th class="ta-right">time</th>
+                      <th class="ta-right">tokens</th>
+                      <th class="ta-right">cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in taskUsage.roles" :key="r.role" class="task-usage-role">
+                      <td class="task-usage-role-name ta-left">{{ r.role }}</td>
+                      <td class="ta-right">{{ fmtElapsed(r.totalElapsedMs) }}</td>
+                      <td class="ta-right">{{ fmtTokens(r.totalTokens) }}</td>
+                      <td class="ta-right">{{ fmtCost(r.totalCostUsd, r.costSource) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
             <div v-if="taskUsage.sessions && taskUsage.sessions.length > 0" class="task-usage-sessions">
               <div class="task-usage-title">individual sessions</div>
-              <div class="task-usage-session-list">
-                <div class="task-usage-session-row task-usage-session-head">
-                  <span>type</span>
-                  <span>agent / model</span>
-                  <span>started</span>
-                  <span>ended</span>
-                  <span>time</span>
-                  <span>tokens</span>
-                  <span>cost</span>
-                </div>
-                <div
-                  v-for="s in taskUsage.sessions"
-                  :key="s.sessionId"
-                  class="task-usage-session-row"
-                  :class="{ 'task-usage-session-active': s.status === 'active' }"
-                >
-                  <span class="task-usage-session-type">{{ s.sessionType }}</span>
-                  <span>{{ s.agent }} · {{ s.model }}</span>
-                  <span>{{ fmtSessionTime(s.startedAt) }}</span>
-                  <span>{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</span>
-                  <span>{{ fmtElapsed(s.elapsedMs) }}</span>
-                  <span>{{ fmtTokens(s.totalTokens) }}</span>
-                  <span>{{ fmtCost(s.costUsd, s.costSource) }}</span>
-                </div>
+              <div class="task-usage-table-wrap">
+                <table class="task-usage-table">
+                  <thead>
+                    <tr class="task-usage-session-head">
+                      <th class="ta-left">type</th>
+                      <th class="ta-left">agent / model</th>
+                      <th class="ta-left">started</th>
+                      <th class="ta-left">ended</th>
+                      <th class="ta-right">time</th>
+                      <th class="ta-right">tokens</th>
+                      <th class="ta-right">cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="s in taskUsage.sessions"
+                      :key="s.sessionId"
+                      class="task-usage-session-row"
+                      :class="{ 'task-usage-session-active': s.status === 'active' }"
+                    >
+                      <td class="task-usage-session-type ta-left">{{ s.sessionType }}</td>
+                      <td
+                        class="ta-left task-usage-session-agent"
+                        :title="sessionAgentsExpanded ? 'Click to collapse' : 'Click to show model'"
+                        @click="toggleSessionAgentExpand()"
+                      >
+                        <div>{{ s.codingAgent }}</div>
+                        <div v-if="sessionAgentsExpanded" class="task-usage-session-model">{{ s.model }}</div>
+                      </td>
+                      <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
+                      <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>
+                      <td class="ta-right">{{ fmtElapsed(s.elapsedMs) }}</td>
+                      <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
+                      <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -2898,12 +3065,8 @@ function resetFreeformOverrides(): void {
                 />
               </div>
                <div class="agent-field" style="padding-top:20px">
-                  <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
-                    <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
-                    <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
-                    <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
-                      <RotateCcw class="size-3" />
-                    </Button>
+                  <div v-if="pmOverrideDirty" class="agent-override-actions">
+                    <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
             </div>
@@ -2921,6 +3084,7 @@ function resetFreeformOverrides(): void {
                   <div class="pm-bubble" :class="`pm-bubble-${pmLineKind(entry)}`">
                     <div v-if="pmLineKind(entry) === 'assistant'" class="pm-markdown" v-html="renderMarkdown(pmLineText(entry))"></div>
                     <span v-else>{{ pmLineText(entry) }}</span>
+                    <span v-if="pmLineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
                   </div>
                 </div>
               </template>
@@ -2930,6 +3094,12 @@ function resetFreeformOverrides(): void {
             </template>
           </div>
 
+          <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
+            <div v-for="(msg, i) in pmCannedMessages" :key="i" class="pm-canned-item" role="button" tabindex="0" @click="pmSendCanned(msg)" @keydown.enter="pmSendCanned(msg)">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8 4 3 10l5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span>{{ msg }}</span>
+            </div>
+          </div>
           <form class="pm-compose" @submit.prevent="pmSend">
             <textarea
               v-model="pmDraft"
@@ -2939,7 +3109,17 @@ function resetFreeformOverrides(): void {
               aria-label="Message PM"
               @keydown="pmOnKeydown"
             ></textarea>
-            <button type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
+            <button
+              v-if="pmBusy"
+              type="button"
+              class="pm-stop"
+              aria-label="Stop PM response"
+              title="Stop response"
+              @click="pmInterrupt"
+            >
+              <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+            </button>
+            <button v-else type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
               <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
             </button>
           </form>
@@ -2984,6 +3164,13 @@ function resetFreeformOverrides(): void {
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
+  />
+
+  <SpecEditModal
+    :open="specModalOpen"
+    :body="draft.body"
+    @update:open="(v) => (specModalOpen = v)"
+    @save="applySpec"
   />
 </template>
 
@@ -3077,6 +3264,15 @@ function resetFreeformOverrides(): void {
   background: var(--panel);
   border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  display: block;
+  margin-top: 3px;
+  text-align: right;
+  color: var(--txt-faint);
+  font: 500 8.5px 'JetBrains Mono', monospace;
+  opacity: 0.8;
 }
 
 .pm-row-status {
@@ -3211,6 +3407,47 @@ function resetFreeformOverrides(): void {
   height: 18px;
 }
 
+.pm-compose button.pm-stop {
+  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
+  color: var(--red, #ef5b5b);
+}
+
+.pm-canned {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 12px 10px;
+}
+
+.pm-canned-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-size: 12.5px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pm-canned-item svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--violet);
+}
+
+.pm-canned-item:hover,
+.pm-canned-item:focus-visible {
+  border-color: var(--violet);
+  background: var(--violet-dim);
+  outline: none;
+}
+
 @keyframes pm-bounce {
   0%, 70%, 100% {
     transform: translateY(0);
@@ -3251,13 +3488,21 @@ function resetFreeformOverrides(): void {
 
 .diff-stat-warning {
   grid-column: 1 / -1;
-  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
   text-align: center;
   color: #ff6b6b;
   font-size: 11px;
   font-weight: 500;
   background: rgba(255, 107, 107, 0.1);
   border-radius: 4px;
+}
+
+.diff-sync-btn {
+  color: var(--txt);
 }
 
 .diff-stats-loading {

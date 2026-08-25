@@ -29,6 +29,24 @@ export type UiTheme = "classic" | "clear" | "gen z" | "jelly";
 export type TaskMode = "freeform" | "manual";
 
 /**
+ * Machine-readable reasons `needsInput` gets set, one per escalation call
+ * site. Stored alongside the flag so a later automated success (e.g. a
+ * review that finally completes cleanly) can tell whether IT is what the
+ * human was waited on for, and clear the flag itself rather than leaving it
+ * stuck forever once the underlying problem resolves. A boolean alone can't
+ * make that call safely — clearing on every success would just as happily
+ * wipe out an unrelated flag (e.g. a CTO policy question) that happened to
+ * still be pending.
+ */
+export const NEEDS_INPUT_REASONS = [
+  "review-failed",
+  "dev-error",
+  "watchdog-stuck",
+  "cto-escalation",
+] as const;
+export type NeedsInputReason = (typeof NEEDS_INPUT_REASONS)[number];
+
+/**
  * The frontmatter we recognise. Unknown keys are preserved in `extra` so we
  * never destroy fields a user (or another tool) added.
  */
@@ -40,6 +58,8 @@ export interface TaskFrontmatter {
   priority?: Priority | string;
   /** True when the agent is waiting on the human and the task stays `active`. */
   needs_input?: boolean;
+  /** Machine-readable reason `needs_input` was set (e.g. "review-failed"), for auto-clearing and UI display. Only meaningful while needs_input is true. */
+  needs_input_reason?: string;
   /** True when the task branch has drifted from main and needs a manual merge. */
   needs_merge?: boolean;
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
@@ -77,6 +97,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`, never a status. */
   needsInput: boolean;
+  /** Machine-readable reason `needsInput` was set — see {@link NeedsInputReason}. Only meaningful while needsInput is true. */
+  needsInputReason?: string;
   /** True when the task branch has drifted from main. Layered on `review`, never a status. */
   needsMerge: boolean;
   /** True when a no-op task opts out of the vacuous-handoff rejection. */
@@ -114,6 +136,12 @@ export interface Task {
   pmCliOverride?: string | null;
   /** Per-task PM model override, or null when using the agent's default. */
   pmModelOverride?: string | null;
+  /** Per-task reviewer agent name override, or null when using the default. */
+  reviewAgentOverride?: string | null;
+  /** Per-task reviewer CLI override, or null when using the agent's default. */
+  reviewCliOverride?: string | null;
+  /** Per-task reviewer model override, or null when using the agent's default. */
+  reviewModelOverride?: string | null;
 
   /** True when this task runs as a hotfix in the main checkout. */
   hotfix?: boolean;
@@ -167,27 +195,35 @@ export interface Agent {
  * a flat wall of text.
  */
 export type AgentOutputEntry =
-  /** A complete assistant text part (opencode `text` event). */
-  | { type: "text"; text: string }
-  /** A message sent by the human from the Agent tab follow-up input. */
-  | { type: "human"; text: string }
-  /** A finished tool call (opencode `tool_use` event). */
-  | {
-      type: "tool";
-      tool: string;
-      /** Rendered input (bash -> its command, objects -> pretty JSON). */
-      input?: string;
-      /** Rendered output, or the error message when the call failed. */
-      output?: string;
-      /** Tool state: "completed" | "error" (absent when unknown). */
-      state?: string;
-    }
-  /** A step boundary (opencode `step_start` / `step_finish`). */
-  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
-  /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
-  | { type: "sys"; d: string }
-  /** A legacy plain line, kept for compatibility and unknown CLI warnings. */
-  | { s: "out" | "err" | "sys"; d: string };
+  (
+    /** A complete assistant text part (opencode `text` event). */
+    | { type: "text"; text: string }
+    /** A message sent by the human from the Agent tab follow-up input. */
+    | { type: "human"; text: string }
+    /** A finished tool call (opencode `tool_use` event). */
+    | {
+        type: "tool";
+        tool: string;
+        /** Rendered input (bash -> its command, objects -> pretty JSON). */
+        input?: string;
+        /** Rendered output, or the error message when the call failed. */
+        output?: string;
+        /** Tool state: "completed" | "error" (absent when unknown). */
+        state?: string;
+      }
+    /** A step boundary (opencode `step_start` / `step_finish`). */
+    | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
+    /** A system/notice line (open code `error` / `file-update`, or "stopped"). */
+    | { type: "sys"; d: string }
+    /** A legacy plain line, kept for compatibility and unknown CLI warnings. */
+    | { s: "out" | "err" | "sys"; d: string }
+  ) & {
+    /**
+     * ISO timestamp of when the entry was created (0258). Populated by the
+     * server on every entry it creates; absent on persisted legacy transcripts.
+     */
+    at?: string;
+  };
 
 /**
  * Live run telemetry for one task's agent session (0080). Best-effort and
@@ -241,6 +277,14 @@ export interface AuthConfig {
   };
   /** Bootstrap admin email (set on first enable, cleared after bootstrap). */
   bootstrapAdmin?: string;
+  /**
+   * Static OTP override for local development: `verifyOtp` accepts this code
+   * for any allowlisted user instead of requiring the real emailed OTP.
+   * Sourced only from `REPOOS_AUTH_DEV_BACKDOOR_CODE` (never from a git-tracked
+   * repoos.toml) and only ever honored when `NODE_ENV !== "production"` — see
+   * `src/server/routes/auth.ts` `verifyOtp`.
+   */
+  devBackdoorCode?: string;
 }
 
 /** Resolved configuration (after defaults + repoos.toml merge). */
@@ -283,6 +327,14 @@ export interface RepoOSConfig {
   autoEngineeringMode?: boolean;
   /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */
   maxActiveTasks?: number;
+  /**
+   * Maximum number of agent CLI processes (each with its own build/test
+   * footprint) the runner will spawn at once, across all tasks and chats.
+   * Extra `start`/`send` calls queue and spawn as running agents finish.
+   * Unset means "auto" — computed from the host's CPU count at boot so the
+   * same repo behaves on a small machine and a big one without tuning.
+   */
+  maxConcurrentAgents?: number;
   /**
    * Per-agent state for built-in agents (Tech Debt Agent, …), keyed by agent
    * id: whether it's enabled, its run schedule, and when it last ran. Stored
@@ -427,6 +479,7 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  needsInputReason?: string;
   needsMerge: boolean;
   priority: Priority | string;
   area: string;
@@ -446,6 +499,22 @@ export interface BoardTask {
   git: TaskGitInfo;
   /** Always null in the board response — set on the client from SSE events. */
   preview: null;
+  /** Automatic check-failure retries used on this task's most recent handoff
+   *  (see handoff.ts's scheduleCheckFailureRetry, capped at 2). Lets the board
+   *  distinguish "engineer patching a post-handoff check failure" from
+   *  ordinary coding once a review-status task shows a running agent. */
+  checkRetryCount: number;
+  /** Automatic merge-conflict retries used on this task's most recent
+   *  close-out attempt (see handoff.ts's scheduleMergeConflictRetry, capped
+   *  at 2, #0271 follow-up). Same purpose as checkRetryCount, one step
+   *  earlier in the pipeline. */
+  mergeConflictRetryCount: number;
+  /** Automatic retries after the task-watchdog detected a dead session that
+   *  exited without a clean handoff (see handoff.ts's
+   *  scheduleHandoffSignalRetry, capped at 2, #0271 follow-up). The task
+   *  stays `active` throughout, unlike the other two which stay `review` —
+   *  lets the board distinguish this from ordinary active-status coding. */
+  handoffSignalRetryCount: number;
 }
 
 /** Board index — like RepoIndex but with BoardTask[] instead of Task[]. */

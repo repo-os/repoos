@@ -6,6 +6,28 @@ import { startServer } from "../server/server.js";
 import { PREVIEW_REQUEST_SIGNAL } from "../server/agents.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
+import { detectTailscaleIPv4 } from "../core/tailscale.js";
+
+/**
+ * Picks the bind host: an explicit `--host` always wins; otherwise, if
+ * Tailscale is running on this machine, default to 0.0.0.0 (all interfaces)
+ * so the server is reachable both from other Tailscale devices AND from
+ * localhost — binding to the Tailscale IP alone would leave nothing
+ * listening on 127.0.0.1, silently breaking anything on this same machine
+ * that assumes localhost reachability (Cloudflare Tunnel's local origin,
+ * RepoOS's own tunnel readiness check, etc.). Falls back to localhost-only
+ * when Tailscale isn't detected. `tailscaleIP` is surfaced separately (even
+ * though the actual bind is 0.0.0.0) so callers can show the address other
+ * tailnet devices should actually use.
+ */
+export function resolveServeHost(
+  explicitHost?: string,
+): { host: string; tailscaleDetected: boolean; tailscaleIP?: string } {
+  if (explicitHost) return { host: explicitHost, tailscaleDetected: false };
+  const tailscaleIP = detectTailscaleIPv4();
+  if (tailscaleIP) return { host: "0.0.0.0", tailscaleDetected: true, tailscaleIP };
+  return { host: "127.0.0.1", tailscaleDetected: false };
+}
 
 /**
  * True when this process is a managed agent (REPOOS_AGENT=1) attempting to
@@ -22,7 +44,7 @@ export function directServeBlockedByAgent(env: NodeJS.ProcessEnv = process.env):
   );
 }
 
-export async function cmdServe(args: string[]): Promise<void> {
+export async function cmdServe(args: string[], opts: { onShutdown?: () => void } = {}): Promise<void> {
   // Defense in depth (#0096): a managed agent process must never start its own
   // `repoos serve`. An agent that ignores the mission and runs `repoos serve`
   // directly is rejected here BEFORE binding, so it can never grab the main
@@ -43,13 +65,14 @@ export async function cmdServe(args: string[]): Promise<void> {
   }
 
   let port = 7171;
-  let host = "127.0.0.1";
+  let explicitHost: string | undefined;
   let quiet = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--port" || args[i] === "-p") port = Number(args[++i]);
-    else if (args[i] === "--host") host = args[++i];
+    else if (args[i] === "--host") explicitHost = args[++i];
     else if (args[i] === "--quiet" || args[i] === "-q") quiet = true;
   }
+  const { host, tailscaleDetected, tailscaleIP } = resolveServeHost(explicitHost);
 
   let handle;
   try {
@@ -93,6 +116,17 @@ export async function cmdServe(args: string[]): Promise<void> {
     c.dim("  api: ") +
       c.dim("/api/tasks  /api/tasks/:id  /api/counts  /api/index  /api/docs"),
   );
+  if (tailscaleDetected) {
+    console.log(
+      c.dim("  Tailscale detected — listening on all interfaces (") +
+        c.cyan("0.0.0.0") +
+        c.dim("), reachable from other Tailscale devices at ") +
+        c.cyan(`http://${tailscaleIP}:${handle.port}`) +
+        c.dim(". Use ") +
+        c.cyan("--host 127.0.0.1") +
+        c.dim(" to restrict to localhost only."),
+    );
+  }
   console.log(c.dim("  press ^C to stop\n"));
 
   // Live activity log in the terminal, mirroring the SSE stream.
@@ -123,6 +157,7 @@ export async function cmdServe(args: string[]): Promise<void> {
     shuttingDown = true;
     console.log(c.dim(`\n  shutting down after ${signal} (pid ${process.pid}, port ${handle.port})…`));
     await handle.close(`received ${signal}`);
+    opts.onShutdown?.();
     process.exit(0);
   };
   process.on("SIGINT", () => void shutdown("SIGINT"));

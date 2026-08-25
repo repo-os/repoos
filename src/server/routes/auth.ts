@@ -160,19 +160,21 @@ async function sendOtpEmail(
   toEmail: string,
   code: string,
 ): Promise<boolean> {
+  const repoName = basename(config.root);
   return sendResendEmail(
     config,
     toEmail,
-    "Your RepoOS Login Code",
+    `Your RepoOS Login Code — ${repoName} repo`,
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="margin-bottom: 16px;">RepoOS Login Code</h2>
-        <p>Your one-time login code is:</p>
+        <h2 style="margin-bottom: 16px;">RepoOS Login Code — ${repoName} repo</h2>
+        <p>Your one-time login code for <strong>${repoName}</strong> is:</p>
         <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0; text-align: center; color: #333;">
           ${code}
         </div>
         <p style="color: #666; font-size: 14px;">This code expires in 10 minutes and can only be used once.</p>
-        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you didn't request this code, you can safely ignore this email.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this code only works for <strong>${repoName}</strong> — check you're on the right one before entering it.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 8px;">If you didn't request this code, you can safely ignore this email.</p>
       </div>
     `,
   );
@@ -197,11 +199,12 @@ async function sendInviteEmail(
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
         <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${repoName} repo</h2>
-        <p>An admin has added <strong>${toEmail}</strong> to the allowlist. Sign in any time with a one-time email code${config.auth?.google ? " or Google" : ""}:</p>
+        <p>An admin has added <strong>${toEmail}</strong> to the allowlist for the <strong>${repoName}</strong> repo. Sign in any time with a one-time email code${config.auth?.google ? " or Google" : ""}:</p>
         <p style="margin: 24px 0; text-align: center;">
           <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Sign in to RepoOS</a>
         </p>
-        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you weren't expecting this, you can safely ignore this email.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this invite is only for <strong>${repoName}</strong> — check you're on the right one before signing in.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 8px;">If you weren't expecting this, you can safely ignore this email.</p>
       </div>
     `,
   );
@@ -473,16 +476,24 @@ export const verifyOtp: RouteHandler = async (ctx, req, res) => {
     return json(res, 401, { error: "Invalid or expired code" });
   }
 
-  const codeHash = hashOtp(code);
-  const challenge = store.findValidOtp(email, codeHash);
+  // Dev backdoor: a static code, set only via REPOOS_AUTH_DEV_BACKDOOR_CODE
+  // and only ever loaded outside production (see config.ts), lets the
+  // developer and agents log into a real managed preview without a mailbox.
+  const usedBackdoor =
+    !!config.auth.devBackdoorCode &&
+    process.env.NODE_ENV !== "production" &&
+    timingSafeEqualStr(code, config.auth.devBackdoorCode);
 
-  if (!challenge) {
-    // Check if any valid (non-matching) OTP exists to distinguish "wrong code" from "expired"
-    return json(res, 401, { error: "Invalid or expired code" });
+  if (!usedBackdoor) {
+    const codeHash = hashOtp(code);
+    const challenge = store.findValidOtp(email, codeHash);
+    if (!challenge) {
+      // Check if any valid (non-matching) OTP exists to distinguish "wrong code" from "expired"
+      return json(res, 401, { error: "Invalid or expired code" });
+    }
+    store.markOtpUsed(challenge.id);
   }
 
-  // Mark OTP as used
-  store.markOtpUsed(challenge.id);
   otpVerifyLimiter.reset(`otp_verify:${email}`);
   otpRequestLimiter.reset(`otp_req:${email}`);
 

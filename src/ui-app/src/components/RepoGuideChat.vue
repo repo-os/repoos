@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
@@ -92,7 +93,7 @@ async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
   submitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
@@ -123,6 +124,19 @@ function onKeydown(event: KeyboardEvent): void {
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
     insertTextAtCursor(draftTextarea.value, text);
+  }
+}
+
+/**
+ * Interrupt Ross's in-flight response. The server stops the running agent turn
+ * and appends a "response interrupted" marker to the conversation.
+ * Best-effort — a 404 when nothing is running is harmless.
+ */
+async function interrupt(): Promise<void> {
+  try {
+    await api("/api/chat/interrupt", { method: "POST" });
+  } catch (error) {
+    repo.onError(error);
   }
 }
 
@@ -168,6 +182,7 @@ onMounted(() => void hydrate());
           <div class="guide-bubble" :class="`guide-bubble-${lineKind(entry)}`">
             <div v-if="lineKind(entry) === 'assistant'" class="guide-markdown" v-html="renderMarkdown(lineText(entry))"></div>
             <span v-else>{{ lineText(entry) }}</span>
+            <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
           </div>
         </div>
       </template>
@@ -187,7 +202,17 @@ onMounted(() => void hydrate());
         @keydown="onKeydown"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
-      <button type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
+      <button
+        v-if="busy"
+        type="button"
+        class="guide-stop"
+        aria-label="Stop response"
+        title="Stop response"
+        @click="interrupt"
+      >
+        <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+      </button>
+      <button v-else type="submit" :disabled="!draft.trim() || busy || !enabled" aria-label="Send message">
         <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
       </button>
     </form>
@@ -224,6 +249,7 @@ onMounted(() => void hydrate());
 .guide-bubble{max-width:84%;padding:9px 11px;border-radius:13px;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
 .guide-bubble-human{color:var(--btn-primary-color);background:var(--btn-primary-bg);border:1px solid var(--border-bright);border-bottom-right-radius:4px}
 .guide-bubble-assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-time{display:block;margin-top:3px;text-align:right;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace;opacity:.8}
 .guide-row-status{justify-content:center}
 .guide-bubble-status{padding:4px 8px;background:transparent;color:var(--txt-faint);font:500 9.5px 'JetBrains Mono',monospace;text-align:center}
 .guide-markdown :deep(p){margin:0 0 7px}
@@ -243,6 +269,7 @@ onMounted(() => void hydrate());
 .guide-compose button{width:31px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer}
 .guide-compose button:disabled{opacity:.4;cursor:default}
 .guide-compose button svg{width:18px;height:18px}
+.guide-compose button.guide-stop{background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg));color:var(--red,#ef5b5b)}
 .guide-footnote{padding:7px 14px 10px;text-align:center;color:var(--txt-faint);font:500 8.5px 'JetBrains Mono',monospace}
 @keyframes guide-open{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes guide-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}

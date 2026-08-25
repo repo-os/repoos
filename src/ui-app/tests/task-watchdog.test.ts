@@ -20,6 +20,7 @@ import { LiveIndex } from "../../server/live-index";
 import {
   TaskWatchdog,
   isStuckActiveTask,
+  isStuckReviewTask,
   hasRecentWorktreeActivity,
   suggestNextStep,
   classifyDeadAgentReason,
@@ -28,6 +29,7 @@ import {
 import { parseTask } from "../../core/task";
 import { createRepoOS } from "../../core/repoos";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
+import type { ReviewReport } from "../../server/review";
 import { waitFor } from "./helpers";
 
 /** Fake `opencode`: records its argv, prints a line, exits (clean or not). */
@@ -94,6 +96,51 @@ Working.
 - ${transition} · status inbox→active
 - ${fresh} · some real work happened
 `;
+}
+
+/** A `review` task whose only Activity entry is the transition INTO review. */
+function reviewTaskMd(transitionAgeMs: number): string {
+  const ts = new Date(Date.now() - transitionAgeMs).toISOString();
+  return `---
+id: "0001"
+title: "Review-stuck task"
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Needs review.
+
+## Activity
+
+- ${ts} · status active→review
+`;
+}
+
+/** Minimal fake `ReviewManager` surface the watchdog depends on (#0286). */
+function makeFakeReviews(opts: { report?: ReviewReport | null; isRunning?: boolean } = {}) {
+  const runs: { task: Task; at: number }[] = [];
+  return {
+    reviews: {
+      isRunning: () => opts.isRunning ?? false,
+      read: () => opts.report ?? null,
+      run: async (task: Task) => {
+        runs.push({ task, at: Date.now() });
+        return { ok: true };
+      },
+    },
+    runs,
+  };
+}
+
+/** Fixture whose task file is a `review` task (overwrites makeFx's active one). */
+function makeReviewFx(transitionAgeMs: number): Fx {
+  const fx = makeFx(transitionAgeMs);
+  writeFileSync(fx.taskPath, reviewTaskMd(transitionAgeMs));
+  return fx;
 }
 
 interface GitFxOptions {
@@ -213,6 +260,31 @@ describe("stuck detection", () => {
       "\n- 2020-01-01T00:00:00Z · created\n",
     );
     expect(isStuckActiveTask(body, 5 * 60_000, now)).toBe(false);
+  });
+
+  it("flags a review task with no activity past its transition for the threshold (#0286)", () => {
+    const now = Date.now();
+    expect(isStuckReviewTask(reviewTaskMd(600_000), 5 * 60_000, now)).toBe(true);
+    // Sub-threshold staleness is not yet "stuck".
+    expect(isStuckReviewTask(reviewTaskMd(10_000), 60_000, now)).toBe(false);
+  });
+
+  it("does not flag a review task with no status→review transition in its Activity log", () => {
+    const now = Date.now();
+    // An activity entry that is NOT a status→review transition must not count.
+    const body = reviewTaskMd(600_000).replace(
+      /\n- .*?status active→review\n?/,
+      "\n- 2020-01-01T00:00:00Z · created\n",
+    );
+    expect(isStuckReviewTask(body, 5 * 60_000, now)).toBe(false);
+  });
+
+  it("does not flag a review task with recent activity after its transition", () => {
+    const now = Date.now();
+    const transition = new Date(Date.now() - 600_000).toISOString();
+    const fresh = new Date(Date.now() - 30_000).toISOString();
+    const body = `---\nid: "0001"\nstatus: review\n---\n## Activity\n\n- ${transition} · status active→review\n- ${fresh} · some real review work happened\n`;
+    expect(isStuckReviewTask(body, 5 * 60_000, now)).toBe(false);
   });
 });
 
@@ -368,6 +440,58 @@ describe("TaskWatchdog", () => {
     fx.clean();
   });
 
+  it(
+    "re-surfaces a task that gets stuck a SECOND time, after an earlier surface + restart (#0271 follow-up, confirmed bug: task #0243)",
+    async () => {
+      const fx = makeFx(10_000);
+      // Simulate a task that was already surfaced once, then restarted to
+      // active again (by a human, or a fresh run) — and is now stuck a
+      // second time. The OLD marker from the first, already-resolved session
+      // must not permanently block the watchdog from ever catching this task
+      // again; before the #0271 fix it did, silently, forever (#0243 sat
+      // `active` for 4+ days this way).
+      const firstTransition = new Date(Date.now() - 3_600_000).toISOString(); // 1h ago
+      const surfaced = new Date(Date.now() - 3_500_000).toISOString();
+      const secondTransition = new Date(Date.now() - 10_000).toISOString(); // 10s ago, past the 1s threshold
+      const body = `---
+id: "0001"
+title: "Restarted after a prior surface"
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Stuck twice.
+
+## Activity
+
+- ${firstTransition} · status inbox→active
+- ${surfaced} · watchdog: auto-surfaced stuck task · status active→ready · agent never started · next step: resume manually
+- ${secondTransition} · status ready→active
+`;
+      writeFileSync(fx.taskPath, body);
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+      await watchdog.checkNow();
+
+      const after = readFileSync(fx.taskPath, "utf8");
+      const task = parseTaskAt(fx);
+      expect(task.status).toBe("ready"); // surfaced AGAIN, not silently left active
+      // Exactly one NEW surface marker after the second transition — the old
+      // one from the first session is still there too (append-only log), so
+      // this must count occurrences, not just presence.
+      const surfaceCount = (after.match(/watchdog: auto-surfaced stuck task/g) ?? []).length;
+      expect(surfaceCount).toBe(2);
+      fx.clean();
+    },
+  );
+
   it("surfaces a task whose agent was killed mid-turn → ready, showing why (acceptance 1)", async () => {
     const fx = makeFx(10_000);
     oldPath = process.env.PATH ?? "";
@@ -407,37 +531,91 @@ describe("TaskWatchdog", () => {
     }
   });
 
-  it("moves a stuck task with committed worktree work to review (never silently dropped)", async () => {
-    const fx = makeGitFx(10_000, { committedWork: true });
-    oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    process.env.REPOOS_WATCHDOG_LOG = fx.log;
-    try {
-      const index = new LiveIndex(fx.config);
-      index.refreshAll();
-      runner = new AgentRunner(fx.config, () => {});
-      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+  it(
+    "on exited-without-handoff, auto-resumes the SAME session instead of immediately surfacing (#0271 follow-up)",
+    async () => {
+      const fx = makeGitFx(10_000, { committedWork: true });
+      oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_WATCHDOG_LOG = fx.log;
+      try {
+        const index = new LiveIndex(fx.config);
+        index.refreshAll();
+        runner = new AgentRunner(fx.config, () => {});
+        const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
 
-      // A session ran, did the work (committed in the worktree) and exited
-      // without emitting the handoff signal — the #0172 shape.
-      const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
-      expect(start.ok).toBe(true);
-      await waitFor(() => !runner!.isRunning("0001"), "turn exits without handoff");
-      await new Promise((r) => setTimeout(r, 1200));
+        // A session ran, did the work (committed in the worktree) and exited
+        // without emitting the handoff signal — the #0172 shape.
+        const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
+        expect(start.ok).toBe(true);
+        await waitFor(() => !runner!.isRunning("0001"), "turn exits without handoff");
+        await new Promise((r) => setTimeout(r, 1200));
 
-      await watchdog.checkNow();
+        await watchdog.checkNow();
 
-      const body = readFileSync(fx.taskPath, "utf8");
-      const task = parseTaskAt(fx);
-      expect(task.status).toBe("review");
-      expect(task.needsInput).toBe(false);
-      expect(body).toContain("watchdog: auto-surfaced stuck task");
-      expect(body).toContain("status active→review");
-      expect(body).toContain("exited without emitting the handoff signal");
-    } finally {
-      fx.clean();
-    }
-  });
+        // NOT surfaced yet — a retry was scheduled instead (task #0268 sat
+        // surfaced-but-unresumed until a human noticed; this is what replaces
+        // that).
+        expect(parseTaskAt(fx).status).toBe("active");
+        expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog: auto-surfaced");
+        expect(spawns(fx)).toHaveLength(1); // retry hasn't fired yet (3s delay)
+
+        // The scheduled retry fires ~3s later and resumes the SAME session —
+        // a second spawn, and the retry count is persisted to the file.
+        await waitFor(() => spawns(fx).length === 2, "automatic retry spawns a resumed session", 6000);
+        expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 1");
+        expect(parseTaskAt(fx).status).toBe("active");
+      } finally {
+        fx.clean();
+      }
+    },
+    15_000,
+  );
+
+  it(
+    "surfaces to review only after both automatic retries are exhausted (#0271 follow-up)",
+    async () => {
+      const fx = makeGitFx(10_000, { committedWork: true });
+      oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_WATCHDOG_LOG = fx.log;
+      try {
+        const index = new LiveIndex(fx.config);
+        index.refreshAll();
+        runner = new AgentRunner(fx.config, () => {});
+        const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+        // Original turn: exits without handoff.
+        expect(runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root }).ok).toBe(true);
+        await waitFor(() => !runner!.isRunning("0001"), "turn 1 exits without handoff");
+        await new Promise((r) => setTimeout(r, 1200));
+        await watchdog.checkNow(); // schedules retry 1
+
+        await waitFor(() => spawns(fx).length === 2, "retry 1 spawns", 6000);
+        await waitFor(() => !runner!.isRunning("0001"), "turn 2 (retry 1) exits without handoff — same fake binary, same behavior");
+        await new Promise((r) => setTimeout(r, 1200));
+        await watchdog.checkNow(); // schedules retry 2 (cap: 2)
+
+        await waitFor(() => spawns(fx).length === 3, "retry 2 spawns", 6000);
+        expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 2");
+        await waitFor(() => !runner!.isRunning("0001"), "turn 3 (retry 2) exits without handoff");
+        await new Promise((r) => setTimeout(r, 1200));
+        await watchdog.checkNow(); // cap reached — falls through to normal surfacing
+
+        const body = readFileSync(fx.taskPath, "utf8");
+        const task = parseTaskAt(fx);
+        expect(task.status).toBe("review");
+        expect(task.needsInput).toBe(false);
+        expect(body).toContain("watchdog: auto-surfaced stuck task");
+        expect(body).toContain("status active→review");
+        expect(body).toContain("exited without emitting the handoff signal");
+        expect(spawns(fx)).toHaveLength(3); // the original turn + exactly 2 retries, never a 3rd
+      } finally {
+        fx.clean();
+      }
+    },
+    30_000,
+  );
 
   it("never touches a task whose agent is legitimately paused", async () => {
     const fx = makeFx(10_000);
@@ -597,5 +775,135 @@ describe("TaskWatchdog", () => {
     } finally {
       fx.clean();
     }
+  });
+
+  it("auto-retries a dead reviewer once, leaving a trail, and stays in review (#0286)", async () => {
+    const fx = makeReviewFx(10_000); // sat in review 10s past the 1s threshold
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews(); // no report, nothing running
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    // A fresh reviewer run was kicked off (the watchdog's recovery action) —
+    // the same "Review again" the human would click — and an Activity trail was
+    // left so the retry is visible and bounded.
+    expect(runs).toHaveLength(1);
+    expect(runs[0].task.id).toBe("0001");
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).toContain("watchdog: auto-retried dead reviewer session");
+    // Engineer state is untouched: the task stays in `review`.
+    expect(parseTaskAt(fx).status).toBe("review");
+    fx.clean();
+  });
+
+  it("does not touch a review task whose reviewer is legitimately running (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews({ isRunning: true });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
+  it("does not touch a review task that already has a report for THIS round (its review completed) (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    // A report written AFTER the current →review transition means this round's
+    // review completed — not stuck, even a failed one already surfaces itself.
+    const completedAt = new Date(Date.now() - 5_000).toISOString(); // post-transition (10s ago)
+    const { reviews, runs } = makeFakeReviews({
+      report: { id: "0001", at: completedAt, state: "ok", markdown: "# Verdict" } as ReviewReport,
+    });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
+  it("recovers a dead reviewer even when a STALE report from a PRIOR round exists (#0286 round 2)", async () => {
+    // The report file is never cleared between review rounds (#0110 resets only
+    // the conversation, not the report). So a task that re-entered `review`
+    // after an earlier completed round will still read back that old report —
+    // it must NOT be taken as evidence this round's review completed, or the
+    // watchdog could never recover a second dead reviewer for the same task.
+    const fx = makeReviewFx(10_000);
+    // The stale report's `at` precedes the current →review transition.
+    const staleAt = new Date(Date.now() - 3_600_000).toISOString();
+    const { reviews, runs } = makeFakeReviews({
+      report: { id: "0001", at: staleAt, state: "ok", markdown: "# Old verdict" } as ReviewReport,
+    });
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    // A stale report is ignored — the current dead reviewer is retried once.
+    expect(runs).toHaveLength(1);
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: auto-retried dead reviewer session");
+    fx.clean();
+  });
+
+  it("escalates to needsInput after the single auto-retry is exhausted with no recovery (#0286)", async () => {
+    // The review episode already shows one watchdog auto-retry (from an earlier
+    // scan) and the reviewer is still dead — no report. A second stuck episode
+    // must not retry forever: escalate to the human, tracked in the log.
+    const fx = makeReviewFx(10_000);
+    const retried = new Date(Date.now() - 60_000).toISOString();
+    writeFileSync(
+      fx.taskPath,
+      reviewTaskMd(10_000).replace(
+        /\n- .*?status active→review\n?/,
+        `\n- ${retried} · status active→review\n- ${retried} · watchdog: auto-retried dead reviewer session · starting a fresh review\n`,
+      ),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews, runs } = makeFakeReviews(); // still no report
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, { reviews });
+
+    await watchdog.checkNow();
+
+    expect(runs).toHaveLength(0); // no further retry — bounded at one
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("review");
+    expect(task.needsInput).toBe(true);
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: escalated to needs_input");
+
+    // A second scan stays silent — the escalation is stable, not a transition loop.
+    await watchdog.checkNow();
+    expect(runs).toHaveLength(0);
+    expect(parseTaskAt(fx).needsInput).toBe(true);
+    fx.clean();
+  });
+
+  it("leaves a review task alone when no review manager is wired (#0286)", async () => {
+    const fx = makeReviewFx(10_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000); // no `reviews`
+
+    await watchdog.checkNow();
+
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    expect(parseTaskAt(fx).status).toBe("review");
+    fx.clean();
   });
 });

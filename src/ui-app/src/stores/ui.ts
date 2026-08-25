@@ -42,6 +42,58 @@ export const useUiStore = defineStore("ui", () => {
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
 
+  const GLIDE_PERSIST_KEY = "repoos.board.glide";
+  /** Off by default; when on, cards glide between columns on a status change
+   *  (FLIP animation). A purely client-local UI preference, so toggling it
+   *  takes effect immediately with no page reload. */
+  const glideAnimations = ref<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem(GLIDE_PERSIST_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function setGlideAnimations(value: boolean): void {
+    glideAnimations.value = value;
+    try {
+      localStorage.setItem(GLIDE_PERSIST_KEY, value ? "1" : "0");
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  const INTEGRATION_BAR_PERSIST_KEY = "repoos.integrationBar.collapsed";
+  /** True when the bottom integration bar is folded to a thin strip
+   *  (persisted across reloads). Shared state — the task drawer expands it
+   *  when a task moves to done, so both must read/write the same ref. */
+  const integrationBarCollapsed = ref<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem(INTEGRATION_BAR_PERSIST_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function setIntegrationBarCollapsed(value: boolean): void {
+    integrationBarCollapsed.value = value;
+    try {
+      localStorage.setItem(INTEGRATION_BAR_PERSIST_KEY, value ? "1" : "0");
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  /** Move to done (or any other close-out kickoff): expand the integration
+   *  bar to full size so its live pipeline progress is immediately visible. */
+  function expandIntegrationBar(): void {
+    setIntegrationBarCollapsed(false);
+  }
+
   const nt = reactive<NewTaskForm>({
     title: "",
     type: "feature",
@@ -117,12 +169,22 @@ export const useUiStore = defineStore("ui", () => {
     activeTab.value = defaultTabFor(t);
   }
 
-  /** Open a task drawer, refreshing the task from the API first (fallback to local). */
+  /**
+   * Open a task drawer immediately with the already-loaded task (the board's
+   * own list), then refresh from the API in the background — the drawer's
+   * visibility must never wait on a network round trip, since a burst of
+   * other requests in flight (e.g. every card's diff-stats fetch on a board
+   * reload) can queue behind it.
+   */
   async function openTask(t: Task): Promise<void> {
+    open(t);
     try {
-      open(await api<Task>(`/api/tasks/${t.id}`));
+      const fresh = await api<Task>(`/api/tasks/${t.id}`);
+      // The user may have closed the drawer or opened a different task while
+      // this was in flight — only apply the refresh if it's still relevant.
+      if (active.value?.id === t.id) active.value = fresh;
     } catch {
-      open(t);
+      /* keep the locally-known task — refresh is best-effort */
     }
   }
 
@@ -180,5 +242,10 @@ export const useUiStore = defineStore("ui", () => {
     openTunnel,
     closeTunnel,
     startResize,
+    integrationBarCollapsed,
+    setIntegrationBarCollapsed,
+    expandIntegrationBar,
+    glideAnimations,
+    setGlideAnimations,
   };
 });

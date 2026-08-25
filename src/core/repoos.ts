@@ -16,6 +16,7 @@ import { buildIndex, writeIndexCache } from "./indexer.js";
 import { parseTask, serializeTask, recordChange, utcTimestamp, appendActivityEntry } from "./task.js";
 import {
   commitNewFile as gitCommitNewFile,
+  commitTaskFile,
   emptyGitInfo,
   type CommitNewFileResult,
 } from "./git.js";
@@ -134,6 +135,16 @@ export function createRepoOS(root?: string): RepoOS {
     } catch {
       /* cache is best-effort */
     }
+    // Commit the task file in the main checkout, same as patchTaskFile (#0263):
+    // an uncommitted status/metadata write is indistinguishable from a stray
+    // dirty file, which is exactly what the board's self-heal divergence check
+    // (fileCommittedClean) refuses to trust. Fail-soft — commitTaskFile never
+    // throws, so a git failure here never blocks the write itself.
+    commitTaskFile(
+      config.root,
+      task.absPath,
+      `docs(${task.id}): ${entry ?? "update task"}`,
+    );
     return task;
   }
 
@@ -236,6 +247,9 @@ export function createRepoOS(root?: string): RepoOS {
         pmAgentOverride: null,
         pmCliOverride: null,
         pmModelOverride: null,
+        reviewAgentOverride: null,
+        reviewCliOverride: null,
+        reviewModelOverride: null,
         git: emptyGitInfo(),
       };
 

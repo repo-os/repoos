@@ -46,6 +46,7 @@ import http from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBuildStamp } from "../core/build.js";
+import { isPortListening } from "./serve-reaper.js";
 
 /** The answer POST /api/server/restart and the reload triggers report. */
 export type ReloadState =
@@ -105,6 +106,8 @@ export interface ReloadManagerOptions {
    * died right after the old process exited, leaving the port listenerless.
    */
   confirmMs?: number;
+  /** How long the old process re-binds its listener before giving up, in ms. */
+  rebindTimeoutMs?: number;
   log?: (msg: string) => void;
 }
 
@@ -145,6 +148,17 @@ const DEFAULT_CONFIRM_MS = 750;
 const RELOAD_POLL_MS = 150;
 const REBIND_TIMEOUT_MS = 5000;
 const WATCH_DEBOUNCE_MS = 60;
+/**
+ * Backoff after a failed handoff (#0271 incident): a replacement that fails
+ * to become ready gets retried on the very next poll tick with no cooldown.
+ * If builds keep landing (several close-outs in quick succession) that
+ * becomes an unbounded retry loop — a full server boot, every ~5s, forever —
+ * which is what actually took the control plane down (29 failed attempts
+ * back to back). Doubles per consecutive failure, capped, and resets on the
+ * next successful handoff.
+ */
+const BACKOFF_BASE_MS = 10_000;
+const BACKOFF_MAX_MS = 5 * 60_000;
 
 /** GET a URL and JSON.parse it; resolves null on any failure (never throws). */
 function probeJson(url: string): Promise<Record<string, unknown> | null> {
@@ -185,6 +199,10 @@ export class ReloadManager {
   private childExited = false;
   /** Whether we released our own HTTP listener for the replacement to bind. */
   private drained = false;
+  /** Consecutive failed handoffs. Reset on the next successful one. */
+  private consecutiveFailures = 0;
+  /** Automatic (non-manual) reloads are refused until this time, post-failure. */
+  private backoffUntil = 0;
   /**
    * Hash of a build parked by a close-out (0143). Never auto-reloaded — it
    * waits for the user to trigger POST /api/server/restart.
@@ -261,12 +279,24 @@ export class ReloadManager {
    * Public trigger used by the watcher, the boot self-heal, and
    * POST /api/server/restart. Fires the reload when stale and idle; defers
    * while an agent turn runs; reports not-stale when nothing is out of date.
+   *
+   * `manual` (POST /api/server/restart, a human explicitly asking) bypasses
+   * the post-failure backoff below — automatic triggers (the poll, boot
+   * self-heal) respect it so a run of failed handoffs doesn't retry every
+   * ~5s forever (#0271 incident).
    */
-  requestReload(reason: string): ReloadState {
+  requestReload(reason: string, opts: { manual?: boolean } = {}): ReloadState {
     if (!this.enabled) return { state: "not-stale", reason: "auto-reload disabled" };
     if (this.stopped) return { state: "not-stale", reason: "server is shutting down" };
     if (this.reloading) return { state: "reloading", reason };
     const running = this.options.isBusy();
+    if (!opts.manual && Date.now() < this.backoffUntil) {
+      return {
+        state: "deferred",
+        running,
+        reason: `backing off after ${this.consecutiveFailures} failed reload attempt(s) — retrying automatically at ${new Date(this.backoffUntil).toISOString()}, or POST /api/server/restart to retry now`,
+      };
+    }
     // Close-out deferral (0143): the close-out pipeline merges the branch and
     // runs build/screenshots/check, all of which would be killed if the server
     // reloaded itself mid-flight. Park the new build and surface it to the UI —
@@ -442,9 +472,12 @@ export class ReloadManager {
         this.parkBuild(current);
       }
       this.log(
-        `reload: handover aborted — close-out in progress${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
+        `reload: handover aborted — close-out in progress${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}`,
       );
     } else if (confirmed && !this.childExited) {
+      // A real handoff: whatever run of failures preceded it is over.
+      this.consecutiveFailures = 0;
+      this.backoffUntil = 0;
       this.stopped = true;
       child.unref?.();
       this.log(
@@ -464,10 +497,24 @@ export class ReloadManager {
       await this.killChild();
       const rebound = await this.tryRebind();
       this.reloading = false;
-      this.log(
-        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
+      // Backoff (#0271 incident): a genuine failure to become ready — not a
+      // close-out abort, that's handled in the branch above — arms a cooldown
+      // so the next AUTOMATIC trigger (poll tick, boot self-heal) doesn't
+      // retry in ~5s. Doubles per consecutive failure, capped at
+      // BACKOFF_MAX_MS; a manual POST /api/server/restart still bypasses it.
+      this.consecutiveFailures++;
+      const backoffMs = Math.min(
+        BACKOFF_BASE_MS * 2 ** (this.consecutiveFailures - 1),
+        BACKOFF_MAX_MS,
       );
-      this.options.onReloadFailed?.(rebound ? "replacement did not become ready" : "replacement failed and re-bind failed");
+      this.backoffUntil = Date.now() + backoffMs;
+      this.log(
+        `reload: replacement failed to become ready${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}` +
+          ` — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
+      );
+      this.options.onReloadFailed?.(
+        rebound === "bound" ? "replacement did not become ready" : `replacement failed and ${rebound}`,
+      );
     }
     this.child = null;
   }
@@ -549,19 +596,36 @@ export class ReloadManager {
     }
   }
 
-  /** Re-bind the listener after an aborted reload so the old process keeps serving. */
-  private async tryRebind(): Promise<boolean> {
-    if (!this.drained) return true; // we never released the listener
-    const deadline = Date.now() + REBIND_TIMEOUT_MS;
+  /**
+   * Re-bind the listener after an aborted reload so the old process keeps
+   * serving. Returns `"bound"` when the listener is back, or a reason string
+   * describing why it could not be recovered.
+   *
+   * #0284: a bind attempt by an unrelated `repoos serve` landing in our drain
+   * window can steal the port out from under us — we released the listener in
+   * waitForReplacement, it grabbed it, and now we can never re-bind (each
+   * attempt EADDRINUSEs). Distinguishing that from a transient failure lets
+   * the old process surface a loud, actionable error instead of silently
+   * looping as a listenerless zombie. We probe the port once the retry window
+   * closes: if *something else* is listening there now, the port was stolen
+   * rather than merely not-yet-freed.
+   */
+  private async tryRebind(): Promise<"bound" | string> {
+    if (!this.drained) return "bound"; // we never released the listener
+    const deadline = Date.now() + (this.options.rebindTimeoutMs ?? REBIND_TIMEOUT_MS);
     while (Date.now() < deadline) {
       try {
         await this.options.listen();
-        return true;
+        return "bound";
       } catch {
         await sleep(200);
       }
     }
-    return false;
+    const probeHost = this.options.host === "0.0.0.0" ? "127.0.0.1" : this.options.host;
+    const stolen = await isPortListening(this.options.port, probeHost);
+    return stolen
+      ? `port ${this.options.port} was stolen by another process during the reload drain`
+      : `could not re-bind port ${this.options.port} within ${this.options.rebindTimeoutMs ?? REBIND_TIMEOUT_MS}ms`;
   }
 
   private armRetry(): void {

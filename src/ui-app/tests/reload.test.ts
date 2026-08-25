@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createServer as createTcpServer } from "node:net";
+import { createServer as createHttpServer } from "node:http";
 import {
   mkdtempSync,
   mkdirSync,
@@ -122,6 +123,17 @@ descendant.unref();
 setInterval(() => {}, 1000);
 `;
 
+/** Stays alive without binding the control port (used to model a replacement
+ *  that survives long enough for the old process to drain, while a foreign
+ *  process already holds the port). */
+const FAKEBIN_IDLE = `#!/usr/bin/env node
+const fs = require("node:fs");
+fs.appendFileSync(process.env.REPOOS_RELOAD_FAKE_LOG, JSON.stringify({
+  pid: process.pid, idle: true,
+}) + "\\n");
+setInterval(() => {}, 1000);
+`;
+
 interface SpawnRecord {
   pid?: number;
   args?: string[];
@@ -139,6 +151,7 @@ interface Fixture {
   flashCli: string;
   descendantCli: string;
   neverConfirmCli: string;
+  idleCli: string;
   log: string;
   port: number;
   clean: () => void;
@@ -176,6 +189,7 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-never-confirm"), FAKEBIN_NEVER_CONFIRM, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-idle"), FAKEBIN_IDLE, { mode: 0o755 });
   const port = await reservePort();
   return {
     repo,
@@ -185,6 +199,7 @@ async function makeFixture(): Promise<Fixture> {
     flashCli: join(bin, "repoos-flash"),
     descendantCli: join(bin, "repoos-descendant"),
     neverConfirmCli: join(bin, "repoos-never-confirm"),
+    idleCli: join(bin, "repoos-idle"),
     log: join(root, "spawns.log"),
     port,
     clean: () => rmSync(root, { recursive: true, force: true }),
@@ -244,6 +259,7 @@ interface Calls {
   failed: number;
   drained: number;
   reListen: number;
+  failedReason?: string;
 }
 
 function makeManager(
@@ -269,8 +285,9 @@ function makeManager(
     onReloadConfirmed: async () => {
       calls.confirmed++;
     },
-    onReloadFailed: () => {
+    onReloadFailed: (reason) => {
       calls.failed++;
+      calls.failedReason = reason;
     },
     pollMs: 50,
     retryMs: 50,
@@ -419,6 +436,39 @@ describe("ReloadManager", () => {
       expect(calls.reListen).toBeGreaterThan(0); // listener re-bound: old process keeps serving
       const [spawn] = spawns(fx);
       expect(spawn.dead).toBe(true);
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("#0271: backs off automatic retries after a failed handoff, but a manual restart bypasses it", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.deadCli,
+      handshakeTimeoutMs: 1000,
+    });
+    try {
+      manager.start();
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      expect(manager.requestReload("test").state).toBe("reloading");
+      await waitFor(() => calls.failed > 0, "first reload failure reported");
+      expect(spawns(fx).length).toBe(1);
+
+      // Automatic trigger (no `manual`), same as the poll/self-heal path:
+      // still stale, but the just-armed backoff defers it — no second spawn.
+      const deferred = manager.requestReload("build changed (poll)");
+      expect(deferred.state).toBe("deferred");
+      expect(deferred.reason).toMatch(/backing off/);
+      await sleep(150);
+      expect(spawns(fx).length).toBe(1);
+
+      // A human explicitly retrying (POST /api/server/restart) bypasses it.
+      const manual = manager.requestReload("manual restart", { manual: true });
+      expect(manual.state).toBe("reloading");
+      await waitFor(() => calls.failed > 1, "second reload failure reported");
+      expect(spawns(fx).length).toBe(2);
     } finally {
       manager.stop();
       fx.clean();
@@ -598,6 +648,63 @@ describe("ReloadManager", () => {
     }
   });
 
+  it("#0284: reports a loud \"port stolen\" reason when a foreign process grabs the port during the drain", async () => {
+    if (process.platform === "win32") return;
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    // A foreign HTTP listener holds the port from before the reload (an HTTP
+    // server so the handshake probe's GET completes cleanly rather than hanging
+    // on a bare TCP accept). Once the old process drains (releases its
+    // listener), this foreign process is what `isPortListening` finds — the
+    // reload must say the port was STOLEN, not merely "could not re-bind".
+    const foreign = createHttpServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    await new Promise<void>((resolve, reject) => {
+      foreign.once("error", reject);
+      foreign.listen(fx.port, "127.0.0.1", () => resolve());
+    });
+    // listen() must fail for the whole re-bind window (the foreign server holds
+    // the port), which is exactly what a stolen port does to a real process:
+    // every re-bind attempt EADDRINUSEs. We model that with a rejecting bind.
+    const listen = async (): Promise<void> => {
+      await new Promise<void>((resolve, reject) => {
+        const srv = createTcpServer();
+        srv.once("error", (e) => {
+          srv.close();
+          reject(e);
+        });
+        srv.listen({ port: fx.port, host: "127.0.0.1" }, () => {
+          srv.close();
+          resolve();
+        });
+      });
+    };
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.idleCli, // stays alive, never confirms → drain then failure branch
+      listen,
+      rebindTimeoutMs: 300,
+      graceMs: 20,
+      handshakeTimeoutMs: 1000,
+    });
+    try {
+      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      manager.requestReload("test drain-window steal");
+
+      await waitFor(() => calls.failed > 0, "reload failure reported");
+      expect(calls.failedReason).toMatch(/stolen by another process/);
+    } finally {
+      manager.stop();
+      await killReplacement(fx);
+      await new Promise<void>((resolve) => {
+        foreign.closeAllConnections?.();
+        foreign.close(() => resolve());
+      });
+      fx.clean();
+    }
+  });
+
   it("terminates the full failed-replacement process group", async () => {
     if (process.platform === "win32") return;
     const fx = await makeFixture();
@@ -606,8 +713,7 @@ describe("ReloadManager", () => {
       cliEntry: () => fx.descendantCli,
       graceMs: 20,
       handshakeTimeoutMs: 500,
-    });
-    try {
+    });    try {
       writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
       manager.requestReload("test descendant cleanup");
       await waitFor(() => calls.failed > 0, "descendant replacement failure");
@@ -742,6 +848,376 @@ branch: feat/adopt-test
     }
   });
 });
+
+describe("Review reload durability (0288)", () => {
+  it("finalizes a dead review entry on adoption (process finished during handoff)", async () => {
+    const { AgentRunner } = await import("../../server/agents");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-adopt-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0001-review.md"), `---
+id: "0001"
+title: Review adopt
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review-adopt
+---
+## Test
+`);
+
+      // A registry entry for a REVIEW whose PID is long dead (its process
+      // finished during the reload handoff before the new server could adopt).
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "run" },
+          ],
+        }),
+      );
+      // Its durable stdout log still holds the report.
+      writeFileSync(
+        join(fullCacheDir, "agent-logs", "review:0001.out.log"),
+        "## Verdict\n`good to go` — durability works.\n",
+      );
+
+      let doneKey: string | null = null;
+      let doneKind: string | undefined;
+      const runner = new AgentRunner(configForRoot(root, cacheDir) as any, () => {}, {
+        onReviewDone: (sessionKey, _exited, reviewKind) => {
+          doneKey = sessionKey;
+          doneKind = reviewKind;
+        },
+      });
+      runner.adoptRunningAgents();
+
+      // The completion hook is deferred so the server has built its
+      // ReviewManager before it fires; wait for it here.
+      const deadline = Date.now() + 5000;
+      while (!doneKey && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      expect(doneKey).toBe("review:0001");
+      const session = runner.output("review:0001");
+      // The report text was replayed into the durable session.
+      expect(session?.lines.some((l: any) => l.d?.includes("good to go"))).toBe(true);
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("threads the adopted review's kind (run/chat) through completion (0288 Bug 3)", async () => {
+    const { AgentRunner } = await import("../../server/agents");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-adopt-chat-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0001-review.md"), `---
+id: "0001"
+title: Chat adopt
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review-chat
+---
+## Test
+`);
+
+      // A dead CHAT review entry (reviewKind: "chat") whose process finished
+      // during the handoff. Its session holds a follow-up ANSWER, not a report.
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "chat" },
+          ],
+        }),
+      );
+      writeFileSync(
+        join(fullCacheDir, "agent-logs", "review:0001.out.log"),
+        "the empty-list case is handled by the early return\n",
+      );
+
+      let doneKind: string | undefined;
+      const runner = new AgentRunner(configForRoot(root, cacheDir) as any, () => {}, {
+        onReviewDone: (_key, _exited, reviewKind) => {
+          doneKind = reviewKind;
+        },
+      });
+      runner.adoptRunningAgents();
+
+      const deadline = Date.now() + 5000;
+      while (doneKind === undefined && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      // The adopted chat turn is finalized as a chat, not a fresh run — so the
+      // ReviewManager will not treat a follow-up answer as a new report.
+      expect(doneKind).toBe("chat");
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("ReviewManager adopted-turn completion (0288)", () => {
+  function makeConfig(root: string) {
+    return {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox" as const,
+      defaultAssignee: "unassigned" as const,
+      cacheDir: ".repoos",
+      agents: [
+        { name: "engineer", cli: "opencode", model: "default", enabled: true },
+        { name: "reviewer", cli: "opencode", model: "default", enabled: true },
+      ],
+    };
+  }
+
+  function writeTask(root: string, id: string, extra = ""): string {
+    const absPath = join(root, "work", `${id}-t.md`);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      absPath,
+      `---
+id: "${id}"
+title: Review
+type: feature
+status: review
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/review
+${extra}
+---
+## Test
+`,
+    );
+    return absPath;
+  }
+
+  it("finalizes an adopted CHAT turn as a chat — no report overwrite, no pass bump (Bug 3)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revchat-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001", "review_passes: 1\n");
+      // A previously-written report that a chat follow-up must NOT clobber.
+      const reportFile = join(root, ".repoos", "reviews", "0001.md");
+      mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
+      writeFileSync(reportFile, "task: \"0001\"\nstate: ok\n\nORIGINAL REVIEW REPORT\n");
+      const absPath = join(root, "work", "0001-t.md");
+
+      const events: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      // A mock runner exposing just enough of the AgentRunner surface.
+      const runner: any = {
+        output: () => ({
+          lines: [
+            { type: "text", text: "the empty-list case is handled by the early return in src/thing.ts." },
+          ],
+          accumulatedMs: 500,
+        }),
+        reviewKindOf: () => "chat" as const,
+        system: () => {},
+        isRunning: () => false,
+        running: () => [],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: false }),
+      };
+      const index: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      const reviews = new ReviewManager(config as any, (e) => events.push(e), runner, index);
+
+      // Adopted turn: no `Run` record in this process, but the kind is supplied
+      // through the completion hook. A run would overwrite the report and bump
+      // review_passes; a chat must do neither.
+      reviews.handleReviewDone("review:0001", true, "chat");
+
+      expect(readFileSync(reportFile, "utf8")).toContain("ORIGINAL REVIEW REPORT");
+      expect(readFileSync(absPath, "utf8")).toMatch(/^review_passes: 1$/m);
+      // The chat completed as "ready" on the review event stream, not failed.
+      expect(events.some((e) => e.type === "review" && e.state === "ready")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("honours a durable cancellation for an adopted review — no spurious report (Edge cases 1-2)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revcancel-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001");
+      const absPath = join(root, "work", "0001-t.md");
+
+      // Process A's ReviewManager cancels the review (durable marker written).
+      const eventsA: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      const runnerA: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => true,
+        running: () => [{ id: "review:0001" }],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: true }),
+      };
+      const indexA: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      new ReviewManager(config as any, (e) => eventsA.push(e), runnerA, indexA).cancelAll();
+
+      // Process B (after the reload) adopts the same review: empty in-memory
+      // `runs`, no knowledge of the cancel except the durable marker. Its
+      // completion must finalize as cancelled, never write a failed report.
+      const eventsB: Array<{ type: string; state?: unknown; id?: unknown }> = [];
+      const runnerB: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => false,
+        running: () => [],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: () => ({ stopped: false }),
+      };
+      const indexB: any = {
+        getTask: (id: string) => ({
+          id,
+          absPath,
+          path: `work/0001-t.md`,
+          branch: "feat/review",
+          status: "review",
+          title: "Review",
+          needsInput: false,
+          extra: {},
+        }),
+        applyFileChange: () => {},
+      };
+      const reviewsB = new ReviewManager(config as any, (e) => eventsB.push(e), runnerB, indexB);
+      reviewsB.handleReviewDone("review:0001", false, "run");
+
+      expect(existsSync(join(root, ".repoos", "reviews", "0001.md"))).toBe(false);
+      expect(eventsB.some((e) => e.type === "review" && e.state === "cancelled")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("re-arms the hard timeout for an adopted review run (Bug 2)", async () => {
+    const { ReviewManager } = await import("../../server/review");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+
+    const root = mkdtempSync(join(tmpdir(), "repoos-revtimeout-"));
+    try {
+      const config = makeConfig(root);
+      writeTask(root, "0001");
+
+      // The runner has adopted a live review session whose `Run` (and its
+      // spawner's timeout timer) died with the previous process.
+      const stopped: string[] = [];
+      const runner: any = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+        reviewKindOf: () => "run" as const,
+        system: () => {},
+        isRunning: () => true,
+        running: () => [{ id: "review:0001" }],
+        hasSession: () => true,
+        clearSession: () => {},
+        stop: (id: string) => {
+          stopped.push(id);
+          return { stopped: true };
+        },
+      };
+      const reviews = new ReviewManager(config as any, () => {}, runner as any, undefined);
+
+      // Adopt: an adopted review session reads as running...
+      expect(reviews.isRunning("0001")).toBe(true);
+      reviews.armAdoptedTimeouts();
+
+      // ...and is counted EXACTLY once in runningCount(): armAdoptedTimeouts
+      // registered it in this.runs, so it must not ALSO be counted separately
+      // from runner.running() (0288 review — the old code double-counted).
+      expect(reviews.runningCount()).toBe(1);
+
+      // ...and gets a Run record whose timer stops the child if it fires.
+      // REVIEW_TIMEOUT_MS is 900s, so instead of waiting, verify the wiring by
+      // simulating a cancelled adopted turn via cancel(), which the Run now
+      // supports (an adopted proc-less review previously had no Run and could
+      // never be marked cancelled).
+      reviews.cancel("0001");
+      expect(stopped).toContain("review:0001");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/** Shared config helper for the review-adoption test above. */
+function configForRoot(root: string, cacheDir: string) {
+  return {
+    root,
+    workDir: "work",
+    docsDir: "docs",
+    skillsDir: "skills",
+    taskExtensions: [".md"],
+    defaultStatus: "inbox" as const,
+    defaultAssignee: "unassigned" as const,
+    cacheDir,
+  };
+}
 
 describe("POST /api/server/restart", () => {
   it.skip("returns a reload state from the running server",

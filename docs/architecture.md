@@ -41,7 +41,11 @@ Pure logic, no transport. Everything else calls into this.
   creation/removal, merge). Degrades silently if git is absent.
 - `task.ts` — turns a file's content+path into a normalized Task, and back.
 - `indexer.ts` — walks `work/`, builds the sorted RepoIndex, manages the
-  derived `.repoos/index.json` cache.
+  derived `.repoos/index.json` cache. `buildIndex` is synchronous (the CLI's
+  one-shot commands use it); `buildIndexAsync` runs the same per-task git
+  enrichment concurrently instead of one spawn at a time — the server uses it
+  at boot (via `live-index.ts`'s `refreshAllAsync`) so `listen()` doesn't wait
+  behind hundreds of serial git spawns (#0271: this was 20-30s at 260 tasks).
 - `repoos.ts` — the createRepoOS() facade: getTasks, getTask, counts,
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
@@ -67,6 +71,9 @@ Adds liveness over the one-shot core. No new business logic.
 
 - `live-index.ts` — holds the index in memory, applies incremental per-file
   updates, emits typed events (task.created / task.updated / task.deleted).
+  `refreshAllAsync` (boot only) lets `server.ts` bind the port before the
+  full rebuild finishes; `refreshAll` (synchronous) is for callers that need
+  the index populated when the call returns.
 - `watcher.ts` — native fs.watch over `work/`, debounced; feeds live-index.
 - `write.ts` — safe single-task mutation that re-reads immediately before
   writing, so concurrent edits to the same file don't clobber.
@@ -88,10 +95,20 @@ Adds liveness over the one-shot core. No new business logic.
   writes a short report to `<cacheDir>/reviews/<id>.md` for the human signing
   off. Advisory: it never edits the repo and never moves a task to `done` —
   a task that comes back `done` is put straight back into `review`.
-- `preview.ts` — starts/stops read-only worktree preview servers for review
-  tasks on dedicated ports.
+- `preview.ts` — starts/stops read-only worktree preview servers on dedicated
+  ports. On-demand only (`POST /api/tasks/:id/preview`), capped at ONE running
+  at a time — starting a new one evicts the last (FIFO). Used to auto-launch
+  on a task entering `review` and allow 4 concurrent (#0198); removed once
+  startup got fast enough that the wait it existed to avoid stopped mattering
+  (#0271) — auto-launching several at once (at boot, or as tasks land in
+  review in a burst) was itself a source of CPU contention.
 - `reload.ts` — auto-reload: watches the dist hash and swaps in a zero-downtime
-  replacement process.
+  replacement process. A failed handoff backs off (10s, doubling, capped at
+  5min) before the next AUTOMATIC retry so a run of failures can't retry every
+  ~5s forever — see the #0271 incident this guards against, where that
+  thrashing (spawning a full server boot every ~5s, 29 times) took the control
+  plane down. `POST /api/server/restart` (a human explicitly asking) bypasses
+  the backoff.
 
 ### src/ui-app — the web UI
 

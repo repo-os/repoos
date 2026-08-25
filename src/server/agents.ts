@@ -24,7 +24,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
-import { agentsForConfig } from "../core/config.js";
+import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
 import { fileCommittedClean } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
@@ -37,6 +37,10 @@ import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 export type AgentEvent =
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
+  /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
+  | { type: "agent.queued"; id: string; at: string }
+  /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
+  | { type: "agent.dequeued"; id: string; at: string }
   | {
       type: "agent.output";
       id: string;
@@ -63,6 +67,12 @@ export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
  */
 export const PREVIEW_REQUEST_SIGNAL = "::repoos-preview-request::";
 
+/**
+ * The transcript marker appended when a user interrupts an in-flight AI chat
+ * response. Shared so the runner and the CTO manager (and tests) never drift.
+ */
+export const INTERRUPTED_MARKER = "— response interrupted —";
+
 /** A capability minted by the runner for one completed agent turn. */
 export interface AgentHandoffRequest {
   taskId: string;
@@ -86,6 +96,8 @@ export interface StartResult {
   pid?: number;
   /** True when the request was rejected because a turn is already running. */
   busy?: boolean;
+  /** True when accepted but held for a free slot under maxConcurrentAgents — it will spawn once one frees. */
+  queued?: boolean;
   reason?: string;
 }
 
@@ -118,6 +130,15 @@ interface Entry {
   /** A review-fix follow-up keeps the worktree's last committed review state. */
   skipBoardDivergence?: boolean;
   /**
+   * True for a durable REVIEW turn (0288). Set when the entry is spawned
+   * through the review path so cleanup() can (a) skip its own DB session
+   * recording (ReviewManager owns that) and (b) fire `onReviewDone` on
+   * completion — including for entries re-attached after a reload.
+   */
+  review?: boolean;
+  /** Which kind of review turn: "run" (fresh report) or "chat" (follow-up). */
+  reviewKind?: "run" | "chat";
+  /**
    * For adopted entries (0214): the PID to poll for liveness. When non-null
    * the stall checker periodically verifies the PID is still alive and cleans
    * up if it died.
@@ -138,6 +159,10 @@ interface DurableRegistryEntry {
   workdir: string;
   branch: string;
   runId: string;
+  /** "review" marks a durable review turn so a restart re-attaches as one (0288). */
+  kind?: "engineer" | "review";
+  /** Which review variant the turn is (run vs chat), for completion handling. */
+  reviewKind?: "run" | "chat";
 }
 
 interface DurableRegistry {
@@ -254,8 +279,7 @@ function readRegistry(cacheDir: string): DurableRegistry {
     const parsed = JSON.parse(raw) as Partial<DurableRegistry>;
     if (Array.isArray(parsed.entries)) {
       return { entries: parsed.entries.filter((e) => typeof e.taskId === "string" && typeof e.pid === "number" && typeof e.workdir === "string") };
-    }
-  } catch {
+    }  } catch {
     /* missing or corrupt — start fresh */
   }
   return { entries: [] };
@@ -390,18 +414,24 @@ export function usageCostSource(
  * and review sessions are keyed by the task id directly. PM chats are keyed by
  * a synthetic `pm-task-v2:<id>` id whose suffix is the actual task — attribute
  * them under that real id so PM cost/tokens aggregate per-task. Non-task chats
- * (guide) have no task and return null.
+ * (guide) have no task and return null. Per-user PM sessions (0248) append
+ * `::<email>` after the task id; that suffix is stripped here too so cost
+ * attribution doesn't treat "<id>::<email>" as the task id.
  */
 export function resolveSessionTaskId(taskKey: string | undefined): string | null {
   if (!taskKey) return null;
   // Each alternative has a strict literal prefix so nothing else is captured;
-  // covers the current `pm-task-v2:<id>` scheme and the legacy `pm-task:<id>` /
-  // `pm:<id>` forms without mis-parsing their suffixes (0230 / review).
+  // covers the current `pm-task-v2:<id>` scheme (with or without a `::<email>`
+  // per-user suffix) and the legacy `pm-task:<id>` / `pm:<id>` forms, without
+  // mis-parsing their suffixes (0230 / review).
   const pm =
-    taskKey.match(/^pm-task-v2:(.+)$/i) ??
+    taskKey.match(/^pm-task-v2:([^:]+)(?:::.*)?$/i) ??
     taskKey.match(/^pm-task:(.+)$/i) ??
     taskKey.match(/^pm:(.+)$/i);
   if (pm) return pm[1] || null;
+  // Durable review sessions are keyed by `review:<taskId>` (0288); strip the
+  // prefix so any DB attribution lands on the real task.
+  if (/^review:/i.test(taskKey)) return taskKey.replace(/^review:/i, "") || null;
   return taskKey;
 }
 
@@ -500,6 +530,10 @@ interface PersistedSession {
   createdAt?: string;
   completedAt?: string;
   updatedAt: string;
+  /** Agent config name (e.g. "engineer", "reviewer") — see Session.agent. */
+  agent?: string;
+  /** Model name — see Session.model. */
+  model?: string;
 }
 
 export interface AgentRunnerOptions {
@@ -1153,6 +1187,33 @@ export function resolveReviewer(config: RepoOSConfig): Agent | null {
   return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
 }
 
+/**
+ * Resolve the reviewer agent for a specific task, honoring per-task review
+ * overrides (set via the Review tab's selector, like Dev/PM overrides).
+ *
+ * When the task has no review override, this behaves exactly as the global
+ * `resolveReviewer` — the Agents-page reviewer. When a `reviewAgentOverride`
+ * is set, the enabled agent with that name is used (falling back to the global
+ * reviewer base when only CLI/model are overridden); `reviewCliOverride` /
+ * `reviewModelOverride` then replace the agent's CLI and model.
+ */
+export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent | null {
+  const modelPinned = isModelOverridePinned(task.reviewModelOverride);
+  const hasOverride = task.reviewAgentOverride || task.reviewCliOverride || modelPinned;
+  if (!hasOverride) {
+    return resolveReviewer(config);
+  }
+  const list = agentsForConfig(config);
+  const baseName = task.reviewAgentOverride || "reviewer";
+  const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
+  if (!base) return null;
+  return {
+    ...base,
+    ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
+    ...(modelPinned ? { model: task.reviewModelOverride as string } : {}),
+  };
+}
+
 export function resolveCto(config: RepoOSConfig): Agent | null {
   const list = agentsForConfig(config);
   return list.find((a) => a.enabled && matchesRole(a, "cto")) ?? null;
@@ -1172,13 +1233,33 @@ export function resolveCto(config: RepoOSConfig): Agent | null {
  * @param role    The role to resolve when no agent override is set (default: "engineer").
  * @returns A merged Agent, or null when no matching enabled agent exists.
  */
+/**
+ * True when a model-override field carries a real pin, not the "default"
+ * sentinel `AGENT_MODELS` offers for "use the base agent's own configured
+ * model, whatever that is" (config.ts). Every per-task model-override
+ * resolver (this file's `resolveAgentForTask`/`resolveReviewerForTask`, and
+ * routes/tasks.ts's inline PM-override logic) MUST run the override string
+ * through this before treating it as active — bare truthiness treats the
+ * literal string `"default"` as a real pin and force-overwrites the base
+ * agent's actual configured model with the string `"default"`, which then
+ * skips `--model` entirely (see `modelArgs` below) and falls back to the
+ * underlying CLI's own raw default — NOT the model configured on the
+ * Agents page. Confirmed live: tasks kept ending up running
+ * opencode+(no model flag) instead of the configured model every time a
+ * Dev/Review/PM override dropdown was left on (or reset to) "Default".
+ */
+export function isModelOverridePinned(model: string | null | undefined): boolean {
+  return !!model && model !== "default";
+}
+
 export function resolveAgentForTask(
   config: RepoOSConfig,
   task: Task,
   role: string = "engineer",
 ): Agent | null {
   const list = agentsForConfig(config);
-  const hasOverride = task.agentOverride || task.cliOverride || task.modelOverride;
+  const modelPinned = isModelOverridePinned(task.modelOverride);
+  const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
   if (!hasOverride) {
     return list.find((a) => a.enabled && a.name === role) ?? null;
   }
@@ -1192,7 +1273,7 @@ export function resolveAgentForTask(
   return {
     ...base,
     ...(task.cliOverride ? { cli: task.cliOverride } : {}),
-    ...(task.modelOverride ? { model: task.modelOverride } : {}),
+    ...(modelPinned ? { model: task.modelOverride as string } : {}),
   };
 }
 
@@ -1573,7 +1654,9 @@ function missionFor(
     "",
     "RepoOS owns previews and the control-plane port. Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: direct serve attempts from managed agent processes are rejected. Preview ports and lifecycle are managed for you.",
     "",
-    "To verify a UI change, request THIS task's managed preview (idempotent — repeat requests return the same task preview). Do NOT call the control-plane HTTP API and do NOT use `curl`: your sandbox may have no localhost network access. Instead, include this exact line in your response so RepoOS can start and verify the preview for you:",
+    "Preview requests are the human's to make, not yours. Do NOT automatically request a preview before handoff or as a routine part of finishing a task. If the human wants to inspect a change in the browser, they request the preview manually from the UI — no action needed from you.",
+    "",
+    "Only use the preview request signal below if the human explicitly asks you to verify something the way a browser would see it (or to confirm your change serves). It is idempotent — repeat requests return the same task preview. Do NOT call the control-plane HTTP API and do NOT use `curl`: your sandbox may have no localhost network access. Instead, include this exact line in your response so RepoOS can start and verify the preview for you:",
     "",
     `    ${PREVIEW_REQUEST_SIGNAL}`,
     "",
@@ -1648,6 +1731,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * - codex: `exec` alone — its default sandbox is already read-only, which is
  *   exactly the blast radius a reviewer should have.
  * - qwen code: plain `-p`, matching `promptCommand`.
+ * - opencode: `--format json`, matching the interactive runner (`cliCommand`
+ *   below). Without it, `run`'s plain-text stdout interleaves the model's
+ *   step-by-step narration ("Let me look at...") with its final answer, and
+ *   nothing separates the two — the whole transcript ends up as the review
+ *   report (0264 vs 0253). `extractOneShotReportText` below picks the final
+ *   text event back out of the JSON stream.
  */
 export function reviewCommand(
   agent: Agent,
@@ -1656,11 +1745,35 @@ export function reviewCommand(
 ): { cmd: string; args: string[] } {
   const extra = modelArgs(agent.cli, agent.model);
   if (agent.cli === "claude code") {
-    return { cmd: "claude", args: ["-p", prompt, ...extra, "--dangerously-skip-permissions"] };
+    // stream-json — same structured usage output the engineer's `cliCommand`
+    // uses — so `runPrompt`'s extractUsage/foldUsage sees real tokens/cost and
+    // the reviewer lands in the ledger (0273). The review stays read-only
+    // (no codex-style write sandbox is involved for claude).
+    return {
+      cmd: "claude",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+        "--verbose",
+        "--dangerously-skip-permissions",
+      ],
+    };
   }
-  if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
-  if (agent.cli === "codex") return { cmd: "codex", args: ["exec", prompt, ...extra] };
+  if (agent.cli === "qwen code") {
+    // Mirrors the engineer's claude-compatible stream-json so usage is captured.
+    return { cmd: "qwen", args: ["-p", prompt, ...extra, "--output-format", "stream-json", "--include-partial-messages"] };
+  }
+  if (agent.cli === "codex") {
+    // `--json` streams usage events; the default (read-only) sandbox is exactly
+    // the blast radius a reviewer should have — no `--sandbox workspace-write`.
+    return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
+  }
   if (agent.cli === "github copilot") {
+    // copilotArgs already emits `--output-format json`, so usage is captured.
     return {
       cmd: "copilot",
       args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
@@ -1674,7 +1787,71 @@ export function reviewCommand(
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
-  return { cmd: "opencode", args: ["run", "--dir", cwd, ...extra, "--auto", prompt] };
+  return { cmd: "opencode", args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt] };
+}
+
+/**
+ * Turn one line of a one-shot (review/CTO) agent's stdout into a transcript
+ * entry for live display. Structured event streams (opencode `--format json`,
+ * claude/qwen stream-json, codex `--json`, copilot json) get the same per-line
+ * parsing the interactive runner applies, so the review transcript reads
+ * cleanly instead of dumping raw JSON. A recognized-but-voiceless structured
+ * event (claude `result`, `system/init`, a thinking-only assistant message …)
+ * returns null so the caller can swallow it; a non-JSON line (warnings, plain
+ * text from kiro) passes through as a plain `{s, d}` entry.
+ */
+export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | null {
+  let isJson = false;
+  try {
+    isJson = raw.trim().startsWith("{");
+    void JSON.parse(raw);
+  } catch {
+    return { s: "out", d: raw };
+  }
+  if (!isJson) return { s: "out", d: raw };
+  if (cli === "opencode") {
+    const parsed = parseJsonEvent(raw);
+    return parsed ? parsed.entry : null;
+  }
+  if (cli === "claude code") {
+    const parsed = parseClaudeEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "qwen code") {
+    const parsed = parseQwenEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "codex") {
+    const parsed = parseCodexEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "github copilot") {
+    const parsed = parseCopilotEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  return { s: "out", d: raw };
+}
+
+/**
+ * Isolate the final report/answer from a one-shot agent's full captured
+ * stdout. Structured JSONL engines (opencode `--format json`, claude/qwen
+ * stream-json, codex `--json`, copilot json) carry the model's whole narration
+ * as a sequence of `text` events interleaved with tool calls — the actual final
+ * answer is the LAST `text` event, so this discards the rest (0264 vs 0253).
+ * Non-JSON one-shot CLIs (kiro) print only the final answer, so their raw
+ * output IS the report. Falls back to the raw output if no text event parses,
+ * so a format change never yields an empty report.
+ */
+export function extractOneShotReportText(cli: string, rawOutput: string): string {
+  const trimmed = rawOutput.trim();
+  if (!trimmed) return trimmed;
+  let last = "";
+  for (const line of trimmed.split("\n")) {
+    if (!line.trim()) continue;
+    const entry = parseOneShotLine(cli, line);
+    if (entry && "type" in entry && entry.type === "text") last = entry.text;
+  }
+  return (last || trimmed).trim();
 }
 
 /**
@@ -1805,6 +1982,18 @@ export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
+  /**
+   * Cap on simultaneously-spawned agent CLI processes — each one may
+   * itself run a build/test worker pool sized to the host's core count, so
+   * unlimited concurrent agents oversubscribe the machine. Configurable via
+   * `maxConcurrentAgents` in repoos.toml; "auto" (unset) sizes it to this
+   * machine's CPU count so the same repo behaves on a laptop and a desktop.
+   */
+  private readonly maxConcurrentAgents: number;
+  /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot, mapped to when they were queued. */
+  private readonly queuedIds = new Map<string, string>();
+  /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
+  private readonly startQueue: (() => void)[] = [];
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
@@ -1831,6 +2020,16 @@ export class AgentRunner {
   private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
   private readonly handoffsInFlight = new Set<string>();
   private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+  /**
+   * Fired on completion of a durable REVIEW turn (0288) — including for an
+   * entry re-attached after a reload, whose process finishes on the new
+   * server. The owning ReviewManager finalizes the report from this hook
+    * rather than a post-spawn continuation that would die with the old process.
+    * `reviewKind` (run vs chat) and `exitedCleanly` are threaded through so the
+    * ReviewManager can finalize an adopted turn in the right mode and decide
+    * whether it finished cleanly.
+    */
+  private readonly onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void;
 
   /**
    * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
@@ -1861,13 +2060,15 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; logger?: Logger } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
+    this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
     this.emit = emit;
     this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
+    this.onReviewDone = opts.onReviewDone;
     this.getTask = opts.getTask;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
@@ -1913,8 +2114,14 @@ export class AgentRunner {
       } catch {
         /* PID is dead — drop it */
       }
-      if (!alive) continue;
-      live.push(rec);
+      const isReview = rec.kind === "review";
+      // A dead non-review entry is stale — drop it (must not resurrect dead
+      // sessions). A DEAD REVIEW entry, however, means the review process
+      // finished sometime during the reload handoff before this process could
+      // adopt it — its durable log still holds the full report, so we replay
+      // it and hand completion to the new ReviewManager (0288). By the time the
+      // deferred hook fires, the server has built `reviews`.
+      if (!alive && !isReview) continue;
       const outLog = join(this.logDir, `${rec.taskId}.out.log`);
       const errLog = join(this.logDir, `${rec.taskId}.err.log`);
       // Restore the session so the transcript is pre-loaded for the task.
@@ -1924,6 +2131,7 @@ export class AgentRunner {
         session.workdir = rec.workdir;
         session.engine = "plain";
       }
+      session.workdir = rec.workdir;
       session.turnStartedAt = session.turnStartedAt ?? now();
       session.lastOutputAt = session.lastOutputAt ?? now();
       this.sessions.set(rec.taskId, session);
@@ -1938,6 +2146,21 @@ export class AgentRunner {
       } catch {
         /* best-effort */
       }
+      if (!alive && isReview) {
+        // The reviewer already finished: finalize its report and drop the entry.
+        this.removeRegistryEntry(rec.taskId);
+        session.accumulatedMs = Date.now() - Date.parse(session.turnStartedAt ?? now());
+        // Defer so `reviews` (and safe handler wiring) exists before we finalize.
+        setTimeout(() => {
+          try {
+            this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
+          } catch {
+            /* best-effort */
+          }
+        }, 0);
+        continue;
+      }
+      live.push(rec);
       // Start tailing the log file for live output, and register a fake Entry
       // so isRunning() is true and the task reads as in-flight. The real ChildProcess
       // is referenced by PID, not held directly — we poll for aliveness instead.
@@ -1954,6 +2177,8 @@ export class AgentRunner {
         handoffRequested: false,
         previewRequested: false,
         adoptedPid: rec.pid,
+        review: isReview,
+        reviewKind: rec.kind === "review" ? rec.reviewKind : undefined,
         tailers,
       });
     }
@@ -2036,10 +2261,18 @@ export class AgentRunner {
   }
 
   /** Persist a registry entry for one running task (0214). */
-  private writeRegistryEntry(taskId: string, pid: number, workdir: string, branch: string, runId: string): void {
+  private writeRegistryEntry(
+    taskId: string,
+    pid: number,
+    workdir: string,
+    branch: string,
+    runId: string,
+    kind?: "engineer" | "review",
+    reviewKind?: "run" | "chat",
+  ): void {
     const registry = readRegistry(this.cacheDir);
     const existing = registry.entries.findIndex((e) => e.taskId === taskId);
-    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId };
+    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId, kind, reviewKind };
     if (existing >= 0) {
       registry.entries[existing] = entry;
     } else {
@@ -2204,6 +2437,16 @@ export class AgentRunner {
   }
 
   /**
+   * The review turn kind ("run" | "chat") of a durable review session, if the
+   * entry is one (0288). Used by ReviewManager to finalize an ADOPTED turn in
+   * the right mode — the session's own `Run` record is not carried across a
+   * reload, but its review kind is (persisted in the registry).
+   */
+  reviewKindOf(sessionKey: string): "run" | "chat" | undefined {
+    return this.entries.get(sessionKey)?.reviewKind;
+  }
+
+  /**
    * Record a deliberate human pause (0070): the task stays `active` but its
    * agent is intentionally stopped, so the watchdog must not touch it (#0180).
    * Cleared automatically the moment a new turn starts for the task.
@@ -2279,7 +2522,7 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id)) {
+    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id) || this.queuedIds.has(task.id)) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
@@ -2296,7 +2539,7 @@ export class AgentRunner {
     this.sessions.set(task.id, session);
     const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
     const { cmd, args } = cliCommand(agent, mission, cwd);
-    return this.spawnTurn(task.id, cmd, args, cwd, task, branch);
+    return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
   }
 
   /** Start a persistent, non-task conversation with an explicit role mission. */
@@ -2307,13 +2550,13 @@ export class AgentRunner {
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
-    if (this.entries.has(sessionId)) {
+    if (this.entries.has(sessionId) || this.queuedIds.has(sessionId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
     }
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
     }
-    const human: AgentOutputEntry = { type: "human", text };
+    const human: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     const session: Session = {
       lines: [human],
       pending: "",
@@ -2331,7 +2574,68 @@ export class AgentRunner {
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, this.config.root);
-    return this.spawnTurn(sessionId, cmd, args, this.config.root);
+    return this.spawnOrQueue(sessionId, cmd, args, this.config.root);
+  }
+
+  /**
+   * Spawn a durable REVIEW turn under a synthetic session key (0288), so the
+   * reviewer survives a server reload the same way engineer/PM turns do: the
+   * child's stdout/stderr stream to durable log files and its PID is registered
+   * so the next server's `adoptRunningAgents()` re-attaches and replays any
+   * output written during the handoff. On completion — even post-reload —
+   * `cleanup()` fires `onReviewDone` for the owning ReviewManager to finalize.
+   *
+   * Unlike `start`/`send`, the review agent is deliberately NOT given
+   * `REPOOS_TASK_ID` / `REPOOS_API_URL`, preserving the read-only boundary that
+   * keeps it from reaching the control plane's task endpoints (review.ts layer
+   * 2). `kind: "review"` is persisted in the durable registry so adoption knows
+   * to re-attach as a review.
+   *
+   * `reset: true` (a fresh run) clears any prior conversation; a chat turn
+   * (`reset: false`, with `humanEntry`) continues the existing one.
+   */
+  startReview(
+    sessionKey: string,
+    agent: Agent,
+    mission: string,
+    cwd: string,
+    opts: { humanEntry?: AgentOutputEntry; reset?: boolean; reviewKind?: "run" | "chat" } = {},
+  ): StartResult {
+    if (this.entries.has(sessionKey)) {
+      return { ok: false, busy: true, reason: "a review is already running for this task" };
+    }
+    let session = this.sessions.get(sessionKey) ?? this.loadSession(sessionKey);
+    if (!session || opts.reset) {
+      session = this.emptySession();
+    }
+    if (opts.reset) {
+      session.lines = [];
+      session.bytes = 0;
+    }
+    session.workdir = cwd;
+    session.engine = engineForCli(agent.cli);
+    session.agent = agent.name;
+    session.model = agent.model;
+    if (opts.humanEntry) {
+      session.lines.push(opts.humanEntry);
+      session.bytes += entryBytes(opts.humanEntry);
+      while (session.bytes > OUTPUT_CAP_BYTES) {
+        const dropped = session.lines.shift();
+        if (!dropped) break;
+        session.bytes -= entryBytes(dropped);
+      }
+    }
+    this.sessions.set(sessionKey, session);
+    const { cmd, args } = reviewCommand(agent, mission, cwd);
+    return this.spawnTurn(sessionKey, cmd, args, cwd, undefined, "", {
+      review: true,
+      reviewKind: opts.reviewKind ?? "run",
+    });
+  }
+
+  /** Release a durable review session from the in-memory map (its file stays). */
+  discardReviewSession(sessionKey: string): void {
+    this.sessions.delete(sessionKey);
   }
 
   /**
@@ -2352,11 +2656,11 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId)) {
+    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId) || this.queuedIds.has(taskId)) {
       return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
     }
     this.sessions.set(taskId, session);
-    const entry: AgentOutputEntry = { type: "human", text };
+    const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
     while (session.bytes > OUTPUT_CAP_BYTES) {
@@ -2377,8 +2681,15 @@ export class AgentRunner {
     const fullText = opts.resumePreamble
       ? `${opts.resumePreamble}\n\n${text}`
       : text;
-    const { cmd, args } = resumeCommand(agent, fullText, session.sessionId, session.workdir ?? this.config.root);
-    return this.spawnTurn(
+    // session.sessionId is only meaningful to the CLI that produced it — if
+    // agent.cli has since changed (override edited/cleared between turns),
+    // reusing it would hand one CLI's session id to a different CLI's
+    // --resume flag (e.g. an opencode `ses_...` id passed to `claude
+    // --resume`, which requires a UUID and errors out). Drop it and let
+    // resumeCommand fall back to a fresh/most-recent-session start instead.
+    const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, session.workdir ?? this.config.root);
+    return this.spawnOrQueue(
       taskId,
       cmd,
       args,
@@ -2392,6 +2703,24 @@ export class AgentRunner {
   /** The retained transcript for a task, or null when no session exists. */
   output(taskId: string): Session | null {
     return this.sessions.get(taskId) ?? this.loadSession(taskId);
+  }
+
+  /** Whether a session exists for a key (in memory or persisted on disk). */
+  hasSession(sessionKey: string): boolean {
+    return this.sessions.has(sessionKey) || this.readPersisted(sessionKey) !== null;
+  }
+
+  /** Drop a session both in memory and from disk (a fresh review run). */
+  clearSession(sessionKey: string): void {
+    this.sessions.delete(sessionKey);
+    const file = this.sessionFile(sessionKey);
+    if (file && existsSync(file)) {
+      try {
+        unlinkSync(file);
+      } catch {
+        /* best-effort */
+      }
+    }
   }
 
   /**
@@ -2417,6 +2746,54 @@ export class AgentRunner {
   }
 
   /**
+   * Gate for every spawnTurn call site: at capacity, defer the spawn
+   * instead of oversubscribing the machine. The caller still gets `ok: true`
+   * immediately — `queued: true` distinguishes "will run shortly" from
+   * "running now" without changing callers' happy-path handling. `id` is
+   * marked busy via queuedIds so a second start/send for the same task/chat
+   * while queued is rejected the same way an already-running one would be.
+   */
+  private spawnOrQueue(
+    id: string,
+    cmd: string,
+    args: string[],
+    cwd: string,
+    task?: Task,
+    branch?: string,
+    opts: { skipBoardDivergence?: boolean } = {},
+  ): StartResult {
+    if (this.entries.size < this.maxConcurrentAgents) {
+      return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    }
+    this.queuedIds.set(id, now());
+    this.startQueue.push(() => {
+      this.queuedIds.delete(id);
+      this.emit({ type: "agent.dequeued", id, at: now() });
+      this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
+    });
+    this.logger?.agent(
+      id,
+      "info",
+      `Queued — ${this.entries.size}/${this.maxConcurrentAgents} agent processes already running.`,
+    );
+    this.emit({ type: "agent.queued", id, at: now() });
+    return { ok: true, queued: true };
+  }
+
+  /** Tasks/chats currently waiting for a free maxConcurrentAgents slot. */
+  queued(): { id: string; queuedAt: string }[] {
+    return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
+  }
+
+  /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
+  private drainQueue(): void {
+    while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+      const next = this.startQueue.shift();
+      next?.();
+    }
+  }
+
+  /**
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
@@ -2427,7 +2804,7 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean } = {},
+    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
@@ -2470,9 +2847,14 @@ export class AgentRunner {
       delete agentEnv.REPOOS_RELOAD_SECRET;
       delete agentEnv.REPOOS_PREVIEW_CHILD;
       agentEnv.REPOOS_AGENT = "1";
-      agentEnv.REPOOS_TASK_ID = taskId;
+      // A REVIEW turn is deliberately read-only: unlike the engineer/PM, it is
+      // NOT given REPOOS_TASK_ID / REPOOS_API_URL, so it has no pointer at the
+      // control plane's task endpoints and cannot reach /done (review.ts layer
+      // 2). REPOOS_RUN_ID is still bound so any capability-request signal (none
+      // expected) would route to this exact run.
+      if (!opts.review) agentEnv.REPOOS_TASK_ID = taskId;
       agentEnv.REPOOS_RUN_ID = runId;
-      if (this.apiUrl) agentEnv.REPOOS_API_URL = this.apiUrl;
+      if (this.apiUrl && !opts.review) agentEnv.REPOOS_API_URL = this.apiUrl;
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", outFd, errFd],
@@ -2500,6 +2882,8 @@ export class AgentRunner {
       handoffRequested: false,
       previewRequested: false,
       skipBoardDivergence: opts.skipBoardDivergence,
+      review: opts.review,
+      reviewKind: opts.review ? opts.reviewKind : undefined,
       tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -2515,7 +2899,15 @@ export class AgentRunner {
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
-      this.writeRegistryEntry(taskId, proc.pid, cwd, branch ?? task?.branch ?? "", runId);
+      this.writeRegistryEntry(
+        taskId,
+        proc.pid,
+        cwd,
+        branch ?? task?.branch ?? "",
+        runId,
+        opts.review ? "review" : "engineer",
+        opts.review ? opts.reviewKind : undefined,
+      );
     }
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
@@ -2613,12 +3005,15 @@ export class AgentRunner {
     stream: "out" | "err" | "sys",
     entry: AgentOutputEntry,
   ): void {
-    session.lines.push(entry);
-    session.bytes += entryBytes(entry);
+    const stamped: AgentOutputEntry = entry.at
+      ? entry
+      : { ...entry, at: new Date().toISOString() };
+    session.lines.push(stamped);
+    session.bytes += entryBytes(stamped);
     this.emit({
       type: "agent.output",
       id: taskId,
-      entry,
+      entry: stamped,
       stream: stream === "sys" ? "out" : stream,
       at: now(),
     });
@@ -2969,6 +3364,25 @@ export class AgentRunner {
     return { stopped: true };
   }
 
+  /**
+   * Interrupt a running AI chat response (PM, guide, debugger, …). Stops the
+   * in-flight agent process via {@link stop} and appends a persistent marker to
+   * the chat's transcript so the user sees the response was user-stopped rather
+   * than completed normally. Idempotent — safe to call when nothing is running.
+   *
+   * The marker is emitted server-side (so it survives a client hydrate, not just
+   * the live SSE stream) as a `sys` entry on the session. The agent's own exit
+   * also triggers the generic `agent.exited` "stopped" notice client-side.
+   */
+  interrupt(taskId: string): StopResult {
+    const wasRunning = this.entries.has(taskId);
+    const result = this.stop(taskId);
+    if (wasRunning && this.sessions.has(taskId)) {
+      this.system(taskId, INTERRUPTED_MARKER);
+    }
+    return result;
+  }
+
   /** Record a session to the database. Best-effort, never fails the server. */
   private recordSessionToDb(sessionId: string | undefined, session: Session, taskKey: string, exitedCleanly: boolean): void {
     if (!this.db || !session) return;
@@ -3047,6 +3461,9 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+    // Capture before the entry is deleted below so the review-completion hook
+    // can still be fired and its DB recording skipped (0288).
+    const wasReview = entry.review === true;
 
     // Drain and flush durable-log pollers before removing the registry entry.
     // The final output may not carry a newline, so it lives in the tailer's
@@ -3091,6 +3508,7 @@ export class AgentRunner {
     }
     if (session) session.stalledEmitted = false;
     this.entries.delete(taskId);
+    this.drainQueue();
     // Kiro CLI does not print a session ID during the run. Capture it now by
     // querying the CLI's session list in the same cwd. Best-effort: if the
     // probe fails, sessionId stays undefined and the next turn falls back to
@@ -3104,12 +3522,26 @@ export class AgentRunner {
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);
-    // Record session to database (best-effort).
-    if (session) {
+    // Record session to database (best-effort). Review sessions are recorded by
+    // ReviewManager's own completion handler instead, so they are skipped here
+    // to avoid double-booking (0288).
+    if (session && !wasReview) {
       this.recordSessionToDb(session.sessionId, session, taskId, exitedCleanly);
     }
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
+    // Any non-clean exit that isn't a deliberate human pause means the task is
+    // about to sit silently in its current status with nothing left running —
+    // flag it the moment the process ends rather than waiting for
+    // TaskWatchdog's staleness poll, which wouldn't even catch a fast
+    // crash-on-exit (an expired CLI auth session, say): the process isn't
+    // stalled, it's just done. Excludes `entry.handoffRequested`: that shape
+    // already has its own recovery path below ("retained for recovery" on
+    // next boot) and must not be double-flagged before that has a chance to
+    // run.
+    if (!exitedCleanly && !this.isPaused(taskId) && !entry.handoffRequested && taskForHandoff) {
+      this.escalateFailedExit(taskId, taskForHandoff, session);
+    }
     if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
       // Clean exit with handoff requested: clear the persisted request and fire finalization.
       this.clearPendingHandoff(taskId);
@@ -3162,6 +3594,17 @@ export class AgentRunner {
     // Self-heal may have appended a final system line, so persist only after it.
     this.persist(taskId);
     if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);
+    // A review turn completed. Fire the hook so the owning ReviewManager can
+    // finalize (write the report, log "review completed", auto-bounce) from the
+    // durable session — including for an entry re-attached after a reload whose
+    // completion is only observed here (0288).
+    if (wasReview) {
+      try {
+        this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
+      } catch (err) {
+        this.logger?.agent(taskId, "error", `Review completion handler failed: ${(err as Error).message}`);
+      }
+    }
   }
 
   /**
@@ -3211,10 +3654,11 @@ export class AgentRunner {
 
   private sessionFile(taskId: string): string | null {
     // IDs can name both tasks and durable non-task conversations such as
-    // `pm-task:0209`. Keep the input strictly filename-safe, then escape the
-    // only cross-platform-invalid separator before constructing the path.
-    if (!/^[A-Za-z0-9._:-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
-    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A")}.json`);
+    // `pm-task-v2:0209::alice@example.com` (per-user PM chat, 0248). Keep the
+    // input strictly filename-safe, then escape the cross-platform-invalid
+    // separators before constructing the path.
+    if (!/^[A-Za-z0-9._:@-]+$/.test(taskId) || taskId === "." || taskId === "..") return null;
+    return join(this.sessionsDir, `${taskId.replaceAll(":", "%3A").replaceAll("@", "%40")}.json`);
   }
 
   /** Read and validate one versioned file. Corruption/version drift fails soft. */
@@ -3231,7 +3675,9 @@ export class AgentRunner {
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
-        (value.completedAt !== undefined && typeof value.completedAt !== "string")
+        (value.completedAt !== undefined && typeof value.completedAt !== "string") ||
+        (value.agent !== undefined && typeof value.agent !== "string") ||
+        (value.model !== undefined && typeof value.model !== "string")
       )
         return null;
       return value as PersistedSession;
@@ -3251,6 +3697,8 @@ export class AgentRunner {
       sessionId: saved.sessionId,
       workdir: saved.workdir,
       createdAt: saved.createdAt,
+      agent: saved.agent,
+      model: saved.model,
       accumulatedMs: 0,
       stalledEmitted: false,
     };
@@ -3304,6 +3752,8 @@ export class AgentRunner {
         engine: session.engine,
         workdir: session.workdir,
         createdAt: session.createdAt,
+        agent: session.agent,
+        model: session.model,
         completedAt,
         updatedAt: this.clock().toISOString(),
       };
@@ -3401,6 +3851,72 @@ export class AgentRunner {
   }
 
   /**
+   * Best-effort one-line summary of why a turn failed. Prefers the last
+   * non-empty stderr line (where CLI-level failures like an expired OAuth
+   * session land), falling back to the last `sys`/error line RepoOS itself
+   * parsed out of the CLI's own JSON stream, then a generic fallback.
+   */
+  private lastFailureLine(session: Session | undefined): string {
+    if (session) {
+      for (let i = session.lines.length - 1; i >= 0; i--) {
+        const line = session.lines[i];
+        if ("s" in line && line.s === "err" && line.d.trim()) return line.d.trim();
+      }
+      for (let i = session.lines.length - 1; i >= 0; i--) {
+        const line = session.lines[i];
+        const text =
+          "type" in line && line.type === "sys" ? line.d : "s" in line && line.s === "sys" ? line.d : undefined;
+        if (text?.trim()) return text.trim();
+      }
+    }
+    return "the agent process exited with an error — open the task to see the full output";
+  }
+
+  /**
+   * Flag a task for human attention the instant its agent turn ends non-
+   * cleanly (and isn't a deliberate pause or an in-flight handoff recovery —
+   * see the call site in cleanup()). Mirrors TaskWatchdog's own
+   * `needsInput` escalation, just fired immediately instead of waiting for
+   * the next staleness poll. Never overwrites an existing needsInput note.
+   *
+   * Also bumps `dev_error_count` — unlike the needsInput note, this always
+   * increments, even on a repeat error before a human clears the flag,
+   * because it counts real dev attempts, not distinct escalations (#0271
+   * follow-up: confirmed live on #0291 — an engineer session that errors out
+   * before ever reaching a review pass left `review_passes` at 0, so the
+   * board's `D# · R#` badge showed nothing for a task that genuinely had one
+   * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
+   * `dev` so D can exceed R when a round errored without being reviewed.)
+   */
+  private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      const errCount = current.extra?.dev_error_count;
+      current.extra = {
+        ...current.extra,
+        dev_error_count: (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
+      };
+      if (current.needsInput) {
+        writeFileSync(task.absPath, serializeTask(current));
+        return;
+      }
+      current.needsInput = true;
+      current.needsInputReason = "dev-error";
+      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
+      recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);
+      writeFileSync(task.absPath, serializeTask(current));
+    } catch (err) {
+      console.error(`[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
    * Self-heal the #0068 divergence. Narrowly scoped: ONLY the shape where the
    * main checkout's copy of the task is still `active` but the agent's
    * worktree copy shows `review` or `needs_input` backed by a real commit.
@@ -3444,7 +3960,10 @@ export class AgentRunner {
 
     const patch: TaskPatch = {};
     if (wantsReview) patch.status = "review";
-    if (wantsInput) patch.needsInput = true;
+    if (wantsInput) {
+      patch.needsInput = true;
+      patch.needsInputReason = wt.needsInputReason;
+    }
     try {
       patchTaskFile(this.config, task.absPath, patch);
     } catch (err) {
