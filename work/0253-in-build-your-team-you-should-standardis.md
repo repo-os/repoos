@@ -11,7 +11,7 @@ created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T05:47:41Z"
+updated_at: "2026-08-25T09:56:11Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T01:00:11Z · status review→active
 - 2026-08-25T05:47:35Z · model_override
 - 2026-08-25T05:47:41Z · status active→review
+- 2026-08-25T09:56:11Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
