@@ -8,7 +8,7 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/port-stealing-race-detectconflict-trusts
-model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+model_override: default
 review_model_override: default
 created_at: "2026-08-24T19:31:09Z"
 updated_at: "2026-08-25T08:39:08Z"
@@ -46,3 +46,4 @@ Found while diagnosing and fixing the reload-storm crash (#0271) — see that ta
 - 2026-08-25T06:16:45Z · status active→review
 - 2026-08-25T06:22:43Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-25T08:39:08Z · review_model_override
+- 2026-08-25T08:39:08Z · model_override
