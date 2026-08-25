@@ -102,25 +102,87 @@ function extractSnippet(text: string, query: string, contextLen: number = 60): H
   return { html };
 }
 
+function tokenizeQuery(q: string): string[] {
+  return q.match(/[a-z0-9]+/g) ?? [];
+}
+
+/**
+ * Inverse document frequency per query term over one kind's corpus, so a rare
+ * term (e.g. "stealing") outweighs a term that appears in nearly every item
+ * (e.g. "task") when ranking matches. Smoothed so unseen terms stay positive.
+ */
+function buildIdf(corpusTexts: string[], terms: string[]): Map<string, number> {
+  const n = corpusTexts.length || 1;
+  const idf = new Map<string, number>();
+  for (const term of terms) {
+    let df = 0;
+    for (const text of corpusTexts) if (text.includes(term)) df++;
+    idf.set(term, Math.log((n + 1) / (df + 1)) + 1);
+  }
+  return idf;
+}
+
+/** Relevance contribution of one field: rarity-weighted term hits, plus a bonus for the whole query appearing verbatim. */
+function fieldScore(
+  text: string | null | undefined,
+  weight: number,
+  terms: string[],
+  idf: Map<string, number>,
+  phrase: string,
+): number {
+  if (!text) return 0;
+  const lower = text.toLowerCase();
+  let score = 0;
+  if (phrase.length > 1 && lower.includes(phrase)) score += weight * 6;
+  for (const term of terms) {
+    if (lower.includes(term)) score += weight * (idf.get(term) ?? 1);
+  }
+  return score;
+}
+
+function topByScore<T>(scored: { result: T; score: number }[]): T[] {
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, RESULT_CAP)
+    .map((s) => s.result);
+}
+
 export function searchAll(query: string, src: SearchSource): SearchResult[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
+  const terms = tokenizeQuery(q);
 
-  const taskHits: SearchResult[] = [];
+  // Field weights: title/id are a much stronger relevance signal than a
+  // stray body/content mention, so they must outrank it even when the body
+  // hit came first in source order (0007 follow-up — search results were
+  // effectively unranked, just capped at the first 8 array-order matches).
+  const taskIdf = buildIdf(src.tasks.map((t) => `${t.title} ${t.body}`.toLowerCase()), terms);
+  const scoredTasks: { result: SearchResult; score: number }[] = [];
   for (const t of src.tasks) {
     if (includes(t.id, q) || includes(t.title, q) || includes(t.body, q) ||
         fuzzyMatch(t.title, q) || fuzzyMatch(t.body, q)) {
-      taskHits.push({
-        kind: "task",
-        title: t.title,
-        subtitle: `#${t.id} · ${t.status} · ${t.area}`,
-        task: t,
+      const score =
+        fieldScore(t.id, 8, terms, taskIdf, q) +
+        fieldScore(t.title, 4, terms, taskIdf, q) +
+        fieldScore(t.body, 1, terms, taskIdf, q);
+      scoredTasks.push({
+        result: {
+          kind: "task",
+          title: t.title,
+          subtitle: `#${t.id} · ${t.status} · ${t.area}`,
+          task: t,
+        },
+        score,
       });
-      if (taskHits.length >= RESULT_CAP) break;
     }
   }
+  const taskHits = topByScore(scoredTasks);
 
-  const docHits: SearchResult[] = [];
+  const docIdf = buildIdf(
+    src.docs.map((d) => `${d.title} ${d.path} ${d.content ?? ""}`.toLowerCase()),
+    terms,
+  );
+  const scoredDocs: { result: SearchResult; score: number }[] = [];
   for (const d of src.docs) {
     let match = false;
     let snippet: HighlightedSnippet | undefined;
@@ -133,25 +195,36 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
       snippet = extractSnippet(d.content, q);
     }
     if (match) {
-      docHits.push({
-        kind: "doc",
-        title: d.title || d.path,
-        subtitle: d.path,
-        path: d.path,
-        ...(snippet && { snippet }),
+      const score =
+        fieldScore(d.title, 4, terms, docIdf, q) +
+        fieldScore(d.path, 2, terms, docIdf, q) +
+        fieldScore(d.content, 1, terms, docIdf, q);
+      scoredDocs.push({
+        result: {
+          kind: "doc",
+          title: d.title || d.path,
+          subtitle: d.path,
+          path: d.path,
+          ...(snippet && { snippet }),
+        },
+        score,
       });
-      if (docHits.length >= RESULT_CAP) break;
     }
   }
+  const docHits = topByScore(scoredDocs);
 
-  const settingHits: SearchResult[] = [];
+  const settingIdf = buildIdf(src.fields.map((f) => `${f.label} ${f.key}`.toLowerCase()), terms);
+  const scoredSettings: { result: SearchResult; score: number }[] = [];
   for (const f of src.fields) {
     if (includes(f.label, q) || includes(f.key, q) ||
         fuzzyMatch(f.label, q) || fuzzyMatch(f.key, q)) {
-      settingHits.push({ kind: "setting", title: f.label, subtitle: f.key, key: f.key });
-      if (settingHits.length >= RESULT_CAP) break;
+      const score =
+        fieldScore(f.label, 3, terms, settingIdf, q) +
+        fieldScore(f.key, 2, terms, settingIdf, q);
+      scoredSettings.push({ result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key }, score });
     }
   }
+  const settingHits = topByScore(scoredSettings);
 
   return [...taskHits, ...docHits, ...settingHits];
 }

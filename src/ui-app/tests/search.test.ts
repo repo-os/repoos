@@ -161,6 +161,27 @@ describe("searchAll", () => {
     const task = hits.find((r) => r.kind === "task");
     expect(task && task.kind === "task" && task.subtitle).toContain("#0007");
   });
+
+  it("ranks a title match above an older task's incidental body mention, even beyond the cap", () => {
+    // RESULT_CAP filler tasks all mention "auth" once in the body, in id order
+    // before the real title match — with no ranking, the cap fills up on the
+    // filler and the actual match never surfaces.
+    const filler = Array.from({ length: RESULT_CAP }, (_, i) =>
+      makeTask({ id: `0${100 + i}`, title: `Unrelated task ${i}`, body: "touches auth somewhere" }),
+    );
+    const titleMatch = makeTask({ id: "0250", title: "Fix auth token race", body: "" });
+    const hits = searchAll("auth", { tasks: [...filler, titleMatch], docs: [], fields: [] });
+    const taskTitles = hits.filter((r) => r.kind === "task").map((r) => r.title);
+    expect(taskTitles[0]).toBe("Fix auth token race");
+  });
+
+  it("ranks a rare term above a common one across matching tasks", () => {
+    const common = makeTask({ id: "0300", title: "Update task list", body: "" });
+    const rare = makeTask({ id: "0301", title: "Fix port stealing race", body: "" });
+    const hits = searchAll("port stealing", { tasks: [common, rare], docs: [], fields: [] });
+    const taskTitles = hits.filter((r) => r.kind === "task").map((r) => r.title);
+    expect(taskTitles[0]).toBe("Fix port stealing race");
+  });
 });
 
 function htmlToText(html: string): string {
