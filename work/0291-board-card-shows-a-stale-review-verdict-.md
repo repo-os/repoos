@@ -3,6 +3,7 @@ id: "0291"
 title: Board card shows a stale review verdict after a missed SSE event during reload
 type: bug
 status: review
+needs_input: true
 priority: p1
 area: ui
 assigned_to: ai
@@ -11,7 +12,7 @@ branch: feat/board-card-shows-a-stale-review-verdict-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T09:56:11Z"
+updated_at: "2026-08-25T10:01:11Z"
 review_passes: 1
 ---
 ## Problem
@@ -69,3 +70,4 @@ Task #0286 went through 3 review rounds (2026-08-24T21:31-21:33, 21:36-21:38, 21
 - 2026-08-25T05:27:51Z · review_model_override
 - 2026-08-25T05:34:16Z · pm_model_override
 - 2026-08-25T09:56:11Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-08-25T10:01:11Z · watchdog: escalated to needs_input · reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured · next step: resume the session manually from the task's worktree and check for uncommitted work

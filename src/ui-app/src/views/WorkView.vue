@@ -63,6 +63,9 @@ const boardKey = useBoardKeyboardNav({
   containerRef: boardEl,
   tasks: visibleTasks,
   open: ui.openTask,
+  enabled: computed(() => ui.keyboardNavEnabled),
+  panelOpen: computed(() => !!ui.active),
+  closePanel: ui.close,
 });
 </script>
 

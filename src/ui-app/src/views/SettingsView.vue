@@ -462,6 +462,21 @@ onUnmounted(() => {
               <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
             </div>
           </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Keyboard navigation</div>
+              <div class="setting-desc">
+                Power-user shortcut mode: move around the board with the keyboard —
+                <span class="mono">j</span>/<span class="mono">k</span> (
+                <span class="mono">h</span>/<span class="mono">l</span> between columns),
+                <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close
+                or clear. Off by default; when off the board behaves exactly as before.
+              </div>
+            </div>
+            <div class="setting-input">
+              <Switch :checked="ui.keyboardNavEnabled" @update:checked="ui.setKeyboardNavEnabled" />
+            </div>
+          </div>
         </div>
       </Card>
 

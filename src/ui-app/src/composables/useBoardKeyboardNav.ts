@@ -13,6 +13,12 @@ interface UseBoardKeyboardNavOptions {
   tasks: Ref<Task[]>;
   /** Opens a task — the same behavior as clicking its card. */
   open: (t: Task) => void;
+  /** Opt-in toggle from Settings; when false no keys are handled (req 9). */
+  enabled: Ref<boolean>;
+  /** True while a task panel/drawer is open — governs the two-stage Esc. */
+  panelOpen: Ref<boolean>;
+  /** Closes the open task panel, leaving the card highlighted. */
+  closePanel: () => void;
 }
 
 const EDITABLE_SELECTOR = "input, textarea, [contenteditable]";
@@ -38,34 +44,50 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   return !!target.closest(INTERACTIVE_SELECTOR);
 }
 
-/** Single-task-list keyboard navigation over the board (req 1–8 for #0290).
+/**
+ * Keyboard navigation over the board (#0290), opt-in via Settings (req 9):
  *
- *  j / ArrowDown  — move highlight down one task
- *  k / ArrowUp    — move highlight up one task
- *  Shift+j/k      — move a page (chunk) at a time
- *  Enter          — open the highlighted task
- *  Esc            — clear the highlight
+ *  j / Down  — move highlight down one task
+ *  k / Up    — move highlight up one task
+ *  h / Left  — move to the first card of the previous column
+ *  l / Right — move to the first card of the next column
+ *  Shift+j/k — move a page (chunk) at a time
+ *  Enter     — open the highlighted task
+ *  Esc       — two-stage: a task panel is open → close it and keep the card
+ *              highlighted; otherwise clear the highlight
  *
- *  The highlight index is derived from the live DOM (.task-card rows), so it
- *  always stays within what is actually on screen — there is no virtualization
- *  gap to drift into (req 3). The highlighted row is scrolled into view when it
- *  would go off-screen (req 7).
+ *  The reachable rows come from the live DOM (.task-card / .board-col), so the
+ *  highlight always stays within what is actually on screen — no virtualization
+ *  gap (req 3), and collapsed columns are excluded. The highlighted row is
+ *  scrolled into view when it would go off-screen (req 7).
  */
 export function useBoardKeyboardNav({
   containerRef,
   tasks,
   open,
+  enabled,
+  panelOpen,
+  closePanel,
 }: UseBoardKeyboardNavOptions): BoardKeyboardNav {
   const highlightId = ref<string | null>(null);
 
+  /** Cards reachable by the keyboard: excludes rows hidden by a collapsed
+   *  column (`.board-col.collapsed .col-body { display:none }`). */
   function cardEls(): HTMLElement[] {
     const container = containerRef.value;
     if (!container) return [];
-    // Exclude cards inside collapsed columns: the board hides those rows
-    // (.board-col.collapsed .col-body { display:none }), and the highlight must
-    // never land on (or be scrolled to) an invisible card (req 3).
     return Array.from(container.querySelectorAll<HTMLElement>(".task-card")).filter(
       (el) => !el.closest(".board-col.collapsed"),
+    );
+  }
+
+  /** Columns (`.board-col`), in DOM/left-to-right order, excluding collapsed
+   *  ones — the horizontal axis for h/l and Left/Right. */
+  function columnEls(): HTMLElement[] {
+    const container = containerRef.value;
+    if (!container) return [];
+    return Array.from(container.querySelectorAll<HTMLElement>(".board-col")).filter(
+      (el) => !el.classList.contains("collapsed"),
     );
   }
 
@@ -76,6 +98,12 @@ export function useBoardKeyboardNav({
 
   function scrollToEl(el: HTMLElement): void {
     el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function setHighlight(el: HTMLElement | undefined): void {
+    if (!el?.dataset.taskId) return;
+    highlightId.value = el.dataset.taskId;
+    scrollToEl(el);
   }
 
   /** A "page" step: roughly how many cards fit in the visible container height,
@@ -97,25 +125,40 @@ export function useBoardKeyboardNav({
     return i;
   }
 
-  function move(delta: number): void {
+  function moveVertical(delta: number): void {
     const els = cardEls();
     if (els.length === 0) return;
     // No highlight yet: start from the first card when moving down; moving up
     // from nothing stays unhighlighted (nothing above to reach).
     if (highlightId.value === null) {
-      if (delta > 0) {
-        const first = els[0].dataset.taskId ?? null;
-        highlightId.value = first;
-        if (first) scrollToEl(els[0]);
-      }
+      if (delta > 0) setHighlight(els[0]);
       return;
     }
-    const next = clamp(currentIndex() + delta, els.length);
-    const el = els[next];
-    if (el?.dataset.taskId) {
-      highlightId.value = el.dataset.taskId;
-      scrollToEl(el);
+    setHighlight(els[clamp(currentIndex() + delta, els.length)]);
+  }
+
+  function moveHorizontal(dir: 1 | -1): void {
+    const cols = columnEls();
+    if (cols.length === 0) return;
+    if (highlightId.value === null) {
+      // Nothing highlighted: reaching right lands on the first column's first
+      // card; reaching left stays out (nothing to the left to show).
+      if (dir === 1 && cardEls().length) setHighlight(cardEls()[0]);
+      return;
     }
+    const cur = cardEls()[currentIndex()];
+    if (!cur) return;
+    const curCol = cur.closest<HTMLElement>(".board-col");
+    const start = curCol ? cols.indexOf(curCol) : -1;
+    // Walk to the next/previous non-collapsed column that actually has cards.
+    for (let i = start + dir; i >= 0 && i < cols.length; i += dir) {
+      const first = cols[i].querySelector<HTMLElement>(".task-card");
+      if (first) {
+        setHighlight(first);
+        return;
+      }
+    }
+    // No reachable column in that direction — stay where we are.
   }
 
   /** Reconcile the highlight if the highlighted task leaves the list (e.g. a
@@ -130,24 +173,46 @@ export function useBoardKeyboardNav({
   }
 
   let watcher: (() => void) | undefined;
+  let enabledWatcher: (() => void) | undefined;
 
   function onKeydown(e: KeyboardEvent): void {
-    // Never hijack keys when focus is on an editable field (req 6) or on an
-    // interactive control that owns the key (a card action button, link, or
-    // select): pressing Enter there must perform that control's native action,
-    // not open a task.
-    if (isEditableTarget(e.target) || isInteractiveTarget(e.target)) return;
+    if (!enabled.value) return;
+    // Never hijack keys when focus is in an editable field (req 6).
+    if (isEditableTarget(e.target)) return;
+    // Keep interactive controls' native activation (Enter/Space) intact, but
+    // still allow Escape so the two-stage panel-close/clear still works.
+    if (e.key !== "Escape" && isInteractiveTarget(e.target)) return;
+
+    // A task panel is open: only Esc is meaningful here — it closes the panel
+    // and keeps the card highlighted (two-stage, req 5 / review round 2).
+    if (panelOpen.value) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closePanel();
+      }
+      return;
+    }
 
     switch (e.key) {
       case "j":
       case "ArrowDown":
         e.preventDefault();
-        move(e.shiftKey ? pageStep() : 1);
+        moveVertical(e.shiftKey ? pageStep() : 1);
         break;
       case "k":
       case "ArrowUp":
         e.preventDefault();
-        move(e.shiftKey ? -pageStep() : -1);
+        moveVertical(e.shiftKey ? -pageStep() : -1);
+        break;
+      case "h":
+      case "ArrowLeft":
+        e.preventDefault();
+        moveHorizontal(-1);
+        break;
+      case "l":
+      case "ArrowRight":
+        e.preventDefault();
+        moveHorizontal(1);
         break;
       case "Enter": {
         const id = highlightId.value;
@@ -174,10 +239,15 @@ export function useBoardKeyboardNav({
       () => tasks.value.map((t) => t.id).join(","),
       () => reconcile(),
     );
+    // Turning the feature off clears any leftover highlight.
+    enabledWatcher = watch(enabled, (on) => {
+      if (!on) highlightId.value = null;
+    });
   });
   onBeforeUnmount(() => {
     window.removeEventListener("keydown", onKeydown);
     watcher?.();
+    enabledWatcher?.();
   });
 
   return {
