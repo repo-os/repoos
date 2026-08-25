@@ -11,13 +11,20 @@ export const getDebugger: RouteHandler = (ctx, _req, res) => {
   const session = runner.output(debuggerSessionId);
   return json(res, 200, {
     ok: true,
-    agent: debuggerAgent(),
+    agent: debuggerAgent(fromPersisted(state)),
     enabled,
     lines: session?.lines ?? [],
     running: runner.isRunning(debuggerSessionId),
     stats: runner.stats(debuggerSessionId),
   });
 };
+
+/** Persisted cli/model overrides for the Debugger, sanitized to non-empty strings. */
+function fromPersisted(state: { cli?: string; model?: string }): { cli?: string; model?: string } {
+  const cli = typeof state.cli === "string" && state.cli.trim() ? state.cli.trim() : undefined;
+  const model = typeof state.model === "string" && state.model.trim() ? state.model.trim() : undefined;
+  return { cli, model };
+}
 
 export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
   const { config, index, runner } = ctx;
@@ -31,7 +38,7 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return json(res, 400, { error: "message text is required" });
 
-  const agent = debuggerAgent();
+  const agent = debuggerAgent(fromPersisted(state));
   const context = repoContextForDebugger(index);
   const existing = runner.output(debuggerSessionId);
   const result = existing

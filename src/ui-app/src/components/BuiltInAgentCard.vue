@@ -32,19 +32,25 @@ interface BuiltInAgentState {
   isRunning?: boolean;
 }
 
-const defaultState = computed<BuiltInAgentState>(() => ({
+// Effective defaults for a fresh install: only applied once the config meta has
+// actually loaded. Seeding cli/model from these before `agentsMeta` resolves
+// would persist a stub value the moment the user toggles anything, so `state`
+// starts with empty cli/model and they're filled in below.
+const defaultCli = computed(() => config.agentsMeta.clis[0] ?? "opencode");
+const defaultModel = computed(() => config.agentsMeta.models[0] ?? "default");
+
+const state = ref<BuiltInAgentState>({
   enabled: false,
   schedule: "manual",
-  cli: config.agentsMeta.clis[0] ?? "opencode",
-  model: config.agentsMeta.models[1] ?? "big pickle",
-}));
-
-const state = ref<BuiltInAgentState>({ ...defaultState.value });
+  cli: "",
+  model: "",
+});
 
 // Keeps the row in sync with persisted config: config.data may be empty when
 // the component mounts, and another tab can change builtInAgents at any time.
-// Merge the server's value over local state on every change rather than
-// initializing once (stale-state fix from review).
+// On first run there is no persisted entry, so cli/model stay empty until the
+// user picks them (empty is never persisted); once the server has a value it is
+// merged over local state on every change rather than initializing once.
 watch(
   () => {
     const data = config.data as Record<string, unknown> | null;
@@ -54,10 +60,11 @@ watch(
     const persisted = agents?.[props.agent] as BuiltInAgentState | undefined;
     if (persisted) {
       state.value = {
-        ...defaultState.value,
-        ...persisted,
-        cli: persisted.cli || defaultState.value.cli,
-        model: persisted.model || defaultState.value.model,
+        enabled: persisted.enabled ?? false,
+        schedule: persisted.schedule ?? "manual",
+        lastRunAt: persisted.lastRunAt,
+        cli: persisted.cli || defaultCli.value,
+        model: persisted.model || defaultModel.value,
       };
     }
   },
@@ -121,14 +128,29 @@ const lastRunDisplay = computed(() => {
   });
 });
 
+// The value handed to the control: an empty cli/model (fresh install, nothing
+// persisted yet) falls back to the effective default for display only, so the
+// user sees a real label instead of a blank pair — but nothing is persisted
+// until they explicitly choose.
+const effectiveCli = computed(() => state.value.cli || defaultCli.value);
+const effectiveModel = computed(() => state.value.model || defaultModel.value);
+
 async function saveState(): Promise<void> {
   try {
     const data = config.data as Record<string, unknown> | null;
     const existing = (data?.builtInAgents as Record<string, unknown>) || {};
+    // Never persist an empty cli/model — only values the user actually chose.
+    const entry: Record<string, unknown> = {
+      enabled: state.value.enabled,
+      schedule: state.value.schedule,
+    };
+    if (state.value.lastRunAt) entry.lastRunAt = state.value.lastRunAt;
+    if (state.value.cli) entry.cli = state.value.cli;
+    if (state.value.model) entry.model = state.value.model;
     await api("/api/config", JSON_OPTS("PATCH", {
       builtInAgents: {
         ...existing,
-        [props.agent]: state.value,
+        [props.agent]: entry,
       },
     }));
     const res = (await api("/api/config")) as Record<string, unknown>;
@@ -222,9 +244,9 @@ async function runNow(): Promise<void> {
         <label>Coding agent + Model</label>
         <AgentModelControl
           :cli-options="cliOptions"
-          :model-options="modelsFor(state.cli, state.model)"
-          :cli="state.cli"
-          :model="state.model"
+          :model-options="modelsFor(effectiveCli, effectiveModel)"
+          :cli="effectiveCli"
+          :model="effectiveModel"
           @update:cli="onCliUpdate"
           @update:model="onModelUpdate"
         />

@@ -1457,14 +1457,19 @@ export const debuggerSessionId = "__repoos-debugger__";
 /** The Debugger agent's role name, used to route its chat prompt. */
 export const DEBUGGER_NAME = "debugger";
 
-/** The Debugger agent: a chat-first bug diagnostician (no background scan). */
-export function debuggerAgent(): Agent {
+/**
+ * The Debugger agent: a chat-first bug diagnostician (no background scan).
+ * Its CLI/model can be overridden from the persisted built-in agent state so
+ * the inline "coding agent + model" selector on the Agents page actually drives
+ * which model the Debugger runs on.
+ */
+export function debuggerAgent(override?: { cli?: string; model?: string }): Agent {
   // previously "big pickle"
   const base = { cli: "opencode", model: "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731" } as const;
   return {
     name: DEBUGGER_NAME,
-    cli: base.cli,
-    model: base.model,
+    cli: override?.cli || base.cli,
+    model: override?.model || base.model,
     enabled: true,
     instructions:
       "You are the Debugger, a bug diagnostician. When you're handed a pasted bug report, stack trace, or error message, identify the root cause and suggest a concrete, actionable fix. Ask for more context only when the report is too ambiguous to diagnose. Ground your diagnosis in the repository when the pasted text references code you can inspect.",
