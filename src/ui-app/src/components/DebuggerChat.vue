@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
@@ -9,6 +8,8 @@ import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import type { AgentOutputEntry } from "../types";
 import VoiceDictate from "./VoiceDictate.vue";
+import AgentModelModal from "./AgentModelModal.vue";
+import type { SelectSearchOption } from "./SelectSearchGroup.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 
 const props = defineProps<{ open: boolean }>();
@@ -23,7 +24,6 @@ const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
 const repo = useRepoStore();
 const config = useConfigStore();
 const ui = useUiStore();
-const router = useRouter();
 const draft = ref("");
 const submitting = ref(false);
 const hydratedEnabled = ref(false);
@@ -51,15 +51,35 @@ const repairTaskId = computed(() => {
   return matches.length ? matches[matches.length - 1][1] : null;
 });
 const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
-const providerError = computed(() => lines.value
-  .map(lineText)
-  .reverse()
-  .find((text) => /unexpected server error|unknownerror|connection|credit|rate limit/i.test(text)) ?? null);
-
-function configureDebugger(): void {
-  emit("close");
-  void router.push({ name: "agents" });
-}
+/**
+ * True when the most recent Debugger turn ended without a working reply.
+ * Detects genuine provider/CLI failures — a `sys`/`err` error line appended
+ * after the latest human message — NOT free text in the assistant's diagnosis,
+ * which can legitimately mention "connection", "credit", "server error", etc.
+ * Scanning assistant text was the false-negative source (0275): a correct
+ * diagnosis that discussed e.g. a connection was misread as "could not
+ * respond". Also scoped to the latest turn so an old error doesn't linger.
+ */
+const providerError = computed(() => {
+  const isErrorLine = (entry: AgentOutputEntry): string | null => {
+    const text = "type" in entry
+      ? entry.type === "sys" ? entry.d : null
+      : entry.s === "err" || entry.s === "sys" ? entry.d : null;
+    if (!text) return null;
+    return /unexpected server error|unknownerror|connection|credit|rate limit|out of credit|disconnected/i.test(text)
+      ? text
+      : null;
+  };
+  // Walk back from the end, through the turn that's still "open" after the
+  // most recent human message, looking for a genuine error line.
+  for (let i = lines.value.length - 1; i >= 0; i--) {
+    const entry = lines.value[i];
+    if ("type" in entry && entry.type === "human") break;
+    const hit = isErrorLine(entry);
+    if (hit) return hit;
+  }
+  return null;
+});
 
 async function repair(): Promise<void> {
   if (!repairTaskId.value || repairing.value || !diagnosis.value) return;
@@ -88,6 +108,63 @@ function evalBuiltInEnabled(): boolean {
   const agents = data.builtInAgents as Record<string, { enabled?: boolean }> | undefined;
   if (!agents || agents.debugger === undefined) return hydratedEnabled.value;
   return Boolean(agents.debugger.enabled);
+}
+
+// ---- Debugger agent/model selection (0275) ----
+// The persisted built-in agent state drives which CLI/model the Debugger runs
+// on (agents.ts debuggerAgent + routes/debugger.ts fromPersisted). The "Change
+// agent or model" button opens the same coding-agent + model modal used across
+// the UI and saves straight back to that persisted state.
+
+const modelModalOpen = ref(false);
+
+const debuggerState = computed(() => {
+  const data = config.data as Record<string, unknown> | null;
+  const agents = data?.builtInAgents as
+    | Record<string, { cli?: string; model?: string; enabled?: boolean }>
+    | undefined;
+  return agents?.debugger ?? {};
+});
+
+const debuggerCli = computed(() => debuggerState.value.cli || config.agentsMeta.clis[0] || "opencode");
+const debuggerModel = computed(() => debuggerState.value.model || "default");
+const debuggerCliOptions = computed(() => config.agentsMeta.clis ?? []);
+const debuggerModelOptions = computed<SelectSearchOption[]>(() =>
+  config.modelsFor(debuggerCli.value, debuggerState.value.model || undefined),
+);
+
+function openModelSelection(): void {
+  modelModalOpen.value = true;
+}
+
+/** Keep the Debugger's model override in sync (empty override = "default"). */
+async function persistDebuggerModel(cli?: string, model?: string): Promise<void> {
+  try {
+    const data = config.data as Record<string, unknown> | null;
+    const existing = (data?.builtInAgents as Record<string, unknown>) || {};
+    // Spread the current entry (spreading a missing key is a no-op) and only
+    // override the fields that actually changed.
+    const entry: Record<string, unknown> = {
+      ...(existing.debugger as Record<string, unknown> | undefined),
+    };
+    if (cli !== undefined) entry.cli = cli;
+    if (model !== undefined) entry.model = model;
+    const res = await api<{ config: Record<string, unknown> }>("/api/config", JSON_OPTS("PATCH", {
+      builtInAgents: { ...existing, debugger: entry },
+    }));
+    config.data = res.config;
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
+function onDebuggerCli(v: string): void {
+  // Switching CLI resets the model to default (mirrors AgentModelModal.selectCli).
+  void persistDebuggerModel(v, "default");
+}
+
+function onDebuggerModel(v: string): void {
+  void persistDebuggerModel(undefined, v);
 }
 
 function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
@@ -250,7 +327,7 @@ onMounted(() => {
       <div v-if="providerError && !busy" class="debugger-provider-error" role="alert">
         <strong>The Debugger's agent or model could not respond.</strong>
         <span>It may be out of credit, unavailable, or disconnected. Choose a different agent or model, then try again.</span>
-        <button type="button" @click="configureDebugger">Change agent or model</button>
+        <button type="button" @click="openModelSelection">Change agent or model</button>
       </div>
       <div v-if="repairTaskId && !busy" class="debugger-repair">
         <button type="button" :disabled="repairing || repaired" @click="repair">{{ repairing ? "Implementing fix…" : repaired ? "Fix handed to engineer" : "Implement fix" }}</button>
@@ -288,6 +365,17 @@ onMounted(() => {
       </button>
     </form>
     <div class="debugger-footnote">Paste a bug → root cause + suggested fix · Conversation stays open</div>
+
+    <AgentModelModal
+      :open="modelModalOpen"
+      :cli-options="debuggerCliOptions"
+      :model-options="debuggerModelOptions"
+      :cli="debuggerCli"
+      :model="debuggerModel"
+      @update:open="(v) => (modelModalOpen = v)"
+      @update:cli="onDebuggerCli"
+      @update:model="onDebuggerModel"
+    />
   </aside>
 </template>
 
