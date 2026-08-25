@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T05:41:53Z"
+review_passes: 1
 id: "0284"
 title: "Port-stealing race: detectConflict trusts the lockfile alone, never probes the port"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/port-stealing-race-detectconflict-trusts
 created_at: "2026-08-24T19:31:09Z"
-updated_at: "2026-08-25T05:38:50Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -38,3 +39,4 @@ Found while diagnosing and fixing the reload-storm crash (#0271) — see that ta
 - 2026-08-25T05:06:35Z · model_override
 - 2026-08-25T05:32:53Z · status active→review
 - 2026-08-25T05:38:50Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+
