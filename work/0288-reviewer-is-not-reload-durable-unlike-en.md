@@ -2,7 +2,7 @@
 id: "0288"
 title: "Reviewer is not reload-durable, unlike engineer and PM — dies mid-review on every server reload"
 type: bug
-status: active
+status: review
 needs_merge: true
 priority: p1
 area: server
@@ -11,10 +11,9 @@ created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
 review_model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T00:57:20Z"
+updated_at: "2026-08-25T01:19:27Z"
 review_passes: 1
 handoff_signal_retry_count: 2
-check_retry_count: 1
 ---
 ## Problem
 Reviews are currently failing to complete at a high rate. Confirmed live right now: #0276, #0281, and #0285 all show a reviewer session starting, running for under 2 minutes, then dying with no report (.repoos/reviews/<id>.md never written), no "review completed" line in .repoos/logs/tasks/<id>.log, and no live process. This is not isolated — it is systemic and ongoing.
@@ -60,3 +59,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T00:17:15Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-25T00:57:00Z · review_model_override
 - 2026-08-25T00:57:20Z · status review→active
+- 2026-08-25T01:19:27Z · status active→review
