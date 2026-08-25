@@ -20,6 +20,24 @@ function closeServer(server: net.Server): Promise<void> {
   return new Promise((resolve) => server.close(() => resolve()));
 }
 
+/**
+ * Grab an ephemeral (OS-assigned) port. The probe tests must never hardcode a
+ * fixed port: on a busy/shared runner that port could genuinely be occupied by
+ * an unrelated process, turning a "no conflict here" expectation into a false
+ * positive. Reserving a free port then closing it (and re-binding when a test
+ * needs a real listener) removes that flakiness.
+ */
+function reservePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once("error", reject);
+    srv.listen({ port: 0, host: "127.0.0.1" }, () => {
+      const p = (srv.address() as { port: number }).port;
+      srv.close(() => resolve(p));
+    });
+  });
+}
+
 describe("ServeReaper", () => {
   let tmpDir: string;
   let reaper: ServeReaper;
@@ -88,21 +106,24 @@ describe("ServeReaper", () => {
   });
 
   it("does not detect conflict for different ports", async () => {
-    reaper.register(43111, "127.0.0.1");
-    const conflict = await reaper.detectConflict(43112, "127.0.0.1");
+    const taken = await reservePort();
+    reaper.register(taken, "127.0.0.1");
+    const other = await reservePort();
+    const conflict = await reaper.detectConflict(other, "127.0.0.1");
 
     expect(conflict).toBeNull();
   });
 
   it("does not detect conflict for different hosts", async () => {
-    reaper.register(43111, "127.0.0.1");
-    const conflict = await reaper.detectConflict(43111, "0.0.0.0");
+    const taken = await reservePort();
+    reaper.register(taken, "127.0.0.1");
+    const conflict = await reaper.detectConflict(taken, "0.0.0.0");
 
     expect(conflict).toBeNull();
   });
 
   it("detects a live listener even when the lockfile is missing (#0284)", async () => {
-    const probePort = 39817;
+    const probePort = await reservePort();
     const server = await serveOn(probePort);
 
     try {
@@ -112,13 +133,14 @@ describe("ServeReaper", () => {
       const conflict = await reaper.detectConflict(probePort, "127.0.0.1");
       expect(conflict).toBeDefined();
       expect(conflict).toContain(`Port ${probePort} is already in use`);
+      expect(conflict).toContain("lockfile is missing or corrupt");
     } finally {
       await closeServer(server);
     }
   });
 
   it("detects a live listener even when the lockfile points at a dead PID (#0284)", async () => {
-    const probePort = 39817;
+    const probePort = await reservePort();
     const server = await serveOn(probePort);
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
     require("node:fs").writeFileSync(
@@ -137,6 +159,33 @@ describe("ServeReaper", () => {
       const conflict = await reaper.detectConflict(probePort, "127.0.0.1");
       expect(conflict).toBeDefined();
       expect(conflict).toContain(`Port ${probePort} is already in use`);
+      expect(conflict).toContain("names a dead process on this port");
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  it("reports a present-but-different lockfile honestly (not as missing/stale) (#0284)", async () => {
+    const probePort = await reservePort();
+    const server = await serveOn(probePort);
+    mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
+    require("node:fs").writeFileSync(
+      join(tmpDir, ".repoos", "serve.lock"),
+      JSON.stringify({
+        pid: process.pid, // live PID, but for a different endpoint
+        port: probePort,
+        host: "192.0.2.1",
+        startedAt: new Date().toISOString(),
+      }),
+    );
+
+    try {
+      // The lockfile is present and valid but names a different host; the
+      // message must not claim it is "missing or corrupt" or "a dead process".
+      const conflict = await reaper.detectConflict(probePort, "127.0.0.1");
+      expect(conflict).toBeDefined();
+      expect(conflict).toContain(`Port ${probePort} is already in use`);
+      expect(conflict).toContain("names a different endpoint");
     } finally {
       await closeServer(server);
     }

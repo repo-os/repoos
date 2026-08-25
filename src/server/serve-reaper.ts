@@ -285,12 +285,24 @@ export class ServeReaper {
       this.removeLock();
     }
 
-    // A live listener the (missing/stale/corrupt) lockfile doesn't explain is
-    // still a conflict: binding would either EADDRINUSE or steal a port some
-    // live process — possibly another serve — already holds (#0284).
+    // A live listener the lockfile doesn't explain is still a conflict: binding
+    // would either EADDRINUSE or steal a port some live process — possibly
+    // another serve — already holds (#0284). The message distinguishes the two
+    // reasons the lockfile can differ from reality so a present-and-valid
+    // lockfile (for a different port/host) isn't dismissed as "missing/stale".
     if (listening) {
+      // We reach here only when the lockfile couldn't explain the live listener.
+      // Same endpoint + live PID was handled above; same endpoint + dead PID was
+      // just reaped (stale). Anything else means the lockfile points elsewhere,
+      // or is absent — so say which, rather than blanket-claiming "missing/stale".
+      const lockAccounted =
+        info === null
+          ? "the serve lockfile is missing or corrupt"
+          : info.port === port && info.host === host
+            ? "the serve lockfile names a dead process on this port"
+            : `the serve lockfile names a different endpoint (${info.host}:${info.port})`;
       return (
-        `Port ${port} is already in use by a live process on ${probeHost}, but the serve lockfile is missing or stale. ` +
+        `Port ${port} is already in use by a live process on ${probeHost}, but ${lockAccounted}. ` +
         `Refusing to bind rather than steal a port a live process owns — choose a different port with --port.`
       );
     }

@@ -46,6 +46,7 @@ import http from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBuildStamp } from "../core/build.js";
+import { isPortListening } from "./serve-reaper.js";
 
 /** The answer POST /api/server/restart and the reload triggers report. */
 export type ReloadState =
@@ -105,6 +106,8 @@ export interface ReloadManagerOptions {
    * died right after the old process exited, leaving the port listenerless.
    */
   confirmMs?: number;
+  /** How long the old process re-binds its listener before giving up, in ms. */
+  rebindTimeoutMs?: number;
   log?: (msg: string) => void;
 }
 
@@ -469,7 +472,7 @@ export class ReloadManager {
         this.parkBuild(current);
       }
       this.log(
-        `reload: handover aborted — close-out in progress${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}`,
+        `reload: handover aborted — close-out in progress${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}`,
       );
     } else if (confirmed && !this.childExited) {
       // A real handoff: whatever run of failures preceded it is over.
@@ -506,10 +509,12 @@ export class ReloadManager {
       );
       this.backoffUntil = Date.now() + backoffMs;
       this.log(
-        `reload: replacement failed to become ready${rebound ? "" : " — COULD NOT RE-BIND (server may be down)"}` +
+        `reload: replacement failed to become ready${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}` +
           ` — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
       );
-      this.options.onReloadFailed?.(rebound ? "replacement did not become ready" : "replacement failed and re-bind failed");
+      this.options.onReloadFailed?.(
+        rebound === "bound" ? "replacement did not become ready" : `replacement failed and ${rebound}`,
+      );
     }
     this.child = null;
   }
@@ -591,19 +596,36 @@ export class ReloadManager {
     }
   }
 
-  /** Re-bind the listener after an aborted reload so the old process keeps serving. */
-  private async tryRebind(): Promise<boolean> {
-    if (!this.drained) return true; // we never released the listener
-    const deadline = Date.now() + REBIND_TIMEOUT_MS;
+  /**
+   * Re-bind the listener after an aborted reload so the old process keeps
+   * serving. Returns `"bound"` when the listener is back, or a reason string
+   * describing why it could not be recovered.
+   *
+   * #0284: a bind attempt by an unrelated `repoos serve` landing in our drain
+   * window can steal the port out from under us — we released the listener in
+   * waitForReplacement, it grabbed it, and now we can never re-bind (each
+   * attempt EADDRINUSEs). Distinguishing that from a transient failure lets
+   * the old process surface a loud, actionable error instead of silently
+   * looping as a listenerless zombie. We probe the port once the retry window
+   * closes: if *something else* is listening there now, the port was stolen
+   * rather than merely not-yet-freed.
+   */
+  private async tryRebind(): Promise<"bound" | string> {
+    if (!this.drained) return "bound"; // we never released the listener
+    const deadline = Date.now() + (this.options.rebindTimeoutMs ?? REBIND_TIMEOUT_MS);
     while (Date.now() < deadline) {
       try {
         await this.options.listen();
-        return true;
+        return "bound";
       } catch {
         await sleep(200);
       }
     }
-    return false;
+    const probeHost = this.options.host === "0.0.0.0" ? "127.0.0.1" : this.options.host;
+    const stolen = await isPortListening(this.options.port, probeHost);
+    return stolen
+      ? `port ${this.options.port} was stolen by another process during the reload drain`
+      : `could not re-bind port ${this.options.port} within ${this.options.rebindTimeoutMs ?? REBIND_TIMEOUT_MS}ms`;
   }
 
   private armRetry(): void {
