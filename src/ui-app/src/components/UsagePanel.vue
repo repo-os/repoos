@@ -78,25 +78,49 @@ const days = computed(() => stats.value?.days ?? []);
 
       <div v-if="visibleRoles.length" class="usage-roles">
         <div class="usage-subtitle">by role</div>
-        <div class="usage-role-list">
-          <div v-for="r in visibleRoles" :key="r.role" class="usage-role">
-            <span class="usage-role-name">{{ r.role }}</span>
-            <span>{{ fmtElapsed(r.totalElapsedMs) }}</span>
-            <span>{{ fmtTokens(r.totalTokens) }}</span>
-            <span>{{ fmtCost(r.totalCostUsd, r.costSource) }}</span>
-          </div>
+        <div class="usage-table-wrap">
+          <table class="usage-table">
+            <thead>
+              <tr>
+                <th class="ta-left">name</th>
+                <th class="ta-right">time</th>
+                <th class="ta-right">tokens</th>
+                <th class="ta-right">cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in visibleRoles" :key="r.role" class="usage-role">
+                <td class="usage-role-name ta-left">{{ r.role }}</td>
+                <td class="ta-right">{{ fmtElapsed(r.totalElapsedMs) }}</td>
+                <td class="ta-right">{{ fmtTokens(r.totalTokens) }}</td>
+                <td class="ta-right">{{ fmtCost(r.totalCostUsd, r.costSource) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div v-if="days.length" class="usage-days">
         <div class="usage-subtitle">by day (server local time)</div>
-        <div class="usage-role-list">
-          <div v-for="d in days" :key="d.day" class="usage-role">
-            <span class="usage-role-name">{{ d.day }}</span>
-            <span>{{ fmtElapsed(d.totalElapsedMs) }}</span>
-            <span>{{ fmtTokens(d.totalTokens) }}</span>
-            <span>{{ fmtCost(d.totalCostUsd, d.costSource) }}</span>
-          </div>
+        <div class="usage-table-wrap">
+          <table class="usage-table">
+            <thead>
+              <tr>
+                <th class="ta-left">date</th>
+                <th class="ta-right">time</th>
+                <th class="ta-right">tokens</th>
+                <th class="ta-right">cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in days" :key="d.day" class="usage-role">
+                <td class="usage-role-name ta-left">{{ d.day }}</td>
+                <td class="ta-right">{{ fmtElapsed(d.totalElapsedMs) }}</td>
+                <td class="ta-right">{{ fmtTokens(d.totalTokens) }}</td>
+                <td class="ta-right">{{ fmtCost(d.totalCostUsd, d.costSource) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
       </div>
@@ -163,22 +187,44 @@ const days = computed(() => stats.value?.days ?? []);
   color: var(--txt-faint);
   margin-bottom: 6px;
 }
-.usage-role-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.usage-table-wrap {
+  margin-top: 6px;
+  overflow-x: auto;
 }
-.usage-role {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 11px;
   color: var(--txt-dim);
+  white-space: nowrap;
+}
+.usage-table th,
+.usage-table td {
+  padding: 4px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.usage-table td:first-child,
+.usage-table th:first-child {
+  padding-left: 0;
+}
+.usage-table th {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--txt-faint);
+  font-weight: 600;
+}
+.ta-left {
+  text-align: left !important;
+}
+.ta-right {
+  text-align: right !important;
 }
 .usage-role-name {
   text-transform: capitalize;
   color: var(--cyan);
-  min-width: 92px;
 }
 .usage-empty {
   font-size: 11.5px;
