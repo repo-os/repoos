@@ -308,6 +308,8 @@ export interface SessionUsage {
   sessionType: string;
   agent: string;
   model: string;
+  /** The actual coding CLI/engine (e.g. "opencode", "claude") — distinct from `agent`, which is the config role name. */
+  codingAgent: string;
   startedAt: string;
   endedAt: string | null;
   elapsedMs: number;

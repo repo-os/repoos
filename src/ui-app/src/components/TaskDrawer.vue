@@ -1520,6 +1520,14 @@ watch(
 /** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
 const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
 
+/** Session IDs whose "agent / model" cell is expanded to show the full model name (collapsed by default). */
+const expandedSessionAgents = reactive(new Set<string>());
+
+function toggleSessionAgentExpand(sessionId: string): void {
+  if (expandedSessionAgents.has(sessionId)) expandedSessionAgents.delete(sessionId);
+  else expandedSessionAgents.add(sessionId);
+}
+
 /** Load the task's durable usage totals when the drawer opens or the task changes. */
 watch(
   () => ui.active?.id,
@@ -3007,7 +3015,14 @@ watch(
                       :class="{ 'task-usage-session-active': s.status === 'active' }"
                     >
                       <td class="task-usage-session-type ta-left">{{ s.sessionType }}</td>
-                      <td class="ta-left">{{ s.agent }} · {{ s.model }}</td>
+                      <td
+                        class="ta-left task-usage-session-agent"
+                        :title="expandedSessionAgents.has(s.sessionId) ? 'Click to collapse' : 'Click to show model'"
+                        @click="toggleSessionAgentExpand(s.sessionId)"
+                      >
+                        <span v-if="expandedSessionAgents.has(s.sessionId)">{{ s.codingAgent }} · {{ s.model }}</span>
+                        <span v-else>{{ s.codingAgent }}</span>
+                      </td>
                       <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
                       <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>
                       <td class="ta-right">{{ fmtElapsed(s.elapsedMs) }}</td>

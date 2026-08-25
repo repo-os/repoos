@@ -515,6 +515,10 @@ interface PersistedSession {
   createdAt?: string;
   completedAt?: string;
   updatedAt: string;
+  /** Agent config name (e.g. "engineer", "reviewer") — see Session.agent. */
+  agent?: string;
+  /** Model name — see Session.model. */
+  model?: string;
 }
 
 export interface AgentRunnerOptions {
@@ -3488,7 +3492,9 @@ export class AgentRunner {
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
-        (value.completedAt !== undefined && typeof value.completedAt !== "string")
+        (value.completedAt !== undefined && typeof value.completedAt !== "string") ||
+        (value.agent !== undefined && typeof value.agent !== "string") ||
+        (value.model !== undefined && typeof value.model !== "string")
       )
         return null;
       return value as PersistedSession;
@@ -3508,6 +3514,8 @@ export class AgentRunner {
       sessionId: saved.sessionId,
       workdir: saved.workdir,
       createdAt: saved.createdAt,
+      agent: saved.agent,
+      model: saved.model,
       accumulatedMs: 0,
       stalledEmitted: false,
     };
@@ -3561,6 +3569,8 @@ export class AgentRunner {
         engine: session.engine,
         workdir: session.workdir,
         createdAt: session.createdAt,
+        agent: session.agent,
+        model: session.model,
         completedAt,
         updatedAt: this.clock().toISOString(),
       };
