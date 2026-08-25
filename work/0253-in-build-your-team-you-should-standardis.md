@@ -10,10 +10,10 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-build-your-team-styling-and-
-model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+model_override: default
 review_model_override: default
 created_at: "2026-08-18T15:35:42Z"
-updated_at: "2026-08-25T12:45:25Z"
+updated_at: "2026-08-25T12:45:26Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 1
@@ -89,3 +89,4 @@ In "build your team" you should standardise the styling (now it's mixed between 
 - 2026-08-25T09:36:19Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
 - 2026-08-25T09:36:19Z · status active→review
 - 2026-08-25T12:45:25Z · review_model_override
+- 2026-08-25T12:45:26Z · model_override
