@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T06:42:25Z"
+review_passes: 1
 id: "0294"
 title: Extend PM chat canned questions across the task lifecycle
 type: feature
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/extend-pm-chat-canned-questions-across-t
 pm_model_override: default
 created_at: "2026-08-25T05:55:32Z"
-updated_at: "2026-08-25T06:41:32Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -88,3 +89,4 @@ None yet — this is a net-new UX affordance, not a bugfix.
 - 2026-08-25T06:26:16Z · pm_model_override
 - 2026-08-25T06:26:28Z · status ready→active, branch
 - 2026-08-25T06:41:32Z · status active→review
+
