@@ -9,8 +9,9 @@ import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 
-const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean }>(), {
+const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(), {
   dragEnabled: true,
+  highlighted: false,
 });
 
 const ui = useUiStore();
@@ -517,9 +518,11 @@ async function openPanelFromError(): Promise<void> {
 <template>
   <article
     ref="rootEl"
+    :data-task-id="task.id"
     class="task-card group flex shrink-0 cursor-pointer flex-col overflow-hidden rounded-[13px] border border-border bg-[var(--panel)] text-foreground transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-bright)]"
     :class="{
       flash: repo.flashId === task.id,
+      'kb-highlight': highlighted,
       'transition-success': repo.transitionState?.id === task.id,
       coding: repo.isRunning(task.id),
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,

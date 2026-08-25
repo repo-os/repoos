@@ -551,8 +551,13 @@ export async function cmdCheck(): Promise<void> {
   const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
   if (hasTestScript || hasTestFiles) {
     const cmd = hasTestScript ? "bun run test" : "bun test";
+    // The suite has grown past the old 120s cap (100+ files, ~1000 tests run
+    // under a maxWorkers=2 pool for contention control); a hard 120s timeout
+    // SIGTERMs `bun run test` mid-run even when every test is green. Give the
+    // test subprocess real headroom so a legitimately slow machine doesn't
+    // fail the gate on duration rather than on correctness.
     try {
-      execSync(cmd, { stdio: "inherit", timeout: 120_000 });
+      execSync(cmd, { stdio: "inherit", timeout: 300_000 });
       console.log(c.green("  ✔ Tests passed"));
       results.push(pass("tests"));
     } catch (e) {

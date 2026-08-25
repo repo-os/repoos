@@ -40,8 +40,8 @@ function applyDefaults(repo: ReturnType<typeof useRepoStore>) {
 }
 
 const props = withDefaults(
-  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean }>(),
-  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true }
+  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean; highlightId?: string | null }>(),
+  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true, highlightId: null }
 );
 
 const repo = useRepoStore();
@@ -239,7 +239,13 @@ const unackedBadge = computed(() =>
       <div v-if="leavingTaskName" class="board-ghost" :key="'ghost-' + repo.transitionState?.id">
         Moved to {{ repo.transitionState?.to }}
       </div>
-      <TaskCard v-for="t in repo.byStatus(col.id)" :key="t.id" :task="t" :drag-enabled="dragEnabled" />
+      <TaskCard
+        v-for="t in repo.byStatus(col.id)"
+        :key="t.id"
+        :task="t"
+        :drag-enabled="dragEnabled"
+        :highlighted="props.highlightId === t.id"
+      />
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
