@@ -108,9 +108,10 @@ describe("inline move-to-done errors", () => {
 
     await expect(repo.completeTask(task)).rejects.toBeInstanceOf(MoveToDoneError);
     expect(repo.doneErrorFor("0042")).toEqual({
-      message: "merge conflict: src/a.ts, src/b.ts",
+      message: "Merge conflict in 2 files.",
       conflicts: ["src/a.ts", "src/b.ts"],
       step: "merge",
+      detail: "merge conflict: src/a.ts, src/b.ts",
       hint: "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry.",
     });
     // The inline error replaces the global toast — nothing is pushed.
@@ -180,7 +181,7 @@ describe("inline move-to-done errors", () => {
     const task = makeTask({ id: "0042" });
 
     await expect(repo.completeTask(task)).rejects.toThrow();
-    expect(repo.doneErrorFor("0042")?.message).toBe("merge conflict: src/a.ts, src/b.ts");
+    expect(repo.doneErrorFor("0042")?.message).toBe("Merge conflict in 2 files.");
 
     // A retry fails with a different message → replaced, still scoped.
     stubDone({ "/done": { ok: false, error: "repoos check failed: build" } });

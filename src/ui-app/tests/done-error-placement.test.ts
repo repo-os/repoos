@@ -106,8 +106,9 @@ describe("move-to-done inline error placement", () => {
       // No "review passed · ready to finish" hint either — it would read as
       // contradictory right next to a failure banner.
       expect(wrapper.text()).not.toContain("ready to finish");
-      // The raw server message is preserved, not genericized.
-      expect(err.text()).toContain("merge conflict: src/a.ts, src/b.ts");
+      // The card shows the capped headline; the full raw reason lives in the
+      // expanded panel's `detail` (not genericized).
+      expect(err.text()).toContain("Merge conflict in 2 files.");
     },
   );
 
