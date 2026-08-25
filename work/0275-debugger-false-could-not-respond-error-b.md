@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: default
 created_at: "2026-08-24T15:57:09Z"
-updated_at: "2026-08-24T19:55:57Z"
+updated_at: "2026-08-25T15:11:13Z"
 ---
 ## Problem
 Several related debugger/agent-selection issues seen on the same run:
@@ -26,3 +27,4 @@ Several related debugger/agent-selection issues seen on the same run:
 
 - 2026-08-24T15:59:55Z · body
 - 2026-08-24T19:55:57Z · status inbox→ready
+- 2026-08-25T15:11:13Z · model_override
