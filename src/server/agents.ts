@@ -3665,6 +3665,15 @@ export class AgentRunner {
    * see the call site in cleanup()). Mirrors TaskWatchdog's own
    * `needsInput` escalation, just fired immediately instead of waiting for
    * the next staleness poll. Never overwrites an existing needsInput note.
+   *
+   * Also bumps `dev_error_count` — unlike the needsInput note, this always
+   * increments, even on a repeat error before a human clears the flag,
+   * because it counts real dev attempts, not distinct escalations (#0271
+   * follow-up: confirmed live on #0291 — an engineer session that errors out
+   * before ever reaching a review pass left `review_passes` at 0, so the
+   * board's `D# · R#` badge showed nothing for a task that genuinely had one
+   * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
+   * `dev` so D can exceed R when a round errored without being reviewed.)
    */
   private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
     try {
@@ -3675,7 +3684,15 @@ export class AgentRunner {
         defaultStatus: this.config.defaultStatus,
         defaultAssignee: this.config.defaultAssignee,
       });
-      if (current.needsInput) return;
+      const errCount = current.extra?.dev_error_count;
+      current.extra = {
+        ...current.extra,
+        dev_error_count: (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
+      };
+      if (current.needsInput) {
+        writeFileSync(task.absPath, serializeTask(current));
+        return;
+      }
       current.needsInput = true;
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);
