@@ -13,7 +13,7 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-25T00:16:03Z"
-updated_at: "2026-08-25T05:54:25Z"
+updated_at: "2026-08-25T05:54:35Z"
 handoff_signal_retry_count: 1
 ---
 Fix the tokens tab to use actual HTML tables (with proper table semantics) so tabular data is displayed correctly and legibly, and apply the same fix to the other surfaces that render token/usage tabular data.
