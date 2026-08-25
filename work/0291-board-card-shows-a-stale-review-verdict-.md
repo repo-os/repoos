@@ -2,7 +2,7 @@
 id: "0291"
 title: Board card shows a stale review verdict after a missed SSE event during reload
 type: bug
-status: review
+status: done
 priority: p1
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/board-card-shows-a-stale-review-verdict-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T05:34:16Z"
+updated_at: "2026-08-25T06:02:30Z"
 review_passes: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ Task #0286 went through 3 review rounds (2026-08-24T21:31-21:33, 21:36-21:38, 21
 - 2026-08-25T05:15:03Z · updated needsInput
 - 2026-08-25T05:27:51Z · review_model_override
 - 2026-08-25T05:34:16Z · pm_model_override
+- 2026-08-25T06:02:30Z · status review→done, release:success
