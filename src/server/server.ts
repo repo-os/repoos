@@ -1080,6 +1080,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       } else {
         runner.system(request.taskId, `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`);
       }
+    },
+    // A durable review turn completed (0288), possibly re-attached after a
+    // reload. The ReviewManager finalizes the report from its own durable
+    // session rather than a post-`runPrompt` continuation that would have died
+    // with the old process. `reviews` is assigned below but the callback only
+    // fires asynchronously after completion, so the closure is safe.
+    onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
+      if (!reviews) return;
+      try {
+        reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
+      } catch (err) {
+        console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
+      }
     } },
   );
 
@@ -1099,6 +1112,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner, index);
+
+  // Re-arm the hard review timeout for any durable review sessions re-attached
+  // from the previous server (0288): the spawner's timer died with it, so an
+  // adopted review would otherwise run without a deadline. Also registers the
+  // adopted turns in `reviews` so cancellation and run/chat mode work for them.
+  reviews.armAdoptedTimeouts();
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
@@ -1928,11 +1947,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           reload?.stop();
           // No preview survives the main server: on SIGTERM/SIGINT (or an
           // in-process close / reload handover) tear them all down so no
-          // orphan `repoos serve` process is left behind. Same for review
-          // agents — a one-shot child must not outlive the server that
-          // launched it and wait 15 minutes to write a report nobody reads.
-          reviews.cancelAll();
+          // orphan `repoos serve` process is left behind.
+          //
+          // Review agents differ (0288): on a RELOAD handover they must NOT be
+          // cancelled — they are durable (registered in the runner's durable
+          // registry + log files) and the replacement process re-attaches and
+          // finalizes their reports. Cancelling here would kill every in-flight
+          // review on every reload, re-introducing the mid-review death this
+          // task fixes. Only a REAL shutdown (not a reload) reaps them: a
+          // one-shot child must not outlive the server that launched it and
+          // wait 15 minutes to write a report nobody reads. The CTO monitor is
+          // still always cancelled (it is NOT durable), so it is reaped even on
+          // a reload rather than left as an un-adoptable orphan.
           cto.cancelAll();
+          if (!(reload?.isReloading ?? false)) {
+            reviews.cancelAll();
+          }
           await previews.stopAll();
           runner.flushAll();
           for (const c of clients) {

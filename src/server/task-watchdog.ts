@@ -48,8 +48,8 @@
  *   set is only a fast path).
  */
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";

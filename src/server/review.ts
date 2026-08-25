@@ -11,21 +11,26 @@
  *
  * Three layers keep it that way:
  *   1. the mission spells out the read-only boundary;
- *   2. the child is spawned through `runPrompt`, which injects no
+ *   2. the child is spawned through the runner's review path, which injects no
  *      `REPOOS_API_URL`/`REPOOS_TASK_ID`, so the agent has no pointer at the
  *      control plane's `/done` endpoint;
  *   3. `enforceStillInReview` reverts the task file if it comes back `done`
  *      anyway, and says so loudly (the same shape as the 0077 self-heal).
  *
+ * Reload durability (0288): the review run is spawned through `AgentRunner`
+ * (a durable per-session log file + a PID in the durable registry), so when
+ * the server self-reloads mid-review the NEW process's `adoptRunningAgents()`
+ * re-attaches to the still-alive reviewer, replays its output, and on
+ * completion fires `onReviewDone` — and THIS manager finalizes the report from
+ * that hook instead of from a post-`runPrompt` continuation that would have
+ * died with the old process.
+ *
  * Zero runtime deps — node:fs / node:path only.
  */
-import type { ChildProcess } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
   readFileSync,
-  renameSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
@@ -37,11 +42,8 @@ import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   estimateCostUsd,
   extractOneShotReportText,
-  parseOneShotLine,
   resolveReviewer,
   resolveReviewerForTask,
-  reviewCommand,
-  runPrompt,
   usageCostSource,
   type AgentRunner,
   type PromptResult,
@@ -97,12 +99,6 @@ const REPORT_CHARS = 20_000;
  * or in the UI (0110).
  */
 export const REVIEW_SESSION_ID_PREFIX = "review:";
-
-/** Cap on retained reviewer-conversation entries in the client and on disk. */
-const SESSION_LINES_CAP = 2000;
-
-/** Debounce window for persisting the reviewer conversation to disk. */
-const SESSION_WRITE_DEBOUNCE_MS = 300;
 
 const now = (): string => new Date().toISOString();
 
@@ -289,8 +285,13 @@ export function reviewFollowupMission(
 
 /** In-flight bookkeeping for one review run. */
 interface Run {
-  proc?: ChildProcess;
   cancelled: boolean;
+  /** Which turn is in flight: a fresh report ("run") or a follow-up chat ("chat"). */
+  mode: "run" | "chat";
+  /** True when the hard timeout fired (the child was killed). */
+  timedOut?: boolean;
+  /** The timeout timer, so it can be cleared on completion/cancel. */
+  timer?: ReturnType<typeof setTimeout>;
 }
 
 /** How long a guard revert stays claimable by the review trigger, in ms. */
@@ -371,19 +372,75 @@ function extractReportSections(markdown: string): {
   };
 }
 
+/**
+ * Reconstruct the review report from a durable runner session's parsed
+ * transcript (0288). This is the `runPrompt`-era `extractOneShotReportText`,
+ * re-sourced from the entries the runner keeps in the review session so the
+ * report can be built after a reload. Structured engines (opencode/claude/
+ * qwen/codex) surface the final answer as the LAST `text` entry; the plain
+ * path (kiro) keeps each line as an `{ s: "out", d }` entry whose `d` values
+ * concatenate into the report.
+ */
+function extractReportFromSession(cli: string, lines: AgentOutputEntry[], fallback: string): string {
+  let lastText = "";
+  const outLines: string[] = [];
+  for (const line of lines) {
+    if ("type" in line && line.type === "text" && line.text) {
+      lastText = line.text;
+    } else if ("s" in line && line.s === "out" && line.d) {
+      outLines.push(line.d);
+    }
+  }
+  const structured = lastText.trim();
+  if (structured) return structured;
+  const plain = outLines.join("\n").trim();
+  if (plain) {
+    // extractOneShotReportText's non-JSON engines return the raw output as the
+    // report; mirror that for kiro/plain sessions.
+    return extractOneShotReportText(cli, plain) || plain;
+  }
+  return fallback;
+}
+
+/** Whether a durable review session produced enough output to count as a report. */
+function sessionHasUsableOutput(cli: string, lines: AgentOutputEntry[]): boolean {
+  for (const line of lines) {
+    if ("type" in line && line.type === "text" && line.text.trim()) return true;
+    if ("s" in line && line.s === "out" && line.d.trim()) return true;
+  }
+  return false;
+}
+
+/**
+ * Best-effort failure text for a run that produced no report, mirroring
+ * `runPrompt`'s old behaviour of surfacing the child's last stderr lines.
+ */
+function sessionErrorText(lines: AgentOutputEntry[]): string {
+  const errs: string[] = [];
+  for (const line of lines) {
+    if ("s" in line && line.s === "err" && line.d.trim()) errs.push(line.d.trim());
+    else if ("type" in line && line.type === "sys" && line.d?.trim()) errs.push(line.d.trim());
+  }
+  if (errs.length === 0) return "no output produced";
+  return errs.slice(-3).join(" ").trim();
+}
+
+/**
+ * The task id for a durable review session key (`review:<id>` → `<id>`).
+ * Guards against keys that don't carry the prefix.
+ */
+function taskIdFromReviewKey(sessionKey: string): string {
+  return sessionKey.startsWith(REVIEW_SESSION_ID_PREFIX)
+    ? sessionKey.slice(REVIEW_SESSION_ID_PREFIX.length)
+    : sessionKey;
+}
+
 export class ReviewManager {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
   private readonly runs = new Map<string, Run>();
   /** Tasks the status guard just put back in `review`, by timestamp. */
   private readonly reverted = new Map<string, number>();
-  /**
-   * The reviewer conversation per task, in-memory. Kept apart from the
-   * engineer session (which lives in AgentRunner): reviewer chat must stay
-   * isolated in both UI state and message routing (0110).
-   */
-  private readonly sessions = new Map<string, AgentOutputEntry[]>();
-  private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
   private readonly runner?: AgentRunner;
   /**
@@ -425,10 +482,21 @@ export class ReviewManager {
   }
 
   isRunning(taskId: string): boolean {
-    return this.runs.has(taskId);
+    // An in-flight review is tracked in the durable runner session (0288), so
+    // a review re-attached after a reload still reads as running here.
+    return this.runs.has(taskId) || !!this.runner?.isRunning(this.reviewKey(taskId));
   }
 
-  /** How many reviews are in flight (the server's idle check). */
+  /**
+   * How many reviews are in flight (the server's idle check).
+   *
+   * `this.runs` is the single source of truth for running reviews: fresh turns
+   * register in `run()`/`send()`, and adopted turns (re-attached after a reload)
+   * are registered by `armAdoptedTimeouts()` at boot. So counting `this.runs`
+   * already covers every in-flight review, including adopted ones — adding a
+   * separate count of `runner.running()` review sessions here would DOUBLE-count
+   * each adopted review (0288 review round 2).
+   */
   runningCount(): number {
     return this.runs.size;
   }
@@ -527,7 +595,7 @@ export class ReviewManager {
    * again"), never a continuation of the prior one (0110).
    */
   async run(task: Task): Promise<ReviewRunResult> {
-    if (this.runs.has(task.id)) {
+    if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
     const agent = resolveReviewerForTask(this.config, task);
@@ -546,46 +614,177 @@ export class ReviewManager {
 
     // Fresh run: drop any earlier conversation and its persisted copy so the
     // new report reads as a new assessment, not a continuation of the old one.
-    this.resetSession(task.id);
+    this.resetReviewSession(task.id);
 
-    const run: Run = { cancelled: false };
+    const run: Run = { cancelled: false, mode: "run" };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
-    this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
     this.logger.task(task.id, "info", "review started", { agent: agent.name, cli: agent.cli, model: agent.model });
+    this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
     const mission = reviewMission(task, agent, workdir, baseBranch);
-    let result;
-    try {
-      result = await runPrompt(agent, mission, {
-        cwd: workdir,
-        timeoutMs: REVIEW_TIMEOUT_MS,
-        command: reviewCommand(agent, mission, workdir),
-        onSpawn: (proc) => {
-          run.proc = proc;
-          // A cancel that landed between spawn and this callback still kills.
-          if (run.cancelled) proc.kill("SIGTERM");
-        },
-        onLine: (line) => this.appendSessionLine(task.id, agent.cli, line),
-      });
-    } finally {
-      this.runs.delete(task.id);
-    }
-
-    // Cancelled means the task left review (close-out, restart, a human move):
-    // the report would describe a state nobody is signing off on any more, and
-    // the status guard below must not fight the human who moved it.
+    // A cancel that landed before the spawn must not still start a run.
     if (run.cancelled) {
-      this.logger.task(task.id, "info", "review cancelled — task left review");
+      this.runs.delete(task.id);
       this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
       return { ok: false, skipped: true, reason: "review cancelled" };
     }
+    this.spawnDurable(task.id, agent, mission, workdir, run, "run");
+    return { ok: true };
+  }
 
-    const state: ReviewReport["state"] = result.ok && result.output ? "ok" : "failed";
+  /**
+   * Spawn (or re-start) a durable review turn in the AgentRunner and arm its
+   * hard timeout. Completion is event-driven: `AgentRunner` fires `onReviewDone`
+   * (0288), which lands in `handleReviewDone` — so a review that is in flight
+   * across a server reload is finalized by the NEW process's `ReviewManager`
+   * rather than dying with a `runPrompt` continuation.
+   */
+  private spawnDurable(
+    taskId: string,
+    agent: Agent,
+    mission: string,
+    workdir: string,
+    run: Run,
+    mode: "run" | "chat",
+    humanEntry?: AgentOutputEntry,
+  ): void {
+    const started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
+      reset: mode === "run",
+      reviewKind: mode,
+      humanEntry,
+    });
+    if (!started || !started.ok) {
+      this.runs.delete(taskId);
+      this.emit({
+        type: "review",
+        id: taskId,
+        state: "failed",
+        at: now(),
+        error: started?.reason ?? "could not start the review",
+      });
+      this.appendMarker(taskId, `✗ review could not start: ${started?.reason ?? "unknown error"}`);
+      this.logger.task(taskId, "error", "review failed to start", { error: started?.reason ?? "unknown" });
+      return;
+    }
+    // A fresh spawn expresses fresh intent — drop any cancellation recorded by
+    // an earlier (possibly pre-reload) abandon, so the new turn is not
+    // instantly treated as cancelled.
+    this.clearCancelled(taskId);
+    run.timer = setTimeout(() => {
+      run.timedOut = true;
+      this.runner?.stop(this.reviewKey(taskId));
+    }, REVIEW_TIMEOUT_MS);
+    run.timer.unref?.();
+  }
+
+  /**
+   * Re-arm the hard review timeout for durable review sessions re-attached
+   * from the previous server (0288). The spawning process's timer died with the
+   * reload, so without this an adopted review could hang forever. Also registers
+   * each adopted turn as a `Run` so cancellation and the run/chat mode keep
+   * working across the handoff. Called once at boot, after the runner has
+   * adopted still-alive review children.
+   */
+  armAdoptedTimeouts(): void {
+    for (const r of this.runner?.running() ?? []) {
+      if (!r.id.startsWith(REVIEW_SESSION_ID_PREFIX)) continue;
+      const taskId = taskIdFromReviewKey(r.id);
+      if (this.runs.has(taskId)) continue;
+      const run: Run = {
+        cancelled: this.isCancelled(taskId),
+        mode: this.runner?.reviewKindOf(r.id) ?? "run",
+      };
+      run.timer = setTimeout(() => {
+        run.timedOut = true;
+        this.runner?.stop(r.id);
+      }, REVIEW_TIMEOUT_MS);
+      run.timer.unref?.();
+      this.runs.set(taskId, run);
+    }
+  }
+
+  /** Durable review-turn completion hook (0288). */
+  handleReviewDone(sessionKey: string, exitedCleanly = false, reviewKind?: "run" | "chat"): void {
+    const taskId = taskIdFromReviewKey(sessionKey);
+    const run = this.runs.get(taskId);
+    // The run/chat distinction and cancel state are persisted (reviewKind in
+    // the durable registry, cancellation in the cancelled-marker file), so an
+    // ADOPTED turn — whose `Run` record died with the previous process — is
+    // finalized in the right mode and honoured if it was cancelled.
+    const mode = reviewKind ?? run?.mode ?? "run";
+    const cancelled = run?.cancelled ?? this.isCancelled(taskId);
+    const timedOut = run?.timedOut ?? false;
+    if (run) {
+      if (run.timer) clearTimeout(run.timer);
+      this.runs.delete(taskId);
+    }
+
+    if (cancelled) {
+      this.clearCancelled(taskId);
+      this.logger.task(taskId, "info", "review cancelled — task left review");
+      this.emit({ type: "review", id: taskId, state: "cancelled", at: now() });
+      return;
+    }
+
+    const agent = resolveReviewer(this.config);
+    const task = this.index?.getTask(taskId) ?? null;
+    if (!task || !agent) {
+      // Cannot finalize — no task/agent to build the report from (e.g. the task
+      // was deleted). Surface it and leave the durable session intact.
+      this.emit({
+        type: "review",
+        id: taskId,
+        state: "failed",
+        at: now(),
+        error: "could not resolve the task or review agent after the review ran",
+      });
+      return;
+    }
+
+    const session = this.runner?.output(sessionKey) ?? null;
+    const lines = session?.lines ?? [];
+
+    if (mode === "run") {
+      this.finalizeRun(task, agent, lines, session, timedOut);
+    } else {
+      this.finalizeChat(task, agent, lines, session, timedOut);
+    }
+  }
+
+  /** Finalize a fresh review run from its durable session transcript. */
+  private finalizeRun(
+    task: Task,
+    agent: Agent,
+    lines: AgentOutputEntry[],
+    session: { accumulatedMs?: number; inputTokens?: number; outputTokens?: number; tokens?: number; costUsd?: number } | null,
+    timedOut: boolean,
+  ): void {
+    const hasOutput = sessionHasUsableOutput(agent.cli, lines);
+    const ok = !timedOut && hasOutput;
+    const error = timedOut
+      ? `the ${agent.cli} agent timed out after ${Math.round(REVIEW_TIMEOUT_MS / 1000)}s`
+      : ok
+        ? undefined
+        : `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`;
+    const result: PromptResult = {
+      ok,
+      // The full raw transcript isn't kept; extract the report from the parsed
+      // session so it is usable even after a reload rebuilt the transcript.
+      output: ok ? extractReportFromSession(agent.cli, lines, "") : undefined,
+      error,
+      elapsedMs: session?.accumulatedMs ?? 0,
+      inputTokens: session?.inputTokens,
+      outputTokens: session?.outputTokens,
+      totalTokens: session?.tokens,
+      costUsd: session?.costUsd,
+    };
+    const reportText = result.output?.trim() ?? "";
+    const state: ReviewReport["state"] = ok && reportText ? "ok" : "failed";
     const body =
       state === "ok"
-        ? extractOneShotReportText(agent.cli, result.output ?? "")
-        : `The review agent produced no report: ${result.error ?? "unknown error"}`;
+        ? reportText
+        : `The review agent produced no report: ${error ?? "no report"}`;
     const report: ReviewReport = {
       id: task.id,
       at: now(),
@@ -599,20 +798,19 @@ export class ReviewManager {
     this.write(report);
     this.appendMarker(
       task.id,
-      state === "ok" ? "✓ review complete" : `✗ review failed: ${result.error ?? "no report"}`,
+      state === "ok" ? "✓ review complete" : `✗ review failed: ${error ?? "no report"}`,
     );
     if (state === "ok") {
       this.logger.task(task.id, "info", "review completed");
     } else {
-      this.logger.task(task.id, "error", "review failed", { error: result.error ?? "no report" });
+      this.logger.task(task.id, "error", "review failed", { error: error ?? "no report" });
     }
-    this.persistSession(task.id);
     this.emit({
       type: "review",
       id: task.id,
       state: state === "ok" ? "ready" : "failed",
       at: report.at,
-      ...(state === "failed" ? { error: result.error } : {}),
+      ...(state === "failed" ? { error } : {}),
     });
     this.enforceStillInReview(task);
 
@@ -627,7 +825,7 @@ export class ReviewManager {
           type: "task.corrected",
           id: task.id,
           path: task.path,
-          note: `Review agent failed to produce a report (${result.error ?? "unknown error"}) — needs a human to retry or investigate.`,
+          note: `Review agent failed to produce a report (${error ?? "unknown error"}) — needs a human to retry or investigate.`,
           at: now(),
         });
       } catch (err) {
@@ -653,10 +851,6 @@ export class ReviewManager {
     // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
     // review_passes (all successful passes).
     if (state === "ok") this.bumpReviewPasses(task);
-
-    return state === "ok"
-      ? { ok: true, report }
-      : { ok: false, reason: result.error ?? "the review agent failed", report };
   }
 
   /**
@@ -731,7 +925,7 @@ export class ReviewManager {
    * stored report — the verdict callout keeps describing the last full review.
    */
   async send(task: Task, text: string): Promise<ReviewRunResult> {
-    if (this.runs.has(task.id)) {
+    if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
     const agent = resolveReviewerForTask(this.config, task);
@@ -744,46 +938,55 @@ export class ReviewManager {
     }
     const baseBranch = currentBranch(this.config.root) ?? "main";
 
-    // The human's message starts the turn. The conversation must already exist
-    // (a review ran first) so the reviewer has context; the report on disk
-    // still feeds the follow-up mission even after a server restart.
-    if (!this.hasSession(task.id)) {
-      this.sessions.set(task.id, []);
-    }
-    this.appendEntry(task.id, { type: "human", text });
+    // The human's message starts the turn and streams into the reviewer
+    // conversation under `review:<taskId>`.
+    this.emitHumanEntry(task.id, { type: "human", text });
 
-    const run: Run = { cancelled: false };
+    const run: Run = { cancelled: false, mode: "chat" };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
 
     const mission = reviewFollowupMission(task, agent, workdir, baseBranch, text, this.read(task.id));
-    let result;
-    try {
-      result = await runPrompt(agent, mission, {
-        cwd: workdir,
-        timeoutMs: REVIEW_TIMEOUT_MS,
-        command: reviewCommand(agent, mission, workdir),
-        onSpawn: (proc) => {
-          run.proc = proc;
-          if (run.cancelled) proc.kill("SIGTERM");
-        },
-        onLine: (line) => this.appendSessionLine(task.id, agent.cli, line),
-      });
-    } finally {
-      this.runs.delete(task.id);
-    }
-
     if (run.cancelled) {
+      this.runs.delete(task.id);
       this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
       return { ok: false, skipped: true, reason: "review cancelled" };
     }
+    const humanEntry: AgentOutputEntry = { type: "human", text };
+    this.spawnDurable(task.id, agent, mission, workdir, run, "chat", humanEntry);
+    return { ok: true };
+  }
 
+  /** Finalize a follow-up chat turn from its durable session transcript. */
+  private finalizeChat(
+    task: Task,
+    agent: Agent,
+    lines: AgentOutputEntry[],
+    session: { accumulatedMs?: number; inputTokens?: number; outputTokens?: number; tokens?: number; costUsd?: number } | null,
+    timedOut: boolean,
+  ): void {
+    const hasOutput = sessionHasUsableOutput(agent.cli, lines);
+    const ok = !timedOut && hasOutput;
+    const error = timedOut
+      ? `the ${agent.cli} agent timed out after ${Math.round(REVIEW_TIMEOUT_MS / 1000)}s`
+      : ok
+        ? undefined
+        : `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`;
+    const result: PromptResult = {
+      ok,
+      output: ok ? extractReportFromSession(agent.cli, lines, "") : undefined,
+      error,
+      elapsedMs: session?.accumulatedMs ?? 0,
+      inputTokens: session?.inputTokens,
+      outputTokens: session?.outputTokens,
+      totalTokens: session?.tokens,
+      costUsd: session?.costUsd,
+    };
     const completedAt = now();
     const success = result.ok;
 
     if (!result.ok) {
       this.appendMarker(task.id, `✗ the reviewer could not answer: ${result.error ?? "unknown error"}`);
-      this.persistSession(task.id);
       this.emit({
         type: "review",
         id: task.id,
@@ -792,17 +995,13 @@ export class ReviewManager {
         ...(result.error ? { error: result.error } : {}),
       });
       this.enforceStillInReview(task);
-      // Record the failed chat turn
       this.recordReviewChatTurn(task.id, agent, result, completedAt, false);
-      return { ok: false, reason: result.error ?? "the reviewer failed to answer" };
+      return;
     }
 
-    this.persistSession(task.id);
     this.emit({ type: "review", id: task.id, state: "ready", at: completedAt });
     this.enforceStillInReview(task);
-    // Record the successful chat turn
     this.recordReviewChatTurn(task.id, agent, result, completedAt, true);
-    return { ok: true };
   }
 
   /** Record a review chat turn to the database. Best-effort, never fails. */
@@ -837,10 +1036,9 @@ export class ReviewManager {
 
   /** The retained reviewer conversation for a task, or [] when none exists. */
   session(taskId: string): AgentOutputEntry[] {
-    const lines = this.sessions.get(taskId);
-    if (lines) return lines;
-    const loaded = this.readSession(taskId);
-    return loaded ?? [];
+    const session = this.runner?.output(this.reviewKey(taskId));
+    if (session) return session.lines;
+    return [];
   }
 
   /**
@@ -852,18 +1050,78 @@ export class ReviewManager {
    */
   cancel(taskId: string): void {
     const run = this.runs.get(taskId);
-    if (!run) return;
-    run.cancelled = true;
+    const key = this.reviewKey(taskId);
+    if (!run && !this.runner?.isRunning(key)) return;
+    if (run) run.cancelled = true;
+    // Persist the cancellation so it survives a reload: an adopted review whose
+    // `Run` record died with the previous process must still finalize as
+    // "cancelled", never as a spurious failed report (0288).
+    this.markCancelled(taskId);
+    // Stop the durable child by PID (works for adopted, proc-less, entries too).
     try {
-      run.proc?.kill("SIGTERM");
+      this.runner?.stop(key);
     } catch {
       /* already gone */
     }
+    if (run?.timer) clearTimeout(run.timer);
   }
 
   /** Cancel every in-flight review (server shutdown). */
   cancelAll(): void {
     for (const id of [...this.runs.keys()]) this.cancel(id);
+    // Also stop adopted review sessions re-attached after a reload (0288).
+    for (const r of this.runner?.running() ?? []) {
+      if (r.id.startsWith(REVIEW_SESSION_ID_PREFIX)) this.cancel(r.id.slice(REVIEW_SESSION_ID_PREFIX.length));
+    }
+  }
+
+  // ---- Durable "cancelled review" marker (0288) ----
+  //
+  // `this.runs` is per-server-process bookkeeping that dies on a reload. A
+  // human abandoning a review (task leaving `review`, server shutdown) records
+  // the task in a small durable marker file so that even an ADOPTED review —
+  // re-attached by the next process with no `Run` record — finalizes as
+  // cancelled rather than writing a spurious failed report.
+
+  private cancelledFilePath(): string {
+    return join(this.config.root, this.config.cacheDir, "reviews", ".cancelled.json");
+  }
+
+  private readCancelled(): Set<string> {
+    try {
+      const raw = readFileSync(this.cancelledFilePath(), "utf8");
+      const parsed = JSON.parse(raw) as { taskIds?: string[] };
+      return new Set(Array.isArray(parsed.taskIds) ? parsed.taskIds : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  private writeCancelled(ids: Set<string>): void {
+    try {
+      const file = this.cancelledFilePath();
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify({ taskIds: [...ids] }));
+    } catch {
+      /* best-effort — a lost marker only risks a spurious failed report */
+    }
+  }
+
+  private isCancelled(taskId: string): boolean {
+    return this.readCancelled().has(taskId);
+  }
+
+  private markCancelled(taskId: string): void {
+    const ids = this.readCancelled();
+    ids.add(taskId);
+    this.writeCancelled(ids);
+  }
+
+  private clearCancelled(taskId: string): void {
+    const ids = this.readCancelled();
+    if (!ids.has(taskId)) return;
+    ids.delete(taskId);
+    this.writeCancelled(ids);
   }
 
   /**
@@ -1029,119 +1287,49 @@ export class ReviewManager {
   }
 
   // ---- reviewer conversation (isolated from the engineer session) ----
+  //
+  // The durable reviewer conversation lives in the AgentRunner session under
+  // the `review:<taskId>` key (0288), NOT in this manager — so it survives a
+  // server reload and stays isolated from the engineer's session under the
+  // plain task id (0110). The manager only reaches into that session to read
+  // it (`session`) and to append trusted markers / the human's text.
 
-  /** The SSE event id used to stream a task's reviewer conversation. */
-  private sessionId(taskId: string): string {
+  /** The runner session key (== SSE event id) for a task's reviewer chat. */
+  private reviewKey(taskId: string): string {
     return `${REVIEW_SESSION_ID_PREFIX}${taskId}`;
   }
 
-  /** Whether a conversation is held for the task (in memory or persisted). */
+  /** Whether a review conversation exists for the task (memory or persisted). */
   private hasSession(taskId: string): boolean {
-    if (this.sessions.has(taskId)) return true;
-    const file = this.sessionFile(taskId);
-    return file !== null && existsSync(file);
+    return this.runner?.hasSession(this.reviewKey(taskId)) ?? false;
   }
 
-  /** Sidecar file holding the reviewer conversation, or null when unsafe. */
-  private sessionFile(taskId: string): string | null {
-    if (!/^[A-Za-z0-9._-]+$/.test(taskId)) return null;
-    return join(this.config.root, this.config.cacheDir, "reviews", `${taskId}.session.json`);
+  /** Drop the task's durable conversation, in memory and on disk. */
+  private resetReviewSession(taskId: string): void {
+    this.runner?.clearSession(this.reviewKey(taskId));
   }
 
-  /** Read a persisted reviewer conversation (server restart survival). */
-  private readSession(taskId: string): AgentOutputEntry[] | null {
-    const file = this.sessionFile(taskId);
-    if (!file || !existsSync(file)) return null;
-    try {
-      const parsed = JSON.parse(readFileSync(file, "utf8")) as { lines?: unknown };
-      if (!Array.isArray(parsed.lines)) return null;
-      const lines = parsed.lines as AgentOutputEntry[];
-      this.sessions.set(taskId, lines.slice(-SESSION_LINES_CAP));
-      return lines;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Write the conversation atomically (temp + rename), best-effort. */
-  private persistSession(taskId: string): void {
-    const timer = this.sessionTimers.get(taskId);
-    if (timer) clearTimeout(timer);
-    this.sessionTimers.delete(taskId);
-    const lines = this.sessions.get(taskId);
-    const file = this.sessionFile(taskId);
-    if (!lines || !file) return;
-    try {
-      mkdirSync(dirname(file), { recursive: true });
-      const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
-      try {
-        writeFileSync(temp, JSON.stringify({ lines }, null, 2), "utf8");
-        renameSync(temp, file);
-      } finally {
-        if (existsSync(temp)) unlinkSync(temp);
-      }
-    } catch {
-      /* the conversation is best-effort — never take the server down */
-    }
-  }
-
-  /** Debounced write, so a fast-running agent does not write per line. */
-  private scheduleSessionWrite(taskId: string): void {
-    const existing = this.sessionTimers.get(taskId);
-    if (existing) clearTimeout(existing);
-    const timer = setTimeout(() => this.persistSession(taskId), SESSION_WRITE_DEBOUNCE_MS);
-    timer.unref?.();
-    this.sessionTimers.set(taskId, timer);
-  }
-
-  /** Drop a task's conversation, in memory and on disk (a fresh run starts clean). */
-  private resetSession(taskId: string): void {
-    const timer = this.sessionTimers.get(taskId);
-    if (timer) {
-      clearTimeout(timer);
-      this.sessionTimers.delete(taskId);
-    }
-    this.sessions.delete(taskId);
-    const file = this.sessionFile(taskId);
-    if (file) {
-      try {
-        if (existsSync(file)) unlinkSync(file);
-      } catch {
-        /* best-effort */
-      }
-    }
-  }
-
-  /** Append a human/system entry and stream it under the review session id. */
-  private appendEntry(taskId: string, entry: AgentOutputEntry): void {
-    let lines = this.sessions.get(taskId);
-    if (!lines) {
-      lines = [];
-      this.sessions.set(taskId, lines);
-    }
-    if (!entry.at) entry = { ...entry, at: new Date().toISOString() };
-    lines.push(entry);
-    if (lines.length > SESSION_LINES_CAP) lines.splice(0, lines.length - SESSION_LINES_CAP);
+  /**
+   * Emit the human's follow-up text under the review session id. The durable
+   * transcript records it too (via the runner session's `humanEntry`), and the
+   * live SSE stream is emitted here because the runner does not surface a
+   * seeded human entry on spawn.
+   */
+  private emitHumanEntry(taskId: string, entry: AgentOutputEntry): void {
     this.emit({
       type: "agent.output",
-      id: this.sessionId(taskId),
+      id: this.reviewKey(taskId),
       entry,
       stream: "out",
       at: now(),
     });
-    this.scheduleSessionWrite(taskId);
   }
 
-  /** Append a streamed line from the agent's stdout, parsed per its CLI. */
-  private appendSessionLine(taskId: string, cli: string, line: string): void {
-    const entry = parseOneShotLine(cli, line);
-    if (!entry) return; // a recognized-but-voiceless structured event
-    this.appendEntry(taskId, entry);
-  }
-
-  /** Append a trusted system marker (run start / completion). */
+  /** Append a trusted system marker into the durable review transcript. */
   private appendMarker(taskId: string, text: string): void {
-    this.appendEntry(taskId, { type: "sys", d: text });
+    // Delegate to the runner so the marker is recorded in the durable session
+    // AND streamed under `review:<taskId>` (runner.system emits agent.output).
+    this.runner?.system(this.reviewKey(taskId), text);
   }
 
   /** Persist a report, creating `<cacheDir>/reviews/` on first use. */

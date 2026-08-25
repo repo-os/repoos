@@ -130,6 +130,15 @@ interface Entry {
   /** A review-fix follow-up keeps the worktree's last committed review state. */
   skipBoardDivergence?: boolean;
   /**
+   * True for a durable REVIEW turn (0288). Set when the entry is spawned
+   * through the review path so cleanup() can (a) skip its own DB session
+   * recording (ReviewManager owns that) and (b) fire `onReviewDone` on
+   * completion — including for entries re-attached after a reload.
+   */
+  review?: boolean;
+  /** Which kind of review turn: "run" (fresh report) or "chat" (follow-up). */
+  reviewKind?: "run" | "chat";
+  /**
    * For adopted entries (0214): the PID to poll for liveness. When non-null
    * the stall checker periodically verifies the PID is still alive and cleans
    * up if it died.
@@ -150,6 +159,10 @@ interface DurableRegistryEntry {
   workdir: string;
   branch: string;
   runId: string;
+  /** "review" marks a durable review turn so a restart re-attaches as one (0288). */
+  kind?: "engineer" | "review";
+  /** Which review variant the turn is (run vs chat), for completion handling. */
+  reviewKind?: "run" | "chat";
 }
 
 interface DurableRegistry {
@@ -266,8 +279,7 @@ function readRegistry(cacheDir: string): DurableRegistry {
     const parsed = JSON.parse(raw) as Partial<DurableRegistry>;
     if (Array.isArray(parsed.entries)) {
       return { entries: parsed.entries.filter((e) => typeof e.taskId === "string" && typeof e.pid === "number" && typeof e.workdir === "string") };
-    }
-  } catch {
+    }  } catch {
     /* missing or corrupt — start fresh */
   }
   return { entries: [] };
@@ -417,6 +429,9 @@ export function resolveSessionTaskId(taskKey: string | undefined): string | null
     taskKey.match(/^pm-task:(.+)$/i) ??
     taskKey.match(/^pm:(.+)$/i);
   if (pm) return pm[1] || null;
+  // Durable review sessions are keyed by `review:<taskId>` (0288); strip the
+  // prefix so any DB attribution lands on the real task.
+  if (/^review:/i.test(taskKey)) return taskKey.replace(/^review:/i, "") || null;
   return taskKey;
 }
 
@@ -2000,6 +2015,16 @@ export class AgentRunner {
   private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
   private readonly handoffsInFlight = new Set<string>();
   private readonly onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+  /**
+   * Fired on completion of a durable REVIEW turn (0288) — including for an
+   * entry re-attached after a reload, whose process finishes on the new
+   * server. The owning ReviewManager finalizes the report from this hook
+    * rather than a post-spawn continuation that would die with the old process.
+    * `reviewKind` (run vs chat) and `exitedCleanly` are threaded through so the
+    * ReviewManager can finalize an adopted turn in the right mode and decide
+    * whether it finished cleanly.
+    */
+  private readonly onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void;
 
   /**
    * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
@@ -2030,7 +2055,7 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; logger?: Logger } & AgentRunnerOptions = {},
+    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void; logger?: Logger } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
@@ -2038,6 +2063,7 @@ export class AgentRunner {
     this.logger = opts.logger;
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
+    this.onReviewDone = opts.onReviewDone;
     this.getTask = opts.getTask;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
@@ -2083,8 +2109,14 @@ export class AgentRunner {
       } catch {
         /* PID is dead — drop it */
       }
-      if (!alive) continue;
-      live.push(rec);
+      const isReview = rec.kind === "review";
+      // A dead non-review entry is stale — drop it (must not resurrect dead
+      // sessions). A DEAD REVIEW entry, however, means the review process
+      // finished sometime during the reload handoff before this process could
+      // adopt it — its durable log still holds the full report, so we replay
+      // it and hand completion to the new ReviewManager (0288). By the time the
+      // deferred hook fires, the server has built `reviews`.
+      if (!alive && !isReview) continue;
       const outLog = join(this.logDir, `${rec.taskId}.out.log`);
       const errLog = join(this.logDir, `${rec.taskId}.err.log`);
       // Restore the session so the transcript is pre-loaded for the task.
@@ -2094,6 +2126,7 @@ export class AgentRunner {
         session.workdir = rec.workdir;
         session.engine = "plain";
       }
+      session.workdir = rec.workdir;
       session.turnStartedAt = session.turnStartedAt ?? now();
       session.lastOutputAt = session.lastOutputAt ?? now();
       this.sessions.set(rec.taskId, session);
@@ -2108,6 +2141,21 @@ export class AgentRunner {
       } catch {
         /* best-effort */
       }
+      if (!alive && isReview) {
+        // The reviewer already finished: finalize its report and drop the entry.
+        this.removeRegistryEntry(rec.taskId);
+        session.accumulatedMs = Date.now() - Date.parse(session.turnStartedAt ?? now());
+        // Defer so `reviews` (and safe handler wiring) exists before we finalize.
+        setTimeout(() => {
+          try {
+            this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
+          } catch {
+            /* best-effort */
+          }
+        }, 0);
+        continue;
+      }
+      live.push(rec);
       // Start tailing the log file for live output, and register a fake Entry
       // so isRunning() is true and the task reads as in-flight. The real ChildProcess
       // is referenced by PID, not held directly — we poll for aliveness instead.
@@ -2124,6 +2172,8 @@ export class AgentRunner {
         handoffRequested: false,
         previewRequested: false,
         adoptedPid: rec.pid,
+        review: isReview,
+        reviewKind: rec.kind === "review" ? rec.reviewKind : undefined,
         tailers,
       });
     }
@@ -2206,10 +2256,18 @@ export class AgentRunner {
   }
 
   /** Persist a registry entry for one running task (0214). */
-  private writeRegistryEntry(taskId: string, pid: number, workdir: string, branch: string, runId: string): void {
+  private writeRegistryEntry(
+    taskId: string,
+    pid: number,
+    workdir: string,
+    branch: string,
+    runId: string,
+    kind?: "engineer" | "review",
+    reviewKind?: "run" | "chat",
+  ): void {
     const registry = readRegistry(this.cacheDir);
     const existing = registry.entries.findIndex((e) => e.taskId === taskId);
-    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId };
+    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId, kind, reviewKind };
     if (existing >= 0) {
       registry.entries[existing] = entry;
     } else {
@@ -2374,6 +2432,16 @@ export class AgentRunner {
   }
 
   /**
+   * The review turn kind ("run" | "chat") of a durable review session, if the
+   * entry is one (0288). Used by ReviewManager to finalize an ADOPTED turn in
+   * the right mode — the session's own `Run` record is not carried across a
+   * reload, but its review kind is (persisted in the registry).
+   */
+  reviewKindOf(sessionKey: string): "run" | "chat" | undefined {
+    return this.entries.get(sessionKey)?.reviewKind;
+  }
+
+  /**
    * Record a deliberate human pause (0070): the task stays `active` but its
    * agent is intentionally stopped, so the watchdog must not touch it (#0180).
    * Cleared automatically the moment a new turn starts for the task.
@@ -2505,6 +2573,67 @@ export class AgentRunner {
   }
 
   /**
+   * Spawn a durable REVIEW turn under a synthetic session key (0288), so the
+   * reviewer survives a server reload the same way engineer/PM turns do: the
+   * child's stdout/stderr stream to durable log files and its PID is registered
+   * so the next server's `adoptRunningAgents()` re-attaches and replays any
+   * output written during the handoff. On completion — even post-reload —
+   * `cleanup()` fires `onReviewDone` for the owning ReviewManager to finalize.
+   *
+   * Unlike `start`/`send`, the review agent is deliberately NOT given
+   * `REPOOS_TASK_ID` / `REPOOS_API_URL`, preserving the read-only boundary that
+   * keeps it from reaching the control plane's task endpoints (review.ts layer
+   * 2). `kind: "review"` is persisted in the durable registry so adoption knows
+   * to re-attach as a review.
+   *
+   * `reset: true` (a fresh run) clears any prior conversation; a chat turn
+   * (`reset: false`, with `humanEntry`) continues the existing one.
+   */
+  startReview(
+    sessionKey: string,
+    agent: Agent,
+    mission: string,
+    cwd: string,
+    opts: { humanEntry?: AgentOutputEntry; reset?: boolean; reviewKind?: "run" | "chat" } = {},
+  ): StartResult {
+    if (this.entries.has(sessionKey)) {
+      return { ok: false, busy: true, reason: "a review is already running for this task" };
+    }
+    let session = this.sessions.get(sessionKey) ?? this.loadSession(sessionKey);
+    if (!session || opts.reset) {
+      session = this.emptySession();
+    }
+    if (opts.reset) {
+      session.lines = [];
+      session.bytes = 0;
+    }
+    session.workdir = cwd;
+    session.engine = engineForCli(agent.cli);
+    session.agent = agent.name;
+    session.model = agent.model;
+    if (opts.humanEntry) {
+      session.lines.push(opts.humanEntry);
+      session.bytes += entryBytes(opts.humanEntry);
+      while (session.bytes > OUTPUT_CAP_BYTES) {
+        const dropped = session.lines.shift();
+        if (!dropped) break;
+        session.bytes -= entryBytes(dropped);
+      }
+    }
+    this.sessions.set(sessionKey, session);
+    const { cmd, args } = reviewCommand(agent, mission, cwd);
+    return this.spawnTurn(sessionKey, cmd, args, cwd, undefined, "", {
+      review: true,
+      reviewKind: opts.reviewKind ?? "run",
+    });
+  }
+
+  /** Release a durable review session from the in-memory map (its file stays). */
+  discardReviewSession(sessionKey: string): void {
+    this.sessions.delete(sessionKey);
+  }
+
+  /**
    * Send a follow-up message to a task's session, resuming the same
    * conversation as a new turn. Rejected when the task has no session yet
    * (`ok: false`) or when a turn is already running (`ok: false, busy: true`).
@@ -2569,6 +2698,24 @@ export class AgentRunner {
   /** The retained transcript for a task, or null when no session exists. */
   output(taskId: string): Session | null {
     return this.sessions.get(taskId) ?? this.loadSession(taskId);
+  }
+
+  /** Whether a session exists for a key (in memory or persisted on disk). */
+  hasSession(sessionKey: string): boolean {
+    return this.sessions.has(sessionKey) || this.readPersisted(sessionKey) !== null;
+  }
+
+  /** Drop a session both in memory and from disk (a fresh review run). */
+  clearSession(sessionKey: string): void {
+    this.sessions.delete(sessionKey);
+    const file = this.sessionFile(sessionKey);
+    if (file && existsSync(file)) {
+      try {
+        unlinkSync(file);
+      } catch {
+        /* best-effort */
+      }
+    }
   }
 
   /**
@@ -2652,7 +2799,7 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean } = {},
+    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
@@ -2695,9 +2842,14 @@ export class AgentRunner {
       delete agentEnv.REPOOS_RELOAD_SECRET;
       delete agentEnv.REPOOS_PREVIEW_CHILD;
       agentEnv.REPOOS_AGENT = "1";
-      agentEnv.REPOOS_TASK_ID = taskId;
+      // A REVIEW turn is deliberately read-only: unlike the engineer/PM, it is
+      // NOT given REPOOS_TASK_ID / REPOOS_API_URL, so it has no pointer at the
+      // control plane's task endpoints and cannot reach /done (review.ts layer
+      // 2). REPOOS_RUN_ID is still bound so any capability-request signal (none
+      // expected) would route to this exact run.
+      if (!opts.review) agentEnv.REPOOS_TASK_ID = taskId;
       agentEnv.REPOOS_RUN_ID = runId;
-      if (this.apiUrl) agentEnv.REPOOS_API_URL = this.apiUrl;
+      if (this.apiUrl && !opts.review) agentEnv.REPOOS_API_URL = this.apiUrl;
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", outFd, errFd],
@@ -2725,6 +2877,8 @@ export class AgentRunner {
       handoffRequested: false,
       previewRequested: false,
       skipBoardDivergence: opts.skipBoardDivergence,
+      review: opts.review,
+      reviewKind: opts.review ? opts.reviewKind : undefined,
       tailers,
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -2740,7 +2894,15 @@ export class AgentRunner {
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
-      this.writeRegistryEntry(taskId, proc.pid, cwd, branch ?? task?.branch ?? "", runId);
+      this.writeRegistryEntry(
+        taskId,
+        proc.pid,
+        cwd,
+        branch ?? task?.branch ?? "",
+        runId,
+        opts.review ? "review" : "engineer",
+        opts.review ? opts.reviewKind : undefined,
+      );
     }
     // Either path means the run is over: natural exit, spawn error (e.g. the
     // CLI isn't installed), or our own SIGKILL after a graceful pause. `close`
@@ -3294,6 +3456,9 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+    // Capture before the entry is deleted below so the review-completion hook
+    // can still be fired and its DB recording skipped (0288).
+    const wasReview = entry.review === true;
 
     // Drain and flush durable-log pollers before removing the registry entry.
     // The final output may not carry a newline, so it lives in the tailer's
@@ -3352,8 +3517,10 @@ export class AgentRunner {
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);
-    // Record session to database (best-effort).
-    if (session) {
+    // Record session to database (best-effort). Review sessions are recorded by
+    // ReviewManager's own completion handler instead, so they are skipped here
+    // to avoid double-booking (0288).
+    if (session && !wasReview) {
       this.recordSessionToDb(session.sessionId, session, taskId, exitedCleanly);
     }
     // Resolve task from index if not in entry (important for resume turns).
@@ -3422,6 +3589,17 @@ export class AgentRunner {
     // Self-heal may have appended a final system line, so persist only after it.
     this.persist(taskId);
     if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);
+    // A review turn completed. Fire the hook so the owning ReviewManager can
+    // finalize (write the report, log "review completed", auto-bounce) from the
+    // durable session — including for an entry re-attached after a reload whose
+    // completion is only observed here (0288).
+    if (wasReview) {
+      try {
+        this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
+      } catch (err) {
+        this.logger?.agent(taskId, "error", `Review completion handler failed: ${(err as Error).message}`);
+      }
+    }
   }
 
   /**
