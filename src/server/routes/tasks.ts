@@ -332,7 +332,7 @@ export const getScreenshot: RouteHandler = (ctx, _req, res, params) => {
     "Cache-Control": "no-cache",
     "Access-Control-Allow-Origin": "*",
   });
-  res.end(require("fs").readFileSync(abs));
+  res.end(readFileSync(abs));
 };
 
 export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {

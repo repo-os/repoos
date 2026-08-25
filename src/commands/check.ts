@@ -10,9 +10,9 @@
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot } from "../core/config.js";
@@ -62,6 +62,72 @@ function selectorGroups(sel: string): string[] {
 function isBroadSelector(g: string): boolean {
   if (g === "*") return true;
   return /^[a-z][a-z0-9-]*([\s.#:\[>~+]|$)/.test(g);
+}
+
+/** Recursively list `.ts` files under `dir`, skipping node_modules/dist/dotdirs. */
+function walkTsFiles(dir: string, acc: string[] = []): string[] {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return acc;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "dist") continue;
+    const full = join(dir, e.name);
+    if (e.isDirectory()) walkTsFiles(full, acc);
+    else if (e.name.endsWith(".ts")) acc.push(full);
+  }
+  return acc;
+}
+
+/**
+ * Bare `require(...)` calls guard (#0271 follow-up): this package is
+ * `"type": "module"` (ESM) — a bare, un-shadowed `require` is undefined at
+ * runtime in the compiled `dist/` output, throwing `ReferenceError`.
+ * Confirmed live: `integration-job.ts`'s `removeJob()` used bare
+ * `require("fs")` inside a try/catch that silently swallowed the
+ * `ReferenceError`, so a moot close-out job was never actually deleted from
+ * disk — it kept getting re-picked-up and re-processed in a tight infinite
+ * loop, live, in production (task #0258), until someone noticed and asked
+ * why it was stuck.
+ *
+ * vitest transpiles TypeScript on the fly with its own module loader, which
+ * DOES provide a working `require()` even in these ESM-flagged files — so
+ * this bug is invisible to every unit test that imports the affected module,
+ * no matter how thorough. Only the actual compiled `dist/` output, run under
+ * Node's real ESM semantics, exposes it. This static, textual guard is the
+ * only check in the whole gate that runs against the real failure mode.
+ *
+ * `createRequire(...)` (a real, valid way to get a working `require` in ESM
+ * — see `ui-harness.ts`) shadows the global; a file that uses it anywhere is
+ * exempted file-wide rather than precisely scoping which calls are shadowed
+ * and which aren't — simpler, and a false negative here just means a
+ * legitimately-shadowed file's OTHER bare-require bugs (if any) go
+ * uncaught, never that a broken bare require ships silently.
+ */
+function bareRequireOffenders(): string[] {
+  const offenders: string[] = [];
+  const srcRoot = "src";
+  for (const dir of ["core", "server", "commands", "cli"]) {
+    for (const absPath of walkTsFiles(join(srcRoot, dir))) {
+      if (absPath.endsWith(".test.ts")) continue; // vitest supplies its own require shim
+      let content: string;
+      try {
+        content = readFileSync(absPath, "utf8");
+      } catch {
+        continue;
+      }
+      if (content.includes("createRequire")) continue; // legitimately shadowed file-wide
+      const relPath = absPath.split(sep).join("/");
+      content.split("\n").forEach((line, i) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("*") || trimmed.startsWith("//")) return;
+        if (/\brequire\(/.test(line)) offenders.push(`${relPath}:${i + 1}`);
+      });
+    }
+  }
+  return offenders;
 }
 
 /**
@@ -455,6 +521,26 @@ export async function cmdCheck(): Promise<void> {
     } else {
       console.log(c.green("  ✔ Theme tokens have valid button gradients and ≥3:1 contrast"));
       results.push(pass("theme-contrast"));
+    }
+  }
+
+  // ── 2d. Bare require() guard ─────────────────────────────────────────
+  heading("Bare require() guard");
+  {
+    const offenders = bareRequireOffenders();
+    if (offenders.length > 0) {
+      const msg =
+        "Bare require() in ESM source (this package is \"type\": \"module\" — a bare require throws " +
+        "ReferenceError at runtime in dist/, silently if caught):\n    " +
+        offenders.slice(0, 10).join("\n    ") +
+        "\n    Import from \"node:...\" normally, or use createRequire(import.meta.url) if you " +
+        "genuinely need CJS interop (see ui-harness.ts).";
+      console.log(c.red("  ✗ " + msg.split("\n")[0]));
+      results.push(fail("bare-require", msg));
+      exitCode = 1;
+    } else {
+      console.log(c.green("  ✔ No bare require() calls in ESM source"));
+      results.push(pass("bare-require"));
     }
   }
 
