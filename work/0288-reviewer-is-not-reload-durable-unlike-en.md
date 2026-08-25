@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T06:30:45Z"
+review_passes: 3
 id: "0288"
 title: "Reviewer is not reload-durable, unlike engineer and PM — dies mid-review on every server reload"
 type: bug
@@ -13,9 +15,7 @@ branch: feat/reviewer-is-not-reload-durable-unlike-en
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T06:27:50Z"
 review_rounds: 1
-review_passes: 2
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -75,3 +75,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T05:57:06Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-25T06:03:32Z · watchdog: escalated to needs_input · reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-08-25T06:27:50Z · review_model_override
+
