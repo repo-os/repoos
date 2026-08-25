@@ -2,7 +2,7 @@
 id: "0275"
 title: "Debugger false could-not-respond error, broken change-agent/model button, Agents page cant set model per agent"
 type: bug
-status: active
+status: review
 priority: p2
 area: agent
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/debugger-false-could-not-respond-error-b
 model_override: default
 created_at: "2026-08-24T15:57:09Z"
-updated_at: "2026-08-25T16:16:43Z"
+updated_at: "2026-08-25T16:46:49Z"
 ---
 ## Problem
 Several related debugger/agent-selection issues seen on the same run:
@@ -29,3 +29,4 @@ Several related debugger/agent-selection issues seen on the same run:
 - 2026-08-24T19:55:57Z · status inbox→ready
 - 2026-08-25T15:11:13Z · model_override
 - 2026-08-25T16:16:43Z · status ready→active, branch
+- 2026-08-25T16:46:49Z · status active→review
