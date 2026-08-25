@@ -10,10 +10,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/reviewer-is-not-reload-durable-unlike-en
-model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T06:54:49Z"
+updated_at: "2026-08-25T06:54:50Z"
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 2
@@ -76,3 +76,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T06:03:32Z · watchdog: escalated to needs_input · reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-08-25T06:27:50Z · review_model_override
 - 2026-08-25T06:54:49Z · review_model_override
+- 2026-08-25T06:54:50Z · model_override
