@@ -158,7 +158,10 @@ cannot tell from the code alone:
   `REPOOS_AUTH_DEV_BACKDOOR_CODE`, non-production only) instead of requesting a
   real email OTP you have no inbox for. It only replaces the OTP step: the
   email you enter must already be an allowlisted user (e.g. the configured
-  `bootstrapAdmin`) — it does not let you log in as an arbitrary address.
+  `bootstrapAdmin`) — it does not let you log in as an arbitrary address. This
+  same backdoor works against any locally-served instance, not just managed
+  task previews — e.g. a `repoos serve` a human is already running for manual
+  dev/testing (see `docs/native-auth.md`).
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse
