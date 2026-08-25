@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-25T09:40:40Z"
+review_passes: 1
 id: "0290"
 title: Add keyboard shortcuts to navigate task list (j/k) and open a task (Enter)
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-keyboard-shortcuts-to-navigate-task-
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T09:39:17Z"
 handoff_signal_retry_count: 1
 ---
 ## Goal
@@ -69,3 +70,4 @@ Keep the arrows (`Up`/`Down`) as an equivalent to `j`/`k` for users who prefer t
 - 2026-08-25T05:49:47Z · status inbox→ready
 - 2026-08-25T05:49:52Z · status ready→active, branch
 - 2026-08-25T09:39:17Z · status active→review
+
