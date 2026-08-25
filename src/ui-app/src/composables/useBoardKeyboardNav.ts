@@ -17,11 +17,25 @@ interface UseBoardKeyboardNavOptions {
 
 const EDITABLE_SELECTOR = "input, textarea, [contenteditable]";
 
+/** Interactive controls whose native Enter/Space activation we must not steal:
+ *  typing in fields is guarded separately; here we keep a focused button / link
+ *  / select working normally rather than hijacking Enter to open the task. */
+const INTERACTIVE_SELECTOR =
+  "button, a[href], select, [role='button'], [role='link'], [role='menuitem'], [role='option'], summary, input, textarea, [contenteditable]";
+
 /** True when the event target is inside an editable field — typing there must
  *  never drive list navigation (req 6). */
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return !!target.closest(EDITABLE_SELECTOR);
+}
+
+/** True when the event target sits on an interactive control that owns the key
+ *  (e.g. a card's action button, a link, a focused select). Returns false for
+ *  plain document/body/card focus so j/k/Enter still navigate the list. */
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(INTERACTIVE_SELECTOR);
 }
 
 /** Single-task-list keyboard navigation over the board (req 1–8 for #0290).
@@ -47,7 +61,12 @@ export function useBoardKeyboardNav({
   function cardEls(): HTMLElement[] {
     const container = containerRef.value;
     if (!container) return [];
-    return Array.from(container.querySelectorAll<HTMLElement>(".task-card"));
+    // Exclude cards inside collapsed columns: the board hides those rows
+    // (.board-col.collapsed .col-body { display:none }), and the highlight must
+    // never land on (or be scrolled to) an invisible card (req 3).
+    return Array.from(container.querySelectorAll<HTMLElement>(".task-card")).filter(
+      (el) => !el.closest(".board-col.collapsed"),
+    );
   }
 
   function currentIndex(): number {
@@ -113,7 +132,11 @@ export function useBoardKeyboardNav({
   let watcher: (() => void) | undefined;
 
   function onKeydown(e: KeyboardEvent): void {
-    if (isEditableTarget(e.target)) return;
+    // Never hijack keys when focus is on an editable field (req 6) or on an
+    // interactive control that owns the key (a card action button, link, or
+    // select): pressing Enter there must perform that control's native action,
+    // not open a task.
+    if (isEditableTarget(e.target) || isInteractiveTarget(e.target)) return;
 
     switch (e.key) {
       case "j":

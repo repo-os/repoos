@@ -43,11 +43,14 @@ function makeTask(id: string, title = "Task " + id): Task {
 /** Minimal harness that exercises the composable against a real DOM of
  *  `.task-card` rows (the same selector the composable queries in the board).
  *  The highlighted row gets the `kb-highlight` class, mirroring how TaskCard
- *  derives it from the `highlighted` prop. */
+ *  derives it from the `highlighted` prop. Cards whose id appears in
+ *  `collapsedIds` are wrapped in a `.board-col.collapsed` column, mirroring how
+ *  the board hides collapsed columns. */
 const Harness = defineComponent({
   name: "KeyboardHarness",
   props: {
     tasks: { type: Array as () => Task[], required: true },
+    collapsedIds: { type: Array as () => string[], default: () => [] },
   },
   emits: ["opened"],
   setup(props, { emit }) {
@@ -63,8 +66,8 @@ const Harness = defineComponent({
       h(
         "div",
         { ref: containerRef },
-        props.tasks.map((t) =>
-          h(
+        props.tasks.map((t) => {
+          const card = h(
             "div",
             {
               class: ["task-card", nav.highlightId.value === t.id ? "kb-highlight" : ""],
@@ -72,8 +75,12 @@ const Harness = defineComponent({
               key: t.id,
             },
             t.title,
-          ),
-        ),
+          );
+          if (props.collapsedIds.includes(t.id)) {
+            return h("div", { class: "board-col collapsed", key: "col-" + t.id }, card);
+          }
+          return card;
+        }),
       );
   },
 });
@@ -196,5 +203,39 @@ describe("useBoardKeyboardNav", () => {
     // reconcile lands on the first remaining card rather than stranding an id.
     expect(kb.exists()).toBe(true);
     expect(kb.attributes("data-task-id")).toBe("0002");
+  });
+
+  it("never moves the highlight onto a collapsed column's cards", async () => {
+    const wrapper = mount(Harness, {
+      props: {
+        tasks: [makeTask("0001"), makeTask("0002"), makeTask("0003")],
+        collapsedIds: ["0002"],
+      },
+    });
+
+    await press("Enter"); // nothing highlighted yet
+    // First reachable card is 0001.
+    await press("j");
+    expect(wrapper.find(".task-card[data-task-id='0001']").classes()).toContain("kb-highlight");
+
+    // Moving down must skip the hidden 0002 and land on 0003.
+    await press("j");
+    expect(wrapper.find(".task-card[data-task-id='0002']").classes()).not.toContain("kb-highlight");
+    expect(wrapper.find(".task-card[data-task-id='0003']").classes()).toContain("kb-highlight");
+  });
+
+  it("does not hijack Enter on a focused interactive control", async () => {
+    const wrapper = mount(Harness, {
+      props: { tasks: [makeTask("0001"), makeTask("0002")] },
+    });
+    // Establish a highlight first.
+    await press("j");
+
+    // Dispatching Enter from a focused button must NOT open the highlighted
+    // task — the button owns the key (its native activation).
+    const button = window.document.createElement("button");
+    window.document.body.appendChild(button);
+    await press("Enter", button);
+    expect(wrapper.emitted("opened")).toBeUndefined();
   });
 });

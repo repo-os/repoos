@@ -6,6 +6,7 @@ import { COLUMNS, SORT_ORDER_OPTIONS, useRepoStore } from "../stores/repo";
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
+import { isColumnCollapsed } from "../lib/boardCollapse";
 import BoardColumn from "../components/BoardColumn.vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
@@ -41,13 +42,19 @@ const filterCol = computed<Column | null>(() => {
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
 // The board is the primary task list. Reconstruct the flat, DOM-ordered list
 // of visible cards (columns render top-to-bottom in this same order) so the
-// keyboard highlight index mirrors exactly what is on screen.
+// keyboard highlight index mirrors exactly what is on screen. Collapsed
+// columns are skipped so the highlight never lands on a hidden row (req 3).
 const visibleTasks = computed<Task[]>(() => {
   const order = statusFilter.value
     ? [filterCol.value!]
     : [DRAFT_COL, ...COLUMNS];
   const out: Task[] = [];
-  for (const col of order) out.push(...repo.byStatus(col.id));
+  for (const col of order) {
+    // In the filtered single-column view the column is force-expanded, so it is
+    // always on screen even if its id sits in the persisted collapse set.
+    if (!statusFilter.value && isColumnCollapsed(col.id)) continue;
+    out.push(...repo.byStatus(col.id));
+  }
   return out;
 });
 
