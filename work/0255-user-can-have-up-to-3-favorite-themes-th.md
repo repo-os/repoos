@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-19T07:46:22Z"
-updated_at: "2026-08-25T14:56:08Z"
+updated_at: "2026-08-25T15:01:49Z"
 ---
 User can have up to 3 favorite themes that they can star from settings page theme list, these 3  will show in the quick switcher on the sidebar.
 
