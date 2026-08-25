@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-25T14:18:56Z"
-review_passes: 3
 id: "0290"
 title: Add keyboard shortcuts to navigate task list (j/k/h/l) and open a task (Enter)
 type: feature
@@ -14,6 +12,8 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
+updated_at: "2026-08-25T14:21:21Z"
+review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
 ---
