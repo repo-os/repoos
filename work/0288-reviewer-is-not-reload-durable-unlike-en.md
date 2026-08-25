@@ -13,7 +13,8 @@ branch: feat/reviewer-is-not-reload-durable-unlike-en
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:27:29Z"
-updated_at: "2026-08-25T06:54:50Z"
+updated_at: "2026-08-25T07:42:17Z"
+merge_conflict_retry_count: 2
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 2
@@ -77,3 +78,4 @@ Move the reviewer's one-shot run onto the same durable path the engineer and PM 
 - 2026-08-25T06:27:50Z · review_model_override
 - 2026-08-25T06:54:49Z · review_model_override
 - 2026-08-25T06:54:50Z · model_override
+- 2026-08-25T07:01:47Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/server/review.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
