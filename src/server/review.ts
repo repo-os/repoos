@@ -1084,6 +1084,7 @@ export class ReviewManager {
       lines = [];
       this.sessions.set(taskId, lines);
     }
+    if (!entry.at) entry = { ...entry, at: new Date().toISOString() };
     lines.push(entry);
     if (lines.length > SESSION_LINES_CAP) lines.splice(0, lines.length - SESSION_LINES_CAP);
     this.emit({

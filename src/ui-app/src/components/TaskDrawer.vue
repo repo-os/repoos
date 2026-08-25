@@ -8,6 +8,7 @@ import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtTime } from "../lib/time";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
@@ -971,7 +972,7 @@ async function pmSend(): Promise<void> {
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
   pmSubmitting.value = true;
-  const optimistic: AgentOutputEntry = { type: "human", text };
+  const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
@@ -3013,6 +3014,7 @@ function resetFreeformOverrides(): void {
                   <div class="pm-bubble" :class="`pm-bubble-${pmLineKind(entry)}`">
                     <div v-if="pmLineKind(entry) === 'assistant'" class="pm-markdown" v-html="renderMarkdown(pmLineText(entry))"></div>
                     <span v-else>{{ pmLineText(entry) }}</span>
+                    <span v-if="pmLineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
                   </div>
                 </div>
               </template>
@@ -3185,6 +3187,15 @@ function resetFreeformOverrides(): void {
   background: var(--panel);
   border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  display: block;
+  margin-top: 3px;
+  text-align: right;
+  color: var(--txt-faint);
+  font: 500 8.5px 'JetBrains Mono', monospace;
+  opacity: 0.8;
 }
 
 .pm-row-status {

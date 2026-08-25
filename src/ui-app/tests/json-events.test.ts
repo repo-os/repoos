@@ -394,16 +394,17 @@ describe("opencode driver (structured JSON events)", () => {
       const lines = runner.output("0045")!.lines;
       expect(lines).toEqual([
         expect.objectContaining({ type: "step", kind: "start" }),
-        { type: "text", text: "I will inspect the repo." },
+        { type: "text", text: "I will inspect the repo.", at: expect.any(String) },
         {
           type: "tool",
           tool: "bash",
           input: "ls",
           output: "AGENTS.md",
           state: "completed",
+          at: expect.any(String),
         },
         expect.objectContaining({ type: "step", kind: "finish", reason: "stop" }),
-        { s: "out", d: "not json at all" },
+        { s: "out", d: "not json at all", at: expect.any(String) },
       ]);
       for (const line of lines) {
         if (typeof line === "object" && "type" in line && line.type === "step") {
@@ -456,7 +457,7 @@ process.stdout.write('{"type":"text","sessionID":"ses-abc","part":{"type":"text"
       runner.start(TASK, "feat/json-events", agent("opencode"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0045"), "no-newline turn exit");
       const lines = runner.output("0045")!.lines;
-      expect(lines).toContainEqual({ type: "text", text: "final" });
+      expect(lines).toContainEqual(expect.objectContaining({ type: "text", text: "final" }));
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -529,10 +530,11 @@ describe("claude code driver (stream-json events, 0109)", () => {
           tool: "Read",
           input: JSON.stringify({ file_path: "/private/tmp/ccprobe/sample.txt" }, null, 2),
           output: "1\thello world\n2\t",
+          at: expect.any(String),
         },
-        { type: "text", text: "Hello world greeting." },
+        { type: "text", text: "Hello world greeting.", at: expect.any(String) },
         expect.objectContaining({ type: "step", kind: "finish" }),
-        { s: "out", d: "Warning: no stdin data received in 3s, proceeding without it" },
+        { s: "out", d: "Warning: no stdin data received in 3s, proceeding without it", at: expect.any(String) },
       ]);
       // Session id comes from the system/init event field, not regex scraping.
       expect(runner.output("0045")!.sessionId).toBe("78dc4e6a-abcd");
@@ -595,11 +597,13 @@ process.stdout.write('{"type":"assistant","message":{"content":[{"type":"tool_us
       const runner = new AgentRunner(config(fx.bin), () => {});
       runner.start(TASK, "feat/json-events", agent("claude code"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0045"), "interrupted turn exit");
-      expect(runner.output("0045")!.lines).toContainEqual({
-        type: "tool",
-        tool: "Bash",
-        input: "ls",
-      });
+      expect(runner.output("0045")!.lines).toContainEqual(
+        expect.objectContaining({
+          type: "tool",
+          tool: "Bash",
+          input: "ls",
+        }),
+      );
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
