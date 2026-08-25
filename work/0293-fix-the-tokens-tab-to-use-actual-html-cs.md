@@ -9,10 +9,11 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-the-tokens-tab-to-use-actual-html-cs
+model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-25T00:16:03Z"
-updated_at: "2026-08-25T06:23:23Z"
+updated_at: "2026-08-25T06:23:24Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -71,3 +72,4 @@ Also update the matching styles — `src/ui-app/src/components/UsagePanel.vue` s
 - 2026-08-25T05:54:49Z · review_model_override
 - 2026-08-25T05:55:41Z · model_override
 - 2026-08-25T06:23:23Z · review_model_override
+- 2026-08-25T06:23:24Z · model_override
