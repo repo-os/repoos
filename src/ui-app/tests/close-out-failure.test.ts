@@ -92,13 +92,31 @@ describe("describeCloseOutFailure", () => {
   });
 
   it("still lists conflicting files + resolve-then-retry for a genuine conflict", () => {
-    const err = describeCloseOutFailure(
-      "validating",
-      "merge conflict in src/server/done.ts, src/ui/App.vue — resolve it in the feature branch's own worktree (merge main into the branch), then retry",
-    );
+    const reason =
+      "merge conflict in src/server/done.ts, src/ui/App.vue — resolve it in the feature branch's own worktree (merge main into the branch), then retry";
+    const err = describeCloseOutFailure("validating", reason);
     expect(err.conflicts).toEqual(["src/server/done.ts", "src/ui/App.vue"]);
-    expect(err.message).toContain("merge conflict");
+    expect(err.message).toMatch(/merge conflict/i);
     expect(err.hint).toBe(CONFLICT_HINT);
+    // The concise headline summarizes; the full raw reason lives in detail.
+    expect(err.detail).toBe(reason);
+  });
+
+  it("keeps a headline short even when the raw reason is huge, moving the rest to detail", () => {
+    // A real merge-conflict reason can carry a long file listing/diff excerpt —
+    // that must never end up rendered unclamped in the task panel (0253).
+    const hugeReason = "merge conflict in " + Array.from({ length: 50 }, (_, i) => `src/file-${i}.ts`).join(", ") + " — resolve it";
+    const err = describeCloseOutFailure(undefined, hugeReason);
+    expect(err.message.length).toBeLessThanOrEqual(240);
+    expect(err.detail).toBe(hugeReason);
+    expect(err.conflicts.length).toBe(50);
+  });
+
+  it("caps a huge non-conflict reason's headline too, preserving the full text in detail", () => {
+    const hugeReason = "could not acquire publication lock: " + "x".repeat(2000);
+    const err = describeCloseOutFailure("publishing", hugeReason);
+    expect(err.message.length).toBeLessThanOrEqual(240);
+    expect(err.detail).toBe(hugeReason);
   });
 
   it("keeps the legacy conflict form working", () => {
