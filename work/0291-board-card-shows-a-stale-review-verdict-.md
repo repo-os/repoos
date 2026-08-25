@@ -11,7 +11,7 @@ branch: feat/board-card-shows-a-stale-review-verdict-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:52:07Z"
-updated_at: "2026-08-25T06:02:30Z"
+updated_at: "2026-08-25T06:08:32Z"
 review_passes: 1
 ---
 ## Problem
