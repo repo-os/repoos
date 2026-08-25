@@ -820,7 +820,6 @@
    .agent-override-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
    .agent-pick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
    .agent-override-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-   .agent-custom-badge{font-size:10px;font-weight:600;color:var(--violet);background:rgba(157,123,255,0.12);border:1px solid rgba(157,123,255,0.3);border-radius:6px;padding:1px 6px;text-transform:uppercase;letter-spacing:0.5px}
    .agent-save-hint{font-size:10px;font-weight:600;color:var(--txt-faint);text-transform:uppercase;letter-spacing:0.5px;animation:agent-save-pulse 1s ease-in-out infinite}
    @keyframes agent-save-pulse{50%{opacity:.4}}
   .agent-log{flex:1;min-height:0;overflow-y:auto;background:var(--md-body-bg);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;max-height:none}

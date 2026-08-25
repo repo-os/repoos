@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
-import { X, RotateCcw } from "lucide-vue-next";
+import { X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -189,10 +189,6 @@ const freeformIsCustom = computed(() => {
   );
 });
 
-function resetFreeformOverrides(): void {
-  initFreeformOverrides();
-}
-
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
   const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
   return raw.map((e) => {
@@ -313,18 +309,6 @@ function onDocBodyTranscribed(text: string): void {
                   :disabled="freeformRunning"
                 />
               </div>
-            </div>
-            <div v-if="freeformIsCustom" class="agent-override-actions">
-              <span class="agent-custom-badge">custom</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                :disabled="freeformRunning"
-                @click="resetFreeformOverrides"
-                title="Reset to PM defaults"
-              >
-                <RotateCcw class="size-3" />
-              </Button>
             </div>
           </div>
           <div v-if="!pmAgentReady" class="ff-notice">
@@ -468,21 +452,6 @@ function onDocBodyTranscribed(text: string): void {
   font-size: 12px;
   font-weight: 500;
   color: var(--txt-secondary);
-}
-
-.agent-override-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.agent-custom-badge {
-  font-size: 11px;
-  padding: 2px 6px;
-  background: var(--accent-alpha);
-  color: var(--accent);
-  border-radius: 4px;
-  font-weight: 600;
 }
 
 .ff-notice {

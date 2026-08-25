@@ -1058,12 +1058,6 @@ const pmBaseAgent = computed(() => {
   return list.find((a) => a.enabled && a.name === "pm") ?? null;
 });
 
-/** Whether the current task has any persisted PM override set. */
-const hasPmOverride = computed(() => {
-  const t = ui.active;
-  return !!(t && (t.pmAgentOverride || t.pmCliOverride || t.pmModelOverride));
-});
-
 /** Draft overrides for the PM tab, initialized from the task's persisted values. */
 const pmOverrideDraft = reactive({ agent: "", cli: "", model: "" });
 
@@ -1088,17 +1082,6 @@ const pmOverrideDirty = computed(
     pmOverrideDraft.cli !== pmOverrideSaved.cli ||
     pmOverrideDraft.model !== pmOverrideSaved.model,
 );
-
-/** True when the PM overrides differ from the base PM agent defaults. */
-const pmIsCustom = computed(() => {
-  const base = pmBaseAgent.value;
-  if (!base) return false;
-  return (
-    pmOverrideDraft.agent !== base.name ||
-    pmOverrideDraft.cli !== base.cli ||
-    pmOverrideDraft.model !== base.model
-  );
-});
 
 /** Model options for the PM tab's model select. */
 const pmModelOptions = computed(() =>
@@ -1169,33 +1152,12 @@ watch(
   },
 );
 
-/** Reset PM overrides to the base PM agent defaults (persisted). */
-async function resetPmOverrides(): Promise<void> {
-  if (!ui.active) return;
-  try {
-    await repo.patchTask(ui.active.id, {
-      pmAgentOverride: null,
-      pmCliOverride: null,
-      pmModelOverride: null,
-    });
-    initPmOverrideDraft(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  }
-}
-
 // ---- review agent override (task detail) ----
 
 /** The base reviewer agent from the Agents page. */
 const reviewBaseAgent = computed(() => {
   const list = config.agents?.length ? config.agents : [];
   return list.find((a) => a.enabled && a.name.toLowerCase() === "reviewer") ?? null;
-});
-
-/** Whether the current task has any persisted review override set. */
-const hasReviewOverride = computed(() => {
-  const t = ui.active;
-  return !!(t && (t.reviewAgentOverride || t.reviewCliOverride || t.reviewModelOverride));
 });
 
 /** Draft overrides for the Review tab, initialized from the task's persisted values. */
@@ -1222,17 +1184,6 @@ const reviewOverrideDirty = computed(
     reviewOverrideDraft.cli !== reviewOverrideSaved.cli ||
     reviewOverrideDraft.model !== reviewOverrideSaved.model,
 );
-
-/** True when the review overrides differ from the base reviewer agent defaults. */
-const reviewIsCustom = computed(() => {
-  const base = reviewBaseAgent.value;
-  if (!base) return false;
-  return (
-    reviewOverrideDraft.agent !== base.name ||
-    reviewOverrideDraft.cli !== base.cli ||
-    reviewOverrideDraft.model !== base.model
-  );
-});
 
 /** Model options for the Review tab's model select. */
 const reviewModelOptions = computed(() =>
@@ -1300,21 +1251,6 @@ watch(
     scheduleReviewOverrideSave();
   },
 );
-
-/** Reset review overrides to the base reviewer agent defaults (persisted). */
-async function resetReviewOverrides(): Promise<void> {
-  if (!ui.active) return;
-  try {
-    await repo.patchTask(ui.active.id, {
-      reviewAgentOverride: null,
-      reviewCliOverride: null,
-      reviewModelOverride: null,
-    });
-    initReviewOverrideDraft(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  }
-}
 
 // ---- agent session tab ----
 
@@ -1725,12 +1661,6 @@ const baseAgent = computed(() => {
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 });
 
-/** Whether the current task has any override set. */
-const hasAgentOverride = computed(() => {
-  const t = ui.active;
-  return !!(t && (t.agentOverride || t.cliOverride || t.modelOverride));
-});
-
 /** Draft overrides for the agent tab. These are the values the user is editing
  *  but haven't saved yet. They are initialized from the task's current overrides
  *  (or the base agent's defaults when none are set). */
@@ -1765,17 +1695,6 @@ const overrideDirty = computed(
     overrideDraft.cli !== overrideSaved.cli ||
     overrideDraft.model !== overrideSaved.model,
 );
-
-/** True when the overrides differ from the base agent defaults. */
-const isCustom = computed(() => {
-  const base = baseAgent.value;
-  if (!base) return false;
-  return (
-    overrideDraft.agent !== base.name ||
-    overrideDraft.cli !== base.cli ||
-    overrideDraft.model !== base.model
-  );
-});
 
 watch(
   () => ui.active,
@@ -1854,30 +1773,6 @@ onUnmounted(() => {
   }
 });
 
-/** Reset overrides to the base agent defaults. */
-async function resetOverrides(): Promise<void> {
-  if (!ui.active) return;
-  ui.saving = true;
-  try {
-    await repo.patchTask(ui.active.id, {
-      agentOverride: null,
-      cliOverride: null,
-      modelOverride: null,
-    });
-    const base = baseAgent.value;
-    overrideDraft.agent = base?.name || "";
-    overrideDraft.cli = base?.cli || "";
-    overrideDraft.model = base?.model || "";
-    overrideSaved.agent = overrideDraft.agent;
-    overrideSaved.cli = overrideDraft.cli;
-    overrideSaved.model = overrideDraft.model;
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    ui.saving = false;
-  }
-}
-
 // ---- freeform agent override (one-shot) ----
 
 /** The PM agent's base config, for the freeform readout. */
@@ -1922,10 +1817,6 @@ watch(
   },
 );
 
-/** Reset freeform overrides to the PM agent defaults. */
-function resetFreeformOverrides(): void {
-  initFreeformOverrides();
-}
 </script>
 
 <template>
@@ -2042,20 +1933,6 @@ function resetFreeformOverrides(): void {
                     :disabled="freeformRunning"
                   />
                 </div>
-                   <div class="agent-field">
-                       <div v-if="freeformIsCustom" class="agent-override-actions" style="padding-top:20px">
-                         <span class="agent-custom-badge">custom</span>
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           :disabled="freeformRunning"
-                           @click="resetFreeformOverrides"
-                           title="Reset to PM defaults"
-                         >
-                           <RotateCcw class="size-3" />
-                         </Button>
-                       </div>
-                   </div>
               </div>
             </div>
             <div v-if="!pmAgentReady" class="ff-notice">
@@ -2614,12 +2491,8 @@ function resetFreeformOverrides(): void {
                 />
               </div>
               <div class="agent-field">
-                  <div v-if="isCustom || overrideDirty" class="agent-override-actions" style='padding-top:20px'>
-                    <span v-if="isCustom" class="agent-custom-badge">custom</span>
-                    <span v-if="overrideDirty" class="agent-save-hint">saving…</span>
-                    <Button v-if="hasAgentOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetOverrides" title="Reset to default">
-                      <RotateCcw class="size-3" />
-                    </Button>
+                  <div v-if="overrideDirty" class="agent-override-actions" style='padding-top:20px'>
+                    <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
             </div>
@@ -2760,12 +2633,8 @@ function resetFreeformOverrides(): void {
                 />
               </div>
                <div class="agent-field" style="padding-top:20px">
-                  <div v-if="reviewIsCustom || reviewOverrideDirty" class="agent-override-actions">
-                    <span v-if="reviewIsCustom" class="agent-custom-badge">custom</span>
-                    <span v-if="reviewOverrideDirty" class="agent-save-hint">saving…</span>
-                    <Button v-if="hasReviewOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetReviewOverrides" title="Reset to default">
-                      <RotateCcw class="size-3" />
-                    </Button>
+                  <div v-if="reviewOverrideDirty" class="agent-override-actions">
+                    <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
             </div>
@@ -3149,12 +3018,8 @@ function resetFreeformOverrides(): void {
                 />
               </div>
                <div class="agent-field" style="padding-top:20px">
-                  <div v-if="pmIsCustom || pmOverrideDirty" class="agent-override-actions">
-                    <span v-if="pmIsCustom" class="agent-custom-badge">custom</span>
-                    <span v-if="pmOverrideDirty" class="agent-save-hint">saving…</span>
-                    <Button v-if="hasPmOverride" variant="ghost" size="sm" :disabled="ui.saving" @click="resetPmOverrides" title="Reset to defaults">
-                      <RotateCcw class="size-3" />
-                    </Button>
+                  <div v-if="pmOverrideDirty" class="agent-override-actions">
+                    <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
             </div>
