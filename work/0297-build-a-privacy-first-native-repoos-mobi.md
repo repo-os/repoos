@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-26T12:19:09Z"
+review_passes: 2
 id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
@@ -12,8 +14,6 @@ model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T12:14:35Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T12:11:54Z · review_model_override
 - 2026-08-26T12:14:30Z · model_override
 - 2026-08-26T12:14:35Z · pm_model_override
+
