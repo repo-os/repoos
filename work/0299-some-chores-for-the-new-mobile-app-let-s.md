@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T14:22:34Z"
-updated_at: "2026-08-26T14:23:12Z"
+updated_at: "2026-08-26T14:23:18Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Some chores for the new mobile app: Let's use the actual RepoOS logo in the mobi
 
 - 2026-08-26T14:22:59Z · status draft→inbox, title, area, type, body
 - 2026-08-26T14:23:12Z · model_override
+- 2026-08-26T14:23:18Z · review_model_override
