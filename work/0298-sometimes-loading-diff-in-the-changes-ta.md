@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-26T12:35:13Z"
+review_passes: 2
 id: "0298"
 title: Show diff stats and loading indicator while fetching full diff
 type: feature
@@ -10,8 +12,6 @@ created_by: hello@repoos.org
 branch: feat/show-diff-stats-and-loading-indicator-wh
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T12:12:10Z"
-updated_at: "2026-08-26T12:30:19Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ Sometimes "loading diff..." in the changes tab of a task takes a looooong time (
 - 2026-08-26T12:19:57Z · status active→review
 - 2026-08-26T12:25:46Z · status review→active
 - 2026-08-26T12:30:19Z · status active→review
+
