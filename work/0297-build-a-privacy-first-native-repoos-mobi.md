@@ -8,8 +8,9 @@ area: mobile
 assigned_to: ai
 created_by: ""
 branch: ""
+pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T11:02:13Z"
+updated_at: "2026-08-26T11:14:42Z"
 ---
 ## Problem
 
@@ -45,3 +46,4 @@ The server list, display names, and selection state remain on-device only. The n
 
 - 2026-08-26T10:53:07Z · created · unknown
 - 2026-08-26T11:02:13Z · status inbox→ready
+- 2026-08-26T11:14:42Z · pm_model_override
