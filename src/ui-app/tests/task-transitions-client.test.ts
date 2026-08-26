@@ -5,7 +5,7 @@
  * instead of only failing after the fact in `onDrop`.
  */
 import { describe, expect, it } from "vitest";
-import { isValidBoardMove, GENERIC_PATCH_TARGETS } from "../src/lib/taskTransitions";
+import { isValidBoardMove, boardMoveRejectionReason, GENERIC_PATCH_TARGETS } from "../src/lib/taskTransitions";
 
 describe("isValidBoardMove", () => {
   it("rejects dropping a card back on its own column", () => {
@@ -53,5 +53,20 @@ describe("isValidBoardMove", () => {
     for (const [from, to] of nonsense) {
       expect(isValidBoardMove(from, to)).toBe(false);
     }
+  });
+});
+
+describe("boardMoveRejectionReason", () => {
+  it("names the right dedicated action for each non-generic edge", () => {
+    expect(boardMoveRejectionReason("ready", "active")).toMatch(/Start work/);
+    expect(boardMoveRejectionReason("active", "ready")).toMatch(/Abandon work/);
+    expect(boardMoveRejectionReason("review", "ready")).toMatch(/Abandon work/);
+    expect(boardMoveRejectionReason("done", "ready")).toMatch(/Reopen/);
+    expect(boardMoveRejectionReason("review", "done")).toMatch(/Move to done/);
+  });
+
+  it("falls back to a generic message for skip-a-step jumps", () => {
+    expect(boardMoveRejectionReason("draft", "active")).toMatch(/can't move directly/);
+    expect(boardMoveRejectionReason("review", "draft")).toMatch(/can't move directly/);
   });
 });

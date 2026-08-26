@@ -5,7 +5,7 @@ import type { Column } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import { applyCollapseDefaults, isColumnCollapsed, toggleColumnCollapsed } from "../lib/boardCollapse";
-import { isValidBoardMove } from "../lib/taskTransitions";
+import { isValidBoardMove, boardMoveRejectionReason } from "../lib/taskTransitions";
 
 const GENZ_EMPTY: Record<string, string> = {
   draft: "no drafts yet — agent ideas land here",
@@ -82,23 +82,37 @@ const dragOver = ref(false);
 let dragDepth = 0;
 
 /** Whether the task currently being dragged (if any) could actually land in
- *  this column — mirrors onDrop's own checks so the cue never promises a
- *  drop that would then fail. Null (no drag in progress, or a no-op drag
- *  back onto its own column) means "not applicable", not "invalid". */
-const dropIsValid = computed<boolean | null>(() => {
+ *  this column, and why not — mirrors onDrop's own checks so the cue never
+ *  promises a drop that would then fail. Null (no drag in progress, or a
+ *  no-op drag back onto its own column) means "not applicable", not
+ *  "invalid". The done column's checks need live agent/review state
+ *  taskTransitions.ts has no way to know, so they're inlined here rather
+ *  than folded into boardMoveRejectionReason. */
+const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() => {
   const t = repo.draggingTask;
   if (!t || t.status === props.col.id) return null;
   if (props.col.id === "done") {
-    return t.status === "review" && !repo.reviewFor(t.id)?.running;
+    if (t.status !== "review") return { valid: false, reason: "Only review tasks can be moved to done." };
+    if (repo.reviewFor(t.id)?.running) return { valid: false, reason: "Waiting for automatic review to finish." };
+    return { valid: true, reason: null };
   }
-  return isValidBoardMove(t.status, props.col.id);
+  const valid = isValidBoardMove(t.status, props.col.id);
+  return { valid, reason: valid ? null : boardMoveRejectionReason(t.status, props.col.id) };
 });
+const dropIsValid = computed(() => (dropCheck.value === null ? null : dropCheck.value.valid));
 
 function onDragEnter(e: DragEvent): void {
   if (!props.dragEnabled) return;
   dragDepth++;
   dragOver.value = true;
   e.preventDefault();
+  // Fire once per genuine column-enter (not nested child re-entries, which
+  // also dispatch dragenter) — the toast the user gets on a rejected drop
+  // moved here so it shows the moment the drag hovers an invalid column,
+  // not only after they release the mouse and the drop silently refuses.
+  if (dragDepth === 1 && dropCheck.value?.valid === false && dropCheck.value.reason) {
+    repo.pushToast(dropCheck.value.reason, "error");
+  }
 }
 
 function onDragOver(e: DragEvent): void {

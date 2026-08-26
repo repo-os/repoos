@@ -26,3 +26,28 @@ export function isValidBoardMove(from: string, to: string): boolean {
   if (to === "done") return from === "review";
   return GENERIC_PATCH_TARGETS[from]?.includes(to) ?? false;
 }
+
+/** Which dedicated action actually performs each non-generic edge — for a
+ *  helpful rejection message, not for validity itself (see isValidBoardMove
+ *  and BoardColumn's own done-specific checks, which need live agent/review
+ *  state this table doesn't have). */
+const ACTION_HINTS: Record<string, string> = {
+  "ready->active": "Start work",
+  "active->ready": "Abandon work",
+  "review->ready": "Abandon work",
+  "done->ready": "Reopen",
+  "review->done": "Move to done",
+};
+
+/**
+ * Human-readable reason a board drag from `from` to `to` is invalid — shown
+ * as a toast the moment the drag hovers an invalid column, same message a
+ * rejected drop used to only surface after the fact. Callers should only
+ * invoke this for a move `isValidBoardMove` (or their own extra checks, e.g.
+ * BoardColumn's live review-running check for `done`) has already rejected.
+ */
+export function boardMoveRejectionReason(from: string, to: string): string {
+  const hint = ACTION_HINTS[`${from}->${to}`];
+  if (hint) return `Can't drag "${from}" straight to "${to}" — use ${hint} instead.`;
+  return `A task can't move directly from "${from}" to "${to}".`;
+}
