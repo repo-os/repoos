@@ -8,10 +8,8 @@ area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/bump-canary-counter-for-end-to-end-smoke
-review_model_override: default
 created_at: "2026-08-26T05:52:26Z"
-updated_at: "2026-08-26T06:09:51Z"
-review_passes: 1
+updated_at: "2026-08-26T06:02:55Z"
 ---
 ## Problem
 
@@ -51,8 +49,3 @@ This is the repoos canary task: a deliberately trivial change used to smoke-test
 - 2026-08-26T05:53:43Z · status inbox→ready
 - 2026-08-26T05:54:07Z · status ready→active, branch
 - 2026-08-26T06:02:55Z · status active→review
-- 2026-08-26T06:03:29Z · review_model_override
-- 2026-08-26T06:03:29Z · model_override
-- 2026-08-26T06:09:11Z · pm_model_override
-- 2026-08-26T06:09:32Z · model_override
-- 2026-08-26T06:09:51Z · pm_model_override
