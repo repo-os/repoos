@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
+review_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T17:18:07Z"
-updated_at: "2026-08-26T17:22:58Z"
+updated_at: "2026-08-26T17:23:13Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ This is a prerequisite for the mobile shell tasks #0302/#0303/#0304 and should c
 
 - 2026-08-26T17:18:07Z · created · unknown
 - 2026-08-26T17:22:58Z · model_override
+- 2026-08-26T17:23:13Z · review_model_override
