@@ -9,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: default
+pm_model_override: default
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-08-19T18:46:11Z"
@@ -69,3 +70,4 @@ preview links shouldn't use auth if possible, or it should inherit the auth of t
 - 2026-08-26T11:22:04Z · review_cli_override
 - 2026-08-26T11:22:09Z · review_model_override
 - 2026-08-26T11:22:18Z · model_override
+- 2026-08-26T11:22:18Z · pm_model_override
