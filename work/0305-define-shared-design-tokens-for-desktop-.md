@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-26T18:08:28Z"
+review_passes: 2
 id: "0305"
 title: Define shared design tokens for desktop and mobile
 type: chore
@@ -11,8 +13,6 @@ branch: feat/define-shared-design-tokens-for-desktop-
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T17:18:07Z"
-updated_at: "2026-08-26T18:08:28Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ This is a prerequisite for the mobile shell tasks #0302/#0303/#0304 and should c
 - 2026-08-26T17:46:24Z · needs_input
 - 2026-08-26T18:08:00Z · review_model_override
 - 2026-08-26T18:08:28Z · needs_input
+
