@@ -8,10 +8,9 @@ area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-pm_model_override: default
 review_model_override: default
 created_at: "2026-08-26T05:52:26Z"
-updated_at: "2026-08-26T05:53:17Z"
+updated_at: "2026-08-26T05:53:23Z"
 ---
 ## Problem
 
@@ -46,3 +45,4 @@ This is the repoos canary task: a deliberately trivial change used to smoke-test
 - 2026-08-26T05:52:41Z · title, area, type, body
 - 2026-08-26T05:53:12Z · pm_model_override
 - 2026-08-26T05:53:17Z · review_model_override
+- 2026-08-26T05:53:23Z · pm_model_override
