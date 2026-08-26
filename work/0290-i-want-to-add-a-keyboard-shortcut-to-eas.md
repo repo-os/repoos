@@ -11,7 +11,7 @@ branch: feat/add-keyboard-shortcuts-to-navigate-task-
 model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-25T15:01:37Z"
+updated_at: "2026-08-26T10:53:59Z"
 ---
 ## Goal
 
