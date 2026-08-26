@@ -41,6 +41,22 @@ const TASK_COUNT = 30;
  */
 const HEALTH_CEILING_MS = 8_000;
 const FULL_READY_CEILING_MS = 15_000;
+/**
+ * Measurement tolerance for the "health first" assertion below.
+ *
+ * `firstHealthMs` is only *observed* from inside a polling loop: it is
+ * recorded after a 25ms sleep plus a localhost fetch round-trip, whereas
+ * `fullReadyMs` is timestamped synchronously the moment `startServer()`
+ * resolves. When the two genuinely land in the same instant, the poll can
+ * measure health a few ms AFTER full-ready even though the listener bound
+ * first — a race that made the bare `<=` assertion flake persistently (this
+ * exact machine failed it ~80% of the time in isolation, e.g. 709 ≤ 707).
+ *
+ * The tolerance only has to absorb that poll/fetch skew (well under 100ms),
+ * never a real regression: reverting to the old synchronous boot makes health
+ * lag full-ready by seconds, comfortably past the guard.
+ */
+const POLL_TOLERANCE_MS = 100;
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -130,10 +146,12 @@ describe("boot timing (#0271 regression guard)", () => {
       try {
         expect(firstHealthMs).not.toBeNull();
         // The listener answers before the full index (30 real-git-enriched
-        // tasks) is done — the whole point of the fix. Equal is impossible in
-        // practice, but `<=` keeps this from flaking if the box is so fast
-        // both land in the same millisecond.
-        expect(firstHealthMs!).toBeLessThanOrEqual(fullReadyMs);
+        // tasks) is done — the whole point of the fix. A tolerance equal to
+        // the polling granularity absorbs the measurement skew above (the
+        // poll can timestamp health a few ms after full-ready even when the
+        // listener bound first), without ever masking a regression to the old
+        // synchronous boot.
+        expect(firstHealthMs!).toBeLessThanOrEqual(fullReadyMs + POLL_TOLERANCE_MS);
         expect(firstHealthMs!).toBeLessThan(HEALTH_CEILING_MS);
         expect(fullReadyMs).toBeLessThan(FULL_READY_CEILING_MS);
 
