@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-26T14:43:25Z"
+review_passes: 1
 id: "0299"
 title: Update Mobile App Icons and Improve UX
 type: chore
@@ -11,7 +13,6 @@ branch: feat/update-mobile-app-icons-and-improve-ux
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T14:22:34Z"
-updated_at: "2026-08-26T14:43:13Z"
 ---
 ## Problem
 
@@ -55,3 +56,4 @@ Some chores for the new mobile app: Let's use the actual RepoOS logo in the mobi
 - 2026-08-26T14:23:36Z · status inbox→ready
 - 2026-08-26T14:29:06Z · status ready→active, branch
 - 2026-08-26T14:43:13Z · status active→review
+
