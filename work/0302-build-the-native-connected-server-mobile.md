@@ -2,14 +2,14 @@
 id: "0302"
 title: Build the native connected-server mobile shell and four-item navigation
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: mobile
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-08-26T16:39:04Z"
+updated_at: "2026-08-26T18:14:02Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Use Ionic Vue
 ## Activity
 
 - 2026-08-26T16:39:04Z · created · unknown
+- 2026-08-26T18:14:02Z · status inbox→ready
