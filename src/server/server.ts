@@ -871,7 +871,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           },
         );
         const jobBefore = jobCoordinator.peekNext();
-        const result = await orchestrator.processNext();
+        // Defer auto-reload for the duration of this job's processing: a
+        // close-out runs its own `bun run build`, and an auto-reload handover
+        // landing mid-flight would tear down the very server orchestrating it
+        // (see CloseOutLock above `completeTask` — this is the live path,
+        // `completeTask` itself is dead code and never acquires this lock).
+        closeOutLock.acquire();
+        let result: Awaited<ReturnType<typeof orchestrator.processNext>>;
+        try {
+          result = await orchestrator.processNext();
+        } finally {
+          closeOutLock.release();
+        }
         // Surface close-out failures (0199): the /done action returns as soon
         // as the job is enqueued, so the UI never learns of a background
         // failure. Only emit for a terminal `failed` phase — "main advanced,
@@ -894,10 +905,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         // Keep the live index in sync: the orchestrator writes the task file
         // (markTaskReleased) and merges the branch directly, bypassing the
-        // done-action's usual index.applyFileChange/refreshBranches.
-        const processed = jobCoordinator.peekNext();
-        if (processed && processed.phase === "done") {
-          const doneTask = index.getTask(processed.taskId);
+        // done-action's usual index.applyFileChange/refreshBranches. Must use
+        // jobBefore (captured pre-processing), not another peekNext() call —
+        // peekNext() filters out done/failed jobs by design, so it can never
+        // return the job that was just completed.
+        if (jobBefore && jobCoordinator.getJob(jobBefore.taskId)?.phase === "done") {
+          const doneTask = index.getTask(jobBefore.taskId);
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
         index.refreshBranches();
