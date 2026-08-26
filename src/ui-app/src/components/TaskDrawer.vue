@@ -2924,7 +2924,7 @@ watch(
           <template v-else-if="!ui.active.branch">
             <p class="changes-empty">No branch yet — start work to create the worktree.</p>
           </template>
-          <template v-else-if="!ui.active.git?.worktreeExists && (taskDiff === undefined || taskDiff.patch === '')">
+          <template v-else-if="!ui.active.git?.worktreeExists && taskDiff !== undefined && taskDiff.patch === ''">
             <p class="changes-empty">
               No saved code changes are available for this completed task.
             </p>
@@ -2949,8 +2949,7 @@ watch(
                   <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
                 </div>
               </div>
-              <div v-else class="diff-stats-loading">Loading change summary…</div>
-              <div v-if="taskDiff === undefined && !taskDiffStats" class="diff-stats-loading">
+              <div v-else class="diff-stats-loading">
                 <ActivityIndicator size="sm" label="Loading diff…" />
                 Loading changes…
               </div>
