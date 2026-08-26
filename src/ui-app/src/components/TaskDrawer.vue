@@ -1089,15 +1089,29 @@ const pmOverrideDraft = reactive({ agent: "", cli: "", model: "" });
 /** Snapshot of the last-saved PM override values. */
 const pmOverrideSaved = reactive({ agent: "", cli: "", model: "" });
 
+/**
+ * True while `initPmOverrideDraft` is assigning the draft from a task/base
+ * re-sync. The CLI→model reset watcher below must ignore changes made during
+ * this window — otherwise a re-sync that merely resolves `cli` to a
+ * different string than before (e.g. because the base agent briefly changed)
+ * silently wipes a real, already-saved model override back to "default" and
+ * the debounced auto-save persists that wipe to the task file.
+ */
+let pmCliResetSuppressed = false;
+
 /** Initialize the PM override draft from the current task. */
 function initPmOverrideDraft(t: Task | null): void {
   const base = pmBaseAgent.value;
+  pmCliResetSuppressed = true;
   pmOverrideDraft.agent = t?.pmAgentOverride || base?.name || "";
   pmOverrideDraft.cli = t?.pmCliOverride || base?.cli || "";
   pmOverrideDraft.model = t?.pmModelOverride || base?.model || "";
   pmOverrideSaved.agent = pmOverrideDraft.agent;
   pmOverrideSaved.cli = pmOverrideDraft.cli;
   pmOverrideSaved.model = pmOverrideDraft.model;
+  nextTick(() => {
+    pmCliResetSuppressed = false;
+  });
 }
 
 /** True when the PM override draft differs from the saved values. */
@@ -1164,6 +1178,7 @@ function schedulePmOverrideSave(): void {
 watch(
   () => pmOverrideDraft.cli,
   (newCli, oldCli) => {
+    if (pmCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
     const opts = config.modelsFor(newCli);
     pmOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
@@ -1191,15 +1206,22 @@ const reviewOverrideDraft = reactive({ agent: "", cli: "", model: "" });
 /** Snapshot of the last-saved review override values. */
 const reviewOverrideSaved = reactive({ agent: "", cli: "", model: "" });
 
+/** Same re-sync-vs-user-edit hazard as `pmCliResetSuppressed`, for the Review tab. */
+let reviewCliResetSuppressed = false;
+
 /** Initialize the review override draft from the current task. */
 function initReviewOverrideDraft(t: Task | null): void {
   const base = reviewBaseAgent.value;
+  reviewCliResetSuppressed = true;
   reviewOverrideDraft.agent = t?.reviewAgentOverride || base?.name || "";
   reviewOverrideDraft.cli = t?.reviewCliOverride || base?.cli || "";
   reviewOverrideDraft.model = t?.reviewModelOverride || base?.model || "";
   reviewOverrideSaved.agent = reviewOverrideDraft.agent;
   reviewOverrideSaved.cli = reviewOverrideDraft.cli;
   reviewOverrideSaved.model = reviewOverrideDraft.model;
+  nextTick(() => {
+    reviewCliResetSuppressed = false;
+  });
 }
 
 /** True when the review override draft differs from the saved values. */
@@ -1264,6 +1286,7 @@ function scheduleReviewOverrideSave(): void {
 watch(
   () => reviewOverrideDraft.cli,
   (newCli, oldCli) => {
+    if (reviewCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
     const opts = config.modelsFor(newCli);
     reviewOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
@@ -1721,15 +1744,22 @@ const overrideSaved = reactive({
   model: "",
 });
 
+/** Same re-sync-vs-user-edit hazard as `pmCliResetSuppressed`, for the Engineer tab. */
+let agentCliResetSuppressed = false;
+
 /** Initialize the override draft from the current task. */
 function initOverrideDraft(t: Task | null): void {
   const base = baseAgent.value;
+  agentCliResetSuppressed = true;
   overrideDraft.agent = t?.agentOverride || base?.name || "";
   overrideDraft.cli = t?.cliOverride || base?.cli || "";
   overrideDraft.model = t?.modelOverride || base?.model || "";
   overrideSaved.agent = overrideDraft.agent;
   overrideSaved.cli = overrideDraft.cli;
   overrideSaved.model = overrideDraft.model;
+  nextTick(() => {
+    agentCliResetSuppressed = false;
+  });
 }
 
 /** True when the override draft differs from the saved values. */
@@ -1795,6 +1825,7 @@ function scheduleAgentOverrideSave(): void {
 watch(
   () => overrideDraft.cli,
   (newCli, oldCli) => {
+    if (agentCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
     const opts = config.modelsFor(newCli);
     overrideDraft.model = opts.length > 0 ? opts[0].value : "default";
