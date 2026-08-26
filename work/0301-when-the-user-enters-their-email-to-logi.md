@@ -2,7 +2,7 @@
 id: "0301"
 title: Animate the login email submission while awaiting passcode
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/animate-the-login-email-submission-while
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T15:47:48Z"
-updated_at: "2026-08-26T15:53:49Z"
+updated_at: "2026-08-26T17:26:38Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ When the user enters their email to login there should be some animation while w
 - 2026-08-26T15:48:46Z · model_override
 - 2026-08-26T15:48:58Z · status ready→active, branch
 - 2026-08-26T15:53:49Z · status active→review
+- 2026-08-26T17:26:38Z · status review→done, release:success
