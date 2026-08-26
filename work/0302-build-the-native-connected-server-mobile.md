@@ -2,16 +2,16 @@
 id: "0302"
 title: Build the native connected-server mobile shell and four-item navigation
 type: feature
-status: ready
+status: active
 priority: p1
 area: mobile
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-the-native-connected-server-mobile
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-08-26T18:14:43Z"
+updated_at: "2026-08-26T18:14:54Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Use Ionic Vue
 - 2026-08-26T18:14:02Z · status inbox→ready
 - 2026-08-26T18:14:34Z · model_override
 - 2026-08-26T18:14:43Z · review_model_override
+- 2026-08-26T18:14:54Z · status ready→active, branch
