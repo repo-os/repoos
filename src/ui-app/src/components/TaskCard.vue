@@ -141,10 +141,15 @@ function onDragStart(e: DragEvent): void {
   dt.effectAllowed = "move";
   dt.setData("text/plain", props.task.id);
   dragging.value = true;
+  // dataTransfer's actual payload is unreadable by other columns until drop,
+  // so share the dragged task via the store instead — that's what lets a
+  // column show a valid/invalid cue while the drag is still in progress.
+  repo.setDraggingTask(props.task);
 }
 
 function onDragEnd(): void {
   dragging.value = false;
+  repo.setDraggingTask(null);
   window.dispatchEvent(new CustomEvent("repoos:board-dragend"));
 }
 

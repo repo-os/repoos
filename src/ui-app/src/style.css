@@ -343,6 +343,13 @@
   .board-col.drag-over{outline:1px dashed var(--cyan);outline-offset:-1px;border-radius:13px;box-shadow:0 0 14px -5px var(--cyan)}
   .board-col.drag-over .col-body{background:var(--cyan-dim);border-radius:12px}
   .board-col.drag-over .col-body .col-empty{color:var(--cyan)}
+  /* Dragging a task over a column its status can't move to — the dragover
+     handler already refuses the drop (no preventDefault, native "not
+     allowed" cursor); this is the same signal in the column's own styling,
+     since a subtle OS cursor is easy to miss against the highlight below. */
+  .board-col.drag-over.drop-invalid{outline:1px dashed var(--red);box-shadow:0 0 14px -5px var(--red);cursor:not-allowed}
+  .board-col.drag-over.drop-invalid .col-body{background:var(--red-tint)}
+  .board-col.drag-over.drop-invalid .col-body .col-empty{color:var(--red)}
 
   /* collapsed: slim neutral vertical bar, colored cap with count, bottom fades out */
   .board-col.collapsed{flex:0 0 38px;width:38px;-webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);mask-image:linear-gradient(to bottom,#000 55%,transparent 100%)}

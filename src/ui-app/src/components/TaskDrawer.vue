@@ -33,6 +33,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import AgentModelControl from "./AgentModelControl.vue";
+import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -47,19 +48,6 @@ const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
   ...COLUMNS,
 ]);
-/** Mirrors task-transitions.ts's GENERIC_PATCH_EDGES on the server — the six
- *  bare-status-write edges with no side effect requiring a dedicated action.
- *  Everything else needs its own action (Start work, Move to done, Abandon
- *  work, Reopen) instead of a raw dropdown pick the server would reject. */
-const GENERIC_PATCH_TARGETS: Record<string, string[]> = {
-  draft: ["inbox"],
-  inbox: ["draft", "ready"],
-  ready: ["inbox"],
-  active: ["review"],
-  review: ["active"],
-  done: [],
-};
-
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;
   const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];

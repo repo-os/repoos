@@ -5,6 +5,7 @@ import type { Column } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import { applyCollapseDefaults, isColumnCollapsed, toggleColumnCollapsed } from "../lib/boardCollapse";
+import { isValidBoardMove } from "../lib/taskTransitions";
 
 const GENZ_EMPTY: Record<string, string> = {
   draft: "no drafts yet — agent ideas land here",
@@ -80,6 +81,19 @@ const leavingTaskName = computed(() => {
 const dragOver = ref(false);
 let dragDepth = 0;
 
+/** Whether the task currently being dragged (if any) could actually land in
+ *  this column — mirrors onDrop's own checks so the cue never promises a
+ *  drop that would then fail. Null (no drag in progress, or a no-op drag
+ *  back onto its own column) means "not applicable", not "invalid". */
+const dropIsValid = computed<boolean | null>(() => {
+  const t = repo.draggingTask;
+  if (!t || t.status === props.col.id) return null;
+  if (props.col.id === "done") {
+    return t.status === "review" && !repo.reviewFor(t.id)?.running;
+  }
+  return isValidBoardMove(t.status, props.col.id);
+});
+
 function onDragEnter(e: DragEvent): void {
   if (!props.dragEnabled) return;
   dragDepth++;
@@ -89,6 +103,14 @@ function onDragEnter(e: DragEvent): void {
 
 function onDragOver(e: DragEvent): void {
   if (!props.dragEnabled) return;
+  // Only allow the drop when it would actually succeed — a dragover that
+  // never calls preventDefault means the browser refuses the drop and shows
+  // its native "not allowed" cursor on its own, so an invalid target is
+  // rejected before the user ever releases the mouse, not after.
+  if (dropIsValid.value === false) {
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+    return;
+  }
   e.preventDefault();
 }
 
@@ -168,7 +190,7 @@ const unackedBadge = computed(() =>
 <template>
   <div
     class="board-col"
-    :class="{ collapsed, scrollable, 'drag-over': dragOver }"
+    :class="{ collapsed, scrollable, 'drag-over': dragOver, 'drop-invalid': dragOver && dropIsValid === false }"
     @dragenter="onDragEnter"
     @dragover="onDragOver"
     @dragleave="onDragLeave"

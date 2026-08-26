@@ -288,6 +288,15 @@ export const useRepoStore = defineStore("repo", () => {
     to: string;
   }
   const transitionState = ref<TransitionState | null>(null);
+  /** The task currently being drag-started on the board, or null between
+   *  drags. Shared (rather than read from dataTransfer) because dataTransfer's
+   *  actual payload is unreadable during dragover/dragenter in most browsers
+   *  — only at drop — so a column can't otherwise tell what's being dragged
+   *  over it in time to show a valid/invalid cue. */
+  const draggingTask = ref<Task | null>(null);
+  function setDraggingTask(task: Task | null): void {
+    draggingTask.value = task;
+  }
   const runningIds = ref<string[]>([]);
   /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
@@ -1642,6 +1651,8 @@ export const useRepoStore = defineStore("repo", () => {
     eventCount,
     flashId,
     transitionState,
+    draggingTask,
+    setDraggingTask,
     runningIds,
     queuedIds,
     runningSince,
