@@ -38,15 +38,32 @@ The web shell (`www/`) and native projects are independent of the repo's main
 `src/` TypeScript build. From this directory:
 
 ```bash
-npm install
-npm run build        # typecheck + vite builds src/ -> www/
-npx cap sync         # copy www/ + plugins into ios/ and android/
-npx cap open ios     # open Xcode (build + run on device/simulator)
-npx cap open android # open Android Studio
+bun install
+bun run build        # typecheck + vite builds src/ -> www/
+bun run sync         # copy www/ + plugins into ios/ and android/
+bun run open:ios     # open Xcode (build + run on device/simulator)
+bun run open:android # open Android Studio
 ```
 
-`npx cap add ios` / `npx cap add android` regenerate the native projects (only
+`bun run add:ios` / `bun run add:android` regenerate the native projects (only
 needed if you delete them; they are committed).
+
+### Rapid local testing
+
+From the repo root, `just build-android`, `just build-ios`, and
+`just build-mobile` build install-ready artifacts end to end (bun install +
+build + sync + native build) without opening Xcode or Android Studio:
+
+```bash
+just build-android  # -> mobile/android/app/build/outputs/apk/debug/app-debug.apk
+just build-ios      # -> unsigned .app for the iOS Simulator (not a device .ipa)
+just build-mobile   # both
+```
+
+`build-android` needs `openjdk@21` and the `android-commandlinetools` cask
+(`brew install openjdk@21 && brew install --cask android-commandlinetools`).
+`build-ios` needs the full Xcode.app installed (Command Line Tools alone
+aren't enough) — see [justfile](../justfile) for exact requirements/errors.
 
 ## Android SDK note
 
