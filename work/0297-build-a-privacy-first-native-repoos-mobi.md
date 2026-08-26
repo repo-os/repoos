@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: ""
 branch: feat/build-a-privacy-first-native-repoos-mobi
 model_override: default
-pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
+pm_model_override: default
 review_cli_override: claude code
 review_model_override: sonnet
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T11:18:43Z"
+updated_at: "2026-08-26T11:18:44Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T11:18:04Z · review_model_override
 - 2026-08-26T11:18:12Z · status ready→active
 - 2026-08-26T11:18:43Z · model_override
+- 2026-08-26T11:18:44Z · pm_model_override
