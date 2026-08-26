@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
+review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-08-26T18:14:34Z"
+updated_at: "2026-08-26T18:14:43Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Use Ionic Vue
 - 2026-08-26T16:39:04Z · created · unknown
 - 2026-08-26T18:14:02Z · status inbox→ready
 - 2026-08-26T18:14:34Z · model_override
+- 2026-08-26T18:14:43Z · review_model_override
