@@ -13,7 +13,7 @@ pm_model_override: default
 review_cli_override: claude code
 review_model_override: sonnet
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T11:17:04Z"
+updated_at: "2026-08-26T11:17:08Z"
 ---
 ## Problem
 
