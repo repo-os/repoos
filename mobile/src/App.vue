@@ -98,8 +98,12 @@ async function submitForm() {
   }
 }
 
-async function onRemove(server: ServerEntry) {
-  await removeServer(server.id);
+async function removeEditing() {
+  if (!editingId.value) return;
+  await removeServer(editingId.value);
+  mode.value = "picker";
+  editingId.value = null;
+  formError.value = "";
 }
 
 // ── lock settings ───────────────────────────────────────────────────────
@@ -122,7 +126,10 @@ async function persistLock() {
     <!-- ── App header ─────────────────────────────────────────────── -->
     <header class="topbar">
       <div class="brand">
-        <span class="logo" aria-hidden="true">◈</span>
+        <svg class="logo" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
+          <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
         <span class="brand-name">RepoOS</span>
       </div>
       <button
@@ -183,7 +190,10 @@ async function persistLock() {
       <div v-if="!loaded" class="center muted">Loading…</div>
 
       <div v-else-if="isEmpty" class="center">
-        <div class="hero-logo" aria-hidden="true">◈</div>
+        <svg class="hero-logo" width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
+          <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
         <h1 class="hero-title">Add your first server</h1>
         <p class="hero-sub">
           Enter the address of a self-hosted RepoOS instance. It's saved on this device only —
@@ -211,7 +221,6 @@ async function persistLock() {
             <button class="icon-btn sm" :disabled="i === 0" aria-label="Move up" @click="reorderServer(server.id, -1)">↑</button>
             <button class="icon-btn sm" :disabled="i === servers.length - 1" aria-label="Move down" @click="reorderServer(server.id, 1)">↓</button>
             <button class="icon-btn sm" aria-label="Edit" @click="startEdit(server)">✎</button>
-            <button class="icon-btn sm danger" aria-label="Delete" @click="onRemove(server)">✕</button>
           </div>
         </li>
       </ul>
@@ -243,6 +252,10 @@ async function persistLock() {
       <p v-if="mode === 'edit'" class="hint">URL can't be changed here — delete and re-add to point elsewhere.</p>
 
       <div class="form-actions">
+        <template v-if="mode === 'edit'">
+          <button class="ghost danger" @click="removeEditing">Delete server</button>
+          <span class="form-actions-spacer"></span>
+        </template>
         <button class="ghost" @click="cancelForm">Cancel</button>
         <button class="primary" :disabled="formBusy" @click="submitForm">
           {{ formValidating ? "Checking…" : mode === "add" ? "Save" : "Done" }}
