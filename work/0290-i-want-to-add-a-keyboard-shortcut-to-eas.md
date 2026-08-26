@@ -9,9 +9,10 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-keyboard-shortcuts-to-navigate-task-
 model_override: default
+pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T21:39:20Z"
-updated_at: "2026-08-26T10:53:59Z"
+updated_at: "2026-08-26T10:54:14Z"
 ---
 ## Goal
 
@@ -73,3 +74,4 @@ Keep the arrows (`Up`/`Down`) as an equivalent to `j`/`k` for users who prefer t
 - 2026-08-25T09:55:36Z · review_model_override
 - 2026-08-25T09:55:36Z · model_override
 - 2026-08-25T15:00:44Z · status review→done, release:success
+- 2026-08-26T10:54:14Z · pm_model_override
