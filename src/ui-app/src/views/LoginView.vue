@@ -220,6 +220,7 @@ function googleLogin(): void {
             />
             <p class="mt-4 text-right">
                 <button class="login-btn primary" :disabled="sending || !email.trim()" @click="requestOtp">
+                    <span v-if="sending" class="btn-spinner" aria-hidden="true"></span>
                     {{ sending ? "Sending..." : "Send code" }}
                 </button>
             </p>
@@ -432,6 +433,24 @@ function googleLogin(): void {
   font-family: inherit;
   cursor: pointer;
   transition: filter 0.15s, opacity 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.login-btn.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0.9;
+  animation: spin 0.6s linear infinite;
 }
 
 .login-btn:disabled {
