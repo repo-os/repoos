@@ -70,8 +70,8 @@ input {
 }
 
 .logo {
-  color: var(--accent);
-  font-size: 20px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .brand-name {
@@ -81,14 +81,15 @@ input {
 }
 
 .icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--txt-dim);
   background: transparent;
+  font-size: 20px;
 }
 .icon-btn:active {
   background: var(--bg-elev);
@@ -97,9 +98,9 @@ input {
   opacity: 0.3;
 }
 .icon-btn.sm {
-  width: 30px;
-  height: 30px;
-  font-size: 13px;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
 }
 .icon-btn.danger {
   color: var(--danger);
@@ -125,8 +126,7 @@ input {
   color: var(--txt-dim);
 }
 .hero-logo {
-  font-size: 56px;
-  color: var(--accent);
+  flex-shrink: 0;
 }
 .hero-title {
   font-size: 22px;
@@ -163,6 +163,11 @@ input {
   border-radius: 12px;
   color: var(--txt-dim);
   border: 1px solid var(--border);
+}
+.ghost.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  min-height: 48px;
 }
 .link {
   color: var(--accent);
@@ -345,9 +350,13 @@ input {
 }
 .form-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 8px;
+}
+.form-actions-spacer {
+  flex: 1;
 }
 
 .lock-overlay {
