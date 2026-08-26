@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-26T11:57:49Z"
-review_passes: 1
 id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
@@ -12,9 +10,10 @@ created_by: ""
 branch: feat/build-a-privacy-first-native-repoos-mobi
 model_override: default
 pm_model_override: default
-review_cli_override: claude code
 review_model_override: default
 created_at: "2026-08-26T10:53:07Z"
+updated_at: "2026-08-26T12:11:52Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -69,4 +68,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T11:24:38Z · model_override
 - 2026-08-26T11:29:05Z · model_override
 - 2026-08-26T11:57:44Z · status active→review
-
+- 2026-08-26T12:11:52Z · review_cli_override
