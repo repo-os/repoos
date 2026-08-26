@@ -10,9 +10,9 @@ created_by: hello@repoos.org
 branch: ""
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_cli_override: claude code
-review_model_override: default
+review_model_override: haiku
 created_at: "2026-08-19T18:46:11Z"
-updated_at: "2026-08-26T11:22:04Z"
+updated_at: "2026-08-26T11:22:09Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ preview links shouldn't use auth if possible, or it should inherit the auth of t
 - 2026-08-26T11:21:59Z · model_override
 - 2026-08-26T11:22:00Z · review_model_override
 - 2026-08-26T11:22:04Z · review_cli_override
+- 2026-08-26T11:22:09Z · review_model_override
