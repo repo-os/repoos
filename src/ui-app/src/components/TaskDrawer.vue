@@ -2731,8 +2731,8 @@ watch(
                   :disabled="ui.saving"
                 />
               </div>
-               <div class="agent-field" style="padding-top:20px">
-                  <div v-if="reviewOverrideDirty" class="agent-override-actions">
+               <div class="agent-field">
+                  <div v-if="reviewOverrideDirty" class="agent-override-actions" style="padding-top:20px">
                     <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
@@ -3147,8 +3147,8 @@ watch(
                   :disabled="ui.saving"
                 />
               </div>
-               <div class="agent-field" style="padding-top:20px">
-                  <div v-if="pmOverrideDirty" class="agent-override-actions">
+               <div class="agent-field">
+                  <div v-if="pmOverrideDirty" class="agent-override-actions" style="padding-top:20px">
                     <span class="agent-save-hint">saving…</span>
                   </div>
               </div>
