@@ -2,14 +2,14 @@
 id: "0303"
 title: Build a touch-first mobile Work queue and task detail flow
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: mobile
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:45:58Z"
-updated_at: "2026-08-26T16:45:58Z"
+updated_at: "2026-08-26T18:14:10Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Follow docs/mobile-ux-strategy.md. Do not force the desktop Work DOM and CSS to 
 ## Activity
 
 - 2026-08-26T16:45:58Z · created · unknown
+- 2026-08-26T18:14:10Z · status inbox→ready
