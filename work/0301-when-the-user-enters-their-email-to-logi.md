@@ -2,14 +2,14 @@
 id: "0301"
 title: Animate the login email submission while awaiting passcode
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-26T15:47:48Z"
-updated_at: "2026-08-26T15:48:18Z"
+updated_at: "2026-08-26T15:48:37Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ When the user enters their email to login there should be some animation while w
 ## Activity
 
 - 2026-08-26T15:48:18Z · status draft→inbox, title, area, body
+- 2026-08-26T15:48:37Z · status inbox→ready
