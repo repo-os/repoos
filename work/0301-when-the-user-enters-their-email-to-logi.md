@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T15:47:48Z"
-updated_at: "2026-08-26T15:48:37Z"
+updated_at: "2026-08-26T15:48:46Z"
 ---
 ## Problem
 
@@ -67,3 +68,4 @@ When the user enters their email to login there should be some animation while w
 
 - 2026-08-26T15:48:18Z · status draft→inbox, title, area, body
 - 2026-08-26T15:48:37Z · status inbox→ready
+- 2026-08-26T15:48:46Z · model_override
