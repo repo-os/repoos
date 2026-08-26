@@ -2924,10 +2924,7 @@ watch(
           <template v-else-if="!ui.active.branch">
             <p class="changes-empty">No branch yet — start work to create the worktree.</p>
           </template>
-          <template v-else-if="taskDiff === undefined">
-            <p class="changes-empty">Loading diff…</p>
-          </template>
-          <template v-else-if="!ui.active.git?.worktreeExists && taskDiff.patch === ''">
+          <template v-else-if="!ui.active.git?.worktreeExists && (taskDiff === undefined || taskDiff.patch === '')">
             <p class="changes-empty">
               No saved code changes are available for this completed task.
             </p>
@@ -2935,7 +2932,7 @@ watch(
           <template v-else-if="taskDiff && taskDiff.patch === ''">
             <p class="changes-empty">No code changes yet</p>
           </template>
-          <template v-else-if="taskDiff">
+          <template v-else>
             <section class="changes-summary" aria-label="Code changes summary">
               <div class="changes-summary-title">Code changes</div>
               <div v-if="taskDiffStats" class="diff-stats">
@@ -2953,6 +2950,10 @@ watch(
                 </div>
               </div>
               <div v-else class="diff-stats-loading">Loading change summary…</div>
+              <div v-if="taskDiff === undefined && !taskDiffStats" class="diff-stats-loading">
+                <ActivityIndicator size="sm" label="Loading diff…" />
+                Loading changes…
+              </div>
               <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
                 This diff looks much bigger than the task — main has likely drifted since the branch was cut.
                 <template v-if="ui.active?.status === 'review'">
@@ -2968,6 +2969,11 @@ watch(
                 </template>
               </div>
             </section>
+            <div v-if="taskDiff === undefined" class="diff-loading-note">
+              <ActivityIndicator size="sm" label="Loading full diff…" />
+              <span>Loading full diff… this may take a moment for large changes.</span>
+            </div>
+            <template v-else>
             <div v-if="diffFiles.length > 0" class="diff-file-list">
               <button
                 v-for="file in diffFiles"
@@ -3022,6 +3028,7 @@ watch(
 </template></code></pre>
               </div>
             </div>
+            </template>
           </template>
         </div>
         <div v-else-if="ui.activeTab === 'tokens'" class="drawer-body">
@@ -3584,6 +3591,21 @@ watch(
 
 .diff-stats-loading {
   padding: 8px;
+  color: var(--txt-faint);
+  font-size: 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.diff-loading-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 8px;
   color: var(--txt-faint);
   font-size: 12px;
   text-align: center;
