@@ -57,6 +57,52 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
+# build the mobile app's Android debug APK for rapid local testing `just build-android`
+build-android:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v brew >/dev/null || [ -z "$(brew --prefix openjdk@21 2>/dev/null)" ]; then
+        echo "error: openjdk@21 not found — run: brew install openjdk@21" >&2
+        exit 1
+    fi
+    sdk_root="$(brew --prefix)/share/android-commandlinetools"
+    if [ ! -d "$sdk_root" ]; then
+        echo "error: Android SDK not found at $sdk_root — run: brew install --cask android-commandlinetools" >&2
+        exit 1
+    fi
+    cd mobile
+    bun install
+    bun run build
+    bun run sync
+    cd android
+    export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+    export ANDROID_HOME="$sdk_root"
+    export ANDROID_SDK_ROOT="$sdk_root"
+    ./gradlew assembleDebug
+    apk="app/build/outputs/apk/debug/app-debug.apk"
+    cp -f "$apk" ../app-debug.apk
+    echo "==> mobile/app-debug.apk ($(du -h ../app-debug.apk | cut -f1)) — copied from $apk"
+
+# build the mobile app for the iOS Simulator (unsigned .app, no device/App Store signing) `just build-ios`
+build-ios:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! xcodebuild -version >/dev/null 2>&1; then
+        echo "error: full Xcode is required (Command Line Tools alone won't build) — install Xcode from the App Store, then: sudo xcode-select -s /Applications/Xcode.app" >&2
+        exit 1
+    fi
+    cd mobile
+    bun install
+    bun run build
+    bun run sync
+    cd ios/App
+    xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath ../build build
+    app=$(find ../build/Build/Products -maxdepth 1 -iname "*.app" | head -1)
+    echo "==> $app (iOS Simulator build — unsigned, not a device-installable .ipa)"
+
+# build both mobile platforms `just build-mobile`
+build-mobile: build-android build-ios
+
 # show the released version (package.json) vs the latest git tag
 current-version:
     #!/usr/bin/env bash

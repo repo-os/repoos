@@ -54,6 +54,7 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
+
 [[agents]]
 name = "engineer"
 cli = "opencode"

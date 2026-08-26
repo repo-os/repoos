@@ -131,5 +131,5 @@ InAppBrowser WebView:
 does not add any runtime dependency to the `repoos` package (which keeps its
 zero-runtime-dependency guarantee — see AGENTS.md). `repoos check` builds
 `src/` and smokes the RepoOS UI; `mobile/` is built separately
-(`cd mobile && npm install && npm run build`), and is genuinely usable on the
-web (`npm run dev`) for picker testing without a device.
+(`cd mobile && bun install && bun run build`), and is genuinely usable on the
+web (`bun run dev`) for picker testing without a device.
