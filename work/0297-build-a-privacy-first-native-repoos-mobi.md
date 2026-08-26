@@ -2,7 +2,7 @@
 id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
-status: active
+status: ready
 priority: p2
 area: mobile
 assigned_to: ai
@@ -13,7 +13,7 @@ pm_model_override: default
 review_cli_override: claude code
 review_model_override: sonnet
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T11:17:15Z"
+updated_at: "2026-08-26T11:17:46Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T11:16:49Z · status ready→active, branch
 - 2026-08-26T11:17:01Z · model_override
 - 2026-08-26T11:17:04Z · pm_model_override
+- 2026-08-26T11:17:46Z · status active→ready
