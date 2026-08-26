@@ -2,8 +2,10 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { COLUMNS, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
+import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
+import RestartTaskDialog from "./RestartTaskDialog.vue";
 import { applyCollapseDefaults, isColumnCollapsed, toggleColumnCollapsed } from "../lib/boardCollapse";
 import { isValidBoardMove, boardMoveRejectionReason } from "../lib/taskTransitions";
 
@@ -96,6 +98,12 @@ const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() 
     if (repo.reviewFor(t.id)?.running) return { valid: false, reason: "Waiting for automatic review to finish." };
     return { valid: true, reason: null };
   }
+  // Mirrors the drawer's Review button, which disables itself while the
+  // agent is running: the commit-and-validate gate would otherwise run
+  // against a worktree the agent might still be writing to.
+  if (t.status === "active" && props.col.id === "review" && repo.isRunning(t.id)) {
+    return { valid: false, reason: "The agent is still coding — Review becomes available when the turn ends." };
+  }
   const valid = isValidBoardMove(t.status, props.col.id);
   return { valid, reason: valid ? null : boardMoveRejectionReason(t.status, props.col.id) };
 });
@@ -134,6 +142,12 @@ function onDragLeave(): void {
   if (dragDepth === 0) dragOver.value = false;
 }
 
+/** Task whose dirty-worktree restart choice is awaiting an answer — same
+ *  dialog TaskCard/TaskDrawer use for the Start work button, so dragging
+ *  ready onto active behaves identically instead of silently picking
+ *  resume-or-clean on the human's behalf. */
+const restartTask = ref<Task | null>(null);
+
 async function onDrop(e: DragEvent): Promise<void> {
   if (!props.dragEnabled) return;
   e.preventDefault();
@@ -154,6 +168,17 @@ async function onDrop(e: DragEvent): Promise<void> {
         throw new Error("Waiting for automatic review to finish.");
       }
       await repo.completeTask(task);
+    } else if (props.col.id === "active" && task.status === "ready") {
+      // Same as clicking Start work — provisions the worktree/branch and
+      // spawns the agent, not a bare status write, so it needs the real
+      // action rather than repo.setStatus.
+      if (task.git?.dirty) {
+        restartTask.value = task;
+      } else {
+        await repo.startWork(task);
+      }
+    } else if (props.col.id === "review" && task.status === "active" && repo.isRunning(task.id)) {
+      throw new Error("The agent is still coding — Review becomes available when the turn ends.");
     } else {
       await repo.setStatus(task, props.col.id);
     }
@@ -250,4 +275,5 @@ const unackedBadge = computed(() =>
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
+  <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
 </template>
