@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T12:12:10Z"
-updated_at: "2026-08-26T12:12:33Z"
+updated_at: "2026-08-26T12:12:57Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Sometimes "loading diff..." in the changes tab of a task takes a looooong time (
 ## Activity
 
 - 2026-08-26T12:12:33Z · status draft→inbox, title, area, body
+- 2026-08-26T12:12:57Z · model_override
