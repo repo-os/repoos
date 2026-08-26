@@ -2,18 +2,18 @@
 id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
-status: ready
+status: active
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-a-privacy-first-native-repoos-mobi
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_cli_override: claude code
 review_model_override: sonnet
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T11:15:11Z"
+updated_at: "2026-08-26T11:16:49Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T11:14:50Z · model_override
 - 2026-08-26T11:15:03Z · review_cli_override, review_model_override
 - 2026-08-26T11:15:11Z · review_model_override
+- 2026-08-26T11:16:49Z · status ready→active, branch
