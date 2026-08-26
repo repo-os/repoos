@@ -2,7 +2,7 @@
 id: "0305"
 title: Define shared design tokens for desktop and mobile
 type: chore
-status: active
+status: review
 priority: p1
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/define-shared-design-tokens-for-desktop-
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T17:18:07Z"
-updated_at: "2026-08-26T17:23:23Z"
+updated_at: "2026-08-26T17:30:14Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ This is a prerequisite for the mobile shell tasks #0302/#0303/#0304 and should c
 - 2026-08-26T17:23:13Z · review_model_override
 - 2026-08-26T17:23:20Z · status inbox→ready
 - 2026-08-26T17:23:23Z · status ready→active, branch
+- 2026-08-26T17:30:14Z · status active→review
