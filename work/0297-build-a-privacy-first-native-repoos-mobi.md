@@ -9,10 +9,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/build-a-privacy-first-native-repoos-mobi
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
-pm_model_override: default
+pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-08-26T12:14:30Z"
+updated_at: "2026-08-26T12:14:35Z"
 review_passes: 1
 ---
 ## Problem
@@ -71,3 +71,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T12:11:52Z · review_cli_override
 - 2026-08-26T12:11:54Z · review_model_override
 - 2026-08-26T12:14:30Z · model_override
+- 2026-08-26T12:14:35Z · pm_model_override
