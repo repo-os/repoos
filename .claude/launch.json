@@ -12,6 +12,12 @@
       "runtimeExecutable": "bunx",
       "runtimeArgs": ["vite", "--config", "src/ui-app/vite.config.ts"],
       "port": 5173
+    },
+    {
+      "name": "repoos-mobile-dev",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": ["vite", "--config", "mobile/vite.config.ts", "--port", "5174"],
+      "port": 5174
     }
   ]
 }
