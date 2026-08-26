@@ -120,8 +120,14 @@ function formatDuration(ms: number): string {
 }
 
 function formatActivity(at: string | undefined): string | null {
+  // const ms = silentMs(at);
+  // return ms === null ? null : `${formatDuration(ms)} ago`;
+
   const ms = silentMs(at);
-  return ms === null ? null : `${formatDuration(ms)} ago`;
+  if (ms === null) return null;
+
+  const duration = formatDuration(ms);
+  return duration === "just now" ? duration : `${duration} ago`;
 }
 
 /** Diff stats for this task. */
