@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-26T14:22:34Z"
-updated_at: "2026-08-26T14:22:59Z"
+updated_at: "2026-08-26T14:23:12Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Some chores for the new mobile app: Let's use the actual RepoOS logo in the mobi
 ## Activity
 
 - 2026-08-26T14:22:59Z · status draft→inbox, title, area, type, body
+- 2026-08-26T14:23:12Z · model_override
