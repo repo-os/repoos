@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-27T03:28:01Z"
-review_passes: 4
 id: "0302"
 title: Build the native connected-server mobile shell and four-item navigation
 type: feature
@@ -11,8 +9,11 @@ assigned_to: ai
 created_by: ""
 branch: feat/build-the-native-connected-server-mobile
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
+pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
+updated_at: "2026-08-27T05:06:38Z"
+review_passes: 4
 check_retry_count: 2
 handoff_signal_retry_count: 1
 ---
@@ -63,4 +64,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Ionic Vue pri
 - 2026-08-27T03:14:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — check failed after 2 automatic retries · repoos check failed: [90m745|[39m       [35mawait[39m watchdog[33m.[39m[34mcheckNow[39m()[33m;[39m · [90m746|[39m · [90m747|[39m       expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdo… · [90m   |[39m                                                     [31m^[39m · [90m748|[39m       [34mexpect[39m([34mparseTaskAt[39m(fx)[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"active"[39m)[33m;[39m [90m// untouched[39m · [90m749|[39m     } [35mfinally[39m { · [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m · error: script "test" exited with code 1 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-08-27T03:15:01Z · status review→active
 - 2026-08-27T03:20:55Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — check failed after 2 automatic retries · repoos check failed: [90m745|[39m       [35mawait[39m watchdog[33m.[39m[34mcheckNow[39m()[33m;[39m · [90m746|[39m · [90m747|[39m       expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdo… · [90m   |[39m                                                     [31m^[39m · [90m748|[39m       [34mexpect[39m([34mparseTaskAt[39m(fx)[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"active"[39m)[33m;[39m [90m// untouched[39m · [90m749|[39m     } [35mfinally[39m { · [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m · error: script "test" exited with code 1 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-
+- 2026-08-27T05:06:38Z · pm_model_override
