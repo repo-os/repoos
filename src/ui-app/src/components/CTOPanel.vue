@@ -55,6 +55,7 @@ function onKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     void send();
   }
+  // Note: Shift+Enter inserts a newline instead of sending (changed from previous <input> implementation)
 }
 
 function adjustTextareaHeight(): void {

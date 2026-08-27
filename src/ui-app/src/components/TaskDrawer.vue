@@ -101,6 +101,15 @@ const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
     insertTextAtCursor(freeformTextarea.value, text);
+    adjustFreeformTextareaHeight();
+  }
+}
+
+function adjustFreeformTextareaHeight(): void {
+  const textarea = freeformTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 }
 
@@ -1934,12 +1943,18 @@ watch(() => draftMsg.value, () => {
   nextTick(() => adjustDraftMsgTextareaHeight());
 });
 
+// Watch freeform text to adjust textarea height
+watch(() => freeformText.value, () => {
+  nextTick(() => adjustFreeformTextareaHeight());
+});
+
 onMounted(() => {
   // Adjust textarea height on mount
   setTimeout(() => {
     adjustPmTextareaHeight();
     adjustReviewTextareaHeight();
     adjustDraftMsgTextareaHeight();
+    adjustFreeformTextareaHeight();
   }, 0);
 });
 
@@ -2044,6 +2059,7 @@ onMounted(() => {
                     class="ff-textarea"
                     rows="10"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
+                    @input="adjustFreeformTextareaHeight"
                 ></textarea>
                 <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom:14px" />
               </div>
