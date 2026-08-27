@@ -2,14 +2,14 @@
 id: "0309"
 title: Show stale review indicator when new review is pending
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-27T06:06:03Z"
-updated_at: "2026-08-27T06:07:17Z"
+updated_at: "2026-08-27T06:07:36Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Currently when a task goes through multiple reviews the review just gets overwri
 ## Activity
 
 - 2026-08-27T06:07:17Z · status draft→inbox, title, area, body
+- 2026-08-27T06:07:36Z · status inbox→ready
