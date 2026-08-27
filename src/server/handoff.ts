@@ -320,6 +320,15 @@ export function scheduleCheckFailureRetry(
   const detail = result.detail ?? "repoos check failed";
 
   if (retries >= MAX_CHECK_RETRY_ATTEMPTS) {
+    // Persist parseable handoff-check failure details
+    const failureDetails = {
+      stage: "check",
+      command: "repoos check",
+      exitCode: null, // We don't have access to the actual exit code here
+      detail: detail,
+      timestamp: new Date().toISOString()
+    };
+    
     runner.persistHandoffFailure(task.id, task, `check failed after ${MAX_CHECK_RETRY_ATTEMPTS} automatic retries · ${detail}`);
     return false;
   }
@@ -349,8 +358,18 @@ export function scheduleCheckFailureRetry(
       const raw = readFileSync(task.absPath, "utf8");
       const doc = parseDocument(raw);
       doc.data.check_retry_count = attempt;
-      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count");
-      keys.unshift("check_retry_count");
+      
+      // Persist parseable handoff-check failure details
+      doc.data.last_check_failure = {
+        stage: "check",
+        command: "repoos check",
+        exitCode: null, // We don't have access to the actual exit code here
+        detail: detail,
+        timestamp: new Date().toISOString()
+      };
+      
+      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count" && k !== "last_check_failure");
+      keys.unshift("check_retry_count", "last_check_failure");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       onFileChange?.(task.absPath);
     } catch (err) {
