@@ -62,9 +62,29 @@ const generalFields = computed(() =>
     (field) =>
       field.key !== "tunnelEnabled" &&
       field.key !== "ntfyEnabled" &&
-      field.key !== "ntfyTopic",
+      field.key !== "ntfyTopic" &&
+      field.key !== "auth.enabled" &&
+      field.key !== "auth.sessionMaxAge",
   ),
 );
+
+/**
+ * auth.sessionMaxAge is stored and sent to the server as seconds (it backs a
+ * cookie Max-Age / session-expiry check — see routes/auth.ts), but "how long
+ * should a login last" is naturally a day count for a human to set. This
+ * converts for display/edit only; the underlying config key, its string
+ * storage, and the server's >= 300s validation are untouched.
+ */
+const sessionMaxAgeDays = computed<number>({
+  get: () => {
+    const seconds = Number(form["auth.sessionMaxAge"]);
+    return Number.isFinite(seconds) && seconds > 0 ? Math.round((seconds / 86400) * 100) / 100 : 7;
+  },
+  set: (days: number) => {
+    if (!Number.isFinite(days) || days <= 0) return;
+    form["auth.sessionMaxAge"] = String(Math.round(days * 86400));
+  },
+});
 
 function focusSetting(key: string): void {
   const el = document.getElementById(`setting-${key}`);
@@ -324,6 +344,45 @@ onUnmounted(() => {
                 ntfy install + subscribe guide →
               </a>
             </aside>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Authentication
+          </div>
+          <div id="setting-auth.enabled" class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Authentication</div>
+              <div class="setting-desc">Require login to access RepoOS (email OTP or Google OAuth).</div>
+            </div>
+            <div class="setting-input">
+              <Switch
+                :checked="!!form['auth.enabled']"
+                :disabled="config.saving"
+                @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
+              />
+            </div>
+            <span class="restart-badge">restart required</span>
+          </div>
+          <div id="setting-auth.sessionMaxAge" class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Session duration (days)</div>
+              <div class="setting-desc">How long a login session lasts before requiring sign-in again. Default 7 days.</div>
+            </div>
+            <div class="setting-input">
+              <Input
+                :model-value="sessionMaxAgeDays"
+                type="number"
+                min="1"
+                step="1"
+                style="width: 100px"
+                @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
+              />
+            </div>
+            <span class="restart-badge">restart required</span>
           </div>
         </div>
       </Card>
