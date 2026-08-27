@@ -2,7 +2,7 @@
 id: "0302"
 title: Build the native connected-server mobile shell and four-item navigation
 type: feature
-status: review
+status: active
 priority: p1
 area: mobile
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/build-the-native-connected-server-mobile
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-08-27T02:19:50Z"
+updated_at: "2026-08-27T02:20:14Z"
 review_passes: 1
 check_retry_count: 2
 handoff_signal_retry_count: 1
@@ -55,3 +55,4 @@ Follow docs/mobile-ux-strategy.md and docs/mobile-architecture.md. Ionic Vue pri
 ## Activity
 
 - 2026-08-27T02:19:50Z · body
+- 2026-08-27T02:20:14Z · status review→active
