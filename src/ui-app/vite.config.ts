@@ -107,6 +107,11 @@ export default defineConfig({
     // this shim the suite passes under Node 24 and fails under Node 26 — and
     // the close-out gate runs under whichever Node is serving. See the file.
     setupFiles: ["./tests/setup/web-storage.ts"],
+    // Runs once before the whole test run starts (not per test file) —
+    // sweeps orphaned fake-agent processes a previous run's worker left
+    // behind when it was torn down before its own try/finally could fire.
+    // See the file for the failure mode this closes.
+    globalSetup: ["./tests/setup/global-reap.ts"],
     // Process-spawning tests boot real child processes (fixture CLI stubs,
     // git) and wait on them with waitFor() polls of up to 10s. Vitest's
     // default 5s per-test timeout flaked the `repoos check` gate under load
