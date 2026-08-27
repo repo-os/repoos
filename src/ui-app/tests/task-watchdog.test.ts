@@ -740,7 +740,15 @@ Stuck twice.
       const index = new LiveIndex(fx.config);
       index.refreshAll();
       runner = new AgentRunner(fx.config, () => {}); // empty registry — no entry for 0001
-      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+      // Staleness threshold must comfortably exceed the wall-clock cost of the
+      // setup between the writeFileSync above and the mtime scan inside
+      // checkNow() (LiveIndex build + a `git worktree list` subprocess). A tight
+      // 1000ms window here made the test flaky on a loaded machine — the freshly
+      // written file's mtime aged past the window before the scan read it, so
+      // the worktree-freshness suppression looked broken when it was not. The
+      // task's own activity log is 600_000ms stale, so isStuckActiveTask still
+      // fires and the worktree-freshness path is still what this test exercises.
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 5 * 60_000);
 
       await watchdog.checkNow();
 
