@@ -4,6 +4,7 @@ import { init, servers, selected, selectServer, addServer, removeServer, renameS
 import { onBrowserEvents } from "./browser";
 import { verifyWithDeviceLock } from "./lock";
 import type { ServerEntry } from "./types";
+import { IonApp, IonContent } from '@ionic/vue';
 
 // State for the picker mode
 const mode = ref<"picker" | "add" | "edit">("picker");
@@ -125,153 +126,157 @@ async function persistLock() {
 </script>
 
 <template>
-  <div class="shell">
-    <!-- Picker mode -->
-    <template v-if="mode === 'picker'">
-      <!-- App header -->
-      <header class="topbar">
-        <div class="brand">
-          <svg class="logo" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
-            <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <span class="brand-name">RepoOS</span>
-        </div>
-        <button
-          class="icon-btn"
-          :disabled="!loaded"
-          aria-label="Settings"
-          @click="showSettings = !showSettings"
-        >
-          ⚙
-        </button>
-      </header>
-
-      <!-- Lock gate overlay -->
-      <div v-if="lockOpen" class="lock-overlay">
-        <div class="lock-card">
-          <div class="lock-icon" aria-hidden="true">🔒</div>
-          <div class="lock-title">RepoOS is locked</div>
-          <div class="lock-sub">Authenticate with your device to continue.</div>
-        </div>
-      </div>
-
-      <!-- Settings sheet -->
-      <div v-if="showSettings" class="settings">
-        <div class="section-title">Device lock</div>
-        <p class="hint">
-          Optionally require biometrics or your device passcode before reopening the app or a
-          selected server. This is separate from each server's own sign-in.
-        </p>
-        <label class="row">
-          <span class="row-label">Enable device lock</span>
-          <button
-            class="switch"
-            :class="{ on: lockSettings.enabled }"
-            role="switch"
-            :aria-checked="lockSettings.enabled"
-            @click="toggleLock"
-          >
-            <span class="knob"></span>
-          </button>
-        </label>
-        <template v-if="lockSettings.enabled">
-          <label class="row">
-            <span class="row-label">Lock on</span>
-            <select class="select" :value="lockSettings.scope" @change="setScope(($event.target as HTMLSelectElement).value as 'reopen' | 'server')">
-              <option value="reopen">Reopening the app</option>
-              <option value="server">Opening a server</option>
-            </select>
-          </label>
-          <p v-if="!lockSupported" class="warn">
-            Biometrics aren't available on this device — the lock will be skipped.
-          </p>
-        </template>
-        <button class="link" @click="showSettings = false">Close</button>
-      </div>
-
-      <!-- Picker / empty state -->
-      <main class="content">
-        <div v-if="!loaded" class="center muted">Loading…</div>
-
-        <div v-else-if="isEmpty" class="center">
-          <svg class="hero-logo" width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
-            <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <h1 class="hero-title">Add your first server</h1>
-          <p class="hero-sub">
-            Enter the address of a self-hosted RepoOS instance. It's saved on this device only —
-            never sent anywhere.
-          </p>
-          <button class="primary" @click="startAdd">+ Add server</button>
-        </div>
-
-        <ul v-else class="server-list">
-          <li
-            v-for="(server, i) in servers"
-            :key="server.id"
-            class="server-item"
-            :class="{ selected: selected?.id === server.id }"
-          >
-            <button class="server-main" @click="onSelect(server)">
-              <span class="server-avatar" aria-hidden="true">{{ server.name.slice(0, 1).toUpperCase() }}</span>
-              <span class="server-meta">
-                <span class="server-name">{{ server.name }}</span>
-                <span class="server-url">{{ server.url.replace("https://", "") }}</span>
-              </span>
-              <span class="chevron" aria-hidden="true">›</span>
-            </button>
-            <div class="server-actions">
-              <button class="icon-btn sm" :disabled="i === 0" aria-label="Move up" @click="reorderServer(server.id, -1)">↑</button>
-              <button class="icon-btn sm" :disabled="i === servers.length - 1" aria-label="Move down" @click="reorderServer(server.id, 1)">↓</button>
-              <button class="icon-btn sm" aria-label="Edit" @click="startEdit(server)">✎</button>
+  <ion-app>
+    <ion-content>
+      <div class="shell">
+        <!-- Picker mode -->
+        <template v-if="mode === 'picker'">
+          <!-- App header -->
+          <header class="topbar">
+            <div class="brand">
+              <svg class="logo" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
+                <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <span class="brand-name">RepoOS</span>
             </div>
-          </li>
-        </ul>
+            <button
+              class="icon-btn"
+              :disabled="!loaded"
+              aria-label="Settings"
+              @click="showSettings = !showSettings"
+            >
+              ⚙
+            </button>
+          </header>
 
-        <button v-if="hasServers" class="primary block" @click="startAdd">+ Add server</button>
-      </main>
-    </template>
+          <!-- Lock gate overlay -->
+          <div v-if="lockOpen" class="lock-overlay">
+            <div class="lock-card">
+              <div class="lock-icon" aria-hidden="true">🔒</div>
+              <div class="lock-title">RepoOS is locked</div>
+              <div class="lock-sub">Authenticate with your device to continue.</div>
+            </div>
+          </div>
 
-    <!-- Add / edit form -->
-    <main v-else-if="mode === 'add' || mode === 'edit'" class="content">
-      <h1 class="form-title">{{ mode === "add" ? "Add server" : "Edit server" }}</h1>
-      <label class="field">
-        <span class="field-label">Display name</span>
-        <input v-model="formName" type="text" placeholder="dev" autocomplete="off" enterkeyhint="done" />
-      </label>
-      <label class="field">
-        <span class="field-label">Server URL (HTTPS)</span>
-        <input
-          v-model="formUrl"
-          type="url"
-          placeholder="https://dev.repoos.org"
-          inputmode="url"
-          autocapitalize="none"
-          autocorrect="off"
-          spellcheck="false"
-          enterkeyhint="go"
-        />
-      </label>
-      <p v-if="formError" class="form-error">{{ formError }}</p>
-      <p v-if="mode === 'edit'" class="hint">URL can't be changed here — delete and re-add to point elsewhere.</p>
+          <!-- Settings sheet -->
+          <div v-if="showSettings" class="settings">
+            <div class="section-title">Device lock</div>
+            <p class="hint">
+              Optionally require biometrics or your device passcode before reopening the app or a
+              selected server. This is separate from each server's own sign-in.
+            </p>
+            <label class="row">
+              <span class="row-label">Enable device lock</span>
+              <button
+                class="switch"
+                :class="{ on: lockSettings.enabled }"
+                role="switch"
+                :aria-checked="lockSettings.enabled"
+                @click="toggleLock"
+              >
+                <span class="knob"></span>
+              </button>
+            </label>
+            <template v-if="lockSettings.enabled">
+              <label class="row">
+                <span class="row-label">Lock on</span>
+                <select class="select" :value="lockSettings.scope" @change="setScope(($event.target as HTMLSelectElement).value as 'reopen' | 'server')">
+                  <option value="reopen">Reopening the app</option>
+                  <option value="server">Opening a server</option>
+                </select>
+              </label>
+              <p v-if="!lockSupported" class="warn">
+                Biometrics aren't available on this device — the lock will be skipped.
+              </p>
+            </template>
+            <button class="link" @click="showSettings = false">Close</button>
+          </div>
 
-      <div class="form-actions">
-        <template v-if="mode === 'edit'">
-          <button class="ghost danger" @click="removeEditing">Delete server</button>
-          <span class="form-actions-spacer"></span>
+          <!-- Picker / empty state -->
+          <main class="content">
+            <div v-if="!loaded" class="center muted">Loading…</div>
+
+            <div v-else-if="isEmpty" class="center">
+              <svg class="hero-logo" width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#39e0ff" stroke-width="2" stroke-linejoin="round" />
+                <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#9d7bff" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <h1 class="hero-title">Add your first server</h1>
+              <p class="hero-sub">
+                Enter the address of a self-hosted RepoOS instance. It's saved on this device only —
+                never sent anywhere.
+              </p>
+              <button class="primary" @click="startAdd">+ Add server</button>
+            </div>
+
+            <ul v-else class="server-list">
+              <li
+                v-for="(server, i) in servers"
+                :key="server.id"
+                class="server-item"
+                :class="{ selected: selected?.id === server.id }"
+              >
+                <button class="server-main" @click="onSelect(server)">
+                  <span class="server-avatar" aria-hidden="true">{{ server.name.slice(0, 1).toUpperCase() }}</span>
+                  <span class="server-meta">
+                    <span class="server-name">{{ server.name }}</span>
+                    <span class="server-url">{{ server.url.replace("https://", "") }}</span>
+                  </span>
+                  <span class="chevron" aria-hidden="true">›</span>
+                </button>
+                <div class="server-actions">
+                  <button class="icon-btn sm" :disabled="i === 0" aria-label="Move up" @click="reorderServer(server.id, -1)">↑</button>
+                  <button class="icon-btn sm" :disabled="i === servers.length - 1" aria-label="Move down" @click="reorderServer(server.id, 1)">↓</button>
+                  <button class="icon-btn sm" aria-label="Edit" @click="startEdit(server)">✎</button>
+                </div>
+              </li>
+            </ul>
+
+            <button v-if="hasServers" class="primary block" @click="startAdd">+ Add server</button>
+          </main>
         </template>
-        <button class="ghost" @click="cancelForm">Cancel</button>
-        <button class="primary" :disabled="formBusy" @click="submitForm">
-          {{ formValidating ? "Checking…" : mode === "add" ? "Save" : "Done" }}
-        </button>
-      </div>
-    </main>
 
-    <!-- Connected server shell -->
-    <RouterView v-else-if="mode === 'connected'" />
-  </div>
+        <!-- Add / edit form -->
+        <main v-else-if="mode === 'add' || 'edit'" class="content">
+          <h1 class="form-title">{{ mode === "add" ? "Add server" : "Edit server" }}</h1>
+          <label class="field">
+            <span class="field-label">Display name</span>
+            <input v-model="formName" type="text" placeholder="dev" autocomplete="off" enterkeyhint="done" />
+          </label>
+          <label class="field">
+            <span class="field-label">Server URL (HTTPS)</span>
+            <input
+              v-model="formUrl"
+              type="url"
+              placeholder="https://dev.repoos.org"
+              inputmode="url"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              enterkeyhint="go"
+            />
+          </label>
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+          <p v-if="mode === 'edit'" class="hint">URL can't be changed here — delete and re-add to point elsewhere.</p>
+
+          <div class="form-actions">
+            <template v-if="mode === 'edit'">
+              <button class="ghost danger" @click="removeEditing">Delete server</button>
+              <span class="form-actions-spacer"></span>
+            </template>
+            <button class="ghost" @click="cancelForm">Cancel</button>
+            <button class="primary" :disabled="formBusy" @click="submitForm">
+              {{ formValidating ? "Checking…" : mode === "add" ? "Save" : "Done" }}
+            </button>
+          </div>
+        </main>
+
+        <!-- Connected server shell -->
+        <RouterView v-else-if="mode === 'connected'" />
+      </div>
+    </ion-content>
+  </ion-app>
 </template>
 
 <style>

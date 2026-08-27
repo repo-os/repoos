@@ -86,7 +86,7 @@ const actionSheetItems = [
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 54px); /* Header height */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 56px); /* Header height */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); /* Nav height estimate */
 }
 

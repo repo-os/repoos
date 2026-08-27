@@ -1,6 +1,6 @@
 <template>
-  <div v-if="isOpen" class="action-sheet-overlay" @click="closeSheet">
-    <div class="action-sheet" @click.stop>
+  <div v-if="isOpen" class="action-sheet-overlay" @click="handleDismiss">
+    <div class="action-sheet-container" @click.stop>
       <div class="action-sheet-header">
         <h3>More Options</h3>
       </div>
@@ -8,14 +8,14 @@
         <button 
           v-for="item in items" 
           :key="item.id"
-          class="action-sheet-item"
-          @click="selectItem(item)"
+          class="action-sheet-button"
+          @click="handleItemClick(item)"
         >
           {{ item.label }}
         </button>
       </div>
       <div class="action-sheet-footer">
-        <button class="action-sheet-cancel" @click="closeSheet">Cancel</button>
+        <button class="action-sheet-cancel" @click="handleClose">Cancel</button>
       </div>
     </div>
   </div>
@@ -24,14 +24,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-interface ActionSheetItem {
-  id: string;
-  label: string;
-  action: () => void;
-}
-
 const props = defineProps<{
-  items: ActionSheetItem[];
+  items: Array<{ id: string; label: string; action: () => void }>;
 }>();
 
 const emit = defineEmits<{
@@ -40,14 +34,18 @@ const emit = defineEmits<{
 
 const isOpen = ref(true);
 
-const closeSheet = () => {
+const handleItemClick = (item: { id: string; label: string; action: () => void }) => {
+  item.action();
+  handleClose();
+};
+
+const handleClose = () => {
   isOpen.value = false;
   emit('close');
 };
 
-const selectItem = (item: ActionSheetItem) => {
-  item.action();
-  closeSheet();
+const handleDismiss = () => {
+  handleClose();
 };
 </script>
 
@@ -62,31 +60,32 @@ const selectItem = (item: ActionSheetItem) => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 2000;
+  z-index: 1000;
 }
 
-.action-sheet {
-  background: var(--panel-solid, #0e1426);
+.action-sheet-container {
+  background: var(--ion-background-color, #ffffff);
   border-radius: 20px 20px 0 0;
   width: 100%;
   max-width: 500px;
-  max-height: 80vh;
+  max-height: 50vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .action-sheet-header {
   padding: 16px;
   text-align: center;
-  border-bottom: 1px solid var(--border, rgba(120, 140, 200, 0.14));
+  border-bottom: 1px solid var(--ion-border-color, #e0e0e0);
 }
 
 .action-sheet-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--txt, #e7ecf7);
+  color: var(--ion-text-color, #000000);
 }
 
 .action-sheet-content {
@@ -95,29 +94,29 @@ const selectItem = (item: ActionSheetItem) => {
   padding: 8px 0;
 }
 
-.action-sheet-item {
+.action-sheet-button {
   width: 100%;
   text-align: left;
   padding: 16px 20px;
   border: none;
   background: none;
-  color: var(--txt, #e7ecf7);
+  color: var(--ion-text-color, #000000);
   font-size: 16px;
   cursor: pointer;
-  border-bottom: 1px solid var(--border, rgba(120, 140, 200, 0.14));
+  border-bottom: 1px solid var(--ion-border-color, #e0e0e0);
 }
 
-.action-sheet-item:last-child {
+.action-sheet-button:last-child {
   border-bottom: none;
 }
 
-.action-sheet-item:hover {
-  background: var(--panel, rgba(17, 23, 41, 0.6));
+.action-sheet-button:hover {
+  background: var(--ion-background-color-step-100, #f5f5f5);
 }
 
 .action-sheet-footer {
   padding: 8px;
-  border-top: 1px solid var(--border, rgba(120, 140, 200, 0.14));
+  border-top: 1px solid var(--ion-border-color, #e0e0e0);
 }
 
 .action-sheet-cancel {
@@ -125,14 +124,14 @@ const selectItem = (item: ActionSheetItem) => {
   padding: 16px;
   border: none;
   border-radius: 12px;
-  background: var(--panel, rgba(17, 23, 41, 0.6));
-  color: var(--txt, #e7ecf7);
+  background: var(--ion-background-color-step-50, #f0f0f0);
+  color: var(--ion-text-color, #000000);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .action-sheet-cancel:hover {
-  background: var(--nav-hover-bg, rgba(120, 140, 200, 0.07));
+  background: var(--ion-background-color-step-100, #e0e0e0);
 }
 </style>
