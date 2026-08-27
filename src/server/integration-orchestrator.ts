@@ -50,6 +50,42 @@ function candidateBranchName(taskId: string): string {
 }
 
 /**
+ * The merge that just ran left the candidate at exactly base main — it added
+ * nothing. That is legitimate when the feature branch was already fully
+ * integrated (a re-run of a close-out, a branch cherry-picked onto main
+ * earlier): the close-out is idempotent and the task genuinely has nothing
+ * left to land.
+ *
+ * It is a BUG when the branch still carries commits main lacks and the merge —
+ * or, far more often, the conflict auto-resolution in `mergeBranch` — silently
+ * dropped them. Left unguarded, the gate then runs `build` + `check` against
+ * what is effectively bare main (which trivially passes) and the task publishes
+ * as `done` with none of its code integrated. This bit #0306/#0307/#0309/#0312.
+ *
+ * Returns an actionable failure reason in the bug case, `null` when the no-op
+ * is legitimate (or when git errored and a downstream step should surface it).
+ */
+export async function detectDroppedMerge(
+  root: string,
+  mainBranch: string,
+  featureBranch: string,
+  postMergeHead: string,
+  baseMainSha: string,
+): Promise<string | null> {
+  if (postMergeHead !== baseMainSha) return null;
+  // `git diff --quiet A...B` — exit 0: B adds nothing over the merge-base
+  // (branch already in main → legit); exit 1: B carries a real delta that the
+  // merge failed to bring across; >1: git error, leave it for a later step.
+  const delta = await runGit(root, ["diff", "--quiet", `${mainBranch}...${featureBranch}`], 15_000);
+  if (delta.status !== 1) return null;
+  return (
+    `merge of ${featureBranch} produced no change to ${mainBranch}, but the branch still carries ` +
+    `commits ${mainBranch} does not have — the merge, or its conflict auto-resolution, dropped them. ` +
+    `Rebase ${featureBranch} onto ${mainBranch} and resolve the conflicts there, then retry.`
+  );
+}
+
+/**
  * Resolve the repository's actual default branch name.
  * Tries (in order):
  * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
@@ -536,6 +572,24 @@ export class CloseOutOrchestrator {
           ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
           : merge.reason ?? "merge failed",
       };
+    }
+
+    // The merge "succeeded" but must have actually changed something, unless
+    // the branch was already fully in main. A no-op merge that swallowed real
+    // branch work would otherwise sail through the gate (it validates bare
+    // main) and publish the task as done with nothing integrated (#0306 et al).
+    const postMergeHead = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
+    if (postMergeHead.status === 0) {
+      const dropped = await detectDroppedMerge(
+        root,
+        mainBranch,
+        featureBranch,
+        postMergeHead.stdout.trim(),
+        currentMainSha,
+      );
+      if (dropped) {
+        return { ok: false, retryable: false, reason: dropped };
+      }
     }
 
     // Check for merge conflict markers in text files (unresolved conflicts in content).
