@@ -2,15 +2,15 @@
 id: "0309"
 title: Show stale review indicator when new review is pending
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-stale-review-indicator-when-new-rev
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T06:06:03Z"
-updated_at: "2026-08-27T06:07:48Z"
+updated_at: "2026-08-27T06:07:49Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Currently when a task goes through multiple reviews the review just gets overwri
 - 2026-08-27T06:07:17Z · status draft→inbox, title, area, body
 - 2026-08-27T06:07:36Z · status inbox→ready
 - 2026-08-27T06:07:48Z · review_model_override
+- 2026-08-27T06:07:49Z · status ready→active, branch
