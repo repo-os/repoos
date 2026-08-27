@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
+import { runGit, worktreePathForBranch, currentBranch, branchChangesSinceBase } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
@@ -33,9 +33,9 @@ interface RunResult {
   error?: NodeJS.ErrnoException;
 }
 
-function run(cmd: string, args: string[], cwd: string, timeoutMs: number): Promise<RunResult> {
+function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env?: NodeJS.ProcessEnv): Promise<RunResult> {
   return new Promise((finish) => {
-    const child = spawn(cmd, args, { cwd });
+    const child = spawn(cmd, args, { cwd, env: env ?? process.env });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -94,7 +94,7 @@ function concise(run: RunResult): string {
     .join(" · ") || `exit ${run.status}`;
 }
 
-async function runCheck(worktree: string): Promise<RunResult> {
+async function runCheck(worktree: string, config: RepoOSConfig): Promise<RunResult> {
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
   // falsely pass or fail when finalizing a different linked worktree.
@@ -105,9 +105,18 @@ async function runCheck(worktree: string): Promise<RunResult> {
         ["repoos", "check"],
         ["bun", "run", "repoos", "check"],
       ];
+  // Scope the test step to what this branch actually changed since its
+  // merge-base with main (see changedTestRef in commands/check.ts): this is
+  // re-verifying the SAME isolated branch the engineer already self-checked,
+  // not main's merged state, so narrowing coverage here is safe and cuts a
+  // ~10-minute full run down to seconds for a typical small task. Falls back
+  // to an unscoped (full) run when the merge-base can't be resolved.
+  const baseBranch = currentBranch(config.root) ?? "main";
+  const { base } = branchChangesSinceBase(worktree, baseBranch);
+  const env = base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env;
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
-    last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000);
+    last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env);
     if (last.status === 0) return last;
     if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;
   }
@@ -199,7 +208,7 @@ export async function handoffTask(
       }
 
       onProgress?.("check");
-      const check = await runCheck(workdir);
+      const check = await runCheck(workdir, config);
       if (check.status !== 0) {
         return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
       }

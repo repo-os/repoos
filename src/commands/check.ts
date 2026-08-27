@@ -402,6 +402,25 @@ export function skipBuildAction(
   return buildFresh ? "skip" : "build-not-fresh";
 }
 
+/**
+ * Which git ref (if any) to scope the Tests step to, via Vitest's own
+ * `--changed <ref>` (git-diff + module graph, only runs tests that could
+ * actually be affected). Unset for a standalone `repoos check` — that path
+ * is the full definition-of-done gate and must never narrow coverage.
+ *
+ * Only the two per-branch pre-merge checks set this: the engineer's own
+ * self-check before requesting handoff, and the server's handoff-finalize
+ * re-verification (both re-checking the SAME isolated branch, just diffed
+ * against its own base). The close-out gate that validates the actual merge
+ * onto main (integration-orchestrator.ts's validateCandidate) deliberately
+ * never sets it — that check is about interaction with whatever else has
+ * landed on main since, which a per-branch diff can't see.
+ */
+export function changedTestRef(env: NodeJS.ProcessEnv): string | undefined {
+  const ref = env.REPOOS_CHECK_CHANGED;
+  return ref && ref.trim() ? ref.trim() : undefined;
+}
+
 export async function cmdCheck(): Promise<void> {
   let exitCode = 0;
   const results: CheckResult[] = [];
@@ -550,7 +569,18 @@ export async function cmdCheck(): Promise<void> {
   const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
   const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
   if (hasTestScript || hasTestFiles) {
-    const cmd = hasTestScript ? "bun run test" : "bun test";
+    // Only the vitest-backed `bun run test` script understands `--changed`;
+    // the bare `bun test` fallback (no package.json test script) is left
+    // unscoped.
+    const changedRef = hasTestScript ? changedTestRef(process.env) : undefined;
+    const cmd = hasTestScript
+      ? changedRef
+        ? `bun run test -- --changed ${changedRef}`
+        : "bun run test"
+      : "bun test";
+    if (changedRef) {
+      console.log(c.dim(`  · Scoped to files changed vs ${changedRef} (--changed)`));
+    }
     // The suite has grown past the old 120s cap (100+ files, ~1000 tests run
     // under a maxWorkers=2 pool for contention control); a hard 120s timeout
     // SIGTERMs `bun run test` mid-run even when every test is green. Give the
@@ -559,7 +589,7 @@ export async function cmdCheck(): Promise<void> {
     try {
       execSync(cmd, { stdio: "inherit", timeout: 300_000 });
       console.log(c.green("  ✔ Tests passed"));
-      results.push(pass("tests"));
+      results.push(pass("tests", changedRef ? `scoped to changed vs ${changedRef}` : undefined));
     } catch (e) {
       console.log(c.red("  ✗ Tests failed"));
       results.push(fail("tests", (e as Error).message));

@@ -25,7 +25,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
 import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
-import { fileCommittedClean } from "../core/git.js";
+import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
@@ -1616,6 +1616,7 @@ function missionFor(
   // Source edits stay inside the sandbox. RepoOS owns the privileged Git and
   // canonical-board mutations after the structured signal below (ADR-0005).
   const worktreeTask = join(workdir, relative(config.root, task.path));
+  const baseBranch = currentBranch(config.root) ?? "main";
   const parts: string[] = [];
 
   if (contextPack) {
@@ -1638,7 +1639,7 @@ function missionFor(
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
     "",
     "1. Read the task file and implement what it describes.",
-    "2. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). It MUST be green before requesting handoff.",
+    `2. Run \`REPOOS_CHECK_CHANGED=${baseBranch} repoos check\` and confirm it passes (build, typecheck, tests scoped to what your branch changed vs ${baseBranch}, UI smoke test). It MUST be green before requesting handoff. RepoOS re-verifies it server-side before finalizing your handoff, and runs the full unscoped test suite again when your branch actually merges — so this scoped run is a fast correctness check, not the final word.`,
     "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
     "   RepoOS commits only source, work, docs, and config files to the branch — never `dist/` or `screenshots/`; build artifacts created by `repoos check` stay local.",
     `4. When the implementation is ready, finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
