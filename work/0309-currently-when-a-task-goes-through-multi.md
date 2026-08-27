@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-08-27T07:19:25Z"
-review_passes: 2
 id: "0309"
 title: Show stale review indicator when new review is pending
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: hello@repoos.org
 branch: feat/show-stale-review-indicator-when-new-rev
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T06:06:03Z"
+updated_at: "2026-08-27T10:29:26Z"
+review_passes: 2
 handoff_signal_retry_count: 2
 check_retry_count: 1
 ---
@@ -68,4 +68,4 @@ Currently when a task goes through multiple reviews the review just gets overwri
 - 2026-08-27T07:12:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-08-27T07:12:48Z · status review→active
 - 2026-08-27T07:18:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
-
+- 2026-08-27T10:29:26Z · status review→done, release:success
