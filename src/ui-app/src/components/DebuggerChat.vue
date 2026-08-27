@@ -10,6 +10,7 @@ import { useUiStore } from "../stores/ui";
 import type { AgentOutputEntry } from "../types";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -166,15 +167,19 @@ async function send(): Promise<void> {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey) return;
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();
   void send();
 }
 
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
-    insertTextAtCursor(draftTextarea.value, text);
+    insertTextAtCursor(draftTextarea.value, text); // dispatches `input` → adjustDraftHeight
   }
+}
+
+function adjustDraftHeight(): void {
+  autoGrowTextarea(draftTextarea.value);
 }
 
 /**
@@ -201,6 +206,11 @@ watch(() => props.open, (isOpen) => {
 onMounted(() => {
   void config.load();
   void hydrate();
+});
+
+// Covers programmatic changes (post-send reset, a restored draft) — no `input` event.
+watch(() => draft.value, () => {
+  nextTick(adjustDraftHeight);
 });
 </script>
 
@@ -266,11 +276,12 @@ onMounted(() => {
       <textarea
         ref="draftTextarea"
         v-model="draft"
-        rows="3"
+        rows="1"
         :disabled="!enabled"
         :placeholder="enabled ? 'Paste the bug, error, or stack trace…' : 'Enable the Debugger on the Agents page'"
         aria-label="Message the Debugger"
         @keydown="onKeydown"
+        @input="adjustDraftHeight"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
       <button
@@ -341,7 +352,7 @@ onMounted(() => {
 .debugger-provider-error{display:flex;flex-direction:column;gap:7px;padding:10px 11px;border:1px solid var(--red,#ef5b5b);border-radius:10px;background:color-mix(in srgb,var(--red,#ef5b5b) 10%,var(--panel));color:var(--txt-dim);font-size:11px;line-height:1.45}.debugger-provider-error strong{color:var(--txt);font-size:11px}.debugger-provider-error button{align-self:flex-start;border:1px solid var(--border-bright);border-radius:7px;padding:6px 8px;background:var(--panel-solid);color:var(--txt);font:600 10px var(--font-sans);cursor:pointer}.debugger-provider-error button:hover{border-color:var(--cyan);color:var(--cyan)}
 .debugger-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
 .debugger-compose:focus-within{border-color:var(--border-bright);box-shadow:0 0 0 3px var(--cyan-dim)}
-.debugger-compose textarea{flex:1;min-height:34px;max-height:96px;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
+.debugger-compose textarea{flex:1;min-height:34px;max-height:120px;overflow-y:auto;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
 .debugger-compose textarea::placeholder{color:var(--txt-faint)}
 .debugger-compose button{width:auto;padding:0 11px;height:31px;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .debugger-compose button:disabled{opacity:.4;cursor:default}

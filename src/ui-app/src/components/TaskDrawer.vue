@@ -20,6 +20,7 @@ import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -101,20 +102,30 @@ const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
+    // The freeform compose box keeps its fixed min-height + resize:vertical
+    // (a large drafting area, not a one-line chat input), so it is not auto-grown.
     insertTextAtCursor(freeformTextarea.value, text);
   }
 }
 
 function onDraftMsgTranscribed(text: string): void {
   if (draftMsgTextarea.value) {
-    insertTextAtCursor(draftMsgTextarea.value, text);
+    insertTextAtCursor(draftMsgTextarea.value, text); // dispatches `input` → adjustDraftMsgHeight
   }
+}
+
+function adjustDraftMsgHeight(): void {
+  autoGrowTextarea(draftMsgTextarea.value);
 }
 
 function onReviewDraftMsgTranscribed(text: string): void {
   if (reviewDraftMsgTextarea.value) {
-    insertTextAtCursor(reviewDraftMsgTextarea.value, text);
+    insertTextAtCursor(reviewDraftMsgTextarea.value, text); // dispatches `input` → adjustReviewHeight
   }
+}
+
+function adjustReviewHeight(): void {
+  autoGrowTextarea(reviewDraftMsgTextarea.value);
 }
 
 watch(
@@ -950,6 +961,7 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
+const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
 
@@ -1063,9 +1075,13 @@ async function pmSend(): Promise<void> {
 }
 
 function pmOnKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey) return;
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();
   void pmSend();
+}
+
+function adjustPmHeight(): void {
+  autoGrowTextarea(pmDraftTextarea.value);
 }
 
 /**
@@ -1908,6 +1924,14 @@ watch(
   },
 );
 
+// Re-fit each compose textarea when its value changes programmatically (the
+// post-send reset, a restored draft) — those paths emit no `input` event, and
+// `immediate` covers a value already populated when the field first mounts.
+// Live typing is handled by each field's `@input` binding.
+watch(() => pmDraft.value, () => nextTick(adjustPmHeight), { immediate: true });
+watch(() => reviewDraftMsg.value, () => nextTick(adjustReviewHeight), { immediate: true });
+watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: true });
+
 </script>
 
 <template>
@@ -2703,10 +2727,11 @@ watch(
                 ref="draftMsgTextarea"
                 v-model="draftMsg"
                 class="agent-input"
-                rows="2"
+                rows="1"
                 placeholder="Send a follow-up to the task's agent session…"
                 :disabled="agentBusy || ui.saving"
                 @keydown.enter.exact.prevent="sendTurn"
+                @input="adjustDraftMsgHeight"
               ></textarea>
               <VoiceDictate
                 :disabled="agentBusy || ui.saving"
@@ -2915,10 +2940,11 @@ watch(
                   ref="reviewDraftMsgTextarea"
                   v-model="reviewDraftMsg"
                   class="agent-input"
-                  rows="2"
+                  rows="1"
                   placeholder="Ask the reviewer a follow-up question…"
                   :disabled="review?.running || reviewBusy || ui.saving"
                   @keydown.enter.exact.prevent="sendReviewTurn"
+                  @input="adjustReviewHeight"
                 ></textarea>
                 <VoiceDictate
                   :disabled="review?.running || reviewBusy || ui.saving"
@@ -3208,12 +3234,14 @@ watch(
           </div>
           <form class="pm-compose" @submit.prevent="pmSend">
             <textarea
+              ref="pmDraftTextarea"
               v-model="pmDraft"
               rows="1"
               :disabled="!pmAgentEnabled"
               :placeholder="pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'"
               aria-label="Message PM"
               @keydown="pmOnKeydown"
+              @input="adjustPmHeight"
             ></textarea>
             <button
               v-if="pmBusy"
@@ -3477,7 +3505,8 @@ watch(
 .pm-compose textarea {
   flex: 1;
   min-height: 24px;
-  max-height: 82px;
+  max-height: 120px;
+  overflow-y: auto;
   resize: none;
   border: 0;
   outline: 0;

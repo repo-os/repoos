@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 
@@ -13,6 +14,7 @@ const repo = useRepoStore();
 const draft = ref("");
 const submitting = ref(false);
 const log = ref<HTMLElement | null>(null);
+const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 
 const busy = computed(() => submitting.value || repo.cto.running);
 const enabled = computed(() => repo.cto.enabled);
@@ -49,6 +51,18 @@ function scrollToLatest(): void {
   });
 }
 
+function onKeydown(event: KeyboardEvent): void {
+  // Enter sends; Shift+Enter inserts a newline (this field became a <textarea>).
+  // `isComposing` keeps an IME confirmation Enter from sending mid-composition.
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+  event.preventDefault();
+  void send();
+}
+
+function adjustDraftHeight(): void {
+  autoGrowTextarea(draftTextarea.value);
+}
+
 async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
@@ -83,6 +97,11 @@ async function interrupt(): Promise<void> {
 
 onMounted(() => {
   void repo.loadCTO();
+});
+
+// Covers programmatic changes (the post-send reset) that emit no `input` event.
+watch(() => draft.value, () => {
+  nextTick(adjustDraftHeight);
 });
 </script>
 
@@ -126,13 +145,15 @@ onMounted(() => {
     </div>
 
     <form class="cto-compose" @submit.prevent="send">
-      <input
+      <textarea
+        ref="draftTextarea"
         v-model="draft"
-        type="text"
         placeholder="Ask the CTO about board health..."
         :disabled="busy || !enabled"
-        @keydown.enter="send"
-      />
+        rows="1"
+        @keydown="onKeydown"
+        @input="adjustDraftHeight"
+      ></textarea>
       <button v-if="busy" type="button" class="cto-stop" aria-label="Stop response" title="Stop response" @click="interrupt">
         <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
       </button>
@@ -173,8 +194,8 @@ onMounted(() => {
 .cto-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:cto-bounce 1.2s infinite}
 .cto-thinking span:nth-child(2){animation-delay:.15s}.cto-thinking span:nth-child(3){animation-delay:.3s}
 .cto-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
-.cto-compose input{flex:1;min-height:24px;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
-.cto-compose input::placeholder{color:var(--txt-faint)}
+.cto-compose textarea{flex:1;min-height:24px;max-height:120px;overflow-y:auto;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
+.cto-compose textarea::placeholder{color:var(--txt-faint)}
 .cto-compose button{width:auto;padding:0 12px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .cto-compose button:disabled{opacity:.4;cursor:default}
 .cto-compose button.cto-stop{width:31px;padding:0;display:grid;place-items:center;color:var(--red,#ef5b5b);background:color-mix(in srgb,var(--red,#ef5b5b) 16%,var(--btn-primary-bg))}

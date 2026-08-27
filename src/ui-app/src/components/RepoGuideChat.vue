@@ -8,6 +8,7 @@ import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -116,15 +117,19 @@ async function send(): Promise<void> {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey) return;
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();
   void send();
 }
 
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
-    insertTextAtCursor(draftTextarea.value, text);
+    insertTextAtCursor(draftTextarea.value, text); // dispatches `input` → adjustDraftHeight
   }
+}
+
+function adjustDraftHeight(): void {
+  autoGrowTextarea(draftTextarea.value);
 }
 
 /**
@@ -144,7 +149,14 @@ watch(() => lines.value.length, () => {
   if (props.open) scrollToLatest();
 });
 
-onMounted(() => void hydrate());
+onMounted(() => {
+  void hydrate();
+});
+
+// Covers programmatic changes (post-send reset, a restored draft) — no `input` event.
+watch(() => draft.value, () => {
+  nextTick(adjustDraftHeight);
+});
 </script>
 
 <template>
@@ -200,6 +212,7 @@ onMounted(() => void hydrate());
         :placeholder="enabled ? 'Ask about this repo…' : 'Enable Ross on the Agents page'"
         aria-label="Message Ross"
         @keydown="onKeydown"
+        @input="adjustDraftHeight"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
       <button
@@ -264,7 +277,7 @@ onMounted(() => void hydrate());
 .guide-thinking span:nth-child(2){animation-delay:.15s}.guide-thinking span:nth-child(3){animation-delay:.3s}
 .guide-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
 .guide-compose:focus-within{border-color:var(--border-bright);box-shadow:0 0 0 3px var(--cyan-dim)}
-.guide-compose textarea{flex:1;min-height:24px;max-height:82px;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
+.guide-compose textarea{flex:1;min-height:24px;max-height:120px;overflow-y:auto;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
 .guide-compose textarea::placeholder{color:var(--txt-faint)}
 .guide-compose button{width:31px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer}
 .guide-compose button:disabled{opacity:.4;cursor:default}

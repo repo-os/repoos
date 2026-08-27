@@ -172,4 +172,38 @@ describe("RepoOS Guide message submission", () => {
     await pendingPost;
     await nextTick();
   });
+
+  it("does not send on the Enter that confirms an IME composition", async () => {
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve(
+          new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(chatState), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    const host = await mountChat(fetchMock as typeof fetch);
+    const textarea = host.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.value = "日本語";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const composing = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    textarea.dispatchEvent(composing);
+    await nextTick();
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+
+    textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    await vi.waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1),
+    );
+  });
 });
