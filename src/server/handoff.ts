@@ -358,8 +358,18 @@ export function scheduleCheckFailureRetry(
       const raw = readFileSync(task.absPath, "utf8");
       const doc = parseDocument(raw);
       doc.data.check_retry_count = attempt;
-      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count");
-      keys.unshift("check_retry_count");
+      
+      // Persist parseable handoff-check failure details
+      doc.data.last_check_failure = {
+        stage: "check",
+        command: "repoos check",
+        exitCode: result.detail?.match(/exit (\d+)/)?.[1] || null,
+        detail: detail,
+        timestamp: new Date().toISOString()
+      };
+      
+      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count" && k !== "last_check_failure");
+      keys.unshift("check_retry_count", "last_check_failure");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       onFileChange?.(task.absPath);
     } catch (err) {

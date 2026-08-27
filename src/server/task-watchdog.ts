@@ -220,6 +220,14 @@ export function classifyDeadAgentReason(
   // resolved) — the "killed mid-turn" shape.
   const failed = extractHandoffFailure(task.body);
   if (failed) {
+    // Check if this is a check failure that has been exhausted
+    if (/check failed after \d+ automatic retries/.test(failed)) {
+      return {
+        kind: "crashed",
+        reason: `check-failed-after-retries · ${failed}`,
+      };
+    }
+    
     // Recovery was attempted but finalization failed — surface that outcome,
     // not the original "retained for recovery" which is now stale (#0235).
     if (HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) {
@@ -534,6 +542,13 @@ export class TaskWatchdog {
     if (alreadySurfaced(current.body)) return;
 
     const { kind, reason } = classifyDeadAgentReason(current, this.runner);
+    
+    // Check if this is a terminal check failure that should immediately set needs_input
+    if (reason.startsWith("check-failed-after-retries")) {
+      this.escalateToNeedsInput(current, reason);
+      return;
+    }
+    
     // #0271 follow-up: `exited-without-handoff` is the one dead-session shape
     // with a plausible quick fix — the agent may have simply mis-emitted the
     // signal line (#0154/#0155) or just needs a nudge to finish. Give the
