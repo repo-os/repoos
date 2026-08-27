@@ -2,14 +2,14 @@
 id: "0308"
 title: Only surface actionable worktree states in the UI
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-27T05:30:22Z"
-updated_at: "2026-08-27T05:30:22Z"
+updated_at: "2026-08-27T10:17:16Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 ## Activity
 
 - 2026-08-27T05:30:22Z · created · unknown
+- 2026-08-27T10:17:16Z · status inbox→ready
