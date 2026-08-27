@@ -49,6 +49,18 @@ function retry(): void {
     });
 }
 
+/** What each pipeline stage actually does — shown as a hover tooltip so the
+ *  bar isn't a black box (0309 follow-up: a human watching "check" sit for
+ *  a long time had no way to know that's the full test-suite run, not a
+ *  hang). Order matches INTEGRATION_STAGES. */
+const STAGE_INFO: Record<string, string> = {
+  sync: "Syncing: fast-forwarding the task's branch onto the latest main before validating, so it's tested against current main, not a stale base.",
+  merge: "Merge: merging the branch into a temporary candidate alongside current main. Fast — a real hang here is unusual.",
+  build: "Build: compiling the merged candidate (tsc + asset bundling) to catch build breaks the branch's own diff couldn't see.",
+  check: "Check: running the full repoos check — typecheck, the complete test suite (1000+ tests), and a UI smoke test — against the merged candidate. This is normally the slowest stage, often several minutes; it is not scoped to just this branch's changes since it's validating the actual merge onto main.",
+  done: "Done: fast-forwarding main to the validated candidate and cleaning up the temporary worktree/branch.",
+};
+
 function stageClass(s: string, i: number): string {
   // On failure the failing stage is pinned red; earlier stages stay checked
   // (green) and later stages remain pending (todo).
@@ -115,6 +127,7 @@ function stageClass(s: string, i: number): string {
               :key="s"
               class="stage"
               :class="stageClass(s, i)"
+              :title="STAGE_INFO[s]"
             >
               <span class="stage-mark" aria-hidden="true">
                 <svg v-if="i < currentIndex" viewBox="0 0 24 24" class="stage-check" fill="none">
@@ -250,6 +263,7 @@ function stageClass(s: string, i: number): string {
   font-size: 12px;
   color: var(--txt-faint);
   white-space: nowrap;
+  cursor: help;
 }
 
 .stage-mark {
