@@ -2,7 +2,7 @@
 id: "0307"
 title: Automatically repair and surface terminal handoff check failures
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/automatically-repair-and-surface-termina
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T02:56:16Z"
-updated_at: "2026-08-27T04:44:20Z"
+updated_at: "2026-08-27T04:44:24Z"
 check_retry_count: 2
 handoff_signal_retry_count: 2
 ---
@@ -51,3 +51,4 @@ Coordinate with the handoff retry logic in src/server/handoff.ts, agent lifecycl
 - 2026-08-27T03:12:08Z · status ready→active, branch
 - 2026-08-27T04:39:19Z · handoff failed · check failed after 2 automatic retries · repoos check failed: [90m745|[39m       [35mawait[39m watchdog[33m.[39m[34mcheckNow[39m()[33m;[39m · [90m746|[39m · [90m747|[39m       expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdo… · [90m   |[39m                                                     [31m^[39m · [90m748|[39m       [34mexpect[39m([34mparseTaskAt[39m(fx)[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"active"[39m)[33m;[39m [90m// untouched[39m · [90m749|[39m     } [35mfinally[39m { · [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯[22m[39m · error: script "test" exited with code 1
 - 2026-08-27T04:44:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — check failed after 2 automatic retries · repoos check failed: [90m745|[39m       [35mawait[39m watchdog[33m.[39m[34mcheckNow[39m()[33m;[39m · [90m746|[39m · [90m747|[39m       expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdo… · [90m   |[39m                                                     [31m^[39m · [90m748|[39m       [34mexpect[39m([34mparseTaskAt[39m(fx)[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"active"[39m)[33m;[39m [90m// untouched[39m · [90m749|[39m     } [35mfinally[39m { · [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯[22m[39m · error: script "test" exited with code 1 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-08-27T04:44:24Z · status review→active
