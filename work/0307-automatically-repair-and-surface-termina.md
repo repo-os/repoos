@@ -1,4 +1,6 @@
 ---
+handoff_signal_retry_count: 1
+check_retry_count: 1
 id: "0307"
 title: Automatically repair and surface terminal handoff check failures
 type: feature
@@ -47,3 +49,5 @@ Coordinate with the handoff retry logic in src/server/handoff.ts, agent lifecycl
 - 2026-08-27T03:11:50Z · review_model_override
 - 2026-08-27T03:11:54Z · review_model_override
 - 2026-08-27T03:12:08Z · status ready→active, branch
+
+
