@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
-import { resolvePmAgent, runPrompt } from "./agents.js";
+import { resolvePmAgent, runPrompt, recordOneShotSession } from "./agents.js";
 
 /** Result of a reconciliation attempt. */
 export interface ReconciliationResult {
@@ -261,6 +261,9 @@ export class AutoEngineeringOrchestrator {
         error,
       };
     }
+
+    // Board-level PM spend — the dispatch pass belongs to no single task (0311).
+    recordOneShotSession(config.root, pm, pmResult, { sessionType: "dispatch", taskId: null });
 
     if (!pmResult.ok || !pmResult.output) {
       const error = pmResult.error || "PM agent returned no output";

@@ -3,7 +3,7 @@
  */
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
-import { resolvePmAgent, runPrompt } from "../agents.js";
+import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
 import { createDocument, createFreeformDocument, docFreeformPrompt, parseGeneratedDocument } from "../../core/docs.js";
 
 export const createDoc: RouteHandler = async (ctx, req, res) => {
@@ -54,6 +54,8 @@ export const createFreeformDoc: RouteHandler = async (ctx, req, res) => {
             }
           : undefined,
       });
+      // Freeform doc authoring is real PM spend that belongs to no task (0311).
+      recordOneShotSession(config.root, pm, result, { sessionType: "pm", taskId: null });
       if (!result.ok || !result.output) {
         throw new Error(result.error ?? "the PM agent returned no usable output");
       }

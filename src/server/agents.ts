@@ -1979,6 +1979,63 @@ export function runPrompt(
   });
 }
 
+/**
+ * Persist a one-shot `runPrompt` run to the sessions DB (0311). One-shot AI
+ * work — freeform task/doc authoring, the auto-engineering dispatch pass —
+ * bypasses the AgentRunner, so nothing books it unless the caller does. This
+ * is the shared path for those: it folds the `PromptResult` (elapsed, tokens,
+ * cost) into a session row, classifying `costSource` the same way
+ * `recordSessionToDb` does — a real CLI figure wins, a token-only run gets an
+ * estimate, Kiro credits are never presented as USD. Best-effort: a DB failure
+ * never propagates to the request.
+ *
+ * `taskId` is null for board-level work that belongs to no single task; those
+ * rows still roll into every board-level aggregation (getSessionTypeStats /
+ * getDailyTotals / board summary), just not a task drawer.
+ */
+export function recordOneShotSession(
+  repoRoot: string,
+  agent: Agent,
+  result: PromptResult,
+  opts: { sessionType: string; taskId?: string | null; sessionId?: string },
+): void {
+  const db = getRepoOSDb(repoRoot);
+  if (!db) return;
+  try {
+    const endedAt = new Date().toISOString();
+    const elapsedMs = result.elapsedMs ?? 0;
+    const totalTokens = result.totalTokens ?? undefined;
+    let costUsd = result.costUsd ?? undefined;
+    let costSource = "none";
+    if (totalTokens && !costUsd) {
+      costUsd = estimateCostUsd(totalTokens);
+      costSource = "estimate";
+    } else if (result.costUsd) {
+      costSource = agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
+    }
+    db.upsertSession({
+      sessionId: opts.sessionId ?? `${opts.sessionType}:${opts.taskId ?? "board"}:${endedAt}:${randomUUID()}`,
+      sessionType: opts.sessionType,
+      taskId: opts.taskId ?? undefined,
+      agent: agent.name,
+      model: agent.model,
+      codingAgent: agent.cli,
+      startedAt: new Date(Date.parse(endedAt) - elapsedMs).toISOString(),
+      endedAt,
+      elapsedMs,
+      inputTokens: result.inputTokens ?? undefined,
+      outputTokens: result.outputTokens ?? undefined,
+      totalTokens,
+      costUsd,
+      costSource,
+      status: result.ok ? "finished" : "errored",
+      lastActivityAt: endedAt,
+    });
+  } catch {
+    // Database recording is best-effort and must never crash the caller.
+  }
+}
+
 export class AgentRunner {
   private entries = new Map<string, Entry>();
   private readonly sessions = new Map<string, Session>();

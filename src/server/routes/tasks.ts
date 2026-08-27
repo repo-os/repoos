@@ -16,10 +16,8 @@ import {
   runPrompt,
   deriveBranch,
   isModelOverridePinned,
-  estimateCostUsd,
-  type PromptResult,
+  recordOneShotSession,
 } from "../agents.js";
-import { getRepoOSDb } from "../../core/db.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
@@ -98,56 +96,6 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
   return json(res, 201, index.getTask(created.id));
 };
-
-/**
- * Persist the freeform task-creation PM pass to the sessions DB (0311). This
- * run goes through `runPrompt`, not the AgentRunner, so — unlike per-task PM
- * chats — nothing books it under the task. Mirror what the reviewer/CTO
- * one-shots do: record a `pm` session from the returned usage so the drawer's
- * "by role" breakdown includes the PM that authored the task. Best-effort.
- */
-export function recordFreeformPmSession(
-  repoRoot: string,
-  taskId: string,
-  agent: Agent,
-  result: PromptResult,
-): void {
-  const db = getRepoOSDb(repoRoot);
-  if (!db) return;
-  try {
-    const endedAt = new Date().toISOString();
-    const elapsedMs = result.elapsedMs ?? 0;
-    const totalTokens = result.totalTokens ?? undefined;
-    let costUsd = result.costUsd ?? undefined;
-    let costSource = "none";
-    if (totalTokens && !costUsd) {
-      costUsd = estimateCostUsd(totalTokens);
-      costSource = "estimate";
-    } else if (result.costUsd) {
-      costSource = agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
-    }
-    db.upsertSession({
-      sessionId: `pm-freeform:${taskId}:${endedAt}`,
-      sessionType: "pm",
-      taskId,
-      agent: agent.name,
-      model: agent.model,
-      codingAgent: agent.cli,
-      startedAt: new Date(Date.parse(endedAt) - elapsedMs).toISOString(),
-      endedAt,
-      elapsedMs,
-      inputTokens: result.inputTokens ?? undefined,
-      outputTokens: result.outputTokens ?? undefined,
-      totalTokens,
-      costUsd,
-      costSource,
-      status: result.ok ? "finished" : "errored",
-      lastActivityAt: endedAt,
-    });
-  } catch {
-    // Database recording is best-effort and must never crash the request.
-  }
-}
 
 export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   const { config, repoos, index, logger, emitEvent } = ctx;
@@ -239,7 +187,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       });
       // Book the PM authoring pass under the task (0311) — it aggregates into
       // the drawer's "by role" breakdown like per-task PM chats already do.
-      recordFreeformPmSession(config.root, created.id, pm!, result);
+      recordOneShotSession(config.root, pm!, result, {
+        sessionType: "pm",
+        taskId: created.id,
+        sessionId: `pm-freeform:${created.id}:${new Date().toISOString()}`,
+      });
       if (!result.ok || !result.output) {
         logger.task(created.id, "warn", "PM agent failed; keeping draft with original prompt", {
           reason: result.error ?? "the PM agent returned no usable output",

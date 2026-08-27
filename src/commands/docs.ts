@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { createDocument, createFreeformDocument, docFreeformPrompt, parseGeneratedDocument } from "../core/docs.js";
 import { loadConfig } from "../core/config.js";
 import { c } from "../cli/colors.js";
-import { resolvePmAgent, runPrompt } from "../server/agents.js";
+import { resolvePmAgent, runPrompt, recordOneShotSession } from "../server/agents.js";
 
 /** `repoos new-doc "<description>"` or `repoos new-doc --path docs/foo.md --content-file x.md` */
 export async function cmdNewDoc(args: string[]): Promise<void> {
@@ -36,6 +36,8 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
         const result = await runPrompt(pm, docFreeformPrompt(desc), {
           cwd: config.root,
         });
+        // Freeform doc authoring is real PM spend that belongs to no task (0311).
+        recordOneShotSession(config.root, pm, result, { sessionType: "pm", taskId: null });
         if (!result.ok || !result.output) {
           throw new Error(result.error ?? "the PM agent returned no usable output");
         }
