@@ -2,16 +2,16 @@
 id: "0306"
 title: Expandable chat input area for multi-line messages
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/expandable-chat-input-area-for-multi-lin
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-27T02:52:30Z"
-updated_at: "2026-08-27T02:55:24Z"
+updated_at: "2026-08-27T02:55:29Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometim
 - 2026-08-27T02:54:59Z · status inbox→ready
 - 2026-08-27T02:55:15Z · model_override
 - 2026-08-27T02:55:24Z · review_model_override
+- 2026-08-27T02:55:29Z · status ready→active, branch
