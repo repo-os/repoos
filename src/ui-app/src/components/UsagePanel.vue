@@ -76,54 +76,57 @@ const days = computed(() => stats.value?.days ?? []);
         </div>
       </div>
 
-      <div v-if="visibleRoles.length" class="usage-roles">
-        <div class="usage-subtitle">by role</div>
-        <div class="usage-table-wrap">
-          <table class="usage-table">
-            <thead>
-              <tr>
-                <th class="ta-left">name</th>
-                <th class="ta-right">time</th>
-                <th class="ta-right">tokens</th>
-                <th class="ta-right">cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in visibleRoles" :key="r.role" class="usage-role">
-                <td class="usage-role-name ta-left">{{ r.role }}</td>
-                <td class="ta-right">{{ fmtElapsed(r.totalElapsedMs) }}</td>
-                <td class="ta-right">{{ fmtTokens(r.totalTokens) }}</td>
-                <td class="ta-right">{{ fmtCost(r.totalCostUsd, r.costSource) }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div v-if="visibleRoles.length || days.length" class="usage-breakdown">
+        <div v-if="visibleRoles.length" class="usage-roles">
+          <div class="usage-subtitle">by role</div>
+          <div class="usage-table-wrap">
+            <table class="usage-table">
+              <thead>
+                <tr>
+                  <th class="ta-left">name</th>
+                  <th class="ta-right">time</th>
+                  <th class="ta-right">tokens</th>
+                  <th class="ta-right">cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in visibleRoles" :key="r.role" class="usage-role">
+                  <td class="usage-role-name ta-left">{{ r.role }}</td>
+                  <td class="ta-right">{{ fmtElapsed(r.totalElapsedMs) }}</td>
+                  <td class="ta-right">{{ fmtTokens(r.totalTokens) }}</td>
+                  <td class="ta-right">{{ fmtCost(r.totalCostUsd, r.costSource) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="days.length" class="usage-days">
+          <div class="usage-subtitle">by day (server local time)</div>
+          <div class="usage-table-wrap">
+            <table class="usage-table">
+              <thead>
+                <tr>
+                  <th class="ta-left">date</th>
+                  <th class="ta-right">time</th>
+                  <th class="ta-right">tokens</th>
+                  <th class="ta-right">cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="d in days" :key="d.day" class="usage-role">
+                  <td class="usage-role-name ta-left">{{ d.day }}</td>
+                  <td class="ta-right">{{ fmtElapsed(d.totalElapsedMs) }}</td>
+                  <td class="ta-right">{{ fmtTokens(d.totalTokens) }}</td>
+                  <td class="ta-right">{{ fmtCost(d.totalCostUsd, d.costSource) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div v-if="days.length" class="usage-days">
-        <div class="usage-subtitle">by day (server local time)</div>
-        <div class="usage-table-wrap">
-          <table class="usage-table">
-            <thead>
-              <tr>
-                <th class="ta-left">date</th>
-                <th class="ta-right">time</th>
-                <th class="ta-right">tokens</th>
-                <th class="ta-right">cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="d in days" :key="d.day" class="usage-role">
-                <td class="usage-role-name ta-left">{{ d.day }}</td>
-                <td class="ta-right">{{ fmtElapsed(d.totalElapsedMs) }}</td>
-                <td class="ta-right">{{ fmtTokens(d.totalTokens) }}</td>
-                <td class="ta-right">{{ fmtCost(d.totalCostUsd, d.costSource) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
-      </div>
+      <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
     </template>
     <div v-else>No AI usage recorded yet.</div>
   </div>
@@ -174,11 +177,24 @@ const days = computed(() => stats.value?.days ?? []);
   font-weight: 600;
   color: var(--txt);
 }
-.usage-roles,
-.usage-days {
+.usage-breakdown {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px dashed var(--border);
+  display: grid;
+  gap: 10px 22px;
+}
+/* min-width:0 lets each table's own overflow-x scroller engage instead of
+   stretching the grid column. */
+.usage-roles,
+.usage-days {
+  min-width: 0;
+}
+@media (min-width: 860px) {
+  .usage-breakdown {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
 }
 .usage-subtitle {
   font-size: 9px;

@@ -34,9 +34,18 @@ watch(systemStats, (s) => {
   memHistory.value = [...memHistory.value, s.totals.memPercent].slice(-HISTORY_MAX);
 });
 
-const memUsed = computed(() => {
+/** Memory the OS can hand back on demand (free + inactive + cache). The number
+ *  worth watching — raw `freeMem` is pinned near zero on macOS at all times. */
+const machineAvail = computed(() => {
   if (!systemStats.value) return null;
-  return (systemStats.value.machine.totalMem - systemStats.value.machine.freeMem);
+  return systemStats.value.machine.availableMem ?? systemStats.value.machine.freeMem;
+});
+
+/** "Used" that excludes reclaimable memory, so it tracks real pressure instead
+ *  of sitting pinned near total. */
+const memUsed = computed(() => {
+  if (!systemStats.value || machineAvail.value === null) return null;
+  return systemStats.value.machine.totalMem - machineAvail.value;
 });
 
 function fmtBytes(b: number): string {
@@ -162,7 +171,9 @@ const serveMessage = computed(() => {
             <span class="metric-sub">used of {{ fmtBytes(systemStats!.machine.totalMem) }}</span>
           </div>
           <div class="metric-extra">
-            <span>Free: {{ fmtBytes(systemStats!.machine.freeMem) }}</span>
+            <span
+              :title="`Reclaimable on demand (free + inactive + cache). Truly-free pages right now: ${fmtBytes(systemStats!.machine.freeMem)}.`"
+            >Available: {{ fmtBytes(machineAvail!) }}</span>
             <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
             <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
               Serve: {{ serve.total }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template><template

@@ -15,7 +15,14 @@ import type { RunningAgentInfo } from "./agents.js";
 export interface MachineInfo {
   cpuCount: number;
   totalMem: number;
+  /** Truly-free pages only (`os.freemem()`). On macOS this is always tiny — the
+   *  OS parks everything it can in cache — so it is a poor "headroom" signal. */
   freeMem: number;
+  /** Memory the OS can hand back on demand without swapping: free + inactive +
+   *  speculative + purgeable (macOS) or `MemAvailable` (Linux). Falls back to
+   *  `freeMem` on other platforms or if the probe fails. This is the number to
+   *  reason about for "is there room to run a build". */
+  availableMem: number;
   loadavg: number[];
   platform: string;
 }
@@ -137,11 +144,46 @@ export function parsePsOutput(output: string): PsRecord[] {
   return output.split("\n").map(parsePsLine).filter((r): r is PsRecord => r !== null);
 }
 
+/**
+ * Bytes the OS can reclaim on demand without swapping. `os.freemem()` only
+ * counts fully-idle pages, which on macOS is near-zero at all times because the
+ * kernel fills unused RAM with cache and inactive pages it will drop the moment
+ * anything asks — so the raw "used" figure sits pinned near total and tells you
+ * nothing about whether a build will fit. Returns `os.freemem()` when the
+ * platform probe is unavailable or fails.
+ */
+function availableMemBytes(): number {
+  const p = platform();
+  if (p === "darwin") {
+    const out = safeExecFileSync("vm_stat", []);
+    if (out) {
+      const pageSize = Number(out.match(/page size of (\d+) bytes/)?.[1]) || 4096;
+      const pages = (label: string): number =>
+        Number(out.match(new RegExp(`${label}:\\s+(\\d+)\\.`))?.[1]) || 0;
+      const reclaimable =
+        pages("Pages free") +
+        pages("Pages inactive") +
+        pages("Pages speculative") +
+        pages("Pages purgeable");
+      if (reclaimable > 0) return reclaimable * pageSize;
+    }
+  } else if (p === "linux") {
+    try {
+      const avail = readFileSync("/proc/meminfo", "utf8").match(/^MemAvailable:\s+(\d+)\s+kB/m);
+      if (avail) return Number(avail[1]) * KB;
+    } catch {
+      /* fall through to freemem() */
+    }
+  }
+  return freemem();
+}
+
 function machineInfo(): MachineInfo {
   return {
     cpuCount: cpus().length,
     totalMem: totalmem(),
     freeMem: freemem(),
+    availableMem: availableMemBytes(),
     loadavg: loadavg(),
     platform: platform(),
   };

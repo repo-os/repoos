@@ -73,6 +73,10 @@ describe("sampleSystem", () => {
       expect(result.machine.cpuCount).toBeGreaterThan(0);
       expect(result.machine.totalMem).toBeGreaterThan(0);
       expect(result.machine.loadavg).toHaveLength(3);
+      // availableMem counts reclaimable memory (free + inactive + cache), so it
+      // is always >= raw freeMem and never exceeds total.
+      expect(result.machine.availableMem).toBeGreaterThanOrEqual(result.machine.freeMem);
+      expect(result.machine.availableMem).toBeLessThanOrEqual(result.machine.totalMem);
       expect(result.serverPid).toBe(process.pid);
       expect(result.at).toBeTruthy();
       expect(result.totals.cpuPercent).toBeGreaterThanOrEqual(0);

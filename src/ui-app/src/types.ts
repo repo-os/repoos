@@ -539,7 +539,11 @@ export interface SkillMeta {
 export interface MachineInfo {
   cpuCount: number;
   totalMem: number;
+  /** Truly-free pages only. On macOS this is always tiny (the OS caches everything). */
   freeMem: number;
+  /** Memory reclaimable on demand without swapping (free + inactive + cache).
+   *  The meaningful "headroom" figure. Older servers may omit it. */
+  availableMem?: number;
   loadavg: number[];
   platform: string;
 }
