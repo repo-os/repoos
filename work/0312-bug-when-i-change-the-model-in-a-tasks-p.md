@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-27T09:34:41Z"
-updated_at: "2026-08-27T09:36:59Z"
+updated_at: "2026-08-27T09:38:38Z"
 ---
 ## Problem
 
@@ -70,3 +71,4 @@ Bug: when I change the model in a tasks pm/dev/review tab it often (maybe always
 
 - 2026-08-27T09:36:32Z · status draft→inbox, title, area, type, body
 - 2026-08-27T09:36:59Z · status inbox→ready
+- 2026-08-27T09:38:38Z · model_override
