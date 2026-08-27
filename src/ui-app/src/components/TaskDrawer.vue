@@ -323,7 +323,7 @@ async function pauseWork(): Promise<void> {
 
 async function abandonWork(): Promise<void> {
   if (!ui.active) return;
-  if (!confirm("Abandon this task's current work and send it back to ready? The worktree is kept, not deleted.")) return;
+  if (!confirm("Stop this task's current work and send it back to ready? The worktree is kept, not deleted.")) return;
   ui.saving = true;
   try {
     await repo.abandonWork(ui.active);
@@ -2238,7 +2238,7 @@ watch(
               @click="abandonWork"
             >
               <Square class="size-3.5" />
-              Abandon work
+              Stop work
             </Button>
             <Button
               v-if="ui.active.status === 'done'"

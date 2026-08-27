@@ -42,8 +42,8 @@ describe("isValidBoardMove", () => {
 
   it("rejects transitions that still require a dedicated action drag can't perform", () => {
     const blocked: [string, string][] = [
-      ["active", "ready"], // Abandon work — stops the agent, needs confirm()
-      ["review", "ready"], // Abandon work — cancels the review, needs confirm()
+      ["active", "ready"], // Stop work — stops the agent, needs confirm()
+      ["review", "ready"], // Stop work — cancels the review, needs confirm()
       ["done", "ready"], // Reopen — needs confirm()
     ];
     for (const [from, to] of blocked) {
@@ -67,8 +67,8 @@ describe("isValidBoardMove", () => {
 
 describe("boardMoveRejectionReason", () => {
   it("names the right dedicated action for edges that still need one", () => {
-    expect(boardMoveRejectionReason("active", "ready")).toMatch(/Abandon work/);
-    expect(boardMoveRejectionReason("review", "ready")).toMatch(/Abandon work/);
+    expect(boardMoveRejectionReason("active", "ready")).toMatch(/Stop work/);
+    expect(boardMoveRejectionReason("review", "ready")).toMatch(/Stop work/);
     expect(boardMoveRejectionReason("done", "ready")).toMatch(/Reopen/);
   });
 

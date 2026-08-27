@@ -1,7 +1,7 @@
 /**
  * Client-side mirror of server/task-transitions.ts's GENERIC_PATCH_EDGES — the
  * six bare-status-write edges with no side effect requiring a dedicated
- * action (Start work, Move to done, Abandon work, Reopen). Kept as the single
+ * action (Start work, Move to done, Stop work, Reopen). Kept as the single
  * client source of truth so the status dropdown and board drag-drop can't
  * drift apart on which moves are actually valid.
  *
@@ -25,7 +25,7 @@ export const GENERIC_PATCH_TARGETS: Record<string, string[]> = {
  * status write — BoardColumn's onDrop special-cases each of these exactly
  * like it already did for review -> done (completeTask), so dragging behaves
  * identically to clicking the equivalent button (Start work), dirty-worktree
- * confirmation included. Abandon work and Reopen are deliberately NOT here:
+ * confirmation included. Stop work and Reopen are deliberately NOT here:
  * both stop something in progress (an agent, a review, a done task's
  * history) behind an explicit confirm(), which an easy-to-trigger-by-accident
  * drag gesture shouldn't be able to skip past.
@@ -52,8 +52,8 @@ export function isValidBoardMove(from: string, to: string): boolean {
 /** Which dedicated action actually performs each edge drag-drop can't do
  *  directly — for a helpful rejection message, not for validity itself. */
 const ACTION_HINTS: Record<string, string> = {
-  "active->ready": "Abandon work",
-  "review->ready": "Abandon work",
+  "active->ready": "Stop work",
+  "review->ready": "Stop work",
   "done->ready": "Reopen",
 };
 

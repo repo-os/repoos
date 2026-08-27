@@ -8,7 +8,7 @@
  *   2. The PATCH route actually rejecting the previously-open transitions
  *      (e.g. ready -> active with no agent spawned) and still allowing the
  *      six edges that require no dedicated action.
- *   3. The two new dedicated actions, Abandon work and Reopen.
+ *   3. The two new dedicated actions, Stop work and Reopen.
  */
 import { describe, expect, it, vi } from "vitest";
 import type { IncomingMessage } from "node:http";
