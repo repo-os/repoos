@@ -1,6 +1,6 @@
 ---
 id: "0313"
-title: "Let's add a \"Model playground\" to the agents page as a ne…"
+title: Model playground tab on the agents page
 type: feature
 status: ready
 priority: p2
@@ -12,48 +12,28 @@ cli_override: claude code
 model_override: sonnet
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-27T14:33:48Z"
+updated_at: "2026-08-27T14:35:13Z"
 ---
-Let's add a \"Model playground\" to the agents page as a new tab, in the model playground I want to surface new models that might be useful to try out, based on their pricing and abilities.
+Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
 
-## Requirements
+## Layout
 
-1. **UI Structure**:
-   - Add a new \"Model Playground\" tab to the agents page
-   - Left sidebar showing providers and models worth trying
-   - Main panel with chat interface for testing selected models
+- Left sidebar: list of models worth trying, grouped by provider, with a one-line reason why each is worth trying, pricing (input/output per 1M tokens), and context window size where available.
+- Right panel: chat screen for the selected model, with canned starter prompts (e.g. "What's this repo about?", "Explain this codebase") and a clear indication of which model is active.
 
-2. **Data Sources**:
-   - Primary: DeepInfra API for model information and pricing
-   - Secondary: OpenRouter API (https://openrouter.ai/api/v1/models) for additional model data including context window info
-   - Additional: Other OpenCode providers with similar data exposure
-   - Keep architecture flexible for adding more providers
+## Data sources
 
-3. **Model Display**:
-   - List models with brief descriptions of why they're worth trying
-   - Show pricing: input/output cost per 1M tokens
-   - Show context window information where available
-   - Group by provider when multiple providers are selected
+- DeepInfra API for model info and pricing.
+- OpenRouter `GET https://openrouter.ai/api/v1/models` (open endpoint, no auth) for pricing + context window data.
+- Two providers to start; add a small provider abstraction so more can be added later (e.g. other opencode providers that expose pricing).
 
-4. **Chat Interface**:
-   - Live chat testing with selected model
-   - Predefined prompts like \"What's this repo about?\", \"Explain this codebase\", etc.
-   - Clear indication of which model is currently being tested
+## Notes
 
-5. **Provider Integration**:
-   - Start with 2 providers (DeepInfra + OpenRouter)
-   - Design API abstraction layer for easy provider additions
-   - Handle authentication/API key management appropriately
-
-## Implementation Notes
-
-- Focus on clean UI/UX for model discovery and testing
-- Consider rate limits and caching strategies for provider APIs
-- Ensure security around API key handling
-- Make responsive for different screen sizes
+- Architecture should make adding providers cheap; keep provider-specific quirks behind the abstraction.
+- Cache/rate-limit-aware fetching of provider data.
+- Keep API key handling out of the client where possible.
+- Responsive layout for smaller screens.
 
 ## Activity
 
-- 2026-08-27T14:32:16Z · body
-- 2026-08-27T14:32:36Z · pm_model_override
-- 2026-08-27T14:33:48Z · status inbox→ready
+- 2026-08-27T14:35:13Z · title, body
