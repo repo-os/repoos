@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
+review_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-27T02:52:30Z"
-updated_at: "2026-08-27T02:55:15Z"
+updated_at: "2026-08-27T02:55:24Z"
 ---
 ## Problem
 
@@ -59,3 +60,4 @@ When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometim
 - 2026-08-27T02:54:00Z · status draft→inbox, title, area, body
 - 2026-08-27T02:54:59Z · status inbox→ready
 - 2026-08-27T02:55:15Z · model_override
+- 2026-08-27T02:55:24Z · review_model_override
