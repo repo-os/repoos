@@ -94,6 +94,14 @@ const pmAgentReady = computed(() => {
 const freeformRunning = ref(false);
 /** The client-generated id that tags this run's streamed `agent.output` events. */
 const freeformRunId = ref<string | null>(null);
+/**
+ * True once the user submits a freeform task. The drawer swaps the input form
+ * for an acknowledgment panel that lets them keep working or start another
+ * task while the PM agent fleshes the draft out in the background (0311).
+ */
+const freeformSubmitted = ref(false);
+/** The draft the user just created, referenced by the acknowledgment panel. */
+const submittedTask = ref<Task | null>(null);
 
 const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
 const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -126,6 +134,8 @@ watch(
     // the drawer within a session. It is cleared only after a successful create.
     freeformError.value = "";
     draftSaved.value = null;
+    freeformSubmitted.value = false;
+    submittedTask.value = null;
     initFreeformOverrides();
   },
 );
@@ -152,22 +162,48 @@ async function createFreeform(): Promise<void> {
       draftSaved.value = res.task;
       freeformError.value = res.reason ?? "The PM agent failed";
       await uploadPendingScreenshots(res.task.id);
+      if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+      freeformRunId.value = null;
       return;
     }
     // Success, or the no-PM-agent fallback (raw explanation saved as draft):
-    // open the resulting task in the drawer's edit view so it can be tweaked.
+    // the task is created server-side and the PM agent fleshes it out in the
+    // background. Rather than auto-jumping into the draft's edit view and
+    // keeping the pane blocked on it, swap to the acknowledgment panel so the
+    // user can keep working or start another task (0311).
     await uploadPendingScreenshots(res.task.id);
-    ui.close();
+    submittedTask.value = res.task;
+    freeformSubmitted.value = true;
+    // Clear the input so a "Create another task" tap starts from a clean form.
     freeformText.value = "";
-    await ui.openTask(res.task);
-    router.push("/work");
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
     freeformRunning.value = false;
-    freeformRunId.value = null;
     ui.saving = false;
   }
+}
+
+/** Reset the form + acknowledgment state to queue up another freeform task. */
+function createAnotherTask(): void {
+  freeformSubmitted.value = false;
+  submittedTask.value = null;
+  freeformError.value = "";
+  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  freeformRunId.value = null;
+  ui.clearScreenshots();
+  requestAnimationFrame(() => {
+    document.getElementById("nt-freeform")?.focus();
+  });
+}
+
+/** Acknowledge the in-flight creation and leave the new-task pane. */
+function doneFreeform(): void {
+  freeformSubmitted.value = false;
+  submittedTask.value = null;
+  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  freeformRunId.value = null;
+  ui.close();
 }
 
 function openDraft(): void {
@@ -1967,6 +2003,39 @@ watch(
             </p>
           </div>
           <template v-if="newMode === 'freeform'">
+            <div v-if="freeformSubmitted" class="ff-done">
+              <div class="ff-done-head">
+                <ActivityIndicator />
+                <span>Creating your task</span>
+              </div>
+              <p class="ff-done-copy">
+                This may take a few minutes. Your task
+                <template v-if="submittedTask"><span class="mono">#{{ submittedTask.id }}</span> —</template>
+                is being created in the background and will be updated automatically when it's
+                ready. You can keep working, or start another task while you wait — nothing is lost.
+              </p>
+              <div class="btn-row" style="margin-top: 18px">
+                <Button variant="default" @click="createAnotherTask">Create another task</Button>
+                <Button variant="outline" @click="doneFreeform">Done</Button>
+              </div>
+              <div v-if="freeformLines.length" class="ff-stream" style="margin-top: 16px">
+                <div class="ff-stream-head">
+                  <ActivityIndicator />
+                  PM agent
+                </div>
+                <div class="ff-stream-log" ref="ffLogEl">
+                  <div
+                    v-for="(line, i) in freeformLines"
+                    :key="i"
+                    class="ff-stream-line"
+                    :class="line.s === 'err' ? 'err' : ''"
+                  >
+                    {{ line.d }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <template v-else>
             <div class="field">
               <div class="field-header">
                 <label for="nt-freeform">Describe the task</label>
@@ -2045,6 +2114,7 @@ watch(
                 </div>
               </div>
             </div>
+            </template>
           </template>
           <template v-else>
             <div class="field">

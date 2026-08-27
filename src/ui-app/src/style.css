@@ -833,7 +833,11 @@
    .ff-notice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--amber);background:rgba(255,180,84,0.08);border:1px solid rgba(255,180,84,0.25);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
   .ff-notice a{color:var(--cyan);font-weight:600;text-decoration:none}
   .ff-notice a:hover{text-decoration:underline}
-  .ff-error{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--red);background:rgba(255,107,125,0.08);border:1px solid rgba(255,107,125,0.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
+   .ff-error{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--red);background:rgba(255,107,125,0.08);border:1px solid rgba(255,107,125,0.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5}
+   .ff-done{display:flex;flex-direction:column;gap:8px;padding:18px 16px;border:1px solid var(--border);border-radius:12px;background:var(--panel-solid);margin-top:4px}
+   .ff-done-head{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;color:var(--txt)}
+   .ff-done-copy{margin:0;font-size:13px;line-height:1.6;color:var(--txt-dim)}
+   .ff-done-copy .mono{color:var(--cyan)}
   .agent-log-wrap,.review-log-wrap{position:relative;flex:1 1 0;min-height:0;display:flex;flex-direction:column;margin-bottom:12px}
   /* A long review report above this region must not push the transcript and
      reply controls below the fixed drawer. `height:0` makes the flex region
