@@ -4,6 +4,7 @@ import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { recordOrigin, takeOrigin } from "../lib/flip";
+import { parseReviewVerdict } from "../lib/reviewVerdict";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -340,6 +341,12 @@ const QUEUED_HINT: CardHint = {
   cls: "tc-queued",
 };
 
+/** The last automatic review's actual outcome for this task, when one
+ *  exists — null while no report has landed yet, or its state is
+ *  unparseable. Distinct from `reviewFor(id)?.running`: that's whether a
+ *  review is happening right now, this is what the last one concluded. */
+const reviewVerdict = computed(() => parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown));
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -363,6 +370,17 @@ const hint = computed<CardHint | null>(() => {
     // — "review passed · ready to finish" right above it reads as
     // contradictory once that attempt already failed.
     if (repo.doneErrorFor(t.id)) return null;
+    // "Nothing is currently running" isn't the same claim as "the review
+    // passed" — a task can sit here idle after a "needs some work" or "back
+    // to the drawing board" verdict too (e.g. auto-bounce hit its round
+    // cap). Only the green/unparseable case gets the optimistic label.
+    const v = reviewVerdict.value;
+    if (v?.tone === "red") {
+      return { label: "review: back to the drawing board", title: "the reviewer rejected this — open the task to see why", cls: "tc-review-bad" };
+    }
+    if (v?.tone === "amber") {
+      return { label: "review: needs some work", title: "the reviewer found issues — open the task to see the report", cls: "tc-review-warn" };
+    }
     return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
   }
   if (t.status === "active") {
@@ -406,13 +424,18 @@ const action = computed<CardAction | null>(() => {
  *  the Move to done button and raises the card cue. It mirrors the
  *  `waiting-for-human` card state — every condition must hold, so the button
  *  is never highlighted while the review runs, the engineer works, or a
- *  close-out is in flight. */
+ *  close-out is in flight — and now also not when the last verdict was
+ *  actually "needs some work" or "back to the drawing board": a task can
+ *  sit idle in review after a bad verdict too (e.g. auto-bounce hit its
+ *  round cap), and the ready-to-merge glow shouldn't claim otherwise. */
 const reviewReady = computed(
   () =>
     props.task.status === "review" &&
     !inPipeline.value &&
     !repo.reviewFor(props.task.id)?.running &&
-    !repo.isRunning(props.task.id),
+    !repo.isRunning(props.task.id) &&
+    reviewVerdict.value?.tone !== "red" &&
+    reviewVerdict.value?.tone !== "amber",
 );
 
 /** Full-width footer colors retain the board's action/status language. */

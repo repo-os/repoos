@@ -481,6 +481,8 @@
   .task-card .tc-human::before{display:none}
   .tc-moving{color:var(--cyan)}
   .tc-needs-input{color:var(--amber)}
+  .tc-review-warn{color:var(--amber)}
+  .tc-review-bad{color:var(--red)}
   .tc-stalled{color:var(--txt-dim)}
   .tc-queued{color:var(--txt-dim)}
   .tc-queued::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--txt-dim)}

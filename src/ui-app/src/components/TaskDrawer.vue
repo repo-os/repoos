@@ -34,6 +34,7 @@ import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import AgentModelControl from "./AgentModelControl.vue";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
+import { parseReviewVerdict } from "../lib/reviewVerdict";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -744,23 +745,8 @@ const reviewHtml = computed(() =>
 
 // ---- agent review tab (0110) ----
 
-/** The three canonical verdict labels, most specific first. */
-const VERDICTS = [
-  { label: "back to the drawing board", tone: "red" },
-  { label: "needs some work", tone: "amber" },
-  { label: "good to go", tone: "green" },
-] as const;
-
 /** The review agent's verdict, derived from the report's verdict line. */
-const verdict = computed<{ label: string; tone: string } | null>(() => {
-  const md = review.value?.report?.markdown ?? "";
-  if (!md) return null;
-  const lower = md.toLowerCase();
-  for (const v of VERDICTS) {
-    if (lower.includes(v.label)) return { label: v.label, tone: v.tone };
-  }
-  return null;
-});
+const verdict = computed(() => parseReviewVerdict(review.value?.report?.markdown));
 
 /** True while a "Review again" / reviewer-chat request is in flight. */
 const reviewBusy = ref(false);
