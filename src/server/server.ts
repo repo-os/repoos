@@ -1780,6 +1780,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       closeOutLock,
       rootLock,
       jobCoordinator,
+      reportedStages,
       triggerJobProcessing,
       pendingReview,
       uiDir,

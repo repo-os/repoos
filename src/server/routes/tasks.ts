@@ -1209,13 +1209,15 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
 
 /**
  * Full integration-pipeline snapshot for the pinned status bar (0207).
- * `reported` stages are empty for a cold hydration; the live `integration`
- * SSE event keeps the bar accurate from the moment it connects.
+ * Reads the same live `reportedStages` map the SSE push path uses, so a
+ * page refresh mid-pipeline shows the job's actual current sub-step (e.g.
+ * "check", mid-test-run) rather than falling back to a coarse per-phase
+ * guess (0207 follow-up — see RouteContext.reportedStages).
  */
 export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, {
     ok: true,
-    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, ctx.reportedStages),
   });
 };
 

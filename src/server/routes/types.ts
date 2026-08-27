@@ -11,6 +11,7 @@ import type { RootLock } from "../repo-lock.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
 import type { Logger } from "../../core/logger.js";
+import type { DoneStep } from "../done.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -40,6 +41,17 @@ export interface RouteContext {
   closeOutLock: CloseOutLock;
   rootLock: RootLock;
   jobCoordinator: JobCoordinator;
+  /**
+   * Live progress step last reported by the close-out orchestrator for each
+   * in-flight task (the same map `emitIntegration`'s SSE push uses) — keyed
+   * by task id. A route that builds a pipeline snapshot for an
+   * ALREADY-in-flight job (the GET hydration endpoint) must read this rather
+   * than pass `{}`, or the stage shown falls back to a coarse per-phase
+   * guess (e.g. "validating" always reads as "merge", even mid-test-run)
+   * until the next SSE event happens to correct it — misleading on a page
+   * refresh mid-pipeline (0207 follow-up).
+   */
+  reportedStages: Record<string, DoneStep>;
   triggerJobProcessing: () => void;
   pendingReview: Set<string>;
   uiDir: string | null;

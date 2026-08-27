@@ -192,6 +192,7 @@ function makeCtx(fx: Fixture, opts: { runnerRunning?: boolean; reviewRunning?: b
     closeOutLock: {} as any,
     rootLock: {} as any,
     jobCoordinator: { enqueue: () => ({}), allJobs: () => [] } as any,
+    reportedStages: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,

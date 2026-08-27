@@ -112,6 +112,7 @@ function makeCtx(
       enqueue: opts.onEnqueue ?? (() => ({})),
       allJobs: () => [],
     } as any,
+    reportedStages: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,

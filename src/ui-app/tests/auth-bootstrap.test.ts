@@ -78,6 +78,7 @@ function makeCtx(root: string, bootstrapAdminEmail: string | undefined): RouteCo
     closeOutLock: null as unknown as RouteContext["closeOutLock"],
     rootLock: null as unknown as RouteContext["rootLock"],
     jobCoordinator: null as unknown as RouteContext["jobCoordinator"],
+    reportedStages: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set<string>(),
     uiDir: null,

@@ -77,6 +77,7 @@ function makeCtx(root: string, devBackdoorCode: string | undefined): RouteContex
     closeOutLock: null as unknown as RouteContext["closeOutLock"],
     rootLock: null as unknown as RouteContext["rootLock"],
     jobCoordinator: null as unknown as RouteContext["jobCoordinator"],
+    reportedStages: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set<string>(),
     uiDir: null,

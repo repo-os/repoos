@@ -384,6 +384,27 @@ async function startHotfix(target: "branch" | "main"): Promise<void> {
 
 // ---- review → done close-out ----
 
+/** True once Move to done has been enqueued and the close-out job for this
+ *  task is active or queued in the integration pipeline (mirrors TaskCard's
+ *  `inPipeline`, 0207). Unlike `doingDone` below (local component state that
+ *  only covers the single in-flight enqueue request and resets on every page
+ *  load), this reads the server-authoritative pipeline snapshot — so a
+ *  drawer reopened after a refresh mid-pipeline still shows "Integrating…"
+ *  instead of inviting a second click on a task that's already merging.
+ *  (0309 follow-up.) */
+const inPipeline = computed(() => {
+  const snap = repo.integration;
+  if (!ui.active || !snap) return false;
+  return snap.active?.taskId === ui.active.id || snap.queue.includes(ui.active.id);
+});
+
+/** The active pipeline stage (sync/merge/build/check/done) for this task, or
+ *  null when it's still queued behind another close-out. */
+const pipelineStage = computed(() => {
+  const active = repo.integration?.active;
+  return active && active.taskId === ui.active?.id ? active.stage : null;
+});
+
 /** True while the merge+build+check+cleanup request is in flight. */
 const doingDone = ref(false);
 /** Elapsed seconds shown next to the progress label while the flow runs. */
@@ -427,7 +448,7 @@ const doneProgress = computed(() => {
 });
 
 async function moveToDone(): Promise<void> {
-  if (!ui.active || review.value?.running) return;
+  if (!ui.active || review.value?.running || inPipeline.value) return;
   ui.saving = true;
   doingDone.value = true;
   startDoneTimer();
@@ -2253,13 +2274,13 @@ watch(
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id)"
-              :title="review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
+              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id) || inPipeline"
+              :title="inPipeline ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.' : review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
               @click="moveToDone"
             >
-              <CheckCheck v-if="!doingDone" class="size-3.5" />
+              <CheckCheck v-if="!doingDone && !inPipeline" class="size-3.5" />
               <ActivityIndicator v-else />
-              {{ doingDone ? doneProgress : "Move to done" }}
+              {{ inPipeline ? `Integrating…${pipelineStage ? ` (${pipelineStage})` : ""}` : doingDone ? doneProgress : "Move to done" }}
             </Button>
           </div>
           <span v-if="review?.running" class="drawer-run reviewing" role="status">
