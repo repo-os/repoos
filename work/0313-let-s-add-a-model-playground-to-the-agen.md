@@ -8,9 +8,11 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: claude code
+model_override: default
 pm_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-27T10:19:33Z"
+updated_at: "2026-08-27T10:33:06Z"
 ---
 Let's add a "Model playground" to the agents page as a new tab, in the model playground I want to surface new models that might be useful to try out, based on their pricing and abilities.
 
@@ -51,3 +53,4 @@ Let's add a "Model playground" to the agents page as a new tab, in the model pla
 ## Activity
 
 - 2026-08-27T10:19:33Z · area, body
+- 2026-08-27T10:33:06Z · cli_override, model_override
