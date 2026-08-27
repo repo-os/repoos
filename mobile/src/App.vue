@@ -4,7 +4,6 @@ import { init, servers, selected, selectServer, addServer, removeServer, renameS
 import { onBrowserEvents } from "./browser";
 import { verifyWithDeviceLock } from "./lock";
 import type { ServerEntry } from "./types";
-import { IonApp, IonContent } from '@ionic/vue';
 
 // State for the picker mode
 const mode = ref<"picker" | "add" | "edit">("picker");
@@ -126,9 +125,7 @@ async function persistLock() {
 </script>
 
 <template>
-  <ion-app>
-    <ion-content>
-      <div class="shell">
+  <div class="shell">
         <!-- Picker mode -->
         <template v-if="mode === 'picker'">
           <!-- App header -->
@@ -237,8 +234,8 @@ async function persistLock() {
           </main>
         </template>
 
-        <!-- Add / edit form -->
-        <main v-else-if="mode === 'add' || 'edit'" class="content">
+    <!-- Add / edit form -->
+    <main v-else-if="mode === 'add' || mode === 'edit'" class="content">
           <h1 class="form-title">{{ mode === "add" ? "Add server" : "Edit server" }}</h1>
           <label class="field">
             <span class="field-label">Display name</span>
@@ -275,8 +272,8 @@ async function persistLock() {
         <!-- Connected server shell -->
         <RouterView v-else-if="mode === 'connected'" />
       </div>
-    </ion-content>
-  </ion-app>
+    </div>
+  </div>
 </template>
 
 <style>
