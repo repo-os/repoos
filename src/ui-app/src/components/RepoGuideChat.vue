@@ -124,6 +124,15 @@ function onKeydown(event: KeyboardEvent): void {
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
     insertTextAtCursor(draftTextarea.value, text);
+    adjustTextareaHeight();
+  }
+}
+
+function adjustTextareaHeight(): void {
+  const textarea = draftTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
   }
 }
 
@@ -144,7 +153,15 @@ watch(() => lines.value.length, () => {
   if (props.open) scrollToLatest();
 });
 
-onMounted(() => void hydrate());
+onMounted(() => {
+  void hydrate();
+  // Adjust textarea height on mount
+  setTimeout(() => adjustTextareaHeight(), 0);
+});
+
+watch(() => draft.value, () => {
+  nextTick(() => adjustTextareaHeight());
+});
 </script>
 
 <template>
@@ -200,6 +217,7 @@ onMounted(() => void hydrate());
         :placeholder="enabled ? 'Ask about this repo…' : 'Enable Ross on the Agents page'"
         aria-label="Message Ross"
         @keydown="onKeydown"
+        @input="adjustTextareaHeight"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
       <button

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
@@ -13,6 +13,7 @@ const repo = useRepoStore();
 const draft = ref("");
 const submitting = ref(false);
 const log = ref<HTMLElement | null>(null);
+const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 
 const busy = computed(() => submitting.value || repo.cto.running);
 const enabled = computed(() => repo.cto.enabled);
@@ -49,6 +50,21 @@ function scrollToLatest(): void {
   });
 }
 
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    void send();
+  }
+}
+
+function adjustTextareaHeight(): void {
+  const textarea = draftTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  }
+}
+
 async function send(): Promise<void> {
   const text = draft.value.trim();
   if (!text || busy.value || !enabled.value) return;
@@ -83,6 +99,12 @@ async function interrupt(): Promise<void> {
 
 onMounted(() => {
   void repo.loadCTO();
+  // Adjust textarea height on mount
+  setTimeout(() => adjustTextareaHeight(), 0);
+});
+
+watch(() => draft.value, () => {
+  nextTick(() => adjustTextareaHeight());
 });
 </script>
 
@@ -126,13 +148,15 @@ onMounted(() => {
     </div>
 
     <form class="cto-compose" @submit.prevent="send">
-      <input
+      <textarea
+        ref="draftTextarea"
         v-model="draft"
-        type="text"
         placeholder="Ask the CTO about board health..."
         :disabled="busy || !enabled"
-        @keydown.enter="send"
-      />
+        rows="1"
+        @keydown="onKeydown"
+        @input="adjustTextareaHeight"
+      ></textarea>
       <button v-if="busy" type="button" class="cto-stop" aria-label="Stop response" title="Stop response" @click="interrupt">
         <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
       </button>

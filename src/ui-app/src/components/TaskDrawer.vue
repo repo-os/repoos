@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
@@ -113,6 +113,7 @@ function onDraftMsgTranscribed(text: string): void {
 function onReviewDraftMsgTranscribed(text: string): void {
   if (reviewDraftMsgTextarea.value) {
     insertTextAtCursor(reviewDraftMsgTextarea.value, text);
+    adjustReviewTextareaHeight();
   }
 }
 
@@ -868,6 +869,14 @@ async function sendReviewTurn(): Promise<void> {
   }
 }
 
+function adjustReviewTextareaHeight(): void {
+  const textarea = reviewDraftMsgTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  }
+}
+
 /** Start a fresh review run — a new assessment, not a continuation. */
 async function reviewAgain(): Promise<void> {
   if (!ui.active || review.value?.running || reviewBusy.value) return;
@@ -934,6 +943,7 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
+const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
 
@@ -1050,6 +1060,14 @@ function pmOnKeydown(event: KeyboardEvent): void {
   if (event.key !== "Enter" || event.shiftKey) return;
   event.preventDefault();
   void pmSend();
+}
+
+function adjustPmTextareaHeight(): void {
+  const textarea = pmDraftTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  }
 }
 
 /**
@@ -1891,6 +1909,24 @@ watch(
     freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
   },
 );
+
+// Watch PM draft to adjust textarea height
+watch(() => pmDraft.value, () => {
+  nextTick(() => adjustPmTextareaHeight());
+});
+
+// Watch review draft to adjust textarea height
+watch(() => reviewDraftMsg.value, () => {
+  nextTick(() => adjustReviewTextareaHeight());
+});
+
+onMounted(() => {
+  // Adjust textarea height on mount
+  setTimeout(() => {
+    adjustPmTextareaHeight();
+    adjustReviewTextareaHeight();
+  }, 0);
+});
 
 </script>
 
@@ -2892,10 +2928,11 @@ watch(
                   ref="reviewDraftMsgTextarea"
                   v-model="reviewDraftMsg"
                   class="agent-input"
-                  rows="2"
+                  rows="1"
                   placeholder="Ask the reviewer a follow-up question…"
                   :disabled="review?.running || reviewBusy || ui.saving"
                   @keydown.enter.exact.prevent="sendReviewTurn"
+                  @input="adjustReviewTextareaHeight"
                 ></textarea>
                 <VoiceDictate
                   :disabled="review?.running || reviewBusy || ui.saving"
@@ -3185,12 +3222,14 @@ watch(
           </div>
           <form class="pm-compose" @submit.prevent="pmSend">
             <textarea
+              ref="pmDraftTextarea"
               v-model="pmDraft"
               rows="1"
               :disabled="!pmAgentEnabled"
               :placeholder="pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'"
               aria-label="Message PM"
               @keydown="pmOnKeydown"
+              @input="adjustPmTextareaHeight"
             ></textarea>
             <button
               v-if="pmBusy"

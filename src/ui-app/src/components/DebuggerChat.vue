@@ -174,6 +174,15 @@ function onKeydown(event: KeyboardEvent): void {
 function onDraftTranscribed(text: string): void {
   if (draftTextarea.value) {
     insertTextAtCursor(draftTextarea.value, text);
+    adjustTextareaHeight();
+  }
+}
+
+function adjustTextareaHeight(): void {
+  const textarea = draftTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
   }
 }
 
@@ -201,6 +210,12 @@ watch(() => props.open, (isOpen) => {
 onMounted(() => {
   void config.load();
   void hydrate();
+  // Adjust textarea height on mount
+  setTimeout(() => adjustTextareaHeight(), 0);
+});
+
+watch(() => draft.value, () => {
+  nextTick(() => adjustTextareaHeight());
 });
 </script>
 
@@ -266,11 +281,12 @@ onMounted(() => {
       <textarea
         ref="draftTextarea"
         v-model="draft"
-        rows="3"
+        rows="1"
         :disabled="!enabled"
         :placeholder="enabled ? 'Paste the bug, error, or stack trace…' : 'Enable the Debugger on the Agents page'"
         aria-label="Message the Debugger"
         @keydown="onKeydown"
+        @input="adjustTextareaHeight"
       ></textarea>
       <VoiceDictate :disabled="!enabled" @transcribed="onDraftTranscribed" />
       <button
