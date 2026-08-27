@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
+import { availableMemBytes } from "../core/sysmem.js";
 import type { RunningAgentInfo } from "./agents.js";
 
 export interface MachineInfo {
@@ -142,40 +143,6 @@ function parsePsLine(line: string): PsRecord | null {
  */
 export function parsePsOutput(output: string): PsRecord[] {
   return output.split("\n").map(parsePsLine).filter((r): r is PsRecord => r !== null);
-}
-
-/**
- * Bytes the OS can reclaim on demand without swapping. `os.freemem()` only
- * counts fully-idle pages, which on macOS is near-zero at all times because the
- * kernel fills unused RAM with cache and inactive pages it will drop the moment
- * anything asks — so the raw "used" figure sits pinned near total and tells you
- * nothing about whether a build will fit. Returns `os.freemem()` when the
- * platform probe is unavailable or fails.
- */
-function availableMemBytes(): number {
-  const p = platform();
-  if (p === "darwin") {
-    const out = safeExecFileSync("vm_stat", []);
-    if (out) {
-      const pageSize = Number(out.match(/page size of (\d+) bytes/)?.[1]) || 4096;
-      const pages = (label: string): number =>
-        Number(out.match(new RegExp(`${label}:\\s+(\\d+)\\.`))?.[1]) || 0;
-      const reclaimable =
-        pages("Pages free") +
-        pages("Pages inactive") +
-        pages("Pages speculative") +
-        pages("Pages purgeable");
-      if (reclaimable > 0) return reclaimable * pageSize;
-    }
-  } else if (p === "linux") {
-    try {
-      const avail = readFileSync("/proc/meminfo", "utf8").match(/^MemAvailable:\s+(\d+)\s+kB/m);
-      if (avail) return Number(avail[1]) * KB;
-    } catch {
-      /* fall through to freemem() */
-    }
-  }
-  return freemem();
 }
 
 function machineInfo(): MachineInfo {

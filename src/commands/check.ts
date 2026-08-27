@@ -11,11 +11,12 @@
  */
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpus, tmpdir, totalmem } from "node:os";
 import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot } from "../core/config.js";
+import { availableMemBytes } from "../core/sysmem.js";
 import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
 
 
@@ -421,6 +422,36 @@ export function changedTestRef(env: NodeJS.ProcessEnv): string | undefined {
   return ref && ref.trim() ? ref.trim() : undefined;
 }
 
+/**
+ * Vitest worker-pool size for the Tests step. `vite.config.ts` pins a
+ * conservative floor (`maxWorkers: 2`) because several agent-driven check runs
+ * routinely overlap across worktrees and each pool otherwise multiplies against
+ * the others. But a solo run on an idle machine with memory to spare leaves
+ * most of the box idle — the subprocess-heavy suites (agent-review,
+ * done-reliability, task-watchdog) are I/O-bound on `waitFor` polls, so more
+ * workers is close to linear there.
+ *
+ * Scale up only with real headroom, gated on BOTH cpu count and reclaimable
+ * memory (budget ~900MB per worker + its fixture subprocesses). An explicit
+ * `REPOOS_TEST_WORKERS` always wins; anything else falls back to the config
+ * floor via `undefined`.
+ */
+export function testPoolSize(env: NodeJS.ProcessEnv): number | undefined {
+  const pinned = Number(env.REPOOS_TEST_WORKERS);
+  if (Number.isFinite(pinned) && pinned >= 1) return Math.floor(pinned);
+  const avail = availableMemBytes();
+  // Scale up only with genuine headroom. `availableMem` counts reclaimable
+  // inactive/cache, but on a box that has been thrashing that memory is slow
+  // and expensive to actually reclaim — so also require it to be a solid
+  // fraction of total before trusting it. A starved machine stays at the
+  // config floor (2).
+  if (avail < totalmem() * 0.45) return undefined;
+  const byCpu = Math.floor(cpus().length * 0.75);
+  const byMem = Math.floor(avail / (900 * 1024 * 1024));
+  const n = Math.min(byCpu, byMem, 8);
+  return n >= 3 ? n : undefined;
+}
+
 export async function cmdCheck(): Promise<void> {
   let exitCode = 0;
   const results: CheckResult[] = [];
@@ -581,13 +612,21 @@ export async function cmdCheck(): Promise<void> {
     if (changedRef) {
       console.log(c.dim(`  · Scoped to files changed vs ${changedRef} (--changed)`));
     }
-    // The suite has grown past the old 120s cap (100+ files, ~1000 tests run
-    // under a maxWorkers=2 pool for contention control); a hard 120s timeout
-    // SIGTERMs `bun run test` mid-run even when every test is green. Give the
-    // test subprocess real headroom so a legitimately slow machine doesn't
-    // fail the gate on duration rather than on correctness.
+    // Worker pool: `undefined` keeps the config floor (2). A solo run with
+    // headroom scales up — passed through env, read back in vite.config.ts.
+    const workers = hasTestScript ? testPoolSize(process.env) : undefined;
+    const testEnv = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
+    if (workers && !changedRef) {
+      const availGiB = (availableMemBytes() / 1024 ** 3).toFixed(1);
+      console.log(c.dim(`  · Full suite · ${workers} workers (${availGiB} GiB reclaimable)`));
+    }
+    // A full unscoped run is ~10min even healthy and can legitimately reach
+    // ~25min on a slow box; a too-tight cap SIGTERMs `bun run test` mid-run
+    // (exit 143) even when every test is green. Vitest's own per-test
+    // `testTimeout` fails a genuine hang fast; this is only the outer backstop.
+    const timeoutMs = changedRef ? 300_000 : 1_500_000;
     try {
-      execSync(cmd, { stdio: "inherit", timeout: 300_000 });
+      execSync(cmd, { stdio: "inherit", timeout: timeoutMs, env: testEnv });
       console.log(c.green("  ✔ Tests passed"));
       results.push(pass("tests", changedRef ? `scoped to changed vs ${changedRef}` : undefined));
     } catch (e) {

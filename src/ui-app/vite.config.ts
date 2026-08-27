@@ -113,13 +113,14 @@ export default defineConfig({
     // See the file for the failure mode this closes.
     globalSetup: ["./tests/setup/global-reap.ts"],
     // Process-spawning tests boot real child processes (fixture CLI stubs,
-    // git) and wait on them with waitFor() polls of up to 10s. Vitest's
-    // default 5s per-test timeout flaked the `repoos check` gate under load
-    // (right after a build, or with other worktrees building in parallel) —
-    // give the suite real headroom while still failing fast on genuine
-    // breakage (waitFor throws well before these caps).
-    testTimeout: 15_000,
-    hookTimeout: 15_000,
+    // git, whole HTTP servers) and wait on them with waitFor() polls. Vitest's
+    // default 5s per-test timeout flaked the `repoos check` gate under load;
+    // 15s still flaked the heaviest suites (agent-review, done-reliability,
+    // boot-timing) on a memory-starved box — server boot + agent subprocess +
+    // poll legitimately reaches ~20s there. 30s gives real headroom while
+    // still failing a genuine hang fast (waitFor throws well before this).
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     // Vitest's default forks pool sizes itself to (CPU cores - 1) per run —
     // fine for one run alone, but repoos routinely has several agent-driven
     // `bun run test`/`repoos check` runs happening at once across worktrees,
@@ -127,6 +128,10 @@ export default defineConfig({
     // sharing the machine. Capping a single run's own pool bounds that
     // multiplier so maxConcurrentAgents (src/core/config.ts) can be sized off
     // total cores instead of assuming any one run might claim all of them.
-    maxWorkers: 2,
+    //
+    // `repoos check` overrides this via REPOOS_TEST_WORKERS when it detects a
+    // solo run with cpu + memory headroom (see check.ts testPoolSize) — the
+    // subprocess-heavy suites are I/O-bound and scale close to linearly.
+    maxWorkers: Number(process.env.REPOOS_TEST_WORKERS) || 2,
   },
 });
