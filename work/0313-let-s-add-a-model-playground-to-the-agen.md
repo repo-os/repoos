@@ -2,7 +2,7 @@
 id: "0313"
 title: "Let's add a \"Model playground\" to the agents page as a ne…"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: sonnet
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-27T14:32:36Z"
+updated_at: "2026-08-27T14:33:48Z"
 ---
 Let's add a \"Model playground\" to the agents page as a new tab, in the model playground I want to surface new models that might be useful to try out, based on their pricing and abilities.
 
@@ -56,3 +56,4 @@ Let's add a \"Model playground\" to the agents page as a new tab, in the model p
 
 - 2026-08-27T14:32:16Z · body
 - 2026-08-27T14:32:36Z · pm_model_override
+- 2026-08-27T14:33:48Z · status inbox→ready
