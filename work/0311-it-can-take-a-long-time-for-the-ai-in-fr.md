@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T06:23:56Z"
-updated_at: "2026-08-27T06:24:32Z"
+updated_at: "2026-08-27T09:31:45Z"
 ---
 ## Problem
 
@@ -52,3 +53,4 @@ It can take a long time for the AI in freeform new task to create the task, and 
 ## Activity
 
 - 2026-08-27T06:24:32Z · status draft→inbox, title, area, body
+- 2026-08-27T09:31:45Z · review_model_override
