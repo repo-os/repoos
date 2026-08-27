@@ -320,15 +320,6 @@ export function scheduleCheckFailureRetry(
   const detail = result.detail ?? "repoos check failed";
 
   if (retries >= MAX_CHECK_RETRY_ATTEMPTS) {
-    // Persist parseable handoff-check failure details
-    const failureDetails = {
-      stage: "check",
-      command: "repoos check",
-      exitCode: null, // We don't have access to the actual exit code here
-      detail: detail,
-      timestamp: new Date().toISOString()
-    };
-    
     runner.persistHandoffFailure(task.id, task, `check failed after ${MAX_CHECK_RETRY_ATTEMPTS} automatic retries · ${detail}`);
     return false;
   }
@@ -363,7 +354,7 @@ export function scheduleCheckFailureRetry(
       doc.data.last_check_failure = {
         stage: "check",
         command: "repoos check",
-        exitCode: null, // We don't have access to the actual exit code here
+        exitCode: result.detail?.match(/exit (\d+)/)?.[1] || null,
         detail: detail,
         timestamp: new Date().toISOString()
       };
