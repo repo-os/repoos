@@ -742,6 +742,15 @@ const reviewHtml = computed(() =>
   review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
 );
 
+/** True when a new review is in progress while a previous report is still
+ *  shown. The old report is kept for context but must be flagged as stale —
+ *  it describes an earlier worktree state and will be replaced as soon as the
+ *  fresh run writes its report (RepoOS preserves the prior report until then).
+ */
+const reviewStale = computed(() =>
+  Boolean(review.value?.running && review.value.report),
+);
+
 // ---- agent review tab (0110) ----
 
 /** The three canonical verdict labels, most specific first. */
@@ -2788,6 +2797,13 @@ watch(
           </div>
 
           <section v-if="review?.report && reviewPane === 'report'" class="review-pane review-report-pane" role="tabpanel">
+            <div v-if="reviewStale" class="review-stale" role="status">
+              <ActivityIndicator variant="reviewing" />
+              <div class="review-stale-body">
+                <span class="review-stale-title">This report is stale</span>
+                <span class="review-stale-sub">A new review is running and will replace it shortly.</span>
+              </div>
+            </div>
             <div v-if="review.report.state === 'failed'" class="review-failed">
               {{ review.report.markdown }}
             </div>
