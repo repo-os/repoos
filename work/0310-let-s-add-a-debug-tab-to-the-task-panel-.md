@@ -2,14 +2,14 @@
 id: "0310"
 title: Add debug tab to task panel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-27T06:18:58Z"
-updated_at: "2026-08-27T09:23:16Z"
+updated_at: "2026-08-27T09:31:19Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ Let's add a debug tab to the task panel next to the tokens tab. In this debug ta
 
 - 2026-08-27T06:20:50Z · status draft→inbox, title, area, body
 - 2026-08-27T09:23:16Z · body — added check-duration + live check-log tracking to the Debug tab, per follow-up request
+- 2026-08-27T09:31:19Z · status inbox→ready
