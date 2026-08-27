@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
@@ -20,6 +20,7 @@ import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -100,39 +101,30 @@ const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
+    // The freeform compose box keeps its fixed min-height + resize:vertical
+    // (a large drafting area, not a one-line chat input), so it is not auto-grown.
     insertTextAtCursor(freeformTextarea.value, text);
-    adjustFreeformTextareaHeight();
-  }
-}
-
-function adjustFreeformTextareaHeight(): void {
-  const textarea = freeformTextarea.value;
-  if (textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 }
 
 function onDraftMsgTranscribed(text: string): void {
   if (draftMsgTextarea.value) {
-    insertTextAtCursor(draftMsgTextarea.value, text);
-    adjustDraftMsgTextareaHeight();
+    insertTextAtCursor(draftMsgTextarea.value, text); // dispatches `input` → adjustDraftMsgHeight
   }
 }
 
-function adjustDraftMsgTextareaHeight(): void {
-  const textarea = draftMsgTextarea.value;
-  if (textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  }
+function adjustDraftMsgHeight(): void {
+  autoGrowTextarea(draftMsgTextarea.value);
 }
 
 function onReviewDraftMsgTranscribed(text: string): void {
   if (reviewDraftMsgTextarea.value) {
-    insertTextAtCursor(reviewDraftMsgTextarea.value, text);
-    adjustReviewTextareaHeight();
+    insertTextAtCursor(reviewDraftMsgTextarea.value, text); // dispatches `input` → adjustReviewHeight
   }
+}
+
+function adjustReviewHeight(): void {
+  autoGrowTextarea(reviewDraftMsgTextarea.value);
 }
 
 watch(
@@ -887,14 +879,6 @@ async function sendReviewTurn(): Promise<void> {
   }
 }
 
-function adjustReviewTextareaHeight(): void {
-  const textarea = reviewDraftMsgTextarea.value;
-  if (textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  }
-}
-
 /** Start a fresh review run — a new assessment, not a continuation. */
 async function reviewAgain(): Promise<void> {
   if (!ui.active || review.value?.running || reviewBusy.value) return;
@@ -1075,17 +1059,13 @@ async function pmSend(): Promise<void> {
 }
 
 function pmOnKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey) return;
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();
   void pmSend();
 }
 
-function adjustPmTextareaHeight(): void {
-  const textarea = pmDraftTextarea.value;
-  if (textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  }
+function adjustPmHeight(): void {
+  autoGrowTextarea(pmDraftTextarea.value);
 }
 
 /**
@@ -1928,35 +1908,13 @@ watch(
   },
 );
 
-// Watch PM draft to adjust textarea height
-watch(() => pmDraft.value, () => {
-  nextTick(() => adjustPmTextareaHeight());
-});
-
-// Watch review draft to adjust textarea height
-watch(() => reviewDraftMsg.value, () => {
-  nextTick(() => adjustReviewTextareaHeight());
-});
-
-// Watch draft message to adjust textarea height
-watch(() => draftMsg.value, () => {
-  nextTick(() => adjustDraftMsgTextareaHeight());
-});
-
-// Watch freeform text to adjust textarea height
-watch(() => freeformText.value, () => {
-  nextTick(() => adjustFreeformTextareaHeight());
-});
-
-onMounted(() => {
-  // Adjust textarea height on mount
-  setTimeout(() => {
-    adjustPmTextareaHeight();
-    adjustReviewTextareaHeight();
-    adjustDraftMsgTextareaHeight();
-    adjustFreeformTextareaHeight();
-  }, 0);
-});
+// Re-fit each compose textarea when its value changes programmatically (the
+// post-send reset, a restored draft) — those paths emit no `input` event, and
+// `immediate` covers a value already populated when the field first mounts.
+// Live typing is handled by each field's `@input` binding.
+watch(() => pmDraft.value, () => nextTick(adjustPmHeight), { immediate: true });
+watch(() => reviewDraftMsg.value, () => nextTick(adjustReviewHeight), { immediate: true });
+watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: true });
 
 </script>
 
@@ -2059,7 +2017,6 @@ onMounted(() => {
                     class="ff-textarea"
                     rows="10"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
-                    @input="adjustFreeformTextareaHeight"
                 ></textarea>
                 <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom:14px" />
               </div>
@@ -2758,7 +2715,7 @@ onMounted(() => {
                 placeholder="Send a follow-up to the task's agent session…"
                 :disabled="agentBusy || ui.saving"
                 @keydown.enter.exact.prevent="sendTurn"
-                @input="adjustDraftMsgTextareaHeight"
+                @input="adjustDraftMsgHeight"
               ></textarea>
               <VoiceDictate
                 :disabled="agentBusy || ui.saving"
@@ -2964,7 +2921,7 @@ onMounted(() => {
                   placeholder="Ask the reviewer a follow-up question…"
                   :disabled="review?.running || reviewBusy || ui.saving"
                   @keydown.enter.exact.prevent="sendReviewTurn"
-                  @input="adjustReviewTextareaHeight"
+                  @input="adjustReviewHeight"
                 ></textarea>
                 <VoiceDictate
                   :disabled="review?.running || reviewBusy || ui.saving"
@@ -3261,7 +3218,7 @@ onMounted(() => {
               :placeholder="pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'"
               aria-label="Message PM"
               @keydown="pmOnKeydown"
-              @input="adjustPmTextareaHeight"
+              @input="adjustPmHeight"
             ></textarea>
             <button
               v-if="pmBusy"
@@ -3526,6 +3483,7 @@ onMounted(() => {
   flex: 1;
   min-height: 24px;
   max-height: 120px;
+  overflow-y: auto;
   resize: none;
   border: 0;
   outline: 0;

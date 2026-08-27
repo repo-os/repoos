@@ -880,7 +880,7 @@
   .agent-empty{color:var(--txt-faint);text-align:center;padding:36px 20px;line-height:1.7;font-size:12px}
   .agent-input-row{display:flex;gap:10px;align-items:flex-end;flex-shrink:0}
   .agent-reply-input-wrapper{position:relative;flex:1;min-width:0}
-  .agent-input{display:block;box-sizing:border-box;width:100%;padding:10px 46px 10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;resize:none;max-height:120px;min-height:34px}
+  .agent-input{display:block;box-sizing:border-box;width:100%;padding:10px 46px 10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--panel-solid);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;resize:none;max-height:120px;min-height:34px;overflow-y:auto}
   .agent-reply-input-wrapper .voice-dictate{position:absolute;right:8px;bottom:8px}
   .agent-input:focus{outline:none;border-color:var(--border-bright)}
   .agent-input:disabled{opacity:.6}
