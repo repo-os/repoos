@@ -631,7 +631,10 @@ export const useRepoStore = defineStore("repo", () => {
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
       const ui = useUiStore();
-      if (ui.active && ui.active.id === e.task.id) ui.open(merged);
+      // Sync the drawer's copy without re-deriving the tab: a background
+      // update (e.g. the debounced agent+model override save) must not bounce
+      // the user off the pm/dev/review tab they're viewing (0312).
+      if (ui.active && ui.active.id === e.task.id) ui.syncActive(merged);
       recount();
       // A close-out error only makes sense while the task is still in review;
       // once it leaves review (done, moved back, etc.) the stale card would
@@ -807,7 +810,7 @@ export const useRepoStore = defineStore("repo", () => {
         const updated = { ...tasks.value[i], preview: e.preview };
         tasks.value[i] = updated;
         const ui = useUiStore();
-        if (ui.active && ui.active.id === e.id) ui.open(updated);
+        if (ui.active && ui.active.id === e.id) ui.syncActive(updated);
       }
       pushFeed(
         e.preview
