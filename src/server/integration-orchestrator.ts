@@ -852,11 +852,27 @@ export class CloseOutOrchestrator {
       // Fail-soft: the merge already succeeded, so a failed rebuild here
       // must not fail the whole publish — it just leaves dist/ stale, the
       // same pre-existing failure mode this is fixing, now at least logged.
-      let rebuildRes = await runProcess("bun", ["run", "build"], { cwd: root, timeout: 300_000 });
-      if (rebuildRes.status !== 0) {
-        rebuildRes = await runProcess("npm", ["run", "build"], { cwd: root, timeout: 300_000 });
+      //
+      // Skip entirely when there's no package.json: neither `bun run build`
+      // nor the `npm run build` fallback can ever succeed without one, so
+      // attempting them is two guaranteed-useless subprocess spawns every
+      // time — real cost under load, and observed contributing to orphaned
+      // build processes outliving a fixture test's own vitest timeout
+      // (testTimeout: 15_000 vs. up to 300s per attempt here). Root without
+      // a package.json only happens in this orchestrator's own unit-test
+      // fixtures (bare git repos with no app to build) — a real repo always
+      // has one, so this never skips a build that could have mattered.
+      const canBuild = existsSync(join(root, "package.json"));
+      let rebuildRes: ProcessRunResult | undefined;
+      if (canBuild) {
+        rebuildRes = await runProcess("bun", ["run", "build"], { cwd: root, timeout: 300_000 });
+        if (rebuildRes.status !== 0) {
+          rebuildRes = await runProcess("npm", ["run", "build"], { cwd: root, timeout: 300_000 });
+        }
       }
-      if (rebuildRes.status !== 0) {
+      if (!canBuild) {
+        console.error(`Post-merge rebuild of ${root} skipped for task ${job.taskId}: no package.json`);
+      } else if (rebuildRes && rebuildRes.status !== 0) {
         console.error(
           `Post-merge rebuild of ${root} failed for task ${job.taskId}: ${tailLine(rebuildRes.stdout, rebuildRes.stderr)}`,
         );
