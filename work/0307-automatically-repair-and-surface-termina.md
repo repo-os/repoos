@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T02:56:16Z"
-updated_at: "2026-08-27T03:11:33Z"
+updated_at: "2026-08-27T03:11:42Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ Coordinate with the handoff retry logic in src/server/handoff.ts, agent lifecycl
 
 - 2026-08-27T02:56:16Z · created · unknown
 - 2026-08-27T03:11:33Z · status inbox→ready
+- 2026-08-27T03:11:42Z · model_override
