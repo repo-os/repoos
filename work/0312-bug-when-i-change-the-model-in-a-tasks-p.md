@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-08-27T09:49:48Z"
-review_passes: 1
 id: "0312"
 title: Fix tab switching after changing agent+model in a task's pm/dev/review tabs
 type: bug
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: hello@repoos.org
 branch: feat/fix-tab-switching-after-changing-agent-m
 model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-27T09:34:41Z"
+updated_at: "2026-08-27T10:45:31Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -75,4 +75,4 @@ Bug: when I change the model in a tasks pm/dev/review tab it often (maybe always
 - 2026-08-27T09:38:38Z · model_override
 - 2026-08-27T09:38:41Z · status ready→active, branch
 - 2026-08-27T09:48:34Z · status active→review
-
+- 2026-08-27T10:45:31Z · status review→done, release:success
