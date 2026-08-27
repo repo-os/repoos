@@ -107,6 +107,15 @@ function onFreeformTranscribed(text: string): void {
 function onDraftMsgTranscribed(text: string): void {
   if (draftMsgTextarea.value) {
     insertTextAtCursor(draftMsgTextarea.value, text);
+    adjustDraftMsgTextareaHeight();
+  }
+}
+
+function adjustDraftMsgTextareaHeight(): void {
+  const textarea = draftMsgTextarea.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 }
 
@@ -1920,11 +1929,17 @@ watch(() => reviewDraftMsg.value, () => {
   nextTick(() => adjustReviewTextareaHeight());
 });
 
+// Watch draft message to adjust textarea height
+watch(() => draftMsg.value, () => {
+  nextTick(() => adjustDraftMsgTextareaHeight());
+});
+
 onMounted(() => {
   // Adjust textarea height on mount
   setTimeout(() => {
     adjustPmTextareaHeight();
     adjustReviewTextareaHeight();
+    adjustDraftMsgTextareaHeight();
   }, 0);
 });
 
@@ -2723,10 +2738,11 @@ onMounted(() => {
                 ref="draftMsgTextarea"
                 v-model="draftMsg"
                 class="agent-input"
-                rows="2"
+                rows="1"
                 placeholder="Send a follow-up to the task's agent session…"
                 :disabled="agentBusy || ui.saving"
                 @keydown.enter.exact.prevent="sendTurn"
+                @input="adjustDraftMsgTextareaHeight"
               ></textarea>
               <VoiceDictate
                 :disabled="agentBusy || ui.saving"
@@ -3493,7 +3509,7 @@ onMounted(() => {
 .pm-compose textarea {
   flex: 1;
   min-height: 24px;
-  max-height: 82px;
+  max-height: 120px;
   resize: none;
   border: 0;
   outline: 0;

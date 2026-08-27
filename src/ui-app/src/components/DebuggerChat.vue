@@ -182,7 +182,7 @@ function adjustTextareaHeight(): void {
   const textarea = draftTextarea.value;
   if (textarea) {
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 }
 
@@ -357,7 +357,7 @@ watch(() => draft.value, () => {
 .debugger-provider-error{display:flex;flex-direction:column;gap:7px;padding:10px 11px;border:1px solid var(--red,#ef5b5b);border-radius:10px;background:color-mix(in srgb,var(--red,#ef5b5b) 10%,var(--panel));color:var(--txt-dim);font-size:11px;line-height:1.45}.debugger-provider-error strong{color:var(--txt);font-size:11px}.debugger-provider-error button{align-self:flex-start;border:1px solid var(--border-bright);border-radius:7px;padding:6px 8px;background:var(--panel-solid);color:var(--txt);font:600 10px var(--font-sans);cursor:pointer}.debugger-provider-error button:hover{border-color:var(--cyan);color:var(--cyan)}
 .debugger-compose{display:flex;align-items:flex-end;gap:8px;margin:0 12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel-solid)}
 .debugger-compose:focus-within{border-color:var(--border-bright);box-shadow:0 0 0 3px var(--cyan-dim)}
-.debugger-compose textarea{flex:1;min-height:34px;max-height:96px;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
+.debugger-compose textarea{flex:1;min-height:34px;max-height:120px;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
 .debugger-compose textarea::placeholder{color:var(--txt-faint)}
 .debugger-compose button{width:auto;padding:0 11px;height:31px;flex:none;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);cursor:pointer;font:500 11px var(--font-sans)}
 .debugger-compose button:disabled{opacity:.4;cursor:default}
