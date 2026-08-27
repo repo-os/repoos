@@ -193,6 +193,19 @@ export const useUiStore = defineStore("ui", () => {
   }
 
   /**
+   * Refresh the drawer's task copy in place (SSE task.updated / preview
+   * events) WITHOUT re-deriving the active tab. Tab selection is a
+   * user-driven decision made at open time; re-applying the status default
+   * here bounced the user off the pm/dev/review tab whenever a background
+   * update landed — e.g. the debounced agent+model override save (0312).
+   */
+  function syncActive(t: Task): void {
+    if (!active.value || active.value.id !== t.id) return;
+    active.value = t;
+    isNew.value = false;
+  }
+
+  /**
    * Open a task drawer immediately with the already-loaded task (the board's
    * own list), then refresh from the API in the background — the drawer's
    * visibility must never wait on a network round trip, since a burst of
@@ -260,6 +273,7 @@ export const useUiStore = defineStore("ui", () => {
     openNewTask,
     openNewDoc,
     open,
+    syncActive,
     openTask,
     close,
     openTunnel,

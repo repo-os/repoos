@@ -992,6 +992,61 @@ describe("default drawer tab (0080)", () => {
   });
 });
 
+describe("background task updates keep the drawer's tab (0312)", () => {
+  it("task.updated syncs the drawer's copy without resetting the active tab", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    const es = FakeEventSource.instances[0];
+    // An active task opens on the Agent tab; the user then moves to the PM tab.
+    ui.open(makeTask({ status: "active" }));
+    ui.activeTab = "pm";
+    expect(ui.activeTab).toBe("pm");
+    // The debounced agent+model override save lands as an SSE task.updated.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "active", modelOverride: "deepinfra/some-model" }),
+      prev: { modelOverride: null },
+    });
+    expect(ui.activeTab).toBe("pm");
+    expect(ui.active?.modelOverride).toBe("deepinfra/some-model");
+  });
+
+  it("task.updated does not bounce a review-status task off the Agent tab", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    const es = FakeEventSource.instances[0];
+    // A review task opens on the Agent Review tab; the user moves to Agent.
+    ui.open(makeTask({ status: "review" }));
+    ui.activeTab = "agent";
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "review", modelOverride: "deepinfra/some-model" }),
+      prev: { modelOverride: null },
+    });
+    expect(ui.activeTab).toBe("agent");
+  });
+
+  it("preview events update the drawer's preview without resetting the active tab", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active" }) });
+    ui.open(makeTask({ status: "active" }));
+    ui.activeTab = "pm";
+    es.emit("preview", {
+      type: "preview",
+      id: "0001",
+      preview: { url: "http://127.0.0.1:7234", port: 7234, startedAt: "2026-08-27T00:00:00Z" },
+      at: "2026-08-27T00:00:00Z",
+    });
+    expect(ui.activeTab).toBe("pm");
+    expect(ui.active?.preview?.url).toBe("http://127.0.0.1:7234");
+  });
+});
+
 describe("fresh-done acknowledgement (0278)", () => {
   const now = () => new Date().toISOString();
 
