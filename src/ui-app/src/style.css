@@ -277,8 +277,9 @@
   .model-pricing-link{font-size:11px;letter-spacing:0;text-transform:none;color:var(--cyan);text-decoration:none;font-weight:600;font-family:var(--font-sans);cursor:pointer}
   .model-pricing-link:hover{text-decoration:underline}
 
-  .dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start}
-  @media(max-width:1000px){.dash-grid{grid-template-columns:1fr}}
+  .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+  @media(max-width:1300px){.dash-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:800px){.dash-grid{grid-template-columns:1fr}}
 
   .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 17px;border-bottom:1px solid var(--border)}
   .panel-title{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px}

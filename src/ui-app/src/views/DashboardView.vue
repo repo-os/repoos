@@ -158,9 +158,8 @@ const { counts, repoName } = storeToRefs(repo);
 
     <AutoEngineeringPanel />
 
-    <ReleaseTimeline />
-
     <div class="dash-grid">
+      <ReleaseTimeline />
       <FeedPanel />
       <NeedsYouPanel />
     </div>
@@ -172,5 +171,9 @@ const { counts, repoName } = storeToRefs(repo);
 <style scoped>
 .control-usage {
   margin-bottom: 14px;
+}
+
+.dash-grid {
+  margin-bottom: 18px;
 }
 </style>
