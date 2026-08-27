@@ -2,14 +2,14 @@
 id: "0306"
 title: Expandable chat input area for multi-line messages
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-27T02:52:30Z"
-updated_at: "2026-08-27T02:54:00Z"
+updated_at: "2026-08-27T02:54:59Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometim
 ## Activity
 
 - 2026-08-27T02:54:00Z · status draft→inbox, title, area, body
+- 2026-08-27T02:54:59Z · status inbox→ready
