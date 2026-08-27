@@ -1,4 +1,5 @@
 ---
+check_retry_count: 2
 id: "0306"
 title: Expandable chat input area for multi-line messages
 type: feature
@@ -62,3 +63,5 @@ When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometim
 - 2026-08-27T02:55:15Z · model_override
 - 2026-08-27T02:55:24Z · review_model_override
 - 2026-08-27T02:55:29Z · status ready→active, branch
+
+
