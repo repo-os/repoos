@@ -350,6 +350,16 @@ export const useRepoStore = defineStore("repo", () => {
   const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
+  /** Full test-suite run state (Control page's "Run full test suite" button),
+   *  fed by SSE + hydrated via API on load (so a client that connects mid-run
+   *  sees it immediately rather than waiting for the next chunk). */
+  const testRun = reactive<{
+    running: boolean;
+    startedAt: string | null;
+    finishedAt: string | null;
+    code: number | null;
+    output: string;
+  }>({ running: false, startedAt: null, finishedAt: null, code: null, output: "" });
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
@@ -847,6 +857,18 @@ export const useRepoStore = defineStore("repo", () => {
       autoEng.value = e.state;
     } else if (e.type === "integration") {
       integration.value = e.pipeline;
+    } else if (e.type === "test-run.started") {
+      testRun.running = true;
+      testRun.startedAt = e.at;
+      testRun.finishedAt = null;
+      testRun.code = null;
+      testRun.output = "";
+    } else if (e.type === "test-run.output") {
+      testRun.output += e.chunk;
+    } else if (e.type === "test-run.done") {
+      testRun.running = false;
+      testRun.finishedAt = e.at;
+      testRun.code = e.code;
     }
   }
 
@@ -876,6 +898,35 @@ export const useRepoStore = defineStore("repo", () => {
    */
   async function retryIntegration(taskId: string): Promise<void> {
     await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
+  }
+
+  /** Hydrate test-run state after a refresh/SSE gap — picks up a run already
+   *  in progress (or its last result) rather than showing empty until the
+   *  next chunk arrives. */
+  async function refreshTestRun(): Promise<void> {
+    try {
+      const r = await api<{ running: boolean; startedAt: string | null; finishedAt: string | null; code: number | null; output: string }>(
+        "/api/system/run-tests",
+      );
+      testRun.running = r.running;
+      testRun.startedAt = r.startedAt;
+      testRun.finishedAt = r.finishedAt;
+      testRun.code = r.code;
+      testRun.output = r.output;
+    } catch {
+      /* non-fatal — the panel falls back to its empty state */
+    }
+  }
+
+  /** Starts a full `bun run test` run. Output/completion arrive over SSE
+   *  (test-run.output / test-run.done), not in this response. */
+  async function startTestRun(): Promise<void> {
+    const r = await api<{ ok: boolean; error?: string }>("/api/system/run-tests", { method: "POST" });
+    if (!r.ok) {
+      const message = r.error ?? "could not start the test run";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
   }
 
   function connectSSE(): void {
@@ -920,7 +971,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1679,6 +1730,9 @@ export const useRepoStore = defineStore("repo", () => {
     integration,
     refreshIntegration,
     retryIntegration,
+    testRun,
+    refreshTestRun,
+    startTestRun,
     newVersion,
     restarting,
     pushToast,

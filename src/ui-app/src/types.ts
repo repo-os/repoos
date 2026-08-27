@@ -407,7 +407,10 @@ export type RepoEvent =
       };
       at: string;
     }
-  | { type: "integration"; pipeline: IntegrationPipelineSnapshot };
+  | { type: "integration"; pipeline: IntegrationPipelineSnapshot }
+  | { type: "test-run.started"; at: string }
+  | { type: "test-run.output"; chunk: string; at: string }
+  | { type: "test-run.done"; code: number | null; at: string };
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */
 export interface AutoEngineeringDecision {

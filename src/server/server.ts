@@ -114,6 +114,7 @@ import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } fr
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { TestRunManager } from "./test-run.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import {
@@ -1126,6 +1127,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner, index);
 
+  // Control page's "Run full test suite" button (0296-adjacent): an
+  // ephemeral, non-durable background run, one at a time — see test-run.ts.
+  const testRuns = new TestRunManager();
+
   // Re-arm the hard review timeout for any durable review sessions re-attached
   // from the previous server (0288): the spawner's timer died with it, so an
   // adopted review would otherwise run without a deadline. Also registers the
@@ -1487,6 +1492,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
     const ok = killTrackedProcess(pid);
     return json(res, ok ? 200 : 404, ok ? { ok: true } : { error: "process was already gone" });
+  });
+
+  // Full test-suite run (Control page). GET returns current/last state (for
+  // a client that just (re)connected mid-run); POST starts one, streaming
+  // output over the existing SSE event bus rather than the response itself
+  // — a run can take minutes, far past any sane HTTP response timeout.
+  router.register("GET", "/api/system/run-tests", (_ctx, _req, res) => {
+    return json(res, 200, testRuns.getState());
+  });
+  router.register("POST", "/api/system/run-tests", (_ctx, _req, res) => {
+    const result = testRuns.start(
+      config,
+      (chunk) => emitEvent({ type: "test-run.output", chunk, at: new Date().toISOString() }),
+      (code) => emitEvent({ type: "test-run.done", code, at: new Date().toISOString() }),
+    );
+    if (!result.ok) return json(res, 409, { error: result.reason });
+    emitEvent({ type: "test-run.started", at: new Date().toISOString() });
+    return json(res, 200, { ok: true });
   });
 
   // Task routes

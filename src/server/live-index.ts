@@ -107,7 +107,11 @@ export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "system.stats"; stats: SystemStats }
   /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
-  | { type: "integration"; pipeline: IntegrationSnapshot };
+  | { type: "integration"; pipeline: IntegrationSnapshot }
+  /** Full-suite test run (Control page): started, a raw stdout/stderr chunk, or exited. */
+  | { type: "test-run.started"; at: string }
+  | { type: "test-run.output"; chunk: string; at: string }
+  | { type: "test-run.done"; code: number | null; at: string };
 
 type Listener = (e: RepoEvent) => void;
 

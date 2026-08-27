@@ -10,6 +10,7 @@ import SystemResourcePanel from "../components/SystemResourcePanel.vue";
 import UsagePanel from "../components/UsagePanel.vue";
 import AutoEngineeringPanel from "../components/AutoEngineeringPanel.vue";
 import ReleaseTimeline from "../components/ReleaseTimeline.vue";
+import TestRunPanel from "../components/TestRunPanel.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -163,6 +164,8 @@ const { counts, repoName } = storeToRefs(repo);
       <FeedPanel />
       <NeedsYouPanel />
     </div>
+
+    <TestRunPanel />
   </div>
 </template>
 
