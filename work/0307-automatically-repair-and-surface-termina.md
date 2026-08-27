@@ -2,16 +2,16 @@
 id: "0307"
 title: Automatically repair and surface terminal handoff check failures
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/automatically-repair-and-surface-termina
 model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T02:56:16Z"
-updated_at: "2026-08-27T03:11:54Z"
+updated_at: "2026-08-27T03:12:08Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Coordinate with the handoff retry logic in src/server/handoff.ts, agent lifecycl
 - 2026-08-27T03:11:42Z · model_override
 - 2026-08-27T03:11:50Z · review_model_override
 - 2026-08-27T03:11:54Z · review_model_override
+- 2026-08-27T03:12:08Z · status ready→active, branch
