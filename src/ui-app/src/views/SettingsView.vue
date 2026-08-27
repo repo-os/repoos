@@ -36,8 +36,21 @@ const tunnelStatus = computed(() => {
   if (tunnelReadiness.value.running) return "Running";
   return tunnelReadiness.value.originCertificate?.usable ? "Configured but stopped" : "Needs attention";
 });
+const rvStatus = ref<Record<string, any> | null>(null);
+const rvStatusLabel = computed(() => {
+  const s = rvStatus.value;
+  if (!s || !s.enabled) return "Disabled";
+  if (!s.hasApiToken || !s.hasSshKey || !s.snapshotConfigured) return "Needs setup";
+  if (!s.running) return "Enabled — restart to apply";
+  if (s.activeServer) return `Runner up · ${s.activeServer.ageMinutes}m`;
+  return "Ready";
+});
+async function refreshRvStatus(): Promise<void> {
+  try { rvStatus.value = await api("/api/remote-validation/status"); } catch { rvStatus.value = null; }
+}
 onMounted(async () => {
   try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
+  void refreshRvStatus();
 });
 
 const testState = ref<"idle" | "sending" | "sent" | "failed">("idle");
@@ -64,7 +77,8 @@ const generalFields = computed(() =>
       field.key !== "ntfyEnabled" &&
       field.key !== "ntfyTopic" &&
       field.key !== "auth.enabled" &&
-      field.key !== "auth.sessionMaxAge",
+      field.key !== "auth.sessionMaxAge" &&
+      !field.key.startsWith("remoteValidation."),
   ),
 );
 
@@ -274,6 +288,30 @@ onUnmounted(() => {
             <div class="setting-input tunnel-setting-actions">
               <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
               <Button variant="outline" size="sm" @click="ui.openTunnel()">Configure publishing</Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Remote validation
+          </div>
+          <div id="setting-remoteValidation.enabled" class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Remote validation runner</div>
+              <div class="setting-desc">
+                Run the close-out build + test suite on a disposable Hetzner VM instead of this
+                machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
+                sends repo contents to Hetzner.
+              </div>
+            </div>
+            <div class="setting-input tunnel-setting-actions">
+              <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
+              <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
+                Configure runner
+              </Button>
             </div>
           </div>
         </div>

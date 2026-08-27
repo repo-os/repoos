@@ -599,7 +599,15 @@ export async function cmdCheck(): Promise<void> {
   const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
   const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
   const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
-  if (hasTestScript || hasTestFiles) {
+  // The close-out pipeline can hand the test suite to the Remote Validation
+  // Runner (docs/remote-validation.md) — a Hetzner VM runs `bun run build` +
+  // `bun run test` off this machine — and then invoke the LOCAL `repoos check`
+  // with REPOOS_SKIP_TESTS=1 for only the cheap static guards + UI smoke.
+  // Standalone `repoos check` never sets it, so the CLI gate is unchanged.
+  if (process.env.REPOOS_SKIP_TESTS === "1") {
+    console.log(c.dim("  · Skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)"));
+    results.push(pass("tests", "skipped — ran on the remote validation runner"));
+  } else if (hasTestScript || hasTestFiles) {
     // Only the vitest-backed `bun run test` script understands `--changed`;
     // the bare `bun test` fallback (no package.json test script) is left
     // unscoped.

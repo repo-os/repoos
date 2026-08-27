@@ -10,6 +10,7 @@ import Sidebar from "./components/Sidebar.vue";
 import MobileTabs from "./components/MobileTabs.vue";
 import TaskDrawer from "./components/TaskDrawer.vue";
 import TunnelDrawer from "./components/TunnelDrawer.vue";
+import RemoteValidationDrawer from "./components/RemoteValidationDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
 
@@ -58,6 +59,7 @@ onMounted(async () => {
       <MobileTabs />
       <TaskDrawer />
       <TunnelDrawer />
+      <RemoteValidationDrawer />
       <ToastPanel />
       <FloatingHeads />
     </template>

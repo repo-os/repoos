@@ -1,0 +1,19 @@
+#cloud-config
+# First-boot setup for the throwaway box you use to BUILD the runner snapshot
+# (see build-snapshot.md). The production runner boots from the finished
+# snapshot and needs no cloud-init — everything below is already baked in.
+package_update: true
+packages:
+  - docker.io
+  - git
+
+write_files:
+  - path: /etc/docker/daemon.json
+    content: |
+      { "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
+
+runcmd:
+  - systemctl enable --now docker
+  - mkdir -p /opt/repoos /var/cache/repoos/bun
+  # validate.sh is copied up by build-snapshot.md before the snapshot is taken.
+  - [ chmod, "0755", /opt/repoos/validate.sh ]

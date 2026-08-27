@@ -150,6 +150,15 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     enabled: false,
     sessionMaxAge: 604800,
   },
+  remoteValidation: {
+    enabled: false,
+    provider: "hetzner",
+    serverType: "cax31",
+    location: "hil",
+    idleShutdownMinutes: 8,
+    maxServerLifetimeMinutes: 120,
+    fallbackToLocal: false,
+  },
 };
 
 /**
@@ -465,6 +474,42 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         google: { clientId: googleClientId, clientSecret: googleClientSecret },
       };
     }
+
+    // [remoteValidation] section — run the close-out build+test on a cloud VM.
+    // The API token and SSH key path are env-only (never a git-tracked TOML
+    // key), same rule as the [auth] secrets above.
+    const rvEnabled = parsed["remoteValidation.enabled"];
+    if (typeof rvEnabled === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, enabled: rvEnabled };
+    }
+    const rvServerType = parsed["remoteValidation.serverType"];
+    if (typeof rvServerType === "string" && rvServerType) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, serverType: rvServerType };
+    }
+    const rvLocation = parsed["remoteValidation.location"];
+    if (typeof rvLocation === "string" && rvLocation) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, location: rvLocation };
+    }
+    const rvSnapshot = parsed["remoteValidation.snapshotId"];
+    if (typeof rvSnapshot === "string" && rvSnapshot) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, snapshotId: rvSnapshot };
+    }
+    const rvSshKeyName = parsed["remoteValidation.sshKeyName"];
+    if (typeof rvSshKeyName === "string" && rvSshKeyName) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, sshKeyName: rvSshKeyName };
+    }
+    const rvIdle = parsed["remoteValidation.idleShutdownMinutes"];
+    if (typeof rvIdle === "number" && rvIdle >= 0) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, idleShutdownMinutes: rvIdle };
+    }
+    const rvMaxLife = parsed["remoteValidation.maxServerLifetimeMinutes"];
+    if (typeof rvMaxLife === "number" && rvMaxLife >= 10) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, maxServerLifetimeMinutes: rvMaxLife };
+    }
+    const rvFallback = parsed["remoteValidation.fallbackToLocal"];
+    if (typeof rvFallback === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
+    }
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
@@ -700,6 +745,27 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: "604800",
       description: "How long a login session lasts in seconds (default 604800 = 7 days)",
+    },
+    {
+      key: "remoteValidation.enabled",
+      label: "Remote validation runner",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description:
+        "Run the close-out build + test suite on a disposable Hetzner VM instead of this machine " +
+        "(needs HETZNER_API_TOKEN + REPOOS_REMOTE_SSH_KEY env vars and [remoteValidation] snapshotId/sshKeyName in repoos.toml — see docs/remote-validation.md). Sends repo contents to a third-party host.",
+    },
+    {
+      key: "remoteValidation.fallbackToLocal",
+      label: "Remote validation: fall back to local",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description:
+        "When the remote runner is unreachable, run the full gate locally instead of keeping the task in review for retry.",
     },
   ];
 }

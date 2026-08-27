@@ -140,6 +140,14 @@ the conflict there, let the branch re-validate), not in the candidate.
 
 ### 3. `validating` (build + check)
 Runs `bun run build` then `repoos check` in the candidate worktree. Both must succeed.
+
+**Remote Validation Runner (2026-08-28):** when `[remoteValidation] enabled` (see
+`docs/remote-validation.md`), the expensive half — `bun install` + `bun run build` +
+`bun run test` — runs on a disposable Hetzner VM instead, and the local `repoos check`
+here runs with `REPOOS_SKIP_TESTS=1` (guards + UI smoke only). A remote infra failure
+fails the job *retryably* (resume from this phase); a real remote test failure is
+non-retryable — fix it in the feature branch and resubmit.
+
 Since #0213, the `repoos check` subprocess is invoked with `REPOOS_SKIP_BUILD=1` (the
 candidate was just built with nothing changed since), so `check`'s own internal "Full
 build" step is skipped — exactly one build per close-out. Standalone `repoos check`

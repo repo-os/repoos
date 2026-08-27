@@ -239,6 +239,15 @@ export const useUiStore = defineStore("ui", () => {
     tunnelOpen.value = false;
   }
 
+  /** Remote validation runner setup drawer — independent of every other drawer. */
+  const remoteValidationOpen = ref(false);
+  function openRemoteValidation(): void {
+    remoteValidationOpen.value = true;
+  }
+  function closeRemoteValidation(): void {
+    remoteValidationOpen.value = false;
+  }
+
   function startResize(e: MouseEvent): void {
     const startX = e.clientX;
     const startW = drawerWidth.value;
@@ -278,6 +287,9 @@ export const useUiStore = defineStore("ui", () => {
     close,
     openTunnel,
     closeTunnel,
+    remoteValidationOpen,
+    openRemoteValidation,
+    closeRemoteValidation,
     startResize,
     integrationBarCollapsed,
     setIntegrationBarCollapsed,

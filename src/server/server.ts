@@ -108,6 +108,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
+import { RemoteValidationRunner, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } from "./handoff.js";
@@ -797,6 +798,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
+  // Remote Validation Runner (docs/remote-validation.md): one instance for the
+  // whole server so its warm-VM state and idle/lifetime timers persist across
+  // close-out jobs. Only constructed when enabled — the constructor builds a
+  // Hetzner client and reads env secrets. `reconcile()` deletes any runner VM
+  // leaked by a previous crash (nothing is validating at boot).
+  let remoteValidator: RemoteValidator | undefined;
+  if (config.remoteValidation?.enabled) {
+    try {
+      remoteValidator = new RemoteValidationRunner(config, logger);
+      void remoteValidator.reconcile().catch((e) => {
+        logger.system("warn", `remote validation reconcile failed: ${(e as Error).message}`);
+      });
+    } catch (e) {
+      logger.system("error", `remote validation runner disabled — init failed: ${(e as Error).message}`);
+      remoteValidator = undefined;
+    }
+  }
+
   // Recovery on startup: resume interrupted jobs (0118)
   const interruptedJobs = jobCoordinator.findInterruptedJobs();
   for (const job of interruptedJobs) {
@@ -870,6 +889,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               index.applyFileChange(absPath, { guarded: true }),
             );
           },
+          remoteValidator,
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
@@ -1524,6 +1544,57 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  router.register("GET", "/api/remote-validation/status", (_ctx, _req, res) => {
+    const rv = config.remoteValidation ?? {};
+    let activeServer: { id: number; ip: string; ageMinutes: number } | null = null;
+    try {
+      const s = JSON.parse(
+        readFileSync(join(config.root, ".repoos", "remote-runner.json"), "utf8"),
+      ) as { serverId?: number; ip?: string; createdAt?: string };
+      if (s?.serverId && s.ip) {
+        activeServer = {
+          id: s.serverId,
+          ip: s.ip,
+          ageMinutes: s.createdAt
+            ? Math.round((Date.now() - new Date(s.createdAt).getTime()) / 60_000)
+            : 0,
+        };
+      }
+    } catch {
+      /* no warm runner */
+    }
+    const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    return json(res, 200, {
+      enabled: !!rv.enabled,
+      running: !!remoteValidator,
+      provider: rv.provider ?? "hetzner",
+      serverType: rv.serverType ?? "cax31",
+      location: rv.location ?? "hil",
+      idleShutdownMinutes: rv.idleShutdownMinutes ?? 8,
+      maxServerLifetimeMinutes: rv.maxServerLifetimeMinutes ?? 120,
+      fallbackToLocal: !!rv.fallbackToLocal,
+      snapshotConfigured: !!rv.snapshotId,
+      sshKeyName: rv.sshKeyName ?? "",
+      hasApiToken: !!process.env.HETZNER_API_TOKEN,
+      hasSshKey: !!sshKeyEnv && existsSync(sshKeyEnv),
+      activeServer,
+    });
+  });
+  router.register(
+    "GET",
+    /^\/api\/tasks\/([^/]+)\/remote-validation\/log$/,
+    (_ctx, _req, res, params) => {
+      if (!remoteValidator) return json(res, 200, { enabled: false, log: "" });
+      const p = remoteValidator.logPath(params.param1);
+      let log = "";
+      try {
+        if (existsSync(p)) log = readFileSync(p, "utf8").slice(-200_000);
+      } catch {
+        /* no log yet */
+      }
+      return json(res, 200, { enabled: true, log });
+    },
+  );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
@@ -1976,6 +2047,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();
+          // Delete any warm runner VM. On a reload the replacement process's
+          // reconcile() would clean it anyway; doing it here keeps the window
+          // with a paid-for idle VM as short as possible.
+          void remoteValidator?.dispose();
           unsubscribe();
           unsubscribeCleanup();
           unsubscribeNeedsInput();

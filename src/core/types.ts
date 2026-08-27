@@ -350,6 +350,57 @@ export interface RepoOSConfig {
   whisper?: WhisperConfig;
   /** Authentication configuration. */
   auth?: AuthConfig;
+  /** Remote validation runner — runs the close-out build+test off this machine. */
+  remoteValidation?: RemoteValidationConfig;
+}
+
+/**
+ * Remote Validation Runner (#RVR). The close-out gate's expensive half —
+ * `bun run build` + `bun run test` — runs on a disposable cloud VM instead of
+ * the developer's machine, which is where MTD keeps failing under memory
+ * pressure. The cheap static guards (CSS/theme/require/lockfile/UI-smoke) still
+ * run locally. Master switch defaults off: enabling it sends repo contents to a
+ * third-party host (see docs/remote-validation.md).
+ */
+export interface RemoteValidationConfig {
+  /** Master switch. Default false. */
+  enabled?: boolean;
+  /** Cloud provider. Only "hetzner" is implemented for the MVP. */
+  provider?: "hetzner";
+  /**
+   * Hetzner server type. Default "cax31" (8 vCPU Ampere ARM / 16 GB) — the
+   * cheapest type that fills the vitest 8-worker pool; this repo has no native
+   * deps so arm64 is safe. Use "cpx41" for an x86 (AMD) snapshot instead.
+   * MUST match the architecture the snapshot was built on.
+   */
+  serverType?: string;
+  /** Hetzner location slug. Default "hil". */
+  location?: string;
+  /**
+   * ID (or name) of the prebuilt Hetzner snapshot the runner boots from — an
+   * image with Docker installed and the `repoos-ci` container image preloaded.
+   * Built once via scripts/remote-runner/build-snapshot.md.
+   */
+  snapshotId?: string;
+  /** Name of the SSH key registered in the Hetzner project, injected into the server. */
+  sshKeyName?: string;
+  /**
+   * Keep a warm server alive this long after a job finishes so queued jobs
+   * reuse it instead of paying cold-boot each time. Default 8.
+   */
+  idleShutdownMinutes?: number;
+  /**
+   * Hard cost stop-loss: force-delete any runner older than this, even
+   * mid-job (the job then fails retryably). Default 120.
+   */
+  maxServerLifetimeMinutes?: number;
+  /**
+   * When the remote runner is unreachable / provisioning fails, fall back to
+   * running the full gate locally instead of failing the close-out. Default
+   * false — a transient infra failure keeps the task in `review` for retry
+   * rather than dropping back onto the contended local machine.
+   */
+  fallbackToLocal?: boolean;
 }
 
 /** Whisper voice transcription configuration. */

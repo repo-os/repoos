@@ -176,6 +176,36 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
+  /**
+   * Persist one or more scalar config keys immediately (used by setup drawers
+   * that live outside the auto-saving Settings form). Optimistic: updates the
+   * form right away and rolls back on failure. Keys must match the schema.
+   */
+  async function setConfigValues(partial: Record<string, unknown>): Promise<void> {
+    const previous: Record<string, unknown> = {};
+    for (const k of Object.keys(partial)) {
+      previous[k] = form[k];
+      form[k] = partial[k];
+    }
+    saving.value = true;
+    msg.value = "";
+    error.value = "";
+    try {
+      await api("/api/config", JSON_OPTS("PATCH", partial));
+      if (data.value) for (const k of Object.keys(partial)) data.value[k] = partial[k];
+      const needsRestart = Object.keys(partial).some(
+        (k) => schema.value.find((x) => x.key === k)?.restartRequired,
+      );
+      msg.value = needsRestart ? "Saved — restart server to apply." : "Saved — applied live.";
+    } catch (err) {
+      for (const k of Object.keys(previous)) form[k] = previous[k];
+      error.value = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      saving.value = false;
+    }
+  }
+
   // Apply the dark/light/system preference the moment it changes in the
   // settings form, so it takes effect live without hitting "Save changes".
   watch(
@@ -297,6 +327,7 @@ export const useConfigStore = defineStore("config", () => {
     setTheme,
     effectiveTheme,
     setTunnelEnabled,
+    setConfigValues,
     uiTheme,
     agents,
     agentsMeta,

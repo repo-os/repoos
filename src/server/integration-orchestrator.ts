@@ -33,6 +33,7 @@ import {
 } from "../core/git.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
+import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
@@ -227,6 +228,12 @@ export class CloseOutOrchestrator {
      * to auto-resume the engineer to fix it and resubmit (#0271 follow-up).
      */
     private onMergeConflict?: (taskId: string, reason: string) => void,
+    /**
+     * Runs the expensive half of the gate (build + test) on a cloud VM when
+     * `config.remoteValidation.enabled` — see validateCandidate. Undefined
+     * disables remote validation regardless of config.
+     */
+    private remoteValidator?: RemoteValidator,
   ) {}
 
   /**
@@ -622,6 +629,50 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
     }
 
+    // Remote Validation Runner (docs/remote-validation.md): hand the expensive
+    // half of the gate — `bun install` + `bun run build` + `bun run test` — to a
+    // disposable cloud VM, which is where MTD keeps failing under local memory
+    // pressure. On a remote pass, the LOCAL `repoos check` below runs only the
+    // cheap static guards + UI smoke (REPOOS_SKIP_TESTS=1). On a transient infra
+    // failure the job fails RETRYABLY (resumes from this phase) unless
+    // `remoteValidation.fallbackToLocal` is set; a real remote test failure is
+    // non-retryable — fix it in the feature branch and resubmit.
+    let skipTestsLocally = false;
+    if (this.remoteValidator && this.config.remoteValidation?.enabled) {
+      this.onProgress?.("check");
+      const headRes = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
+      if (headRes.status !== 0) {
+        return { ok: false, reason: "could not resolve candidate HEAD before remote validation" };
+      }
+      const remote = await this.remoteValidator.validate({
+        taskId: job.taskId,
+        worktreePath: wtPath,
+        candidateSha: headRes.stdout.trim(),
+      });
+      if (remote.ok) {
+        skipTestsLocally = true;
+      } else if (remote.transient && !this.config.remoteValidation.fallbackToLocal) {
+        return {
+          ok: false,
+          retryable: true,
+          reason: `${remote.detail ?? "remote validation unavailable"} — the branch IS merged into the candidate; retrying resumes from the check step`,
+        };
+      } else if (!remote.transient) {
+        return {
+          ok: false,
+          retryable: false,
+          reason: `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — fix it in the feature branch and resubmit`,
+        };
+      } else {
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
+          { detail: remote.detail },
+        );
+      }
+    }
+
     this.onProgress?.("check");
     // The candidate's OWN freshly-built CLI comes first, same as the legacy
     // done.ts close-out gate (#0130): a globally linked `repoos` resolves
@@ -632,7 +683,11 @@ export class CloseOutOrchestrator {
     // The build above already ran `bun run build` with nothing changed since,
     // so `check`'s own "Full build" step is redundant (#0213) — pass
     // REPOOS_SKIP_BUILD so it skips it. Standalone `repoos check` never sets it.
-    const skipBuildEnv = { ...process.env, REPOOS_SKIP_BUILD: "1" };
+    const skipBuildEnv = {
+      ...process.env,
+      REPOOS_SKIP_BUILD: "1",
+      ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
+    };
     const localCli = join(wtPath, "dist", "cli", "index.js");
     const localCliPresent = existsSync(localCli);
     const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
