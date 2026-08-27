@@ -1,17 +1,53 @@
 ---
 id: "0306"
-title: When I message an AI agent (either in pm/dev/review tab o…
+title: Expandable chat input area for multi-line messages
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
-assigned_to: ""
+area: web
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-27T02:52:30Z"
-updated_at: "2026-08-27T02:52:30Z"
+updated_at: "2026-08-27T02:54:00Z"
 ---
-When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometimes the text input/area is too small and when I type multiple lines I can't see them all because the text input/area doesn't change size to fit the text I'm typing, please make those chat entry areas expand to fit the text being typed so the human can see what they typed
+## Problem
+
+When messaging AI agents through various interfaces (pm/dev/review tabs or ross/cto), the text input area remains fixed in size. When users type multiple lines of text, they cannot see all of their input because the text area does not expand to accommodate the content. This creates a poor user experience where users cannot fully view what they've typed before sending.
+
+## Desired UX
+
+The chat text input areas should dynamically expand vertically to fit the text content as users type. As more lines are added, the input area should grow in height to show all entered text. The expansion should be smooth and responsive, allowing users to see their entire message before sending. The input area should have reasonable minimum and maximum height limits to maintain usability.
+
+## Acceptance criteria
+
+- [ ] Text input areas in all AI agent messaging interfaces expand vertically as text content grows
+- [ ] Input areas show all typed content without requiring scrolling within the input field
+- [ ] Expansion works smoothly as users type or paste multi-line content
+- [ ] Input areas have appropriate min/max height constraints for usability
+- [ ] Behavior is consistent across all messaging interfaces (pm/dev/review tabs and ross/cto)
+- [ ] Existing functionality (sending messages, keyboard shortcuts) remains intact
+- [ ] Works correctly with different text content (single lines, multiple lines, wrapped text)
+
+## Notes for AI
+
+- Focus on CSS and component adjustments rather than major architectural changes
+- Look for existing textarea or input components used in chat interfaces
+- Ensure the solution works across different browsers and devices
+- Test with various content lengths and types (short messages, long paragraphs)
+- Maintain existing styling and design language
+- Consider accessibility implications of dynamic input sizing
+
+## Scope
+
+This task covers:
+- Making text input areas expandable in all AI agent messaging interfaces
+- Ensuring consistent behavior across different chat contexts
+
+Deferred:
+- Redesigning the overall chat interface layout
+- Adding advanced text formatting features
+- Changing backend message handling
 
 ## Original prompt
 
@@ -19,4 +55,4 @@ When I message an AI agent (either in pm/dev/review tab or ross/cto etc) sometim
 
 ## Activity
 
-- 2026-08-27T02:52:30Z · created · hello@repoos.org
+- 2026-08-27T02:54:00Z · status draft→inbox, title, area, body
