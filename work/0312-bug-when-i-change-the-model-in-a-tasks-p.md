@@ -2,14 +2,14 @@
 id: "0312"
 title: Fix tab switching after changing agent+model in a task's pm/dev/review tabs
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-27T09:34:41Z"
-updated_at: "2026-08-27T09:36:32Z"
+updated_at: "2026-08-27T09:36:59Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Bug: when I change the model in a tasks pm/dev/review tab it often (maybe always
 ## Activity
 
 - 2026-08-27T09:36:32Z · status draft→inbox, title, area, type, body
+- 2026-08-27T09:36:59Z · status inbox→ready
