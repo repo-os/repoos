@@ -612,8 +612,10 @@ export async function cmdCheck(): Promise<void> {
     // Only the vitest-backed `bun run test` script understands `--changed`;
     // the bare `bun test` fallback (no package.json test script) is left
     // unscoped. `--bun` forces vitest's `#!/usr/bin/env node` shebang onto
-    // Bun when the runtime is opted in (REPOOS_RUNTIME=bun|auto) — ~5x faster
-    // and it stops the swap-thrash flake on a loaded machine.
+    // Bun for a Bun-native repo (has bun.lock) unless pinned to Node — ~5x
+    // faster and it stops the swap-thrash flake on a loaded machine.
+    // preferBunForDevTasks() checks the lockfile so a managed repo whose
+    // tests want Node is never switched.
     const changedRef = hasTestScript ? changedTestRef(process.env) : undefined;
     const runScript = preferBunForDevTasks() ? "bun run --bun test" : "bun run test";
     const cmd = hasTestScript

@@ -1,21 +1,20 @@
 /**
- * Optional Bun runtime for the long-lived `repoos serve` process.
+ * Runtime selection for the long-lived `repoos serve` process.
  *
  * RepoOS has zero runtime dependencies and its SQLite layer already targets
  * `bun:sqlite` OR `node:sqlite` (see db.ts), so the server runs unchanged
- * under either runtime. Bun boots roughly 2-3x faster and holds noticeably
- * less memory — worth having for a process that stays up for days and has to
- * answer a reload health handshake inside a tight window.
+ * under either runtime. Bun boots ~2-3x faster, holds noticeably less memory,
+ * and runs the vitest suite ~5x faster with no swap-thrash flake — a clear
+ * win across the board.
  *
- * This is strictly OPT-IN. With no env var set, nothing changes: `repoos`
- * runs on whatever launched it (Node, via the `#!/usr/bin/env node` shebang).
+ * So the DEFAULT is: use Bun when `bun` is on PATH, else Node. Opt out with
+ * `REPOOS_RUNTIME=node`.
  *
- *   REPOOS_RUNTIME=bun    prefer Bun for `serve`; if `bun` is not on PATH,
- *                         print one line and stay on Node
- *   REPOOS_RUNTIME=auto   use Bun for `serve` when it's on PATH, else Node,
- *                         silently either way
- *   REPOOS_RUNTIME=node   never switch (same as unset)
- *   REPOOS_BUN_PATH=/x    explicit bun binary instead of a PATH lookup
+ *   REPOOS_RUNTIME unset   Bun if available, else Node, silently  (default)
+ *   REPOOS_RUNTIME=auto    same as unset (explicit form)
+ *   REPOOS_RUNTIME=bun     require Bun; print one line + stay on Node if missing
+ *   REPOOS_RUNTIME=node    always Node
+ *   REPOOS_BUN_PATH=/x     explicit bun binary instead of a PATH lookup
  *
  * Only `repoos serve` re-execs — short commands (`list`, `show`, …) would pay
  * a second process launch for no benefit. Everything the server then spawns
@@ -28,6 +27,7 @@
  */
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 /** True when this process is Bun rather than Node. */
 export function isBun(): boolean {
@@ -52,35 +52,41 @@ export function resolveBun(): string | null {
   }
 }
 
-type RuntimeMode = "bun" | "auto" | "node";
+/** "node" is the only explicit opt-out; anything else (incl. unset) prefers Bun. */
+type RuntimeMode = "prefer-bun" | "require-bun" | "node";
 
 function runtimeMode(): RuntimeMode {
   const raw = (process.env.REPOOS_RUNTIME ?? "").toLowerCase();
-  return raw === "bun" || raw === "auto" ? raw : "node";
+  if (raw === "node") return "node";
+  if (raw === "bun") return "require-bun";
+  return "prefer-bun"; // unset, "auto", or anything unrecognized
 }
 
 /**
  * Whether repoos-spawned dev subtasks that CAN run on either runtime — right
- * now just `repoos check`'s vitest step — should be forced onto Bun. True when
- * `REPOOS_RUNTIME` opts in AND Bun is actually usable (already running it, or
- * on PATH). The vitest suite is ~5x faster and lower-memory under Bun.
+ * now just `repoos check`'s vitest step — should be forced onto Bun.
  *
- * Gated on the env var, not on "is this the repoos repo", so `repoos check`
- * in a managed repo whose tests need Node is never silently switched.
+ * True when the runtime isn't pinned to Node, Bun is usable, AND the target
+ * repo declares Bun as its package manager (a `bun.lock` / `bun.lockb`). The
+ * lockfile guard keeps `repoos check` in a managed repo whose test script
+ * expects Node from being silently switched.
  */
-export function preferBunForDevTasks(): boolean {
+export function preferBunForDevTasks(cwd: string = process.cwd()): boolean {
   if (runtimeMode() === "node") return false;
+  if (!existsSync(join(cwd, "bun.lock")) && !existsSync(join(cwd, "bun.lockb"))) {
+    return false;
+  }
   return isBun() || resolveBun() !== null;
 }
 
 /**
- * If a Bun switch is requested (`REPOOS_RUNTIME=bun|auto`) and we are on Node,
- * re-exec this CLI under Bun. With `process.execve` this never returns (the
- * process image is replaced in place). With the spawn fallback it returns
- * `true` and the Node parent lingers only to relay SIGINT/SIGTERM/SIGHUP/
- * SIGQUIT and propagate the child's exit status.
+ * Unless pinned to Node (`REPOOS_RUNTIME=node`) or already running under Bun,
+ * re-exec this CLI under Bun when `bun` is available. With `process.execve`
+ * this never returns (the process image is replaced in place). With the spawn
+ * fallback it returns `true` and the Node parent lingers only to relay
+ * SIGINT/SIGTERM/SIGHUP/SIGQUIT and propagate the child's exit status.
  *
- * Returns `false` (a no-op) in every other case: already Bun, not requested,
+ * Returns `false` (a no-op) in every other case: already Bun, pinned to Node,
  * `bun` unavailable, or a prior attempt already set the re-exec guard — the
  * caller then proceeds normally on the current runtime.
  *
@@ -94,7 +100,7 @@ export function reexecServeUnderBunIfRequested(): boolean {
 
   const bun = resolveBun();
   if (!bun) {
-    if (mode === "bun") {
+    if (mode === "require-bun") {
       process.stderr.write(
         "[repoos] REPOOS_RUNTIME=bun but `bun` is not on PATH — running `serve` on Node.\n",
       );

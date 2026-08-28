@@ -1,9 +1,20 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync, chmodSync, existsSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  chmodSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { isBun, resolveBun, reexecServeUnderBunIfRequested } from "../../core/runtime.js";
+import {
+  isBun,
+  resolveBun,
+  preferBunForDevTasks,
+  reexecServeUnderBunIfRequested,
+} from "../../core/runtime.js";
 
 function findRuntimeSrc(): string {
   let dir = process.cwd();
@@ -18,6 +29,17 @@ function findRuntimeSrc(): string {
 }
 const RUNTIME_SRC = findRuntimeSrc();
 
+// Resolved once, before beforeEach installs a bogus REPOOS_BUN_PATH.
+const REAL_BUN: string | null = (() => {
+  const prev = process.env.REPOOS_BUN_PATH;
+  delete process.env.REPOOS_BUN_PATH;
+  try {
+    return resolveBun();
+  } finally {
+    if (prev !== undefined) process.env.REPOOS_BUN_PATH = prev;
+  }
+})();
+
 const ENV_KEYS = [
   "REPOOS_RUNTIME",
   "REPOOS_RUNTIME_REEXEC",
@@ -31,6 +53,10 @@ beforeEach(() => {
     saved[k] = process.env[k];
     delete process.env[k];
   }
+  // Safety: the default (unset) prefers Bun, and an in-process re-exec would
+  // replace the vitest worker. Point every in-process test at a bun that
+  // cannot resolve; the real switch is covered by subprocess fixtures below.
+  process.env.REPOOS_BUN_PATH = "/nonexistent/runtime-test-bun";
 });
 afterEach(() => {
   for (const k of ENV_KEYS) {
@@ -60,62 +86,95 @@ describe("resolveBun", () => {
   });
 
   it("returns null for a REPOOS_BUN_PATH that does not exist", () => {
-    process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
-    expect(resolveBun()).toBeNull();
+    expect(resolveBun()).toBeNull(); // beforeEach set a bogus path
+  });
+});
+
+describe("preferBunForDevTasks", () => {
+  function repo(withLock: boolean): string {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-pref-"));
+    if (withLock) writeFileSync(join(dir, "bun.lock"), "");
+    return dir;
+  }
+
+  it("is false when pinned to Node, even in a Bun repo", () => {
+    process.env.REPOOS_RUNTIME = "node";
+    const dir = repo(true);
+    try {
+      expect(preferBunForDevTasks(dir)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("is false in a repo with no bun lockfile", () => {
+    delete process.env.REPOOS_BUN_PATH; // let it find real bun if present
+    const dir = repo(false);
+    try {
+      expect(preferBunForDevTasks(dir)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("is true in a Bun repo when Bun is resolvable and not pinned to Node", () => {
+    delete process.env.REPOOS_BUN_PATH; // use the real PATH lookup
+    const dir = repo(true);
+    try {
+      expect(preferBunForDevTasks(dir)).toBe(REAL_BUN !== null);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
 describe("reexecServeUnderBunIfRequested — no-op cases", () => {
-  it("does nothing when REPOOS_RUNTIME is unset", () => {
-    expect(reexecServeUnderBunIfRequested()).toBe(false);
-  });
-
-  it("does nothing for REPOOS_RUNTIME=node", () => {
+  it("does nothing when pinned to Node", () => {
     process.env.REPOOS_RUNTIME = "node";
     expect(reexecServeUnderBunIfRequested()).toBe(false);
   });
 
   it("does nothing when the re-exec guard is already set", () => {
-    process.env.REPOOS_RUNTIME = "bun";
     process.env.REPOOS_RUNTIME_REEXEC = "1";
-    process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
     expect(reexecServeUnderBunIfRequested()).toBe(false);
   });
 
-  // These two assert Node-side behavior — under Bun the function bails at the
-  // isBun() guard before ever probing for `bun`, so there's nothing to observe.
-  it.runIf(!isBun())("stays on Node (and warns) when REPOOS_RUNTIME=bun but bun is unresolvable", () => {
-    process.env.REPOOS_RUNTIME = "bun";
-    process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
-    const errs: string[] = [];
-    const orig = process.stderr.write.bind(process.stderr);
-    (process.stderr.write as unknown as (s: string) => boolean) = (s: string) => {
-      errs.push(s);
-      return true;
-    };
-    try {
-      expect(reexecServeUnderBunIfRequested()).toBe(false);
-    } finally {
-      process.stderr.write = orig;
-    }
-    expect(errs.join("")).toContain("not on PATH");
+  it("stays on the current runtime when bun is unresolvable (default mode)", () => {
+    // REPOOS_RUNTIME unset -> prefer-bun, but the bogus BUN_PATH -> no bun.
+    expect(reexecServeUnderBunIfRequested()).toBe(false);
   });
 
-  it.runIf(!isBun())("stays silent for REPOOS_RUNTIME=auto when bun is unresolvable", () => {
-    process.env.REPOOS_RUNTIME = "auto";
-    process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
-    const errs: string[] = [];
-    const orig = process.stderr.write.bind(process.stderr);
-    (process.stderr.write as unknown as (s: string) => boolean) = (s: string) => {
-      errs.push(s);
-      return true;
+  it.runIf(!isBun())("warns only for REPOOS_RUNTIME=bun when bun is unresolvable", () => {
+    const capture = (): { restore: () => void; text: () => string } => {
+      const buf: string[] = [];
+      const orig = process.stderr.write.bind(process.stderr);
+      (process.stderr.write as unknown as (s: string) => boolean) = (s: string) => {
+        buf.push(s);
+        return true;
+      };
+      return { restore: () => (process.stderr.write = orig), text: () => buf.join("") };
     };
+
+    process.env.REPOOS_RUNTIME = "bun";
+    let cap = capture();
     try {
-      expect(reexecServeUnderBunIfRequested()).toBe(false);
+      reexecServeUnderBunIfRequested();
     } finally {
-      process.stderr.write = orig;
+      cap.restore();
     }
-    expect(errs.join("")).toBe("");
+    expect(cap.text()).toContain("not on PATH");
+
+    // default (unset) and auto stay silent
+    for (const mode of ["", "auto"]) {
+      process.env.REPOOS_RUNTIME = mode;
+      cap = capture();
+      try {
+        reexecServeUnderBunIfRequested();
+      } finally {
+        cap.restore();
+      }
+      expect(cap.text()).toBe("");
+    }
   });
 });
 
@@ -143,7 +202,7 @@ describe.runIf(canStripTypes && !isBun())("reexecServeUnderBunIfRequested — re
       const out = execFileSync(
         process.execPath,
         ["--experimental-strip-types", "--no-warnings", file, "serve", "--port", "0"],
-        { encoding: "utf8", env: { ...process.env, ...env } },
+        { encoding: "utf8", env: { ...process.env, REPOOS_BUN_PATH: "", ...env } },
       );
       return { stdout: out, status: 0 };
     } catch (e) {
@@ -154,21 +213,16 @@ describe.runIf(canStripTypes && !isBun())("reexecServeUnderBunIfRequested — re
     }
   }
 
-  it("stays on Node with no opt-in", () => {
-    const { stdout, status } = runFixture({
-      REPOOS_RUNTIME: "",
-      REPOOS_RUNTIME_REEXEC: "",
-    });
+  it("stays on Node when pinned to Node", () => {
+    const { stdout, status } = runFixture({ REPOOS_RUNTIME: "node", REPOOS_RUNTIME_REEXEC: "" });
     expect(stdout).toContain("node ");
     expect(stdout).toContain("guard=unset");
     expect(status).toBe(7);
   });
 
-  it.runIf(!!resolveBun())("re-execs under Bun for serve and propagates exit code", () => {
-    const { stdout, status } = runFixture({
-      REPOOS_RUNTIME: "bun",
-      REPOOS_RUNTIME_REEXEC: "",
-    });
+  it.runIf(!!REAL_BUN)("re-execs under Bun by default and propagates exit code", () => {
+    // REPOOS_RUNTIME unset -> prefer-bun; bun is on PATH.
+    const { stdout, status } = runFixture({ REPOOS_RUNTIME: "", REPOOS_RUNTIME_REEXEC: "" });
     expect(stdout).toContain("bun ");
     expect(stdout).toContain("guard=1");
     expect(status).toBe(7);

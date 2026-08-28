@@ -189,17 +189,17 @@ never compile. NodeNext modules mean `.ts` source uses `.js` import specifiers
 
 The package has zero runtime dependencies and `src/core/db.ts` already targets
 `bun:sqlite` OR `node:sqlite`, so the whole thing runs unchanged on either
-runtime. The `#!/usr/bin/env node` shebang means `repoos` is Node by default.
+runtime. Bun boots ~2-3x faster, holds less memory, and runs the test suite
+~5x faster with no swap-thrash flake — a clear win, so it's the **default when
+`bun` is on PATH**.
 
-`repoos serve` (only that command) can opt into Bun, which boots ~2-3x faster
-and holds less memory — useful for a process that stays up for days and must
-answer the reload health handshake in a tight window:
+`repoos serve` (only that command) re-execs under Bun on startup:
 
 | `REPOOS_RUNTIME` | behavior |
 | --- | --- |
-| unset / `node` | Node (default) |
-| `bun` | Bun; prints one line and stays on Node if `bun` is missing |
-| `auto` | Bun when it's on PATH, else Node, silently |
+| unset / `auto` | Bun if on PATH, else Node, silently (default) |
+| `bun` | require Bun; prints one line + stays on Node if missing |
+| `node` | always Node (the opt-out) |
 
 `REPOOS_BUN_PATH` overrides the PATH lookup. The switch is a true `execve`
 (same PID, no wrapper) on Node ≥ 22.15 / POSIX, and a signal-relaying child
@@ -208,8 +208,8 @@ process elsewhere. `src/core/runtime.ts` guards against re-exec loops with
 `process.execPath` (reload replacements, preview children, `repoos check`)
 inherits the same runtime.
 
-The same env var also moves `repoos check`'s vitest step onto Bun
-(`preferBunForDevTasks()` → `bun run --bun test`): the suite is ~5x faster
-and its lower memory footprint avoids the swap-thrash flake on a loaded
-machine. `just test` / `just test-node` pick the runtime explicitly.
-Managed-repo checks are never switched unless the env var is set.
+`repoos check`'s vitest step also runs under Bun — `preferBunForDevTasks()`
+(→ `bun run --bun test`) is true when the repo is Bun-native (has `bun.lock`)
+and not pinned to Node, so RepoOS's own check is fast while a managed repo
+whose test script expects Node is left alone. `just test` / `just test-node`
+pick the runtime explicitly.

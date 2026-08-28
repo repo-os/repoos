@@ -90,8 +90,9 @@ function help(): void {
 function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
 
-  // Opt-in: run the long-lived server under Bun (REPOOS_RUNTIME=bun|auto).
-  // When it re-execs, the Node parent stays only to relay signals — stop here.
+  // Run the long-lived server under Bun when it's available (opt out with
+  // REPOOS_RUNTIME=node). With `execve` this call replaces the process image;
+  // with the spawn fallback the Node parent stays only to relay signals.
   if ((cmd === "serve" || cmd === "server") && reexecServeUnderBunIfRequested()) {
     return;
   }
