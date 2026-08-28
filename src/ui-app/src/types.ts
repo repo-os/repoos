@@ -420,7 +420,36 @@ export type RepoEvent =
   | { type: "integration"; pipeline: IntegrationPipelineSnapshot }
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
-  | { type: "test-run.done"; code: number | null; at: string };
+  | { type: "test-run.done"; code: number | null; at: string }
+  | { type: "task-check.started"; taskId: string; checkId: string; checkKind: TaskCheckKind; at: string }
+  | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
+  | { type: "task-check.done"; taskId: string; checkId: string; code: number | null; passed: boolean; durationMs: number; at: string };
+
+/** A server-run `repoos check` for a task (0310 Debug tab) — either the
+ *  handoff-finalize check or the MTD merge-gate check. */
+export type TaskCheckKind = "handoff-finalize" | "merge-gate";
+
+export interface TaskCheckRun {
+  id: string;
+  taskId: string;
+  kind: TaskCheckKind;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  running: boolean;
+  passed: boolean | null;
+  code: number | null;
+  output: string;
+}
+
+/** One entry from a task's `.repoos/logs/tasks/<id>.log` (0310 Debug tab). */
+export interface TaskLogEntry {
+  timestamp: string;
+  level: "debug" | "info" | "warn" | "error" | "fatal";
+  component: "system" | "task" | "agent" | "integration";
+  message: string;
+  context?: Record<string, unknown>;
+}
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */
 export interface AutoEngineeringDecision {

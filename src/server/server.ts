@@ -117,6 +117,7 @@ import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { TestRunManager } from "./test-run.js";
+import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import {
@@ -848,6 +849,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Per-task `repoos check` run tracking for the Debug tab (0310): the
+  // handoff-finalize check and the MTD merge-gate check are the only two
+  // checks the server spawns directly, so only those two are instrumented.
+  const taskChecks = new TaskCheckManager();
+  const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
+    if (eventKind === "started") {
+      emitEvent({ type: "task-check.started", taskId: run.taskId, checkId: run.id, checkKind: run.kind, at: run.startedAt });
+    } else if (eventKind === "output") {
+      emitEvent({ type: "task-check.output", taskId: run.taskId, checkId: run.id, chunk: chunk ?? "", at: new Date().toISOString() });
+    } else {
+      emitEvent({
+        type: "task-check.done",
+        taskId: run.taskId,
+        checkId: run.id,
+        code: run.code,
+        passed: run.passed === true,
+        durationMs: run.durationMs ?? 0,
+        at: run.finishedAt ?? new Date().toISOString(),
+      });
+    }
+  };
+
   // Last integration-pipeline stage progress reported per task id (0207). The
   // orchestrator's DoneStep callbacks drive the pinned status bar's stage
   // indicator; recorded here so the live `integration` snapshot is accurate.
@@ -894,6 +917,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             );
           },
           remoteValidator,
+          taskChecks,
+          onTaskCheckEvent,
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
@@ -1066,6 +1091,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
         },
         onServerStatusChange,
+        taskChecks,
+        onTaskCheckEvent,
       );
       if (result.ok) {
         index.applyFileChange(task.absPath, { guarded: true });
@@ -1578,6 +1605,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
+  // Per-task `repoos check` history (handoff-finalize + MTD merge-gate) for
+  // the Debug tab (0310). The currently-running entry (if any) streams its
+  // output live over the existing SSE bus as task-check.* events.
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/checks$/, (_ctx, _req, res, params) => {
+    return json(res, 200, { ok: true, runs: taskChecks.getRuns(params.param1) });
+  });
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);

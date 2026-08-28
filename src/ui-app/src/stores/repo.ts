@@ -22,6 +22,8 @@ import type {
   Status,
   SystemStats,
   Task,
+  TaskCheckRun,
+  TaskLogEntry,
   TaskUsageStats,
 } from "../types";
 
@@ -360,6 +362,11 @@ export const useRepoStore = defineStore("repo", () => {
     code: number | null;
     output: string;
   }>({ running: false, startedAt: null, finishedAt: null, code: null, output: "" });
+  /** Per-task `repoos check` history (Debug tab, 0310): handoff-finalize +
+   *  MTD merge-gate runs, fed by SSE + hydrated via API when the tab opens. */
+  const taskChecks = ref<Record<string, TaskCheckRun[]>>({});
+  /** Per-task log entries (Debug tab, 0310), hydrated via API when the tab opens. */
+  const taskLogs = ref<Record<string, TaskLogEntry[]>>({});
   const sortOrder = ref<SortOrder>(readSortOrder());
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
@@ -872,6 +879,32 @@ export const useRepoStore = defineStore("repo", () => {
       testRun.running = false;
       testRun.finishedAt = e.at;
       testRun.code = e.code;
+    } else if (e.type === "task-check.started") {
+      if (!taskChecks.value[e.taskId]) taskChecks.value[e.taskId] = [];
+      taskChecks.value[e.taskId].push({
+        id: e.checkId,
+        taskId: e.taskId,
+        kind: e.checkKind,
+        startedAt: e.at,
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+      });
+    } else if (e.type === "task-check.output") {
+      const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
+      if (run) run.output += e.chunk;
+    } else if (e.type === "task-check.done") {
+      const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
+      if (run) {
+        run.running = false;
+        run.finishedAt = e.at;
+        run.durationMs = e.durationMs;
+        run.code = e.code;
+        run.passed = e.passed;
+      }
     }
   }
 
@@ -929,6 +962,28 @@ export const useRepoStore = defineStore("repo", () => {
       const message = r.error ?? "could not start the test run";
       pushToast(message, "error");
       throw new Error(message);
+    }
+  }
+
+  /** Hydrate a task's check history (Debug tab, 0310) — picks up runs already
+   *  recorded, including one currently in progress, rather than waiting for
+   *  the next SSE event. */
+  async function refreshTaskChecks(taskId: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; runs: TaskCheckRun[] }>(`/api/tasks/${taskId}/checks`);
+      taskChecks.value[taskId] = r.runs;
+    } catch {
+      /* non-fatal — the Debug tab falls back to whatever SSE has delivered */
+    }
+  }
+
+  /** Hydrate a task's log entries (Debug tab, 0310). */
+  async function refreshTaskLogs(taskId: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; logs: TaskLogEntry[] }>(`/api/tasks/${taskId}/logs`);
+      taskLogs.value[taskId] = r.logs;
+    } catch {
+      /* non-fatal — the Debug tab falls back to its empty state */
     }
   }
 
@@ -1736,6 +1791,10 @@ export const useRepoStore = defineStore("repo", () => {
     testRun,
     refreshTestRun,
     startTestRun,
+    taskChecks,
+    refreshTaskChecks,
+    taskLogs,
+    refreshTaskLogs,
     newVersion,
     restarting,
     pushToast,

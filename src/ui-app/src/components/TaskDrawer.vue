@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins, Bug } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -19,6 +19,7 @@ import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import DebugPanel from "./DebugPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -2465,6 +2466,15 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <Coins class="tab-icon" />
             Tokens
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'debug' }"
+            @click="ui.activeTab = 'debug'"
+          >
+            <Bug class="tab-icon" />
+            Debug
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -3218,6 +3228,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
           <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
             <p>No token or usage data yet.</p>
           </div>
+        </div>
+        <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
+          <DebugPanel v-if="ui.active" :task="ui.active" />
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
