@@ -1690,17 +1690,6 @@
   animation: cc-modal-in .22s cubic-bezier(.2,.8,.2,1);
 }
 
-/* Stop work confirm modal - centred overlay mirroring cc-modal */
-.stop-work-modal.drawer-wrap.drawer {
-  top: 50%; left: 50%; right: auto; bottom: auto;
-  width: min(400px, 90vw); height: auto;
-  transform: translate(-50%, -50%);
-  border-radius: 16px; border: 1px solid var(--border-bright);
-  background: var(--panel-gradient);
-  box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px var(--border);
-  overflow: hidden;
-  animation: cc-modal-in .22s cubic-bezier(.2,.8,.2,1);
-}
 .sm-modal-head {
   padding: 20px 24px 0; display: flex; align-items: flex-start; gap: 12px;
 }

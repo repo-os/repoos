@@ -391,12 +391,21 @@ async function confirmAbandonWork(): Promise<void> {
     // Close intentionally after the request so the result is not dependent
     // on whether the parent drawer survived the modal interaction.
     ui.close();
+    // Success: release the captured task. On failure we deliberately keep
+    // `stopWorkTask` so the user can dismiss and retry without reopening the
+    // drawer — clearing it here would make a retry report "No task selected".
+    stopWorkTask.value = null;
   } catch (err) {
     repo.onError(err);
   } finally {
     ui.saving = false;
-    stopWorkTask.value = null;
   }
+}
+
+/** Explicit cancel from the modal: close it and release the captured task. */
+function cancelAbandonWork(): void {
+  confirmStopWork.value = false;
+  stopWorkTask.value = null;
 }
 
 async function reopenTask(): Promise<void> {
@@ -3520,7 +3529,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
     :busy="ui.saving"
     @update:open="(v) => (confirmStopWork = v)"
     @confirm="confirmAbandonWork"
-    @cancel="() => (confirmStopWork = false)"
+    @cancel="cancelAbandonWork"
   />
 </template>
 

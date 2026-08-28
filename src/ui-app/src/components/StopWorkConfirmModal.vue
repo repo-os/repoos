@@ -2,6 +2,14 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "./ui/button.vue";
 
+/**
+ * Modal ownership stack. Every mounted stop-work modal registers itself here
+ * when open; only the top-most one reacts to ESC. Without this, multiple
+ * mounted modal instances would all dismiss on a single ESC keypress.
+ */
+const openStack: number[] = [];
+let modalSeq = 0;
+
 const props = defineProps<{ open: boolean; taskId: string | undefined; busy: boolean }>();
 
 const emit = defineEmits<{
@@ -10,21 +18,91 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-const cancelButton = ref<InstanceType<typeof Button> | null>(null);
+const myId = ++modalSeq;
+const modalEl = ref<HTMLElement | null>(null);
+let previouslyFocused: HTMLElement | null = null;
 
-function onKey(event: KeyboardEvent): void {
-  if (event.key === "Escape" && props.open) emit("cancel");
+function focusable(): HTMLElement[] {
+  if (!modalEl.value) return [];
+  return Array.from(
+    modalEl.value.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((el) => el.offsetParent !== null);
 }
 
-onMounted(() => window.addEventListener("keydown", onKey));
-onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
+/** Keep keyboard focus inside the modal while it is open. */
+function trapFocus(event: KeyboardEvent): void {
+  if (event.key !== "Tab") return;
+  const items = focusable();
+  if (items.length === 0) {
+    event.preventDefault();
+    modalEl.value?.focus();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement as HTMLElement | null;
+  if (event.shiftKey) {
+    if (!active || active === first || !modalEl.value!.contains(active)) {
+      event.preventDefault();
+      last.focus();
+    }
+  } else if (!active || active === last || !modalEl.value!.contains(active)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+/**
+ * ESC dismisses the modal, but only for the top-most open instance and never
+ * while a stop request is in flight (busy). The latter protects against
+ * vanishing mid-stop and the resulting "No task selected" dead-end on retry.
+ */
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key !== "Escape") return;
+  if (openStack[openStack.length - 1] !== myId) return;
+  event.preventDefault();
+  if (!props.busy) emit("cancel");
+}
+
+function onOverlayClick(): void {
+  if (!props.busy) emit("cancel");
+}
+
+function close(): void {
+  emit("cancel");
+}
+
+function confirm(): void {
+  emit("confirm");
+}
 
 watch(
   () => props.open,
   (open) => {
-    if (open) void nextTick(() => cancelButton.value?.$el?.focus());
+    if (open) {
+      previouslyFocused = document.activeElement as HTMLElement | null;
+      openStack.push(myId);
+      void nextTick(() => {
+        const items = focusable();
+        (items[0] ?? modalEl.value)?.focus();
+      });
+    } else {
+      const idx = openStack.indexOf(myId);
+      if (idx !== -1) openStack.splice(idx, 1);
+      previouslyFocused?.focus?.();
+      previouslyFocused = null;
+    }
   },
 );
+
+onMounted(() => window.addEventListener("keydown", onKeydown));
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onKeydown);
+  const idx = openStack.indexOf(myId);
+  if (idx !== -1) openStack.splice(idx, 1);
+});
 </script>
 
 <template>
@@ -32,13 +110,18 @@ watch(
     <div
       v-if="open"
       class="stop-work-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="stop-work-confirm-title"
-      aria-describedby="stop-work-confirm-description"
-      @click.self="emit('cancel')"
+      @click.self="onOverlayClick"
     >
-      <div class="stop-work-modal">
+      <div
+        ref="modalEl"
+        class="stop-work-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stop-work-confirm-title"
+        aria-describedby="stop-work-confirm-description"
+        tabindex="-1"
+        @keydown="trapFocus"
+      >
         <div class="stop-work-modal-head">
           <h3 id="stop-work-confirm-title" class="stop-work-title">Confirm Stop Work</h3>
           <button
@@ -46,7 +129,7 @@ watch(
             class="stop-work-close"
             aria-label="Close confirmation"
             :disabled="busy"
-            @click="emit('cancel')"
+            @click="close"
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -59,12 +142,11 @@ watch(
 
         <div class="stop-work-modal-actions">
           <Button
-            ref="cancelButton"
             type="button"
             variant="outline"
             size="sm"
             :disabled="busy"
-            @click="emit('cancel')"
+            @click="close"
           >
             Cancel
           </Button>
@@ -73,7 +155,7 @@ watch(
             variant="destructive"
             size="sm"
             :disabled="busy"
-            @click="emit('confirm')"
+            @click="confirm"
           >
             Stop Work
           </Button>
