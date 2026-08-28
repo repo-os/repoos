@@ -2,7 +2,7 @@
 id: "0310"
 title: Add debug tab to task panel
 type: feature
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-debug-tab-to-task-panel
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-08-27T06:18:58Z"
-updated_at: "2026-08-28T10:04:07Z"
+updated_at: "2026-08-28T14:31:28Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -85,3 +85,4 @@ Let's add a debug tab to the task panel next to the tokens tab. In this debug ta
 - 2026-08-28T10:03:24Z · cli_override, model_override
 - 2026-08-28T10:03:26Z · model_override
 - 2026-08-28T10:04:07Z · needs_input
+- 2026-08-28T14:31:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
