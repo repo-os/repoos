@@ -2,76 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
-import { nextTick } from "vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
-import type { Task } from "../src/types";
-
-const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
-
-const makeTask = (over: Partial<Task> = {}): Task => ({
-  id: "0001",
-  title: "Test task",
-  type: "bug",
-  status: "ready",
-  priority: "p1",
-  area: "web",
-  assignee: "ai",
-  assignedTo: "ai",
-  createdBy: "",
-  branch: "",
-  tags: [],
-  needsInput: false,
-  needsMerge: false,
-  created_at: null,
-  updated_at: null,
-  path: "work/0001-test.md",
-  absPath: "/tmp/repo/work/0001-test.md",
-  body: "",
-  extra: {},
-  agentOverride: null,
-  cliOverride: null,
-  modelOverride: null,
-  git: {
-    branchExists: false,
-    worktreeExists: false,
-    lastCommit: null,
-    lastCommitAt: null,
-    worktreePath: null,
-    dirty: false,
-  },
-  preview: null,
-  automaticReview: { running: false, enabled: false },
-  ...over,
-});
-
-class FakeEventSource {
-  static instances: FakeEventSource[] = [];
-  listeners = new Map<string, Array<(ev: { data: string }) => void>>();
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  constructor(public url: string) {
-    FakeEventSource.instances.push(this);
-  }
-  addEventListener(t: string, fn: (ev: { data: string }) => void): void {
-    const list = this.listeners.get(t) ?? [];
-    list.push(fn);
-    this.listeners.set(t, list);
-  }
-  close(): void {
-    /* noop */
-  }
-}
+import { EMPTY_COUNTS, makeTask, FakeEventSource, json, flush } from "./component-test-helpers";
 
 // jsdom has no Element.scrollTo; TaskDrawer calls it while streaming session output.
 (Element.prototype as unknown as { scrollTo: () => void }).scrollTo ??= () => {};
-
-const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
-
-async function flush(): Promise<void> {
-  for (let i = 0; i < 8; i++) await nextTick();
-}
 
 describe("Hotfix confirm dialog (#0295-adjacent latent bug)", () => {
   it("still activates the hotfix when the dialog dismissed the drawer", async () => {
