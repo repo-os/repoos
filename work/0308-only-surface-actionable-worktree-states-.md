@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-28T11:30:19Z"
+review_passes: 2
 id: "0308"
 title: Only surface actionable worktree states in the UI
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/only-surface-actionable-worktree-states-
 created_at: "2026-08-27T05:30:22Z"
-updated_at: "2026-08-28T11:29:01Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -47,3 +47,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 - 2026-08-28T11:27:23Z · status review→active
 - 2026-08-28T11:29:01Z · status active→review
 - 2026-08-28T11:29:01Z · status review→active
+
