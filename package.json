@@ -30,7 +30,8 @@
     "repoos": "bun src/cli/index.ts",
     "lint": "oxlint",
     "fmt": "oxfmt src/ui-app/src src/ui-app/vite.config.ts src/ui-app/tests",
-    "test": "vitest run --config src/ui-app/vite.config.ts",
+    "test": "node scripts/run-tests.mjs",
+    "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
     "screenshots": "bun run build && node scripts/capture-screenshots.mjs",
     "dev:preview": "bun run build && node scripts/dev-preview.mjs",
     "prepublishOnly": "npm run build"
