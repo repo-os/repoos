@@ -490,8 +490,7 @@
   .tc-stuck{color:var(--red)}
   .tc-stuck::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
   .task-card .tc-stuck::before{display:none}
-  .tc-dirty{color:var(--amber);font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:help}
-  .tc-dirty::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:4px;box-shadow:0 0 6px var(--amber)}
+
   @keyframes tcpulse{0%,100%{opacity:1}50%{opacity:.35}}
   .task-card.needs-input{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-tint);animation:needs-input-pulse 1.6s ease-in-out infinite}
   @keyframes needs-input-pulse{0%,100%{box-shadow:0 0 0 1px var(--amber-tint)}50%{box-shadow:0 0 0 3px var(--amber-tint)}}
