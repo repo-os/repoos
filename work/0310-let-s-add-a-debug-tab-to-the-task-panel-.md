@@ -2,14 +2,14 @@
 id: "0310"
 title: Add debug tab to task panel
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-debug-tab-to-task-panel
 created_at: "2026-08-27T06:18:58Z"
-updated_at: "2026-08-28T09:57:30Z"
+updated_at: "2026-08-28T10:20:40Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ Let's add a debug tab to the task panel next to the tokens tab. In this debug ta
 - 2026-08-27T09:23:16Z · body — added check-duration + live check-log tracking to the Debug tab, per follow-up request
 - 2026-08-27T09:31:19Z · status inbox→ready
 - 2026-08-28T09:57:30Z · status ready→active, branch
+- 2026-08-28T10:20:40Z · status active→review
