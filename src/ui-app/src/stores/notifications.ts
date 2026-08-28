@@ -61,7 +61,7 @@ function persist(s: PersistedSettings): void {
 
 /** Ready for a browser notification system when this is resolved. */
 function notificationsSupported(): boolean {
-  return typeof window !== "undefined" && "Notification" in window;
+  return typeof window !== "undefined" && "Notification" in window && Notification.requestPermission !== undefined;
 }
 
 /**
@@ -104,8 +104,18 @@ export async function ensurePushPermission(): Promise<boolean> {
   if (!notificationsSupported()) return false;
   if (Notification.permission === "granted") return true;
   if (Notification.permission === "denied") return false;
-  const res = await Notification.requestPermission();
-  return res === "granted";
+  
+  try {
+    // Handle both callback and promise-based APIs
+    if (typeof Notification.requestPermission === 'function') {
+      const res = await Notification.requestPermission();
+      return res === "granted";
+    }
+    return false;
+  } catch (err) {
+    console.warn("Failed to request notification permission:", err);
+    return false;
+  }
 }
 
 /** Deliver a browser notification. Best-effort and never throws. */
@@ -114,8 +124,9 @@ export function sendPush(title: string, body: string): void {
   if (Notification.permission !== "granted") return;
   try {
     new Notification(title, { body });
-  } catch {
+  } catch (err) {
     /* constructing a notification can throw in exotic environments — ignore */
+    console.warn("Failed to send notification:", err);
   }
 }
 
@@ -197,10 +208,17 @@ export const useNotificationsStore = defineStore("notifications", () => {
    * `permissionError` only on refusal.
    */
   async function requestPushPermission(): Promise<void> {
-    permissionError.value = "";
-    const granted = await ensurePushPermission();
-    if (!granted) {
-      permissionError.value = "Notification permission was not granted.";
+    try {
+      permissionError.value = "";
+      // Add a small delay to ensure UI updates before requesting permission
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const granted = await ensurePushPermission();
+      if (!granted) {
+        permissionError.value = "Notification permission was not granted.";
+      }
+    } catch (err) {
+      permissionError.value = "Failed to request notification permission.";
+      console.warn("Failed to request notification permission:", err);
     }
   }
 
