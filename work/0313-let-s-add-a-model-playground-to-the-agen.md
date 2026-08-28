@@ -2,18 +2,18 @@
 id: "0313"
 title: Model playground tab on the agents page
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/model-playground-tab-on-the-agents-page
 cli_override: claude code
 model_override: sonnet
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-28T10:10:55Z"
+updated_at: "2026-08-28T10:11:04Z"
 ---
 Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
 
@@ -39,3 +39,4 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 
 - 2026-08-27T14:35:13Z · title, body
 - 2026-08-28T10:10:55Z · review_model_override
+- 2026-08-28T10:11:04Z · status ready→active, branch
