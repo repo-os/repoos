@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureWorktree } from "../../core/git.js";
+import { ensureWorktree, listWorktrees } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
@@ -273,4 +273,34 @@ describe("publish-time dirty-main guard (#0211)", () => {
       }
     },
   );
+});
+
+describe("close-out candidate cleanup on failure (worktree leak)", () => {
+  it("removes the repoos/integrate/<id> worktree + branch when the job fails", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // Job for a task whose feature branch has no worktree — syncCandidate
+      // creates the candidate worktree, then fails the "feature worktree not
+      // found" check and routes through failOrReconcile.
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T9", branch: "feat/t9" } as any);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+      expect(result.ok).toBe(false);
+
+      // The candidate must not outlive the failed job.
+      const branches = listWorktrees(root).map((w) => w.branch);
+      expect(branches).not.toContain("repoos/integrate/T9");
+      expect(git(root, ["branch", "--list", "repoos/integrate/T9"])).toBe("");
+    } finally {
+      clean();
+    }
+  });
 });

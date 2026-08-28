@@ -14,6 +14,7 @@ import {
   cmdNote,
 } from "../commands/tasks.js";
 import { cmdNewDoc } from "../commands/docs.js";
+import { cmdGc } from "../commands/gc.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdServe } from "../commands/serve.js";
 import { cmdTunnel } from "../commands/tunnel.js";
@@ -72,6 +73,7 @@ function help(): void {
     ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority --body')}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
+    ${c.cyan("gc")} [--yes|--dry-run] Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
     ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
     ${c.cyan("upgrade")}              Self-update a standalone (curl-installed) repoos to the latest release
@@ -154,6 +156,9 @@ function main(): void {
     case "index":
     case "reindex":
       cmdIndex(rest);
+      break;
+    case "gc":
+      cmdGc(rest);
       break;
     case "serve":
     case "server":

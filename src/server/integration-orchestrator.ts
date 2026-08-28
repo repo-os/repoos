@@ -22,6 +22,7 @@ import {
   ensureWorktree,
   removeWorktree,
   deleteBranch,
+  pruneWorktrees,
   isGitRepo,
   commitTaskFile,
   commitDirtyFiles,
@@ -295,12 +296,32 @@ export class CloseOutOrchestrator {
    * failure, which is recorded as `failed` (and `onRecorded`, e.g. the merge-
    * conflict retry, runs) so the UI and status bar can surface it.
    */
+  /**
+   * Tear down the `repoos/integrate/<id>` candidate worktree + branch. Safe to
+   * call whether or not the candidate exists. The candidate is a throwaway
+   * scratch area rebuilt from scratch on the next run, so its branch is
+   * force-deleted (git will not see it as merged after a failed job).
+   *
+   * Runs on EVERY terminal job outcome — success (`cleanup`), genuine failure,
+   * and moot/reconciled — so a candidate never outlives its job. Without this,
+   * every failed close-out leaked a worktree that inflated cold-boot `git
+   * status` fan-out until someone ran gc.
+   */
+  private removeCandidate(taskId: string): void {
+    const root = this.config.root;
+    const branch = candidateBranchName(taskId);
+    removeWorktree(root, branch);
+    deleteBranch(root, branch, { force: true });
+    pruneWorktrees(root);
+  }
+
   private failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
     reason: string | undefined,
     onRecorded?: () => void,
   ): { ok: boolean; reason?: string } {
+    this.removeCandidate(job.taskId);
     if (this.taskIsDone(job.taskId)) {
       this.logger?.integration(
         job.taskId,
@@ -1017,19 +1038,24 @@ export class CloseOutOrchestrator {
 
   private async cleanup(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
-    const branch = candidateBranchName(job.taskId);
+    const featureBranch = job.branch ?? job.taskId;
 
-    // Remove candidate worktree.
-    removeWorktree(root, branch);
+    // Candidate worktree + throwaway branch.
+    this.removeCandidate(job.taskId);
 
-    // Delete candidate branch.
-    deleteBranch(root, branch);
-
-    // Remove task's feature worktree (if it still exists).
-    removeWorktree(root, job.branch ?? job.taskId);
-
-    // Delete task's feature branch.
-    deleteBranch(root, job.branch ?? job.taskId);
+    // Task's feature worktree + branch. The branch was just merged into main, so
+    // `-d` is correct; a false return means the worktree is still registered
+    // (leak) — log the path so a human/gc can see which one.
+    if (!removeWorktree(root, featureBranch)) {
+      const stuck = worktreePathForBranch(root, featureBranch);
+      this.logger?.integration(job.taskId, "warn", "feature worktree not removed at close-out", {
+        branch: featureBranch,
+        path: stuck ?? "unknown",
+      });
+      console.warn(`Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck ?? "unknown"})`);
+    }
+    deleteBranch(root, featureBranch);
+    pruneWorktrees(root);
 
     // Mark the task as done in the main checkout.
     //
