@@ -137,6 +137,100 @@ export async function lastCommitForFileAsync(
   return { subject: subject || null, date: date || null };
 }
 
+export type LastCommit = { subject: string | null; date: string | null };
+
+const DIR_LOG_REC = "\x1e";
+const DIR_LOG_FLD = "\x1f";
+
+/** Args for a single `git log` pass that reports the last commit per file. */
+function dirLogArgs(relDir: string): string[] {
+  return [
+    // Unicode-safe paths; never abbreviate task filenames.
+    "-c",
+    "core.quotePath=false",
+    "log",
+    // A rename would list only the new path anyway; skip the extra diffing.
+    "--no-renames",
+    // Print `--name-only` paths relative to cwd (== root) so they match
+    // `Task.path`, not relative to the repo toplevel when root is a subdir.
+    "--relative",
+    `--format=${DIR_LOG_REC}%s${DIR_LOG_FLD}%cI`,
+    "--name-only",
+    "--",
+    relDir,
+  ];
+}
+
+function parseDirLog(out: string | null): Map<string, LastCommit> {
+  const map = new Map<string, LastCommit>();
+  if (!out) return map;
+  // Newest commit first: the first chunk that touches a path wins.
+  for (const chunk of out.split(DIR_LOG_REC)) {
+    if (!chunk) continue;
+    const nl = chunk.indexOf("\n");
+    const header = nl === -1 ? chunk : chunk.slice(0, nl);
+    const sep = header.indexOf(DIR_LOG_FLD);
+    const subject = (sep === -1 ? header : header.slice(0, sep)) || null;
+    const date = (sep === -1 ? "" : header.slice(sep + 1)) || null;
+    if (nl === -1) continue;
+    for (const line of chunk.slice(nl + 1).split("\n")) {
+      const path = line.trim();
+      if (!path || map.has(path)) continue;
+      map.set(path, { subject, date });
+    }
+  }
+  return map;
+}
+
+/**
+ * Last commit subject + ISO date for EVERY tracked file under `relDir`, in a
+ * SINGLE `git log` pass. The indexer needs this for every task file; calling
+ * `lastCommitForFile` per task instead runs one full history walk per file,
+ * which was a large share of RepoOS's slow index build at 200+ tasks (#0271
+ * follow-up). Keys are paths relative to `root`, matching `Task.path`.
+ * Fail-soft: an empty map when git is missing or the walk fails.
+ */
+export function lastCommitsForDir(root: string, relDir: string): Map<string, LastCommit> {
+  return parseDirLog(git(root, dirLogArgs(relDir)));
+}
+
+/** Async counterpart of `lastCommitsForDir` - see `gitAsync`. */
+export async function lastCommitsForDirAsync(
+  root: string,
+  relDir: string,
+): Promise<Map<string, LastCommit>> {
+  return parseDirLog(await gitAsync(root, dirLogArgs(relDir)));
+}
+
+/**
+ * Turn on git's own fast-status machinery for `root` (and, since worktrees
+ * share `.git/config`, every task worktree cut from it). RepoOS runs
+ * `git status --porcelain` once per task worktree on every index build; on a
+ * large monorepo each of those is a full tree stat-walk. `core.fsmonitor`
+ * lets git's builtin file-system-monitor daemon (git ≥ 2.37, macOS/Windows/
+ * Linux) skip unchanged directories, and `core.untrackedCache` caches the
+ * per-directory untracked-file scan. Both are opt-in per repo and safe:
+ * git falls back to a full scan if the daemon is unavailable.
+ *
+ * Idempotent, best-effort, and cheap — call it once at startup. Skips any key
+ * already set to the desired value, so a repo that has been tuned once pays
+ * only two `git config --get` reads on subsequent boots.
+ */
+export function tuneRepoForScale(root: string): void {
+  if (!isGitRepo(root)) return;
+  for (const [key, value] of [
+    ["core.fsmonitor", "true"],
+    ["core.untrackedCache", "true"],
+  ]) {
+    try {
+      if (git(root, ["config", "--get", key]) === value) continue;
+      git(root, ["config", key, value]);
+    } catch {
+      /* best-effort: an old git or a read-only .git/config just means no speedup */
+    }
+  }
+}
+
 /**
  * True when git tracks `relPath` in the checkout at `root` and its working
  * copy matches HEAD — i.e. whatever the file currently shows is backed by a

@@ -83,6 +83,7 @@ import {
   resetWorktree,
   syncBranchWithMain,
   worktreePathForBranch,
+  tuneRepoForScale,
 } from "../core/git.js";
 import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
@@ -704,6 +705,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     config.auth = { ...config.auth, enabled: false };
   }
   const logger = createLogger(config.root);
+  // Best-effort: enable git's fsmonitor + untracked-cache so the per-worktree
+  // `git status` calls in every index build stop doing full tree scans.
+  tuneRepoForScale(config.root);
   const index = new LiveIndex(config);
   // Non-blocking: with 200+ tasks, the git-heavy full index build can take
   // several seconds even after parallelizing it (buildIndexAsync). Kicking it

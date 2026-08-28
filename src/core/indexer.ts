@@ -29,8 +29,8 @@ import { parseDocument } from "./frontmatter.js";
 import {
   isGitRepo,
   localBranches,
-  lastCommitForFile,
-  lastCommitForFileAsync,
+  lastCommitsForDir,
+  lastCommitsForDirAsync,
   worktreeStatus,
   worktreeStatusAsync,
   worktreePaths,
@@ -76,6 +76,11 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
   // hundreds of redundant git spawns (#0271 follow-up: this was a large
   // share of RepoOS's 20-30s boot time).
   const baseBranch = useGit ? currentBranch(config.root) : null;
+  // One `git log` pass for every task file's last commit, instead of one
+  // history walk per file inside the loop below (#0271 follow-up).
+  const lastCommits = useGit
+    ? lastCommitsForDir(config.root, config.workDir)
+    : new Map<string, { subject: string | null; date: string | null }>();
 
   let skippedTaskFiles = 0;
   const tasks: Task[] = files.flatMap((absPath) => {
@@ -97,7 +102,10 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
       git: emptyGitInfo(),
     });
     if (useGit) {
-      const { subject, date } = lastCommitForFile(config.root, base.path);
+      const { subject, date } = lastCommits.get(base.path) ?? {
+        subject: null,
+        date: null,
+      };
       const wt = base.branch
         ? worktreeStatus(config.root, base.branch, { worktrees, baseBranch })
         : { path: null, dirty: false };
@@ -179,6 +187,9 @@ export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> 
   const branches = useGit ? localBranches(config.root) : new Set<string>();
   const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
   const baseBranch = useGit ? currentBranch(config.root) : null;
+  const lastCommits = useGit
+    ? await lastCommitsForDirAsync(config.root, config.workDir)
+    : new Map<string, { subject: string | null; date: string | null }>();
 
   let skippedTaskFiles = 0;
   const tasks: Task[] = [];
@@ -209,12 +220,13 @@ export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> 
 
   if (useGit) {
     await runBounded(tasks, GIT_ENRICH_CONCURRENCY, async (base) => {
-      const [{ subject, date }, wt] = await Promise.all([
-        lastCommitForFileAsync(config.root, base.path),
-        base.branch
-          ? worktreeStatusAsync(config.root, base.branch, { worktrees, baseBranch })
-          : Promise.resolve({ path: null, dirty: false }),
-      ]);
+      const { subject, date } = lastCommits.get(base.path) ?? {
+        subject: null,
+        date: null,
+      };
+      const wt = base.branch
+        ? await worktreeStatusAsync(config.root, base.branch, { worktrees, baseBranch })
+        : { path: null, dirty: false };
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
         worktreeExists: base.branch ? worktrees.has(base.branch) : false,
