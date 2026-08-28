@@ -791,8 +791,9 @@ describe("extractUsage (0080)", () => {
         }),
       ),
     ).toEqual({ inputTokens: 4, outputTokens: 91, totalTokens: 95 });
-    // The terminal `result` reports the turn's authoritative numbers; the cache
-    // fields bill at different rates and must NOT be summed into the headline.
+    // The terminal `result` reports the turn's authoritative numbers. Cache
+    // read/creation are surfaced SEPARATELY (Phase 0) — they bill at different
+    // rates and must NOT be summed into the `totalTokens` headline.
     expect(
       extractUsage(
         JSON.stringify({
@@ -809,7 +810,14 @@ describe("extractUsage (0080)", () => {
           },
         }),
       ),
-    ).toEqual({ inputTokens: 4, outputTokens: 91, totalTokens: 95, costUsd: 0.0731223 });
+    ).toEqual({
+      inputTokens: 4,
+      outputTokens: 91,
+      totalTokens: 95,
+      costUsd: 0.0731223,
+      cacheReadTokens: 49071,
+      cacheCreationTokens: 9403,
+    });
   });
 
   it("returns an empty object when nothing usage-shaped is present", () => {

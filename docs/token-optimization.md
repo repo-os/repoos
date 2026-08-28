@@ -136,6 +136,11 @@ that subtask; otherwise delegation merely multiplies context and review cost.
 
 1. Persist normalized session usage, retry, validation, and outcome metrics by
    CLI/model/task class, while treating unavailable provider fields as unknown.
+   *(In progress: prompt-cache read/creation tokens are now captured per session
+   — `cacheReadTokens` / `cacheCreationTokens` in the sessions table, surfaced on
+   the task Tokens tab as a "cache hit" rate — so the effect of prompt structure
+   on caching is measurable before any restructuring work. NULL, never 0, when a
+   CLI reports no cache figures.)*
 2. Add per-CLI capability metadata: model discovery quality, resume support,
    output format, tool-permission model, and known limitations.
 3. Provide a human-reviewable routing suggestion based on local evidence and

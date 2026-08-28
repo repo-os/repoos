@@ -200,6 +200,10 @@ interface Session {
   tokens?: number;
   /** Best-effort cumulative cost (USD) reported by the CLI, or undefined if never reported. */
   costUsd?: number;
+  /** Cumulative prompt-cache read tokens, when the CLI reports them (Phase 0). */
+  cacheReadTokens?: number;
+  /** Cumulative prompt-cache creation tokens, when the CLI reports them. */
+  cacheCreationTokens?: number;
   /**
    * claude stream only (0109): a `tool_use` whose `tool_result` has not
    * arrived yet. claude emits the call and its result as separate events, so
@@ -330,8 +334,19 @@ export function estimateCostUsd(tokens?: number): number | undefined {
  * claude/qwen print). Returns only the fields it actually found — this must
  * never fabricate a number for a CLI that reports nothing.
  */
-export function extractUsage(raw: string): { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } {
-  const out: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } = {};
+export interface ExtractedUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
+  /** Input tokens served from the provider's prompt cache (~10% price). */
+  cacheReadTokens?: number;
+  /** Input tokens written to the prompt cache this turn (~125% price). */
+  cacheCreationTokens?: number;
+}
+
+export function extractUsage(raw: string): ExtractedUsage {
+  const out: ExtractedUsage = {};
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
@@ -344,6 +359,9 @@ export function extractUsage(raw: string): { inputTokens?: number; outputTokens?
       if (totalTokens !== undefined) out.totalTokens = totalTokens;
       const cost = costFromObject(obj);
       if (cost !== undefined) out.costUsd = cost;
+      const cache = cacheTokensFromObject(obj);
+      if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
+      if (cache.cacheCreationTokens !== undefined) out.cacheCreationTokens = cache.cacheCreationTokens;
     }
   } catch {
     /* not JSON — fall through to text patterns below */
@@ -383,15 +401,16 @@ export function extractUsage(raw: string): { inputTokens?: number; outputTokens?
  * streaming engineer runner does. Never fabricates a number — absent fields are
  * simply left untouched.
  */
-export function foldUsage(
-  total: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number },
-  raw: string,
-): void {
+export function foldUsage(total: ExtractedUsage, raw: string): void {
   const found = extractUsage(raw);
   if (found.inputTokens !== undefined) total.inputTokens = Math.max(total.inputTokens ?? 0, found.inputTokens);
   if (found.outputTokens !== undefined) total.outputTokens = Math.max(total.outputTokens ?? 0, found.outputTokens);
   if (found.totalTokens !== undefined) total.totalTokens = Math.max(total.totalTokens ?? 0, found.totalTokens);
   if (found.costUsd !== undefined) total.costUsd = Math.max(total.costUsd ?? 0, found.costUsd);
+  if (found.cacheReadTokens !== undefined)
+    total.cacheReadTokens = Math.max(total.cacheReadTokens ?? 0, found.cacheReadTokens);
+  if (found.cacheCreationTokens !== undefined)
+    total.cacheCreationTokens = Math.max(total.cacheCreationTokens ?? 0, found.cacheCreationTokens);
 }
 
 /**
@@ -470,11 +489,15 @@ function findUsage(obj: Record<string, unknown>): Record<string, unknown> | unde
     const tokens = p.tokens;
     if (tokens && typeof tokens === "object") {
       const t = tokens as Record<string, unknown>;
+      // opencode nests cache counts under `tokens.cache = { read, write }`.
+      const cache = (t.cache && typeof t.cache === "object" ? t.cache : {}) as Record<string, unknown>;
       return {
         ...(typeof t.input === "number" ? { input_tokens: t.input } : {}),
         ...(typeof t.output === "number" ? { output_tokens: t.output } : {}),
         ...(typeof t.total === "number" ? { total_tokens: t.total } : {}),
         ...(typeof p.cost === "number" ? { cost_usd: p.cost } : {}),
+        ...(typeof cache.read === "number" ? { cache_read_input_tokens: cache.read } : {}),
+        ...(typeof cache.write === "number" ? { cache_creation_input_tokens: cache.write } : {}),
       };
     }
   }
@@ -513,6 +536,32 @@ function costFromObject(obj: Record<string, unknown>): number | undefined {
     if (typeof usage.total_cost_usd === "number") return usage.total_cost_usd;
   }
   return undefined;
+}
+
+/**
+ * Prompt-cache token counts from a `usage`-shaped object. Provider field names
+ * vary; `findUsage` already normalizes opencode's `part.tokens.cache.{read,
+ * write}`. Claude: `cache_read_input_tokens` / `cache_creation_input_tokens`.
+ * Codex: `cached_input_tokens` (read only). All absent when a CLI reports no
+ * cache figures — never fabricated.
+ */
+function cacheTokensFromObject(obj: Record<string, unknown>): {
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
+} {
+  const usage = findUsage(obj);
+  if (!usage) return {};
+  const num = (v: unknown): number | undefined => (typeof v === "number" && v >= 0 ? v : undefined);
+  const read =
+    num(usage.cache_read_input_tokens) ??
+    num(usage.cached_input_tokens) ??
+    num(usage.cache_read_tokens);
+  const creation =
+    num(usage.cache_creation_input_tokens) ?? num(usage.cache_creation_tokens);
+  const out: { cacheReadTokens?: number; cacheCreationTokens?: number } = {};
+  if (read !== undefined) out.cacheReadTokens = read;
+  if (creation !== undefined) out.cacheCreationTokens = creation;
+  return out;
 }
 
 /** On-disk transcript schema. Bump when persisted fields change incompatibly. */
@@ -1682,6 +1731,8 @@ export interface PromptResult {
   outputTokens?: number;
   totalTokens?: number;
   costUsd?: number;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
 }
 
 /** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
@@ -1910,7 +1961,7 @@ export function runPrompt(
     // tokens/cost instead of zeros (0230). `costUsd` holds Kiro credits when
     // this is a Kiro session (extractUsage maps its credits footer) — callers
     // must present it as credits, never as USD.
-    const usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number; costUsd?: number } = {};
+    const usage: ExtractedUsage = {};
     const forwardChunk = (c: Buffer): void => {
       out.push(c);
       pending += c.toString("utf8").replace(/\r/g, "\n");
@@ -1959,6 +2010,8 @@ export function runPrompt(
         outputTokens: usage.outputTokens,
         totalTokens: usage.totalTokens,
         costUsd: usage.costUsd,
+        cacheReadTokens: usage.cacheReadTokens,
+        cacheCreationTokens: usage.cacheCreationTokens,
       };
       if (output) {
         resolve({ ok: true, output, ...usageFields });
@@ -2026,6 +2079,8 @@ export function recordOneShotSession(
       inputTokens: result.inputTokens ?? undefined,
       outputTokens: result.outputTokens ?? undefined,
       totalTokens,
+      cacheReadTokens: result.cacheReadTokens ?? undefined,
+      cacheCreationTokens: result.cacheCreationTokens ?? undefined,
       costUsd,
       costSource,
       status: result.ok ? "finished" : "errored",
@@ -3313,6 +3368,20 @@ export class AgentRunner {
         changed = true;
       }
     }
+    if (found.cacheReadTokens !== undefined) {
+      const next = Math.max(session.cacheReadTokens ?? 0, found.cacheReadTokens);
+      if (next !== session.cacheReadTokens) {
+        session.cacheReadTokens = next;
+        changed = true;
+      }
+    }
+    if (found.cacheCreationTokens !== undefined) {
+      const next = Math.max(session.cacheCreationTokens ?? 0, found.cacheCreationTokens);
+      if (next !== session.cacheCreationTokens) {
+        session.cacheCreationTokens = next;
+        changed = true;
+      }
+    }
     return changed;
   }
 
@@ -3474,6 +3543,8 @@ export class AgentRunner {
       const inputTokens = session.inputTokens ?? undefined;
       const outputTokens = session.outputTokens ?? undefined;
       const totalTokens = session.tokens ?? undefined;
+      const cacheReadTokens = session.cacheReadTokens ?? undefined;
+      const cacheCreationTokens = session.cacheCreationTokens ?? undefined;
       let costUsd = session.costUsd ?? undefined;
       let costSource = "none";
       const isKiro = session.engine === "kiro";
@@ -3505,6 +3576,8 @@ export class AgentRunner {
         inputTokens,
         outputTokens,
         totalTokens,
+        cacheReadTokens,
+        cacheCreationTokens,
         costUsd,
         costSource,
         status,

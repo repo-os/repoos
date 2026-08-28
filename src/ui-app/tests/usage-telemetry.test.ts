@@ -87,6 +87,27 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.costUsd).toBeCloseTo(0.05, 10);
   });
 
+  it("extracts prompt-cache tokens from claude's usage shape (Phase 0)", () => {
+    const u = extractUsage(
+      '{"message":{"usage":{"input_tokens":120,"output_tokens":40,"cache_read_input_tokens":9000,"cache_creation_input_tokens":250}}}',
+    );
+    expect(u.inputTokens).toBe(120);
+    expect(u.cacheReadTokens).toBe(9000);
+    expect(u.cacheCreationTokens).toBe(250);
+  });
+
+  it("maps codex's cached_input_tokens to cacheReadTokens", () => {
+    const u = extractUsage('{"usage":{"input_tokens":300,"output_tokens":50,"cached_input_tokens":2048}}');
+    expect(u.cacheReadTokens).toBe(2048);
+    expect(u.cacheCreationTokens).toBeUndefined();
+  });
+
+  it("leaves cache fields undefined when a CLI reports none", () => {
+    const u = extractUsage('{"usage":{"input_tokens":10,"output_tokens":20}}');
+    expect(u.cacheReadTokens).toBeUndefined();
+    expect(u.cacheCreationTokens).toBeUndefined();
+  });
+
   it("extracts tokens/cost from opencode's step_finish event (part.tokens, not usage)", () => {
     // Captured from a real `opencode run --format json` session — opencode
     // nests usage under `part.tokens.{total,input,output}` and `part.cost`,
@@ -100,6 +121,8 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.outputTokens).toBe(41);
     expect(u.totalTokens).toBe(8339);
     expect(u.costUsd).toBeCloseTo(0.02, 10);
+    expect(u.cacheReadTokens).toBe(1024);
+    expect(u.cacheCreationTokens).toBe(0);
   });
 
   it("never fabricates numbers for output with no usage", () => {
@@ -235,6 +258,36 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     // can label estimates/credits honestly (0230 / review).
     expect(eng.costSource).toBe("extractUsage");
     expect(stats!.costSource).toBe("extractUsage");
+    db.close();
+  });
+
+  it("round-trips prompt-cache tokens and sums them per task (Phase 0)", () => {
+    const root = tempRoot();
+    const db = new RepoOSDb(root);
+    const ended = new Date().toISOString();
+    const base = {
+      sessionType: "engineer",
+      taskId: "0007",
+      agent: "engineer",
+      model: "default",
+      codingAgent: "claude code",
+      startedAt: ended,
+      endedAt: ended,
+      elapsedMs: 1000,
+      status: "finished",
+      lastActivityAt: ended,
+    };
+    db.upsertSession({ ...base, sessionId: "c-1", inputTokens: 100, cacheReadTokens: 9000, cacheCreationTokens: 200 });
+    db.upsertSession({ ...base, sessionId: "c-2", inputTokens: 50, cacheReadTokens: 4000 });
+    // A session whose CLI reported no cache figures — must stay NULL, not 0.
+    db.upsertSession({ ...base, sessionId: "c-3", inputTokens: 20 });
+
+    const stats = db.getTaskStats("0007")!;
+    expect(stats.totalCacheReadTokens).toBe(13000);
+    expect(stats.totalCacheCreationTokens).toBe(200);
+    const rows = db.getTaskSessions("0007");
+    expect(rows.find((r) => r.sessionId === "c-3")!.cacheReadTokens).toBeNull();
+    expect(rows.find((r) => r.sessionId === "c-1")!.cacheReadTokens).toBe(9000);
     db.close();
   });
 

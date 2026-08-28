@@ -158,6 +158,16 @@ const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    // Prompt-cache token visibility (Phase 0). Nullable — left NULL for any
+    // session whose CLI reported no cache figures, and for every row that
+    // predates this migration.
+    version: 3,
+    up: `
+      ALTER TABLE sessions ADD COLUMN cacheReadTokens INTEGER;
+      ALTER TABLE sessions ADD COLUMN cacheCreationTokens INTEGER;
+    `,
+  },
 ];
 
 /** Singleton database instance. */
@@ -177,6 +187,10 @@ export interface SessionRecord {
   inputTokens: number | null;
   outputTokens: number | null;
   totalTokens: number | null;
+  /** Input tokens served from the provider's prompt cache; null if unreported. */
+  cacheReadTokens: number | null;
+  /** Input tokens written to the prompt cache this session; null if unreported. */
+  cacheCreationTokens: number | null;
   costUsd: number | null;
   costSource: string;
   status: string;
@@ -191,6 +205,8 @@ export interface TaskStats {
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
+  totalCacheReadTokens: number | null;
+  totalCacheCreationTokens: number | null;
   totalCostUsd: number | null;
   /** Representative cost source for the task's sessions ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
   costSource: string;
@@ -208,6 +224,8 @@ export interface TaskRoleStats {
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
+  totalCacheReadTokens: number | null;
+  totalCacheCreationTokens: number | null;
   totalCostUsd: number | null;
   costSource: string;
 }
@@ -233,6 +251,8 @@ export interface SessionTypeStats {
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
+  totalCacheReadTokens: number | null;
+  totalCacheCreationTokens: number | null;
   totalCostUsd: number | null;
   costSource: string;
 }
@@ -335,6 +355,8 @@ export class RepoOSDb {
     inputTokens?: number | null;
     outputTokens?: number | null;
     totalTokens?: number | null;
+    cacheReadTokens?: number | null;
+    cacheCreationTokens?: number | null;
     costUsd?: number | null;
     costSource?: string;
     status?: string;
@@ -346,14 +368,17 @@ export class RepoOSDb {
         INSERT INTO sessions (
           sessionId, sessionType, taskId, agent, model, codingAgent,
           startedAt, endedAt, elapsedMs, inputTokens, outputTokens, totalTokens,
+          cacheReadTokens, cacheCreationTokens,
           costUsd, costSource, status, lastActivityAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(sessionId) DO UPDATE SET
           endedAt = excluded.endedAt,
           elapsedMs = excluded.elapsedMs,
           inputTokens = COALESCE(excluded.inputTokens, inputTokens),
           outputTokens = COALESCE(excluded.outputTokens, outputTokens),
           totalTokens = COALESCE(excluded.totalTokens, totalTokens),
+          cacheReadTokens = COALESCE(excluded.cacheReadTokens, cacheReadTokens),
+          cacheCreationTokens = COALESCE(excluded.cacheCreationTokens, cacheCreationTokens),
           costUsd = COALESCE(excluded.costUsd, costUsd),
           costSource = excluded.costSource,
           status = excluded.status,
@@ -374,6 +399,8 @@ export class RepoOSDb {
         session.inputTokens ?? null,
         session.outputTokens ?? null,
         session.totalTokens ?? null,
+        session.cacheReadTokens ?? null,
+        session.cacheCreationTokens ?? null,
         session.costUsd ?? null,
         session.costSource ?? "none",
         session.status ?? "active",
@@ -419,6 +446,8 @@ export class RepoOSDb {
         totalInputTokens: agg.totalInputTokens,
         totalOutputTokens: agg.totalOutputTokens,
         totalTokens: agg.totalTokens,
+        totalCacheReadTokens: agg.totalCacheReadTokens,
+        totalCacheCreationTokens: agg.totalCacheCreationTokens,
         totalCostUsd: agg.totalCostUsd,
         costSource: agg.costSource,
         roles: this.groupRows(rows, (r) => r.sessionType)
@@ -486,6 +515,8 @@ export class RepoOSDb {
             totalInputTokens: agg.totalInputTokens,
             totalOutputTokens: agg.totalOutputTokens,
             totalTokens: agg.totalTokens,
+            totalCacheReadTokens: agg.totalCacheReadTokens,
+            totalCacheCreationTokens: agg.totalCacheCreationTokens,
             totalCostUsd: agg.totalCostUsd,
             costSource: agg.costSource,
           };
@@ -518,6 +549,8 @@ export class RepoOSDb {
       totalInputTokens: agg.totalInputTokens,
       totalOutputTokens: agg.totalOutputTokens,
       totalTokens: agg.totalTokens,
+      totalCacheReadTokens: agg.totalCacheReadTokens,
+      totalCacheCreationTokens: agg.totalCacheCreationTokens,
       totalCostUsd: agg.totalCostUsd,
       costSource: agg.costSource,
     };
@@ -535,6 +568,8 @@ export class RepoOSDb {
     totalInputTokens: number | null;
     totalOutputTokens: number | null;
     totalTokens: number | null;
+    totalCacheReadTokens: number | null;
+    totalCacheCreationTokens: number | null;
     totalCostUsd: number | null;
     costSource: string;
   } {
@@ -543,6 +578,8 @@ export class RepoOSDb {
     let totalInputTokens: number | null = null;
     let totalOutputTokens: number | null = null;
     let totalTokens: number | null = null;
+    let totalCacheReadTokens: number | null = null;
+    let totalCacheCreationTokens: number | null = null;
     let totalCostUsd: number | null = null;
     const sources = new Set<string>();
     for (const r of rows) {
@@ -551,6 +588,10 @@ export class RepoOSDb {
       if (r.inputTokens != null) totalInputTokens = (totalInputTokens ?? 0) + r.inputTokens;
       if (r.outputTokens != null) totalOutputTokens = (totalOutputTokens ?? 0) + r.outputTokens;
       if (r.totalTokens != null) totalTokens = (totalTokens ?? 0) + r.totalTokens;
+      if (r.cacheReadTokens != null)
+        totalCacheReadTokens = (totalCacheReadTokens ?? 0) + r.cacheReadTokens;
+      if (r.cacheCreationTokens != null)
+        totalCacheCreationTokens = (totalCacheCreationTokens ?? 0) + r.cacheCreationTokens;
       if (r.costUsd != null) {
         totalCostUsd = (totalCostUsd ?? 0) + r.costUsd;
         sources.add(r.costSource || "extractUsage");
@@ -565,6 +606,8 @@ export class RepoOSDb {
       totalInputTokens,
       totalOutputTokens,
       totalTokens,
+      totalCacheReadTokens,
+      totalCacheCreationTokens,
       totalCostUsd,
       costSource,
     };

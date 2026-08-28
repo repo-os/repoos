@@ -300,6 +300,8 @@ export interface RoleUsage {
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
+  totalCacheReadTokens?: number | null;
+  totalCacheCreationTokens?: number | null;
   totalCostUsd: number | null;
   /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
   costSource: string;
@@ -316,7 +318,13 @@ export interface SessionUsage {
   startedAt: string;
   endedAt: string | null;
   elapsedMs: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
   totalTokens: number | null;
+  /** Input tokens served from the provider's prompt cache; null if the CLI didn't report it. */
+  cacheReadTokens: number | null;
+  /** Input tokens written to the prompt cache this session; null if unreported. */
+  cacheCreationTokens: number | null;
   costUsd: number | null;
   costSource: string;
   status: string;
@@ -330,6 +338,8 @@ export interface TaskUsageStats {
   totalInputTokens: number | null;
   totalOutputTokens: number | null;
   totalTokens: number | null;
+  totalCacheReadTokens: number | null;
+  totalCacheCreationTokens: number | null;
   totalCostUsd: number | null;
   costSource: string;
   roles: RoleUsage[];

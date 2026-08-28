@@ -1509,6 +1509,23 @@ function fmtCost(usd: number | null | undefined, source?: string): string {
   return `$${n}`;
 }
 
+/**
+ * Prompt-cache hit rate as a percent string: cached input ÷ all input. `null`
+ * when no CLI in the set reported cache figures (so the column stays "—"
+ * rather than implying a real 0%).
+ */
+function cacheHitPct(
+  input: number | null | undefined,
+  read: number | null | undefined,
+  creation: number | null | undefined,
+): string {
+  if (read == null && creation == null) return "—";
+  const r = read ?? 0;
+  const denom = (input ?? 0) + r + (creation ?? 0);
+  if (denom <= 0) return "—";
+  return `${Math.round((r / denom) * 100)}%`;
+}
+
 /** "Aug 20, 3:14 PM" — local time, for a session's start/end timestamp. */
 function fmtSessionTime(iso: string | null): string {
   if (!iso) return "—";
@@ -3106,6 +3123,19 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 <span class="agent-stat-label">total tokens</span>
                 <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
               </span>
+              <span
+                class="agent-stat"
+                title="Input tokens served from the provider's prompt cache ÷ all input tokens, summed across this task's sessions. '—' when no CLI reported cache figures."
+              >
+                <span class="agent-stat-label">cache hit</span>
+                <span class="agent-stat-value">{{
+                  cacheHitPct(
+                    taskUsage.totalInputTokens,
+                    taskUsage.totalCacheReadTokens,
+                    taskUsage.totalCacheCreationTokens,
+                  )
+                }}</span>
+              </span>
               <span class="agent-stat">
                 <span class="agent-stat-label">total cost</span>
                 <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
@@ -3150,6 +3180,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <th class="ta-left">ended</th>
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
+                      <th class="ta-right" title="Cached input tokens (share of this session's input served from the prompt cache)">cache</th>
                       <th class="ta-right">cost</th>
                     </tr>
                   </thead>
@@ -3173,6 +3204,10 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>
                       <td class="ta-right">{{ fmtElapsed(s.elapsedMs) }}</td>
                       <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
+                      <td
+                        class="ta-right"
+                        :title="`${cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens)} of input cached` + (s.cacheCreationTokens ? ` · ${fmtTokens(s.cacheCreationTokens)} written` : '')"
+                      >{{ fmtTokens(s.cacheReadTokens) }}</td>
                       <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
                     </tr>
                   </tbody>
