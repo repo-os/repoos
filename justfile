@@ -2,7 +2,7 @@
 default:
     @just --list
 
-# serve on nohup `just serve` (Bun: `REPOOS_RUNTIME=bun just restart`)
+# serve on nohup `just serve` (runs under Bun if present; REPOOS_RUNTIME=node to force Node)
 serve:
     nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
@@ -18,11 +18,11 @@ commit message:
 check:
     repoos check
 
-# run the test suite under Bun (~5x faster than Node) `just test` / `just test runtime`
+# run the test suite under Bun (~5x faster) `just test` / `just test runtime`
 test *args:
     bun run --bun test -- {{args}}
 
-# run the test suite under Node `just test-node`
+# run the test suite under Node (the pre-Bun path) `just test-node`
 test-node *args:
     bun run test -- {{args}}
 
