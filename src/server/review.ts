@@ -36,7 +36,7 @@ import {
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
+import { commitTaskFile, currentBranch, headCommitISO, worktreePathForBranch } from "../core/git.js";
 import { parseTask, utcTimestamp } from "../core/task.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
@@ -701,6 +701,59 @@ export class ReviewManager {
       }, REVIEW_TIMEOUT_MS);
       run.timer.unref?.();
       this.runs.set(taskId, run);
+    }
+  }
+
+  /**
+   * Re-spawn reviews that a real (non-reload) server shutdown killed. On
+   * shutdown `handle.close()` runs `reviews.cancelAll()`, which SIGKILLs every
+   * in-flight review agent (unlike the engineer, which is left running and
+   * re-adopted by PID). The next boot's `adoptRunningAgents()` then finds
+   * nothing to re-attach, so the task sits in `review` forever with a stale or
+   * missing report. This closes that gap — the review equivalent of
+   * `recoverPendingHandoffs()`.
+   *
+   * A task is re-reviewed when it is in `review`, has a reviewer enabled and a
+   * worktree, is not already running/adopted, was not deliberately cancelled,
+   * AND its stored report is missing or older than the branch's HEAD commit
+   * (i.e. the engineer pushed a fix the report never saw). Runs are staggered
+   * so a batch doesn't spawn every reviewer at once.
+   *
+   * Must be called AFTER the index has populated — it reads `index.getTasks()`.
+   */
+  recoverInterruptedReviews(tasks: Task[]): void {
+    let delay = 0;
+    for (const task of tasks) {
+      if (task.status !== "review") continue;
+      if (this.isRunning(task.id)) continue;
+      if (this.isCancelled(task.id)) continue;
+      if (!task.branch) continue;
+      if (!resolveReviewerForTask(this.config, task)) continue;
+      const workdir = worktreePathForBranch(this.config.root, task.branch);
+      if (!workdir) continue;
+
+      const report = this.read(task.id);
+      const headAt = headCommitISO(workdir);
+      const stale =
+        !report ||
+        !report.at ||
+        (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
+      if (!stale) continue;
+
+      this.appendMarker(
+        task.id,
+        report
+          ? "re-reviewing — the previous review was interrupted and the branch has newer commits"
+          : "re-reviewing — the previous review was interrupted before writing a report",
+      );
+      setTimeout(() => {
+        // Guard again at fire time: a concurrent auto-review (engineer.exited)
+        // or a human "Review again" may have started one in the interim.
+        if (this.isRunning(task.id)) return;
+        const fresh = this.index?.getTask(task.id) ?? task;
+        if (fresh.status === "review") void this.run(fresh);
+      }, delay).unref?.();
+      delay += 3000;
     }
   }
 

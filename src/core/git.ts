@@ -23,6 +23,25 @@ function git(root: string, args: string[]): string | null {
 }
 
 /**
+ * Blocking `git` that also hands back the exit status and stderr — `git()`
+ * collapses every failure to `null`, which is fine for reads but loses the
+ * information `removeWorktree` needs to tell "already gone" from "refused
+ * because the branch is checked out elsewhere".
+ */
+function gitCapture(root: string, args: string[]): GitRun {
+  const run = spawnSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    timeout: 4000,
+  });
+  return {
+    status: run.status,
+    stdout: run.stdout ?? "",
+    stderr: run.stderr ?? (run.error ? `${run.error.message}\n` : ""),
+  };
+}
+
+/**
  * Non-blocking counterpart of `git()`. Lets a caller enriching many tasks
  * (e.g. `buildIndexAsync`) run their git spawns concurrently instead of
  * one at a time on the main thread — each `execFileSync` call above blocks
@@ -94,6 +113,11 @@ export function isGitRepo(root: string): boolean {
 
 export function currentBranch(root: string): string | null {
   return git(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
+}
+
+/** ISO-8601 commit date of HEAD at `root` (a worktree or the main checkout), or null. */
+export function headCommitISO(root: string): string | null {
+  return git(root, ["log", "-1", "--format=%cI"]) || null;
 }
 
 /** Set of local branch names, fetched once and reused across tasks. */
@@ -331,6 +355,60 @@ export function worktreeList(root: string): Map<string, WorktreeEntry> {
     }
   }
   return map;
+}
+
+export interface WorktreeInfo {
+  /** Absolute path of the linked worktree (as git reports it). */
+  path: string;
+  /** Checked-out branch, or null for a detached HEAD. */
+  branch: string | null;
+  /** The commit SHA the worktree currently has checked out. */
+  head: string;
+  /** True for the repository's own main checkout (`git worktree list` lists it first). */
+  isMain: boolean;
+  /** True for a bare repository entry. */
+  isBare: boolean;
+}
+
+/**
+ * Every entry from `git worktree list --porcelain`, including detached-HEAD and
+ * bare entries that `worktreeList` (branch-keyed) necessarily drops. The garbage
+ * collector needs the full picture so it can also prune worktrees that lost
+ * their branch ref. Empty when git is missing.
+ */
+export function listWorktrees(root: string): WorktreeInfo[] {
+  const out = git(root, ["worktree", "list", "--porcelain"]);
+  const infos: WorktreeInfo[] = [];
+  if (!out) return infos;
+  let cur: Partial<WorktreeInfo> | null = null;
+  const flush = (): void => {
+    if (cur?.path) {
+      infos.push({
+        path: cur.path,
+        branch: cur.branch ?? null,
+        head: cur.head ?? "",
+        isMain: infos.length === 0,
+        isBare: cur.isBare ?? false,
+      });
+    }
+    cur = null;
+  };
+  for (const line of out.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      flush();
+      cur = { path: line.slice("worktree ".length).trim() };
+    } else if (!cur) {
+      continue;
+    } else if (line.startsWith("HEAD ")) {
+      cur.head = line.slice("HEAD ".length).trim();
+    } else if (line.startsWith("branch refs/heads/")) {
+      cur.branch = line.slice("branch refs/heads/".length).trim();
+    } else if (line.trim() === "bare") {
+      cur.isBare = true;
+    }
+  }
+  flush();
+  return infos;
 }
 
 /**
@@ -1283,25 +1361,62 @@ export async function syncBranchWithMain(
 
 /**
  * Delete a local branch. The close-out flow only ever deletes a branch that
- * was just merged into main, so `-d` (refuses unless fully merged) is correct.
+ * was just merged into main, so `-d` (refuses unless fully merged) is the
+ * default. Pass `force: true` for a throwaway branch (a `repoos/integrate/*`
+ * candidate) that git will not see as merged.
  * Fail-soft: false when the branch is gone, not merged, or git is missing —
  * the caller treats it as best-effort cleanup.
  */
-export function deleteBranch(root: string, branch: string): boolean {
-  return git(root, ["branch", "-d", branch]) !== null;
+export function deleteBranch(
+  root: string,
+  branch: string,
+  opts: { force?: boolean } = {},
+): boolean {
+  return git(root, ["branch", opts.force ? "-D" : "-d", branch]) !== null;
+}
+
+/** `git worktree prune` — clears metadata for worktrees whose directory is gone. */
+export function pruneWorktrees(root: string): void {
+  git(root, ["worktree", "prune"]);
 }
 
 /**
- * Remove the linked worktree for `branch`. Forced when dirty — content is
- * preserved in the merged main, so nothing is lost. Tolerates an already-gone
- * worktree and prunes stale metadata if the first attempt fails.
+ * Remove the linked worktree for `branch` and make sure it is really gone.
+ * Forced when dirty — close-out content is preserved in the merged main, so
+ * nothing is lost.
+ *
+ * Handles the two states a leak actually shows up in:
+ *  - directory + metadata present   -> `git worktree remove --force`
+ *  - directory gone, metadata stale -> `remove` fails ("is not a working
+ *    tree"), so fall back to `git worktree prune`, then `rm -rf` any leftover
+ *    directory and prune once more.
+ *
+ * Returns false (without forcing anything) when `branch` is checked out in a
+ * DIFFERENT worktree than expected, or is the main checkout — the caller asked
+ * to remove the wrong thing.
  */
 export function removeWorktree(root: string, branch: string): boolean {
   const path = worktreePaths(root).get(branch);
   if (!path) return true;
-  if (git(root, ["worktree", "remove", "--force", path]) !== null) return true;
-  git(root, ["worktree", "prune"]);
-  return git(root, ["worktree", "remove", "--force", path]) !== null;
+  let realRoot = root;
+  try { realRoot = realpathSync(root); } catch { /* keep */ }
+  try { if (realpathSync(path) === realRoot) return false; } catch { /* dir gone — safe to continue */ }
+
+  const first = gitCapture(root, ["worktree", "remove", "--force", path]);
+  if (first.status === 0) return true;
+  if (/is a main working tree|checked out at/i.test(first.stderr)) return false;
+
+  pruneWorktrees(root);
+  const second = gitCapture(root, ["worktree", "remove", "--force", path]);
+  if (second.status === 0) return true;
+
+  // Last resort: the registration is stale AND a directory is in the way.
+  if (existsSync(path)) {
+    try { rmSync(path, { recursive: true, force: true }); } catch { /* best-effort */ }
+  }
+  pruneWorktrees(root);
+  // Success == the branch no longer resolves to any registered worktree.
+  return !worktreePaths(root).has(branch);
 }
 
 export interface EnsureHotfixResult {

@@ -2,17 +2,14 @@
 id: "0310"
 title: Add debug tab to task panel
 type: feature
-status: ready
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-debug-tab-to-task-panel
-cli_override: claude code
-model_override: sonnet
 created_at: "2026-08-27T06:18:58Z"
-updated_at: "2026-08-28T14:31:28Z"
-dev_error_count: 1
+updated_at: "2026-08-28T10:30:14Z"
 ---
 ## Problem
 
@@ -81,8 +78,5 @@ Let's add a debug tab to the task panel next to the tokens tab. In this debug ta
 - 2026-08-27T09:23:16Z · body — added check-duration + live check-log tracking to the Debug tab, per follow-up request
 - 2026-08-27T09:31:19Z · status inbox→ready
 - 2026-08-28T09:57:30Z · status ready→active, branch
-- 2026-08-28T10:01:21Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-08-28T10:03:24Z · cli_override, model_override
-- 2026-08-28T10:03:26Z · model_override
-- 2026-08-28T10:04:07Z · needs_input
-- 2026-08-28T14:31:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-08-28T10:20:40Z · status active→review
+- 2026-08-28T10:30:14Z · status review→done, release:success

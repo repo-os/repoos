@@ -1,17 +1,16 @@
 ---
-updated_at: "2026-08-28T14:31:27Z"
-review_passes: 1
+updated_at: "2026-08-28T16:13:13Z"
+review_passes: 3
 id: "0313"
 title: Model playground tab on the agents page
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/model-playground-tab-on-the-agents-page
-cli_override: claude code
-model_override: sonnet
+model_override: deepinfra/zai-org/GLM-5.3-Flash
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
@@ -42,4 +41,17 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 - 2026-08-28T10:10:55Z · review_model_override
 - 2026-08-28T10:11:04Z · status ready→active, branch
 - 2026-08-28T10:23:43Z · status active→review
+- 2026-08-28T13:56:09Z · status review→active
+- 2026-08-28T13:56:09Z · note: Something's wrong with the html of the model list, it's not showing, just some html snippet is there. also see the suggestions from the reviewer and try to implement them.
+- 2026-08-28T14:19:26Z · status active→review
+- 2026-08-28T14:32:18Z · status review→active
+- 2026-08-28T14:32:18Z · note: UI still has a bug, it's showing this instead of a list of models: ```Unexpected token '<', "<!DOCTYPE "... is not valid JSON```
+- 2026-08-28T14:32:27Z · cli_override, model_override
+- 2026-08-28T14:32:29Z · model_override
+- 2026-08-28T14:32:55Z · status active→review
+- 2026-08-28T14:32:57Z · status review→active
+- 2026-08-28T14:33:26Z · status active→ready
+- 2026-08-28T14:33:46Z · status ready→active
+- 2026-08-28T16:09:48Z · status active→review
+- 2026-08-28T16:09:48Z · status review→active
 

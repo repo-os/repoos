@@ -17,7 +17,12 @@ import { execFileSync } from "node:child_process";
 import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
-import { parseTask, serializeTask, recordChange, utcTimestamp } from "../core/task.js";
+import {
+  parseTask,
+  serializeTask,
+  recordChange,
+  utcTimestamp,
+} from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 
 export interface TaskPatch {
@@ -57,6 +62,14 @@ export interface TaskPatch {
   hotfix?: boolean;
   /** Hotfix merge target. */
   hotfixTarget?: "branch" | "main";
+  /**
+   * Append a short, free-form note to the task's activity log (e.g.
+   * instructions from a PM/reviewer back to the developer). The note is
+   * recorded as its own activity entry — it never rewrites the task body and
+   * can be combined with a status transition in the same patch. An empty or
+   * whitespace-only note is ignored.
+   */
+  note?: string | null;
 }
 
 export interface PatchTaskOptions {
@@ -200,8 +213,24 @@ export function patchTaskFile(
     current.hotfixTarget = patch.hotfixTarget;
   }
 
-  if (changes.length) {
-    recordChange(current, changes.join(", "));
+  // A note is an additive activity entry, not a task field: it surfaces in the
+  // timeline (and therefore in the UI and to AI reviewers) without rewriting
+  // the body. It can accompany a status transition in the same patch. Entries
+  // are appended status-first then note, matching the core `updateStatus` path,
+  // so the timeline reads identically regardless of entry path.
+  //
+  // Newlines are collapsed to spaces (defense-in-depth): a multi-line note
+  // from the UI textarea must not inject raw line breaks into the `## Activity`
+  // list, which would break the single-line `- ts · entry` structure that
+  // consumers (e.g. DebugPanel.parseActivity) rely on.
+  const note =
+    typeof patch.note === "string" ? patch.note.replace(/\r?\n/g, " ").trim() : "";
+  const entries: string[] = [];
+  if (changes.length) entries.push(changes.join(", "));
+  if (note) entries.push(`note: ${note}`);
+
+  if (entries.length) {
+    for (const entry of entries) recordChange(current, entry);
   } else {
     current.updated_at = utcTimestamp();
   }

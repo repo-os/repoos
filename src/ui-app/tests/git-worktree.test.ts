@@ -15,6 +15,8 @@ import {
   ensureWorktree,
   worktreeStatus,
   resetWorktree,
+  removeWorktree,
+  listWorktrees,
   dirtyFiles,
   commitDirtyFiles,
   mergeBranch,
@@ -282,6 +284,43 @@ describe("resetWorktree", () => {
       const branch = git(root, ["branch", "--show-current"]);
 
       expect(resetWorktree(root, branch)).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("removeWorktree", () => {
+  it("heals a worktree whose directory was deleted out from under it", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      rmSync(wt.path, { recursive: true, force: true });
+      // Metadata is still registered until something prunes it.
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(true);
+
+      expect(removeWorktree(root, "feat/one")).toBe(true);
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("is a no-op success when the branch has no worktree", () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(removeWorktree(root, "feat/ghost")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses to remove the main checkout", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = git(root, ["branch", "--show-current"]);
+      expect(removeWorktree(root, branch)).toBe(false);
+      expect(existsSync(join(root, ".git"))).toBe(true);
     } finally {
       clean();
     }

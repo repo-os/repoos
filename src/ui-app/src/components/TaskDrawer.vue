@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins } from "lucide-vue-next";
-import type { ReviewState, Task, AgentOutputEntry } from "../types";
+import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins, Bug } from "lucide-vue-next";
+import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
@@ -17,8 +17,10 @@ import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import DebugPanel from "./DebugPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -396,6 +398,14 @@ async function reopenTask(): Promise<void> {
 
 const confirmDelete = ref(false);
 const confirmHotfix = ref(false);
+// HotfixConfirmDialog is body-teleported, so opening it trips the drawer's
+// modal dismiss-on-outside and nulls `ui.active` before `startHotfix` runs.
+// Snapshot the task on open — same pattern as the send-to-engineer note dialog.
+const hotfixTask = ref<Task | null>(null);
+function openHotfixConfirm(): void {
+  hotfixTask.value = ui.active;
+  confirmHotfix.value = true;
+}
 
 async function deleteTask(): Promise<void> {
   if (!ui.active) return;
@@ -412,15 +422,19 @@ async function deleteTask(): Promise<void> {
 }
 
 async function startHotfix(target: "branch" | "main"): Promise<void> {
-  if (!ui.active) return;
+  const task = hotfixTask.value ?? ui.active;
+  if (!task) return;
   ui.saving = true;
   try {
-    await repo.activateHotfix(ui.active, target);
+    await repo.activateHotfix(task, target);
     // Selecting a hotfix target is the start action, not merely a mode
     // setting. Launch the engineer immediately so the user sees the task
     // enter active state and its progress tab without a second click.
-    await repo.startWork(ui.active);
+    await repo.startWork(task);
     confirmHotfix.value = false;
+    // Opening the confirm dialog dismissed the drawer; bring it back on the
+    // agent tab where the engineer is now streaming.
+    ui.open(repo.tasks.find((t) => t.id === task.id) ?? task);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -557,7 +571,10 @@ async function confirmCommitDirty(): Promise<void> {
 }
 
 function cancelDirty(): void {
-  if (ui.active) repo.clearDirtyMain(ui.active.id);
+  // Use the captured task, not ui.active — the body-teleported dialog dismissed
+  // the drawer's modal, so ui.active may already be null here.
+  const id = dirtyTask.value?.id ?? ui.active?.id;
+  if (id) repo.clearDirtyMain(id);
   dirtyTask.value = null;
 }
 
@@ -945,25 +962,58 @@ async function reviewAgain(): Promise<void> {
 }
 
 /** Return a reviewed task to its existing engineer session with the review as
- * the first instruction of the resumed turn. */
+ * the first instruction of the resumed turn. Opens an optional-note dialog
+ * first so the human can attach specific instructions for the engineer. */
 const sendingToEngineer = ref(false);
+const engineerNoteOpen = ref(false);
+// SendToEngineerDialog is a body-teleported layer, so opening it (or moving
+// focus into it) trips the drawer's modal dismiss-on-outside and nulls
+// `ui.active` before the confirm handler runs. Snapshot the task and its report
+// when the dialog opens — same pattern as RestartTaskDialog / DirtyMainDialog.
+const engineerNoteTask = ref<Task | null>(null);
+const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
   const task = ui.active;
-  const report = review.value?.report;
+  const report = review.value?.report ?? null;
   if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  engineerNoteTask.value = task;
+  engineerNoteReport.value = report;
+  engineerNoteOpen.value = true;
+}
+async function confirmSendToEngineer(note: string): Promise<void> {
+  const task = engineerNoteTask.value;
+  const report = engineerNoteReport.value;
+  if (!task || !report) {
+    // Surface the failure rather than silently discarding the typed note: keep
+    // the dialog open so the human keeps their text and can retry once the
+    // review report is available.
+    repo.onError(
+      new Error(
+        report
+          ? "No task selected to send to engineer."
+          : "Reviewer report is not ready yet. Wait for the review to finish, then try again.",
+      ),
+    );
+    return;
+  }
+  engineerNoteOpen.value = false;
 
-  const instruction = [
+  const parts = [
     "This task was returned from review for fixes. Resume work in the existing worktree; do not reset or discard the current changes.",
     "Read the reviewer report below, fix every concrete applicable finding, add or update regression coverage where appropriate, then run repoos check before returning the task to review.",
-    "Reviewer report:",
-    report.markdown,
-  ].join("\n\n");
+  ];
+  if (note) parts.push(`Instructions from the reviewer/human:\n${note}`);
+  parts.push("Reviewer report:", report.markdown);
+  const instruction = parts.join("\n\n");
 
   ui.saving = true;
   sendingToEngineer.value = true;
   try {
-    await repo.setStatus(task, "active");
+    await repo.setStatus(task, "active", note);
     await repo.startWork(task, "resume", instruction);
+    // Opening the note dialog dismissed the drawer (see above), so bring it
+    // back on the agent tab where the resumed engineer is now streaming.
+    ui.open(repo.tasks.find((t) => t.id === task.id) ?? task);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -1560,6 +1610,16 @@ function cacheHitPct(
   const denom = (input ?? 0) + r + (creation ?? 0);
   if (denom <= 0) return "—";
   return `${Math.round((r / denom) * 100)}%`;
+}
+
+/** Tooltip for a session's cache cell: raw read/write counts, or a "not reported" note. */
+function cacheCellTitle(s: SessionUsage): string {
+  if (s.cacheReadTokens == null && s.cacheCreationTokens == null) {
+    return "no prompt-cache figures reported by this CLI";
+  }
+  const parts = [`${fmtTokens(s.cacheReadTokens)} read from cache`];
+  if (s.cacheCreationTokens) parts.push(`${fmtTokens(s.cacheCreationTokens)} written`);
+  return `${parts.join(" · ")} — cumulative over the turn's model calls`;
 }
 
 /** "Aug 20, 3:14 PM" — local time, for a session's start/end timestamp. */
@@ -2535,6 +2595,15 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <Coins class="tab-icon" />
             Tokens
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: ui.activeTab === 'debug' }"
+            @click="ui.activeTab = 'debug'"
+          >
+            <Bug class="tab-icon" />
+            Debug
+          </button>
         </div>
         <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
           <template v-if="!locked">
@@ -2683,7 +2752,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 variant="outline"
                 size="sm"
                 :disabled="ui.saving"
-                @click="confirmHotfix = true"
+                @click="openHotfixConfirm"
               >
                 Hotfix
               </Button>
@@ -3250,7 +3319,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <th class="ta-left">ended</th>
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
-                      <th class="ta-right" title="Cached input tokens (share of this session's input served from the prompt cache)">cache</th>
+                      <th class="ta-right" title="Share of this session's input served from the provider's prompt cache (hover a cell for raw token counts)">cache</th>
                       <th class="ta-right">cost</th>
                     </tr>
                   </thead>
@@ -3276,8 +3345,8 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
                       <td
                         class="ta-right"
-                        :title="`${cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens)} of input cached` + (s.cacheCreationTokens ? ` · ${fmtTokens(s.cacheCreationTokens)} written` : '')"
-                      >{{ fmtTokens(s.cacheReadTokens) }}</td>
+                        :title="cacheCellTitle(s)"
+                      >{{ cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens) }}</td>
                       <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
                     </tr>
                   </tbody>
@@ -3288,6 +3357,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
           <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
             <p>No token or usage data yet.</p>
           </div>
+        </div>
+        <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
+          <DebugPanel v-if="ui.active" :task="ui.active" />
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">
@@ -3399,10 +3471,18 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
 
   <HotfixConfirmDialog
     :open="confirmHotfix"
-    :task-id="ui.active?.id"
+    :task-id="hotfixTask?.id ?? ui.active?.id"
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
+  />
+
+  <SendToEngineerDialog
+    :open="engineerNoteOpen"
+    :busy="ui.saving"
+    :title="'Send to engineer'"
+    @cancel="engineerNoteOpen = false"
+    @confirm="confirmSendToEngineer"
   />
 
   <SpecEditModal

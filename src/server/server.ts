@@ -85,6 +85,7 @@ import {
   worktreePathForBranch,
   tuneRepoForScale,
 } from "../core/git.js";
+import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -117,6 +118,7 @@ import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { TestRunManager } from "./test-run.js";
+import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import {
@@ -829,6 +831,36 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     console.log(`Resuming interrupted job for task ${job.taskId} from phase ${job.phase}`);
   }
 
+  // Boot-time worktree GC: prune orphaned `repoos/integrate/*` candidate
+  // worktrees left by failed/interrupted close-out jobs, plus stale worktree
+  // metadata. Deliberately conservative — it never touches `feat/*` task
+  // worktrees; `repoos gc` is the path for those. Fire-and-forget so it stays
+  // off `server.listen()`'s critical path (same shape as the remote-validation
+  // reconcile above). Control-plane only, and opt-out via env.
+  if (isControlPlane && process.env.REPOOS_NO_WORKTREE_GC !== "1") {
+    // Wait for the async index build to settle first — the sweep's git spawns
+    // are synchronous, and running them during boot would compete with the
+    // health handshake / first paint.
+    void indexReady
+      .catch(() => {})
+      .then(() => {
+        const activeJobIds = new Set(
+          jobCoordinator
+            .allJobs()
+            .filter((j) => j.phase !== "done" && j.phase !== "failed")
+            .map((j) => j.taskId),
+        );
+        const report = sweepStaleWorktrees(config, { mode: "integrate-only", activeJobIds });
+        if (report.removedWorktrees.length || report.errors.length) {
+          logger.system("info", "boot worktree gc", {
+            removed: report.removedWorktrees.map((w) => w.branch || w.path),
+            errors: report.errors,
+          });
+        }
+      })
+      .catch((e) => logger.system("warn", `boot worktree gc failed: ${(e as Error).message}`));
+  }
+
   let processingJob = false;
   let triggerJobProcessing: () => void = () => {}; // Initialized below
 
@@ -850,6 +882,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
   const unsubscribe = index.on(emitEvent);
+
+  // Per-task `repoos check` run tracking for the Debug tab (0310): the
+  // handoff-finalize check and the MTD merge-gate check are the only two
+  // checks the server spawns directly, so only those two are instrumented.
+  const taskChecks = new TaskCheckManager();
+  const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
+    if (eventKind === "started") {
+      emitEvent({ type: "task-check.started", taskId: run.taskId, checkId: run.id, checkKind: run.kind, at: run.startedAt });
+    } else if (eventKind === "output") {
+      emitEvent({ type: "task-check.output", taskId: run.taskId, checkId: run.id, chunk: chunk ?? "", at: new Date().toISOString() });
+    } else {
+      emitEvent({
+        type: "task-check.done",
+        taskId: run.taskId,
+        checkId: run.id,
+        code: run.code,
+        passed: run.passed === true,
+        durationMs: run.durationMs ?? 0,
+        at: run.finishedAt ?? new Date().toISOString(),
+      });
+    }
+  };
 
   // Last integration-pipeline stage progress reported per task id (0207). The
   // orchestrator's DoneStep callbacks drive the pinned status bar's stage
@@ -897,6 +951,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             );
           },
           remoteValidator,
+          taskChecks,
+          onTaskCheckEvent,
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
@@ -1069,6 +1125,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
         },
         onServerStatusChange,
+        taskChecks,
+        onTaskCheckEvent,
       );
       if (result.ok) {
         index.applyFileChange(task.absPath, { guarded: true });
@@ -1144,9 +1202,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
-  // re-fires onHandoff for valid ones. Must run after adoptRunningAgents so
-  // in-flight handoffs from adopted agents are visible.
-  runner.recoverPendingHandoffs();
+  // re-fires onHandoff for valid ones. Runs after `adoptRunningAgents` (so
+  // in-flight handoffs from adopted agents are visible) AND after the index
+  // has populated: recovery validates via `index.getTask()`, which is empty
+  // until `refreshAllAsync` resolves — a fast boot used to run recovery first
+  // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
+  // leaving the task stuck `active` with its work uncommitted.
+  const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
+  void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
@@ -1163,6 +1226,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // adopted review would otherwise run without a deadline. Also registers the
   // adopted turns in `reviews` so cancellation and run/chat mode work for them.
   reviews.armAdoptedTimeouts();
+
+  // Re-spawn reviews a real (non-reload) shutdown killed: `handle.close()` runs
+  // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
+  // leaves tasks stuck in `review` with a stale/missing report and nothing
+  // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
+  const runReviewRecovery = (): void =>
+    reviews.recoverInterruptedReviews(index.getTasks());
+  void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
@@ -1581,6 +1652,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/output$/, getTaskOutput);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/logs$/, getTaskLogs);
+  // Per-task `repoos check` history (handoff-finalize + MTD merge-gate) for
+  // the Debug tab (0310). The currently-running entry (if any) streams its
+  // output live over the existing SSE bus as task-check.* events.
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/checks$/, (_ctx, _req, res, params) => {
+    return json(res, 200, { ok: true, runs: taskChecks.getRuns(params.param1) });
+  });
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);

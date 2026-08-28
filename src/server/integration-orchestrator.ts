@@ -22,6 +22,7 @@ import {
   ensureWorktree,
   removeWorktree,
   deleteBranch,
+  pruneWorktrees,
   isGitRepo,
   commitTaskFile,
   commitDirtyFiles,
@@ -37,6 +38,7 @@ import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
+import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -181,7 +183,7 @@ interface ProcessRunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv; onChunk?: (text: string) => void },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
@@ -198,8 +200,16 @@ function runProcess(
       resolve({ status, stdout, stderr, timedOut });
     };
 
-    child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
-    child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
+    child.stdout.on("data", (d: Buffer) => {
+      const text = d.toString("utf8");
+      stdout += text;
+      opts.onChunk?.(text);
+    });
+    child.stderr.on("data", (d: Buffer) => {
+      const text = d.toString("utf8");
+      stderr += text;
+      opts.onChunk?.(text);
+    });
     child.on("error", () => finish(null));
     child.on("close", (code: number | null) => finish(code));
 
@@ -234,6 +244,9 @@ export class CloseOutOrchestrator {
      * disables remote validation regardless of config.
      */
     private remoteValidator?: RemoteValidator,
+    /** Records the MTD merge-gate `repoos check` run for the Debug tab (0310). */
+    private taskChecks?: TaskCheckManager,
+    private onTaskCheckEvent?: TaskCheckListener,
   ) {}
 
   /**
@@ -283,12 +296,32 @@ export class CloseOutOrchestrator {
    * failure, which is recorded as `failed` (and `onRecorded`, e.g. the merge-
    * conflict retry, runs) so the UI and status bar can surface it.
    */
+  /**
+   * Tear down the `repoos/integrate/<id>` candidate worktree + branch. Safe to
+   * call whether or not the candidate exists. The candidate is a throwaway
+   * scratch area rebuilt from scratch on the next run, so its branch is
+   * force-deleted (git will not see it as merged after a failed job).
+   *
+   * Runs on EVERY terminal job outcome — success (`cleanup`), genuine failure,
+   * and moot/reconciled — so a candidate never outlives its job. Without this,
+   * every failed close-out leaked a worktree that inflated cold-boot `git
+   * status` fan-out until someone ran gc.
+   */
+  private removeCandidate(taskId: string): void {
+    const root = this.config.root;
+    const branch = candidateBranchName(taskId);
+    removeWorktree(root, branch);
+    deleteBranch(root, branch, { force: true });
+    pruneWorktrees(root);
+  }
+
   private failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
     reason: string | undefined,
     onRecorded?: () => void,
   ): { ok: boolean; reason?: string } {
+    this.removeCandidate(job.taskId);
     if (this.taskIsDone(job.taskId)) {
       this.logger?.integration(
         job.taskId,
@@ -690,8 +723,11 @@ export class CloseOutOrchestrator {
     };
     const localCli = join(wtPath, "dist", "cli", "index.js");
     const localCliPresent = existsSync(localCli);
+    const checkHandle = this.taskChecks && this.onTaskCheckEvent
+      ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
+      : undefined;
     const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
-      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
+      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv, onChunk: checkHandle?.chunk });
     // A check whose ONLY failure is a stale build marker: the same marker the
     // close-out build above should have refreshed. This is the self-resolving
     // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
@@ -747,6 +783,7 @@ export class CloseOutOrchestrator {
         await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
         checkRes = await rawCheck(process.execPath, [localCli, "check"]);
         if (checkRes.status !== 0) {
+          checkHandle?.done(checkRes.status);
           return {
             ok: false,
             reason: `check failed after in-place staleness re-check: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
@@ -763,6 +800,7 @@ export class CloseOutOrchestrator {
         }
       }
     }
+    checkHandle?.done(checkRes.status);
 
     if (checkRes.status !== 0) {
       return {
@@ -1000,19 +1038,24 @@ export class CloseOutOrchestrator {
 
   private async cleanup(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
-    const branch = candidateBranchName(job.taskId);
+    const featureBranch = job.branch ?? job.taskId;
 
-    // Remove candidate worktree.
-    removeWorktree(root, branch);
+    // Candidate worktree + throwaway branch.
+    this.removeCandidate(job.taskId);
 
-    // Delete candidate branch.
-    deleteBranch(root, branch);
-
-    // Remove task's feature worktree (if it still exists).
-    removeWorktree(root, job.branch ?? job.taskId);
-
-    // Delete task's feature branch.
-    deleteBranch(root, job.branch ?? job.taskId);
+    // Task's feature worktree + branch. The branch was just merged into main, so
+    // `-d` is correct; a false return means the worktree is still registered
+    // (leak) — log the path so a human/gc can see which one.
+    if (!removeWorktree(root, featureBranch)) {
+      const stuck = worktreePathForBranch(root, featureBranch);
+      this.logger?.integration(job.taskId, "warn", "feature worktree not removed at close-out", {
+        branch: featureBranch,
+        path: stuck ?? "unknown",
+      });
+      console.warn(`Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck ?? "unknown"})`);
+    }
+    deleteBranch(root, featureBranch);
+    pruneWorktrees(root);
 
     // Mark the task as done in the main checkout.
     //
