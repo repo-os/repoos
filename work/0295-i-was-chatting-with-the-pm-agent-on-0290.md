@@ -2,7 +2,7 @@
 id: "0295"
 title: Add a note/activity mechanism for task updates
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-note-activity-mechanism-for-task-u
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
 created_at: "2026-08-25T11:26:17Z"
-updated_at: "2026-08-28T11:35:25Z"
+updated_at: "2026-08-28T11:40:34Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -68,3 +68,4 @@ There's no dedicated "note" command. The note to the developer is best captured 
 - 2026-08-28T10:47:31Z · status ready→active, branch
 - 2026-08-28T11:31:11Z · status active→review
 - 2026-08-28T11:35:24Z · status review→active
+- 2026-08-28T11:40:34Z · status active→review
