@@ -133,6 +133,27 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.costUsd).toBeUndefined();
   });
 
+  it("a terminal claude `result` event overwrites a stale mid-stream max", () => {
+    const total: {
+      inputTokens?: number;
+      outputTokens?: number;
+      cacheReadTokens?: number;
+      costUsd?: number;
+    } = {};
+    // A transient mid-stream spike latches high under plain Math.max.
+    foldUsage(total, '{"type":"assistant","message":{"usage":{"input_tokens":22086,"output_tokens":10}}}');
+    expect(total.inputTokens).toBe(22086);
+    // The authoritative turn summary corrects it downward (#0310: real input 236).
+    foldUsage(
+      total,
+      '{"type":"result","total_cost_usd":6.07,"usage":{"input_tokens":236,"output_tokens":59498,"cache_read_input_tokens":14082906,"cache_creation_input_tokens":157277}}',
+    );
+    expect(total.inputTokens).toBe(236);
+    expect(total.outputTokens).toBe(59498);
+    expect(total.cacheReadTokens).toBe(14082906);
+    expect(total.costUsd).toBeCloseTo(6.07, 10);
+  });
+
   it("folds usage monotonically upward and stays blank on unknown input", () => {
     const total: { inputTokens?: number; totalTokens?: number; costUsd?: number } = {};
     foldUsage(total, "plain line without usage");
@@ -288,6 +309,35 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     const rows = db.getTaskSessions("0007");
     expect(rows.find((r) => r.sessionId === "c-3")!.cacheReadTokens).toBeNull();
     expect(rows.find((r) => r.sessionId === "c-1")!.cacheReadTokens).toBe(9000);
+    db.close();
+  });
+
+  it("later upserts correct a session's cli/model — but a fallback value never clobbers a real one", () => {
+    const root = tempRoot();
+    const db = new RepoOSDb(root);
+    const ended = new Date().toISOString();
+    const row = {
+      sessionId: "ovr-1",
+      sessionType: "engineer",
+      taskId: "0310",
+      startedAt: ended,
+      endedAt: ended,
+      elapsedMs: 1,
+      status: "active",
+      lastActivityAt: ended,
+    };
+    // First insert: base config agent (no per-task override applied yet).
+    db.upsertSession({ ...row, agent: "engineer", model: "deepinfra/Qwen/Qwen3-Coder", codingAgent: "opencode" });
+    // Later turn ran under the resolved override (cli_override: claude code).
+    db.upsertSession({ ...row, agent: "engineer", model: "sonnet", codingAgent: "claude", status: "finished" });
+    let r = db.getTaskSessions("0310")[0];
+    expect(r.model).toBe("sonnet");
+    expect(r.codingAgent).toBe("claude");
+    // A bare fallback ("default"/"unknown") must NOT overwrite the real value.
+    db.upsertSession({ ...row, agent: "unknown", model: "default", codingAgent: "unknown", status: "finished" });
+    r = db.getTaskSessions("0310")[0];
+    expect(r.model).toBe("sonnet");
+    expect(r.codingAgent).toBe("claude");
     db.close();
   });
 

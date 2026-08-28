@@ -2,7 +2,7 @@
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins, Bug } from "lucide-vue-next";
-import type { ReviewState, Task, AgentOutputEntry } from "../types";
+import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
@@ -1561,6 +1561,16 @@ function cacheHitPct(
   const denom = (input ?? 0) + r + (creation ?? 0);
   if (denom <= 0) return "—";
   return `${Math.round((r / denom) * 100)}%`;
+}
+
+/** Tooltip for a session's cache cell: raw read/write counts, or a "not reported" note. */
+function cacheCellTitle(s: SessionUsage): string {
+  if (s.cacheReadTokens == null && s.cacheCreationTokens == null) {
+    return "no prompt-cache figures reported by this CLI";
+  }
+  const parts = [`${fmtTokens(s.cacheReadTokens)} read from cache`];
+  if (s.cacheCreationTokens) parts.push(`${fmtTokens(s.cacheCreationTokens)} written`);
+  return `${parts.join(" · ")} — cumulative over the turn's model calls`;
 }
 
 /** "Aug 20, 3:14 PM" — local time, for a session's start/end timestamp. */
@@ -3260,7 +3270,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <th class="ta-left">ended</th>
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
-                      <th class="ta-right" title="Cached input tokens (share of this session's input served from the prompt cache)">cache</th>
+                      <th class="ta-right" title="Share of this session's input served from the provider's prompt cache (hover a cell for raw token counts)">cache</th>
                       <th class="ta-right">cost</th>
                     </tr>
                   </thead>
@@ -3286,8 +3296,8 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
                       <td
                         class="ta-right"
-                        :title="`${cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens)} of input cached` + (s.cacheCreationTokens ? ` · ${fmtTokens(s.cacheCreationTokens)} written` : '')"
-                      >{{ fmtTokens(s.cacheReadTokens) }}</td>
+                        :title="cacheCellTitle(s)"
+                      >{{ cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens) }}</td>
                       <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
                     </tr>
                   </tbody>

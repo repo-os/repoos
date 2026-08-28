@@ -343,6 +343,14 @@ export interface ExtractedUsage {
   cacheReadTokens?: number;
   /** Input tokens written to the prompt cache this turn (~125% price). */
   cacheCreationTokens?: number;
+  /**
+   * True when parsed from a terminal turn-summary event (claude's
+   * `type:"result"`) — its numbers are authoritative for the whole turn and
+   * should OVERWRITE the running figures, not fold via Math.max. Without this
+   * a transient mid-stream `input_tokens` latches high and never comes down
+   * (e.g. #0310 showed "177k tokens" when the real non-cached input was 236).
+   */
+  authoritative?: boolean;
 }
 
 export function extractUsage(raw: string): ExtractedUsage {
@@ -362,6 +370,10 @@ export function extractUsage(raw: string): ExtractedUsage {
       const cache = cacheTokensFromObject(obj);
       if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
       if (cache.cacheCreationTokens !== undefined) out.cacheCreationTokens = cache.cacheCreationTokens;
+      // claude's terminal turn summary — authoritative for the whole turn.
+      if (obj.type === "result" && typeof obj.total_cost_usd === "number") {
+        out.authoritative = true;
+      }
     }
   } catch {
     /* not JSON — fall through to text patterns below */
@@ -403,14 +415,21 @@ export function extractUsage(raw: string): ExtractedUsage {
  */
 export function foldUsage(total: ExtractedUsage, raw: string): void {
   const found = extractUsage(raw);
-  if (found.inputTokens !== undefined) total.inputTokens = Math.max(total.inputTokens ?? 0, found.inputTokens);
-  if (found.outputTokens !== undefined) total.outputTokens = Math.max(total.outputTokens ?? 0, found.outputTokens);
-  if (found.totalTokens !== undefined) total.totalTokens = Math.max(total.totalTokens ?? 0, found.totalTokens);
-  if (found.costUsd !== undefined) total.costUsd = Math.max(total.costUsd ?? 0, found.costUsd);
-  if (found.cacheReadTokens !== undefined)
-    total.cacheReadTokens = Math.max(total.cacheReadTokens ?? 0, found.cacheReadTokens);
-  if (found.cacheCreationTokens !== undefined)
-    total.cacheCreationTokens = Math.max(total.cacheCreationTokens ?? 0, found.cacheCreationTokens);
+  // A terminal `result` event's numbers are authoritative for the whole turn —
+  // overwrite rather than Math.max, so a transient mid-stream spike can't stick.
+  const merge = (
+    key: "inputTokens" | "outputTokens" | "totalTokens" | "costUsd" | "cacheReadTokens" | "cacheCreationTokens",
+  ): void => {
+    const v = found[key];
+    if (v === undefined) return;
+    total[key] = found.authoritative ? v : Math.max(total[key] ?? 0, v);
+  };
+  merge("inputTokens");
+  merge("outputTokens");
+  merge("totalTokens");
+  merge("costUsd");
+  merge("cacheReadTokens");
+  merge("cacheCreationTokens");
 }
 
 /**
@@ -3340,47 +3359,34 @@ export class AgentRunner {
   private applyUsage(session: Session, raw: string): boolean {
     const found = extractUsage(raw);
     let changed = false;
+    // A terminal `result` event is authoritative for the whole turn — take its
+    // value directly. Otherwise fold upward (some CLIs report a running total,
+    // some reset per turn).
+    const set = (cur: number | undefined, v: number): number =>
+      found.authoritative ? v : Math.max(cur ?? 0, v);
     if (found.inputTokens !== undefined) {
-      const next = Math.max(session.inputTokens ?? 0, found.inputTokens);
-      if (next !== session.inputTokens) {
-        session.inputTokens = next;
-        changed = true;
-      }
+      const next = set(session.inputTokens, found.inputTokens);
+      if (next !== session.inputTokens) { session.inputTokens = next; changed = true; }
     }
     if (found.outputTokens !== undefined) {
-      const next = Math.max(session.outputTokens ?? 0, found.outputTokens);
-      if (next !== session.outputTokens) {
-        session.outputTokens = next;
-        changed = true;
-      }
+      const next = set(session.outputTokens, found.outputTokens);
+      if (next !== session.outputTokens) { session.outputTokens = next; changed = true; }
     }
     if (found.totalTokens !== undefined) {
-      const next = Math.max(session.tokens ?? 0, found.totalTokens);
-      if (next !== session.tokens) {
-        session.tokens = next;
-        changed = true;
-      }
+      const next = set(session.tokens, found.totalTokens);
+      if (next !== session.tokens) { session.tokens = next; changed = true; }
     }
     if (found.costUsd !== undefined) {
-      const next = Math.max(session.costUsd ?? 0, found.costUsd);
-      if (next !== session.costUsd) {
-        session.costUsd = next;
-        changed = true;
-      }
+      const next = set(session.costUsd, found.costUsd);
+      if (next !== session.costUsd) { session.costUsd = next; changed = true; }
     }
     if (found.cacheReadTokens !== undefined) {
-      const next = Math.max(session.cacheReadTokens ?? 0, found.cacheReadTokens);
-      if (next !== session.cacheReadTokens) {
-        session.cacheReadTokens = next;
-        changed = true;
-      }
+      const next = set(session.cacheReadTokens, found.cacheReadTokens);
+      if (next !== session.cacheReadTokens) { session.cacheReadTokens = next; changed = true; }
     }
     if (found.cacheCreationTokens !== undefined) {
-      const next = Math.max(session.cacheCreationTokens ?? 0, found.cacheCreationTokens);
-      if (next !== session.cacheCreationTokens) {
-        session.cacheCreationTokens = next;
-        changed = true;
-      }
+      const next = set(session.cacheCreationTokens, found.cacheCreationTokens);
+      if (next !== session.cacheCreationTokens) { session.cacheCreationTokens = next; changed = true; }
     }
     return changed;
   }

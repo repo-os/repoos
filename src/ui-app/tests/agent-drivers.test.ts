@@ -817,6 +817,8 @@ describe("extractUsage (0080)", () => {
       costUsd: 0.0731223,
       cacheReadTokens: 49071,
       cacheCreationTokens: 9403,
+      // A terminal `result` event's figures replace the running max, not fold.
+      authoritative: true,
     });
   });
 

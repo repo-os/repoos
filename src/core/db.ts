@@ -372,6 +372,14 @@ export class RepoOSDb {
           costUsd, costSource, status, lastActivityAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(sessionId) DO UPDATE SET
+          -- A per-task cli/model override (or an agent switch mid-session) is
+          -- resolved by the time the agent actually runs, so a later upsert
+          -- carries the accurate CLI/model — the first insert may have used the
+          -- base config agent. Keep an existing real value only when the new
+          -- one is a bare fallback ("unknown"/"default"/"").
+          agent = CASE WHEN excluded.agent IN ('', 'unknown') THEN agent ELSE excluded.agent END,
+          model = CASE WHEN excluded.model IN ('', 'default') THEN model ELSE excluded.model END,
+          codingAgent = CASE WHEN excluded.codingAgent IN ('', 'unknown') THEN codingAgent ELSE excluded.codingAgent END,
           endedAt = excluded.endedAt,
           elapsedMs = excluded.elapsedMs,
           inputTokens = COALESCE(excluded.inputTokens, inputTokens),
