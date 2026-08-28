@@ -10,7 +10,6 @@ import Button from "./ui/button.vue";
 
 const props = defineProps<{
   open: boolean;
-  taskId: string;
 }>();
 
 const emit = defineEmits<{
@@ -21,7 +20,6 @@ const emit = defineEmits<{
 
 function onClose(): void {
   emit("update:open", false);
-  emit("cancel");
 }
 
 function onConfirm(): void {
