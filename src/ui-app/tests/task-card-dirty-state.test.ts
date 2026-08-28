@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import TaskCard from "../src/components/TaskCard.vue";
@@ -45,7 +45,7 @@ describe("task card dirty state display", () => {
     setActivePinia(pinia);
   });
 
-  it("does not display dirty badge for clean task", () => {
+  it("does not display passive dirty badge for clean task", () => {
     const task = makeTask({ status: "ready", git: { ...makeTask().git, dirty: false } });
     const wrapper = mount(TaskCard, {
       props: { task },
@@ -55,10 +55,10 @@ describe("task card dirty state display", () => {
     });
     
     // Should not have any dirty badge elements
-    expect(wrapper.find(".tc-dirty").exists()).toBe(false);
+    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
   });
 
-  it("does not display dirty badge for dirty task (passive state removed)", () => {
+  it("does not display passive dirty badge for dirty task (passive state removed)", () => {
     const task = makeTask({ status: "ready", git: { ...makeTask().git, dirty: true } });
     const wrapper = mount(TaskCard, {
       props: { task },
@@ -68,12 +68,22 @@ describe("task card dirty state display", () => {
     });
     
     // Should not have any dirty badge elements even for dirty tasks
-    expect(wrapper.find(".tc-dirty").exists()).toBe(false);
+    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
   });
 
-  it("still shows restart dialog for dirty tasks when starting work", async () => {
-    // This test ensures the actionable behavior is preserved
-    const task = makeTask({ status: "ready", git: { ...makeTask().git, dirty: true } });
+  it("does not show dirty badge for branchless tasks", () => {
+    const task = makeTask({ 
+      status: "ready", 
+      branch: "",
+      git: { 
+        branchExists: false,
+        worktreeExists: false,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: null,
+        dirty: false,
+      } 
+    });
     const wrapper = mount(TaskCard, {
       props: { task },
       global: {
@@ -81,15 +91,14 @@ describe("task card dirty state display", () => {
       },
     });
     
-    // The restart dialog functionality should still be available
-    // but we're not testing the actual dialog interaction here
-    expect(wrapper.props().task.git.dirty).toBe(true);
+    // Should not have any dirty badge elements for branchless tasks
+    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
   });
 
-  it("preserves internal dirty state detection for close-out guard", () => {
-    // This test ensures the internal state is still tracked
+  it("preserves internal dirty state detection for actionable scenarios", () => {
+    // This test ensures the internal state is still tracked for actionable scenarios
     const task = makeTask({ status: "review", git: { ...makeTask().git, dirty: true } });
     expect(task.git.dirty).toBe(true);
-    // The actual close-out guard functionality is tested elsewhere
+    // The actual actionable behavior (dialogs, etc.) is tested elsewhere
   });
 });
