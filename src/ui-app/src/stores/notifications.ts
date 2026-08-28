@@ -61,7 +61,7 @@ function persist(s: PersistedSettings): void {
 
 /** Ready for a browser notification system when this is resolved. */
 function notificationsSupported(): boolean {
-  return typeof window !== "undefined" && "Notification" in window && Notification.requestPermission !== undefined;
+  return typeof window !== "undefined" && "Notification" in window;
 }
 
 /**
@@ -106,12 +106,8 @@ export async function ensurePushPermission(): Promise<boolean> {
   if (Notification.permission === "denied") return false;
   
   try {
-    // Handle both callback and promise-based APIs
-    if (typeof Notification.requestPermission === 'function') {
-      const res = await Notification.requestPermission();
-      return res === "granted";
-    }
-    return false;
+    const res = await Notification.requestPermission();
+    return res === "granted";
   } catch (err) {
     console.warn("Failed to request notification permission:", err);
     return false;
@@ -210,8 +206,6 @@ export const useNotificationsStore = defineStore("notifications", () => {
   async function requestPushPermission(): Promise<void> {
     try {
       permissionError.value = "";
-      // Add a small delay to ensure UI updates before requesting permission
-      await new Promise(resolve => setTimeout(resolve, 100));
       const granted = await ensurePushPermission();
       if (!granted) {
         permissionError.value = "Notification permission was not granted.";
