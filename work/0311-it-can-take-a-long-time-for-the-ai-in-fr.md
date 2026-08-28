@@ -2,7 +2,7 @@
 id: "0311"
 title: Improve UX for Long-Running Freeform Task Creation
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/improve-ux-for-long-running-freeform-tas
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T06:23:56Z"
-updated_at: "2026-08-27T09:43:46Z"
+updated_at: "2026-08-28T09:59:24Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ It can take a long time for the AI in freeform new task to create the task, and 
 - 2026-08-27T09:31:46Z · status inbox→ready
 - 2026-08-27T09:31:55Z · status ready→active, branch
 - 2026-08-27T09:43:46Z · status active→review
+- 2026-08-28T09:59:24Z · status review→done, release:success
