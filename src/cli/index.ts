@@ -11,6 +11,7 @@ import {
   cmdUpdate,
   cmdNew,
   cmdIndex,
+  cmdNote,
 } from "../commands/tasks.js";
 import { cmdNewDoc } from "../commands/docs.js";
 import { cmdCheck } from "../commands/check.js";
@@ -65,7 +66,8 @@ function help(): void {
     ${c.cyan("init")} [name]           Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console
     ${c.cyan("list")} [status]        Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})
     ${c.cyan("show")} <id>            Show a task's full spec
-    ${c.cyan("mv")} <id> <status>     Move a task to a new status (edits frontmatter)
+    ${c.cyan("mv")} <id> <status>     Move a task to a new status   ${c.dim('flags: --note "..."')}
+    ${c.cyan("note")} <id> "<text>"   Append a free-form note to a task's activity log
     ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim('flags: --title --area --priority --type --body --branch --assigned-to')}
     ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority --body')}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
@@ -80,6 +82,8 @@ function help(): void {
     ${c.dim("$")} repoos new "Add company dashboard" --ai --type feature --area web --priority p1
     ${c.dim("$")} repoos new-doc "API design doc for the payment system"
     ${c.dim("$")} repoos mv 0012 active
+    ${c.dim("$")} repoos mv 0012 active --note "Fix the regression in checkout; see review"
+    ${c.dim("$")} repoos note 0012 "Handle the reviewer's suggestions before the next review"
     ${c.dim("$")} repoos update 0012 --title "New title" --area web
     ${c.dim("$")} repoos list ready
     ${c.dim("$")} repoos index --json   ${c.dim("# machine-readable, for agents/tools")}
@@ -125,8 +129,17 @@ function main(): void {
       cmdShow(rest[0]);
       break;
     case "mv":
-    case "move":
-      cmdMv(rest[0], rest[1]);
+    case "move": {
+      let note: string | undefined;
+      const args = rest.slice();
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--note") note = args[++i];
+      }
+      cmdMv(args[0], args[1], note);
+      break;
+    }
+    case "note":
+      cmdNote(rest);
       break;
     case "update":
       cmdUpdate(rest);

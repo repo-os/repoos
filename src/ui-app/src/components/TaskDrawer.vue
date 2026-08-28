@@ -17,6 +17,7 @@ import VoiceDictate from "./VoiceDictate.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
@@ -946,24 +947,45 @@ async function reviewAgain(): Promise<void> {
 }
 
 /** Return a reviewed task to its existing engineer session with the review as
- * the first instruction of the resumed turn. */
+ * the first instruction of the resumed turn. Opens an optional-note dialog
+ * first so the human can attach specific instructions for the engineer. */
 const sendingToEngineer = ref(false);
+const engineerNoteOpen = ref(false);
 async function sendToEngineer(): Promise<void> {
   const task = ui.active;
+  if (!task || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  engineerNoteOpen.value = true;
+}
+async function confirmSendToEngineer(note: string): Promise<void> {
+  const task = ui.active;
   const report = review.value?.report;
-  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  if (!task || !report) {
+    // Surface the failure rather than silently discarding the typed note: keep
+    // the dialog open so the human keeps their text and can retry once the
+    // review report is available.
+    repo.onError(
+      new Error(
+        report
+          ? "No task selected to send to engineer."
+          : "Reviewer report is not ready yet. Wait for the review to finish, then try again.",
+      ),
+    );
+    return;
+  }
+  engineerNoteOpen.value = false;
 
-  const instruction = [
+  const parts = [
     "This task was returned from review for fixes. Resume work in the existing worktree; do not reset or discard the current changes.",
     "Read the reviewer report below, fix every concrete applicable finding, add or update regression coverage where appropriate, then run repoos check before returning the task to review.",
-    "Reviewer report:",
-    report.markdown,
-  ].join("\n\n");
+  ];
+  if (note) parts.push(`Instructions from the reviewer/human:\n${note}`);
+  parts.push("Reviewer report:", report.markdown);
+  const instruction = parts.join("\n\n");
 
   ui.saving = true;
   sendingToEngineer.value = true;
   try {
-    await repo.setStatus(task, "active");
+    await repo.setStatus(task, "active", note);
     await repo.startWork(task, "resume", instruction);
     ui.activeTab = "agent";
   } catch (err) {
@@ -3426,6 +3448,14 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
+  />
+
+  <SendToEngineerDialog
+    :open="engineerNoteOpen"
+    :busy="ui.saving"
+    :title="'Send to engineer'"
+    @cancel="engineerNoteOpen = false"
+    @confirm="confirmSendToEngineer"
   />
 
   <SpecEditModal

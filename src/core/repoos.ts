@@ -75,8 +75,17 @@ export interface RepoOS {
   getTask(id: string): Task | null;
   /** Counts per status. */
   counts(): Record<Status, number>;
-  /** Change a task's status (frontmatter edit; file stays put). */
-  updateStatus(id: string, status: Status): Task;
+  /**
+   * Change a task's status (frontmatter edit; file stays put). An optional
+   * `note` is appended to the activity log in the same operation.
+   */
+  updateStatus(id: string, status: Status, note?: string): Task;
+  /**
+   * Append a short, free-form note to a task's activity log (see addNote).
+   * The note is recorded as its own activity entry and never rewrites the
+   * task body.
+   */
+  addNote(id: string, note: string): Task;
   /** Update arbitrary known fields on a task. */
   updateTask(id: string, patch: Partial<Omit<Task, "git" | "absPath" | "path">>): Task;
   /** Create a new task file under workDir. Returns the created task. */
@@ -125,9 +134,12 @@ export function createRepoOS(root?: string): RepoOS {
     return String(max + 1).padStart(4, "0");
   }
 
-  function rewrite(task: Task, entry?: string): Task {
-    if (entry) recordChange(task, entry);
-    else task.updated_at = utcTimestamp();
+  function rewrite(task: Task, entries?: string[]): Task {
+    if (entries && entries.length) {
+      for (const entry of entries) recordChange(task, entry);
+    } else {
+      task.updated_at = utcTimestamp();
+    }
     writeFileSync(task.absPath, serializeTask(task));
     // refresh cache opportunistically; ignore failures
     try {
@@ -143,7 +155,7 @@ export function createRepoOS(root?: string): RepoOS {
     commitTaskFile(
       config.root,
       task.absPath,
-      `docs(${task.id}): ${entry ?? "update task"}`,
+      `docs(${task.id}): ${entries?.at(-1) ?? "update task"}`,
     );
     return task;
   }
@@ -174,7 +186,7 @@ export function createRepoOS(root?: string): RepoOS {
       return freshIndex().counts;
     },
 
-    updateStatus(id: string, status: Status) {
+    updateStatus(id: string, status: Status, note?: string) {
       if (!(STATUSES as readonly string[]).includes(status)) {
         throw new Error(
           `Invalid status "${status}". Valid: ${STATUSES.join(", ")}`,
@@ -184,7 +196,18 @@ export function createRepoOS(root?: string): RepoOS {
       if (!task) throw new Error(`Task #${id} not found.`);
       const old = task.status;
       task.status = status;
-      return rewrite(task, old === status ? undefined : `status ${old}→${status}`);
+      const entries: string[] = [];
+      if (old !== status) entries.push(`status ${old}→${status}`);
+      if (note && note.trim()) entries.push(`note: ${note.trim()}`);
+      return rewrite(task, entries);
+    },
+
+    addNote(id: string, note: string) {
+      const task = findFile(id);
+      if (!task) throw new Error(`Task #${id} not found.`);
+      const trimmed = note.trim();
+      if (!trimmed) throw new Error("Note must not be empty.");
+      return rewrite(task, [`note: ${trimmed}`]);
     },
 
     updateTask(id, patch) {
@@ -196,7 +219,7 @@ export function createRepoOS(root?: string): RepoOS {
       });
       Object.assign(task, patch);
       const summary = changed.length ? `updated ${changed.join(", ")}` : "updated";
-      return rewrite(task, summary);
+      return rewrite(task, [summary]);
     },
 
     createTask(input: CreateTaskInput) {

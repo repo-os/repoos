@@ -163,10 +163,10 @@ export function cmdShow(id?: string): void {
  * the full handoff guarantee (implementation committed + non-vacuous) should
  * go through the trusted handoff/PATCH path, not this CLI shortcut.
  */
-export function cmdMv(id?: string, status?: string): void {
+export function cmdMv(id?: string, status?: string, note?: string): void {
   if (!id || !status) {
     console.error(
-      c.red("  Usage: repoos mv <id> <status>") +
+      c.red("  Usage: repoos mv <id> <status> [--note \"...\"]") +
         c.dim(`   (${STATUSES.join(" | ")})`),
     );
     process.exitCode = 1;
@@ -179,7 +179,7 @@ export function cmdMv(id?: string, status?: string): void {
   // .git) is a silent no-op from the board's perspective.
   const repoos = boardRepoOS();
   try {
-    const t = repoos.updateStatus(id, status as Status);
+    const t = repoos.updateStatus(id, status as Status, note);
     console.log(
       "  " +
         c.green("moved ") +
@@ -187,6 +187,36 @@ export function cmdMv(id?: string, status?: string): void {
         " → " +
         statusColor(t.status)(t.status),
     );
+    if (note && note.trim()) {
+      console.log("  " + c.dim("note: ") + note.trim());
+    }
+  } catch (e) {
+    console.error(c.red("  " + (e as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * `repoos note <id> "<text>"` — append a short, free-form note to a task's
+ * activity log, so a PM/reviewer can send guidance back to the developer (or
+ * record any free-form note) without rewriting the task body. The note is
+ * recorded as its own activity entry and surfaces wherever the task's
+ * history is shown. Board-rooted, not cwd-rooted (#0202) — see cmdMv.
+ */
+export function cmdNote(args: string[]): void {
+  const [id, ...text] = args;
+  const usage = '  Usage: repoos note <id> "<text>"';
+  const note = text.join(" ").trim();
+  if (!id || !note) {
+    console.error(c.red(usage));
+    process.exitCode = 1;
+    return;
+  }
+  const repoos = boardRepoOS();
+  try {
+    const t = repoos.addNote(id, note);
+    console.log("  " + c.green("note added ") + c.dim("#" + t.id));
+    console.log("  " + c.dim("note: ") + note);
   } catch (e) {
     console.error(c.red("  " + (e as Error).message));
     process.exitCode = 1;
