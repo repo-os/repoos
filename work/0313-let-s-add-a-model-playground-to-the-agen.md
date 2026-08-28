@@ -2,7 +2,7 @@
 id: "0313"
 title: Model playground tab on the agents page
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -53,3 +53,4 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 - 2026-08-28T14:33:26Z · status active→ready
 - 2026-08-28T14:33:46Z · status ready→active
 - 2026-08-28T16:09:48Z · status active→review
+- 2026-08-28T16:09:48Z · status review→active
