@@ -12,7 +12,7 @@ model_override: opencode/hy3-free
 review_cli_override: codex
 review_model_override: gpt-5.6-luna
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T17:14:06Z"
+updated_at: "2026-08-28T17:14:17Z"
 review_passes: 3
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
