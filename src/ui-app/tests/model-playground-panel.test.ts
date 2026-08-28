@@ -178,3 +178,64 @@ describe("ModelPlaygroundPanel — interaction", () => {
     expect(wrapper.find(".playground-send-error").text()).toBe("the model returned no output");
   });
 });
+
+describe("ModelPlaygroundPanel — loading state and session controls", () => {
+  it("shows skeleton cards while the catalog is loading, before any model exists", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    const wrapper = mount(ModelPlaygroundPanel);
+    await nextTick();
+
+    expect(wrapper.findAll(".playground-skeleton")).toHaveLength(3);
+    expect(wrapper.find(".playground-model-card").exists()).toBe(false);
+  });
+
+  it("offers a clear-chat action once a conversation exists, and clears it", async () => {
+    const fetchMock = stubModelsFetch([deepinfraGroup()]);
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes("/api/playground/models")) {
+        return { ok: true, json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }) } as Response;
+      }
+      return { ok: true, json: async () => ({ ok: true, text: "It's RepoOS." }) } as Response;
+    });
+
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+    expect(wrapper.find(".playground-clear").exists()).toBe(false);
+
+    await wrapper.find(".playground-starters button").trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(wrapper.find(".playground-clear").exists()).toBe(true);
+    await wrapper.find(".playground-clear").trigger("click");
+    await nextTick();
+
+    expect(wrapper.findAll(".playground-bubble")).toHaveLength(0);
+    expect(wrapper.find(".playground-clear").exists()).toBe(false);
+    expect(wrapper.find(".playground-welcome").exists()).toBe(true);
+  });
+
+  it("shows a friendly error (never the raw JSON parse message) when a 200 response is not JSON", async () => {
+    // The 0313 preview bug: a stale server answered `/api/playground/models`
+    // with the SPA's index.html; parsing it as JSON must not leak the parser
+    // error into the sidebar.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => {
+          throw new SyntaxError(`Unexpected token '<', "<!DOCTYPE "... is not valid JSON`);
+        },
+      })),
+    );
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    const err = wrapper.find(".playground-error").text();
+    expect(err).toContain("non-JSON");
+    expect(err).not.toContain("Unexpected token");
+    expect(err).not.toContain("<!DOCTYPE");
+  });
+});

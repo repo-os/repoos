@@ -76,6 +76,13 @@ function selectModel(m: CatalogModel): void {
   draft.value = "";
 }
 
+function clearChat(): void {
+  if (sending.value) return;
+  messages.value = [];
+  sendError.value = "";
+  draft.value = "";
+}
+
 function scrollToLatest(): void {
   nextTick(() => {
     if (log.value) log.value.scrollTop = log.value.scrollHeight;
@@ -118,7 +125,7 @@ onMounted(() => {
 
 <template>
   <div class="playground">
-    <aside class="playground-sidebar" aria-label="Models worth trying">
+    <aside class="playground-sidebar" aria-label="Models worth trying" :aria-busy="loading">
       <div class="playground-sidebar-head">
         <span class="sec-label"><span class="live-dot"></span>Models worth trying</span>
         <Button variant="outline" size="sm" :disabled="loading" @click="loadModels(true)">
@@ -127,7 +134,13 @@ onMounted(() => {
       </div>
 
       <div v-if="loadError" class="playground-error">{{ loadError }}</div>
-      <div v-if="loading && !allModels.length" class="playground-loading">Loading catalog…</div>
+      <div v-if="loading && !allModels.length" class="playground-skeletons" aria-hidden="true">
+        <div v-for="i in 3" :key="i" class="playground-skeleton">
+          <div class="playground-skeleton-line w-70"></div>
+          <div class="playground-skeleton-line w-90"></div>
+          <div class="playground-skeleton-line w-45"></div>
+        </div>
+      </div>
       <div v-else-if="loadedOnce && !allModels.length && !loadError" class="playground-loading">
         No models available right now.
       </div>
@@ -164,6 +177,16 @@ onMounted(() => {
             <strong>{{ selected.name }}</strong>
             <span>{{ selected.providerLabel }} · active model</span>
           </div>
+          <button
+            v-if="messages.length"
+            type="button"
+            class="playground-clear"
+            :disabled="sending"
+            aria-label="Clear conversation"
+            @click="clearChat()"
+          >
+            Clear
+          </button>
         </header>
 
         <div ref="log" class="playground-log" role="log" aria-live="polite" :aria-label="`Conversation with ${selected.name}`">
@@ -214,6 +237,12 @@ onMounted(() => {
 .playground-provider-group{display:flex;flex-direction:column;gap:8px}
 .playground-provider-label{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);margin:4px 2px 0}
 .playground-provider-error{font-size:11px;color:var(--amber);padding:0 2px}
+.playground-skeletons{display:flex;flex-direction:column;gap:8px}
+.playground-skeleton{display:flex;flex-direction:column;gap:6px;padding:11px;border:1px solid var(--border);border-radius:11px;background:var(--panel)}
+.playground-skeleton-line{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--panel) 0%,var(--border) 50%,var(--panel) 100%);background-size:200% 100%;animation:playground-shimmer 1.4s ease-in-out infinite}
+.playground-skeleton-line.w-70{width:70%}
+.playground-skeleton-line.w-90{width:90%}
+.playground-skeleton-line.w-45{width:45%}
 .playground-model-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--txt);cursor:pointer;transition:.15s}
 .playground-model-card:hover{border-color:var(--border-bright)}
 .playground-model-card:disabled{opacity:.5;cursor:default}
@@ -228,6 +257,9 @@ onMounted(() => {
 .playground-active-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .playground-active-info strong{font-size:13px;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .playground-active-info span{font:500 10px 'JetBrains Mono',monospace;color:var(--txt-dim)}
+.playground-clear{margin-left:auto;flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer;transition:.15s}
+.playground-clear:hover{border-color:var(--border-bright);color:var(--txt)}
+.playground-clear:disabled{opacity:.5;cursor:default}
 .playground-log{flex:1;min-height:280px;max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px}
 .playground-empty{flex:1;display:grid;place-items:center;color:var(--txt-dim);font-size:12.5px;padding:40px 16px}
 .playground-welcome{margin:auto 0;text-align:center;padding:22px 12px;color:var(--txt-dim)}
@@ -259,6 +291,7 @@ onMounted(() => {
 .playground-compose button{flex:none;padding:7px 14px;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);font:600 11.5px var(--font-sans);cursor:pointer}
 .playground-compose button:disabled{opacity:.4;cursor:default}
 @keyframes playground-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
+@keyframes playground-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 @media(max-width:860px){
   .playground{flex-direction:column}
@@ -267,5 +300,6 @@ onMounted(() => {
 }
 @media(prefers-reduced-motion:reduce){
   .playground-thinking span{animation:none}
+  .playground-skeleton-line{animation:none}
 }
 </style>
