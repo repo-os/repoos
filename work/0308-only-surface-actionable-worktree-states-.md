@@ -11,7 +11,7 @@ branch: feat/only-surface-actionable-worktree-states-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-08-27T05:30:22Z"
-updated_at: "2026-08-28T11:55:58Z"
+updated_at: "2026-08-28T12:01:07Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 1
@@ -55,3 +55,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 - 2026-08-28T11:39:19Z · review_model_override
 - 2026-08-28T11:39:26Z · status review→active
 - 2026-08-28T11:55:46Z · status active→review
+- 2026-08-28T12:01:07Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
