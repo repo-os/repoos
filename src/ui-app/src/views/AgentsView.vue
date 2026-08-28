@@ -12,6 +12,7 @@ import Switch from "../components/ui/switch.vue";
 import AgentModelControl from "../components/AgentModelControl.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
+import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 
 const config = useConfigStore();
@@ -19,18 +20,26 @@ const router = useRouter();
 const route = useRoute();
 const docs = useDocsStore();
 
-type AgentTab = "default" | "custom" | "team" | "detected";
+type AgentTab = "default" | "custom" | "team" | "detected" | "playground";
 
 const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   default: "Default Agents",
   custom: "Custom Agents",
   team: "Build Your Team",
   detected: "Detected Coding Agents",
+  playground: "Model Playground",
 };
 
-const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected"];
+const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected", "playground"];
 
 const activeTab = ref<AgentTab>("default");
+// The playground fetches from external APIs on first view — lazy-mount it
+// only once the user actually opens the tab, but keep it mounted afterward
+// so switching tabs doesn't lose the in-progress chat.
+const playgroundActivated = ref(false);
+watch(activeTab, (tab) => {
+  if (tab === "playground") playgroundActivated.value = true;
+});
 
 // Deep-linking: the active tab is reflected in the URL as ?tab=<id> so users
 // can link straight to a section. Falls back to "default" on page load.
@@ -652,6 +661,8 @@ onUnmounted(() => {
           </div>
         </template>
       </Card>
+
+      <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
       </div>
 
     </template>
