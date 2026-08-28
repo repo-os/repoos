@@ -1,16 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import Dialog from "./ui/dialog/root.vue";
-import DialogClose from "./ui/dialog/close.vue";
-import DialogContent from "./ui/dialog/content.vue";
-import DialogDescription from "./ui/dialog/description.vue";
-import DialogOverlay from "./ui/dialog/overlay.vue";
-import DialogTitle from "./ui/dialog/title.vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "./ui/button.vue";
 
-const props = defineProps<{
-  open: boolean;
-}>();
+const props = defineProps<{ open: boolean; taskId: string | undefined; busy: boolean }>();
 
 const emit = defineEmits<{
   "update:open": [value: boolean];
@@ -18,73 +10,104 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-function onClose(): void {
-  emit("update:open", false);
+const cancelButton = ref<InstanceType<typeof Button> | null>(null);
+
+function onKey(event: KeyboardEvent): void {
+  if (event.key === "Escape" && props.open) emit("cancel");
 }
 
-function onConfirm(): void {
-  emit("update:open", false);
-  emit("confirm");
-}
+onMounted(() => window.addEventListener("keydown", onKey));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) void nextTick(() => cancelButton.value?.$el?.focus());
+  },
+);
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
-    <DialogOverlay />
-    <DialogContent class="stop-work-modal">
-      <div class="stop-work-modal-head">
-        <div class="stop-work-modal-head-text">
-          <DialogTitle>Confirm Stop Work</DialogTitle>
-          <DialogDescription class="sr-only">
-            Confirm stopping work on this task
-          </DialogDescription>
+  <Teleport to="body">
+    <div
+      v-if="open"
+      class="stop-work-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stop-work-confirm-title"
+      aria-describedby="stop-work-confirm-description"
+      @click.self="emit('cancel')"
+    >
+      <div class="stop-work-modal">
+        <div class="stop-work-modal-head">
+          <h3 id="stop-work-confirm-title" class="stop-work-title">Confirm Stop Work</h3>
+          <button
+            type="button"
+            class="stop-work-close"
+            aria-label="Close confirmation"
+            :disabled="busy"
+            @click="emit('cancel')"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
         </div>
-        <DialogClose class="close-x" @click="onClose">
-          <svg class="size-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </DialogClose>
-      </div>
-      
-      <div class="stop-work-modal-body">
-        <p class="stop-work-modal-message">
-          Stop this task's current work and send it back to ready? 
-          The worktree is kept, not deleted.
+
+        <p id="stop-work-confirm-description" class="stop-work-modal-message">
+          Stop work on task {{ taskId || "this task" }} and send it back to ready?
+          The current worktree is kept, not deleted.
         </p>
-        
+
         <div class="stop-work-modal-actions">
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            @click="onClose"
+          <Button
+            ref="cancelButton"
+            type="button"
+            variant="outline"
+            size="sm"
+            :disabled="busy"
+            @click="emit('cancel')"
           >
             Cancel
           </Button>
-          <Button 
-            type="button" 
-            variant="destructive" 
-            size="sm" 
-            @click="onConfirm"
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            :disabled="busy"
+            @click="emit('confirm')"
           >
             Stop Work
           </Button>
         </div>
       </div>
-    </DialogContent>
-  </Dialog>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
+.stop-work-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  isolation: isolate;
+  pointer-events: auto;
+  background: rgba(4, 6, 12, 0.62);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
 .stop-work-modal {
-  width: min(400px, 90vw);
-  max-width: 90vw;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  width: min(400px, 100%);
   background: var(--panel-solid);
   border: 1px solid var(--border-bright);
   border-radius: 16px;
-  padding: 0;
+  padding: 22px;
   box-shadow: var(--drawer-shadow);
-  animation: slideIn .2s ease-out;
+  animation: slideIn 0.18s ease-out;
 }
 
 @keyframes slideIn {
@@ -102,26 +125,30 @@ function onConfirm(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--border);
+  gap: 12px;
 }
-
-.stop-work-modal-head-text h3 {
+.stop-work-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--txt);
   margin: 0;
 }
-
-.stop-work-modal-body {
-  padding: 22px;
+.stop-work-close {
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  padding: 2px 6px;
 }
-
+.stop-work-close:hover { color: var(--txt); }
+.stop-work-close:disabled { cursor: not-allowed; opacity: 0.5; }
 .stop-work-modal-message {
   font-size: 13px;
   line-height: 1.55;
   color: var(--txt-dim);
-  margin: 0 0 20px;
+  margin: 12px 0 20px;
 }
 
 .stop-work-modal-actions {

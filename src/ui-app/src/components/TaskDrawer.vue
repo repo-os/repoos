@@ -373,18 +373,29 @@ async function pauseWork(): Promise<void> {
 
 async function abandonWork(): Promise<void> {
   if (!ui.active) return;
+  stopWorkTask.value = ui.active;
   confirmStopWork.value = true;
 }
 
 async function confirmAbandonWork(): Promise<void> {
-  if (!ui.active) return;
+  const task = stopWorkTask.value;
+  if (!task) {
+    repo.onError(new Error("No task selected to stop."));
+    return;
+  }
   ui.saving = true;
   try {
-    await repo.abandonWork(ui.active);
+    await repo.abandonWork(task);
+    confirmStopWork.value = false;
+    // The body-teleported modal can dismiss the drawer while it is open.
+    // Close intentionally after the request so the result is not dependent
+    // on whether the parent drawer survived the modal interaction.
+    ui.close();
   } catch (err) {
     repo.onError(err);
   } finally {
     ui.saving = false;
+    stopWorkTask.value = null;
   }
 }
 
@@ -405,6 +416,9 @@ const confirmDelete = ref(false);
 const confirmHotfix = ref(false);
 // Stop work confirmation modal state
 const confirmStopWork = ref(false);
+// The body-teleported confirmation can dismiss the drawer before its confirm
+// handler runs, so retain the task identity captured when it was opened.
+const stopWorkTask = ref<Task | null>(null);
 
 // HotfixConfirmDialog is body-teleported, so opening it trips the drawer's
 // modal dismiss-on-outside and nulls `ui.active` before `startHotfix` runs.
@@ -3502,7 +3516,8 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
 
   <StopWorkConfirmModal
     :open="confirmStopWork"
-    :task-id="ui.active?.id ?? ''"
+    :task-id="stopWorkTask?.id ?? ui.active?.id"
+    :busy="ui.saving"
     @update:open="(v) => (confirmStopWork = v)"
     @confirm="confirmAbandonWork"
     @cancel="() => (confirmStopWork = false)"
