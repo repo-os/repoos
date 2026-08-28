@@ -8,12 +8,11 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/model-playground-tab-on-the-agents-page
-cli_override: claude code
-model_override: sonnet
+model_override: default
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-28T14:32:19Z"
+updated_at: "2026-08-28T14:32:27Z"
 review_passes: 2
 ---
 Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
@@ -47,3 +46,4 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 - 2026-08-28T14:19:26Z · status active→review
 - 2026-08-28T14:32:18Z · status review→active
 - 2026-08-28T14:32:18Z · note: UI still has a bug, it's showing this instead of a list of models: ```Unexpected token '<', "<!DOCTYPE "... is not valid JSON```
+- 2026-08-28T14:32:27Z · cli_override, model_override
