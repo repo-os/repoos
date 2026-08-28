@@ -1168,9 +1168,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
-  // re-fires onHandoff for valid ones. Must run after adoptRunningAgents so
-  // in-flight handoffs from adopted agents are visible.
-  runner.recoverPendingHandoffs();
+  // re-fires onHandoff for valid ones. Runs after `adoptRunningAgents` (so
+  // in-flight handoffs from adopted agents are visible) AND after the index
+  // has populated: recovery validates via `index.getTask()`, which is empty
+  // until `refreshAllAsync` resolves — a fast boot used to run recovery first
+  // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
+  // leaving the task stuck `active` with its work uncommitted.
+  const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
+  void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
