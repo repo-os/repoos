@@ -85,6 +85,7 @@ import {
   worktreePathForBranch,
   tuneRepoForScale,
 } from "../core/git.js";
+import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -825,6 +826,36 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const interruptedJobs = jobCoordinator.findInterruptedJobs();
   for (const job of interruptedJobs) {
     console.log(`Resuming interrupted job for task ${job.taskId} from phase ${job.phase}`);
+  }
+
+  // Boot-time worktree GC: prune orphaned `repoos/integrate/*` candidate
+  // worktrees left by failed/interrupted close-out jobs, plus stale worktree
+  // metadata. Deliberately conservative — it never touches `feat/*` task
+  // worktrees; `repoos gc` is the path for those. Fire-and-forget so it stays
+  // off `server.listen()`'s critical path (same shape as the remote-validation
+  // reconcile above). Control-plane only, and opt-out via env.
+  if (isControlPlane && process.env.REPOOS_NO_WORKTREE_GC !== "1") {
+    // Wait for the async index build to settle first — the sweep's git spawns
+    // are synchronous, and running them during boot would compete with the
+    // health handshake / first paint.
+    void indexReady
+      .catch(() => {})
+      .then(() => {
+        const activeJobIds = new Set(
+          jobCoordinator
+            .allJobs()
+            .filter((j) => j.phase !== "done" && j.phase !== "failed")
+            .map((j) => j.taskId),
+        );
+        const report = sweepStaleWorktrees(config, { mode: "integrate-only", activeJobIds });
+        if (report.removedWorktrees.length || report.errors.length) {
+          logger.system("info", "boot worktree gc", {
+            removed: report.removedWorktrees.map((w) => w.branch || w.path),
+            errors: report.errors,
+          });
+        }
+      })
+      .catch((e) => logger.system("warn", `boot worktree gc failed: ${(e as Error).message}`));
   }
 
   let processingJob = false;
