@@ -40,8 +40,8 @@ afterEach(() => {
 });
 
 describe("isBun", () => {
-  it("is false under the Node test runner", () => {
-    expect(isBun()).toBe(false);
+  it("reflects the current runtime", () => {
+    expect(isBun()).toBe(typeof (process.versions as { bun?: string }).bun === "string");
   });
 });
 
@@ -82,7 +82,9 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
     expect(reexecServeUnderBunIfRequested()).toBe(false);
   });
 
-  it("stays on Node (and warns) when REPOOS_RUNTIME=bun but bun is unresolvable", () => {
+  // These two assert Node-side behavior — under Bun the function bails at the
+  // isBun() guard before ever probing for `bun`, so there's nothing to observe.
+  it.runIf(!isBun())("stays on Node (and warns) when REPOOS_RUNTIME=bun but bun is unresolvable", () => {
     process.env.REPOOS_RUNTIME = "bun";
     process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
     const errs: string[] = [];
@@ -99,7 +101,7 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
     expect(errs.join("")).toContain("not on PATH");
   });
 
-  it("stays silent for REPOOS_RUNTIME=auto when bun is unresolvable", () => {
+  it.runIf(!isBun())("stays silent for REPOOS_RUNTIME=auto when bun is unresolvable", () => {
     process.env.REPOOS_RUNTIME = "auto";
     process.env.REPOOS_BUN_PATH = "/definitely/not/a/real/bun";
     const errs: string[] = [];
@@ -118,10 +120,11 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
 });
 
 // The actual re-exec replaces the process image, so it can only be observed
-// from a child. Runs only where Node can execute the .ts source directly
-// (native type stripping, Node >= 22.6 / always on 24).
+// from a child. This is the Node -> Bun switch, so it's moot when the suite
+// itself runs under Bun; and it needs Node's native .ts type stripping
+// (>= 22.6 / always on 24) to run the fixture source directly.
 const canStripTypes = process.features.typescript !== undefined;
-describe.runIf(canStripTypes)("reexecServeUnderBunIfRequested — real switch", () => {
+describe.runIf(canStripTypes && !isBun())("reexecServeUnderBunIfRequested — real switch", () => {
   function runFixture(env: Record<string, string>): { stdout: string; status: number } {
     const fixture = mkdtempSync(join(tmpdir(), "repoos-rt-fx-"));
     const file = join(fixture, "fx.ts");

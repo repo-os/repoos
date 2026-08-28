@@ -17,6 +17,7 @@ import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot } from "../core/config.js";
 import { availableMemBytes } from "../core/sysmem.js";
+import { preferBunForDevTasks } from "../core/runtime.js";
 import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
 
 
@@ -610,12 +611,15 @@ export async function cmdCheck(): Promise<void> {
   } else if (hasTestScript || hasTestFiles) {
     // Only the vitest-backed `bun run test` script understands `--changed`;
     // the bare `bun test` fallback (no package.json test script) is left
-    // unscoped.
+    // unscoped. `--bun` forces vitest's `#!/usr/bin/env node` shebang onto
+    // Bun when the runtime is opted in (REPOOS_RUNTIME=bun|auto) — ~5x faster
+    // and it stops the swap-thrash flake on a loaded machine.
     const changedRef = hasTestScript ? changedTestRef(process.env) : undefined;
+    const runScript = preferBunForDevTasks() ? "bun run --bun test" : "bun run test";
     const cmd = hasTestScript
       ? changedRef
-        ? `bun run test -- --changed ${changedRef}`
-        : "bun run test"
+        ? `${runScript} -- --changed ${changedRef}`
+        : runScript
       : "bun test";
     if (changedRef) {
       console.log(c.dim(`  · Scoped to files changed vs ${changedRef} (--changed)`));

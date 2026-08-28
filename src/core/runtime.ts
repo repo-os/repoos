@@ -60,6 +60,20 @@ function runtimeMode(): RuntimeMode {
 }
 
 /**
+ * Whether repoos-spawned dev subtasks that CAN run on either runtime — right
+ * now just `repoos check`'s vitest step — should be forced onto Bun. True when
+ * `REPOOS_RUNTIME` opts in AND Bun is actually usable (already running it, or
+ * on PATH). The vitest suite is ~5x faster and lower-memory under Bun.
+ *
+ * Gated on the env var, not on "is this the repoos repo", so `repoos check`
+ * in a managed repo whose tests need Node is never silently switched.
+ */
+export function preferBunForDevTasks(): boolean {
+  if (runtimeMode() === "node") return false;
+  return isBun() || resolveBun() !== null;
+}
+
+/**
  * If a Bun switch is requested (`REPOOS_RUNTIME=bun|auto`) and we are on Node,
  * re-exec this CLI under Bun. With `process.execve` this never returns (the
  * process image is replaced in place). With the spawn fallback it returns

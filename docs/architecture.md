@@ -207,3 +207,9 @@ process elsewhere. `src/core/runtime.ts` guards against re-exec loops with
 `REPOOS_RUNTIME_REEXEC=1`. Everything the server then spawns via
 `process.execPath` (reload replacements, preview children, `repoos check`)
 inherits the same runtime.
+
+The same env var also moves `repoos check`'s vitest step onto Bun
+(`preferBunForDevTasks()` → `bun run --bun test`): the suite is ~5x faster
+and its lower memory footprint avoids the swap-thrash flake on a loaded
+machine. `just test` / `just test-node` pick the runtime explicitly.
+Managed-repo checks are never switched unless the env var is set.

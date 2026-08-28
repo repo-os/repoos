@@ -18,6 +18,14 @@ commit message:
 check:
     repoos check
 
+# run the test suite under Bun (~5x faster than Node) `just test` / `just test runtime`
+test *args:
+    bun run --bun test -- {{args}}
+
+# run the test suite under Node `just test-node`
+test-node *args:
+    bun run test -- {{args}}
+
 # list tasks `repoos list`
 list:
     repoos list
