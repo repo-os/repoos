@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/the-stop-work-double-confirm-should-be-a
 review_model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T16:34:36Z"
+updated_at: "2026-08-28T16:34:37Z"
 review_passes: 1
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
