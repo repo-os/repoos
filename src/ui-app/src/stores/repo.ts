@@ -1210,10 +1210,10 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  async function setStatus(t: Task, status: string): Promise<void> {
-    if (t.status === status) return;
+  async function setStatus(t: Task, status: string, note?: string): Promise<void> {
+    if (t.status === status && !note) return;
     try {
-      await patchTask(t.id, { status });
+      await patchTask(t.id, note ? { status, note } : { status });
       // Moving a review task anywhere (other than through the done workflow)
       // invalidates any close-out error shown on its card.
       if (status !== "review") setDoneError(t.id, null);

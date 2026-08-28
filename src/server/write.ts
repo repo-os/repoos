@@ -17,7 +17,13 @@ import { execFileSync } from "node:child_process";
 import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
-import { parseTask, serializeTask, recordChange, utcTimestamp } from "../core/task.js";
+import {
+  parseTask,
+  serializeTask,
+  recordChange,
+  utcTimestamp,
+  appendActivityEntry,
+} from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 
 export interface TaskPatch {
@@ -57,6 +63,14 @@ export interface TaskPatch {
   hotfix?: boolean;
   /** Hotfix merge target. */
   hotfixTarget?: "branch" | "main";
+  /**
+   * Append a short, free-form note to the task's activity log (e.g.
+   * instructions from a PM/reviewer back to the developer). The note is
+   * recorded as its own activity entry — it never rewrites the task body and
+   * can be combined with a status transition in the same patch. An empty or
+   * whitespace-only note is ignored.
+   */
+  note?: string | null;
 }
 
 export interface PatchTaskOptions {
@@ -200,9 +214,18 @@ export function patchTaskFile(
     current.hotfixTarget = patch.hotfixTarget;
   }
 
+  // A note is an additive activity entry, not a task field: it surfaces in the
+  // timeline (and therefore in the UI and to AI reviewers) without rewriting
+  // the body. It can accompany a status transition in the same patch.
+  const note = typeof patch.note === "string" ? patch.note.trim() : "";
+  if (note) {
+    current.body = appendActivityEntry(current.body, `- ${utcTimestamp()} · note: ${note}`);
+    current.updated_at = utcTimestamp();
+  }
+
   if (changes.length) {
     recordChange(current, changes.join(", "));
-  } else {
+  } else if (!note) {
     current.updated_at = utcTimestamp();
   }
   writeFileSync(absPath, serializeTask(current));
