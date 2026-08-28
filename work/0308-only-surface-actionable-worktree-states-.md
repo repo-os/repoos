@@ -2,7 +2,7 @@
 id: "0308"
 title: Only surface actionable worktree states in the UI
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -46,3 +46,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 - 2026-08-28T11:26:17Z · status active→review
 - 2026-08-28T11:27:23Z · status review→active
 - 2026-08-28T11:29:01Z · status active→review
+- 2026-08-28T11:29:01Z · status review→active
