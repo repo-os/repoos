@@ -80,6 +80,10 @@ describe("task note mechanism", () => {
       expect(updated.status).toBe("active");
       expect(updated.body).toContain("status review→active");
       expect(updated.body).toContain("note: Handle the reviewer's suggestions");
+      // Timeline order matches the core path: status entry first, then note.
+      const statusIdx = updated.body.indexOf("status review→active");
+      const noteIdx = updated.body.indexOf("note: Handle the reviewer's suggestions");
+      expect(noteIdx).toBeGreaterThan(statusIdx);
     } finally {
       clean();
     }

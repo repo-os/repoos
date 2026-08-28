@@ -22,7 +22,6 @@ import {
   serializeTask,
   recordChange,
   utcTimestamp,
-  appendActivityEntry,
 } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 
@@ -216,16 +215,17 @@ export function patchTaskFile(
 
   // A note is an additive activity entry, not a task field: it surfaces in the
   // timeline (and therefore in the UI and to AI reviewers) without rewriting
-  // the body. It can accompany a status transition in the same patch.
+  // the body. It can accompany a status transition in the same patch. Entries
+  // are appended status-first then note, matching the core `updateStatus` path,
+  // so the timeline reads identically regardless of entry path.
   const note = typeof patch.note === "string" ? patch.note.trim() : "";
-  if (note) {
-    current.body = appendActivityEntry(current.body, `- ${utcTimestamp()} · note: ${note}`);
-    current.updated_at = utcTimestamp();
-  }
+  const entries: string[] = [];
+  if (changes.length) entries.push(changes.join(", "));
+  if (note) entries.push(`note: ${note}`);
 
-  if (changes.length) {
-    recordChange(current, changes.join(", "));
-  } else if (!note) {
+  if (entries.length) {
+    for (const entry of entries) recordChange(current, entry);
+  } else {
     current.updated_at = utcTimestamp();
   }
   writeFileSync(absPath, serializeTask(current));
