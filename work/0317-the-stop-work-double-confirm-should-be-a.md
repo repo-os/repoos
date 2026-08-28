@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-28T16:31:12Z"
+review_passes: 1
 id: "0317"
 title: "The stop work double confirm should be a proper modal, no…"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/the-stop-work-double-confirm-should-be-a
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T16:26:06Z"
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
 
@@ -37,3 +38,4 @@ The stop work confirmation dialog should be implemented as a proper modal compon
 - 2026-08-28T16:18:54Z · status draft→ready
 - 2026-08-28T16:21:48Z · status ready→active, branch
 - 2026-08-28T16:26:06Z · status active→review
+
