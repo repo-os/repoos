@@ -32,10 +32,11 @@ import {
   lastCommitsForDir,
   lastCommitsForDirAsync,
   worktreeStatus,
-  worktreeStatusAsync,
   worktreePaths,
   currentBranch,
   emptyGitInfo,
+  resolveWorktreeStatuses,
+  type WorktreeDirtyCache,
 } from "./git.js";
 
 const INDEX_VERSION = 1;
@@ -150,24 +151,6 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
   };
 }
 
-/** Run `fn` over `items` with at most `concurrency` promises in flight. */
-async function runBounded<T>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T) => Promise<void>,
-): Promise<void> {
-  const queue = [...items];
-  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
-    for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
-      await fn(next);
-    }
-  });
-  await Promise.all(workers);
-}
-
-/** Concurrency cap for the per-task git enrichment below. */
-const GIT_ENRICH_CONCURRENCY = 16;
-
 /**
  * Async counterpart of `buildIndex`. Identical result, but the per-task git
  * enrichment (last commit + worktree status) runs CONCURRENTLY instead of one
@@ -178,8 +161,17 @@ const GIT_ENRICH_CONCURRENCY = 16;
  * fixed above (#0271 follow-up). Used by the server's startup path, which can
  * let `listen()` proceed while this populates the index in the background;
  * `buildIndex` remains for callers (the CLI) that want a synchronous result.
+ *
+ * `opts.fastWorktreeStatus` skips the per-worktree `git status` entirely and
+ * reports each task's `dirty` from the persisted cache plus its ahead count.
+ * The server passes this at boot and follows up with
+ * `LiveIndex.reconcileWorktreeStatus()` a moment later, trading a few seconds
+ * of a possibly-stale "uncommitted changes" dot for a fast first paint.
  */
-export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> {
+export async function buildIndexAsync(
+  config: RepoOSConfig,
+  opts: { fastWorktreeStatus?: boolean } = {},
+): Promise<RepoIndex> {
   const workPath = join(config.root, config.workDir);
   const files = walkFiles(workPath, config.taskExtensions);
 
@@ -219,14 +211,29 @@ export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> 
   }
 
   if (useGit) {
-    await runBounded(tasks, GIT_ENRICH_CONCURRENCY, async (base) => {
+    // Batched worktree status: two git spawns for every branch's ahead count
+    // and worktree HEAD, then one `git status` only per worktree whose HEAD
+    // moved since the last run (persisted in worktree-status.json). On a
+    // server reload — HEADs unchanged — this does zero `git status` calls;
+    // the old path ran two spawns per task branch (~2.5s at 40 branches).
+    const dirtyCache = readWorktreeDirtyCache(config);
+    const branchesWithTasks = tasks
+      .map((t) => t.branch)
+      .filter((b): b is string => !!b);
+    const { statuses, cache, changed } = await resolveWorktreeStatuses(
+      config.root,
+      branchesWithTasks,
+      { baseBranch, cache: dirtyCache, skipStatus: opts.fastWorktreeStatus },
+    );
+    if (changed) writeWorktreeDirtyCache(config, cache);
+
+    for (const base of tasks) {
       const { subject, date } = lastCommits.get(base.path) ?? {
         subject: null,
         date: null,
       };
-      const wt = base.branch
-        ? await worktreeStatusAsync(config.root, base.branch, { worktrees, baseBranch })
-        : { path: null, dirty: false };
+      const wt =
+        (base.branch && statuses.get(base.branch)) || { path: null, dirty: false };
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
         worktreeExists: base.branch ? worktrees.has(base.branch) : false,
@@ -235,7 +242,7 @@ export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> 
         worktreePath: wt.path,
         dirty: wt.dirty,
       };
-    });
+    }
   }
 
   tasks.sort((a, b) => {
@@ -263,6 +270,57 @@ export async function buildIndexAsync(config: RepoOSConfig): Promise<RepoIndex> 
 
 export function indexCachePath(config: RepoOSConfig): string {
   return join(config.root, config.cacheDir, "index.json");
+}
+
+interface WorktreeDirtyFile {
+  version: 1;
+  branches: Record<string, { head: string; uncommitted: boolean }>;
+}
+
+function worktreeDirtyCachePath(config: RepoOSConfig): string {
+  return join(config.root, config.cacheDir, "worktree-status.json");
+}
+
+/**
+ * Load the persisted per-branch working-tree dirtiness so a rebuild can skip
+ * `git status` for worktrees whose HEAD has not moved. Always safe: a missing,
+ * malformed, or stale file just means more `git status` calls this run.
+ */
+export function readWorktreeDirtyCache(config: RepoOSConfig): WorktreeDirtyCache {
+  const cache: WorktreeDirtyCache = new Map();
+  try {
+    const raw = JSON.parse(
+      readFileSync(worktreeDirtyCachePath(config), "utf8"),
+    ) as WorktreeDirtyFile;
+    if (raw?.version === 1 && raw.branches) {
+      for (const [branch, v] of Object.entries(raw.branches)) {
+        if (v && typeof v.head === "string" && typeof v.uncommitted === "boolean") {
+          cache.set(branch, { head: v.head, uncommitted: v.uncommitted });
+        }
+      }
+    }
+  } catch {
+    /* no cache / bad cache -> empty */
+  }
+  return cache;
+}
+
+export function writeWorktreeDirtyCache(
+  config: RepoOSConfig,
+  cache: WorktreeDirtyCache,
+): void {
+  const dir = join(config.root, config.cacheDir);
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const branches: WorktreeDirtyFile["branches"] = {};
+    for (const [branch, v] of cache) branches[branch] = { ...v };
+    writeFileSync(
+      worktreeDirtyCachePath(config),
+      JSON.stringify({ version: 1, branches } satisfies WorktreeDirtyFile),
+    );
+  } catch {
+    /* best-effort: losing the cache only costs `git status` calls next run */
+  }
 }
 
 export function writeIndexCache(config: RepoOSConfig, index: RepoIndex): void {

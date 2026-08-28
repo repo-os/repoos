@@ -103,6 +103,37 @@ export function localBranches(root: string): Set<string> {
   return new Set(out.split("\n").map((s) => s.trim()).filter(Boolean));
 }
 
+/**
+ * Commits-ahead count for EVERY local branch relative to `base`, in a single
+ * `git for-each-ref` call. The indexer needs "does this task's branch have
+ * unmerged commits" for every task; the per-branch alternative
+ * (`git rev-list --count base..branch` once per task) was ~2.5s of the index
+ * build on a repo with ~40 task branches.
+ *
+ * `%(ahead-behind:<base>)` needs git ≥ 2.41 (2023-06); on older git the field
+ * renders empty and this returns an empty map, so callers fall back to
+ * `rev-list` per branch. Fail-soft: empty map when git is missing.
+ */
+export function branchAheadCounts(root: string, base: string | null): Map<string, number> {
+  const map = new Map<string, number>();
+  if (!base) return map;
+  // refs never contain spaces, so a space separator parses unambiguously:
+  // "<branch> <ahead> <behind>". The ahead/behind pair is empty on git < 2.41.
+  const out = git(root, [
+    "for-each-ref",
+    `--format=%(refname:short) %(ahead-behind:${base})`,
+    "refs/heads/",
+  ]);
+  if (!out) return map;
+  for (const line of out.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 2) continue; // no ahead/behind -> old git, or the base ref
+    const ahead = Number(parts[1]);
+    if (parts[0] && Number.isFinite(ahead)) map.set(parts[0], ahead);
+  }
+  return map;
+}
+
 /** Last commit subject + ISO date touching a specific file. */
 export function lastCommitForFile(
   root: string,
@@ -264,25 +295,52 @@ export interface EnsureWorktreeResult {
   reason?: string;
 }
 
+export interface WorktreeEntry {
+  /** Absolute path of the linked worktree. */
+  path: string;
+  /** The commit SHA the worktree currently has checked out. */
+  head: string;
+}
+
 /**
- * Branch -> worktree path for every registered linked worktree, derived from
- * `git worktree list --porcelain`. Empty map when git is missing. Callers that
- * resolve several branches at once (indexer, live index) should call this ONCE
- * and reuse the map — every call shells out to git.
+ * Branch -> { path, head } for every registered linked worktree, derived from
+ * a single `git worktree list --porcelain`. Empty map when git is missing.
+ * Callers resolving several branches at once (indexer, live index) MUST call
+ * this once and reuse the map — every call shells out to git.
+ *
+ * `head` lets a caller skip an expensive per-worktree `git status` when the
+ * worktree has not moved since a cached check (see the indexer's worktree
+ * dirty-status cache).
  */
-export function worktreePaths(root: string): Map<string, string> {
+export function worktreeList(root: string): Map<string, WorktreeEntry> {
   const out = git(root, ["worktree", "list", "--porcelain"]);
-  const map = new Map<string, string>();
+  const map = new Map<string, WorktreeEntry>();
   if (!out) return map;
-  let cur: string | null = null;
+  let path: string | null = null;
+  let head = "";
   for (const line of out.split("\n")) {
     if (line.startsWith("worktree ")) {
-      cur = line.slice("worktree ".length).trim();
-    } else if (cur && line.startsWith("branch refs/heads/")) {
-      map.set(line.slice("branch refs/heads/".length).trim(), cur);
-      cur = null;
+      path = line.slice("worktree ".length).trim();
+      head = "";
+    } else if (line.startsWith("HEAD ")) {
+      head = line.slice("HEAD ".length).trim();
+    } else if (path && line.startsWith("branch refs/heads/")) {
+      map.set(line.slice("branch refs/heads/".length).trim(), { path, head });
+      path = null;
+      head = "";
     }
   }
+  return map;
+}
+
+/**
+ * Branch -> worktree path for every registered linked worktree. Thin
+ * projection of `worktreeList` kept for the many callers that only need the
+ * path; prefer `worktreeList` when you also want the checked-out SHA.
+ */
+export function worktreePaths(root: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const [branch, entry] of worktreeList(root)) map.set(branch, entry.path);
   return map;
 }
 
@@ -495,6 +553,137 @@ export async function worktreeStatusAsync(
   const uncommitted = status !== null && status !== "";
   const ahead = count !== null && Number(count) > 0;
   return { path, dirty: uncommitted || ahead };
+}
+
+/** Per-branch working-tree dirtiness, keyed to the SHA it was checked at. */
+export interface WorktreeDirtyEntry {
+  /** The worktree HEAD SHA this `uncommitted` value was computed against. */
+  head: string;
+  /** True when `git status --porcelain` in the worktree was non-empty. */
+  uncommitted: boolean;
+}
+export type WorktreeDirtyCache = Map<string, WorktreeDirtyEntry>;
+
+const WORKTREE_STATUS_CONCURRENCY = 12;
+
+/**
+ * Resolve `WorktreeStatus` for MANY branches with a bounded number of git
+ * spawns instead of three per branch:
+ *
+ *  - one `git worktree list --porcelain` (paths + HEAD SHAs)
+ *  - one `git for-each-ref` for every branch's ahead count
+ *  - one `git status --porcelain` per worktree WHOSE HEAD MOVED since `cache`
+ *    (all of them on a cold cache; usually none on a server reload)
+ *
+ * `opts.cache` is consulted and updated in place; `changed` says whether it
+ * needs persisting. `opts.skipStatus` returns the cached dirtiness verbatim
+ * and never runs `git status` — the fast boot path, paired with a later
+ * reconcile sweep. Fail-soft throughout: a git failure yields
+ * `{ path: null, dirty: false }` for that branch, matching `worktreeStatus`.
+ */
+export async function resolveWorktreeStatuses(
+  root: string,
+  branches: Iterable<string>,
+  opts: {
+    baseBranch: string | null;
+    cache?: WorktreeDirtyCache;
+    skipStatus?: boolean;
+  },
+): Promise<{
+  statuses: Map<string, WorktreeStatus>;
+  cache: WorktreeDirtyCache;
+  changed: boolean;
+}> {
+  const cache: WorktreeDirtyCache = opts.cache ?? new Map();
+  const statuses = new Map<string, WorktreeStatus>();
+  const wanted = new Set(branches);
+  if (wanted.size === 0) return { statuses, cache, changed: false };
+
+  const worktrees = worktreeList(root);
+  const aheadCounts = branchAheadCounts(root, opts.baseBranch);
+
+  let realRoot = root;
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    /* keep root */
+  }
+
+  // Branches that need a fresh `git status`: HEAD moved (or not cached).
+  const toCheck: { branch: string; path: string; head: string }[] = [];
+  const seenBranches = new Set<string>();
+
+  for (const branch of wanted) {
+    const entry = worktrees.get(branch);
+    if (!entry) {
+      statuses.set(branch, { path: null, dirty: false });
+      continue;
+    }
+    seenBranches.add(branch);
+    let realPath = entry.path;
+    try {
+      realPath = realpathSync(entry.path);
+    } catch {
+      /* keep the reported path */
+    }
+    // git lists the main checkout as a worktree too; it is never a task worktree.
+    if (realPath === realRoot) {
+      statuses.set(branch, { path: null, dirty: false });
+      continue;
+    }
+
+    const ahead = (aheadCounts.get(branch) ?? 0) > 0;
+    const cached = cache.get(branch);
+    if (opts.skipStatus || (cached && cached.head === entry.head)) {
+      const uncommitted = cached && cached.head === entry.head ? cached.uncommitted : false;
+      statuses.set(branch, { path: entry.path, dirty: uncommitted || ahead });
+    } else {
+      toCheck.push({ branch, path: entry.path, head: entry.head });
+      // provisional: reflect `ahead` now, refine once status returns
+      statuses.set(branch, { path: entry.path, dirty: ahead });
+    }
+  }
+
+  let changed = false;
+  // Prune cache entries for branches we looked for that no longer have a
+  // worktree (collect first — don't delete while iterating the Map).
+  const stale: string[] = [];
+  for (const branch of cache.keys()) {
+    if (!seenBranches.has(branch) && wanted.has(branch)) stale.push(branch);
+  }
+  for (const branch of stale) {
+    cache.delete(branch);
+    changed = true;
+  }
+
+  // Fall back to per-branch rev-list when for-each-ref gave nothing (old git).
+  const needAheadFallback =
+    aheadCounts.size === 0 && toCheck.length > 0 && !!opts.baseBranch;
+
+  const queue = [...toCheck];
+  const workers = Array.from(
+    { length: Math.min(WORKTREE_STATUS_CONCURRENCY, queue.length) },
+    async () => {
+      for (let job = queue.shift(); job; job = queue.shift()) {
+        const [status, count] = await Promise.all([
+          gitAsync(job.path, ["status", "--porcelain"]),
+          needAheadFallback && opts.baseBranch !== job.branch
+            ? gitAsync(root, ["rev-list", "--count", `${opts.baseBranch}..${job.branch}`])
+            : Promise.resolve(null),
+        ]);
+        const uncommitted = status !== null && status !== "";
+        const ahead = needAheadFallback
+          ? count !== null && Number(count) > 0
+          : (aheadCounts.get(job.branch) ?? 0) > 0;
+        statuses.set(job.branch, { path: job.path, dirty: uncommitted || ahead });
+        cache.set(job.branch, { head: job.head, uncommitted });
+        changed = true;
+      }
+    },
+  );
+  await Promise.all(workers);
+
+  return { statuses, cache, changed };
 }
 
 /**

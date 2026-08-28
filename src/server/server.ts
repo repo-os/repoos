@@ -1266,6 +1266,39 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, BUILT_IN_CHECK_INTERVAL_MS);
 
+  // Periodic worktree dirty-status sweep. Task mutations already refresh a
+  // task's worktree status via refreshBranches(); this catches the gap where a
+  // worktree goes dirty (or clean) with no task activity at all, and keeps the
+  // fast-boot skip honest over long uptimes. Batched — one `git status` per
+  // worktree whose HEAD moved. Never overlaps itself.
+  const WORKTREE_SWEEP_INTERVAL_MS = 90_000;
+  const worktreeSweep = { inFlight: false };
+  const worktreeSweepTimer = setInterval(() => {
+    if (worktreeSweep.inFlight) return;
+    worktreeSweep.inFlight = true;
+    void index
+      .reconcileWorktreeStatus()
+      .catch(() => {})
+      .finally(() => {
+        worktreeSweep.inFlight = false;
+      });
+  }, WORKTREE_SWEEP_INTERVAL_MS);
+  worktreeSweepTimer.unref?.();
+  // First sweep shortly after boot: refreshAllAsync() built the index with
+  // `git status` skipped for speed, so this is what makes each task's
+  // "uncommitted changes" dot accurate. Deferred a few seconds so it never
+  // competes with the listener coming up or a reload health handshake.
+  const initialWorktreeSweep = setTimeout(() => {
+    worktreeSweep.inFlight = true;
+    void index
+      .reconcileWorktreeStatus()
+      .catch(() => {})
+      .finally(() => {
+        worktreeSweep.inFlight = false;
+      });
+  }, 3_000);
+  initialWorktreeSweep.unref?.();
+
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
@@ -2008,6 +2041,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         clearInterval(systemSampleTimer);
         if (reapTimer) clearInterval(reapTimer);
         clearInterval(builtInTimer);
+        clearInterval(worktreeSweepTimer);
+        clearTimeout(initialWorktreeSweep);
         ctoMonitor.stop();
         runner.dispose();
         throw err;
@@ -2048,6 +2083,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           clearInterval(systemSampleTimer);
           if (reapTimer) clearInterval(reapTimer);
+          clearInterval(worktreeSweepTimer);
+          clearTimeout(initialWorktreeSweep);
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();

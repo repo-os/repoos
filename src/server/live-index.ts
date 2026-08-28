@@ -8,8 +8,8 @@
  * never a source of truth. A full rebuild (`refreshAll`) is always available
  * and always correct.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { join, relative, extname } from "node:path";
+import { readFileSync, existsSync, realpathSync } from "node:fs";
+import { join, extname } from "node:path";
 import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, BoardTask, BoardIndex, SupervisorHeartbeat } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
@@ -22,10 +22,17 @@ import {
   lastCommitForFile,
   worktreeStatus,
   worktreePaths,
+  worktreeList,
   currentBranch,
   emptyGitInfo,
+  resolveWorktreeStatuses,
 } from "../core/git.js";
-import { buildIndex, buildIndexAsync } from "../core/indexer.js";
+import {
+  buildIndex,
+  buildIndexAsync,
+  readWorktreeDirtyCache,
+  writeWorktreeDirtyCache,
+} from "../core/indexer.js";
 import { patchTaskFile } from "./write.js";
 
 export type RepoEvent =
@@ -181,7 +188,7 @@ export class LiveIndex {
    * interleave safely with live updates should keep using `refreshAll`.
    */
   async refreshAllAsync(): Promise<void> {
-    const idx = await buildIndexAsync(this.config);
+    const idx = await buildIndexAsync(this.config, { fastWorktreeStatus: true });
     this.byId.clear();
     this.pathToId.clear();
     this.useGit = isGitRepo(this.config.root);
@@ -197,6 +204,44 @@ export class LiveIndex {
       taskCount: this.byId.size,
       at: now(),
     });
+    // NOTE: `fastWorktreeStatus` skipped `git status`, so `git.dirty` reflects
+    // only each branch's ahead count until the server's post-listen
+    // `reconcileWorktreeStatus()` sweep fills in the working-tree state. That
+    // sweep is scheduled by the caller, deliberately NOT here — starting git
+    // subprocesses from inside the boot path is exactly what this async build
+    // exists to avoid.
+  }
+
+  /**
+   * Refresh every task's worktree `dirty`/`worktreePath` with a real
+   * `git status` sweep (batched — see `resolveWorktreeStatuses`), persist the
+   * result, and emit `task.updated` for any that changed. Called after the
+   * fast boot build and safe to call periodically. No-op without git.
+   */
+  async reconcileWorktreeStatus(): Promise<void> {
+    if (!this.useGit) return;
+    const baseBranch = currentBranch(this.config.root);
+    const branches = [...this.byId.values()]
+      .map((t) => t.branch)
+      .filter((b): b is string => !!b);
+    const { statuses, cache, changed } = await resolveWorktreeStatuses(
+      this.config.root,
+      branches,
+      { baseBranch, cache: readWorktreeDirtyCache(this.config) },
+    );
+    if (changed) writeWorktreeDirtyCache(this.config, cache);
+    for (const [id, t] of this.byId) {
+      if (!t.branch) continue;
+      const wt = statuses.get(t.branch);
+      if (!wt) continue;
+      if (t.git.dirty === wt.dirty && t.git.worktreePath === wt.path) continue;
+      const next: Task = {
+        ...t,
+        git: { ...t.git, dirty: wt.dirty, worktreePath: wt.path },
+      };
+      this.byId.set(id, next);
+      this.emit({ type: "task.updated", task: next, prev: {}, at: now() });
+    }
   }
 
   private isTaskFile(absPath: string): boolean {
@@ -348,32 +393,52 @@ export class LiveIndex {
   }
 
   /**
-   * Re-scan local branches and re-apply `git.branchExists` to indexed tasks.
-   * Used after an agent launch creates a task's branch, so the UI's "branch
-   * exists locally" dot is correct without a full rebuild.
+   * Re-scan local branches / worktrees and re-apply the cheap git facts
+   * (`branchExists`, `worktreeExists`, `worktreePath`) to every indexed task.
+   * Called after an agent launch, branch sync, or hotfix so the UI's branch/
+   * worktree dots are right without a full rebuild.
+   *
+   * `dirty` is NOT recomputed here — that needs a `git status` per worktree,
+   * which this method used to run synchronously for every task on the event
+   * loop (~2.5s at 40 worktrees, on every task mutation). It is delegated to
+   * the batched `reconcileWorktreeStatus()` sweep, kicked off below and
+   * arriving via `task.updated` within ~100ms.
    */
   refreshBranches(): void {
     this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit
-      ? localBranches(this.config.root)
-      : new Set();
-    const worktrees = this.useGit ? worktreePaths(this.config.root) : new Map<string, string>();
-    const baseBranch = this.useGit ? currentBranch(this.config.root) : null;
+    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
+    const worktrees = this.useGit
+      ? worktreeList(this.config.root)
+      : new Map<string, { path: string; head: string }>();
+    let realRoot = this.config.root;
+    try {
+      realRoot = realpathSync(this.config.root);
+    } catch {
+      /* keep the configured root */
+    }
     for (const [id, t] of this.byId) {
-      const wt = t.branch
-        ? worktreeStatus(this.config.root, t.branch, { worktrees, baseBranch })
-        : { path: null, dirty: false };
+      let worktreePath = t.branch ? worktrees.get(t.branch)?.path ?? null : null;
+      if (worktreePath) {
+        let rp = worktreePath;
+        try {
+          rp = realpathSync(worktreePath);
+        } catch {
+          /* keep the reported path */
+        }
+        // git lists the main checkout as a worktree too; it is never a task one.
+        if (rp === realRoot) worktreePath = null;
+      }
       this.byId.set(id, {
         ...t,
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
           worktreeExists: t.branch ? worktrees.has(t.branch) : false,
-          worktreePath: wt.path,
-          dirty: wt.dirty,
+          worktreePath,
         },
       });
     }
+    void this.reconcileWorktreeStatus();
   }
 
   // ---- reads ----
