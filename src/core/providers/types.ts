@@ -50,3 +50,27 @@ export function oneLineReason(description: string | undefined | null, fallback: 
   const firstSentence = text.split(/(?<=[.!?])\s/)[0] ?? text;
   return firstSentence.length > 140 ? `${firstSentence.slice(0, 137)}...` : firstSentence;
 }
+
+/**
+ * Parse a fetch `Response` as JSON on behalf of a provider adapter.
+ *
+ * A blocked/rate-limited request often comes back `ok: true` with an HTML
+ * block page instead of the expected JSON body. Calling `res.json()` directly
+ * on that throws a `SyntaxError` whose message embeds a raw snippet of the
+ * HTML (e.g. `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`) — that
+ * snippet then propagates untouched into `PlaygroundProviderGroup.error` and
+ * renders in the sidebar in place of the model list. Checking content-type
+ * first, and falling back to a clean message if parsing still fails, keeps
+ * every error shown to the user readable text instead of a chunk of markup.
+ */
+export async function parseJsonResponse<T>(res: Response, providerLabel: string): Promise<T> {
+  const contentType = res.headers?.get("content-type") ?? "";
+  if (contentType && !contentType.includes("json")) {
+    throw new Error(`${providerLabel} returned a non-JSON response (${contentType || "unknown content type"})`);
+  }
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new Error(`${providerLabel} returned a response that could not be parsed as JSON`);
+  }
+}

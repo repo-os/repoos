@@ -8,7 +8,7 @@
  * catalog changes constantly and a stale id would just silently vanish.
  */
 import type { PlaygroundModel, PlaygroundProviderAdapter } from "./types.js";
-import { oneLineReason } from "./types.js";
+import { oneLineReason, parseJsonResponse } from "./types.js";
 
 const MODELS_URL = "https://openrouter.ai/api/v1/models";
 const FETCH_TIMEOUT_MS = 8000;
@@ -48,6 +48,13 @@ function dollarsPerMillion(perTokenUsd: string | undefined): number | null {
   return Number.isFinite(n) && n > 0 ? n * 1_000_000 : null;
 }
 
+/** A malformed/non-positive `context_length` isn't a usable context window. */
+function positiveContextWindow(contextLength: number | undefined): number | null {
+  return typeof contextLength === "number" && Number.isFinite(contextLength) && contextLength > 0
+    ? contextLength
+    : null;
+}
+
 /** Curate + parse OpenRouter's models response into playground models. Exported for tests. */
 export function curateOpenRouterModels(models: OpenRouterModel[]): PlaygroundModel[] {
   const candidates = models.filter((m) => {
@@ -78,7 +85,7 @@ export function curateOpenRouterModels(models: OpenRouterModel[]): PlaygroundMod
       reason: oneLineReason(m.description, "Available through OpenRouter."),
       inputPricePerM: dollarsPerMillion(m.pricing?.prompt),
       outputPricePerM: dollarsPerMillion(m.pricing?.completion),
-      contextWindow: typeof m.context_length === "number" ? m.context_length : null,
+      contextWindow: positiveContextWindow(m.context_length),
     }));
 }
 
@@ -88,7 +95,7 @@ export const openrouterProvider: PlaygroundProviderAdapter = {
   async fetchModels(): Promise<PlaygroundModel[]> {
     const res = await fetch(MODELS_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`OpenRouter API returned ${res.status}`);
-    const body = (await res.json()) as { data?: OpenRouterModel[] };
+    const body = await parseJsonResponse<{ data?: OpenRouterModel[] }>(res, "OpenRouter");
     if (!Array.isArray(body.data)) throw new Error("OpenRouter API returned an unexpected shape");
     return curateOpenRouterModels(body.data);
   },

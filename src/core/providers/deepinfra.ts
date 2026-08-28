@@ -6,7 +6,7 @@
  * curation logic of our own required.
  */
 import type { PlaygroundModel, PlaygroundProviderAdapter } from "./types.js";
-import { oneLineReason } from "./types.js";
+import { oneLineReason, parseJsonResponse } from "./types.js";
 
 const FEATURED_URL = "https://api.deepinfra.com/models/featured";
 const FETCH_TIMEOUT_MS = 8000;
@@ -26,9 +26,14 @@ interface DeepInfraModel {
 
 /** DeepInfra prices in cents-per-token; $/1M tokens = cents-per-token * 10,000. */
 function dollarsPerMillion(centsPerToken: number | undefined): number | null {
-  return typeof centsPerToken === "number" && Number.isFinite(centsPerToken)
+  return typeof centsPerToken === "number" && Number.isFinite(centsPerToken) && centsPerToken >= 0
     ? centsPerToken * 10_000
     : null;
+}
+
+/** A malformed/negative `max_tokens` isn't a usable context window. */
+function positiveContextWindow(maxTokens: number | undefined): number | null {
+  return typeof maxTokens === "number" && Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : null;
 }
 
 /** Parse DeepInfra's featured-models response into playground models. Exported for tests. */
@@ -43,7 +48,7 @@ export function parseDeepInfraFeatured(models: DeepInfraModel[]): PlaygroundMode
       reason: oneLineReason(m.description, "Featured on DeepInfra."),
       inputPricePerM: dollarsPerMillion(m.pricing?.cents_per_input_token),
       outputPricePerM: dollarsPerMillion(m.pricing?.cents_per_output_token),
-      contextWindow: typeof m.max_tokens === "number" ? m.max_tokens : null,
+      contextWindow: positiveContextWindow(m.max_tokens),
     }));
 }
 
@@ -53,7 +58,7 @@ export const deepinfraProvider: PlaygroundProviderAdapter = {
   async fetchModels(): Promise<PlaygroundModel[]> {
     const res = await fetch(FEATURED_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`DeepInfra API returned ${res.status}`);
-    const data = (await res.json()) as DeepInfraModel[];
+    const data = await parseJsonResponse<DeepInfraModel[]>(res, "DeepInfra");
     if (!Array.isArray(data)) throw new Error("DeepInfra API returned an unexpected shape");
     return parseDeepInfraFeatured(data);
   },

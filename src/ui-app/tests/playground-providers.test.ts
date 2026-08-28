@@ -4,8 +4,9 @@
  * behavior. `global.fetch` is stubbed so nothing here hits the network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseDeepInfraFeatured } from "../../core/providers/deepinfra";
-import { curateOpenRouterModels } from "../../core/providers/openrouter";
+import { deepinfraProvider, parseDeepInfraFeatured } from "../../core/providers/deepinfra";
+import { curateOpenRouterModels, openrouterProvider } from "../../core/providers/openrouter";
+import { parseJsonResponse } from "../../core/providers/types";
 import {
   PLAYGROUND_PROVIDERS,
   CACHE_TTL_MS,
@@ -53,6 +54,20 @@ describe("parseDeepInfraFeatured", () => {
     ]);
     expect(m.reason).toBe("Featured on DeepInfra.");
   });
+
+  it("treats a negative or non-positive price/context as unknown rather than displaying garbage", () => {
+    const [m] = parseDeepInfraFeatured([
+      {
+        model_name: "org/model",
+        type: "text-generation",
+        pricing: { type: "tokens", cents_per_input_token: -1, cents_per_output_token: 5e-5 },
+        max_tokens: -100,
+      },
+    ]);
+    expect(m.inputPricePerM).toBeNull();
+    expect(m.outputPricePerM).toBeCloseTo(0.5);
+    expect(m.contextWindow).toBeNull();
+  });
 });
 
 describe("curateOpenRouterModels", () => {
@@ -94,6 +109,84 @@ describe("curateOpenRouterModels", () => {
       model({ id: "other/one", context_length: 64_000 }),
     ]);
     expect(models.map((m) => m.id).sort()).toEqual(["acme/big", "other/one"]);
+  });
+
+  it("treats a non-positive completion price as unknown rather than displaying garbage", () => {
+    // Unlike the prompt price (filtered out entirely by the candidate filter
+    // above), a bad completion price only surfaces once mapped — it must not
+    // convert to a negative dollar amount.
+    const [m] = curateOpenRouterModels([model({ pricing: { prompt: "0.000001", completion: "-0.000003" } })]);
+    expect(m.inputPricePerM).toBeCloseTo(1);
+    expect(m.outputPricePerM).toBeNull();
+  });
+});
+
+describe("parseJsonResponse", () => {
+  it("parses a well-formed JSON body", async () => {
+    const res = { headers: new Headers({ "content-type": "application/json" }), json: async () => ({ a: 1 }) } as Response;
+    await expect(parseJsonResponse(res, "TestProvider")).resolves.toEqual({ a: 1 });
+  });
+
+  it("rejects with a clean message — not the raw body — when content-type isn't JSON", async () => {
+    // A blocked/rate-limited request often comes back `ok: true` with an HTML
+    // block page. Calling res.json() directly on that throws a SyntaxError whose
+    // message embeds a snippet of the HTML — the bug this guards against.
+    const res = {
+      headers: new Headers({ "content-type": "text/html" }),
+      json: async () => {
+        throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON');
+      },
+    } as unknown as Response;
+    await expect(parseJsonResponse(res, "TestProvider")).rejects.toThrow(
+      "TestProvider returned a non-JSON response (text/html)",
+    );
+  });
+
+  it("falls back to a clean message when json() throws despite a JSON content-type", async () => {
+    const res = {
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => {
+        throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON');
+      },
+    } as unknown as Response;
+    const err = await parseJsonResponse(res, "TestProvider").catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe("TestProvider returned a response that could not be parsed as JSON");
+    expect((err as Error).message).not.toContain("<!DOCTYPE");
+  });
+});
+
+describe("provider adapters surface clean errors for non-JSON (e.g. block-page) responses", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("deepinfraProvider.fetchModels rejects without leaking the HTML body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ "content-type": "text/html" }),
+        json: async () => {
+          throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE html>..." is not valid JSON');
+        },
+      })),
+    );
+    await expect(deepinfraProvider.fetchModels()).rejects.toThrow(/DeepInfra returned a non-JSON response/);
+  });
+
+  it("openrouterProvider.fetchModels rejects without leaking the HTML body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
+        json: async () => {
+          throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE html>..." is not valid JSON');
+        },
+      })),
+    );
+    await expect(openrouterProvider.fetchModels()).rejects.toThrow(/OpenRouter returned a non-JSON response/);
   });
 });
 
@@ -155,7 +248,7 @@ describe("listPlaygroundModels (registry cache)", () => {
             json: async () => [
               { model_name: "org/m", type: "text-generation", pricing: { type: "tokens" } },
             ],
-          } as Response;
+          } as unknown as Response;
         }
         return { ok: true, json: async () => ({ data: [] }) } as Response;
       }),

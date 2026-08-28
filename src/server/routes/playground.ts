@@ -11,9 +11,26 @@
  */
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
-import { listPlaygroundModels } from "../../core/providers/index.js";
+import { listPlaygroundModels, PLAYGROUND_PROVIDERS } from "../../core/providers/index.js";
 import { runPrompt, recordOneShotSession } from "../agents.js";
 import type { Agent } from "../../core/types.js";
+
+/**
+ * `runId` is `${providerId}/${modelId}`, forwarded verbatim as an opencode
+ * `--model` argv value (see `promptCommand` in agents.ts) — safe from shell
+ * injection since it's spawned via argv, never a shell string, but still
+ * worth constraining to the character set real provider/model ids use and to
+ * a provider we've actually registered, so a malformed client payload fails
+ * fast with a clear 400 instead of reaching the CLI at all.
+ */
+const RUN_ID_PATTERN = /^[a-zA-Z0-9][\w.-]*\/[\w./-]+$/;
+
+/** Exported for tests. */
+export function isKnownRunId(runId: string): boolean {
+  if (!RUN_ID_PATTERN.test(runId)) return false;
+  const providerId = runId.slice(0, runId.indexOf("/"));
+  return PLAYGROUND_PROVIDERS.some((p) => p.id === providerId);
+}
 
 export const getPlaygroundModels: RouteHandler = async (_ctx, req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -66,8 +83,8 @@ export const sendPlaygroundMessage: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
   const body = (await readBody(req)) as { runId?: unknown; messages?: unknown };
   const runId = typeof body.runId === "string" ? body.runId.trim() : "";
-  if (!runId || !runId.includes("/") || runId.length > 200) {
-    return json(res, 400, { error: "runId must be a provider/model id" });
+  if (!runId || runId.length > 200 || !isKnownRunId(runId)) {
+    return json(res, 400, { error: "runId must be a known provider/model id" });
   }
 
   const history = sanitizePlaygroundHistory(body.messages);
