@@ -2,7 +2,7 @@
 default:
     @just --list
 
-# serve on nohup `just serve`
+# serve on nohup `just serve` (Bun: `REPOOS_RUNTIME=bun just restart`)
 serve:
     nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
@@ -22,9 +22,9 @@ check:
 list:
     repoos list
 
-# stop the background server
+# stop the background server (matches node or bun — see REPOOS_RUNTIME)
 kill:
-    pkill -f "node.*dist/cli/index.js.*serve" || true
+    pkill -f "dist/cli/index.js serve" || true
 
 # restart: build then kill then serve
 restart: build kill serve
@@ -193,8 +193,8 @@ status:
     fi
 
     echo
-    echo "== other node/repoos server processes =="
-    pgrep -fl "node.*dist/cli/index.js.*serve" || echo "  none found via pgrep"
+    echo "== other repoos server processes =="
+    pgrep -fl "dist/cli/index.js serve" || echo "  none found via pgrep"
 
     echo
     echo "== git =="
