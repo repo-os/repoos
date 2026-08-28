@@ -2,7 +2,7 @@
 id: "0313"
 title: Model playground tab on the agents page
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: sonnet
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-28T13:56:09Z"
+updated_at: "2026-08-28T14:19:26Z"
 review_passes: 1
 ---
 Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
@@ -44,3 +44,4 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 - 2026-08-28T10:23:43Z · status active→review
 - 2026-08-28T13:56:09Z · status review→active
 - 2026-08-28T13:56:09Z · note: Something's wrong with the html of the model list, it's not showing, just some html snippet is there. also see the suggestions from the reviewer and try to implement them.
+- 2026-08-28T14:19:26Z · status active→review
