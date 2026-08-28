@@ -44,6 +44,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 whisper.provider = "none"
 
 remoteValidation.enabled = true
+remoteValidation.fallbackToLocal = true
 [tunnel]
 provider = "cloudflare"
 enabled = true
@@ -90,3 +91,4 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
+
