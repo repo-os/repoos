@@ -605,18 +605,13 @@ async function openPanelFromError(): Promise<void> {
         <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="diff-stats-empty rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]" title="No code changes">0 changes</span>
       </div>
 
-      <div v-if="hint || (isLaunchAction && task.git?.dirty)" class="mt-[13px]">
-        <span v-if="hint" class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined">
+      <div v-if="hint" class="mt-[13px]">
+        <span class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined">
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
         </span>
-        <span
-          v-if="isLaunchAction && task.git?.dirty"
-          class="tc-dirty"
-          :title="task.git.worktreePath ? 'worktree has uncommitted changes — restarting asks to resume or start clean' : 'branch has unmerged work — restarting asks to resume or start clean'"
-        >dirty</span>
       </div>
     </div>
 
