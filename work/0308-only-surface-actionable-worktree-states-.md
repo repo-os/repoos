@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-28T12:03:24Z"
-review_passes: 4
 id: "0308"
 title: Only surface actionable worktree states in the UI
 type: feature
@@ -10,11 +8,8 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/only-surface-actionable-worktree-states-
-review_cli_override: claude code
-review_model_override: haiku
 created_at: "2026-08-27T05:30:22Z"
-handoff_signal_retry_count: 2
-review_rounds: 1
+updated_at: "2026-08-28T11:26:16Z"
 ---
 ## Problem
 
@@ -45,15 +40,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 - 2026-08-27T05:30:22Z · created · unknown
 - 2026-08-27T10:17:16Z · status inbox→ready
 - 2026-08-28T10:58:10Z · status ready→active, branch
-- 2026-08-28T11:26:17Z · status active→review
-- 2026-08-28T11:27:23Z · status review→active
-- 2026-08-28T11:29:01Z · status active→review
-- 2026-08-28T11:29:01Z · status review→active
-- 2026-08-28T11:35:51Z · status active→review
-- 2026-08-28T11:39:10Z · review_cli_override, review_model_override
-- 2026-08-28T11:39:13Z · review_model_override
-- 2026-08-28T11:39:19Z · review_model_override
-- 2026-08-28T11:39:26Z · status review→active
-- 2026-08-28T11:55:46Z · status active→review
-- 2026-08-28T12:01:07Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
-
+- 2026-08-28T11:26:16Z · status active→review
