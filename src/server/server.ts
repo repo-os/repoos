@@ -121,12 +121,6 @@ import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
-import {
-  appendScreenshotsSection,
-  mimeForExtension,
-  resolveScreenshot,
-  saveScreenshot,
-} from "./attachments.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";

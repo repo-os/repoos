@@ -13,7 +13,14 @@ import {
 import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { buildIndex, writeIndexCache } from "./indexer.js";
-import { parseTask, serializeTask, recordChange, utcTimestamp, appendActivityEntry } from "./task.js";
+import {
+  parseTask,
+  serializeTask,
+  recordChange,
+  utcTimestamp,
+  appendActivityEntry,
+  ORIGINAL_PROMPT_HEADING,
+} from "./task.js";
 import {
   commitNewFile as gitCommitNewFile,
   commitTaskFile,
@@ -46,7 +53,7 @@ export interface CreateTaskInput {
   originalPrompt?: string;
 }
 
-export const ORIGINAL_PROMPT_HEADING = "## Original prompt";
+export { ORIGINAL_PROMPT_HEADING };
 
 /**
  * Append the user's raw freeform prompt as a `## Original prompt` section to a

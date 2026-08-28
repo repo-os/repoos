@@ -40,7 +40,11 @@ const KEY_ORDER = [
   "updated_at",
 ];
 
-const ACTIVITY_HEADING = "## Activity";
+export const ACTIVITY_HEADING = "## Activity";
+/** User-attached screenshots section (0123). Rendered into the body, kept before `## Activity`. */
+export const SCREENSHOTS_HEADING = "## Screenshots";
+/** The user's verbatim freeform prompt, preserved so an agent rewrite can't lose it. */
+export const ORIGINAL_PROMPT_HEADING = "## Original prompt";
 /**
  * A release is a successful close-out event, not any prose mentioning a
  * release. `markTaskReleased` is the sole writer of this exact marker.
@@ -75,6 +79,46 @@ export function appendActivityEntry(body: string, line: string): string {
     return `${trimmed}\n\n${ACTIVITY_HEADING}\n\n${line}\n`;
   }
   return `${trimmed}\n${line}\n`;
+}
+
+/** The line index where a top-level `## Heading` section starts, or -1. */
+function sectionStart(lines: string[], heading: string): number {
+  return lines.findIndex((l) => l.trim() === heading);
+}
+
+/** The line index of the next top-level `## ` heading after `from`, or `lines.length`. */
+function nextSection(lines: string[], from: number): number {
+  for (let i = from; i < lines.length; i++) {
+    if (/^##\s/.test(lines[i].trim())) return i;
+  }
+  return lines.length;
+}
+
+/**
+ * Extract a top-level `## Heading` section from a body — the heading line
+ * through the last line before the next `## ` heading (or EOF), trimmed of
+ * surrounding blank lines. Returns null when the heading is absent.
+ */
+export function extractSection(body: string, heading: string): string | null {
+  const lines = body.split("\n");
+  const start = sectionStart(lines, heading);
+  if (start === -1) return null;
+  return lines.slice(start, nextSection(lines, start + 1)).join("\n").trim();
+}
+
+/**
+ * Remove the `## Heading` section (see {@link extractSection}) from a body,
+ * collapsing the blank lines it leaves behind. Unchanged when the heading is
+ * absent.
+ */
+export function removeSection(body: string, heading: string): string {
+  const lines = body.split("\n");
+  const start = sectionStart(lines, heading);
+  if (start === -1) return body;
+  const end = nextSection(lines, start + 1);
+  const before = lines.slice(0, start).join("\n").replace(/\s+$/, "");
+  const after = lines.slice(end).join("\n").replace(/^\s+/, "");
+  return [before, after].filter(Boolean).join("\n\n");
 }
 
 /**

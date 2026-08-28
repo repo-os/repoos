@@ -29,7 +29,7 @@ import { join } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
-import { appendScreenshotsSection, mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
+import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
@@ -374,9 +374,7 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   if ("error" in result) {
     return json(res, 400, { error: result.error });
   }
-  const updated = patchTaskFile(config, task.absPath, {
-    body: appendScreenshotsSection(task.body, [result]),
-  });
+  const updated = patchTaskFile(config, task.absPath, { addScreenshot: result });
   index.applyFileChange(updated.absPath);
   return json(res, 201, { ok: true, attachment: result });
 };

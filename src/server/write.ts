@@ -22,8 +22,29 @@ import {
   serializeTask,
   recordChange,
   utcTimestamp,
+  extractSection,
+  removeSection,
+  ACTIVITY_HEADING,
+  SCREENSHOTS_HEADING,
+  ORIGINAL_PROMPT_HEADING,
 } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
+import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
+
+/**
+ * Body sections that are user-owned or append-only: they live in the task body
+ * but must survive a wholesale body replacement. The freeform PM "flesh it out"
+ * flow runs `repoos update --body`, which otherwise silently drops the user's
+ * screenshots, their original prompt, and the entire activity history (#0317).
+ * When a patch supplies a new body, these are carried over verbatim from the
+ * current on-disk copy and any caller-supplied version is discarded. Order is
+ * canonical — they always sit at the end of the body in this order.
+ */
+const PROTECTED_SECTIONS = [
+  ORIGINAL_PROMPT_HEADING,
+  SCREENSHOTS_HEADING,
+  ACTIVITY_HEADING,
+] as const;
 
 export interface TaskPatch {
   status?: Status;
@@ -58,6 +79,13 @@ export interface TaskPatch {
   reviewCliOverride?: string | null;
   /** Per-task reviewer model override, or null to clear. */
   reviewModelOverride?: string | null;
+  /**
+   * Append one uploaded screenshot to the task's `## Screenshots` section
+   * (created before `## Activity` when absent). This is the only mutation path
+   * for that section; a body replacement in this or a later patch never drops
+   * it (see {@link PROTECTED_SECTIONS}).
+   */
+  addScreenshot?: ScreenshotMeta;
   /** Set hotfix mode (true to enable, false to disable). */
   hotfix?: boolean;
   /** Hotfix merge target. */
@@ -165,8 +193,21 @@ export function patchTaskFile(
       patch.assignedTo.toLowerCase() === "ai" ? "ai" : patch.assignedTo ? "human" : "unassigned";
   }
   if (patch.body !== undefined) {
-    if (patch.body !== current.body) changes.push("body");
-    current.body = patch.body;
+    // Carry user-owned / append-only sections over from the on-disk copy so a
+    // caller that replaced the whole body (freeform PM rewrites do) can't drop
+    // them. Any copy the caller sent is stripped first, so nothing duplicates.
+    const preserved = PROTECTED_SECTIONS.map((h) => extractSection(current.body, h)).filter(
+      (s): s is string => s !== null,
+    );
+    let nextBody = patch.body;
+    for (const h of PROTECTED_SECTIONS) nextBody = removeSection(nextBody, h);
+    nextBody = [nextBody.replace(/\s+$/, ""), ...preserved].filter(Boolean).join("\n\n");
+    if (nextBody !== current.body) changes.push("body");
+    current.body = nextBody;
+  }
+  if (patch.addScreenshot) {
+    current.body = appendScreenshotsSection(current.body, [patch.addScreenshot]);
+    changes.push("screenshots");
   }
   if (patch.agentOverride !== undefined) {
     if (patch.agentOverride !== current.agentOverride) changes.push("agent_override");
