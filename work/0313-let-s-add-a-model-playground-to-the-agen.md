@@ -12,7 +12,7 @@ model_override: deepinfra/zai-org/GLM-5.3-Flash
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-28T14:33:46Z"
+updated_at: "2026-08-28T16:09:44Z"
 review_passes: 2
 ---
 Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
