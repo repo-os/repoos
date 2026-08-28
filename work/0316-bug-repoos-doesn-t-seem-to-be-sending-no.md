@@ -2,14 +2,14 @@
 id: "0316"
 title: Fix notifications not sending and permission prompts not appearing
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-28T11:41:43Z"
-updated_at: "2026-08-28T11:42:01Z"
+updated_at: "2026-08-28T11:44:03Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Bug: RepoOS doesn't seem to be sending notifications (browser or mac) and it did
 ## Activity
 
 - 2026-08-28T11:42:01Z · status draft→inbox, title, priority, area, type, body
+- 2026-08-28T11:44:03Z · status inbox→ready
