@@ -398,6 +398,14 @@ async function reopenTask(): Promise<void> {
 
 const confirmDelete = ref(false);
 const confirmHotfix = ref(false);
+// HotfixConfirmDialog is body-teleported, so opening it trips the drawer's
+// modal dismiss-on-outside and nulls `ui.active` before `startHotfix` runs.
+// Snapshot the task on open — same pattern as the send-to-engineer note dialog.
+const hotfixTask = ref<Task | null>(null);
+function openHotfixConfirm(): void {
+  hotfixTask.value = ui.active;
+  confirmHotfix.value = true;
+}
 
 async function deleteTask(): Promise<void> {
   if (!ui.active) return;
@@ -414,15 +422,19 @@ async function deleteTask(): Promise<void> {
 }
 
 async function startHotfix(target: "branch" | "main"): Promise<void> {
-  if (!ui.active) return;
+  const task = hotfixTask.value ?? ui.active;
+  if (!task) return;
   ui.saving = true;
   try {
-    await repo.activateHotfix(ui.active, target);
+    await repo.activateHotfix(task, target);
     // Selecting a hotfix target is the start action, not merely a mode
     // setting. Launch the engineer immediately so the user sees the task
     // enter active state and its progress tab without a second click.
-    await repo.startWork(ui.active);
+    await repo.startWork(task);
     confirmHotfix.value = false;
+    // Opening the confirm dialog dismissed the drawer; bring it back on the
+    // agent tab where the engineer is now streaming.
+    ui.open(repo.tasks.find((t) => t.id === task.id) ?? task);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -559,7 +571,10 @@ async function confirmCommitDirty(): Promise<void> {
 }
 
 function cancelDirty(): void {
-  if (ui.active) repo.clearDirtyMain(ui.active.id);
+  // Use the captured task, not ui.active — the body-teleported dialog dismissed
+  // the drawer's modal, so ui.active may already be null here.
+  const id = dirtyTask.value?.id ?? ui.active?.id;
+  if (id) repo.clearDirtyMain(id);
   dirtyTask.value = null;
 }
 
@@ -951,14 +966,23 @@ async function reviewAgain(): Promise<void> {
  * first so the human can attach specific instructions for the engineer. */
 const sendingToEngineer = ref(false);
 const engineerNoteOpen = ref(false);
+// SendToEngineerDialog is a body-teleported layer, so opening it (or moving
+// focus into it) trips the drawer's modal dismiss-on-outside and nulls
+// `ui.active` before the confirm handler runs. Snapshot the task and its report
+// when the dialog opens — same pattern as RestartTaskDialog / DirtyMainDialog.
+const engineerNoteTask = ref<Task | null>(null);
+const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
   const task = ui.active;
-  if (!task || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  const report = review.value?.report ?? null;
+  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  engineerNoteTask.value = task;
+  engineerNoteReport.value = report;
   engineerNoteOpen.value = true;
 }
 async function confirmSendToEngineer(note: string): Promise<void> {
-  const task = ui.active;
-  const report = review.value?.report;
+  const task = engineerNoteTask.value;
+  const report = engineerNoteReport.value;
   if (!task || !report) {
     // Surface the failure rather than silently discarding the typed note: keep
     // the dialog open so the human keeps their text and can retry once the
@@ -987,6 +1011,9 @@ async function confirmSendToEngineer(note: string): Promise<void> {
   try {
     await repo.setStatus(task, "active", note);
     await repo.startWork(task, "resume", instruction);
+    // Opening the note dialog dismissed the drawer (see above), so bring it
+    // back on the agent tab where the resumed engineer is now streaming.
+    ui.open(repo.tasks.find((t) => t.id === task.id) ?? task);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -2725,7 +2752,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 variant="outline"
                 size="sm"
                 :disabled="ui.saving"
-                @click="confirmHotfix = true"
+                @click="openHotfixConfirm"
               >
                 Hotfix
               </Button>
@@ -3444,7 +3471,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
 
   <HotfixConfirmDialog
     :open="confirmHotfix"
-    :task-id="ui.active?.id"
+    :task-id="hotfixTask?.id ?? ui.active?.id"
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
