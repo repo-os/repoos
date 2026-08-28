@@ -153,6 +153,23 @@ function cliEntry(): string | null {
 }
 
 /**
+ * The compiled CLI entry to serve a worktree with: the worktree's OWN build
+ * when it has one, falling back to the control plane's entry (the previous
+ * behavior). This matters because `ensureFreshBuild` guarantees the worktree's
+ * dist matches the worktree's src, but says nothing about the control plane's
+ * build — which the worktree's UI is served against. Spawning the control
+ * plane's stale server for a fresh worktree UI is exactly how a preview ends
+ * up 404ing brand-new API routes into the SPA fallback (HTML for `/api/*`),
+ * which the client reports as `Unexpected token '<'` (0313). A preview of a
+ * worktree must run the worktree's code. Exported for tests.
+ */
+export function resolveServeEntry(root: string): string | null {
+  const own = join(root, "dist", "cli", "index.js");
+  if (existsSync(own)) return own;
+  return cliEntry();
+}
+
+/**
  * Rebuild a worktree's `dist/` when its src hash no longer matches its build
  * marker — the same staleness check the CLI warns about — so a preview always
  * serves current code. A checkout with no `src/` is treated as published.
@@ -444,7 +461,7 @@ export class PreviewManager {
     port: number,
     taskId: string,
   ): { ok: true; pid: number } | { ok: false; error: string } {
-    const entry = cliEntry();
+    const entry = resolveServeEntry(root);
     if (!entry) {
       return { ok: false, error: "could not locate the repoos CLI to serve the worktree" };
     }

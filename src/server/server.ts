@@ -196,6 +196,9 @@ import {
   // Models routes
   listModels,
   testModel,
+  // Model playground routes
+  getPlaygroundModels,
+  sendPlaygroundMessage,
   // Agents routes
   runningAgents,
   queuedAgents,
@@ -1728,6 +1731,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Model routes
   router.register("GET", "/api/models", listModels);
   router.register("POST", "/api/models/test", testModel);
+  router.register("GET", "/api/playground/models", getPlaygroundModels);
+  router.register("POST", "/api/playground/chat", sendPlaygroundMessage);
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);

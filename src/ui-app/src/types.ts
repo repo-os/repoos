@@ -564,6 +564,45 @@ export interface ModelTestResponse {
   at: string;
 }
 
+/** One model worth trying in the Model Playground (GET /api/playground/models). */
+export interface PlaygroundModel {
+  id: string;
+  runId: string;
+  name: string;
+  reason: string;
+  inputPricePerM: number | null;
+  outputPricePerM: number | null;
+  contextWindow: number | null;
+}
+
+/** One provider's catalog in the Model Playground. */
+export interface PlaygroundProviderGroup {
+  id: string;
+  label: string;
+  models: PlaygroundModel[];
+  error?: string;
+  fetchedAt: string;
+}
+
+export interface PlaygroundModelsResponse {
+  providers: PlaygroundProviderGroup[];
+  at: string;
+}
+
+export interface PlaygroundChatMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface PlaygroundChatResponse {
+  ok: boolean;
+  text: string;
+  elapsedMs?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUsd?: number;
+}
+
 export interface DocMeta {
   path: string;
   title: string;

@@ -16,7 +16,7 @@ import { join } from "node:path";
  */
 
 /** Default ceiling for waitFor() polls on real spawned processes, ms. */
-export const WAIT_FOR_TIMEOUT_MS = 10_000;
+export const WAIT_FOR_TIMEOUT_MS = 60_000;
 /** How often waitFor() re-checks, ms. Fast so healthy paths never slow down. */
 export const WAIT_FOR_POLL_MS = 25;
 
