@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-28T16:51:24Z"
+review_passes: 4
 id: "0313"
 title: Model playground tab on the agents page
 type: feature
@@ -14,9 +16,7 @@ model_override: deepinfra/zai-org/GLM-5.3-Flash
 pm_model_override: deepinfra/zai-org/GLM-5.3-Flash
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-27T09:54:25Z"
-updated_at: "2026-08-28T16:50:47Z"
 handoff_signal_retry_count: 1
-review_passes: 3
 dev_error_count: 1
 ---
 Add a "Model playground" tab to the agents page: a place to discover models worth trying out and chat-test them live.
@@ -60,3 +60,4 @@ Add a "Model playground" tab to the agents page: a place to discover models wort
 - 2026-08-28T16:09:48Z · status review→active
 - 2026-08-28T16:24:56Z · agent exited with an error (opencode) · [91m[1mError: [0mSession not found
 - 2026-08-28T16:50:47Z · status active→review
+
