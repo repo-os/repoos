@@ -21,6 +21,7 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
+import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -372,7 +373,11 @@ async function pauseWork(): Promise<void> {
 
 async function abandonWork(): Promise<void> {
   if (!ui.active) return;
-  if (!confirm("Stop this task's current work and send it back to ready? The worktree is kept, not deleted.")) return;
+  confirmStopWork.value = true;
+}
+
+async function confirmAbandonWork(): Promise<void> {
+  if (!ui.active) return;
   ui.saving = true;
   try {
     await repo.abandonWork(ui.active);
@@ -398,6 +403,9 @@ async function reopenTask(): Promise<void> {
 
 const confirmDelete = ref(false);
 const confirmHotfix = ref(false);
+// Stop work confirmation modal state
+const confirmStopWork = ref(false);
+
 // HotfixConfirmDialog is body-teleported, so opening it trips the drawer's
 // modal dismiss-on-outside and nulls `ui.active` before `startHotfix` runs.
 // Snapshot the task on open — same pattern as the send-to-engineer note dialog.
@@ -3490,6 +3498,14 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
     :body="draft.body"
     @update:open="(v) => (specModalOpen = v)"
     @save="applySpec"
+  />
+
+  <StopWorkConfirmModal
+    :open="confirmStopWork"
+    :task-id="ui.active?.id ?? ''"
+    @update:open="(v) => (confirmStopWork = v)"
+    @confirm="confirmAbandonWork"
+    @cancel="() => (confirmStopWork = false)"
   />
 </template>
 
