@@ -9,19 +9,28 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T15:51:56Z"
+updated_at: "2026-08-28T16:18:43Z"
 ---
-The stop work double confirm should be a proper modal, not whatever this is in the screenshot
+The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
 
-## Original prompt
+## Requirements
 
-The stop work double confirm should be a proper modal, not whatever this is in the screenshot
+1. Replace the current confirmation dialog with a proper modal component
+2. The modal should:
+   - Have a clear title (e.g. "Confirm Stop Work")
+   - Display a descriptive message explaining the consequences of stopping work
+   - Include "Cancel" and "Stop Work" buttons
+   - Be centered on screen with appropriate overlay
+   - Prevent interaction with background elements
+   - Support closing via ESC key and clicking outside the modal
+3. Maintain the same functionality but improve the UX
 
-## Screenshots
+## Technical Notes
 
-![Screenshot-2026-08-28-at-22.33.23](/api/tasks/0317/attachments/screenshot-1.png)
+- Look at existing modal implementations in the codebase for consistency
+- Ensure accessibility attributes are properly set
+- Follow established UI patterns and styling conventions
 
 ## Activity
 
-- 2026-08-28T15:51:55Z · created · hello@repoos.org
-- 2026-08-28T15:51:56Z · body
+- 2026-08-28T16:18:43Z · body
