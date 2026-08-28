@@ -8,9 +8,9 @@ area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-model_override: default
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
 created_at: "2026-08-25T11:26:17Z"
-updated_at: "2026-08-28T10:47:05Z"
+updated_at: "2026-08-28T10:47:26Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ There's no dedicated "note" command. The note to the developer is best captured 
 
 - 2026-08-28T10:44:47Z · body
 - 2026-08-28T10:47:05Z · cli_override
+- 2026-08-28T10:47:26Z · model_override
