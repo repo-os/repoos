@@ -10,9 +10,9 @@ created_by: hello@repoos.org
 branch: feat/fix-notifications-not-sending-and-permis
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 pm_cli_override: claude code
-pm_model_override: default
+pm_model_override: haiku
 created_at: "2026-08-28T11:41:43Z"
-updated_at: "2026-08-28T13:57:25Z"
+updated_at: "2026-08-28T13:57:26Z"
 review_passes: 3
 review_rounds: 1
 ---
@@ -63,3 +63,4 @@ Bug: RepoOS doesn't seem to be sending notifications (browser or mac) and it did
 - 2026-08-28T12:02:20Z · status active→review
 - 2026-08-28T12:55:54Z · model_override
 - 2026-08-28T13:57:25Z · pm_cli_override, pm_model_override
+- 2026-08-28T13:57:26Z · pm_model_override
