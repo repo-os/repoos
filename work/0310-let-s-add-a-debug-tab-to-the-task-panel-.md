@@ -11,9 +11,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-debug-tab-to-task-panel
 cli_override: claude code
-model_override: default
+model_override: sonnet
 created_at: "2026-08-27T06:18:58Z"
-updated_at: "2026-08-28T10:03:24Z"
+updated_at: "2026-08-28T10:03:26Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -85,3 +85,4 @@ Let's add a debug tab to the task panel next to the tokens tab. In this debug ta
 - 2026-08-28T09:57:30Z · status ready→active, branch
 - 2026-08-28T10:01:21Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-08-28T10:03:24Z · cli_override, model_override
+- 2026-08-28T10:03:26Z · model_override
