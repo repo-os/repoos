@@ -118,7 +118,17 @@ export type RepoEvent =
   /** Full-suite test run (Control page): started, a raw stdout/stderr chunk, or exited. */
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
-  | { type: "test-run.done"; code: number | null; at: string };
+  | { type: "test-run.done"; code: number | null; at: string }
+  /**
+   * A server-run `repoos check` for one task (0310): the handoff-finalize
+   * check or the MTD merge-gate check. Scoped per task (unlike test-run.*
+   * above, which is a single global Control-page run) so the Debug tab can
+   * show check history and live-stream a check currently running for the
+   * task the drawer has open.
+   */
+  | { type: "task-check.started"; taskId: string; checkId: string; checkKind: "handoff-finalize" | "merge-gate"; at: string }
+  | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
+  | { type: "task-check.done"; taskId: string; checkId: string; code: number | null; passed: boolean; durationMs: number; at: string };
 
 type Listener = (e: RepoEvent) => void;
 

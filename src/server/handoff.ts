@@ -17,6 +17,7 @@ import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
+import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 
 export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
 
@@ -33,7 +34,14 @@ interface RunResult {
   error?: NodeJS.ErrnoException;
 }
 
-function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env?: NodeJS.ProcessEnv): Promise<RunResult> {
+function run(
+  cmd: string,
+  args: string[],
+  cwd: string,
+  timeoutMs: number,
+  env?: NodeJS.ProcessEnv,
+  onChunk?: (text: string) => void,
+): Promise<RunResult> {
   return new Promise((finish) => {
     const child = spawn(cmd, args, { cwd, env: env ?? process.env });
     let stdout = "";
@@ -46,8 +54,16 @@ function run(cmd: string, args: string[], cwd: string, timeoutMs: number, env?: 
       clearTimeout(timer);
       finish({ status, stdout, stderr, error });
     };
-    child.stdout.on("data", (data: Buffer) => (stdout += data.toString("utf8")));
-    child.stderr.on("data", (data: Buffer) => (stderr += data.toString("utf8")));
+    child.stdout.on("data", (data: Buffer) => {
+      const text = data.toString("utf8");
+      stdout += text;
+      onChunk?.(text);
+    });
+    child.stderr.on("data", (data: Buffer) => {
+      const text = data.toString("utf8");
+      stderr += text;
+      onChunk?.(text);
+    });
     child.on("error", (error: NodeJS.ErrnoException) => done(null, error));
     child.on("close", (code) => done(code));
     timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
@@ -94,7 +110,11 @@ function concise(run: RunResult): string {
     .join(" · ") || `exit ${run.status}`;
 }
 
-async function runCheck(worktree: string, config: RepoOSConfig): Promise<RunResult> {
+async function runCheck(
+  worktree: string,
+  config: RepoOSConfig,
+  onChunk?: (text: string) => void,
+): Promise<RunResult> {
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
   // falsely pass or fail when finalizing a different linked worktree.
@@ -116,7 +136,7 @@ async function runCheck(worktree: string, config: RepoOSConfig): Promise<RunResu
   const env = base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env;
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
-    last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env);
+    last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env, onChunk);
     if (last.status === 0) return last;
     if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;
   }
@@ -137,6 +157,9 @@ export async function handoffTask(
   request: AgentHandoffRequest,
   onProgress?: (step: HandoffStep) => void,
   onStatusChange?: (task: Task, prev: Status, next: Status) => void,
+  /** Records this finalization's `repoos check` run for the Debug tab (0310). */
+  taskChecks?: TaskCheckManager,
+  onTaskCheckEvent?: TaskCheckListener,
 ): Promise<HandoffResult> {
   const HANDOFF_DEADLINE_MS = 600_000; // 10 minutes hard deadline
   let settled = false;
@@ -208,7 +231,11 @@ export async function handoffTask(
       }
 
       onProgress?.("check");
-      const check = await runCheck(workdir, config);
+      const checkHandle = taskChecks && onTaskCheckEvent
+        ? taskChecks.start(task.id, "handoff-finalize", onTaskCheckEvent)
+        : undefined;
+      const check = await runCheck(workdir, config, checkHandle?.chunk);
+      checkHandle?.done(check.status);
       if (check.status !== 0) {
         return { ok: false, step: "check", detail: `repoos check failed: ${concise(check)}` };
       }

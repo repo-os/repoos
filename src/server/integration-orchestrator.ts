@@ -37,6 +37,7 @@ import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
+import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -181,7 +182,7 @@ interface ProcessRunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv; onChunk?: (text: string) => void },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
@@ -198,8 +199,16 @@ function runProcess(
       resolve({ status, stdout, stderr, timedOut });
     };
 
-    child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
-    child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
+    child.stdout.on("data", (d: Buffer) => {
+      const text = d.toString("utf8");
+      stdout += text;
+      opts.onChunk?.(text);
+    });
+    child.stderr.on("data", (d: Buffer) => {
+      const text = d.toString("utf8");
+      stderr += text;
+      opts.onChunk?.(text);
+    });
     child.on("error", () => finish(null));
     child.on("close", (code: number | null) => finish(code));
 
@@ -234,6 +243,9 @@ export class CloseOutOrchestrator {
      * disables remote validation regardless of config.
      */
     private remoteValidator?: RemoteValidator,
+    /** Records the MTD merge-gate `repoos check` run for the Debug tab (0310). */
+    private taskChecks?: TaskCheckManager,
+    private onTaskCheckEvent?: TaskCheckListener,
   ) {}
 
   /**
@@ -690,8 +702,11 @@ export class CloseOutOrchestrator {
     };
     const localCli = join(wtPath, "dist", "cli", "index.js");
     const localCliPresent = existsSync(localCli);
+    const checkHandle = this.taskChecks && this.onTaskCheckEvent
+      ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
+      : undefined;
     const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
-      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv });
+      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv, onChunk: checkHandle?.chunk });
     // A check whose ONLY failure is a stale build marker: the same marker the
     // close-out build above should have refreshed. This is the self-resolving
     // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
@@ -747,6 +762,7 @@ export class CloseOutOrchestrator {
         await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
         checkRes = await rawCheck(process.execPath, [localCli, "check"]);
         if (checkRes.status !== 0) {
+          checkHandle?.done(checkRes.status);
           return {
             ok: false,
             reason: `check failed after in-place staleness re-check: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
@@ -763,6 +779,7 @@ export class CloseOutOrchestrator {
         }
       }
     }
+    checkHandle?.done(checkRes.status);
 
     if (checkRes.status !== 0) {
       return {
