@@ -1193,6 +1193,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // adopted turns in `reviews` so cancellation and run/chat mode work for them.
   reviews.armAdoptedTimeouts();
 
+  // Re-spawn reviews a real (non-reload) shutdown killed: `handle.close()` runs
+  // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
+  // leaves tasks stuck in `review` with a stale/missing report and nothing
+  // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
+  const runReviewRecovery = (): void =>
+    reviews.recoverInterruptedReviews(index.getTasks());
+  void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);

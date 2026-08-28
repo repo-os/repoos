@@ -96,6 +96,11 @@ export function currentBranch(root: string): string | null {
   return git(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
 }
 
+/** ISO-8601 commit date of HEAD at `root` (a worktree or the main checkout), or null. */
+export function headCommitISO(root: string): string | null {
+  return git(root, ["log", "-1", "--format=%cI"]) || null;
+}
+
 /** Set of local branch names, fetched once and reused across tasks. */
 export function localBranches(root: string): Set<string> {
   const out = git(root, ["branch", "--format=%(refname:short)"]);
