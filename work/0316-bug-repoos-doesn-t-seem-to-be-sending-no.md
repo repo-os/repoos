@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-08-28T12:03:15Z"
-review_passes: 2
+updated_at: "2026-08-28T12:49:16Z"
+review_passes: 3
 id: "0316"
 title: Fix notifications not sending and permission prompts not appearing
 type: bug
@@ -58,4 +58,5 @@ Bug: RepoOS doesn't seem to be sending notifications (browser or mac) and it did
 - 2026-08-28T12:00:07Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-28T12:01:15Z · status review→active
 - 2026-08-28T12:02:20Z · status active→review
+
 
