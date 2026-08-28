@@ -58,7 +58,7 @@ access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"
 [[agents]]
 name = "engineer"
 cli = "opencode"
-model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+model = "deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 [[agents]]
@@ -70,7 +70,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+model = "deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
