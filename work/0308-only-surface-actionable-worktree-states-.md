@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-28T11:37:29Z"
-review_passes: 3
 id: "0308"
 title: Only surface actionable worktree states in the UI
 type: feature
@@ -10,7 +8,11 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/only-surface-actionable-worktree-states-
+review_cli_override: claude code
+review_model_override: default
 created_at: "2026-08-27T05:30:22Z"
+updated_at: "2026-08-28T11:39:10Z"
+review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 1
 ---
@@ -48,4 +50,4 @@ Use user-facing terms such as changes, resume available, or main checkout needs 
 - 2026-08-28T11:29:01Z · status active→review
 - 2026-08-28T11:29:01Z · status review→active
 - 2026-08-28T11:35:51Z · status active→review
-
+- 2026-08-28T11:39:10Z · review_cli_override, review_model_override
