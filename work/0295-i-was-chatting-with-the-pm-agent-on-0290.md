@@ -8,10 +8,9 @@ area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-cli_override: claude code
 model_override: default
 created_at: "2026-08-25T11:26:17Z"
-updated_at: "2026-08-28T10:44:47Z"
+updated_at: "2026-08-28T10:47:05Z"
 ---
 ## Problem
 
@@ -62,3 +61,4 @@ There's no dedicated "note" command. The note to the developer is best captured 
 ## Activity
 
 - 2026-08-28T10:44:47Z · body
+- 2026-08-28T10:47:05Z · cli_override
