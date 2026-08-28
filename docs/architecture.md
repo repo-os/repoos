@@ -184,3 +184,26 @@ existing compatibility probe.
 Vite into `dist/ui/`. The published package ships prebuilt `dist/`, so users
 never compile. NodeNext modules mean `.ts` source uses `.js` import specifiers
 — intentional, not a bug.
+
+## Runtime: Node or Bun
+
+The package has zero runtime dependencies and `src/core/db.ts` already targets
+`bun:sqlite` OR `node:sqlite`, so the whole thing runs unchanged on either
+runtime. The `#!/usr/bin/env node` shebang means `repoos` is Node by default.
+
+`repoos serve` (only that command) can opt into Bun, which boots ~2-3x faster
+and holds less memory — useful for a process that stays up for days and must
+answer the reload health handshake in a tight window:
+
+| `REPOOS_RUNTIME` | behavior |
+| --- | --- |
+| unset / `node` | Node (default) |
+| `bun` | Bun; prints one line and stays on Node if `bun` is missing |
+| `auto` | Bun when it's on PATH, else Node, silently |
+
+`REPOOS_BUN_PATH` overrides the PATH lookup. The switch is a true `execve`
+(same PID, no wrapper) on Node ≥ 22.15 / POSIX, and a signal-relaying child
+process elsewhere. `src/core/runtime.ts` guards against re-exec loops with
+`REPOOS_RUNTIME_REEXEC=1`. Everything the server then spawns via
+`process.execPath` (reload replacements, preview children, `repoos check`)
+inherits the same runtime.

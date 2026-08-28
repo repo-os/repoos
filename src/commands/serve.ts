@@ -4,6 +4,7 @@
  */
 import { startServer } from "../server/server.js";
 import { PREVIEW_REQUEST_SIGNAL } from "../server/agents.js";
+import { isBun } from "../core/runtime.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
 import { detectTailscaleIPv4 } from "../core/tailscale.js";
@@ -112,6 +113,10 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
       c.dim(" tasks  ·  SSE stream at ") +
       c.cyan(handle.url + "/api/events"),
   );
+  const rt = isBun()
+    ? `Bun ${(process.versions as { bun?: string }).bun ?? ""}`.trim()
+    : `Node ${process.versions.node}`;
+  console.log(c.dim("  runtime ") + rt);
   console.log(
     c.dim("  api: ") +
       c.dim("/api/tasks  /api/tasks/:id  /api/counts  /api/index  /api/docs"),

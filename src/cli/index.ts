@@ -19,6 +19,7 @@ import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
+import { reexecServeUnderBunIfRequested } from "../core/runtime.js";
 import { c } from "./colors.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -88,6 +89,12 @@ function help(): void {
 
 function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
+
+  // Opt-in: run the long-lived server under Bun (REPOOS_RUNTIME=bun|auto).
+  // When it re-execs, the Node parent stays only to relay signals — stop here.
+  if ((cmd === "serve" || cmd === "server") && reexecServeUnderBunIfRequested()) {
+    return;
+  }
 
   // Staleness check — skip for version/help since those read no source.
   const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h", "upgrade"]);
