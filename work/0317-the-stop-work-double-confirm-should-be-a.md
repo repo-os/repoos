@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-28T16:31:12Z"
-review_passes: 1
 id: "0317"
 title: "The stop work double confirm should be a proper modal, no…"
 type: feature
@@ -10,7 +8,10 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/the-stop-work-double-confirm-should-be-a
+review_model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-28T15:51:55Z"
+updated_at: "2026-08-28T16:34:30Z"
+review_passes: 1
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
 
@@ -32,10 +33,18 @@ The stop work confirmation dialog should be implemented as a proper modal compon
 - Ensure accessibility attributes are properly set
 - Follow established UI patterns and styling conventions
 
+## Original prompt
+
+The stop work double confirm should be a proper modal, not whatever this is in the screenshot
+
+## Screenshots
+
+![Screenshot-2026-08-28-at-22.33.23](/api/tasks/0317/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-08-28T16:18:43Z · body
 - 2026-08-28T16:18:54Z · status draft→ready
 - 2026-08-28T16:21:48Z · status ready→active, branch
 - 2026-08-28T16:26:06Z · status active→review
-
+- 2026-08-28T16:34:30Z · review_model_override
