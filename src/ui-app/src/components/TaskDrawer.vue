@@ -959,7 +959,19 @@ async function sendToEngineer(): Promise<void> {
 async function confirmSendToEngineer(note: string): Promise<void> {
   const task = ui.active;
   const report = review.value?.report;
-  if (!task || !report) return;
+  if (!task || !report) {
+    // Surface the failure rather than silently discarding the typed note: keep
+    // the dialog open so the human keeps their text and can retry once the
+    // review report is available.
+    repo.onError(
+      new Error(
+        report
+          ? "No task selected to send to engineer."
+          : "Reviewer report is not ready yet. Wait for the review to finish, then try again.",
+      ),
+    );
+    return;
+  }
   engineerNoteOpen.value = false;
 
   const parts = [

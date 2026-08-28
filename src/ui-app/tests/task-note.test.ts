@@ -99,6 +99,28 @@ describe("task note mechanism", () => {
     }
   });
 
+  it("collapses newlines in a multi-line note so the activity entry stays on one line", () => {
+    const { root, absPath, clean } = setupFile(PLAIN);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        note: "Fix the regression\nand the rendering\nissue,\nplease",
+      });
+      // The note must not inject raw newlines into the `## Activity` list —
+      // every note activity entry must be a single `- ts · note: ...` line.
+      const noteLines = updated.body
+        .split("\n")
+        .filter((l) => l.startsWith("- ") && l.includes("· note:"));
+      expect(noteLines.length).toBe(1);
+      expect(noteLines[0]).toContain(
+        "note: Fix the regression and the rendering issue, please",
+      );
+      // No paragraph break leaks a partial note below the activity entry.
+      expect(updated.body).not.toMatch(/note: Fix the regression\n\n/);
+    } finally {
+      clean();
+    }
+  });
+
   it("leaves a plain status transition (no note) unchanged", () => {
     const { root, absPath, clean } = setupFile(PLAIN);
     try {

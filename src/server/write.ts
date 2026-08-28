@@ -218,7 +218,13 @@ export function patchTaskFile(
   // the body. It can accompany a status transition in the same patch. Entries
   // are appended status-first then note, matching the core `updateStatus` path,
   // so the timeline reads identically regardless of entry path.
-  const note = typeof patch.note === "string" ? patch.note.trim() : "";
+  //
+  // Newlines are collapsed to spaces (defense-in-depth): a multi-line note
+  // from the UI textarea must not inject raw line breaks into the `## Activity`
+  // list, which would break the single-line `- ts · entry` structure that
+  // consumers (e.g. DebugPanel.parseActivity) rely on.
+  const note =
+    typeof patch.note === "string" ? patch.note.replace(/\r?\n/g, " ").trim() : "";
   const entries: string[] = [];
   if (changes.length) entries.push(changes.join(", "));
   if (note) entries.push(`note: ${note}`);
