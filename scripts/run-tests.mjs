@@ -21,9 +21,10 @@ import { fileURLToPath } from "node:url";
 const VITEST = fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url));
 const CONFIG = "src/ui-app/vite.config.ts";
 
-// Suites whose assertions include an absolute latency ceiling. Keep this list
-// tight — pass 2 has no parallelism, so every file added serialises onto it.
-const ISOLATED = ["src/ui-app/tests/boot-timing.test.ts"];
+// Basenames of suites whose assertions include an absolute latency ceiling.
+// Keep this list tight — pass 2 has no parallelism, so every file added
+// serialises onto it.
+const ISOLATED = ["boot-timing.test.ts"];
 
 // `bun run test -- <args>` / `npm test -- <args>` can leak the bare `--`.
 const passthrough = process.argv.slice(2).filter((a) => a !== "--");
@@ -37,15 +38,18 @@ const vitest = (args, env) => {
   return r.status ?? 1;
 };
 
-// Pass 1 — the bulk of the suite at the configured pool size. `--passWithNoTests`
-// only when scoped: a full run that suddenly finds nothing is a real failure.
+// Pass 1 — the bulk of the suite at the configured pool size. `--exclude` takes
+// a glob relative to the vitest root; `**/` keeps it root-agnostic.
+// `--passWithNoTests` only when scoped: a full run that finds nothing is a real
+// failure.
 const bulk = vitest([
   ...passthrough,
   ...(scoped ? ["--passWithNoTests"] : []),
-  ...ISOLATED.flatMap((f) => ["--exclude", f]),
+  ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
 ]);
 
-// Pass 2 — the latency-sensitive suites with the machine to themselves.
+// Pass 2 — the latency-sensitive suites with the machine to themselves. The
+// basenames are positional name filters (substring-matched against the path).
 // `--passWithNoTests` because a `--changed` run may touch none of them.
 const isolated = vitest(
   [...passthrough, "--passWithNoTests", "--retry", "2", ...ISOLATED],
