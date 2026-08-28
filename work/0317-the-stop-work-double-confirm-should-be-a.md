@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-08-28T17:15:21Z"
-review_passes: 4
 id: "0317"
 title: "The stop work double confirm should be a proper modal, no…"
 type: feature
@@ -10,10 +8,8 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/the-stop-work-double-confirm-should-be-a
-model_override: opencode/hy3-free
-review_cli_override: codex
-review_model_override: gpt-5.6-luna
 created_at: "2026-08-28T15:51:55Z"
+updated_at: "2026-08-28T16:30:00Z"
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
 
@@ -35,33 +31,8 @@ The stop work confirmation dialog should be implemented as a proper modal compon
 - Ensure accessibility attributes are properly set
 - Follow established UI patterns and styling conventions
 
-## Original prompt
-
-The stop work double confirm should be a proper modal, not whatever this is in the screenshot
-
-## Screenshots
-
-![Screenshot-2026-08-28-at-22.33.23](/api/tasks/0317/attachments/screenshot-1.png)
-
 ## Activity
 
 - 2026-08-28T16:18:43Z · body
 - 2026-08-28T16:18:54Z · status draft→ready
 - 2026-08-28T16:21:48Z · status ready→active, branch
-- 2026-08-28T16:26:06Z · status active→review
-- 2026-08-28T16:34:30Z · review_model_override
-- 2026-08-28T16:34:36Z · status review→active
-- 2026-08-28T16:36:32Z · status active→review
-- 2026-08-28T16:51:33Z · needs_input
-- 2026-08-28T16:54:15Z · review_cli_override, review_model_override
-- 2026-08-28T16:54:21Z · review_model_override
-- 2026-08-28T16:55:17Z · needs_input
-- 2026-08-28T16:57:43Z · cli_override, model_override
-- 2026-08-28T16:57:48Z · model_override
-- 2026-08-28T16:57:56Z · status review→active
-- 2026-08-28T17:00:44Z · status active→review
-- 2026-08-28T17:03:27Z · cli_override, model_override
-- 2026-08-28T17:04:47Z · model_override
-- 2026-08-28T17:04:56Z · status review→active
-- 2026-08-28T17:14:06Z · status active→review
-
