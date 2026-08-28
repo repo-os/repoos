@@ -3,6 +3,8 @@ id: "0317"
 title: "The stop work double confirm should be a proper modal, no…"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
 priority: p2
 area: general
 assigned_to: ai
@@ -10,7 +12,7 @@ created_by: hello@repoos.org
 branch: feat/the-stop-work-double-confirm-should-be-a
 review_model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T16:36:32Z"
+updated_at: "2026-08-28T16:51:33Z"
 review_passes: 1
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
@@ -50,3 +52,4 @@ The stop work double confirm should be a proper modal, not whatever this is in t
 - 2026-08-28T16:34:30Z · review_model_override
 - 2026-08-28T16:34:36Z · status review→active
 - 2026-08-28T16:36:32Z · status active→review
+- 2026-08-28T16:51:33Z · needs_input
