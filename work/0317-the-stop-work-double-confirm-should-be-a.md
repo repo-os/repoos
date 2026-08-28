@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-28T17:01:40Z"
+review_passes: 3
 id: "0317"
 title: "The stop work double confirm should be a proper modal, no…"
 type: feature
@@ -13,8 +15,6 @@ model_override: gpt-5.6-luna
 review_cli_override: codex
 review_model_override: gpt-5.6-luna
 created_at: "2026-08-28T15:51:55Z"
-updated_at: "2026-08-28T17:00:44Z"
-review_passes: 2
 ---
 The stop work confirmation dialog should be implemented as a proper modal component instead of the current implementation.
 
@@ -61,3 +61,4 @@ The stop work double confirm should be a proper modal, not whatever this is in t
 - 2026-08-28T16:57:48Z · model_override
 - 2026-08-28T16:57:56Z · status review→active
 - 2026-08-28T17:00:44Z · status active→review
+
