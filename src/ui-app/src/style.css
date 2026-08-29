@@ -412,6 +412,8 @@
     .task-card.transition-success::after{display:none}
     .task-card.review-ready{animation:none;border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 14px var(--green-border-tint)}
     .task-card .tc-actions button.review-ready{animation:none;box-shadow:0 0 0 1px var(--green);filter:none}
+    .task-card.ai-created-ack{animation:none;border-color:var(--violet);box-shadow:0 0 0 1px var(--violet),0 0 14px var(--violet-border-tint)}
+    .task-card .tc-actions button.ai-created-ack{animation:none;box-shadow:0 0 0 1px var(--violet);filter:none}
     .board-ghost{animation:none;opacity:1;border-color:var(--cyan);box-shadow:0 0 0 2px var(--cyan);transform:none}
     .drawer-body.transition-success{animation:none;box-shadow:inset 0 0 0 2px var(--cyan);transition:box-shadow .01ms}
     .drawer-body.transition-success::after{display:none}
@@ -467,6 +469,18 @@
   @keyframes review-ready-pulse{0%,100%{box-shadow:0 0 0 1px var(--green-border-tint),0 0 12px var(--green-border-tint)}50%{box-shadow:0 0 0 1px var(--green),0 0 20px var(--green)}}
   .task-card .tc-actions button.review-ready{animation:review-ready-btn-pulse 2s ease-in-out infinite}
   @keyframes review-ready-btn-pulse{0%,100%{filter:brightness(1.05);box-shadow:0 0 0 1px var(--green)}50%{filter:brightness(1.25);box-shadow:0 0 0 1px var(--green),0 0 16px var(--green)}}
+  /* AI-created acknowledgement (0320): a persistent violet ring + breathing
+     glow on a card the PM agent just finished creating, until the human
+     clicks its Acknowledge footer. Violet is the app's AI/agent color —
+     deliberately not done-green (0278's ack), amber (needs-input/warnings),
+     or cyan (start-work), so the states can't be confused. Unlike 0278 the
+     card-level cue stays (that's the point here: the user looked away during
+     the multi-minute creation), and at most a handful of cards flag at once,
+     so no column floods. */
+  .task-card.ai-created-ack{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet-border-tint),0 0 14px var(--violet-border-tint);animation:ai-created-ack-pulse 2.8s ease-in-out infinite}
+  @keyframes ai-created-ack-pulse{0%,100%{box-shadow:0 0 0 1px var(--violet-border-tint),0 0 12px var(--violet-border-tint)}50%{box-shadow:0 0 0 1px var(--violet),0 0 20px var(--violet)}}
+  .task-card .tc-actions button.ai-created-ack{animation:ai-created-ack-btn-pulse 2s ease-in-out infinite}
+  @keyframes ai-created-ack-btn-pulse{0%,100%{filter:brightness(1.05);box-shadow:0 0 0 1px var(--violet-border-tint)}50%{filter:brightness(1.25);box-shadow:0 0 0 1px var(--violet),0 0 12px var(--violet-border-tint)}}
   .task-card[draggable="true"]{cursor:grab}
   .task-card[draggable="true"]:hover{cursor:grab}
   .task-card.dragging{opacity:.35;transform:scale(.97);cursor:grabbing;box-shadow:none}

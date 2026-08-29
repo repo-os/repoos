@@ -248,6 +248,47 @@ function writeDoneAcked(ids: Set<string>): void {
   }
 }
 
+/**
+ * AI-created card acknowledgement (0320). A card the PM agent just finished
+ * fleshing out keeps a persistent violet "newly created" highlight until the
+ * human clicks Acknowledge — mirroring the done-task mechanism (0278) with a
+ * different color, and persisted so the highlight survives reloads.
+ *
+ * Two sets drive it. `pending` holds ids of freeform creates whose PM agent
+ * is still fleshing the draft out (creation in flight — no highlight yet).
+ * When the flesh-out lands, the server promotes the draft to the default
+ * status; the SSE `task.updated` diff (draft -> non-draft) moves the id into
+ * `unacked`, which is what the card highlight reads. The `refresh()`
+ * reconciliation covers a tab that missed the SSE event entirely (closed or
+ * disconnected while the agent ran): the board snapshot is authoritative, so
+ * any pending id that already left `draft` promotes on load.
+ *
+ * Client-side only, like 0278: no frontmatter/API changes, and the sets only
+ * ever gain ids from freeform creates initiated in this browser, so manually
+ * created cards can never flag.
+ */
+const AI_CREATE_PENDING_KEY = "repoos.aiCreate.pending";
+const AI_CREATE_UNACKED_KEY = "repoos.aiCreate.unacked";
+
+function readIdSet(key: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return new Set();
+    const v = JSON.parse(raw);
+    return new Set(Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeIdSet(key: string, ids: Set<string>): void {
+  try {
+    localStorage.setItem(key, JSON.stringify([...ids]));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
 function readSortOrder(): SortOrder {
   try {
     const raw = localStorage.getItem(SORT_ORDER_KEY);
@@ -371,6 +412,11 @@ export const useRepoStore = defineStore("repo", () => {
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
   const doneAcked = ref<Set<string>>(readDoneAcked());
+  /** Freeform-create ids whose PM flesh-out is still in flight (0320). Persisted. */
+  const aiCreatePending = ref<Set<string>>(readIdSet(AI_CREATE_PENDING_KEY));
+  /** AI-created card ids awaiting the human's acknowledgement (0320). Persisted;
+   *  an id here keeps the violet "newly created" highlight across reloads. */
+  const aiCreateUnacked = ref<Set<string>>(readIdSet(AI_CREATE_UNACKED_KEY));
   /** Dismissible toasts stacked at the top-right. */
   const toasts = ref<ToastItem[]>([]);
   /**
@@ -489,9 +535,102 @@ export const useRepoStore = defineStore("repo", () => {
   // acknowledging a done task must clear its highlight here too.
   if (typeof window !== "undefined") {
     window.addEventListener("storage", (ev) => {
-      if (ev.key !== DONE_ACKED_KEY) return;
-      doneAcked.value = readDoneAcked();
+      if (ev.key === DONE_ACKED_KEY) {
+        doneAcked.value = readDoneAcked();
+      } else if (ev.key === AI_CREATE_PENDING_KEY) {
+        aiCreatePending.value = readIdSet(AI_CREATE_PENDING_KEY);
+      } else if (ev.key === AI_CREATE_UNACKED_KEY) {
+        aiCreateUnacked.value = readIdSet(AI_CREATE_UNACKED_KEY);
+      }
     });
+  }
+
+  /** A freeform create actually spawned the PM agent (not the no-pm-agent or
+   *  agent-failed fallback) — remember the draft so the card can flag when
+   *  the flesh-out lands (0320). */
+  function markAiCreatePending(id: string): void {
+    if (aiCreatePending.value.has(id)) return;
+    const next = new Set(aiCreatePending.value);
+    next.add(id);
+    aiCreatePending.value = next;
+    writeIdSet(AI_CREATE_PENDING_KEY, next);
+  }
+
+  /**
+   * A pending id is resolved without the "newly created" highlight (0320
+   * review fix): the PM run failed server-side, or this tab itself moved the
+   * stale draft. Either way the human demonstrably knows the task exists —
+   * promoting it here would flag the card at the exact moment they act on it.
+   */
+  function dropAiCreatePending(id: string): void {
+    if (!aiCreatePending.value.has(id)) return;
+    const next = new Set(aiCreatePending.value);
+    next.delete(id);
+    aiCreatePending.value = next;
+    writeIdSet(AI_CREATE_PENDING_KEY, next);
+  }
+
+  /** The AI creation completed — the flesh-out promoted the draft out of
+   *  `draft` — so the card enters its persistent "newly created" highlight
+   *  until acknowledged (0320). */
+  function promoteAiCreated(id: string): void {
+    if (aiCreatePending.value.has(id)) {
+      const nextPending = new Set(aiCreatePending.value);
+      nextPending.delete(id);
+      aiCreatePending.value = nextPending;
+      writeIdSet(AI_CREATE_PENDING_KEY, nextPending);
+    }
+    if (aiCreateUnacked.value.has(id)) return;
+    const next = new Set(aiCreateUnacked.value);
+    next.add(id);
+    aiCreateUnacked.value = next;
+    writeIdSet(AI_CREATE_UNACKED_KEY, next);
+  }
+
+  /** True when the card should render the persistent "newly created" highlight. */
+  function needsCreateAck(id: string): boolean {
+    return aiCreateUnacked.value.has(id);
+  }
+
+  /** Clear the AI-created highlight (human clicked Acknowledge). */
+  function acknowledgeCreate(id: string): void {
+    if (!aiCreateUnacked.value.has(id)) return;
+    const next = new Set(aiCreateUnacked.value);
+    next.delete(id);
+    aiCreateUnacked.value = next;
+    writeIdSet(AI_CREATE_UNACKED_KEY, next);
+  }
+
+  /**
+   * Reconcile the persisted pending set against a fresh board snapshot
+   * (0320). A tab closed or disconnected while the PM agent ran missed the
+   * SSE transition, so on (re)load any pending id whose task already left
+   * `draft` promotes into the unacked highlight, and an id whose task
+   * vanished (deleted while pending) is dropped. A no-op with nothing pending.
+   */
+  function reconcileAiCreatePending(): void {
+    if (aiCreatePending.value.size === 0) return;
+    const nextPending = new Set<string>();
+    const nextUnacked = new Set(aiCreateUnacked.value);
+    let promoted = false;
+    for (const id of aiCreatePending.value) {
+      const t = tasks.value.find((x) => x.id === id);
+      if (!t) continue; // deleted while pending — drop
+      if (t.status === "draft") {
+        nextPending.add(id); // still being fleshed out
+        continue;
+      }
+      if (!nextUnacked.has(id)) {
+        nextUnacked.add(id);
+        promoted = true;
+      }
+    }
+    aiCreatePending.value = nextPending;
+    writeIdSet(AI_CREATE_PENDING_KEY, nextPending);
+    if (promoted) {
+      aiCreateUnacked.value = nextUnacked;
+      writeIdSet(AI_CREATE_UNACKED_KEY, nextUnacked);
+    }
   }
 
   function recount(): void {
@@ -643,6 +782,14 @@ export const useRepoStore = defineStore("repo", () => {
       // the user off the pm/dev/review tab they're viewing (0312).
       if (ui.active && ui.active.id === e.task.id) ui.syncActive(merged);
       recount();
+      // AI-created card (0320): the PM agent's flesh-out lands as a
+      // draft -> default-status patch, and that transition is the
+      // "creation completed" moment — move the card into its persistent
+      // highlight. Only ids this browser marked at create time qualify, so
+      // manually created tasks are never affected.
+      if (prevStatus === "draft" && e.task.status !== "draft" && aiCreatePending.value.has(e.task.id)) {
+        promoteAiCreated(e.task.id);
+      }
       // A close-out error only makes sense while the task is still in review;
       // once it leaves review (done, moved back, etc.) the stale card would
       // mislead, so drop it.
@@ -695,6 +842,16 @@ export const useRepoStore = defineStore("repo", () => {
       setDoneError(e.id, null);
       recount();
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
+    } else if (e.type === "task.aiCreateFailed") {
+      // The PM flesh-out for a freeform create failed server-side (0320
+      // review fix): the draft is kept with its original prompt and nothing
+      // will promote it. Clear the pending id in every tab so a later manual
+      // draft -> board move cannot falsely flag the card as newly created.
+      const wasPending = aiCreatePending.value.has(e.id);
+      dropAiCreatePending(e.id);
+      if (wasPending) {
+        pushFeed(`<b>PM agent failed</b> on #${e.id} — draft kept as-is`, "#ffb454", "task.aiCreateFailed");
+      }
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
@@ -1029,7 +1186,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.aiCreateFailed", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1093,6 +1250,9 @@ export const useRepoStore = defineStore("repo", () => {
         void loadReview(task.id);
       }
     }
+    // AI-created cards (0320): promote pending ids whose creation completed
+    // while this tab couldn't see the SSE stream (see reconcileAiCreatePending).
+    reconcileAiCreatePending();
     Object.assign(counts, idx.counts);
   }
 
@@ -1212,6 +1372,13 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function setStatus(t: Task, status: string, note?: string): Promise<void> {
     if (t.status === status && !note) return;
+    // 0320 review fix: this tab moving a pending AI-created draft out of
+    // `draft` is the human acting on the card — not the PM flesh-out
+    // completing. Drop the pending id BEFORE the patch so the SSE echo of
+    // this very patch cannot promote it into a false "newly created"
+    // highlight (the usual reason a pending draft is moved by hand is that
+    // the PM run already failed and left the draft stale).
+    if (t.status === "draft" && status !== "draft") dropAiCreatePending(t.id);
     try {
       await patchTask(t.id, note ? { status, note } : { status });
       // Moving a review task anywhere (other than through the done workflow)
@@ -1674,6 +1841,11 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    // AI-created card (0320): when the PM agent was actually spawned (not the
+    // no-pm-agent / agent-failed fallback, where nothing further will happen),
+    // remember the draft so the store can flag the card when the flesh-out
+    // lands. Fallback drafts were effectively created without AI and never flag.
+    if (!r.fallback) markAiCreatePending(r.task.id);
     return r;
   }
 
@@ -1781,6 +1953,11 @@ export const useRepoStore = defineStore("repo", () => {
     doneAckCount,
     needsAck,
     acknowledge,
+    aiCreatePending,
+    aiCreateUnacked,
+    markAiCreatePending,
+    needsCreateAck,
+    acknowledgeCreate,
     toasts,
     systemStats,
     autoEng,

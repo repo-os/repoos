@@ -193,14 +193,25 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         sessionId: `pm-freeform:${created.id}:${new Date().toISOString()}`,
       });
       if (!result.ok || !result.output) {
+        const reason = result.error ?? "the PM agent returned no usable output";
         logger.task(created.id, "warn", "PM agent failed; keeping draft with original prompt", {
-          reason: result.error ?? "the PM agent returned no usable output",
+          reason,
         });
+        // 0320: nothing will promote this draft now — tell every client so
+        // its "AI creation in flight" marker is dropped and a later manual
+        // move of the stale draft cannot falsely flag the card.
+        emitEvent({ type: "task.aiCreateFailed", id: created.id, reason, at: new Date().toISOString() });
         return;
       }
       const fields = parseGeneratedTask(result.output);
       if (!fields.title || !fields.body) {
         logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {});
+        emitEvent({
+          type: "task.aiCreateFailed",
+          id: created.id,
+          reason: "the PM agent returned unusable output",
+          at: new Date().toISOString(),
+        });
         return;
       }
       // Keep the raw prompt section, then promote the fleshed-out task to the
@@ -226,12 +237,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         title: updated.title,
       });
     } catch (err) {
-      logger.task(
-        created.id,
-        "warn",
-        "PM agent update failed; keeping draft with original prompt",
-        { reason: err instanceof Error ? err.message : String(err) },
-      );
+      const reason = err instanceof Error ? err.message : String(err);
+      logger.task(created.id, "warn", "PM agent update failed; keeping draft with original prompt", {
+        reason,
+      });
+      emitEvent({ type: "task.aiCreateFailed", id: created.id, reason, at: new Date().toISOString() });
     }
   })();
 
