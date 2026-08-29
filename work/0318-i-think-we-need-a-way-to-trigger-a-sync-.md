@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode-go/hy3
 created_at: "2026-08-28T16:17:21Z"
-updated_at: "2026-08-28T16:17:51Z"
+updated_at: "2026-08-29T04:35:49Z"
 ---
 ## Problem
 
@@ -89,3 +90,4 @@ I think we need a way to trigger a sync with main on individual tasks that have 
 ## Activity
 
 - 2026-08-28T16:17:51Z · status draft→inbox, title, area, body
+- 2026-08-29T04:35:49Z · model_override
