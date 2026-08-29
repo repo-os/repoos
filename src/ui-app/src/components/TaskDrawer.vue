@@ -3191,7 +3191,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               </div>
               <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
                 This diff looks much bigger than the task — main has likely drifted since the branch was cut.
-                <template v-if="ui.active?.status === 'review'">
+                <template v-if="ui.active?.branch">
                   <Button
                     variant="outline"
                     size="sm"

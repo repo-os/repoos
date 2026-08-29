@@ -1,13 +1,35 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-vue-next";
+import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from "lucide-vue-next";
 import type { Task, TaskCheckRun, TaskLogEntry } from "../types";
 import { useRepoStore } from "../stores/repo";
 import { relTime } from "../lib/time";
 import Card from "./ui/card.vue";
+import Button from "./ui/button.vue";
 
 const props = defineProps<{ task: Task }>();
 const repo = useRepoStore();
+
+/**
+ * Only tasks that actually have a git worktree cut from main can be synced.
+ * Tasks still in `inbox` (no branch/worktree yet) have nothing to reconcile,
+ * so the control is hidden for them.
+ */
+const hasWorktree = computed(() => !!props.task.git.worktreePath);
+/** Warn before merging main into a worktree that has uncommitted edits. */
+const worktreeDirty = computed(() => !!props.task.git.dirty);
+const syncBusy = ref(false);
+async function syncWithMain(): Promise<void> {
+  if (!hasWorktree.value || syncBusy.value) return;
+  syncBusy.value = true;
+  try {
+    await repo.syncTaskBranch(props.task.id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    syncBusy.value = false;
+  }
+}
 
 onMounted(() => {
   void repo.refreshTaskChecks(props.task.id);
@@ -164,6 +186,30 @@ function toggleExpanded(key: string): void {
 
 <template>
   <div class="debug-panel">
+    <Card v-if="hasWorktree" class="debug-sync">
+      <div class="debug-sync-head">
+        <RefreshCw class="debug-sync-icon" :class="{ spinning: syncBusy }" />
+        <div class="debug-sync-text">
+          <span class="debug-sync-title">Sync with main</span>
+          <span class="debug-sync-sub">
+            Merge main into this task's branch to pick up fixes landed since it was cut.
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          class="debug-sync-btn"
+          :disabled="syncBusy"
+          @click="syncWithMain"
+        >
+          {{ syncBusy ? "Syncing…" : "Sync now" }}
+        </Button>
+      </div>
+      <p v-if="worktreeDirty" class="debug-sync-warn">
+        This worktree has uncommitted changes — merging main may refuse or merge around your in-progress edits. Commit or stash first if you want a clean reconcile.
+      </p>
+    </Card>
+
     <Card v-if="runningCheck" class="debug-live">
       <div class="debug-live-head">
         <span class="debug-live-dot" />
@@ -223,6 +269,59 @@ function toggleExpanded(key: string): void {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.debug-sync {
+  background: var(--panel-gradient, linear-gradient(180deg, #0c1222, #080c16));
+  border: 1px solid var(--cyan-dim);
+  border-radius: 12px;
+  padding: 14px;
+}
+.debug-sync-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.debug-sync-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--cyan);
+}
+.debug-sync-icon.spinning {
+  animation: debug-sync-spin 1s linear infinite;
+}
+@keyframes debug-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.debug-sync-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.debug-sync-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.debug-sync-sub {
+  font-size: 11.5px;
+  color: var(--txt-faint);
+  line-height: 1.4;
+}
+.debug-sync-btn {
+  flex-shrink: 0;
+}
+.debug-sync-warn {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--yellow, #e6b450);
 }
 
 .debug-live {
