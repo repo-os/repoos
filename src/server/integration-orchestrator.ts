@@ -32,6 +32,7 @@ import {
   getDiffStats,
   GitDirtyCheckError,
 } from "../core/git.js";
+import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -1110,6 +1111,22 @@ export class CloseOutOrchestrator {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);
       // Don't fail cleanup - the important part (merge) already succeeded
     }
+
+    // Opportunistic GC: every close-out is a natural moment to reclaim
+    // `repoos/integrate/*` candidates that failed jobs left behind (this
+    // task's own were just removed above). Conservative — never touches
+    // `feat/*`. Also logs a "run `repoos gc`" warning if the worktree count is
+    // over the advisory ceiling. Fail-soft and not awaited-critical.
+    sweepAndWarn(this.config, {
+      activeJobIds: new Set(
+        this.coordinator
+          .allJobs()
+          .filter((j) => j.phase !== "done" && j.phase !== "failed")
+          .map((j) => j.taskId),
+      ),
+      threshold: this.config.worktreeWarnThreshold,
+      log: (level, msg, meta) => this.logger?.integration(job.taskId, level, msg, meta),
+    });
 
     return { ok: true };
   }

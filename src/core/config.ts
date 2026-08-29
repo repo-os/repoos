@@ -149,6 +149,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   autoEngineeringMode: false,
   maxActiveTasks: 3,
+  worktreeWarnThreshold: 20,
   whisper: {
     provider: "none",
     apiKey: "",
@@ -375,6 +376,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
+    const worktreeWarnThreshold = get("worktreeWarnThreshold");
+    if (typeof worktreeWarnThreshold === "number" && worktreeWarnThreshold >= 0)
+      cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
+    else if (typeof worktreeWarnThreshold === "string" && /^\d+$/.test(worktreeWarnThreshold))
+      cfg.worktreeWarnThreshold = Number(worktreeWarnThreshold);
     // Older Settings builds wrote this select value as a quoted TOML string.
     // Accept a strict integer string on load so existing repos immediately
     // recover, while the API now writes new values as numbers.
@@ -708,6 +714,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       }),
       description:
         "Maximum number of simultaneously active tasks when auto-engineering mode is enabled (1-20)",
+    },
+    {
+      key: "worktreeWarnThreshold",
+      label: "Worktree warning threshold",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.worktreeWarnThreshold,
+      options: [
+        { value: "0", label: "Off" },
+        ...[10, 15, 20, 25, 30, 40, 50].map((v) => ({ value: String(v), label: String(v) })),
+      ],
+      description:
+        "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
     },
     {
       key: "maxConcurrentAgents",

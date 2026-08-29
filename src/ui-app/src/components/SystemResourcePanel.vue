@@ -95,6 +95,13 @@ const serve = computed(() => systemStats.value?.serve ?? null);
 /** git-derived codebase size (worktrees / tracked files / LOC). Absent on older servers. */
 const repoStats = computed(() => systemStats.value?.repo ?? null);
 
+/** True when the registered worktree count is over the advisory ceiling from config. */
+const worktreesOverLimit = computed(() => {
+  const r = repoStats.value;
+  const limit = r?.worktreeWarnThreshold ?? 0;
+  return !!r && limit > 0 && r.worktrees > limit;
+});
+
 function fmtCount(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 10_000) return Math.round(n / 1000) + "k";
@@ -211,10 +218,13 @@ const serveMessage = computed(() => {
           </div>
           <div class="metric-extra">
             <span
-              :title="'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'"
+              :class="{ 'wt-warn': worktreesOverLimit }"
+              :title="worktreesOverLimit
+                ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Run \`repoos gc\` to reclaim worktrees left by done / abandoned tasks.`
+                : 'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'"
               >{{ repoStats.worktrees }} git worktree{{
                 repoStats.worktrees === 1 ? "" : "s"
-              }}</span
+              }}{{ worktreesOverLimit ? " — run `repoos gc`" : "" }}</span
             >
             <span>tracked on main · gitignored excluded</span>
           </div>
@@ -479,6 +489,11 @@ const serveMessage = computed(() => {
   font-size: 10px;
   color: var(--txt-faint);
   font-variant-numeric: tabular-nums;
+}
+
+.metric-extra .wt-warn {
+  color: var(--amber, #f5a524);
+  font-weight: 600;
 }
 
 .sparkline {

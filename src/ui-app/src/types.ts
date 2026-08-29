@@ -681,6 +681,8 @@ export interface RepoStats {
   worktrees: number;
   trackedFiles: number;
   linesOfCode: number;
+  /** Advisory ceiling; `worktrees` above this turns the count amber. 0 disables. */
+  worktreeWarnThreshold?: number;
 }
 
 export interface SystemStats {

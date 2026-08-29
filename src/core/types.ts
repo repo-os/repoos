@@ -351,6 +351,13 @@ export interface RepoOSConfig {
   auth?: AuthConfig;
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
+  /**
+   * Advisory ceiling on registered git worktrees (including the main checkout).
+   * Above it, the Control page's Codebase card turns amber and the server logs
+   * a "run `repoos gc`" warning — never enforced, never blocks a task start.
+   * Default 20. Set 0 to disable the warning.
+   */
+  worktreeWarnThreshold?: number;
 }
 
 /**

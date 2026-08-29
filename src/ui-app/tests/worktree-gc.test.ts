@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
-import { sweepStaleWorktrees } from "../../core/worktree-gc.js";
+import { sweepStaleWorktrees, sweepAndWarn, countWorktrees } from "../../core/worktree-gc.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
 function git(root: string, args: string[]): string {
@@ -173,6 +173,53 @@ describe("sweepStaleWorktrees — integrate-only mode", () => {
       expect(report.removedWorktrees).toHaveLength(0);
       expect(report.keptDirty.map((k) => k.branch)).toContain("repoos/integrate/0009");
       expect(branches(root).has("repoos/integrate/0009")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("sweepAndWarn", () => {
+  it("sweeps integrate candidates and logs a threshold warning when over the ceiling", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      mergedWorktree(root, main, "feat/live-a");
+      mergedWorktree(root, main, "feat/live-b");
+      ensureWorktree(root, "repoos/integrate/0009");
+      // main + 2 feat + 1 candidate = 4 registered.
+
+      const logs: Array<{ level: string; msg: string }> = [];
+      sweepAndWarn(cfg(root), { threshold: 3, log: (level, msg) => logs.push({ level, msg }) });
+
+      // Candidate swept, feature worktrees untouched.
+      const left = branches(root);
+      expect(left.has("repoos/integrate/0009")).toBe(false);
+      expect(left.has("feat/live-a")).toBe(true);
+      expect(countWorktrees(root)).toBe(3); // main + 2 feat, now == threshold, not over
+
+      expect(logs.some((l) => l.level === "info" && l.msg === "worktree gc")).toBe(true);
+      // 3 is not > 3, so no warning this run.
+      expect(logs.some((l) => l.level === "warn")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("warns when still over the ceiling after sweeping, and stays silent when threshold is 0", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      mergedWorktree(root, main, "feat/a");
+      mergedWorktree(root, main, "feat/b");
+      mergedWorktree(root, main, "feat/c"); // main + 3 = 4 registered, no candidates
+
+      const over: string[] = [];
+      sweepAndWarn(cfg(root), { threshold: 2, log: (lvl, msg) => lvl === "warn" && over.push(msg) });
+      expect(over.length).toBe(1);
+      expect(over[0]).toMatch(/run `repoos gc`/);
+
+      const off: string[] = [];
+      sweepAndWarn(cfg(root), { threshold: 0, log: (lvl, msg) => lvl === "warn" && off.push(msg) });
+      expect(off.length).toBe(0);
     } finally {
       clean();
     }

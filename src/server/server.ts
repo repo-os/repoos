@@ -87,7 +87,7 @@ import {
   worktreePathForBranch,
   tuneRepoForScale,
 } from "../core/git.js";
-import { sweepStaleWorktrees } from "../core/worktree-gc.js";
+import { sweepAndWarn } from "../core/worktree-gc.js";
 import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -873,13 +873,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             .filter((j) => j.phase !== "done" && j.phase !== "failed")
             .map((j) => j.taskId),
         );
-        const report = sweepStaleWorktrees(config, { mode: "integrate-only", activeJobIds });
-        if (report.removedWorktrees.length || report.errors.length) {
-          logger.system("info", "boot worktree gc", {
-            removed: report.removedWorktrees.map((w) => w.branch || w.path),
-            errors: report.errors,
-          });
-        }
+        sweepAndWarn(config, {
+          activeJobIds,
+          threshold: config.worktreeWarnThreshold,
+          log: (level, msg, meta) => logger.system(level, `boot ${msg}`, meta),
+        });
       })
       .catch((e) => logger.system("warn", `boot worktree gc failed: ${(e as Error).message}`));
   }
@@ -1338,6 +1336,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runningAgents: runner.running(),
         knownServePids: previews.knownPids(),
         root: config.root,
+        worktreeWarnThreshold: config.worktreeWarnThreshold,
       });
       emitEvent({ type: "system.stats", stats });
     } catch {

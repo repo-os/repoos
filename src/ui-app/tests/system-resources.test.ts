@@ -198,6 +198,25 @@ describe("sampleRepoStats", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
+
+  it("carries the worktree warning threshold through (default 20, and the cached path)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-wtthresh-"));
+    try {
+      git(root, ["init", "-q"]);
+      git(root, ["config", "user.email", "t@example.com"]);
+      git(root, ["config", "user.name", "T"]);
+      writeFileSync(join(root, "a.ts"), "x\n");
+      git(root, ["add", "a.ts"]);
+      git(root, ["commit", "-qm", "init"]);
+
+      expect(sampleRepoStats(root)!.worktreeWarnThreshold).toBe(20);
+      // Second call for the same root is served from the 30s cache — the
+      // threshold must still reflect the new argument, not the cached one.
+      expect(sampleRepoStats(root, 5)!.worktreeWarnThreshold).toBe(5);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 /**

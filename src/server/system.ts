@@ -89,6 +89,11 @@ export interface RepoStats {
   trackedFiles: number;
   /** Total lines across tracked text files (binary files skipped). */
   linesOfCode: number;
+  /**
+   * Advisory ceiling from config (`worktreeWarnThreshold`, default 20). The UI
+   * turns the worktree count amber when `worktrees` exceeds this. 0 disables.
+   */
+  worktreeWarnThreshold: number;
 }
 
 export interface SystemStats {
@@ -184,21 +189,23 @@ const REPO_STATS_TTL_MS = 30_000;
  * the SSE loop calls this every 5s and these numbers change on the order of
  * commits, not seconds. Returns the last good value (or null) on git failure.
  */
-export function sampleRepoStats(root: string): RepoStats | null {
+export function sampleRepoStats(root: string, worktreeWarnThreshold = 20): RepoStats | null {
   const now = Date.now();
   if (
     repoStatsCache &&
     repoStatsCache.root === root &&
     now - repoStatsCache.at < REPO_STATS_TTL_MS
   ) {
-    return repoStatsCache.stats;
+    return { ...repoStatsCache.stats, worktreeWarnThreshold };
   }
   const worktreeOut = safeExecFileSync("git", ["-C", root, "worktree", "list", "--porcelain"]);
   const filesOut = safeExecFileSync("git", ["-C", root, "ls-files"]);
   if (worktreeOut === null || filesOut === null) {
     // Git unavailable or not a repo: keep serving a stale value for THIS root,
     // never another root's.
-    return repoStatsCache?.root === root ? repoStatsCache.stats : null;
+    return repoStatsCache?.root === root
+      ? { ...repoStatsCache.stats, worktreeWarnThreshold }
+      : null;
   }
 
   // Empty pattern matches every line; -I skips binary files. One spawn yields
@@ -216,6 +223,7 @@ export function sampleRepoStats(root: string): RepoStats | null {
     worktrees: (worktreeOut.match(/^worktree /gm) ?? []).length,
     trackedFiles: filesOut.split("\n").filter(Boolean).length,
     linesOfCode,
+    worktreeWarnThreshold,
   };
   repoStatsCache = { at: now, root, stats };
   return stats;
@@ -487,6 +495,8 @@ export interface SampleSystemOptions {
   knownServePids?: number[];
   /** Repo root — enables the git-derived `repo` codebase-size stats. */
   root?: string;
+  /** Advisory worktree ceiling surfaced in `repo.worktreeWarnThreshold`. */
+  worktreeWarnThreshold?: number;
 }
 
 /**
@@ -577,7 +587,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     },
     processes,
     serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? [])),
-    repo: opts.root ? sampleRepoStats(opts.root) : null,
+    repo: opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : null,
     serverPid,
     at: new Date().toISOString(),
   };

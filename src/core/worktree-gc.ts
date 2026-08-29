@@ -218,3 +218,49 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
   }
   return report;
 }
+
+/** Number of registered git worktrees, including the main checkout. */
+export function countWorktrees(root: string): number {
+  return listWorktrees(root).length;
+}
+
+/**
+ * Run the conservative `integrate-only` sweep, then log its result and — when
+ * the surviving worktree count exceeds `threshold` (0 disables) — a
+ * "run `repoos gc`" warning. Shared by the boot path and every close-out.
+ * Fully fail-soft: a git hiccup is swallowed, never surfaced to the caller.
+ */
+export function sweepAndWarn(
+  config: RepoOSConfig,
+  opts: {
+    activeJobIds?: Set<string>;
+    threshold?: number;
+    log: (level: "info" | "warn", msg: string, meta?: Record<string, unknown>) => void;
+  },
+): void {
+  try {
+    const report = sweepStaleWorktrees(config, {
+      mode: "integrate-only",
+      activeJobIds: opts.activeJobIds,
+    });
+    if (report.removedWorktrees.length || report.errors.length) {
+      opts.log("info", "worktree gc", {
+        removed: report.removedWorktrees.map((w) => w.branch || w.path),
+        errors: report.errors,
+      });
+    }
+    const threshold = opts.threshold ?? 20;
+    if (threshold > 0) {
+      const n = countWorktrees(config.root);
+      if (n > threshold) {
+        opts.log(
+          "warn",
+          `${n} git worktrees registered (advisory ceiling ${threshold}) — run \`repoos gc\` to reclaim leftovers from done/abandoned tasks`,
+          { worktrees: n, threshold },
+        );
+      }
+    }
+  } catch (e) {
+    opts.log("warn", `worktree gc failed: ${(e as Error).message}`);
+  }
+}
