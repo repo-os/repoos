@@ -53,6 +53,10 @@ export type RepoEvent =
       at: string;
     }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats; at: string }
+  /** The freeform-create PM flesh-out failed and the draft is kept as-is
+   *  (0320): lets clients drop their "AI creation in flight" marker so a
+   *  later manual move of the stale draft cannot flag it as newly created. */
+  | { type: "task.aiCreateFailed"; id: string; reason: string; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | {

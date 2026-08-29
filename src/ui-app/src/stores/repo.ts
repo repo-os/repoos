@@ -556,6 +556,20 @@ export const useRepoStore = defineStore("repo", () => {
     writeIdSet(AI_CREATE_PENDING_KEY, next);
   }
 
+  /**
+   * A pending id is resolved without the "newly created" highlight (0320
+   * review fix): the PM run failed server-side, or this tab itself moved the
+   * stale draft. Either way the human demonstrably knows the task exists —
+   * promoting it here would flag the card at the exact moment they act on it.
+   */
+  function dropAiCreatePending(id: string): void {
+    if (!aiCreatePending.value.has(id)) return;
+    const next = new Set(aiCreatePending.value);
+    next.delete(id);
+    aiCreatePending.value = next;
+    writeIdSet(AI_CREATE_PENDING_KEY, next);
+  }
+
   /** The AI creation completed — the flesh-out promoted the draft out of
    *  `draft` — so the card enters its persistent "newly created" highlight
    *  until acknowledged (0320). */
@@ -828,6 +842,16 @@ export const useRepoStore = defineStore("repo", () => {
       setDoneError(e.id, null);
       recount();
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
+    } else if (e.type === "task.aiCreateFailed") {
+      // The PM flesh-out for a freeform create failed server-side (0320
+      // review fix): the draft is kept with its original prompt and nothing
+      // will promote it. Clear the pending id in every tab so a later manual
+      // draft -> board move cannot falsely flag the card as newly created.
+      const wasPending = aiCreatePending.value.has(e.id);
+      dropAiCreatePending(e.id);
+      if (wasPending) {
+        pushFeed(`<b>PM agent failed</b> on #${e.id} — draft kept as-is`, "#ffb454", "task.aiCreateFailed");
+      }
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
@@ -1162,7 +1186,7 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
+    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.aiCreateFailed", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1348,6 +1372,13 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function setStatus(t: Task, status: string, note?: string): Promise<void> {
     if (t.status === status && !note) return;
+    // 0320 review fix: this tab moving a pending AI-created draft out of
+    // `draft` is the human acting on the card — not the PM flesh-out
+    // completing. Drop the pending id BEFORE the patch so the SSE echo of
+    // this very patch cannot promote it into a false "newly created"
+    // highlight (the usual reason a pending draft is moved by hand is that
+    // the PM run already failed and left the draft stale).
+    if (t.status === "draft" && status !== "draft") dropAiCreatePending(t.id);
     try {
       await patchTask(t.id, note ? { status, note } : { status });
       // Moving a review task anywhere (other than through the done workflow)

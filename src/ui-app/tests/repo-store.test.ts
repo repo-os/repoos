@@ -1127,6 +1127,7 @@ describe("AI-created card acknowledgement (0320)", () => {
         return json({ tasks: boardTasks, counts: EMPTY_COUNTS, taskCount: boardTasks.length });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/api/tasks/freeform")) return json(freeformResponse);
+      if (url.includes("/api/tasks/")) return json({ ...makeTask(), ok: true });
       throw new Error("unexpected fetch: " + url);
     }));
   }
@@ -1234,6 +1235,70 @@ describe("AI-created card acknowledgement (0320)", () => {
     expect(repo.needsCreateAck("0047")).toBe(false);
     expect(repo.aiCreatePending.has("0047")).toBe(true);
     expect(repo.aiCreatePending.has("0048")).toBe(false);
+  });
+
+  it("does not flag when this tab itself moves the pending draft out of draft", async () => {
+    // Review fix: a pending draft whose PM run failed (or is stalled) gets
+    // moved by hand. The SSE echo of that very patch must not promote the id
+    // into the "newly created" highlight — the user obviously knows the task
+    // exists at the moment they move it.
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("a fresh idea", "run-1");
+    expect(repo.aiCreatePending.has("0043")).toBe(true);
+
+    await repo.setStatus(makeTask({ id: "0043", status: "draft" }), "inbox");
+    // Dropped up front, before the patch — the highlight never fires.
+    expect(repo.aiCreatePending.has("0043")).toBe(false);
+    expect(repo.needsCreateAck("0043")).toBe(false);
+
+    // The echo of the local patch arrives afterwards; no pending id, no flag.
+    FakeEventSource.instances[0].emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox", title: "Fleshed out" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(false);
+    expect(localStorage.getItem(PENDING_KEY)).not.toContain("0043");
+    expect(localStorage.getItem(UNACKED_KEY)).toBeNull();
+  });
+
+  it("clears a pending id when the server reports the PM flesh-out failed", async () => {
+    // PM failure after `fallback: false`: the draft never promotes on its
+    // own, so the pending id must be dropped on the server's failure event —
+    // otherwise a later manual draft -> board move satisfies the SSE
+    // transition check and falsely flags the card.
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("a fresh idea", "run-1");
+    expect(repo.aiCreatePending.has("0043")).toBe(true);
+
+    FakeEventSource.instances[0].emit("task.aiCreateFailed", {
+      type: "task.aiCreateFailed",
+      id: "0043",
+      reason: "the PM agent returned no usable output",
+      at: "2026-08-29T06:00:00Z",
+    });
+    expect(repo.aiCreatePending.has("0043")).toBe(false);
+    expect(repo.needsCreateAck("0043")).toBe(false);
+    expect(repo.feed.some((f) => f.kind === "task.aiCreateFailed")).toBe(true);
+
+    // The human then moves the stale draft by hand (here or in another tab):
+    // the transition must not flag the card.
+    FakeEventSource.instances[0].emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(false);
+    expect(localStorage.getItem(PENDING_KEY)).not.toContain("0043");
+    expect(localStorage.getItem(UNACKED_KEY)).toBeNull();
   });
 });
 

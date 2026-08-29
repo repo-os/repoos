@@ -375,6 +375,10 @@ export type RepoEvent =
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
+  /** The freeform-create PM flesh-out failed and the draft is kept as-is
+   *  (0320): drop the "AI creation in flight" marker so a later manual move
+   *  of the stale draft cannot flag the card as newly created. */
+  | { type: "task.aiCreateFailed"; id: string; reason: string; at: string }
   | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
