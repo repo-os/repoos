@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-29T05:13:41Z"
+review_passes: 2
 id: "0275"
 title: "Debugger false could-not-respond error, broken change-agent/model button, Agents page cant set model per agent"
 type: bug
@@ -12,8 +14,6 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-24T15:57:09Z"
-updated_at: "2026-08-26T06:05:03Z"
-review_passes: 1
 ---
 ## Problem
 Several related debugger/agent-selection issues seen on the same run:
@@ -36,3 +36,4 @@ Several related debugger/agent-selection issues seen on the same run:
 - 2026-08-25T16:29:05Z · pm_model_override
 - 2026-08-25T16:46:49Z · status active→review
 - 2026-08-26T06:05:03Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+

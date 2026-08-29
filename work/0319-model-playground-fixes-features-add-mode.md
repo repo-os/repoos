@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-08-29T07:46:14Z"
-review_passes: 2
+updated_at: "2026-08-29T05:13:21Z"
+review_passes: 1
 id: "0319"
 title: Improve model playground layout and filtering
 type: feature
@@ -55,5 +55,4 @@ model playground fixes/features - add model search bar, add dropdown for model p
 - 2026-08-29T04:31:33Z · status inbox→ready
 - 2026-08-29T04:31:43Z · status ready→active, branch
 - 2026-08-29T05:01:35Z · status active→review
-
 

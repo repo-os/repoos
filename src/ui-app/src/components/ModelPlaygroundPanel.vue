@@ -35,6 +35,42 @@ const allModels = computed<CatalogModel[]>(() =>
   providers.value.flatMap((group) => group.models.map((m) => ({ ...m, providerLabel: group.label }))),
 );
 
+const search = ref("");
+const providerFilter = ref("");
+const maxCost = ref("");
+
+const COST_THRESHOLDS = [0.5, 1, 2, 5, 10];
+
+function matchesFilters(m: PlaygroundModel): boolean {
+  const q = search.value.trim().toLowerCase();
+  if (q && !m.name.toLowerCase().includes(q)) return false;
+  const max = maxCost.value === "" ? null : Number(maxCost.value);
+  if (max != null) {
+    const price = m.inputPricePerM ?? m.outputPricePerM;
+    if (price != null && price > max) return false;
+  }
+  return true;
+}
+
+const visibleProviders = computed<PlaygroundProviderGroup[]>(() =>
+  providers.value
+    .filter((g) => !providerFilter.value || g.id === providerFilter.value)
+    .map((g) => ({ ...g, models: g.models.filter(matchesFilters) }))
+    .filter((g) => g.models.length > 0 || g.error),
+);
+
+const visibleCount = computed(() => visibleProviders.value.reduce((n, g) => n + g.models.length, 0));
+
+const filtersActive = computed(
+  () => search.value.trim() !== "" || providerFilter.value !== "" || maxCost.value !== "",
+);
+
+function clearFilters(): void {
+  search.value = "";
+  providerFilter.value = "";
+  maxCost.value = "";
+}
+
 function fmtPrice(v: number | null): string {
   if (v == null) return "—";
   return v < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`;
@@ -133,40 +169,77 @@ onMounted(() => {
         </Button>
       </div>
 
-      <div v-if="loadError" class="playground-error">{{ loadError }}</div>
-      <div v-if="loading && !allModels.length" class="playground-skeletons" aria-hidden="true">
-        <div v-for="i in 3" :key="i" class="playground-skeleton">
-          <div class="playground-skeleton-line w-70"></div>
-          <div class="playground-skeleton-line w-90"></div>
-          <div class="playground-skeleton-line w-45"></div>
+      <div class="playground-filters">
+        <input
+          v-model="search"
+          type="search"
+          class="playground-search"
+          placeholder="Search models…"
+          aria-label="Search models by name"
+        />
+        <div class="playground-filter-row">
+          <select v-model="providerFilter" class="playground-provider-select" aria-label="Filter by provider">
+            <option value="">All providers</option>
+            <option v-for="g in providers" :key="g.id" :value="g.id">{{ g.label }}</option>
+          </select>
+          <select v-model="maxCost" class="playground-cost-select" aria-label="Filter by maximum token cost">
+            <option value="">Any cost</option>
+            <option v-for="t in COST_THRESHOLDS" :key="t" :value="String(t)">
+              ≤ {{ fmtPrice(t) }} / 1M
+            </option>
+          </select>
         </div>
-      </div>
-      <div v-else-if="loadedOnce && !allModels.length && !loadError" class="playground-loading">
-        No models available right now.
       </div>
 
-      <template v-for="group in providers" :key="group.id">
-        <div v-if="group.models.length || group.error" class="playground-provider-group">
-          <div class="playground-provider-label">{{ group.label }}</div>
-          <div v-if="group.error" class="playground-provider-error">{{ group.error }}</div>
-          <button
-            v-for="m in group.models"
-            :key="m.runId"
-            type="button"
-            class="playground-model-card"
-            :class="{ active: selected?.runId === m.runId }"
-            :disabled="sending && selected?.runId !== m.runId"
-            @click="selectModel({ ...m, providerLabel: group.label })"
-          >
-            <div class="playground-model-name">{{ m.name }}</div>
-            <div class="playground-model-reason">{{ m.reason }}</div>
-            <div class="playground-model-meta">
-              <span>{{ fmtPrice(m.inputPricePerM) }} / {{ fmtPrice(m.outputPricePerM) }} per 1M</span>
-              <span v-if="m.contextWindow">{{ fmtContext(m.contextWindow) }} ctx</span>
-            </div>
+      <div v-if="loadError" class="playground-error">{{ loadError }}</div>
+
+      <div class="playground-list">
+        <div v-if="loading && !allModels.length" class="playground-skeletons" aria-hidden="true">
+          <div v-for="i in 3" :key="i" class="playground-skeleton">
+            <div class="playground-skeleton-line w-70"></div>
+            <div class="playground-skeleton-line w-90"></div>
+            <div class="playground-skeleton-line w-45"></div>
+          </div>
+        </div>
+        <div
+          v-else-if="loadedOnce && !loadError && allModels.length && !visibleCount"
+          class="playground-loading playground-no-match"
+        >
+          No models match your filters.
+          <button v-if="filtersActive" type="button" class="playground-filter-clear" @click="clearFilters">
+            Clear filters
           </button>
         </div>
-      </template>
+        <div
+          v-else-if="loadedOnce && !allModels.length && !loadError"
+          class="playground-loading"
+        >
+          No models available right now.
+        </div>
+
+        <template v-for="group in visibleProviders" :key="group.id">
+          <div v-if="group.models.length || group.error" class="playground-provider-group">
+            <div class="playground-provider-label">{{ group.label }}</div>
+            <div v-if="group.error" class="playground-provider-error">{{ group.error }}</div>
+            <button
+              v-for="m in group.models"
+              :key="m.runId"
+              type="button"
+              class="playground-model-card"
+              :class="{ active: selected?.runId === m.runId }"
+              :disabled="sending && selected?.runId !== m.runId"
+              @click="selectModel({ ...m, providerLabel: group.label })"
+            >
+              <div class="playground-model-name">{{ m.name }}</div>
+              <div class="playground-model-reason">{{ m.reason }}</div>
+              <div class="playground-model-meta">
+                <span>{{ fmtPrice(m.inputPricePerM) }} / {{ fmtPrice(m.outputPricePerM) }} per 1M</span>
+                <span v-if="m.contextWindow">{{ fmtContext(m.contextWindow) }} ctx</span>
+              </div>
+            </button>
+          </div>
+        </template>
+      </div>
     </aside>
 
     <section class="playground-chat">
@@ -230,9 +303,19 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.playground{display:flex;align-items:flex-start;gap:16px;padding:16px 18px 20px}
-.playground-sidebar{width:320px;flex:none;display:flex;flex-direction:column;gap:10px;max-height:75vh;overflow-y:auto;padding-right:4px}
-.playground-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--bg);z-index:1;padding-bottom:2px}
+.playground{display:flex;gap:16px;padding:16px 18px 20px;height:100%;min-height:0}
+.playground-sidebar{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}
+.playground-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:2px}
+.playground-filters{display:flex;flex-direction:column;gap:8px;flex:none}
+.playground-filters input,.playground-filters select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--panel-solid);color:var(--txt);font:12px var(--font-sans);outline:0;transition:.15s}
+.playground-filters input:focus,.playground-filters select:focus{border-color:var(--border-bright)}
+.playground-filters input::placeholder{color:var(--txt-faint)}
+.playground-filter-row{display:flex;gap:8px}
+.playground-filter-row select{min-width:0;flex:1}
+.playground-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+.playground-no-match{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.playground-filter-clear{border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer;padding:4px 10px;transition:.15s}
+.playground-filter-clear:hover{border-color:var(--border-bright);color:var(--txt)}
 .playground-error,.playground-loading{font-size:11.5px;color:var(--txt-dim);padding:4px 2px}
 .playground-provider-group{display:flex;flex-direction:column;gap:8px}
 .playground-provider-label{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);margin:4px 2px 0}
@@ -251,7 +334,7 @@ onMounted(() => {
 .playground-model-reason{font-size:11px;color:var(--txt-dim);line-height:1.4}
 .playground-model-meta{display:flex;gap:10px;font:500 10px 'JetBrains Mono',monospace;color:var(--txt-faint)}
 
-.playground-chat{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;background:var(--panel-solid);overflow:hidden;min-height:460px}
+.playground-chat{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;background:var(--panel-solid);overflow:hidden}
 .playground-chat-head{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
 .playground-active-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex:none}
 .playground-active-info{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -260,7 +343,7 @@ onMounted(() => {
 .playground-clear{margin-left:auto;flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer;transition:.15s}
 .playground-clear:hover{border-color:var(--border-bright);color:var(--txt)}
 .playground-clear:disabled{opacity:.5;cursor:default}
-.playground-log{flex:1;min-height:280px;max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px}
+.playground-log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px}
 .playground-empty{flex:1;display:grid;place-items:center;color:var(--txt-dim);font-size:12.5px;padding:40px 16px}
 .playground-welcome{margin:auto 0;text-align:center;padding:22px 12px;color:var(--txt-dim)}
 .playground-welcome strong{display:block;color:var(--txt);font-size:14px;margin-bottom:6px}
@@ -294,8 +377,8 @@ onMounted(() => {
 @keyframes playground-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 @media(max-width:860px){
-  .playground{flex-direction:column}
-  .playground-sidebar{width:100%;max-height:280px}
+  .playground{height:auto;flex-direction:column}
+  .playground-sidebar{max-height:320px}
   .playground-chat{width:100%;min-height:420px}
 }
 @media(prefers-reduced-motion:reduce){

@@ -4,7 +4,9 @@
  * provider error — e.g. a raw JSON-parse exception embedding a snippet of an
  * HTML block page — replaced the list instead of showing alongside it), and
  * the core interactions (selecting a model, sending a starter prompt) must
- * wire through to the chat API with the right payload.
+ * wire through to the chat API with the right payload. 0319 adds the
+ * search / provider / token-cost filters, which must compose and never
+ * hide provider error groups.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -34,6 +36,26 @@ function deepinfraGroup(overrides: Partial<PlaygroundProviderGroup> = {}): Playg
         reason: "Kimi K3 is a 2.8T-parameter open-weight multimodal reasoning model.",
         inputPricePerM: 2.85,
         outputPricePerM: 14.25,
+        contextWindow: 1_048_576,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function openrouterGroup(overrides: Partial<PlaygroundProviderGroup> = {}): PlaygroundProviderGroup {
+  return {
+    id: "openrouter",
+    label: "OpenRouter",
+    fetchedAt: new Date().toISOString(),
+    models: [
+      {
+        id: "meta-llama/Llama-4-Maverick",
+        runId: "openrouter/meta-llama/Llama-4-Maverick",
+        name: "meta-llama/Llama-4-Maverick",
+        reason: "Llama 4 Maverick is a cheap general-purpose workhorse.",
+        inputPricePerM: 0.2,
+        outputPricePerM: 0.6,
         contextWindow: 1_048_576,
       },
     ],
@@ -237,5 +259,128 @@ describe("ModelPlaygroundPanel — loading state and session controls", () => {
     expect(err).toContain("non-JSON");
     expect(err).not.toContain("Unexpected token");
     expect(err).not.toContain("<!DOCTYPE");
+  });
+});
+
+describe("ModelPlaygroundPanel — filtering", () => {
+  it("searches the model list by name in real time", async () => {
+    stubModelsFetch([deepinfraGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(2);
+
+    await wrapper.find(".playground-search").setValue("KIMI");
+    await nextTick();
+    let names = wrapper.findAll(".playground-model-name");
+    expect(names).toHaveLength(1);
+    expect(names[0].text()).toBe("moonshotai/Kimi-K3");
+
+    await wrapper.find(".playground-search").setValue("");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(2);
+  });
+
+  it("filters by provider via the dropdown, with All providers as the default", async () => {
+    stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["DeepInfra", "OpenRouter"]);
+
+    await wrapper.find(".playground-provider-select").setValue("openrouter");
+    await nextTick();
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["OpenRouter"]);
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["meta-llama/Llama-4-Maverick"]);
+
+    await wrapper.find(".playground-provider-select").setValue("");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
+  });
+
+  it("hides models whose token cost exceeds the selected max-cost threshold", async () => {
+    stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    await wrapper.find(".playground-cost-select").setValue("1");
+    await nextTick();
+    let names = wrapper.findAll(".playground-model-name").map((n) => n.text());
+    expect(names).toContain("zai-org/GLM-5.3-Flash");
+    expect(names).toContain("meta-llama/Llama-4-Maverick");
+    expect(names).not.toContain("moonshotai/Kimi-K3");
+
+    await wrapper.find(".playground-cost-select").setValue("10");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
+
+    await wrapper.find(".playground-cost-select").setValue("");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
+  });
+
+  it("keeps models with unknown prices visible under a cost threshold", async () => {
+    stubModelsFetch([
+      openrouterGroup({
+        models: [
+          {
+            id: "unknown/mystery-model",
+            runId: "openrouter/unknown/mystery-model",
+            name: "unknown/mystery-model",
+            reason: "Pricing not published yet.",
+            inputPricePerM: null,
+            outputPricePerM: null,
+            contextWindow: null,
+          },
+        ],
+      }),
+    ]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    await wrapper.find(".playground-cost-select").setValue("0.5");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["unknown/mystery-model"]);
+  });
+
+  it("composes search, provider, and cost filters, and can clear them", async () => {
+    stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    await wrapper.find(".playground-provider-select").setValue("deepinfra");
+    await wrapper.find(".playground-cost-select").setValue("1");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["zai-org/GLM-5.3-Flash"]);
+
+    await wrapper.find(".playground-search").setValue("Maverick");
+    await nextTick();
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(0);
+    expect(wrapper.find(".playground-no-match").text()).toContain("No models match your filters.");
+
+    await wrapper.find(".playground-filter-clear").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".playground-no-match").exists()).toBe(false);
+    expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
+  });
+
+  it("still shows a provider error group when filters hide other providers' models", async () => {
+    stubModelsFetch([
+      deepinfraGroup(),
+      { id: "together", label: "Together", models: [], fetchedAt: new Date().toISOString(), error: "Together is down" },
+    ]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    await wrapper.find(".playground-cost-select").setValue("1");
+    await nextTick();
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["DeepInfra", "Together"]);
+    expect(wrapper.find(".playground-provider-error").text()).toBe("Together is down");
   });
 });
