@@ -140,6 +140,31 @@ export async function guardReviewTransition(
       detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
     };
   }
+  // Drop any OTHER task's work/*.md from this commit. A concurrent board write,
+  // a `repoos` CLI call, or a stale merge can leave a sibling task file dirty in
+  // the worktree, and the `git add -A` above folds it into this task's
+  // "implement" commit — which then publishes to main on close-out (observed:
+  // #0319 landed #0202/#0275 frontmatter drift). Only this task's own file
+  // (already unstaged above) is the handoff's to carry.
+  const stagedWorkFiles = (
+    await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
+  ).stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((p) => p && p.endsWith(".md") && p !== task.path);
+  if (stagedWorkFiles.length > 0) {
+    const unstageForeign = await runGit(
+      registered,
+      ["reset", "--quiet", "HEAD", "--", ...stagedWorkFiles],
+      10_000,
+    );
+    if (unstageForeign.status !== 0) {
+      return {
+        ok: false,
+        detail: `could not unstage unrelated task files: ${concise(unstageForeign)}`,
+      };
+    }
+  }
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
     const commit = await runGit(

@@ -248,6 +248,31 @@ describe("guardReviewTransition (0210)", () => {
     }
   });
 
+  it("never folds another task's work/*.md into this task's implement commit", async () => {
+    const fx = makeFixture();
+    try {
+      // Real implementation change for this task…
+      uncommittedChange(fx);
+      // …plus an unrelated task file left dirty in the worktree (a concurrent
+      // board write, a `repoos` CLI call, a stale merge). `git add -A` would
+      // otherwise sweep it into the commit and publish it to main on close-out.
+      writeFileSync(join(fx.worktree, "work", "0299-sibling.md"), '---\nid: "0299"\n---\nstale\n');
+
+      const res = await guardReviewTransition(fx.config, fx.task);
+
+      expect(res.ok).toBe(true);
+      const committed = git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .filter(Boolean);
+      expect(committed).toContain("source.txt");
+      expect(committed).not.toContain("work/0299-sibling.md");
+      // The unrelated file is left in the worktree untouched, not deleted.
+      expect(readFileSync(join(fx.worktree, "work", "0299-sibling.md"), "utf8")).toContain("stale");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("is idempotent: passes again after a successful commit (no double-commit)", async () => {
     const fx = makeFixture();
     try {

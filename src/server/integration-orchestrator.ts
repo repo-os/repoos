@@ -90,6 +90,83 @@ export async function detectDroppedMerge(
 }
 
 /**
+ * Make main's `<workDir>/*.md` state authoritative for every task file the
+ * merged candidate changed that is NOT the closing task's own file, and commit
+ * the restore.
+ *
+ * A feature branch can carry stale edits to other tasks' files — a concurrent
+ * board write, a `repoos` CLI call in the worktree, a partial merge — that git
+ * folds in without a conflict (main untouched since the merge-base), so the
+ * close-out's conflict-only `autoResolveOurs` never catches them and the stale
+ * version publishes to main. This closes that gap: a foreign file modified or
+ * deleted by the branch is restored to main's copy; one the branch newly added
+ * is removed (a close-out never creates another task's file). Returns the paths
+ * touched (empty when there were none); throws only if the git ops fail.
+ *
+ * Exported for tests.
+ */
+export async function resetForeignWorkFiles(opts: {
+  candidateWtPath: string;
+  baseMainSha: string;
+  workDir: string;
+  ownWorkFile: string | null;
+}): Promise<string[]> {
+  const { candidateWtPath, baseMainSha, workDir, ownWorkFile } = opts;
+  const changed = await runGit(
+    candidateWtPath,
+    ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", workDir],
+    10_000,
+  );
+  if (changed.status !== 0) return [];
+  const foreign = changed.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((p) => p && p.endsWith(".md") && p !== ownWorkFile);
+  if (foreign.length === 0) return [];
+
+  // Partition by whether the file exists at main's tip: modified/deleted files
+  // get main's version back; branch-added files get removed.
+  const onMain: string[] = [];
+  const addedByBranch: string[] = [];
+  for (const p of foreign) {
+    const exists = await runGit(candidateWtPath, ["cat-file", "-e", `${baseMainSha}:${p}`], 5_000);
+    (exists.status === 0 ? onMain : addedByBranch).push(p);
+  }
+
+  if (onMain.length > 0) {
+    const restore = await runGit(
+      candidateWtPath,
+      ["checkout", baseMainSha, "--", ...onMain],
+      15_000,
+    );
+    if (restore.status !== 0) {
+      throw new Error(`could not restore unrelated task files: ${restore.stderr.trim()}`);
+    }
+    await runGit(candidateWtPath, ["add", "--", ...onMain], 10_000);
+  }
+  if (addedByBranch.length > 0) {
+    const removed = await runGit(candidateWtPath, ["rm", "-q", "--", ...addedByBranch], 10_000);
+    if (removed.status !== 0) {
+      throw new Error(`could not drop stray task files: ${removed.stderr.trim()}`);
+    }
+  }
+
+  const staged = await runGit(candidateWtPath, ["diff", "--cached", "--quiet"], 10_000);
+  if (staged.status !== 1) return []; // nothing actually differed after all
+  await runGit(
+    candidateWtPath,
+    [
+      "commit",
+      "--no-edit",
+      "-m",
+      `chore: keep main's copy of ${foreign.length} unrelated task file(s) during close-out`,
+    ],
+    10_000,
+  );
+  return foreign;
+}
+
+/**
  * Resolve the repository's actual default branch name.
  * Tries (in order):
  * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
@@ -649,6 +726,35 @@ export class CloseOutOrchestrator {
       if (dropped) {
         return { ok: false, retryable: false, reason: dropped };
       }
+    }
+
+    // A clean merge still carries any edits the feature branch made to OTHER
+    // tasks' work/*.md files (branch changed them, main did not touch them since
+    // the merge-base → git merged them with no conflict, so `autoResolveOurs`,
+    // which only runs on conflicts, never fired). Restore main's copy of each.
+    // Observed live: #0319's close-out published #0202/#0275 frontmatter drift.
+    try {
+      const reset = await resetForeignWorkFiles({
+        candidateWtPath: wtPath,
+        baseMainSha: currentMainSha,
+        workDir: this.config.workDir,
+        ownWorkFile: task ? relative(root, task.absPath) : null,
+      });
+      if (reset.length > 0) {
+        this.logger?.integration(
+          job.taskId,
+          "info",
+          "restored unrelated task files to main during close-out",
+          { files: reset },
+        );
+      }
+    } catch (err) {
+      this.logger?.integration(
+        job.taskId,
+        "warn",
+        "could not restore unrelated task files during close-out",
+        { reason: err instanceof Error ? err.message : String(err) },
+      );
     }
 
     // Check for merge conflict markers in text files (unresolved conflicts in content).
