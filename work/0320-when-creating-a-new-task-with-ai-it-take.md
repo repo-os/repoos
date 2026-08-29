@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-29T05:20:00Z"
+review_passes: 1
 id: "0320"
 title: Highlight AI-created task cards until acknowledged
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-ai-created-task-cards-until-ac
 created_at: "2026-08-29T04:31:08Z"
-updated_at: "2026-08-29T05:16:38Z"
 ---
 ## Problem
 
@@ -51,3 +52,4 @@ When creating a new task with AI it takes a few minutes and the user can easily 
 - 2026-08-29T04:33:24Z · status inbox→ready
 - 2026-08-29T04:33:52Z · status ready→active, branch
 - 2026-08-29T05:16:38Z · status active→review
+
