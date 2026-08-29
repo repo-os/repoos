@@ -2,14 +2,14 @@
 id: "0320"
 title: Highlight AI-created task cards until acknowledged
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-ai-created-task-cards-until-ac
 created_at: "2026-08-29T04:31:08Z"
-updated_at: "2026-08-29T05:55:46Z"
+updated_at: "2026-08-29T06:16:00Z"
 review_passes: 1
 ---
 ## Problem
@@ -54,3 +54,4 @@ When creating a new task with AI it takes a few minutes and the user can easily 
 - 2026-08-29T05:16:38Z · status active→review
 - 2026-08-29T05:55:46Z · status review→active
 - 2026-08-29T05:55:46Z · note: Please see the review suggestion: Stop the promotion on transitions the local client itself initiated (e.g. skip promoteAiCreated when the draft→inbox patch came from this tab's setStatus), and/or clear a pending id when the server emits a PM-run failure — that removes the false-flag path entirely.
+- 2026-08-29T06:16:00Z · status active→review
