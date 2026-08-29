@@ -29,7 +29,7 @@
     "dev": "bun src/cli/index.ts",
     "repoos": "bun src/cli/index.ts",
     "lint": "oxlint",
-    "fmt": "oxfmt src/ui-app/src src/ui-app/vite.config.ts src/ui-app/tests",
+    "fmt": "echo 'repoos has no configured formatter. oxfmt with no .oxfmtrc rewrites ~160 files to defaults that do not match this codebase. Match the surrounding style by hand; run \"bun run lint\" (oxlint) to check.' && exit 1",
     "test": "node scripts/run-tests.mjs",
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
     "screenshots": "bun run build && node scripts/capture-screenshots.mjs",
