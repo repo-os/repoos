@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-ai-created-task-cards-until-ac
 created_at: "2026-08-29T04:31:08Z"
-updated_at: "2026-08-29T04:33:52Z"
+updated_at: "2026-08-29T04:56:55Z"
 ---
 ## Problem
 
