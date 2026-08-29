@@ -1510,11 +1510,11 @@ export const useRepoStore = defineStore("repo", () => {
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /**
-   * Merge main into a review-status task's branch (the "rebase onto main"
-   * action). Reuses the same sync path the server already runs automatically
-   * on entry into review — this just lets the user trigger it again once the
-   * branch has drifted further. Refreshes diff stats/patch on success so the
-   * Changes tab reflects the merged state.
+   * Merge main into a task's branch (the "sync with main" action). Reuses the
+   * same sync path the server already runs automatically on entry into review
+   * for the large-divergence case — this lets the user trigger it on demand for
+   * any task with a worktree, not just review tasks. Refreshes diff
+   * stats/patch on success so the Changes tab reflects the merged state.
    */
   async function syncTaskBranch(id: string): Promise<void> {
     const r = await api<{ ok: boolean; conflicts?: string[]; error?: string }>(

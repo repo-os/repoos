@@ -16,12 +16,16 @@ const repo = useRepoStore();
  * so the control is hidden for them.
  */
 const hasWorktree = computed(() => !!props.task.git.worktreePath);
+/** Warn before merging main into a worktree that has uncommitted edits. */
+const worktreeDirty = computed(() => !!props.task.git.dirty);
 const syncBusy = ref(false);
 async function syncWithMain(): Promise<void> {
   if (!hasWorktree.value || syncBusy.value) return;
   syncBusy.value = true;
   try {
     await repo.syncTaskBranch(props.task.id);
+  } catch (err) {
+    repo.onError(err);
   } finally {
     syncBusy.value = false;
   }
@@ -201,6 +205,9 @@ function toggleExpanded(key: string): void {
           {{ syncBusy ? "Syncing…" : "Sync now" }}
         </Button>
       </div>
+      <p v-if="worktreeDirty" class="debug-sync-warn">
+        This worktree has uncommitted changes — merging main may refuse or merge around your in-progress edits. Commit or stash first if you want a clean reconcile.
+      </p>
     </Card>
 
     <Card v-if="runningCheck" class="debug-live">
@@ -309,6 +316,12 @@ function toggleExpanded(key: string): void {
 }
 .debug-sync-btn {
   flex-shrink: 0;
+}
+.debug-sync-warn {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--yellow, #e6b450);
 }
 
 .debug-live {
