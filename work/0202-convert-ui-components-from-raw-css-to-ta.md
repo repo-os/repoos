@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-08-29T05:15:54Z"
-review_passes: 1
 id: "0202"
 title: Convert Vue SFCs from raw CSS to Tailwind utility classes
 type: chore
-status: review
+status: ready
 needs_merge: true
 priority: p3
 area: ui
@@ -15,6 +13,8 @@ model_override: default
 pm_model_override: default
 review_model_override: default
 created_at: "2026-08-14T16:06:37Z"
+updated_at: "2026-08-29T11:33:20Z"
+review_passes: 1
 review_rounds: 1
 ---
 ## Redo notice (2026-08-20)
@@ -271,4 +271,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-08-20T13:44:56Z · status active→review
 - 2026-08-24T23:41:14Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-08-25T13:36:53Z · review_model_override
-
+- 2026-08-29T11:33:20Z · status review→ready
