@@ -18,6 +18,14 @@ commit message:
 check:
     repoos check
 
+# format code with oxfmt (TS/Vue/CSS; .oxfmtrc scopes it) `just fmt`
+fmt:
+    bun run fmt
+
+# check formatting without writing `just fmt-check`
+fmt-check:
+    bun run fmt:check
+
 # run the test suite under Bun (~5x faster) `just test` / `just test runtime`
 test *args:
     bun run --bun test -- {{args}}
