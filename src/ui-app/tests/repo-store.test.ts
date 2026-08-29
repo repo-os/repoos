@@ -1114,6 +1114,129 @@ describe("fresh-done acknowledgement (0278)", () => {
   });
 });
 
+describe("AI-created card acknowledgement (0320)", () => {
+  const PENDING_KEY = "repoos.aiCreate.pending";
+  const UNACKED_KEY = "repoos.aiCreate.unacked";
+
+  function stubFetchWith(freeformResponse: Record<string, unknown>, boardTasks: Task[] = []): void {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: boardTasks.length, workDir: "work" });
+      if (url.includes("/api/board") || url.includes("/api/index"))
+        return json({ tasks: boardTasks, counts: EMPTY_COUNTS, taskCount: boardTasks.length });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/api/tasks/freeform")) return json(freeformResponse);
+      throw new Error("unexpected fetch: " + url);
+    }));
+  }
+
+  it("flags the card when the PM flesh-out lands, and clears it on acknowledge", async () => {
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+
+    // The freeform create marks the draft pending; no highlight while the PM
+    // agent is still fleshing it out.
+    await repo.createFreeformTask("a fresh idea", "run-1");
+    expect(repo.aiCreatePending.has("0043")).toBe(true);
+    expect(repo.needsCreateAck("0043")).toBe(false);
+
+    // The flesh-out lands as a draft -> default-status transition.
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox", title: "Fleshed out" }),
+      prev: { status: "draft", title: "a fresh idea" },
+    });
+    expect(repo.aiCreatePending.has("0043")).toBe(false);
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    repo.acknowledgeCreate("0043");
+    expect(repo.needsCreateAck("0043")).toBe(false);
+  });
+
+  it("never flags fallback creations or tasks not created through the AI flow", async () => {
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    const draft = makeTask({ id: "0044", status: "draft" });
+    stubFetchWith({ ok: true, fallback: true, fallbackReason: "no-pm-agent", task: draft });
+    const repo = useRepoStore();
+    await repo.init();
+
+    // no-pm-agent fallback: nothing will flesh the draft out, so it must not
+    // be marked pending and its later transition must not flag.
+    await repo.createFreeformTask("rough idea", "run-2");
+    expect(repo.aiCreatePending.has("0044")).toBe(false);
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0044", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0044")).toBe(false);
+
+    // A manually created task (never marked) transitioning draft -> inbox.
+    es.emit("task.created", { type: "task.created", task: makeTask({ id: "0045", status: "draft" }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0045", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0045")).toBe(false);
+  });
+
+  it("persists the highlight across reloads until acknowledged", async () => {
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("a fresh idea", "run-1");
+    FakeEventSource.instances[0].emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    // Reload (a fresh store): the persisted unacked id keeps the highlight.
+    setActivePinia(createPinia());
+    const repo2 = useRepoStore();
+    await repo2.init();
+    expect(repo2.needsCreateAck("0043")).toBe(true);
+    expect(localStorage.getItem(UNACKED_KEY)).toContain("0043");
+
+    repo2.acknowledgeCreate("0043");
+    // Another reload: the ack persisted, the highlight stays cleared.
+    setActivePinia(createPinia());
+    const repo3 = useRepoStore();
+    await repo3.init();
+    expect(repo3.needsCreateAck("0043")).toBe(false);
+  });
+
+  it("recovers a missed SSE transition on load: pending ids already off draft flag, drafts stay pending", async () => {
+    // The tab was closed while the PM agent ran; on reload the board shows
+    // #0046 already promoted while #0047 is still a draft, and #0048 was
+    // deleted while pending.
+    localStorage.setItem(PENDING_KEY, JSON.stringify(["0046", "0047", "0048"]));
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask() }, [
+      makeTask({ id: "0046", status: "inbox" }),
+      makeTask({ id: "0047", status: "draft" }),
+    ]);
+    const repo = useRepoStore();
+    await repo.init();
+
+    expect(repo.needsCreateAck("0046")).toBe(true);
+    expect(repo.needsCreateAck("0047")).toBe(false);
+    expect(repo.aiCreatePending.has("0047")).toBe(true);
+    expect(repo.aiCreatePending.has("0048")).toBe(false);
+  });
+});
+
 describe("sync task branch with main (rebase-onto-main button)", () => {
   it("posts to /sync, reloads diff data, and toasts success", async () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });

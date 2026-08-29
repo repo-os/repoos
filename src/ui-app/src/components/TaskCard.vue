@@ -469,6 +469,20 @@ function acknowledge(): void {
   repo.acknowledge(props.task.id);
 }
 
+/** True when this card was created by an AI flow whose creation completed and
+ *  the human hasn't acknowledged it yet (0320). */
+const createAckPending = computed(() => repo.needsCreateAck(props.task.id));
+
+/** Footer styling for the AI-created Acknowledge button — violet, the app's
+ *  AI/agent color, deliberately distinct from done-green (0278's ack), amber
+ *  (needs-input/warnings), and cyan (start-work) so the states can't be confused. */
+const createAckFooterClass =
+  "border-[var(--violet-border-tint)] bg-[var(--violet-dim)] text-[var(--violet)] hover:brightness-110";
+
+function acknowledgeCreate(): void {
+  repo.acknowledgeCreate(props.task.id);
+}
+
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
@@ -574,6 +588,7 @@ async function openPanelFromError(): Promise<void> {
       'review-ready': reviewReady,
       'needs-input': task.needsInput,
       'done-needs-ack': ackPending,
+      'ai-created-ack': createAckPending,
       dragging,
       'has-action': !!action,
     }"
@@ -644,6 +659,30 @@ async function openPanelFromError(): Promise<void> {
           :class="ackFooterClass"
           title="Acknowledge this task is done — clears the highlight"
           @click.stop="acknowledge"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+            <path
+              d="M4 12l5 5L20 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Acknowledge
+        </button>
+    </div>
+    <!-- AI-created acknowledgement (0320): a persistent violet footer on a card
+         the PM agent just finished creating, clearing on click. Unlike the
+         done-ack footer above, this renders IN ADDITION to the action footer —
+         the card lands in inbox/ready, which already has a move/start action —
+         so it starts its own v-if chain rather than joining that one. -->
+    <div v-if="createAckPending" class="tc-foot tc-actions !ml-0 w-full">
+        <button
+          class="ai-created-ack flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+          :class="createAckFooterClass"
+          title="Acknowledge this AI-created task — clears the highlight"
+          @click.stop="acknowledgeCreate"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
             <path
