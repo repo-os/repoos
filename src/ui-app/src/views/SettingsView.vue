@@ -4,7 +4,12 @@ import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
-import { useNotificationsStore, NOTIFICATION_TYPE_LABELS, type NotificationType } from "../stores/notifications";
+import {
+  useNotificationsStore,
+  NOTIFICATION_TYPE_LABELS,
+  PUSH_AVAILABILITY_HELP,
+  type NotificationType,
+} from "../stores/notifications";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
@@ -30,6 +35,32 @@ const notificationTypes = [
 ] as NotificationType[];
 const route = useRoute();
 const router = useRouter();
+
+// --- Attention (browser) notifications diagnostics (#0316) ---
+const testSending = ref(false);
+async function runTestNotification(): Promise<void> {
+  testSending.value = true;
+  try {
+    await notifications.sendTestPush();
+  } finally {
+    testSending.value = false;
+  }
+}
+const pushStatus = computed(() => {
+  const a = notifications.availability;
+  const map = {
+    granted: { label: "granted", color: "var(--green)", tone: "ok" as const },
+    default: { label: "not requested", color: "var(--txt-dim)", tone: "ok" as const },
+    denied: { label: "blocked", color: "var(--red)", tone: "error" as const },
+    insecure: { label: "unavailable (insecure origin)", color: "var(--red)", tone: "error" as const },
+    unsupported: { label: "unsupported browser", color: "var(--red)", tone: "error" as const },
+  }[a];
+  return {
+    ...map,
+    // Hide the "just turn it on" hint once permission is already granted.
+    help: a === "granted" && notifications.pushEnabled ? "" : PUSH_AVAILABILITY_HELP[a],
+  };
+});
 const tunnelReadiness = ref<Record<string, any> | null>(null);
 const tunnelStatus = computed(() => {
   if (!tunnelReadiness.value?.configured?.tunnelId) return "Not configured";
@@ -49,6 +80,7 @@ async function refreshRvStatus(): Promise<void> {
   try { rvStatus.value = await api("/api/remote-validation/status"); } catch { rvStatus.value = null; }
 }
 onMounted(async () => {
+  notifications.refreshAvailability();
   try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
   void refreshRvStatus();
 });
@@ -500,6 +532,7 @@ onUnmounted(() => {
               <div class="setting-desc">
                 Send a notification through your computer's notification system when a task
                 moves into a state that needs you. Turning this on will ask for permission.
+                Requires a RepoOS tab to stay open — there's no background service worker.
               </div>
             </div>
             <div class="setting-input">
@@ -509,9 +542,36 @@ onUnmounted(() => {
               />
             </div>
           </div>
-          <div v-if="notifications.permissionError" class="setting-row">
+          <div class="setting-row">
             <div class="setting-info">
-              <div class="setting-desc" style="color: var(--red)">{{ notifications.permissionError }}</div>
+              <div class="setting-label" style="font-weight: 500">
+                Browser permission:
+                <span :style="{ color: pushStatus.color }">{{ pushStatus.label }}</span>
+              </div>
+              <div
+                v-if="pushStatus.help"
+                class="setting-desc"
+                :style="{ color: pushStatus.tone === 'error' ? 'var(--red)' : 'var(--txt-dim)' }"
+              >
+                {{ pushStatus.help }}
+              </div>
+              <div
+                v-if="notifications.testResult"
+                class="setting-desc"
+                :style="{ marginTop: '4px', color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)' }"
+              >
+                {{ notifications.testResult.detail }}
+              </div>
+            </div>
+            <div class="setting-input">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="testSending"
+                @click="runTestNotification"
+              >
+                {{ testSending ? "Sending…" : "Send test" }}
+              </Button>
             </div>
           </div>
           <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--txt-faint); font-weight: 600; padding-top: 8px">Events</div>

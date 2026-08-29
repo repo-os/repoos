@@ -5,6 +5,8 @@ import {
   playBell,
   ensurePushPermission,
   sendPush,
+  pushAvailability,
+  PUSH_AVAILABILITY_HELP,
   NOTIFICATION_TYPE_LABELS,
 } from "../src/stores/notifications";
 import { useRepoStore } from "../src/stores/repo";
@@ -62,7 +64,10 @@ class FakeAudioContext {
 class FakeNotification {
   static permission = "granted";
   static instances: { title: string; body: string }[] = [];
-  static requestPermission: (() => Promise<string>) | null = null;
+  // A real Notification always exposes requestPermission as a function; the
+  // store now treats its absence as "unsupported" (embedded web views).
+  static requestPermission: (cb?: (p: string) => void) => Promise<string> = async () =>
+    FakeNotification.permission;
   static __prompt__: (() => Promise<string>) | null = null;
   title: string;
   body: string;
@@ -78,7 +83,7 @@ beforeEach(() => {
   localStorage.clear();
   FakeNotification.instances = [];
   FakeNotification.permission = "granted";
-  FakeNotification.requestPermission = null;
+  FakeNotification.requestPermission = async () => FakeNotification.permission;
   FakeNotification.__prompt__ = null;
   vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal("Notification", FakeNotification);
@@ -155,6 +160,95 @@ describe("push permission + delivery", () => {
     sendPush("Title", "Body");
     expect(FakeNotification.instances).toHaveLength(1);
     expect(FakeNotification.instances[0]).toEqual({ title: "Title", body: "Body" });
+  });
+});
+
+describe("push availability diagnostics (#0316)", () => {
+  afterEach(() => {
+    // Reset any isSecureContext override a test installed.
+    delete (window as unknown as Record<string, unknown>).isSecureContext;
+  });
+
+  const setSecure = (v: boolean | undefined): void => {
+    Object.defineProperty(window, "isSecureContext", { value: v, configurable: true });
+  };
+
+  it("maps the browser permission state", () => {
+    FakeNotification.permission = "granted";
+    expect(pushAvailability()).toBe("granted");
+    FakeNotification.permission = "denied";
+    expect(pushAvailability()).toBe("denied");
+    FakeNotification.permission = "default";
+    expect(pushAvailability()).toBe("default");
+  });
+
+  it("reports 'insecure' when the page is not a secure context", () => {
+    setSecure(false);
+    FakeNotification.permission = "granted";
+    expect(pushAvailability()).toBe("insecure");
+  });
+
+  it("reports 'unsupported' when the Notification API is missing", () => {
+    vi.stubGlobal("Notification", undefined);
+    expect(pushAvailability()).toBe("unsupported");
+  });
+
+  it("reports 'unsupported' when requestPermission is not a function", () => {
+    vi.stubGlobal(
+      "Notification",
+      class {
+        static permission = "default";
+      },
+    );
+    expect(pushAvailability()).toBe("unsupported");
+  });
+
+  it("has actionable help text for every state", () => {
+    for (const state of ["granted", "denied", "default", "insecure", "unsupported"] as const) {
+      expect(PUSH_AVAILABILITY_HELP[state].length).toBeGreaterThan(10);
+    }
+  });
+
+  it("sendTestPush delivers and records success when permission is granted", async () => {
+    const n = useNotificationsStore();
+    FakeNotification.permission = "granted";
+    await n.sendTestPush();
+    expect(FakeNotification.instances).toHaveLength(1);
+    expect(n.testResult).toMatchObject({ ok: true });
+    expect(n.availability).toBe("granted");
+  });
+
+  it("sendTestPush refuses on an insecure origin and explains why", async () => {
+    setSecure(false);
+    const n = useNotificationsStore();
+    await n.sendTestPush();
+    expect(FakeNotification.instances).toHaveLength(0);
+    expect(n.testResult).toMatchObject({ ok: false, detail: PUSH_AVAILABILITY_HELP.insecure });
+  });
+
+  it("sendTestPush also rings the bell when sound is enabled", async () => {
+    const bell = vi.fn();
+    vi.stubGlobal("AudioContext", class {
+      currentTime = 0;
+      destination = {};
+      createOscillator() { bell(); return { type: "", frequency: { value: 0 }, connect() {}, start() {}, stop() {} }; }
+      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+    });
+    const n = useNotificationsStore();
+    n.setSoundEnabled(true);
+    FakeNotification.permission = "granted";
+    await n.sendTestPush();
+    expect(bell).toHaveBeenCalled();
+  });
+
+  it("store availability tracks the live permission state via refreshAvailability", () => {
+    const n = useNotificationsStore();
+    FakeNotification.permission = "default";
+    n.refreshAvailability();
+    expect(n.availability).toBe("default");
+    FakeNotification.permission = "granted";
+    n.refreshAvailability();
+    expect(n.availability).toBe("granted");
   });
 });
 

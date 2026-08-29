@@ -59,10 +59,50 @@ function persist(s: PersistedSettings): void {
   }
 }
 
-/** Ready for a browser notification system when this is resolved. */
+/** True when this browser exposes a usable Notification API. */
 function notificationsSupported(): boolean {
-  return typeof window !== "undefined" && "Notification" in window;
+  return (
+    typeof window !== "undefined" &&
+    typeof window.Notification === "function" &&
+    typeof window.Notification.requestPermission === "function"
+  );
 }
+
+/**
+ * Why browser push is or isn't available right now — surfaced in Settings so a
+ * silent failure is diagnosable (#0316):
+ *  - `granted`     permission is granted; delivery is up to the OS
+ *  - `denied`      the browser is blocking this origin; must be reset by the user
+ *  - `default`     not asked yet (turning the toggle on will prompt)
+ *  - `insecure`    the page isn't a secure context (plain HTTP on a LAN IP / remote
+ *                  host) so the API is unavailable — localhost or HTTPS is required
+ *  - `unsupported` no Notification API at all (older Safari, an embedded web view)
+ */
+export type PushAvailability = "granted" | "denied" | "default" | "insecure" | "unsupported";
+
+/** Classify the current browser-push situation. Never throws. */
+export function pushAvailability(): PushAvailability {
+  if (typeof window === "undefined") return "unsupported";
+  // jsdom / very old browsers leave `isSecureContext` undefined — only an
+  // explicit `false` (http:// on a non-localhost origin) means insecure.
+  if (window.isSecureContext === false) return "insecure";
+  if (!notificationsSupported()) return "unsupported";
+  const p = Notification.permission;
+  return p === "granted" ? "granted" : p === "denied" ? "denied" : "default";
+}
+
+/** Actionable one-liner for each {@link PushAvailability} state. */
+export const PUSH_AVAILABILITY_HELP: Record<PushAvailability, string> = {
+  granted:
+    "Permission granted. If notifications still don't appear, check System Settings → Notifications for your browser and that Do Not Disturb / a Focus mode isn't on — and keep a RepoOS tab open (there's no background service worker).",
+  denied:
+    "Your browser is blocking notifications for this site. Allow them in the site permissions (the button left of the address bar, or the browser's notification settings), then reload.",
+  default: "Turn on Push notifications to grant permission.",
+  insecure:
+    "This page is plain HTTP on a non-local address, which browsers don't treat as secure — the notification API is unavailable. Open RepoOS at http://localhost:<port> on the machine running the server, or via an HTTPS URL (e.g. the tunnel).",
+  unsupported:
+    "This browser doesn't expose a usable notification API (older Safari, or an embedded web view). Try a recent Chrome, Edge, or Firefox.",
+};
 
 /**
  * Play a short bell-like chime using the Web Audio API. No audio asset is
@@ -104,8 +144,21 @@ export async function ensurePushPermission(): Promise<boolean> {
   if (!notificationsSupported()) return false;
   if (Notification.permission === "granted") return true;
   if (Notification.permission === "denied") return false;
-  const res = await Notification.requestPermission();
-  return res === "granted";
+  try {
+    // Safari < 16 only supports the legacy callback form and returns void
+    // (not a promise) from requestPermission — resolve either way.
+    const res = await new Promise<NotificationPermission>((resolve, reject) => {
+      try {
+        const maybe = Notification.requestPermission((p) => resolve(p));
+        if (maybe && typeof maybe.then === "function") maybe.then(resolve, reject);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    return res === "granted";
+  } catch {
+    return false;
+  }
 }
 
 /** Deliver a browser notification. Best-effort and never throws. */
@@ -137,8 +190,10 @@ export const useNotificationsStore = defineStore("notifications", () => {
     stuck: false,
     needsInput: false,
   });
-  /** Latest push-permission request error, shown inline in settings. */
-  const permissionError = ref("");
+  /** Why browser push is / isn't available right now (diagnostic, #0316). */
+  const availability = ref<PushAvailability>("default");
+  /** Outcome of the last "send test notification" click, shown inline. */
+  const testResult = ref<{ ok: boolean; detail: string } | null>(null);
 
   // Hydrate from localStorage the moment the store is first used.
   hydrate();
@@ -152,6 +207,12 @@ export const useNotificationsStore = defineStore("notifications", () => {
     types.stuck = s.types.stuck;
     types.needsInput = s.types.needsInput;
     loaded.value = true;
+    refreshAvailability();
+  }
+
+  /** Re-read the live browser-push situation (permission can change out of band). */
+  function refreshAvailability(): void {
+    availability.value = pushAvailability();
   }
 
   function persistAll(): void {
@@ -193,15 +254,42 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   /**
    * Ask for the browser's notification permission when the master push toggle
-   * is turned on (the AC "permission flow"). Result is surfaced via
-   * `permissionError` only on refusal.
+   * is turned on (the AC "permission flow"). The outcome (and any reason it
+   * failed) is reflected in `availability` for the settings page to surface.
    */
   async function requestPushPermission(): Promise<void> {
-    permissionError.value = "";
-    const granted = await ensurePushPermission();
-    if (!granted) {
-      permissionError.value = "Notification permission was not granted.";
+    await ensurePushPermission();
+    refreshAvailability();
+  }
+
+  /**
+   * Send a test notification so the user can confirm delivery end-to-end
+   * (#0316). Requests permission if needed, fires the bell too when sound is
+   * on, and records a human-readable outcome in `testResult`. Never throws.
+   */
+  async function sendTestPush(): Promise<void> {
+    testResult.value = null;
+    refreshAvailability();
+    if (availability.value === "insecure" || availability.value === "unsupported") {
+      testResult.value = { ok: false, detail: PUSH_AVAILABILITY_HELP[availability.value] };
+      return;
     }
+    if (soundEnabled.value) playBell();
+    const granted = await ensurePushPermission();
+    refreshAvailability();
+    if (!granted) {
+      testResult.value = {
+        ok: false,
+        detail: PUSH_AVAILABILITY_HELP[availability.value] ?? "Permission was not granted.",
+      };
+      return;
+    }
+    sendPush("RepoOS test notification", "Notifications are working — you'll be pinged when a task needs you.");
+    testResult.value = {
+      ok: true,
+      detail:
+        "Sent. If nothing appeared, your OS is suppressing it — check System Settings → Notifications for this browser, and Do Not Disturb / Focus.",
+    };
   }
 
   /**
@@ -222,14 +310,17 @@ export const useNotificationsStore = defineStore("notifications", () => {
     soundEnabled,
     pushEnabled,
     types,
-    permissionError,
+    availability,
+    testResult,
     channelEnabled,
     isActive,
     hydrate,
+    refreshAvailability,
     setSoundEnabled,
     setPushEnabled,
     setTypeEnabled,
     requestPushPermission,
+    sendTestPush,
     notify,
   };
 });
