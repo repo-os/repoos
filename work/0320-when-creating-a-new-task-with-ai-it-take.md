@@ -2,14 +2,14 @@
 id: "0320"
 title: Highlight AI-created task cards until acknowledged
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-29T04:31:08Z"
-updated_at: "2026-08-29T04:31:50Z"
+updated_at: "2026-08-29T04:33:24Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ When creating a new task with AI it takes a few minutes and the user can easily 
 
 - 2026-08-29T04:31:08Z · created · hello@repoos.org
 - 2026-08-29T04:31:50Z · status draft→inbox, title, area, body
+- 2026-08-29T04:33:24Z · status inbox→ready
