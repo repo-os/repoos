@@ -2,7 +2,7 @@
 id: "0318"
 title: Add per-task sync-with-main button to debug tab
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 model_override: opencode-go/hy3
 created_at: "2026-08-28T16:17:21Z"
-updated_at: "2026-08-29T04:35:49Z"
+updated_at: "2026-08-29T04:35:59Z"
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ I think we need a way to trigger a sync with main on individual tasks that have 
 
 - 2026-08-28T16:17:51Z · status draft→inbox, title, area, body
 - 2026-08-29T04:35:49Z · model_override
+- 2026-08-29T04:35:59Z · status inbox→ready
