@@ -31,7 +31,11 @@ import { basename, join } from "node:path";
 import { startServer } from "../../server/server";
 import { ensureWorktree } from "../../core/git";
 
-const TASK_COUNT = 30;
+// Enough real git-enriched tasks that the "listener binds before the index
+// finishes" gap is unmistakable, without paying to build a worktree per task
+// on every run. Was 30; lowered once close-out reliably reaps its worktrees
+// (feat/worktree-gc) so a realistic board no longer accumulates dozens.
+const TASK_COUNT = 20;
 /**
  * Generous ceilings, not the numbers actually observed (~1s to first health,
  * ~7s to a full reload handoff) — wide enough to never flake on a loaded or
@@ -143,8 +147,8 @@ describe("boot timing (#0271 regression guard)", () => {
 
     try {
       expect(firstHealthMs).not.toBeNull();
-      // The listener answers before the full index (30 real-git-enriched
-      // tasks) is done — the whole point of the fix. A tolerance equal to
+      // The listener answers before the full index (TASK_COUNT real-git-
+      // enriched tasks) is done — the whole point of the fix. A tolerance equal to
       // the polling granularity absorbs the measurement skew above (the
       // poll can timestamp health a few ms after full-ready even when the
       // listener bound first), without ever masking a regression to the old
