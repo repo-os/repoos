@@ -3310,6 +3310,13 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 <span class="agent-stat-label">total cost</span>
                 <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
               </span>
+              <span
+                class="agent-stat"
+                title="Total model round-trips across this task's sessions (one turn may run several tool calls). '—' when no CLI reported it."
+              >
+                <span class="agent-stat-label">turns</span>
+                <span class="agent-stat-value">{{ taskUsage.totalTurns ?? "—" }}</span>
+              </span>
               <span class="agent-stat">
                 <span class="agent-stat-label">sessions</span>
                 <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
@@ -3351,6 +3358,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
                       <th class="ta-right" title="Share of this session's input served from the provider's prompt cache (hover a cell for raw token counts)">cache</th>
+                      <th class="ta-right" title="Model round-trips (one turn may run several tool calls). A high count relative to the work usually means the agent was thrashing.">turns</th>
                       <th class="ta-right">cost</th>
                     </tr>
                   </thead>
@@ -3378,6 +3386,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                         class="ta-right"
                         :title="cacheCellTitle(s)"
                       >{{ cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens) }}</td>
+                      <td class="ta-right">{{ s.turns ?? "—" }}</td>
                       <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
                     </tr>
                   </tbody>

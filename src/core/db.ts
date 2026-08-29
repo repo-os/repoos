@@ -168,6 +168,12 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE sessions ADD COLUMN cacheCreationTokens INTEGER;
     `,
   },
+  {
+    // Agent-turn (model round-trip) count per session. Nullable — NULL for a
+    // CLI that reports nothing countable, and for every pre-migration row.
+    version: 4,
+    up: `ALTER TABLE sessions ADD COLUMN turns INTEGER;`,
+  },
 ];
 
 /** Singleton database instance. */
@@ -191,6 +197,8 @@ export interface SessionRecord {
   cacheReadTokens: number | null;
   /** Input tokens written to the prompt cache this session; null if unreported. */
   cacheCreationTokens: number | null;
+  /** Cumulative model round-trips ("turns") across every invocation; null if unreported. */
+  turns: number | null;
   costUsd: number | null;
   costSource: string;
   status: string;
@@ -207,6 +215,7 @@ export interface TaskStats {
   totalTokens: number | null;
   totalCacheReadTokens: number | null;
   totalCacheCreationTokens: number | null;
+  totalTurns: number | null;
   totalCostUsd: number | null;
   /** Representative cost source for the task's sessions ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
   costSource: string;
@@ -226,6 +235,7 @@ export interface TaskRoleStats {
   totalTokens: number | null;
   totalCacheReadTokens: number | null;
   totalCacheCreationTokens: number | null;
+  totalTurns: number | null;
   totalCostUsd: number | null;
   costSource: string;
 }
@@ -253,6 +263,7 @@ export interface SessionTypeStats {
   totalTokens: number | null;
   totalCacheReadTokens: number | null;
   totalCacheCreationTokens: number | null;
+  totalTurns: number | null;
   totalCostUsd: number | null;
   costSource: string;
 }
@@ -357,6 +368,7 @@ export class RepoOSDb {
     totalTokens?: number | null;
     cacheReadTokens?: number | null;
     cacheCreationTokens?: number | null;
+    turns?: number | null;
     costUsd?: number | null;
     costSource?: string;
     status?: string;
@@ -368,9 +380,9 @@ export class RepoOSDb {
         INSERT INTO sessions (
           sessionId, sessionType, taskId, agent, model, codingAgent,
           startedAt, endedAt, elapsedMs, inputTokens, outputTokens, totalTokens,
-          cacheReadTokens, cacheCreationTokens,
+          cacheReadTokens, cacheCreationTokens, turns,
           costUsd, costSource, status, lastActivityAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(sessionId) DO UPDATE SET
           -- A per-task cli/model override (or an agent switch mid-session) is
           -- resolved by the time the agent actually runs, so a later upsert
@@ -387,6 +399,7 @@ export class RepoOSDb {
           totalTokens = COALESCE(excluded.totalTokens, totalTokens),
           cacheReadTokens = COALESCE(excluded.cacheReadTokens, cacheReadTokens),
           cacheCreationTokens = COALESCE(excluded.cacheCreationTokens, cacheCreationTokens),
+          turns = COALESCE(excluded.turns, turns),
           costUsd = COALESCE(excluded.costUsd, costUsd),
           costSource = excluded.costSource,
           status = excluded.status,
@@ -409,6 +422,7 @@ export class RepoOSDb {
         session.totalTokens ?? null,
         session.cacheReadTokens ?? null,
         session.cacheCreationTokens ?? null,
+        session.turns ?? null,
         session.costUsd ?? null,
         session.costSource ?? "none",
         session.status ?? "active",
@@ -456,6 +470,7 @@ export class RepoOSDb {
         totalTokens: agg.totalTokens,
         totalCacheReadTokens: agg.totalCacheReadTokens,
         totalCacheCreationTokens: agg.totalCacheCreationTokens,
+        totalTurns: agg.totalTurns,
         totalCostUsd: agg.totalCostUsd,
         costSource: agg.costSource,
         roles: this.groupRows(rows, (r) => r.sessionType)
@@ -525,6 +540,7 @@ export class RepoOSDb {
             totalTokens: agg.totalTokens,
             totalCacheReadTokens: agg.totalCacheReadTokens,
             totalCacheCreationTokens: agg.totalCacheCreationTokens,
+            totalTurns: agg.totalTurns,
             totalCostUsd: agg.totalCostUsd,
             costSource: agg.costSource,
           };
@@ -559,6 +575,7 @@ export class RepoOSDb {
       totalTokens: agg.totalTokens,
       totalCacheReadTokens: agg.totalCacheReadTokens,
       totalCacheCreationTokens: agg.totalCacheCreationTokens,
+      totalTurns: agg.totalTurns,
       totalCostUsd: agg.totalCostUsd,
       costSource: agg.costSource,
     };
@@ -578,6 +595,7 @@ export class RepoOSDb {
     totalTokens: number | null;
     totalCacheReadTokens: number | null;
     totalCacheCreationTokens: number | null;
+    totalTurns: number | null;
     totalCostUsd: number | null;
     costSource: string;
   } {
@@ -588,6 +606,7 @@ export class RepoOSDb {
     let totalTokens: number | null = null;
     let totalCacheReadTokens: number | null = null;
     let totalCacheCreationTokens: number | null = null;
+    let totalTurns: number | null = null;
     let totalCostUsd: number | null = null;
     const sources = new Set<string>();
     for (const r of rows) {
@@ -600,6 +619,7 @@ export class RepoOSDb {
         totalCacheReadTokens = (totalCacheReadTokens ?? 0) + r.cacheReadTokens;
       if (r.cacheCreationTokens != null)
         totalCacheCreationTokens = (totalCacheCreationTokens ?? 0) + r.cacheCreationTokens;
+      if (r.turns != null) totalTurns = (totalTurns ?? 0) + r.turns;
       if (r.costUsd != null) {
         totalCostUsd = (totalCostUsd ?? 0) + r.costUsd;
         sources.add(r.costSource || "extractUsage");
@@ -616,6 +636,7 @@ export class RepoOSDb {
       totalTokens,
       totalCacheReadTokens,
       totalCacheCreationTokens,
+      totalTurns,
       totalCostUsd,
       costSource,
     };

@@ -108,6 +108,22 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.cacheCreationTokens).toBeUndefined();
   });
 
+  it("counts turns: claude num_turns from a result event, 1 per opencode step_finish", () => {
+    expect(extractUsage('{"type":"result","total_cost_usd":6.07,"num_turns":146,"usage":{}}').turns).toBe(146);
+    expect(extractUsage('{"type":"step_finish","part":{"type":"step-finish"}}').turns).toBe(1);
+    expect(extractUsage('{"type":"step_start"}').turns).toBeUndefined();
+    expect(extractUsage('{"type":"assistant","message":{"usage":{"input_tokens":5}}}').turns).toBeUndefined();
+  });
+
+  it("folds turns by SUM across invocations (not max / overwrite)", () => {
+    const total: { turns?: number } = {};
+    foldUsage(total, '{"type":"step_finish","part":{}}');
+    foldUsage(total, '{"type":"step_finish","part":{}}');
+    expect(total.turns).toBe(2);
+    foldUsage(total, '{"type":"result","total_cost_usd":1,"num_turns":20,"usage":{}}');
+    expect(total.turns).toBe(22);
+  });
+
   it("extracts tokens/cost from opencode's step_finish event (part.tokens, not usage)", () => {
     // Captured from a real `opencode run --format json` session — opencode
     // nests usage under `part.tokens.{total,input,output}` and `part.cost`,
@@ -298,14 +314,15 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       status: "finished",
       lastActivityAt: ended,
     };
-    db.upsertSession({ ...base, sessionId: "c-1", inputTokens: 100, cacheReadTokens: 9000, cacheCreationTokens: 200 });
-    db.upsertSession({ ...base, sessionId: "c-2", inputTokens: 50, cacheReadTokens: 4000 });
+    db.upsertSession({ ...base, sessionId: "c-1", inputTokens: 100, cacheReadTokens: 9000, cacheCreationTokens: 200, turns: 40 });
+    db.upsertSession({ ...base, sessionId: "c-2", inputTokens: 50, cacheReadTokens: 4000, turns: 12 });
     // A session whose CLI reported no cache figures — must stay NULL, not 0.
     db.upsertSession({ ...base, sessionId: "c-3", inputTokens: 20 });
 
     const stats = db.getTaskStats("0007")!;
     expect(stats.totalCacheReadTokens).toBe(13000);
     expect(stats.totalCacheCreationTokens).toBe(200);
+    expect(stats.totalTurns).toBe(52); // 40 + 12; c-3 reported none, doesn't drag it to 0
     const rows = db.getTaskSessions("0007");
     expect(rows.find((r) => r.sessionId === "c-3")!.cacheReadTokens).toBeNull();
     expect(rows.find((r) => r.sessionId === "c-1")!.cacheReadTokens).toBe(9000);

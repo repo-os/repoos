@@ -302,6 +302,7 @@ export interface RoleUsage {
   totalTokens: number | null;
   totalCacheReadTokens?: number | null;
   totalCacheCreationTokens?: number | null;
+  totalTurns?: number | null;
   totalCostUsd: number | null;
   /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
   costSource: string;
@@ -325,6 +326,8 @@ export interface SessionUsage {
   cacheReadTokens: number | null;
   /** Input tokens written to the prompt cache this session; null if unreported. */
   cacheCreationTokens: number | null;
+  /** Model round-trips ("turns") this session ran; null if the CLI didn't report it. */
+  turns: number | null;
   costUsd: number | null;
   costSource: string;
   status: string;
@@ -340,6 +343,7 @@ export interface TaskUsageStats {
   totalTokens: number | null;
   totalCacheReadTokens: number | null;
   totalCacheCreationTokens: number | null;
+  totalTurns: number | null;
   totalCostUsd: number | null;
   costSource: string;
   roles: RoleUsage[];

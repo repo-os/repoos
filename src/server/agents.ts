@@ -204,6 +204,8 @@ interface Session {
   cacheReadTokens?: number;
   /** Cumulative prompt-cache creation tokens, when the CLI reports them. */
   cacheCreationTokens?: number;
+  /** Cumulative model round-trips ("turns") across every invocation of this session. */
+  turns?: number;
   /**
    * claude stream only (0109): a `tool_use` whose `tool_result` has not
    * arrived yet. claude emits the call and its result as separate events, so
@@ -351,6 +353,13 @@ export interface ExtractedUsage {
    * (e.g. #0310 showed "177k tokens" when the real non-cached input was 236).
    */
   authoritative?: boolean;
+  /**
+   * Model round-trips (agent "turns") this line accounts for — claude's
+   * `num_turns` from a `result` event, or 1 per opencode `step_finish`. Always
+   * a DELTA: folds by SUM (not max/overwrite), so multi-invocation sessions
+   * accumulate. `undefined` when the CLI reports nothing countable.
+   */
+  turns?: number;
 }
 
 export function extractUsage(raw: string): ExtractedUsage {
@@ -370,6 +379,8 @@ export function extractUsage(raw: string): ExtractedUsage {
       const cache = cacheTokensFromObject(obj);
       if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
       if (cache.cacheCreationTokens !== undefined) out.cacheCreationTokens = cache.cacheCreationTokens;
+      const turns = turnsFromObject(obj);
+      if (turns !== undefined) out.turns = turns;
       // claude's terminal turn summary — authoritative for the whole turn.
       if (obj.type === "result" && typeof obj.total_cost_usd === "number") {
         out.authoritative = true;
@@ -430,6 +441,8 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
   merge("costUsd");
   merge("cacheReadTokens");
   merge("cacheCreationTokens");
+  // Turns are a per-event delta — always accumulate.
+  if (found.turns !== undefined) total.turns = (total.turns ?? 0) + found.turns;
 }
 
 /**
@@ -581,6 +594,20 @@ function cacheTokensFromObject(obj: Record<string, unknown>): {
   if (read !== undefined) out.cacheReadTokens = read;
   if (creation !== undefined) out.cacheCreationTokens = creation;
   return out;
+}
+
+/**
+ * Model round-trips this event accounts for (a DELTA — see ExtractedUsage.turns).
+ * Only the two clear cases: claude's terminal `result` carries `num_turns` for
+ * that invocation; opencode emits one `step_finish` per model round-trip. Other
+ * CLIs report nothing countable yet.
+ */
+function turnsFromObject(obj: Record<string, unknown>): number | undefined {
+  if (obj.type === "step_finish" || obj.type === "step-finish") return 1;
+  if (obj.type === "result" && typeof obj.num_turns === "number" && obj.num_turns >= 0) {
+    return obj.num_turns;
+  }
+  return undefined;
 }
 
 /** On-disk transcript schema. Bump when persisted fields change incompatibly. */
@@ -1752,6 +1779,7 @@ export interface PromptResult {
   costUsd?: number;
   cacheReadTokens?: number;
   cacheCreationTokens?: number;
+  turns?: number;
 }
 
 /** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
@@ -2031,6 +2059,7 @@ export function runPrompt(
         costUsd: usage.costUsd,
         cacheReadTokens: usage.cacheReadTokens,
         cacheCreationTokens: usage.cacheCreationTokens,
+        turns: usage.turns,
       };
       if (output) {
         resolve({ ok: true, output, ...usageFields });
@@ -2100,6 +2129,7 @@ export function recordOneShotSession(
       totalTokens,
       cacheReadTokens: result.cacheReadTokens ?? undefined,
       cacheCreationTokens: result.cacheCreationTokens ?? undefined,
+      turns: result.turns ?? undefined,
       costUsd,
       costSource,
       status: result.ok ? "finished" : "errored",
@@ -3388,6 +3418,10 @@ export class AgentRunner {
       const next = set(session.cacheCreationTokens, found.cacheCreationTokens);
       if (next !== session.cacheCreationTokens) { session.cacheCreationTokens = next; changed = true; }
     }
+    if (found.turns !== undefined && found.turns > 0) {
+      session.turns = (session.turns ?? 0) + found.turns; // delta — accumulate
+      changed = true;
+    }
     return changed;
   }
 
@@ -3551,6 +3585,7 @@ export class AgentRunner {
       const totalTokens = session.tokens ?? undefined;
       const cacheReadTokens = session.cacheReadTokens ?? undefined;
       const cacheCreationTokens = session.cacheCreationTokens ?? undefined;
+      const turns = session.turns ?? undefined;
       let costUsd = session.costUsd ?? undefined;
       let costSource = "none";
       const isKiro = session.engine === "kiro";
@@ -3584,6 +3619,7 @@ export class AgentRunner {
         totalTokens,
         cacheReadTokens,
         cacheCreationTokens,
+        turns,
         costUsd,
         costSource,
         status,
