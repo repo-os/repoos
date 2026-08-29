@@ -2,14 +2,14 @@
 id: "0319"
 title: Improve model playground layout and filtering
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-08-29T04:18:28Z"
-updated_at: "2026-08-29T04:18:55Z"
+updated_at: "2026-08-29T04:31:33Z"
 ---
 ## Problem
 The model playground tab is hard to navigate and use. There is no way to search for a specific model among a long list, no quick way to narrow by provider or by token cost, the whole tab scrolls instead of just the model list (so controls and context get pushed out of view), and the model list is too narrow to comfortably read model names and metadata.
@@ -51,3 +51,4 @@ model playground fixes/features - add model search bar, add dropdown for model p
 
 - 2026-08-29T04:18:28Z · created · hello@repoos.org
 - 2026-08-29T04:18:55Z · status draft→inbox, title, area, body
+- 2026-08-29T04:31:33Z · status inbox→ready
