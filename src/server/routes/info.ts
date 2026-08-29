@@ -119,6 +119,7 @@ export const getSystem: RouteHandler = (ctx, _req, res) => {
     serverPid: process.pid,
     cacheDir: join(config.root, config.cacheDir),
     runningAgents: runner.running(),
+    root: config.root,
   });
   return json(res, 200, stats);
 };

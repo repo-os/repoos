@@ -3,9 +3,10 @@
  * and orphan-detection logic are pure functions tested against fixture strings.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, reapStrayServeProcesses, killTrackedProcess } from "../../server/system";
+import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, sampleRepoStats, reapStrayServeProcesses, killTrackedProcess } from "../../server/system";
 import type { RunningAgentInfo } from "../../server/agents";
-import { mkdtempSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
@@ -147,6 +148,45 @@ describe("sampleSystem", () => {
       if (orphan) {
         expect(orphan.taskId).toBe("0100");
       }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("sampleRepoStats", () => {
+  function git(root: string, args: string[]): void {
+    execFileSync("git", ["-C", root, ...args], { stdio: "ignore" });
+  }
+
+  it("counts worktrees, tracked files, and lines of code from git", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-reposize-"));
+    try {
+      git(root, ["init", "-q"]);
+      git(root, ["config", "user.email", "t@example.com"]);
+      git(root, ["config", "user.name", "T"]);
+      writeFileSync(join(root, "a.ts"), "one\ntwo\nthree\n");
+      writeFileSync(join(root, "b.md"), "# heading\nbody\n");
+      writeFileSync(join(root, "ignored.log"), "x\ny\nz\n");
+      writeFileSync(join(root, ".gitignore"), "ignored.log\n");
+      git(root, ["add", "a.ts", "b.md", ".gitignore"]);
+      git(root, ["commit", "-qm", "init"]);
+
+      const stats = sampleRepoStats(root);
+      expect(stats).not.toBeNull();
+      // a.ts (3) + b.md (2) + .gitignore (1) = 6; ignored.log excluded.
+      expect(stats!.linesOfCode).toBe(6);
+      expect(stats!.trackedFiles).toBe(3);
+      expect(stats!.worktrees).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("returns null for a non-git directory", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "repoos-nogit-"));
+    try {
+      expect(sampleRepoStats(tmp)).toBeNull();
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }

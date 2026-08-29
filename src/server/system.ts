@@ -77,6 +77,20 @@ export interface ServeScan {
   processes: ServeProcessInfo[];
 }
 
+/**
+ * Cheap "size of the codebase" facts for the Control page. Derived from git, so
+ * gitignored files (dist/, node_modules/, screenshots/) are excluded for free.
+ * Sampled behind a TTL cache — the numbers barely move between 5s polls.
+ */
+export interface RepoStats {
+  /** Registered git worktrees, including the main checkout. */
+  worktrees: number;
+  /** Files tracked by git on the checked-out branch. */
+  trackedFiles: number;
+  /** Total lines across tracked text files (binary files skipped). */
+  linesOfCode: number;
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -86,6 +100,8 @@ export interface SystemStats {
   };
   processes: ProcessInfo[];
   serve: ServeScan | null;
+  /** Codebase size facts, or null when the root is not a git repo / git is missing. */
+  repo: RepoStats | null;
   serverPid: number;
   at: string;
 }
@@ -154,6 +170,48 @@ function machineInfo(): MachineInfo {
     loadavg: loadavg(),
     platform: platform(),
   };
+}
+
+let repoStatsCache: { at: number; root: string; stats: RepoStats } | null = null;
+const REPO_STATS_TTL_MS = 30_000;
+
+/**
+ * git-derived codebase size: worktree count, tracked-file count, and total
+ * lines across tracked text files. Three `git` spawns, so memoised for 30s —
+ * the SSE loop calls this every 5s and these numbers change on the order of
+ * commits, not seconds. Returns the last good value (or null) on git failure.
+ */
+export function sampleRepoStats(root: string): RepoStats | null {
+  const now = Date.now();
+  if (repoStatsCache && repoStatsCache.root === root && now - repoStatsCache.at < REPO_STATS_TTL_MS) {
+    return repoStatsCache.stats;
+  }
+  const worktreeOut = safeExecFileSync("git", ["-C", root, "worktree", "list", "--porcelain"]);
+  const filesOut = safeExecFileSync("git", ["-C", root, "ls-files"]);
+  if (worktreeOut === null || filesOut === null) {
+    // Git unavailable or not a repo: keep serving a stale value for THIS root,
+    // never another root's.
+    return repoStatsCache?.root === root ? repoStatsCache.stats : null;
+  }
+
+  // Empty pattern matches every line; -I skips binary files. One spawn yields
+  // `path:<linecount>` per text file.
+  const locOut = safeExecFileSync("git", ["-C", root, "grep", "-I", "--count", "-e", ""]);
+  let linesOfCode = 0;
+  if (locOut !== null) {
+    for (const line of locOut.split("\n")) {
+      const m = line.match(/:(\d+)$/);
+      if (m) linesOfCode += Number(m[1]);
+    }
+  }
+
+  const stats: RepoStats = {
+    worktrees: (worktreeOut.match(/^worktree /gm) ?? []).length,
+    trackedFiles: filesOut.split("\n").filter(Boolean).length,
+    linesOfCode,
+  };
+  repoStatsCache = { at: now, root, stats };
+  return stats;
 }
 
 function sampleProcesses(pids: number[]): PsRecord[] {
@@ -406,6 +464,8 @@ export interface SampleSystemOptions {
   runningAgents: RunningAgentInfo[];
   /** PIDs of preview servers RepoOS knows it started — never counted as strays. */
   knownServePids?: number[];
+  /** Repo root — enables the git-derived `repo` codebase-size stats. */
+  root?: string;
 }
 
 /**
@@ -496,6 +556,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     },
     processes,
     serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? [])),
+    repo: opts.root ? sampleRepoStats(opts.root) : null,
     serverPid,
     at: new Date().toISOString(),
   };

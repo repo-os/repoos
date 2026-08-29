@@ -663,6 +663,13 @@ export interface ServeScan {
   processes: ServeProcessInfo[];
 }
 
+/** git-derived codebase size for the Control page. Older servers omit it. */
+export interface RepoStats {
+  worktrees: number;
+  trackedFiles: number;
+  linesOfCode: number;
+}
+
 export interface SystemStats {
   machine: MachineInfo;
   totals: {
@@ -672,6 +679,7 @@ export interface SystemStats {
   };
   processes: ProcessInfo[];
   serve: ServeScan | null;
+  repo?: RepoStats | null;
   serverPid: number;
   at: string;
 }

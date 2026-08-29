@@ -92,6 +92,16 @@ const hasData = computed(() => systemStats.value !== null);
 
 const serve = computed(() => systemStats.value?.serve ?? null);
 
+/** git-derived codebase size (worktrees / tracked files / LOC). Absent on older servers. */
+const repoStats = computed(() => systemStats.value?.repo ?? null);
+
+function fmtCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 10_000) return Math.round(n / 1000) + "k";
+  if (n >= 1_000) return (n / 1000).toFixed(1) + "k";
+  return String(n);
+}
+
 /** Strays worth naming individually, newest-looking first. Capped so the panel never grows unbounded. */
 const strayList = computed(() =>
   (serve.value?.processes ?? []).filter((p) => p.kind === "stray").slice(0, 6),
@@ -180,6 +190,20 @@ const serveMessage = computed(() => {
                 v-else-if="serve.inFlight"
               > ({{ serve.inFlight }} busy)</template>
             </span>
+          </div>
+        </div>
+
+        <div v-if="repoStats" class="metric">
+          <div class="metric-label">Codebase</div>
+          <div class="metric-val">
+            <span class="metric-big">{{ fmtCount(repoStats.linesOfCode) }}</span>
+            <span class="metric-sub">lines · {{ fmtCount(repoStats.trackedFiles) }} files</span>
+          </div>
+          <div class="metric-extra">
+            <span
+              :title="'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'"
+            >{{ repoStats.worktrees }} git worktree{{ repoStats.worktrees === 1 ? "" : "s" }}</span>
+            <span>tracked on main · gitignored excluded</span>
           </div>
         </div>
       </div>
@@ -280,7 +304,7 @@ const serveMessage = computed(() => {
 
 .headlines {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
   margin-bottom: 14px;
 }

@@ -1270,6 +1270,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         cacheDir: join(config.root, config.cacheDir),
         runningAgents: runner.running(),
         knownServePids: previews.knownPids(),
+        root: config.root,
       });
       emitEvent({ type: "system.stats", stats });
     } catch {
