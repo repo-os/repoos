@@ -10,7 +10,7 @@ import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const { connected, eventCount, total, backlogCount, health } = storeToRefs(repo);
+const { connected, eventCount, total, health } = storeToRefs(repo);
 
 const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
 const canaryRunning = ref(false);
@@ -62,7 +62,6 @@ const buildTitle = computed(() =>
       exact-active-class="active"
     >
       <span v-html="n.icon"></span>{{ n.label }}
-      <span v-if="n.id === 'work' && backlogCount" class="nav-badge">{{ backlogCount }}</span>
     </RouterLink>
 
     <div class="side-foot">

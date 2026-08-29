@@ -245,7 +245,6 @@
   .nav-item.active{background:var(--nav-active-bg);color:var(--nav-active-color)}
   .nav-item.active svg{opacity:1;color:var(--cyan)}
   .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--cyan);box-shadow:0 0 9px var(--cyan)}
-  .nav-badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:20px;background:var(--violet-dim);color:var(--violet);font-weight:600;font-family:'JetBrains Mono',monospace}
   .side-foot{margin-top:auto;padding:11px;border-radius:11px;background:var(--panel);border:1px solid var(--border);font-size:10.5px;color:var(--txt-faint)}
   .side-foot .row{display:flex;justify-content:space-between;margin-bottom:5px}
   .side-foot .row:last-child{margin-bottom:0}
@@ -1481,7 +1480,7 @@
   @keyframes canary-pulse{0%,100%{opacity:.5}50%{opacity:1}}
 
   /* gentle cross-fade while switching themes (class toggled by the config store) */
-  :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .build-widget,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .theme-toggle,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .nav-badge,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
+  :root.theme-anim body,:root.theme-anim .topbar,:root.theme-anim .sidebar,:root.theme-anim .glass,:root.theme-anim .drawer,:root.theme-anim .task-card,:root.theme-anim .col-head,:root.theme-anim .col-label,:root.theme-anim .side-foot,:root.theme-anim .build-widget,:root.theme-anim .btn,:root.theme-anim .new-btn,:root.theme-anim .status-btn,:root.theme-anim .main,:root.theme-anim .stat,:root.theme-anim .page-title,:root.theme-anim .page-desc,:root.theme-anim .stat-label,:root.theme-anim .stat-val,:root.theme-anim .feed-item,:root.theme-anim .doc-row,:root.theme-anim .md-body,:root.theme-anim .meta-cell,:root.theme-anim .close-x,:root.theme-anim .search-input,:root.theme-anim .search-drop,:root.theme-anim .repo-pill,:root.theme-anim .conn,:root.theme-anim .theme-toggle,:root.theme-anim .chip,:root.theme-anim .tag,:root.theme-anim .col-count,:root.theme-anim .col-empty,:root.theme-anim .panel-head,:root.theme-anim .panel-title,:root.theme-anim .nav-item,:root.theme-anim .tab{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
 
   /* reduced motion */
   @layer base{

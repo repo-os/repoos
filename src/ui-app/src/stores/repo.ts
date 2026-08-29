@@ -452,7 +452,6 @@ export const useRepoStore = defineStore("repo", () => {
   const repoName = computed(() => (health.value ? health.value.root.split("/").pop() ?? "" : ""));
   const workDir = computed(() => (health.value ? health.value.workDir : "work"));
   const total = computed(() => tasks.value.length);
-  const backlogCount = computed(() => tasks.value.filter((t) => t.status !== "draft").length);
   const aiTasks = computed(() => tasks.value.filter((t) => t.assignee === "ai" && t.status !== "done"));
 
   /** Priority rank for the needs-you sort: p0 first, then p1/p2/p3. */
@@ -2014,7 +2013,6 @@ export const useRepoStore = defineStore("repo", () => {
     repoName,
     workDir,
     total,
-    backlogCount,
     aiTasks,
     humanNeeds,
     fmtDate,
