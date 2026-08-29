@@ -69,7 +69,7 @@ if (process.env.REPOOS_SESSION_TEST_HOLD === "1") setTimeout(() => {}, 800);
     tags: [],
     needsInput: false,
     needsMerge: false,
-  noSourceChange: false,
+    noSourceChange: false,
     created_at: null,
     updated_at: null,
     path: "work/0001-session.md",
@@ -121,10 +121,7 @@ describe("agent session persistence", () => {
     process.env.REPOOS_SESSION_TEST_HOLD = "1";
     const runner = new AgentRunner(fx.config, () => {});
     runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
-    await waitFor(
-      () => (runner.output(fx.task.id)?.lines.length ?? 0) === 2,
-      "streamed lines",
-    );
+    await waitFor(() => (runner.output(fx.task.id)?.lines.length ?? 0) === 2, "streamed lines");
     expect(existsSync(fx.file)).toBe(false);
     await waitFor(() => existsSync(fx.file), "debounced transcript write");
     expect(runner.isRunning(fx.task.id)).toBe(true);
@@ -199,7 +196,9 @@ describe("agent session persistence", () => {
     const pmFile = join(fx.root, ".repoos", "sessions", "pm-task-v2%3A0001.json");
     const first = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
 
-    expect(first.startChat(sessionId, "Please revise this task", agent, "Task context").ok).toBe(true);
+    expect(first.startChat(sessionId, "Please revise this task", agent, "Task context").ok).toBe(
+      true,
+    );
     await waitFor(() => !first.isRunning(sessionId), "PM conversation exit");
     expect(existsSync(pmFile)).toBe(true);
 
@@ -235,7 +234,9 @@ setInterval(() => {}, 1000);
     // The running process is stopped and the transcript gets an explicit
     // "interrupted" marker so the response reads as user-stopped, not complete.
     await waitFor(() => !runner.isRunning(sessionId), "interrupted chat exit");
-    expect(runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER)).toBe(true);
+    expect(
+      runner.output(sessionId)?.lines.some((l) => (l as { d?: string }).d === INTERRUPTED_MARKER),
+    ).toBe(true);
   });
 
   it("interrupt is a no-op when nothing is running", async () => {
@@ -357,18 +358,14 @@ setInterval(() => {}, 1000);
     expect(disk).not.toHaveProperty("branch");
 
     // Create a new runner with getTask callback (simulating server with task index)
-    const resumeRunner = new AgentRunner(
-      fx.config,
-      () => {},
-      {
-        writeDelayMs: 10,
-        getTask: (taskId: string) => (taskId === fx.task.id ? fx.task : null),
-        onHandoff: (request) => {
-          handoffCalled = true;
-          handoffRequest = request;
-        },
+    const resumeRunner = new AgentRunner(fx.config, () => {}, {
+      writeDelayMs: 10,
+      getTask: (taskId: string) => (taskId === fx.task.id ? fx.task : null),
+      onHandoff: (request) => {
+        handoffCalled = true;
+        handoffRequest = request;
       },
-    );
+    });
 
     // Set up fixture to emit handoff signal on resume
     writeFileSync(

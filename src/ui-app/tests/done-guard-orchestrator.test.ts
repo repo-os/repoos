@@ -120,159 +120,150 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
-  it(
-    "auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)",
-    async () => {
-      // Confirmed live: #0293's close-out was refused at publish time because
-      // an UNRELATED task's work/*.md file — a routine activity-log stamp —
-      // was dirty on main. That's the same class of write commitTaskFile
-      // makes constantly elsewhere in the system; blocking a merge on it
-      // just to require a human retry is unnecessary friction, unlike a
-      // dirty file OUTSIDE work/ (still refused above), which is genuinely
-      // ambiguous.
-      const { root, clean } = makeRepo();
-      try {
-        mkdirSync(join(root, "work"), { recursive: true });
-        const branch = "repoos/integrate/T3";
-        const wt = ensureWorktree(root, branch);
-        expect(wt.ok).toBe(true);
-        writeFileSync(join(wt.path, "feature.txt"), "new\n");
-        git(wt.path, ["add", "feature.txt"]);
-        git(wt.path, ["commit", "-m", "candidate work"]);
-        const mainSha = git(root, ["rev-parse", "main"]);
-        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+  it("auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)", async () => {
+    // Confirmed live: #0293's close-out was refused at publish time because
+    // an UNRELATED task's work/*.md file — a routine activity-log stamp —
+    // was dirty on main. That's the same class of write commitTaskFile
+    // makes constantly elsewhere in the system; blocking a merge on it
+    // just to require a human retry is unnecessary friction, unlike a
+    // dirty file OUTSIDE work/ (still refused above), which is genuinely
+    // ambiguous.
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const branch = "repoos/integrate/T3";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
 
-        const coordinator = createJobCoordinator(root);
-        coordinator.enqueue({ id: "T3", branch } as any);
-        coordinator.updateJob("T3", {
-          phase: "publishing",
-          startedAt: new Date().toISOString(),
-          baseMainSha: mainSha,
-          branchSha: candidateSha,
-          candidateSha,
-        });
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T3", branch } as any);
+      coordinator.updateJob("T3", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
 
-        // An UNRELATED task file dirty on main at publish time — the exact
-        // #0293 shape.
-        writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
+      // An UNRELATED task file dirty on main at publish time — the exact
+      // #0293 shape.
+      writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
 
-        const orchestrator = new CloseOutOrchestrator(
-          { root, workDir: "work" } as RepoOSConfig,
-          coordinator,
-          createRepositoryLock(root),
-          createRootLock(root),
-        );
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
 
-        const result = await orchestrator.processNext();
+      const result = await orchestrator.processNext();
 
-        expect(result.ok).toBe(true);
-        // The checkpoint commit landed on main, and the candidate merged on
-        // top of it — main advanced past its pre-publish SHA either way.
-        expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
-        expect(git(root, ["status", "--porcelain"])).toBe("");
-        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
-      } finally {
-        clean();
-      }
-    },
-  );
+      expect(result.ok).toBe(true);
+      // The checkpoint commit landed on main, and the candidate merged on
+      // top of it — main advanced past its pre-publish SHA either way.
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+    } finally {
+      clean();
+    }
+  });
 
-  it(
-    "auto-checkpoints and publishes when the only dirty file is repoos.toml",
-    async () => {
-      // Same reasoning, one file over: repoos.toml is always written whole by
-      // the settings API, never hand-edited mid-change — a dirty moment there
-      // is the same class of routine, server-written churn as a task file.
-      const { root, clean } = makeRepo();
-      try {
-        const branch = "repoos/integrate/T4";
-        const wt = ensureWorktree(root, branch);
-        expect(wt.ok).toBe(true);
-        writeFileSync(join(wt.path, "feature.txt"), "new\n");
-        git(wt.path, ["add", "feature.txt"]);
-        git(wt.path, ["commit", "-m", "candidate work"]);
-        const mainSha = git(root, ["rev-parse", "main"]);
-        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+  it("auto-checkpoints and publishes when the only dirty file is repoos.toml", async () => {
+    // Same reasoning, one file over: repoos.toml is always written whole by
+    // the settings API, never hand-edited mid-change — a dirty moment there
+    // is the same class of routine, server-written churn as a task file.
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T4";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
 
-        const coordinator = createJobCoordinator(root);
-        coordinator.enqueue({ id: "T4", branch } as any);
-        coordinator.updateJob("T4", {
-          phase: "publishing",
-          startedAt: new Date().toISOString(),
-          baseMainSha: mainSha,
-          branchSha: candidateSha,
-          candidateSha,
-        });
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T4", branch } as any);
+      coordinator.updateJob("T4", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
 
-        // A settings save landed on main mid-validation.
-        writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+      // A settings save landed on main mid-validation.
+      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
 
-        const orchestrator = new CloseOutOrchestrator(
-          { root, workDir: "work" } as RepoOSConfig,
-          coordinator,
-          createRepositoryLock(root),
-          createRootLock(root),
-        );
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
 
-        const result = await orchestrator.processNext();
+      const result = await orchestrator.processNext();
 
-        expect(result.ok).toBe(true);
-        expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
-        expect(git(root, ["status", "--porcelain"])).toBe("");
-        expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
-      } finally {
-        clean();
-      }
-    },
-  );
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+    } finally {
+      clean();
+    }
+  });
 
-  it(
-    "still refuses when repoos.toml is dirty ALONGSIDE a non-bookkeeping file",
-    async () => {
-      // The allowlist is per-file, not "any dirty set that happens to include
-      // an allowed file" — a genuinely ambiguous file riding along with
-      // repoos.toml must still block.
-      const { root, clean } = makeRepo();
-      try {
-        const branch = "repoos/integrate/T5";
-        const wt = ensureWorktree(root, branch);
-        expect(wt.ok).toBe(true);
-        writeFileSync(join(wt.path, "feature.txt"), "new\n");
-        git(wt.path, ["add", "feature.txt"]);
-        git(wt.path, ["commit", "-m", "candidate work"]);
-        const mainSha = git(root, ["rev-parse", "main"]);
-        const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+  it("still refuses when repoos.toml is dirty ALONGSIDE a non-bookkeeping file", async () => {
+    // The allowlist is per-file, not "any dirty set that happens to include
+    // an allowed file" — a genuinely ambiguous file riding along with
+    // repoos.toml must still block.
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T5";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
 
-        const coordinator = createJobCoordinator(root);
-        coordinator.enqueue({ id: "T5", branch } as any);
-        coordinator.updateJob("T5", {
-          phase: "publishing",
-          startedAt: new Date().toISOString(),
-          baseMainSha: mainSha,
-          branchSha: candidateSha,
-          candidateSha,
-        });
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T5", branch } as any);
+      coordinator.updateJob("T5", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
 
-        writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
-        writeFileSync(join(root, "src-file.ts"), "export const x = 1;\n");
+      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+      writeFileSync(join(root, "src-file.ts"), "export const x = 1;\n");
 
-        const orchestrator = new CloseOutOrchestrator(
-          { root, workDir: "work" } as RepoOSConfig,
-          coordinator,
-          createRepositoryLock(root),
-          createRootLock(root),
-        );
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
 
-        const result = await orchestrator.processNext();
+      const result = await orchestrator.processNext();
 
-        expect(result.ok).toBe(false);
-        expect(result.reason).toMatch(/uncommitted file/i);
-        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
-      } finally {
-        clean();
-      }
-    },
-  );
+      expect(result.ok).toBe(false);
+      expect(result.reason).toMatch(/uncommitted file/i);
+      expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("close-out candidate cleanup on failure (worktree leak)", () => {

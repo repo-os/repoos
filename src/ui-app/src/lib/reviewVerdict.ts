@@ -14,7 +14,9 @@ export const REVIEW_VERDICTS = [
 
 export type ReviewVerdictTone = (typeof REVIEW_VERDICTS)[number]["tone"];
 
-export function parseReviewVerdict(markdown: string | null | undefined): { label: string; tone: ReviewVerdictTone } | null {
+export function parseReviewVerdict(
+  markdown: string | null | undefined,
+): { label: string; tone: ReviewVerdictTone } | null {
   if (!markdown) return null;
   const lower = markdown.toLowerCase();
   for (const v of REVIEW_VERDICTS) {

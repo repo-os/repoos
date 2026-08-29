@@ -33,7 +33,9 @@ function dollarsPerMillion(centsPerToken: number | undefined): number | null {
 
 /** A malformed/negative `max_tokens` isn't a usable context window. */
 function positiveContextWindow(maxTokens: number | undefined): number | null {
-  return typeof maxTokens === "number" && Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : null;
+  return typeof maxTokens === "number" && Number.isFinite(maxTokens) && maxTokens > 0
+    ? maxTokens
+    : null;
 }
 
 /** Parse DeepInfra's featured-models response into playground models. Exported for tests. */

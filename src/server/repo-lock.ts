@@ -162,7 +162,8 @@ export function createRootLock(root: string): RootLock {
         if (existsSync(lockPath)) {
           const content = readFileSync(lockPath, "utf8");
           const lock = JSON.parse(content);
-          const kind = lock.kind === "hotfix" || lock.kind === "close-out" ? lock.kind : "close-out";
+          const kind =
+            lock.kind === "hotfix" || lock.kind === "close-out" ? lock.kind : "close-out";
           return { taskId: lock.taskId, kind };
         }
       } catch {

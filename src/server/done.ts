@@ -263,7 +263,10 @@ const MAX_OUTPUT_LINES = 40;
  */
 export function captureOutput(stdout: string, stderr: string): string {
   const combined = redactSecrets(stripAnsi([stdout, stderr].join("\n")));
-  const lines = combined.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = combined
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const tail = lines.slice(-MAX_OUTPUT_LINES).join("\n");
   return tail.length > MAX_OUTPUT_CHARS ? tail.slice(-MAX_OUTPUT_CHARS) : tail;
 }
@@ -322,10 +325,10 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
     // non-zero test result, not as a timeout of this outer subprocess. Treat
     // that narrow shape like a process deadline: retry once, but do not hide
     // assertion failures or other real regressions behind a retry.
-    const transient = run.timedOut || (
-      opts.stage === "check" &&
-      /(?:timed out waiting for|test timed out|worker .*?(?:timeout|exited))/i.test(output)
-    );
+    const transient =
+      run.timedOut ||
+      (opts.stage === "check" &&
+        /(?:timed out waiting for|test timed out|worker .*?(?:timeout|exited))/i.test(output));
     return {
       ok: false,
       stage: opts.stage,
@@ -407,7 +410,10 @@ export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): 
  * while preserving ordinary non-zero test failures as immediately actionable.
  * Exported for the retry-wiring regression tests.
  */
-export async function runCloseOutCheck(root: string, env?: NodeJS.ProcessEnv): Promise<CheckSummary> {
+export async function runCloseOutCheck(
+  root: string,
+  env?: NodeJS.ProcessEnv,
+): Promise<CheckSummary> {
   const first = await runDoneStep({
     cwd: root,
     candidates: checkCandidates(root),
@@ -573,7 +579,13 @@ async function completeTaskLocked(
   onProgress?.("build");
   const build = steps.build
     ? await steps.build(root)
-    : await runDoneStep({ cwd: root, candidates: BUILD_STEPS, label: "bun run build", stage: "build", timeout: 300_000 });
+    : await runDoneStep({
+        cwd: root,
+        candidates: BUILD_STEPS,
+        label: "bun run build",
+        stage: "build",
+        timeout: 300_000,
+      });
   if (!build.ok) {
     return {
       ok: false,

@@ -7,14 +7,7 @@
  * (and, later, for the Stage 2 server to serve without re-walking on every
  * request).
  */
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import {
   STATUSES,
@@ -136,9 +129,7 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
     return a.id.localeCompare(b.id);
   });
 
-  const counts = Object.fromEntries(
-    STATUSES.map((s) => [s, 0]),
-  ) as Record<Status, number>;
+  const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
   for (const t of tasks) counts[t.status]++;
 
   return {
@@ -217,9 +208,7 @@ export async function buildIndexAsync(
     // server reload — HEADs unchanged — this does zero `git status` calls;
     // the old path ran two spawns per task branch (~2.5s at 40 branches).
     const dirtyCache = readWorktreeDirtyCache(config);
-    const branchesWithTasks = tasks
-      .map((t) => t.branch)
-      .filter((b): b is string => !!b);
+    const branchesWithTasks = tasks.map((t) => t.branch).filter((b): b is string => !!b);
     const { statuses, cache, changed } = await resolveWorktreeStatuses(
       config.root,
       branchesWithTasks,
@@ -232,8 +221,7 @@ export async function buildIndexAsync(
         subject: null,
         date: null,
       };
-      const wt =
-        (base.branch && statuses.get(base.branch)) || { path: null, dirty: false };
+      const wt = (base.branch && statuses.get(base.branch)) || { path: null, dirty: false };
       base.git = {
         branchExists: base.branch ? branches.has(base.branch) : false,
         worktreeExists: base.branch ? worktrees.has(base.branch) : false,
@@ -253,9 +241,7 @@ export async function buildIndexAsync(
     return a.id.localeCompare(b.id);
   });
 
-  const counts = Object.fromEntries(
-    STATUSES.map((s) => [s, 0]),
-  ) as Record<Status, number>;
+  const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
   for (const t of tasks) counts[t.status]++;
 
   return {
@@ -305,10 +291,7 @@ export function readWorktreeDirtyCache(config: RepoOSConfig): WorktreeDirtyCache
   return cache;
 }
 
-export function writeWorktreeDirtyCache(
-  config: RepoOSConfig,
-  cache: WorktreeDirtyCache,
-): void {
+export function writeWorktreeDirtyCache(config: RepoOSConfig, cache: WorktreeDirtyCache): void {
   const dir = join(config.root, config.cacheDir);
   try {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });

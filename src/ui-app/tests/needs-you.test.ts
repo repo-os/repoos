@@ -109,10 +109,30 @@ describe("humanNeeds store computed", () => {
   it("sorts by priority first, then recency", () => {
     const repo = useRepoStore();
     repo.tasks = [
-      makeTask({ id: "p1-old", priority: "p1", status: "review", updated_at: "2026-01-01T00:00:00Z" }),
-      makeTask({ id: "p2-new", priority: "p2", status: "review", updated_at: "2026-03-01T00:00:00Z" }),
-      makeTask({ id: "p0-newer", priority: "p0", status: "review", updated_at: "2026-04-01T00:00:00Z" }),
-      makeTask({ id: "p2-old", priority: "p2", status: "review", updated_at: "2026-02-01T00:00:00Z" }),
+      makeTask({
+        id: "p1-old",
+        priority: "p1",
+        status: "review",
+        updated_at: "2026-01-01T00:00:00Z",
+      }),
+      makeTask({
+        id: "p2-new",
+        priority: "p2",
+        status: "review",
+        updated_at: "2026-03-01T00:00:00Z",
+      }),
+      makeTask({
+        id: "p0-newer",
+        priority: "p0",
+        status: "review",
+        updated_at: "2026-04-01T00:00:00Z",
+      }),
+      makeTask({
+        id: "p2-old",
+        priority: "p2",
+        status: "review",
+        updated_at: "2026-02-01T00:00:00Z",
+      }),
     ];
     expect(repo.humanNeeds.map((item) => item.task.id)).toEqual([
       "p0-newer",

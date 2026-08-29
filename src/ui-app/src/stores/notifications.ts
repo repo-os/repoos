@@ -112,9 +112,7 @@ export const PUSH_AVAILABILITY_HELP: Record<PushAvailability, string> = {
 export function playBell(): void {
   try {
     const ctx =
-      typeof window !== "undefined" && "AudioContext" in window
-        ? new AudioContext()
-        : null;
+      typeof window !== "undefined" && "AudioContext" in window ? new AudioContext() : null;
     if (!ctx) return;
     const now = ctx.currentTime;
     // Two quick sine tones at 880Hz -> 1320Hz approximate a "ding-dong" bell.
@@ -247,9 +245,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   /** True when any type (and at least one master channel) is configured on. */
   const isActive = computed(
-    () =>
-      (soundEnabled.value || pushEnabled.value) &&
-      Object.values(types).some(Boolean),
+    () => (soundEnabled.value || pushEnabled.value) && Object.values(types).some(Boolean),
   );
 
   /**
@@ -284,7 +280,10 @@ export const useNotificationsStore = defineStore("notifications", () => {
       };
       return;
     }
-    sendPush("RepoOS test notification", "Notifications are working — you'll be pinged when a task needs you.");
+    sendPush(
+      "RepoOS test notification",
+      "Notifications are working — you'll be pinged when a task needs you.",
+    );
     testResult.value = {
       ok: true,
       detail:

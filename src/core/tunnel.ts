@@ -258,7 +258,9 @@ export function isValidAppName(name: string): boolean {
  * surfacing later as a confusing "deeper than one label" hostname warning.
  */
 export function isValidBaseDomain(domain: string): boolean {
-  return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain.toLowerCase());
+  return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(
+    domain.toLowerCase(),
+  );
 }
 
 /** Basic email shape check for `--allow` / `allow` / `deny` args. */

@@ -23,7 +23,13 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
-import type { Agent, AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task } from "../core/types.js";
+import type {
+  Agent,
+  AgentOutputEntry,
+  AgentSessionStats,
+  RepoOSConfig,
+  Task,
+} from "../core/types.js";
 import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -251,7 +257,11 @@ function readPendingHandoffs(cacheDir: string): PendingHandoffStore {
     if (Array.isArray(parsed.requests)) {
       return {
         requests: parsed.requests.filter(
-          (r) => typeof r.taskId === "string" && typeof r.runId === "string" && typeof r.branch === "string" && typeof r.workdir === "string",
+          (r) =>
+            typeof r.taskId === "string" &&
+            typeof r.runId === "string" &&
+            typeof r.branch === "string" &&
+            typeof r.workdir === "string",
         ),
       };
     }
@@ -284,8 +294,16 @@ function readRegistry(cacheDir: string): DurableRegistry {
     const raw = readFileSync(registryPath(cacheDir), "utf8");
     const parsed = JSON.parse(raw) as Partial<DurableRegistry>;
     if (Array.isArray(parsed.entries)) {
-      return { entries: parsed.entries.filter((e) => typeof e.taskId === "string" && typeof e.pid === "number" && typeof e.workdir === "string") };
-    }  } catch {
+      return {
+        entries: parsed.entries.filter(
+          (e) =>
+            typeof e.taskId === "string" &&
+            typeof e.pid === "number" &&
+            typeof e.workdir === "string",
+        ),
+      };
+    }
+  } catch {
     /* missing or corrupt — start fresh */
   }
   return { entries: [] };
@@ -378,7 +396,8 @@ export function extractUsage(raw: string): ExtractedUsage {
       if (cost !== undefined) out.costUsd = cost;
       const cache = cacheTokensFromObject(obj);
       if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
-      if (cache.cacheCreationTokens !== undefined) out.cacheCreationTokens = cache.cacheCreationTokens;
+      if (cache.cacheCreationTokens !== undefined)
+        out.cacheCreationTokens = cache.cacheCreationTokens;
       const turns = turnsFromObject(obj);
       if (turns !== undefined) out.turns = turns;
       // claude's terminal turn summary — authoritative for the whole turn.
@@ -390,7 +409,8 @@ export function extractUsage(raw: string): ExtractedUsage {
     /* not JSON — fall through to text patterns below */
   }
   if (out.totalTokens === undefined) {
-    const m = raw.match(/\btotal[_ ]tokens\b["'\s:=]+([\d,]+)/i) ?? raw.match(/\b([\d,]+)\s+tokens\b/i);
+    const m =
+      raw.match(/\btotal[_ ]tokens\b["'\s:=]+([\d,]+)/i) ?? raw.match(/\b([\d,]+)\s+tokens\b/i);
     if (m) {
       const n = Number(m[1].replace(/,/g, ""));
       if (Number.isFinite(n)) out.totalTokens = n;
@@ -429,7 +449,13 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
   // A terminal `result` event's numbers are authoritative for the whole turn —
   // overwrite rather than Math.max, so a transient mid-stream spike can't stick.
   const merge = (
-    key: "inputTokens" | "outputTokens" | "totalTokens" | "costUsd" | "cacheReadTokens" | "cacheCreationTokens",
+    key:
+      | "inputTokens"
+      | "outputTokens"
+      | "totalTokens"
+      | "costUsd"
+      | "cacheReadTokens"
+      | "cacheCreationTokens",
   ): void => {
     const v = found[key];
     if (v === undefined) return;
@@ -452,10 +478,7 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
  * runner) set `costSource` to "estimate" themselves — this only reports whether
  * a real CLI figure was present.
  */
-export function usageCostSource(
-  agent: Agent,
-  usage: { costUsd?: number },
-): string {
+export function usageCostSource(agent: Agent, usage: { costUsd?: number }): string {
   if (usage.costUsd) return agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
   return "none";
 }
@@ -522,7 +545,10 @@ function findUsage(obj: Record<string, unknown>): Record<string, unknown> | unde
     if (tokens && typeof tokens === "object") {
       const t = tokens as Record<string, unknown>;
       // opencode nests cache counts under `tokens.cache = { read, write }`.
-      const cache = (t.cache && typeof t.cache === "object" ? t.cache : {}) as Record<string, unknown>;
+      const cache = (t.cache && typeof t.cache === "object" ? t.cache : {}) as Record<
+        string,
+        unknown
+      >;
       return {
         ...(typeof t.input === "number" ? { input_tokens: t.input } : {}),
         ...(typeof t.output === "number" ? { output_tokens: t.output } : {}),
@@ -588,8 +614,7 @@ function cacheTokensFromObject(obj: Record<string, unknown>): {
     num(usage.cache_read_input_tokens) ??
     num(usage.cached_input_tokens) ??
     num(usage.cache_read_tokens);
-  const creation =
-    num(usage.cache_creation_input_tokens) ?? num(usage.cache_creation_tokens);
+  const creation = num(usage.cache_creation_input_tokens) ?? num(usage.cache_creation_tokens);
   const out: { cacheReadTokens?: number; cacheCreationTokens?: number } = {};
   if (read !== undefined) out.cacheReadTokens = read;
   if (creation !== undefined) out.cacheCreationTokens = creation;
@@ -736,8 +761,7 @@ export function parseJsonEvent(
   const ev = parsed as OpenCodeEvent;
   const type = typeof ev.type === "string" ? ev.type : "";
   if (!type) return null;
-  const sessionID =
-    typeof ev.sessionID === "string" && ev.sessionID ? ev.sessionID : undefined;
+  const sessionID = typeof ev.sessionID === "string" && ev.sessionID ? ev.sessionID : undefined;
   const part = ev.part ?? {};
 
   switch (type) {
@@ -772,9 +796,7 @@ export function parseJsonEvent(
           type: "step",
           kind: "finish",
           at: now(),
-          ...(typeof part.reason === "string" && part.reason
-            ? { reason: part.reason }
-            : {}),
+          ...(typeof part.reason === "string" && part.reason ? { reason: part.reason } : {}),
         },
         sessionID,
       };
@@ -921,8 +943,7 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
   const ev = parsed as ClaudeEvent;
   const type = typeof ev.type === "string" ? ev.type : "";
   if (!type) return null;
-  const sessionID =
-    typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
+  const sessionID = typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
   const content = Array.isArray(ev.message?.content)
     ? (ev.message.content as ClaudeContentBlock[])
     : [];
@@ -985,7 +1006,8 @@ export function parseClaudeEvent(raw: string): ClaudeParseResult | null {
       // they are aggregated by the API layer and only the final "message" or
       // "assistant" event is rendered to the transcript. Swallow them here with
       // the session id extracted from the outer wrapper.
-      const streamSessionId = typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
+      const streamSessionId =
+        typeof ev.session_id === "string" && ev.session_id ? ev.session_id : undefined;
       return { sessionID: streamSessionId };
     }
     default:
@@ -1041,9 +1063,8 @@ export function parseCopilotEvent(
   const type = typeof event.type === "string" ? event.type : "";
   if (!type) return null;
   const data = event.data ?? {};
-  const sessionID = typeof event.sessionId === "string" && event.sessionId
-    ? event.sessionId
-    : undefined;
+  const sessionID =
+    typeof event.sessionId === "string" && event.sessionId ? event.sessionId : undefined;
 
   if (type === "assistant.message_delta") return { sessionID };
   if (type === "assistant.message") {
@@ -1052,11 +1073,12 @@ export function parseCopilotEvent(
   }
 
   if (type === "tool.execution_start") {
-    const tool = typeof data.toolName === "string"
-      ? data.toolName
-      : typeof data.tool === "string"
-        ? data.tool
-        : "";
+    const tool =
+      typeof data.toolName === "string"
+        ? data.toolName
+        : typeof data.tool === "string"
+          ? data.tool
+          : "";
     if (!tool) return { sessionID };
     const input = toolInputText(data.arguments ?? data.input);
     return {
@@ -1066,11 +1088,12 @@ export function parseCopilotEvent(
   }
 
   if (type === "tool.execution_complete") {
-    const tool = typeof data.toolName === "string"
-      ? data.toolName
-      : typeof data.tool === "string"
-        ? data.tool
-        : "tool";
+    const tool =
+      typeof data.toolName === "string"
+        ? data.toolName
+        : typeof data.tool === "string"
+          ? data.tool
+          : "tool";
     const input = toolInputText(data.arguments ?? data.input);
     const output = copilotText(data.result ?? data.output ?? data.error);
     return {
@@ -1095,7 +1118,8 @@ export function parseCopilotEvent(
     type.startsWith("session.") ||
     type.startsWith("model.") ||
     type.startsWith("mcp.")
-  ) return { sessionID };
+  )
+    return { sessionID };
   return null;
 }
 
@@ -1115,15 +1139,19 @@ export function parseQwenEvent(raw: string): ClaudeParseResult | null {
   if (!value || typeof value !== "object") return null;
   const event = value as Record<string, unknown>;
   const sessionID =
-    typeof event.session_id === "string" ? event.session_id :
-    typeof event.sessionId === "string" ? event.sessionId : undefined;
+    typeof event.session_id === "string"
+      ? event.session_id
+      : typeof event.sessionId === "string"
+        ? event.sessionId
+        : undefined;
   const type = typeof event.type === "string" ? event.type : "";
   if (!type) return null;
-  const message = event.message && typeof event.message === "object"
-    ? (event.message as Record<string, unknown>)
-    : undefined;
+  const message =
+    event.message && typeof event.message === "object"
+      ? (event.message as Record<string, unknown>)
+      : undefined;
   const content = Array.isArray(message?.content)
-    ? message.content as ClaudeContentBlock[]
+    ? (message.content as ClaudeContentBlock[])
     : typeof event.content === "string"
       ? [{ type: "text", text: event.content }]
       : [];
@@ -1135,11 +1163,16 @@ export function parseQwenEvent(raw: string): ClaudeParseResult | null {
     return surfaced ? { ...surfaced, sessionID } : { sessionID };
   }
   if (type === "content_block_delta" || type === "message_delta") {
-    const delta = event.delta && typeof event.delta === "object"
-      ? event.delta as Record<string, unknown>
-      : undefined;
-    const text = typeof delta?.text === "string" ? delta.text :
-      typeof event.text === "string" ? event.text : "";
+    const delta =
+      event.delta && typeof event.delta === "object"
+        ? (event.delta as Record<string, unknown>)
+        : undefined;
+    const text =
+      typeof delta?.text === "string"
+        ? delta.text
+        : typeof event.text === "string"
+          ? event.text
+          : "";
     return text ? { entry: { type: "text", text }, sessionID } : { sessionID };
   }
   if (type === "user") {
@@ -1182,34 +1215,54 @@ export function parseCodexEvent(raw: string): CodexEventResult | null {
   const event = value as Record<string, unknown>;
   const type = typeof event.type === "string" ? event.type : "";
   const sessionID =
-    typeof event.thread_id === "string" ? event.thread_id :
-    typeof event.session_id === "string" ? event.session_id : undefined;
+    typeof event.thread_id === "string"
+      ? event.thread_id
+      : typeof event.session_id === "string"
+        ? event.session_id
+        : undefined;
   if (!type) return null;
-  const item = event.item && typeof event.item === "object"
-    ? event.item as Record<string, unknown>
-    : undefined;
+  const item =
+    event.item && typeof event.item === "object"
+      ? (event.item as Record<string, unknown>)
+      : undefined;
   if (type === "thread.started") return { sessionID };
   if (type === "item.updated" && typeof event.delta === "string") {
-    return event.delta.trim() ? { entry: { type: "text", text: event.delta }, sessionID } : { sessionID };
+    return event.delta.trim()
+      ? { entry: { type: "text", text: event.delta }, sessionID }
+      : { sessionID };
   }
   if (type === "error" || type === "turn.failed") {
-    const message = typeof event.message === "string" ? event.message :
-      typeof event.error === "string" ? event.error : undefined;
+    const message =
+      typeof event.message === "string"
+        ? event.message
+        : typeof event.error === "string"
+          ? event.error
+          : undefined;
     return message ? { entry: { type: "sys", d: `error: ${message}` }, sessionID } : { sessionID };
   }
   if (!item) return { sessionID };
   const itemType = typeof item.type === "string" ? item.type : "";
   if (itemType === "agent_message") {
-    const text = typeof item.text === "string" ? item.text :
-      typeof item.delta === "string" ? item.delta : "";
+    const text =
+      typeof item.text === "string" ? item.text : typeof item.delta === "string" ? item.delta : "";
     return text.trim() ? { entry: { type: "text", text }, sessionID } : { sessionID };
   }
   if (itemType === "command_execution") {
     const command = typeof item.command === "string" ? item.command : undefined;
-    const output = typeof item.aggregated_output === "string" ? item.aggregated_output :
-      typeof item.output === "string" ? item.output : undefined;
-    const state = typeof item.status === "string" ? item.status :
-      typeof item.exit_code === "number" ? (item.exit_code === 0 ? "completed" : "error") : undefined;
+    const output =
+      typeof item.aggregated_output === "string"
+        ? item.aggregated_output
+        : typeof item.output === "string"
+          ? item.output
+          : undefined;
+    const state =
+      typeof item.status === "string"
+        ? item.status
+        : typeof item.exit_code === "number"
+          ? item.exit_code === 0
+            ? "completed"
+            : "error"
+          : undefined;
     return {
       entry: {
         type: "tool",
@@ -1224,7 +1277,10 @@ export function parseCodexEvent(raw: string): CodexEventResult | null {
   if (itemType === "file_change" || itemType === "file_changes") {
     const changes = item.changes ?? item.files;
     const detail = typeof changes === "string" ? changes : toolOutputText(changes);
-    return { entry: { type: "tool", tool: "file changes", ...(detail ? { output: detail } : {}) }, sessionID };
+    return {
+      entry: { type: "tool", tool: "file changes", ...(detail ? { output: detail } : {}) },
+      sessionID,
+    };
   }
   return { sessionID };
 }
@@ -1375,12 +1431,13 @@ export function resolveAgentForTask(
 /** Resolve the enabled built-in repository assistant (by current "Ross" name or legacy "RepoOS Guide"). */
 export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
   const agents = agentsForConfig(config);
-  return agents.find(
-    (agent) =>
-      agent.enabled &&
-      (agent.name.toLowerCase() === "ross" ||
-        agent.name.toLowerCase() === "repoos guide"),
-  ) ?? null;
+  return (
+    agents.find(
+      (agent) =>
+        agent.enabled &&
+        (agent.name.toLowerCase() === "ross" || agent.name.toLowerCase() === "repoos guide"),
+    ) ?? null
+  );
 }
 
 /**
@@ -1426,20 +1483,30 @@ function modelArgs(cli: string, model: string): string[] {
 }
 
 const COPILOT_TOOL_PERMISSIONS = [
-  "--allow-tool", "write",
-  "--allow-tool", "shell(bun:*)",
-  "--allow-tool", "shell(node:*)",
-  "--allow-tool", "shell(npm:*)",
-  "--allow-tool", "shell(npx:*)",
-  "--allow-tool", "shell(git:*)",
-  "--allow-tool", "shell(curl:*)",
-  "--allow-tool", "shell(ls)",
-  "--allow-tool", "shell(cat)",
+  "--allow-tool",
+  "write",
+  "--allow-tool",
+  "shell(bun:*)",
+  "--allow-tool",
+  "shell(node:*)",
+  "--allow-tool",
+  "shell(npm:*)",
+  "--allow-tool",
+  "shell(npx:*)",
+  "--allow-tool",
+  "shell(git:*)",
+  "--allow-tool",
+  "shell(curl:*)",
+  "--allow-tool",
+  "shell(ls)",
+  "--allow-tool",
+  "shell(cat)",
 ] as const;
 
 function copilotArgs(options: { write: boolean }): string[] {
   return [
-    "--output-format", "json",
+    "--output-format",
+    "json",
     "--no-ask-user",
     "--no-auto-update",
     "--no-remote",
@@ -1466,10 +1533,23 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
     };
   }
   if (cli === "qwen code") {
-    return { cmd: "qwen", args: ["-p", mission, ...modelArgs(cli, model), "--output-format", "stream-json", "--include-partial-messages"] };
+    return {
+      cmd: "qwen",
+      args: [
+        "-p",
+        mission,
+        ...modelArgs(cli, model),
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+      ],
+    };
   }
   if (cli === "codex") {
-    return { cmd: "codex", args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"] };
+    return {
+      cmd: "codex",
+      args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"],
+    };
   }
   if (cli === "github copilot") {
     return {
@@ -1604,11 +1684,7 @@ function resumeCommand(
 }
 
 /** Build the read-only mission used by the persistent repository chat. */
-export function repoGuidePrompt(
-  question: string,
-  repositoryContext: string,
-  agent: Agent,
-): string {
+export function repoGuidePrompt(question: string, repositoryContext: string, agent: Agent): string {
   return `You are Ross, the always-available assistant for the repository in your current working directory.
 
 ${agent.instructions ?? "Answer questions about RepoOS and this repository."}
@@ -1652,11 +1728,7 @@ export function debuggerAgent(override?: { cli?: string; model?: string }): Agen
   };
 }
 
-export function debuggerPrompt(
-  question: string,
-  repositoryContext: string,
-  agent: Agent,
-): string {
+export function debuggerPrompt(question: string, repositoryContext: string, agent: Agent): string {
   return `You are the Debugger, the agent you copy a failing report to for a clear diagnosis.
 
 ${agent.instructions ?? "Diagnose the root cause and suggest a fix."}
@@ -1676,11 +1748,7 @@ ${question}`;
 }
 
 /** Build the writable task-management mission used only by the PM chat. */
-export function taskPmPrompt(
-  request: string,
-  taskContext: string,
-  agent: Agent,
-): string {
+export function taskPmPrompt(request: string, taskContext: string, agent: Agent): string {
   return `You are the Product Manager for RepoOS, working on the task below. You are not Ross or the read-only repository assistant.
 
 ${agent.instructions ?? "Own the roadmap and keep task specifications accurate."}
@@ -1802,7 +1870,15 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
       // One-shot callers (PM/freeform and model probes) consume the final
       // response, not the streaming transcript. Keep JSONL exclusive to the
       // AgentRunner so freeform task parsing receives markdown.
-      args: ["-p", prompt, ...extra, "--no-ask-user", "--no-auto-update", "--no-remote", "--no-remote-export"],
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--no-ask-user",
+        "--no-auto-update",
+        "--no-remote",
+        "--no-remote-export",
+      ],
     };
   }
   if (agent.cli === "kiro") {
@@ -1864,7 +1940,17 @@ export function reviewCommand(
   }
   if (agent.cli === "qwen code") {
     // Mirrors the engineer's claude-compatible stream-json so usage is captured.
-    return { cmd: "qwen", args: ["-p", prompt, ...extra, "--output-format", "stream-json", "--include-partial-messages"] };
+    return {
+      cmd: "qwen",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+      ],
+    };
   }
   if (agent.cli === "codex") {
     // `--json` streams usage events; the default (read-only) sandbox is exactly
@@ -1886,7 +1972,10 @@ export function reviewCommand(
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
-  return { cmd: "opencode", args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt] };
+  return {
+    cmd: "opencode",
+    args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt],
+  };
 }
 
 /**
@@ -2065,9 +2154,7 @@ export function runPrompt(
         resolve({ ok: true, output, ...usageFields });
         return;
       }
-      const reason = stderr
-        ? stderr.split("\n").slice(-3).join(" ").trim()
-        : "no output produced";
+      const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
       resolve({ ok: false, error: `${cmd} exited without output: ${reason}`, ...usageFields });
     };
     // `close` (not `exit`) fires only after stdio has drained, so a trailing
@@ -2115,7 +2202,9 @@ export function recordOneShotSession(
       costSource = agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
     }
     db.upsertSession({
-      sessionId: opts.sessionId ?? `${opts.sessionType}:${opts.taskId ?? "board"}:${endedAt}:${randomUUID()}`,
+      sessionId:
+        opts.sessionId ??
+        `${opts.sessionType}:${opts.taskId ?? "board"}:${endedAt}:${randomUUID()}`,
       sessionType: opts.sessionType,
       taskId: opts.taskId ?? undefined,
       agent: agent.name,
@@ -2186,12 +2275,16 @@ export class AgentRunner {
    * Fired on completion of a durable REVIEW turn (0288) — including for an
    * entry re-attached after a reload, whose process finishes on the new
    * server. The owning ReviewManager finalizes the report from this hook
-    * rather than a post-spawn continuation that would die with the old process.
-    * `reviewKind` (run vs chat) and `exitedCleanly` are threaded through so the
-    * ReviewManager can finalize an adopted turn in the right mode and decide
-    * whether it finished cleanly.
-    */
-  private readonly onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void;
+   * rather than a post-spawn continuation that would die with the old process.
+   * `reviewKind` (run vs chat) and `exitedCleanly` are threaded through so the
+   * ReviewManager can finalize an adopted turn in the right mode and decide
+   * whether it finished cleanly.
+   */
+  private readonly onReviewDone?: (
+    sessionKey: string,
+    exitedCleanly: boolean,
+    reviewKind?: "run" | "chat",
+  ) => void;
 
   /**
    * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
@@ -2222,7 +2315,18 @@ export class AgentRunner {
   constructor(
     config: RepoOSConfig,
     emit: (e: AgentEvent) => void,
-    opts: { stallTimeoutMs?: number; stallCheckIntervalMs?: number; onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>; onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>; onReviewDone?: (sessionKey: string, exitedCleanly: boolean, reviewKind?: "run" | "chat") => void; logger?: Logger } & AgentRunnerOptions = {},
+    opts: {
+      stallTimeoutMs?: number;
+      stallCheckIntervalMs?: number;
+      onHandoff?: (request: AgentHandoffRequest) => void | Promise<void>;
+      onPreviewRequest?: (request: AgentPreviewRequest) => void | Promise<void>;
+      onReviewDone?: (
+        sessionKey: string,
+        exitedCleanly: boolean,
+        reviewKind?: "run" | "chat",
+      ) => void;
+      logger?: Logger;
+    } & AgentRunnerOptions = {},
   ) {
     this.config = config;
     this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
@@ -2242,7 +2346,8 @@ export class AgentRunner {
     this.clock = opts.now ?? (() => new Date());
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
     const checkMs =
-      opts.stallCheckIntervalMs ?? Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
+      opts.stallCheckIntervalMs ??
+      Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
     this.stallTimer = setInterval(() => this.checkStalls(), checkMs);
     this.stallTimer.unref();
     this.loadHotSessions();
@@ -2377,7 +2482,11 @@ export class AgentRunner {
     let pending = "";
     let decoder = new StringDecoder("utf8");
     if (startAtEnd) {
-      try { lastSize = statSync(logFile).size; } catch { /* missing log */ }
+      try {
+        lastSize = statSync(logFile).size;
+      } catch {
+        /* missing log */
+      }
     }
     const drain = (): void => {
       try {
@@ -2525,10 +2634,17 @@ export class AgentRunner {
         if (loaded) this.sessions.set(request.taskId, loaded);
       }
       // Surface in the transcript so the human sees recovery.
-      this.system(request.taskId, "Recovering pending handoff from interrupted turn — finalizing now");
+      this.system(
+        request.taskId,
+        "Recovering pending handoff from interrupted turn — finalizing now",
+      );
       void Promise.resolve(this.onHandoff?.(request))
         .catch((err) => {
-          this.appendLine(request.taskId, "sys", `✗ recovered handoff failed: ${(err as Error).message}`);
+          this.appendLine(
+            request.taskId,
+            "sys",
+            `✗ recovered handoff failed: ${(err as Error).message}`,
+          );
         })
         .finally(() => {
           this.handoffsInFlight.delete(request.taskId);
@@ -2546,7 +2662,11 @@ export class AgentRunner {
           // attempted and failed (#0235 review fix).
           const task = this.getTask?.(request.taskId) ?? null;
           if (task && task.status === "active") {
-            this.persistHandoffFailure(request.taskId, task, "handoff recovery attempted · finalization failed");
+            this.persistHandoffFailure(
+              request.taskId,
+              task,
+              "handoff recovery attempted · finalization failed",
+            );
           }
         });
     }
@@ -2587,10 +2707,10 @@ export class AgentRunner {
     const issued = this.authorizedPreviews.get(request.runId);
     return Boolean(
       issued &&
-        issued.taskId === request.taskId &&
-        issued.branch === request.branch &&
-        this.samePath(issued.workdir, request.workdir) &&
-        issued.sessionId === request.sessionId,
+      issued.taskId === request.taskId &&
+      issued.branch === request.branch &&
+      this.samePath(issued.workdir, request.workdir) &&
+      issued.sessionId === request.sessionId,
     );
   }
 
@@ -2684,14 +2804,15 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
-    if (this.entries.has(task.id) || this.handoffsInFlight.has(task.id) || this.queuedIds.has(task.id)) {
+    if (
+      this.entries.has(task.id) ||
+      this.handoffsInFlight.has(task.id) ||
+      this.queuedIds.has(task.id)
+    ) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
     const cwd = opts.cwd ?? this.config.root;
-    const session =
-      this.sessions.get(task.id) ??
-      this.loadSession(task.id) ??
-      this.emptySession();
+    const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     session.workdir = cwd;
     session.engine = engineForCli(agent.cli);
     session.task = task;
@@ -2699,7 +2820,15 @@ export class AgentRunner {
     session.agent = agent.name;
     session.model = agent.model;
     this.sessions.set(task.id, session);
-    const mission = missionFor(task, branch, cwd, agent, this.config, opts.contextPack, opts.resumePreamble);
+    const mission = missionFor(
+      task,
+      branch,
+      cwd,
+      agent,
+      this.config,
+      opts.contextPack,
+      opts.resumePreamble,
+    );
     const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
   }
@@ -2713,7 +2842,11 @@ export class AgentRunner {
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
   ): StartResult {
     if (this.entries.has(sessionId) || this.queuedIds.has(sessionId)) {
-      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn to finish" };
+      return {
+        ok: false,
+        busy: true,
+        reason: "agent is busy — wait for the current turn to finish",
+      };
     }
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
@@ -2818,8 +2951,16 @@ export class AgentRunner {
     if (!session) {
       return { ok: false, reason: "no session for this task — start work first" };
     }
-    if (this.entries.has(taskId) || this.handoffsInFlight.has(taskId) || this.queuedIds.has(taskId)) {
-      return { ok: false, busy: true, reason: "agent is busy — wait for the current turn or handoff to finish" };
+    if (
+      this.entries.has(taskId) ||
+      this.handoffsInFlight.has(taskId) ||
+      this.queuedIds.has(taskId)
+    ) {
+      return {
+        ok: false,
+        busy: true,
+        reason: "agent is busy — wait for the current turn or handoff to finish",
+      };
     }
     this.sessions.set(taskId, session);
     const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
@@ -2840,9 +2981,7 @@ export class AgentRunner {
         session.branch = resolvedTask.branch;
       }
     }
-    const fullText = opts.resumePreamble
-      ? `${opts.resumePreamble}\n\n${text}`
-      : text;
+    const fullText = opts.resumePreamble ? `${opts.resumePreamble}\n\n${text}` : text;
     // session.sessionId is only meaningful to the CLI that produced it — if
     // agent.cli has since changed (override edited/cleared between turns),
     // reusing it would hand one CLI's session id to a different CLI's
@@ -2850,7 +2989,12 @@ export class AgentRunner {
     // --resume`, which requires a UUID and errors out). Drop it and let
     // resumeCommand fall back to a fresh/most-recent-session start instead.
     const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
-    const { cmd, args } = resumeCommand(agent, fullText, sessionId, session.workdir ?? this.config.root);
+    const { cmd, args } = resumeCommand(
+      agent,
+      fullText,
+      sessionId,
+      session.workdir ?? this.config.root,
+    );
     return this.spawnOrQueue(
       taskId,
       cmd,
@@ -3091,7 +3235,11 @@ export class AgentRunner {
 
     this.logger?.agent(taskId, "info", "Agent started", { pid: proc.pid, cwd, cmd });
 
-    this.emit({ type: "agent.running", id: taskId, at: this.entries.get(taskId)?.startedAt ?? now() });
+    this.emit({
+      type: "agent.running",
+      id: taskId,
+      at: this.entries.get(taskId)?.startedAt ?? now(),
+    });
     this.emitStats(taskId);
     return { ok: true, pid: proc.pid };
   }
@@ -3134,10 +3282,7 @@ export class AgentRunner {
       return;
     }
 
-    const parsed =
-      stream === "out" && session.engine === "opencode"
-        ? parseJsonEvent(raw)
-        : null;
+    const parsed = stream === "out" && session.engine === "opencode" ? parseJsonEvent(raw) : null;
     let entry: AgentOutputEntry;
     if (parsed) {
       if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
@@ -3167,9 +3312,7 @@ export class AgentRunner {
     stream: "out" | "err" | "sys",
     entry: AgentOutputEntry,
   ): void {
-    const stamped: AgentOutputEntry = entry.at
-      ? entry
-      : { ...entry, at: new Date().toISOString() };
+    const stamped: AgentOutputEntry = entry.at ? entry : { ...entry, at: new Date().toISOString() };
     session.lines.push(stamped);
     session.bytes += entryBytes(stamped);
     this.emit({
@@ -3251,7 +3394,12 @@ export class AgentRunner {
       // An orphaned tool_result (an id we never saw a tool_use for) has
       // nothing to attach to — drop it rather than fabricate a tool card.
     } else if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
     }
     // Otherwise the line was a recognized-but-voiceless claude event (init,
     // rate_limit, thinking-only assistant message, terminal `result`) — it is
@@ -3271,7 +3419,12 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -3288,7 +3441,12 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.entry) {
-      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, parsed.entry, session));
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
     }
     this.lineTouched(taskId, session, raw);
   }
@@ -3314,16 +3472,19 @@ export class AgentRunner {
       "type" in entry &&
       entry.type === "text" &&
       entry.text.split("\n").some((line) => line.trim() === signal)
-    ) return true;
+    )
+      return true;
     try {
       const event = JSON.parse(raw) as {
         type?: unknown;
         item?: { type?: unknown; text?: unknown };
       };
-      return event.type === "item.completed" &&
+      return (
+        event.type === "item.completed" &&
         event.item?.type === "agent_message" &&
         typeof event.item.text === "string" &&
-        event.item.text.split("\n").some((line) => line.trim() === signal);
+        event.item.text.split("\n").some((line) => line.trim() === signal)
+      );
     } catch {
       return false;
     }
@@ -3349,7 +3510,12 @@ export class AgentRunner {
    * When a handoff signal is recognized (#0235), the request is persisted to
    * disk immediately so it survives an interrupted turn or server restart.
    */
-  private applySignals(taskId: string, raw: string, entry: AgentOutputEntry, session?: Session): AgentOutputEntry {
+  private applySignals(
+    taskId: string,
+    raw: string,
+    entry: AgentOutputEntry,
+    session?: Session,
+  ): AgentOutputEntry {
     let out = entry;
     if (this.isPreviewRequestSignal(raw, entry)) {
       const running = this.entries.get(taskId);
@@ -3396,27 +3562,45 @@ export class AgentRunner {
       found.authoritative ? v : Math.max(cur ?? 0, v);
     if (found.inputTokens !== undefined) {
       const next = set(session.inputTokens, found.inputTokens);
-      if (next !== session.inputTokens) { session.inputTokens = next; changed = true; }
+      if (next !== session.inputTokens) {
+        session.inputTokens = next;
+        changed = true;
+      }
     }
     if (found.outputTokens !== undefined) {
       const next = set(session.outputTokens, found.outputTokens);
-      if (next !== session.outputTokens) { session.outputTokens = next; changed = true; }
+      if (next !== session.outputTokens) {
+        session.outputTokens = next;
+        changed = true;
+      }
     }
     if (found.totalTokens !== undefined) {
       const next = set(session.tokens, found.totalTokens);
-      if (next !== session.tokens) { session.tokens = next; changed = true; }
+      if (next !== session.tokens) {
+        session.tokens = next;
+        changed = true;
+      }
     }
     if (found.costUsd !== undefined) {
       const next = set(session.costUsd, found.costUsd);
-      if (next !== session.costUsd) { session.costUsd = next; changed = true; }
+      if (next !== session.costUsd) {
+        session.costUsd = next;
+        changed = true;
+      }
     }
     if (found.cacheReadTokens !== undefined) {
       const next = set(session.cacheReadTokens, found.cacheReadTokens);
-      if (next !== session.cacheReadTokens) { session.cacheReadTokens = next; changed = true; }
+      if (next !== session.cacheReadTokens) {
+        session.cacheReadTokens = next;
+        changed = true;
+      }
     }
     if (found.cacheCreationTokens !== undefined) {
       const next = set(session.cacheCreationTokens, found.cacheCreationTokens);
-      if (next !== session.cacheCreationTokens) { session.cacheCreationTokens = next; changed = true; }
+      if (next !== session.cacheCreationTokens) {
+        session.cacheCreationTokens = next;
+        changed = true;
+      }
     }
     if (found.turns !== undefined && found.turns > 0) {
       session.turns = (session.turns ?? 0) + found.turns; // delta — accumulate
@@ -3551,7 +3735,12 @@ export class AgentRunner {
   }
 
   /** Record a session to the database. Best-effort, never fails the server. */
-  private recordSessionToDb(sessionId: string | undefined, session: Session, taskKey: string, exitedCleanly: boolean): void {
+  private recordSessionToDb(
+    sessionId: string | undefined,
+    session: Session,
+    taskKey: string,
+    exitedCleanly: boolean,
+  ): void {
     if (!this.db || !session) return;
     try {
       // Determine session type from agent name for better aggregations
@@ -3715,7 +3904,13 @@ export class AgentRunner {
     if (!exitedCleanly && !this.isPaused(taskId) && !entry.handoffRequested && taskForHandoff) {
       this.escalateFailedExit(taskId, taskForHandoff, session);
     }
-    if (entry.handoffRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
+    if (
+      entry.handoffRequested &&
+      exitedCleanly &&
+      taskForHandoff &&
+      entry.branch &&
+      entry.workdir
+    ) {
       // Clean exit with handoff requested: clear the persisted request and fire finalization.
       this.clearPendingHandoff(taskId);
       const request: AgentHandoffRequest = {
@@ -3733,18 +3928,36 @@ export class AgentRunner {
         })
         .finally(() => this.handoffsInFlight.delete(taskId));
     } else if (entry.handoffRequested && exitedCleanly && !taskForHandoff) {
-      this.appendLine(taskId, "sys", "✗ handoff was not started because the task could not be resolved");
+      this.appendLine(
+        taskId,
+        "sys",
+        "✗ handoff was not started because the task could not be resolved",
+      );
       this.clearPendingHandoff(taskId);
       this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
     } else if (entry.handoffRequested && !exitedCleanly) {
       // Interrupted turn: the persisted request survives for recovery on next boot (#0235).
-      this.appendLine(taskId, "sys", "⚠ handoff retained for recovery — the request will be finalized on the next server start");
-      this.persistHandoffFailure(taskId, entry.task, "agent turn was interrupted · handoff retained for recovery");
+      this.appendLine(
+        taskId,
+        "sys",
+        "⚠ handoff retained for recovery — the request will be finalized on the next server start",
+      );
+      this.persistHandoffFailure(
+        taskId,
+        entry.task,
+        "agent turn was interrupted · handoff retained for recovery",
+      );
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
     // request to the server, which owns preview process and network lifecycle.
-    if (entry.previewRequested && exitedCleanly && taskForHandoff && entry.branch && entry.workdir) {
+    if (
+      entry.previewRequested &&
+      exitedCleanly &&
+      taskForHandoff &&
+      entry.branch &&
+      entry.workdir
+    ) {
       const request: AgentPreviewRequest = {
         taskId,
         runId: entry.runId,
@@ -3757,7 +3970,11 @@ export class AgentRunner {
         this.appendLine(taskId, "sys", `✗ managed preview failed: ${(err as Error).message}`);
       });
     } else if (entry.previewRequested && !exitedCleanly) {
-      this.appendLine(taskId, "sys", "✗ managed preview was not started because the agent turn was interrupted");
+      this.appendLine(
+        taskId,
+        "sys",
+        "✗ managed preview was not started because the agent turn was interrupted",
+      );
     }
     // Defense-in-depth (0077): a turn that ended with the worktree copy at
     // `review`/`needs_input` while the main copy is still `active` means the
@@ -3775,7 +3992,11 @@ export class AgentRunner {
       try {
         this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
       } catch (err) {
-        this.logger?.agent(taskId, "error", `Review completion handler failed: ${(err as Error).message}`);
+        this.logger?.agent(
+          taskId,
+          "error",
+          `Review completion handler failed: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -3801,28 +4022,50 @@ export class AgentRunner {
       }
       let out = "";
       const timer = setTimeout(() => {
-        try { proc.kill("SIGKILL"); } catch { /* already gone */ }
+        try {
+          proc.kill("SIGKILL");
+        } catch {
+          /* already gone */
+        }
         resolve();
       }, 5000);
-      proc.stdout?.on("data", (c: Buffer) => { out += c.toString("utf8"); });
-      proc.on("error", () => { clearTimeout(timer); resolve(); });
+      proc.stdout?.on("data", (c: Buffer) => {
+        out += c.toString("utf8");
+      });
+      proc.on("error", () => {
+        clearTimeout(timer);
+        resolve();
+      });
       proc.on("close", () => {
         clearTimeout(timer);
         try {
-          const rows = JSON.parse(out) as Array<{ cwd?: string; sessions?: Array<{ sessionId?: string }> }>;
+          const rows = JSON.parse(out) as Array<{
+            cwd?: string;
+            sessions?: Array<{ sessionId?: string }>;
+          }>;
           const sessionId = rows[0]?.sessions?.[0]?.sessionId;
           if (typeof sessionId === "string" && sessionId) {
             session.sessionId = sessionId;
             this.schedulePersist(taskId);
           }
-        } catch { /* malformed JSON — leave sessionId undefined */ }
+        } catch {
+          /* malformed JSON — leave sessionId undefined */
+        }
         resolve();
       });
     });
   }
 
   private emptySession(): Session {
-    return { lines: [], pending: "", bytes: 0, engine: "plain", accumulatedMs: 0, createdAt: now(), stalledEmitted: false };
+    return {
+      lines: [],
+      pending: "",
+      bytes: 0,
+      engine: "plain",
+      accumulatedMs: 0,
+      createdAt: now(),
+      stalledEmitted: false,
+    };
   }
 
   private sessionFile(taskId: string): string | null {
@@ -3844,7 +4087,9 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "plain"].includes(value.engine as string) ||
+        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "plain"].includes(
+          value.engine as string,
+        ) ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
@@ -4019,7 +4264,9 @@ export class AgentRunner {
       writeFileSync(task.absPath, serializeTask(current));
     } catch (err) {
       // Fail-soft: if we can't persist, just log — don't crash the runner
-      console.error(`[repoos] failed to persist handoff failure for #${taskId}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] failed to persist handoff failure for #${taskId}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -4038,7 +4285,11 @@ export class AgentRunner {
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
         const text =
-          "type" in line && line.type === "sys" ? line.d : "s" in line && line.s === "sys" ? line.d : undefined;
+          "type" in line && line.type === "sys"
+            ? line.d
+            : "s" in line && line.s === "sys"
+              ? line.d
+              : undefined;
         if (text?.trim()) return text.trim();
       }
     }
@@ -4073,7 +4324,8 @@ export class AgentRunner {
       const errCount = current.extra?.dev_error_count;
       current.extra = {
         ...current.extra,
-        dev_error_count: (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
+        dev_error_count:
+          (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
       };
       if (current.needsInput) {
         writeFileSync(task.absPath, serializeTask(current));
@@ -4082,10 +4334,15 @@ export class AgentRunner {
       current.needsInput = true;
       current.needsInputReason = "dev-error";
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
-      recordChange(current, `agent exited with an error${engine} · ${this.lastFailureLine(session)}`);
+      recordChange(
+        current,
+        `agent exited with an error${engine} · ${this.lastFailureLine(session)}`,
+      );
       writeFileSync(task.absPath, serializeTask(current));
     } catch (err) {
-      console.error(`[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`,
+      );
     }
   }
 

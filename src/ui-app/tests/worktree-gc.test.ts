@@ -55,7 +55,11 @@ function task(id: string, branch: string, status: string): Task {
 }
 
 function branches(root: string): Set<string> {
-  return new Set(listWorktrees(root).map((w) => w.branch).filter(Boolean) as string[]);
+  return new Set(
+    listWorktrees(root)
+      .map((w) => w.branch)
+      .filter(Boolean) as string[],
+  );
 }
 
 describe("sweepStaleWorktrees — full mode", () => {

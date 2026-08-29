@@ -13,10 +13,34 @@ import {
 import { startServer } from "../../server/server";
 
 const FIXTURE_AGENTS: KnownAgent[] = [
-  { id: "opencode", name: "opencode", binary: "opencode", drivable: true, installHint: "npm i -g opencode-ai" },
-  { id: "claude-code", name: "claude code", binary: "claude", drivable: true, installHint: "npm i -g @anthropic-ai/claude-code" },
-  { id: "qwen-code", name: "qwen code", binary: "qwen", drivable: false, installHint: "npm i -g @qwen-code/qwen-code" },
-  { id: "copilot", name: "github copilot", binary: "copilot", drivable: true, installHint: "npm i -g @github/copilot" },
+  {
+    id: "opencode",
+    name: "opencode",
+    binary: "opencode",
+    drivable: true,
+    installHint: "npm i -g opencode-ai",
+  },
+  {
+    id: "claude-code",
+    name: "claude code",
+    binary: "claude",
+    drivable: true,
+    installHint: "npm i -g @anthropic-ai/claude-code",
+  },
+  {
+    id: "qwen-code",
+    name: "qwen code",
+    binary: "qwen",
+    drivable: false,
+    installHint: "npm i -g @qwen-code/qwen-code",
+  },
+  {
+    id: "copilot",
+    name: "github copilot",
+    binary: "copilot",
+    drivable: true,
+    installHint: "npm i -g @github/copilot",
+  },
 ];
 
 const tmpRoots: string[] = [];
@@ -61,12 +85,8 @@ describe("resolveBinary", () => {
 
 describe("isAppBundleBinary", () => {
   it("detects a binary inside a macOS .app bundle", () => {
-    expect(
-      isAppBundleBinary("/Applications/Opencode.app/Contents/MacOS/opencode"),
-    ).toBe(true);
-    expect(
-      isAppBundleBinary(join(tmpDir(), "Test.app", "Contents", "MacOS", "claude")),
-    ).toBe(true);
+    expect(isAppBundleBinary("/Applications/Opencode.app/Contents/MacOS/opencode")).toBe(true);
+    expect(isAppBundleBinary(join(tmpDir(), "Test.app", "Contents", "MacOS", "claude"))).toBe(true);
   });
 
   it("does not flag plain installs", () => {

@@ -80,10 +80,7 @@ interface FrontmatterScan {
  * historical behavior. In "unclosed" mode (frontmatter terminated by EOF) the
  * first non-frontmatter line ends the block and starts the body.
  */
-function scanFrontmatterLines(
-  lines: string[],
-  mode: "closed" | "unclosed",
-): FrontmatterScan {
+function scanFrontmatterLines(lines: string[], mode: "closed" | "unclosed"): FrontmatterScan {
   const data: Record<string, unknown> = {};
   let i = 0;
   let sawKey = false;
@@ -194,12 +191,7 @@ function serializeScalar(v: unknown): string {
   if (typeof v === "boolean" || typeof v === "number") return String(v);
   const s = String(v);
   // quote if it could be misread (leading zero ids, special chars, etc.)
-  if (
-    /^0\d/.test(s) ||
-    /[:#\[\]{}",]/.test(s) ||
-    s.trim() !== s ||
-    s === ""
-  ) {
+  if (/^0\d/.test(s) || /[:#\[\]{}",]/.test(s) || s.trim() !== s || s === "") {
     return `"${s.replace(/"/g, '\\"')}"`;
   }
   return s;

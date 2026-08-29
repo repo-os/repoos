@@ -86,11 +86,7 @@ describe("parseLiveModels", () => {
       parseLiveModels(
         "openai/gpt-4o\nanthropic/claude-sonnet-4\nopenai/gpt-4o\nopencode/big-pickle\n",
       ),
-    ).toEqual([
-      "anthropic/claude-sonnet-4",
-      "openai/gpt-4o",
-      "opencode/big-pickle",
-    ]);
+    ).toEqual(["anthropic/claude-sonnet-4", "openai/gpt-4o", "opencode/big-pickle"]);
   });
 
   it("drops headers, help text, and ANSI noise", () => {
@@ -102,9 +98,7 @@ describe("parseLiveModels", () => {
   });
 
   it("drops overlong ids", () => {
-    expect(parseLiveModels(`opencode/${"x".repeat(200)}\nopencode/ok\n`)).toEqual([
-      "opencode/ok",
-    ]);
+    expect(parseLiveModels(`opencode/${"x".repeat(200)}\nopencode/ok\n`)).toEqual(["opencode/ok"]);
   });
 });
 
@@ -263,7 +257,7 @@ describe("POST /api/models/test", () => {
         body: JSON.stringify({ cli: "claude code", model: "default" }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json() as { result: { cli: string; model: string; status: string } };
+      const body = (await res.json()) as { result: { cli: string; model: string; status: string } };
       expect(body.result).toEqual({
         cli: "claude code",
         model: "default",

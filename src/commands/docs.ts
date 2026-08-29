@@ -2,7 +2,12 @@
  * Document creation commands for the CLI.
  */
 import { readFileSync } from "node:fs";
-import { createDocument, createFreeformDocument, docFreeformPrompt, parseGeneratedDocument } from "../core/docs.js";
+import {
+  createDocument,
+  createFreeformDocument,
+  docFreeformPrompt,
+  parseGeneratedDocument,
+} from "../core/docs.js";
 import { loadConfig } from "../core/config.js";
 import { c } from "../cli/colors.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../server/agents.js";
@@ -44,10 +49,7 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
         return parseGeneratedDocument(result.output);
       });
       console.log(
-        "  " +
-          c.green("created ") +
-          c.cyan(docResult.path) +
-          c.dim("  → " + docResult.absPath),
+        "  " + c.green("created ") + c.cyan(docResult.path) + c.dim("  → " + docResult.absPath),
       );
     } catch (err) {
       console.error(c.red("  " + (err as Error).message));
@@ -62,10 +64,7 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
         content,
       });
       console.log(
-        "  " +
-          c.green("created ") +
-          c.cyan(docResult.path) +
-          c.dim("  → " + docResult.absPath),
+        "  " + c.green("created ") + c.cyan(docResult.path) + c.dim("  → " + docResult.absPath),
       );
     } catch (err) {
       console.error(c.red("  " + (err as Error).message));
@@ -73,7 +72,9 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
     }
   } else {
     console.error(
-      c.red('  Usage: repoos new-doc "description"  or  repoos new-doc --path <path> --content-file <file>'),
+      c.red(
+        '  Usage: repoos new-doc "description"  or  repoos new-doc --path <path> --content-file <file>',
+      ),
     );
     process.exitCode = 1;
   }

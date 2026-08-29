@@ -24,7 +24,15 @@
 
 import { spawn } from "node:child_process";
 import { createConnection } from "node:net";
-import { mkdtempSync, mkdirSync, rmSync, appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { RepoOSConfig } from "../core/types.js";
@@ -59,7 +67,11 @@ export interface RemoteExecDeps {
   /** `git bundle create <outPath> HEAD` in `cwd`. */
   bundleRepo(cwd: string, outPath: string): Promise<{ ok: boolean; detail?: string }>;
   /** `scp <localPath> <host>:<remotePath>`. */
-  uploadFile(host: RemoteHost, localPath: string, remotePath: string): Promise<{ ok: boolean; detail?: string }>;
+  uploadFile(
+    host: RemoteHost,
+    localPath: string,
+    remotePath: string,
+  ): Promise<{ ok: boolean; detail?: string }>;
   /** `scp -r <host>:<remotePath> <localDir>` — best effort, never throws. */
   downloadDir(host: RemoteHost, remotePath: string, localDir: string): Promise<void>;
   /** `ssh <host> <command>`, streaming combined stdout+stderr through `onChunk`. */
@@ -196,9 +208,7 @@ export function defaultRemoteExec(): RemoteExecDeps {
         cwd,
         timeoutMs: 120_000,
       });
-      return res.code === 0
-        ? { ok: true }
-        : { ok: false, detail: tail(res.output) };
+      return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
     },
     async uploadFile(host, localPath, remotePath) {
       const res = await runLocal(
@@ -217,11 +227,10 @@ export function defaultRemoteExec(): RemoteExecDeps {
       ).catch(() => undefined);
     },
     async runRemote(host, command, onChunk, timeoutMs) {
-      return runLocal(
-        "ssh",
-        [...sshArgs(host), `${host.user}@${host.ip}`, command],
-        { timeoutMs, onChunk },
-      );
+      return runLocal("ssh", [...sshArgs(host), `${host.user}@${host.ip}`, command], {
+        timeoutMs,
+        onChunk,
+      });
     },
     probeTcp(ip, port, timeoutMs) {
       return new Promise((resolve) => {
@@ -298,7 +307,9 @@ export class RemoteValidationRunner implements RemoteValidator {
   private appendLog(taskId: string, text: string): void {
     try {
       const p = this.logPath(taskId);
-      mkdirSync(join(this.config.root, ".repoos", "logs", "remote-validation"), { recursive: true });
+      mkdirSync(join(this.config.root, ".repoos", "logs", "remote-validation"), {
+        recursive: true,
+      });
       appendFileSync(p, redactSecrets(text));
     } catch {
       /* best effort */
@@ -357,7 +368,8 @@ export class RemoteValidationRunner implements RemoteValidator {
       // 2. upload
       const remoteBundle = `/tmp/repoos-${opts.taskId}.bundle`;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
-      if (!up.ok) return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
+      if (!up.ok)
+        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
 
       // 3. run build + test inside the container
       emit(`[running build + test on ${host.ip}]\n`);
@@ -373,8 +385,14 @@ export class RemoteValidationRunner implements RemoteValidator {
 
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
       if (run.timedOut) {
-        emit(`\n[remote run SIGKILLed after ${Math.round(this.timings.remoteRunTimeoutMs / 60000)}m]\n`);
-        this.logger?.integration(opts.taskId, "warn", `remote validation timed out after ${elapsed}s`);
+        emit(
+          `\n[remote run SIGKILLed after ${Math.round(this.timings.remoteRunTimeoutMs / 60000)}m]\n`,
+        );
+        this.logger?.integration(
+          opts.taskId,
+          "warn",
+          `remote validation timed out after ${elapsed}s`,
+        );
         return {
           ok: false,
           stage: "check",
@@ -392,7 +410,10 @@ export class RemoteValidationRunner implements RemoteValidator {
 
       // Non-zero: the ssh transport itself could have dropped (code 255) — treat
       // that as infra, not a real test failure.
-      if (run.code === 255 && /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)) {
+      if (
+        run.code === 255 &&
+        /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
+      ) {
         return this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`);
       }
       const transient = looksTransient(run.output);
@@ -471,7 +492,9 @@ export class RemoteValidationRunner implements RemoteValidator {
       this.state = null;
       this.saveState();
       if (this.lifetimeTimer) clearTimeout(this.lifetimeTimer);
-      throw new Error(`runner ${ip} never accepted SSH within ${this.timings.sshWaitTimeoutMs / 1000}s`);
+      throw new Error(
+        `runner ${ip} never accepted SSH within ${this.timings.sshWaitTimeoutMs / 1000}s`,
+      );
     }
     return { ip, user: this.sshUser, keyPath: this.keyPath };
   }
@@ -531,7 +554,10 @@ export class RemoteValidationRunner implements RemoteValidator {
     }
     for (const s of servers) {
       await this.hetzner.deleteServer(s.id).catch(() => undefined);
-      this.logger?.system("info", `reconcile: deleted stray remote validation runner ${s.id} (${s.name})`);
+      this.logger?.system(
+        "info",
+        `reconcile: deleted stray remote validation runner ${s.id} (${s.name})`,
+      );
     }
     this.saveState();
   }

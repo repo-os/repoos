@@ -56,7 +56,10 @@ export async function validateServer(input: string, timeoutMs = 10_000): Promise
       headers: { Accept: "application/json" },
     });
     if (!res.ok) {
-      return { ok: false, error: `Server responded ${res.status}, not a reachable RepoOS instance.` };
+      return {
+        ok: false,
+        error: `Server responded ${res.status}, not a reachable RepoOS instance.`,
+      };
     }
     const body = await res.json().catch(() => null);
     // A RepoOS health endpoint reports { status: "ok" } (see src/server). Be
@@ -66,7 +69,9 @@ export async function validateServer(input: string, timeoutMs = 10_000): Promise
     const aborted = err instanceof Error && err.name === "AbortError";
     return {
       ok: false,
-      error: aborted ? "Timed out — is the server reachable?" : "Unreachable — check the URL and your connection.",
+      error: aborted
+        ? "Timed out — is the server reachable?"
+        : "Unreachable — check the URL and your connection.",
     };
   } finally {
     clearTimeout(timer);

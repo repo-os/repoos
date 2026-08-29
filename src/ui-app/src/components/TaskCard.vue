@@ -10,10 +10,13 @@ import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 
-const props = withDefaults(defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(), {
-  dragEnabled: true,
-  highlighted: false,
-});
+const props = withDefaults(
+  defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
+  {
+    dragEnabled: true,
+    highlighted: false,
+  },
+);
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -37,9 +40,7 @@ function prefersReducedMotion(): boolean {
  *  system allows motion, and this card is actually mid-transition. */
 function shouldGlide(): boolean {
   return (
-    ui.glideAnimations &&
-    !prefersReducedMotion() &&
-    repo.transitionState?.id === props.task.id
+    ui.glideAnimations && !prefersReducedMotion() && repo.transitionState?.id === props.task.id
   );
 }
 
@@ -244,7 +245,8 @@ function codingOrStuckHint(taskId: string): CardHint {
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
-      title: "agent process is still running but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      title:
+        "agent process is still running but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
       cls: "tc-stuck",
     };
   }
@@ -270,14 +272,18 @@ function checkRetryHint(taskId: string, retryCount: number): CardHint {
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
-      title: "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      title:
+        "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
       cls: "tc-stuck",
     };
   }
   const activity = formatActivity(lastActivity);
   return {
-    label: activity ? `fixing check failure · active ${activity}` : `fixing check failure (retry ${retryCount}/${MAX_CHECK_RETRY_ATTEMPTS})`,
-    title: "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
+    label: activity
+      ? `fixing check failure · active ${activity}`
+      : `fixing check failure (retry ${retryCount}/${MAX_CHECK_RETRY_ATTEMPTS})`,
+    title:
+      "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
     cls: "tc-coding",
   };
 }
@@ -295,14 +301,18 @@ function mergeConflictRetryHint(taskId: string, retryCount: number): CardHint {
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
-      title: "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      title:
+        "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
       cls: "tc-stuck",
     };
   }
   const activity = formatActivity(lastActivity);
   return {
-    label: activity ? `fixing merge conflict · active ${activity}` : `fixing merge conflict (retry ${retryCount}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
-    title: "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
+    label: activity
+      ? `fixing merge conflict · active ${activity}`
+      : `fixing merge conflict (retry ${retryCount}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
+    title:
+      "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
     cls: "tc-coding",
   };
 }
@@ -321,14 +331,18 @@ function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
-      title: "agent was auto-resumed after a missed handoff signal but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+      title:
+        "agent was auto-resumed after a missed handoff signal but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
       cls: "tc-stuck",
     };
   }
   const activity = formatActivity(lastActivity);
   return {
-    label: activity ? `confirming handoff · active ${activity}` : `confirming handoff (retry ${retryCount}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
-    title: "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
+    label: activity
+      ? `confirming handoff · active ${activity}`
+      : `confirming handoff (retry ${retryCount}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
+    title:
+      "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
     cls: "tc-coding",
   };
 }
@@ -337,7 +351,8 @@ function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
  *  it will spawn on its own once a running agent exits. */
 const QUEUED_HINT: CardHint = {
   label: "queued",
-  title: "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",
+  title:
+    "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",
   cls: "tc-queued",
 };
 
@@ -345,7 +360,9 @@ const QUEUED_HINT: CardHint = {
  *  exists — null while no report has landed yet, or its state is
  *  unparseable. Distinct from `reviewFor(id)?.running`: that's whether a
  *  review is happening right now, this is what the last one concluded. */
-const reviewVerdict = computed(() => parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown));
+const reviewVerdict = computed(() =>
+  parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown),
+);
 
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
@@ -353,8 +370,11 @@ const hint = computed<CardHint | null>(() => {
   if (t.status === "review") {
     if (inPipeline.value) {
       return {
-        label: pipelineStage.value ? `moving to done · ${pipelineStage.value}` : "queued for close-out",
-        title: "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
+        label: pipelineStage.value
+          ? `moving to done · ${pipelineStage.value}`
+          : "queued for close-out",
+        title:
+          "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
         cls: "tc-moving",
       };
     }
@@ -376,12 +396,24 @@ const hint = computed<CardHint | null>(() => {
     // cap). Only the green/unparseable case gets the optimistic label.
     const v = reviewVerdict.value;
     if (v?.tone === "red") {
-      return { label: "review: back to the drawing board", title: "the reviewer rejected this — open the task to see why", cls: "tc-review-bad" };
+      return {
+        label: "review: back to the drawing board",
+        title: "the reviewer rejected this — open the task to see why",
+        cls: "tc-review-bad",
+      };
     }
     if (v?.tone === "amber") {
-      return { label: "review: needs some work", title: "the reviewer found issues — open the task to see the report", cls: "tc-review-warn" };
+      return {
+        label: "review: needs some work",
+        title: "the reviewer found issues — open the task to see the report",
+        cls: "tc-review-warn",
+      };
     }
-    return { label: "review passed · ready to finish", title: "review passed — approve and move to done to finish", cls: "tc-human" };
+    return {
+      label: "review passed · ready to finish",
+      title: "review passed — approve and move to done to finish",
+      cls: "tc-human",
+    };
   }
   if (t.status === "active") {
     if (repo.isQueued(t.id)) return QUEUED_HINT;
@@ -390,9 +422,17 @@ const hint = computed<CardHint | null>(() => {
       return codingOrStuckHint(t.id);
     }
     if (t.needsInput) {
-      return { label: "needs input", title: "agent is waiting on you — open the task to reply", cls: "tc-needs-input" };
+      return {
+        label: "needs input",
+        title: "agent is waiting on you — open the task to reply",
+        cls: "tc-needs-input",
+      };
     }
-    return { label: "paused", title: "agent stopped — click Restart work to resume", cls: "tc-stalled" };
+    return {
+      label: "paused",
+      title: "agent stopped — click Restart work to resume",
+      cls: "tc-stalled",
+    };
   }
   return null;
 });
@@ -454,7 +494,9 @@ const actionFooterClass = computed(() => {
 
 /** True when the action would relaunch the agent (fresh start or resume from pause). */
 const isLaunchAction = computed(
-  () => props.task.status === "ready" || (props.task.status === "active" && !repo.isRunning(props.task.id)),
+  () =>
+    props.task.status === "ready" ||
+    (props.task.status === "active" && !repo.isRunning(props.task.id)),
 );
 
 /** True when this fresh-done card still needs the human to acknowledge it (0278). */
@@ -529,9 +571,7 @@ async function runAction(): Promise<void> {
  *  decide whether to commit `main`'s dirty files before merging. */
 const dirtyTask = ref<Task | null>(null);
 
-const dirtyFiles = computed(() =>
-  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
-);
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : []));
 
 async function confirmCommitDirty(): Promise<void> {
   const t = dirtyTask.value;
@@ -584,7 +624,11 @@ async function openPanelFromError(): Promise<void> {
       coding: repo.isRunning(task.id),
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
-      'waiting-for-human': task.status === 'review' && !inPipeline && !repo.reviewFor(task.id)?.running && !repo.isRunning(task.id),
+      'waiting-for-human':
+        task.status === 'review' &&
+        !inPipeline &&
+        !repo.reviewFor(task.id)?.running &&
+        !repo.isRunning(task.id),
       'review-ready': reviewReady,
       'needs-input': task.needsInput,
       'done-needs-ack': ackPending,
@@ -600,30 +644,80 @@ async function openPanelFromError(): Promise<void> {
     <div class="flex flex-1 flex-col p-[13px]">
       <div class="flex items-center gap-[7px]">
         <span class="font-mono text-[10px] text-[var(--txt-faint)]">#{{ task.id }}</span>
-        <span class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">{{ task.type }}</span>
-        <span v-if="task.needsInput" class="tc-waiting" title="waiting for you — open the task to reply">needs input</span>
-        <span v-if="task.status === 'review' && task.needsMerge" class="tc-merge" title="branch drifted from main — move to done to sync and merge">needs merge</span>
-        <span v-if="task.hotfix" class="tc-hotfix" :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`">hotfix</span>
-        <span class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold" :class="task.priority">{{ task.priority }}</span>
+        <span
+          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          >{{ task.type }}</span
+        >
+        <span
+          v-if="task.needsInput"
+          class="tc-waiting"
+          title="waiting for you — open the task to reply"
+          >needs input</span
+        >
+        <span
+          v-if="task.status === 'review' && task.needsMerge"
+          class="tc-merge"
+          title="branch drifted from main — move to done to sync and merge"
+          >needs merge</span
+        >
+        <span
+          v-if="task.hotfix"
+          class="tc-hotfix"
+          :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`"
+          >hotfix</span
+        >
+        <span
+          class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
+          :class="task.priority"
+          >{{ task.priority }}</span
+        >
       </div>
 
-      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">{{ task.title }}</h3>
+      <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">
+        {{ task.title }}
+      </h3>
 
       <div class="mt-[11px] flex flex-wrap gap-[6px]">
-        <span class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">{{ task.area }}</span>
-        <span v-if="task.assignee !== 'ai'" class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]">
+        <span
+          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          >{{ task.area }}</span
+        >
+        <span
+          v-if="task.assignee !== 'ai'"
+          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+        >
           {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
         </span>
-        <span v-if="diffStats && diffStats.filesChanged > 0" class="diff-stats-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]" :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`">
+        <span
+          v-if="diffStats && diffStats.filesChanged > 0"
+          class="diff-stats-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`"
+        >
           {{ diffStats.filesChanged }}f {{ diffStats.additions }}+
         </span>
-        <span v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch" class="diff-stats-empty rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]" title="No code changes">0 changes</span>
+        <span
+          v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch"
+          class="diff-stats-empty rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          title="No code changes"
+          >0 changes</span
+        >
       </div>
 
       <div v-if="hint" class="mt-[13px]">
-        <span class="tc-hint" :class="hint.cls" :title="hint.title" @click.stop="hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined">
+        <span
+          class="tc-hint"
+          :class="hint.cls"
+          :title="hint.title"
+          @click.stop="
+            hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined
+          "
+        >
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
-          <ActivityIndicator v-else-if="hint.cls === 'tc-reviewing'" variant="reviewing" label="Reviewing…" />
+          <ActivityIndicator
+            v-else-if="hint.cls === 'tc-reviewing'"
+            variant="reviewing"
+            label="Reviewing…"
+          />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
         </span>
@@ -631,46 +725,59 @@ async function openPanelFromError(): Promise<void> {
     </div>
 
     <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
-        <button
-          class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
-          :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
-          :disabled="busy || inPipeline || (task.status === 'review' && (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))"
-          :title="inPipeline ? action.title : task.status === 'review' && repo.reviewFor(task.id)?.running ? 'Waiting for automatic review to finish.' : task.status === 'review' && repo.isRunning(task.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : action.title"
-          @click.stop="runAction"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
-            <path
-              :d="action.icon"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          {{ busy ? "Working…" : action.label }}
-        </button>
+      <button
+        class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
+        :disabled="
+          busy ||
+          inPipeline ||
+          (task.status === 'review' &&
+            (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))
+        "
+        :title="
+          inPipeline
+            ? action.title
+            : task.status === 'review' && repo.reviewFor(task.id)?.running
+              ? 'Waiting for automatic review to finish.'
+              : task.status === 'review' && repo.isRunning(task.id)
+                ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                : action.title
+        "
+        @click.stop="runAction"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+          <path
+            :d="action.icon"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {{ busy ? "Working…" : action.label }}
+      </button>
     </div>
     <!-- Fresh-done acknowledgement (0278): a steady Acknowledge footer that
          clears the persistent highlight. Done cards have no move action, so
          this footer only appears for unacked fresh-done tasks. -->
     <div v-else-if="ackPending" class="tc-foot tc-actions !ml-0 w-full">
-        <button
-          class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
-          :class="ackFooterClass"
-          title="Acknowledge this task is done — clears the highlight"
-          @click.stop="acknowledge"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
-            <path
-              d="M4 12l5 5L20 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Acknowledge
-        </button>
+      <button
+        class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        :class="ackFooterClass"
+        title="Acknowledge this task is done — clears the highlight"
+        @click.stop="acknowledge"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+          <path
+            d="M4 12l5 5L20 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Acknowledge
+      </button>
     </div>
     <!-- AI-created acknowledgement (0320): a persistent violet footer on a card
          the PM agent just finished creating, clearing on click. Unlike the
@@ -678,23 +785,23 @@ async function openPanelFromError(): Promise<void> {
          the card lands in inbox/ready, which already has a move/start action —
          so it starts its own v-if chain rather than joining that one. -->
     <div v-if="createAckPending" class="tc-foot tc-actions !ml-0 w-full">
-        <button
-          class="ai-created-ack flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
-          :class="createAckFooterClass"
-          title="Acknowledge this AI-created task — clears the highlight"
-          @click.stop="acknowledgeCreate"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
-            <path
-              d="M4 12l5 5L20 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Acknowledge
-        </button>
+      <button
+        class="ai-created-ack flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        :class="createAckFooterClass"
+        title="Acknowledge this AI-created task — clears the highlight"
+        @click.stop="acknowledgeCreate"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+          <path
+            d="M4 12l5 5L20 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Acknowledge
+      </button>
     </div>
     <!-- A failed move-to-done stays with the card that triggered it, directly
          below the button, instead of detaching into a global toast. -->

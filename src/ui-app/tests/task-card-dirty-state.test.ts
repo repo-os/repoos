@@ -53,9 +53,9 @@ describe("task card dirty state display", () => {
         plugins: [createPinia()],
       },
     });
-    
+
     // Should not have any dirty badge elements
-    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
+    expect(wrapper.find(".tc-dirty").exists()).toBe(false);
   });
 
   it("does not display passive dirty badge for dirty task (passive state removed)", () => {
@@ -66,23 +66,23 @@ describe("task card dirty state display", () => {
         plugins: [createPinia()],
       },
     });
-    
+
     // Should not have any dirty badge elements even for dirty tasks
-    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
+    expect(wrapper.find(".tc-dirty").exists()).toBe(false);
   });
 
   it("does not show dirty badge for branchless tasks", () => {
-    const task = makeTask({ 
-      status: "ready", 
+    const task = makeTask({
+      status: "ready",
       branch: "",
-      git: { 
+      git: {
         branchExists: false,
         worktreeExists: false,
         lastCommit: null,
         lastCommitAt: null,
         worktreePath: null,
         dirty: false,
-      } 
+      },
     });
     const wrapper = mount(TaskCard, {
       props: { task },
@@ -90,9 +90,9 @@ describe("task card dirty state display", () => {
         plugins: [createPinia()],
       },
     });
-    
+
     // Should not have any dirty badge elements for branchless tasks
-    expect(wrapper.find('.tc-dirty').exists()).toBe(false);
+    expect(wrapper.find(".tc-dirty").exists()).toBe(false);
   });
 
   it("preserves internal dirty state detection for actionable scenarios", () => {

@@ -82,35 +82,40 @@ const agentMeta = computed(() => {
   if (props.agent === "debugger") {
     return {
       name: "Debugger Agent",
-      description: "Paste a bug, stack trace, or error and get a clear diagnosis — the root cause plus a suggested fix. Chat with him from his floating head next to Ross and the CTO.",
+      description:
+        "Paste a bug, stack trace, or error and get a clear diagnosis — the root cause plus a suggested fix. Chat with him from his floating head next to Ross and the CTO.",
       icon: "🐞",
     };
   }
   if (props.agent === "tech-debt") {
     return {
       name: "Tech Debt Agent",
-      description: "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Creates tasks in your inbox for each issue found.",
+      description:
+        "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Creates tasks in your inbox for each issue found.",
       icon: "🔧",
     };
   }
   if (props.agent === "performance") {
     return {
       name: "Performance Agent",
-      description: "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Creates tasks in your inbox for each issue found.",
+      description:
+        "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Creates tasks in your inbox for each issue found.",
       icon: "⚡",
     };
   }
   if (props.agent === "architect") {
     return {
       name: "Architect Agent",
-      description: "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Generates a detailed markdown report saved to docs/agents/Architect/ with recommendations.",
+      description:
+        "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Generates a detailed markdown report saved to docs/agents/Architect/ with recommendations.",
       icon: "🏛",
     };
   }
   if (props.agent === "design") {
     return {
       name: "Design Agent",
-      description: "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, saved as a markdown report to docs/agents/Design/.",
+      description:
+        "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, saved as a markdown report to docs/agents/Design/.",
       icon: "🎨",
     };
   }
@@ -147,12 +152,15 @@ async function saveState(): Promise<void> {
     if (state.value.lastRunAt) entry.lastRunAt = state.value.lastRunAt;
     if (state.value.cli) entry.cli = state.value.cli;
     if (state.value.model) entry.model = state.value.model;
-    await api("/api/config", JSON_OPTS("PATCH", {
-      builtInAgents: {
-        ...existing,
-        [props.agent]: entry,
-      },
-    }));
+    await api(
+      "/api/config",
+      JSON_OPTS("PATCH", {
+        builtInAgents: {
+          ...existing,
+          [props.agent]: entry,
+        },
+      }),
+    );
     const res = (await api("/api/config")) as Record<string, unknown>;
     config.data = res.config as Record<string, unknown>;
   } catch (err) {
@@ -284,9 +292,7 @@ async function runNow(): Promise<void> {
           >
             {{ isRunning ? "Running…" : "Run now" }}
           </Button>
-          <span v-if="state.lastRunAt" class="built-in-last-run">
-            Last: {{ lastRunDisplay }}
-          </span>
+          <span v-if="state.lastRunAt" class="built-in-last-run"> Last: {{ lastRunDisplay }} </span>
         </div>
       </div>
       <div v-if="message || error" class="agent-field built-in-status-field">
@@ -322,7 +328,7 @@ async function runNow(): Promise<void> {
 .built-in-last-run {
   font-size: 11px;
   color: var(--txt-faint);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 .built-in-status-field {

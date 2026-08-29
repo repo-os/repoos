@@ -103,7 +103,8 @@ const events = computed<DebugEvent[]>(() => {
       key: `log-${l.timestamp}-${l.message.slice(0, 24)}`,
       at: l.timestamp,
       kind: "log",
-      level: l.level === "error" || l.level === "fatal" ? "error" : l.level === "warn" ? "warn" : "info",
+      level:
+        l.level === "error" || l.level === "fatal" ? "error" : l.level === "warn" ? "warn" : "info",
       title: l.message,
       detail: l.context && Object.keys(l.context).length ? JSON.stringify(l.context) : undefined,
     });
@@ -206,7 +207,8 @@ function toggleExpanded(key: string): void {
         </Button>
       </div>
       <p v-if="worktreeDirty" class="debug-sync-warn">
-        This worktree has uncommitted changes — merging main may refuse or merge around your in-progress edits. Commit or stash first if you want a clean reconcile.
+        This worktree has uncommitted changes — merging main may refuse or merge around your
+        in-progress edits. Commit or stash first if you want a clean reconcile.
       </p>
     </Card>
 
@@ -216,7 +218,9 @@ function toggleExpanded(key: string): void {
         <span class="debug-live-title">{{ checkLabel(runningCheck.kind) }} running…</span>
         <span class="debug-live-elapsed">{{ runningElapsed }}</span>
       </div>
-      <pre ref="logEl" class="debug-log" @scroll="onLogScroll">{{ runningCheck.output || "…" }}</pre>
+      <pre ref="logEl" class="debug-log" @scroll="onLogScroll">{{
+        runningCheck.output || "…"
+      }}</pre>
     </Card>
 
     <div class="debug-filters">
@@ -245,20 +249,34 @@ function toggleExpanded(key: string): void {
         v-for="e in filteredEvents"
         :key="e.key"
         class="debug-event"
-        :class="[`debug-level-${e.level}`, { 'debug-event-expandable': e.kind === 'check' || e.detail }]"
+        :class="[
+          `debug-level-${e.level}`,
+          { 'debug-event-expandable': e.kind === 'check' || e.detail },
+        ]"
         @click="e.kind === 'check' || e.detail ? toggleExpanded(e.key) : undefined"
       >
         <div class="debug-event-row">
           <component
-            :is="e.kind === 'check' || e.detail ? (expanded.has(e.key) ? ChevronDown : ChevronRight) : 'span'"
+            :is="
+              e.kind === 'check' || e.detail
+                ? expanded.has(e.key)
+                  ? ChevronDown
+                  : ChevronRight
+                : 'span'
+            "
             class="debug-event-chevron"
           />
           <span class="debug-event-kind">{{ e.kind }}</span>
           <span class="debug-event-title">{{ e.title }}</span>
           <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
         </div>
-        <pre v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun" class="debug-log debug-log-inline">{{ e.checkRun.output || "(no output captured)" }}</pre>
-        <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{ e.detail }}</pre>
+        <pre
+          v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
+          class="debug-log debug-log-inline"
+          >{{ e.checkRun.output || "(no output captured)" }}</pre>
+        <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{
+          e.detail
+        }}</pre>
       </div>
     </div>
   </div>
@@ -351,7 +369,7 @@ function toggleExpanded(key: string): void {
 }
 .debug-live-elapsed {
   margin-left: auto;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 12px;
   color: var(--txt-dim);
   font-variant-numeric: tabular-nums;
@@ -363,7 +381,7 @@ function toggleExpanded(key: string): void {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.5;
   color: var(--txt-dim);

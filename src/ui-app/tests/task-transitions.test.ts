@@ -175,7 +175,15 @@ function readTaskFile(fx: Fixture) {
 
 /** Minimal ctx: `index` re-reads the fixture's task file fresh on every call,
  *  matching how the real LiveIndex reflects a just-written file. */
-function makeCtx(fx: Fixture, opts: { runnerRunning?: boolean; reviewRunning?: boolean; stop?: ReturnType<typeof vi.fn>; cancel?: ReturnType<typeof vi.fn> } = {}): RouteContext {
+function makeCtx(
+  fx: Fixture,
+  opts: {
+    runnerRunning?: boolean;
+    reviewRunning?: boolean;
+    stop?: ReturnType<typeof vi.fn>;
+    cancel?: ReturnType<typeof vi.fn>;
+  } = {},
+): RouteContext {
   return {
     config: fx.config,
     index: {
@@ -183,8 +191,14 @@ function makeCtx(fx: Fixture, opts: { runnerRunning?: boolean; reviewRunning?: b
       applyFileChange: () => {},
     } as any,
     indexReady: Promise.resolve(),
-    reviews: { isRunning: () => opts.reviewRunning ?? false, cancel: opts.cancel ?? vi.fn() } as any,
-    runner: { isRunning: () => opts.runnerRunning ?? false, stop: opts.stop ?? vi.fn(() => ({ stopped: true })) } as any,
+    reviews: {
+      isRunning: () => opts.reviewRunning ?? false,
+      cancel: opts.cancel ?? vi.fn(),
+    } as any,
+    runner: {
+      isRunning: () => opts.runnerRunning ?? false,
+      stop: opts.stop ?? vi.fn(() => ({ stopped: true })),
+    } as any,
     previews: { stop: vi.fn(async () => {}) } as any,
     cto: {} as any,
     repoos: {} as any,
@@ -197,7 +211,14 @@ function makeCtx(fx: Fixture, opts: { runnerRunning?: boolean; reviewRunning?: b
     pendingReview: new Set(),
     uiDir: null,
     reload: null,
-    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as any,
+    logger: {
+      task: () => {},
+      system: () => {},
+      agent: () => {},
+      getTaskLogs: () => [],
+      getAgentLogs: () => [],
+      getSystemLogs: () => [],
+    } as any,
     onServerStatusChange: () => {},
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
@@ -210,7 +231,9 @@ describe("PATCH /api/tasks/:id — generic status writes now gated", () => {
       const { res, fake } = makeRes();
       await patchTask(makeCtx(fx), makeReq({ status: "active" }), res, { param1: "0296" });
       expect(fake.status).toBe(400);
-      expect((fake.payload as { error: string }).error).toMatch(/requires POST \/api\/tasks\/:id\/start/);
+      expect((fake.payload as { error: string }).error).toMatch(
+        /requires POST \/api\/tasks\/:id\/start/,
+      );
       expect(readTaskFile(fx).status).toBe("ready");
     } finally {
       fx.clean();

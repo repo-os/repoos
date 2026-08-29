@@ -118,77 +118,69 @@ async function previewUrl(server: ServerHandle, id: string): Promise<string | nu
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 describe("on-demand previews (#0271 follow-up)", () => {
-  it(
-    "does not auto-launch on transition to review, launches on request, and closes when leaving review",
-    async () => {
-      const fx = makeFixture(1);
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-      try {
-        expect(await previewUrl(server, "0001")).toBeNull();
+  it("does not auto-launch on transition to review, launches on request, and closes when leaving review", async () => {
+    const fx = makeFixture(1);
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      expect(await previewUrl(server, "0001")).toBeNull();
 
-        // Transition to review -> NO auto-launch (unlike the old #0198 behavior).
-        const moved = await api(server, "PATCH", "/api/tasks/0001", { status: "review" });
-        expect(moved.status).toBe(200);
-        await sleep(500);
-        expect(await previewUrl(server, "0001")).toBeNull();
+      // Transition to review -> NO auto-launch (unlike the old #0198 behavior).
+      const moved = await api(server, "PATCH", "/api/tasks/0001", { status: "review" });
+      expect(moved.status).toBe(200);
+      await sleep(500);
+      expect(await previewUrl(server, "0001")).toBeNull();
 
-        // On-demand launch.
-        const started = await api(server, "POST", "/api/tasks/0001/preview");
-        expect(started.status).toBe(200);
-        expect(started.body.ok).toBe(true);
-        const url = started.body.url as string;
-        expect((await (await fetch(`${url}/api/health`)).json())).toMatchObject({ ok: true });
-        expect(await previewUrl(server, "0001")).toBe(url);
+      // On-demand launch.
+      const started = await api(server, "POST", "/api/tasks/0001/preview");
+      expect(started.status).toBe(200);
+      expect(started.body.ok).toBe(true);
+      const url = started.body.url as string;
+      expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
+      expect(await previewUrl(server, "0001")).toBe(url);
 
-        // Leaving the previewable states closes it automatically. The real
-        // trigger is `done`; it shares the exact `stopPreviewIfLeft` path a
-        // move to a non-previewable status takes, so we move to `ready` (the
-        // light equivalent — the PATCH `done` route is guarded behind the
-        // heavy close-out flow). review -> ready now requires the Abandon
-        // action (#0296) rather than a bare PATCH.
-        const back = await api(server, "POST", "/api/tasks/0001/abandon");
-        expect(back.status).toBe(200);
-        for (let i = 0; i < 40; i++) {
-          if (!(await previewUrl(server, "0001"))) break;
-          await sleep(250);
-        }
-        expect(await previewUrl(server, "0001")).toBeNull();
-      } finally {
-        await server.close();
-        fx.clean();
+      // Leaving the previewable states closes it automatically. The real
+      // trigger is `done`; it shares the exact `stopPreviewIfLeft` path a
+      // move to a non-previewable status takes, so we move to `ready` (the
+      // light equivalent — the PATCH `done` route is guarded behind the
+      // heavy close-out flow). review -> ready now requires the Abandon
+      // action (#0296) rather than a bare PATCH.
+      const back = await api(server, "POST", "/api/tasks/0001/abandon");
+      expect(back.status).toBe(200);
+      for (let i = 0; i < 40; i++) {
+        if (!(await previewUrl(server, "0001"))) break;
+        await sleep(250);
       }
-    },
-    90_000,
-  );
+      expect(await previewUrl(server, "0001")).toBeNull();
+    } finally {
+      await server.close();
+      fx.clean();
+    }
+  }, 90_000);
 
-  it(
-    "caps concurrent previews at 1 and evicts the previous one when a new one starts",
-    async () => {
-      const fx = makeFixture(2);
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-      try {
-        const first = await api(server, "POST", "/api/tasks/0001/preview");
-        expect(first.status).toBe(200);
-        const firstUrl = first.body.url as string;
-        expect((await (await fetch(`${firstUrl}/api/health`)).json())).toMatchObject({ ok: true });
+  it("caps concurrent previews at 1 and evicts the previous one when a new one starts", async () => {
+    const fx = makeFixture(2);
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const first = await api(server, "POST", "/api/tasks/0001/preview");
+      expect(first.status).toBe(200);
+      const firstUrl = first.body.url as string;
+      expect(await (await fetch(`${firstUrl}/api/health`)).json()).toMatchObject({ ok: true });
 
-        // Starting a second task's preview evicts the first (cap of 1, FIFO).
-        const second = await api(server, "POST", "/api/tasks/0002/preview");
-        expect(second.status).toBe(200);
-        const secondUrl = second.body.url as string;
-        expect((await (await fetch(`${secondUrl}/api/health`)).json())).toMatchObject({ ok: true });
+      // Starting a second task's preview evicts the first (cap of 1, FIFO).
+      const second = await api(server, "POST", "/api/tasks/0002/preview");
+      expect(second.status).toBe(200);
+      const secondUrl = second.body.url as string;
+      expect(await (await fetch(`${secondUrl}/api/health`)).json()).toMatchObject({ ok: true });
 
-        for (let i = 0; i < 40; i++) {
-          if (!(await previewUrl(server, "0001"))) break;
-          await sleep(250);
-        }
-        expect(await previewUrl(server, "0001")).toBeNull();
-        expect(await previewUrl(server, "0002")).toBe(secondUrl);
-      } finally {
-        await server.close();
-        fx.clean();
+      for (let i = 0; i < 40; i++) {
+        if (!(await previewUrl(server, "0001"))) break;
+        await sleep(250);
       }
-    },
-    120_000,
-  );
+      expect(await previewUrl(server, "0001")).toBeNull();
+      expect(await previewUrl(server, "0002")).toBe(secondUrl);
+    } finally {
+      await server.close();
+      fx.clean();
+    }
+  }, 120_000);
 });

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { spawn } from "node:child_process";
-import { ServeReaper, isOrphanRoot, isOrphanServeCommand, isPortListening } from "../../server/serve-reaper.js";
+import {
+  ServeReaper,
+  isOrphanRoot,
+  isOrphanServeCommand,
+  isPortListening,
+} from "../../server/serve-reaper.js";
 import { shouldReapStrayServeProcesses } from "../../server/server.js";
 import { existsSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -273,7 +278,9 @@ describe("ServeReaper", () => {
     try {
       let closed = 0;
       // interval 5ms, default 3 consecutive misses required.
-      reaper.watchRoot(() => { closed += 1; }, 5);
+      reaper.watchRoot(() => {
+        closed += 1;
+      }, 5);
 
       rmSync(tmpDir, { recursive: true, force: true });
       vi.advanceTimersByTime(5); // miss 1
@@ -296,7 +303,13 @@ describe("ServeReaper", () => {
       let closed = 0;
       // interval 5ms, needs 3 consecutive misses: a root that flickers back
       // before three checks must never tear the server down.
-      reaper.watchRoot(() => { closed += 1; }, 5, 3);
+      reaper.watchRoot(
+        () => {
+          closed += 1;
+        },
+        5,
+        3,
+      );
 
       // Flicker: each cycle the root is missing for one check, then restored —
       // the miss counter must reset before it ever reaches 3.
@@ -360,7 +373,9 @@ describe("ServeReaper", () => {
 
 describe("periodic serve reaper ownership (#0216)", () => {
   it("is disabled in preview children, which must never reap their control plane", () => {
-    expect(shouldReapStrayServeProcesses({ port: 63096 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(false);
+    expect(shouldReapStrayServeProcesses({ port: 63096 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(
+      false,
+    );
   });
 
   it("is disabled for ephemeral in-process test servers", () => {
@@ -406,8 +421,8 @@ describe("orphaned-root sweep classification (#0216)", () => {
     const sweep = new ServeReaper(join(tmpdir(), `repoos-sweep-unused-${Date.now()}`), ".repoos");
     const child = spawn(process.execPath, [join(root, "cli", "index.js"), "serve"], { cwd: root });
     try {
-      const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
-        child.once("exit", (code, signal) => resolve({ code, signal })),
+      const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
+        (resolve) => child.once("exit", (code, signal) => resolve({ code, signal })),
       );
       // Give the child time to bind its cwd before the root disappears.
       await new Promise((r) => setTimeout(r, 200));

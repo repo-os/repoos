@@ -234,7 +234,8 @@ export function patchTaskFile(
     current.pmModelOverride = patch.pmModelOverride;
   }
   if (patch.reviewAgentOverride !== undefined) {
-    if (patch.reviewAgentOverride !== current.reviewAgentOverride) changes.push("review_agent_override");
+    if (patch.reviewAgentOverride !== current.reviewAgentOverride)
+      changes.push("review_agent_override");
     current.reviewAgentOverride = patch.reviewAgentOverride;
   }
   if (patch.reviewCliOverride !== undefined) {
@@ -242,7 +243,8 @@ export function patchTaskFile(
     current.reviewCliOverride = patch.reviewCliOverride;
   }
   if (patch.reviewModelOverride !== undefined) {
-    if (patch.reviewModelOverride !== current.reviewModelOverride) changes.push("review_model_override");
+    if (patch.reviewModelOverride !== current.reviewModelOverride)
+      changes.push("review_model_override");
     current.reviewModelOverride = patch.reviewModelOverride;
   }
   if (patch.hotfix !== undefined) {
@@ -264,8 +266,7 @@ export function patchTaskFile(
   // from the UI textarea must not inject raw line breaks into the `## Activity`
   // list, which would break the single-line `- ts · entry` structure that
   // consumers (e.g. DebugPanel.parseActivity) rely on.
-  const note =
-    typeof patch.note === "string" ? patch.note.replace(/\r?\n/g, " ").trim() : "";
+  const note = typeof patch.note === "string" ? patch.note.replace(/\r?\n/g, " ").trim() : "";
   const entries: string[] = [];
   if (changes.length) entries.push(changes.join(", "));
   if (note) entries.push(`note: ${note}`);

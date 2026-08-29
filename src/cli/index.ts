@@ -45,7 +45,9 @@ process.on("warning", (warning) => {
 function readVersion(): string {
   try {
     const root = dirname(dirname(fileURLToPath(import.meta.url)));
-    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as { version?: string };
+    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as {
+      version?: string;
+    };
     if (info.version) return info.version;
   } catch {
     /* fall through */
@@ -69,8 +71,8 @@ function help(): void {
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status   ${c.dim('flags: --note "..."')}
     ${c.cyan("note")} <id> "<text>"   Append a free-form note to a task's activity log
-    ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim('flags: --title --area --priority --type --body --branch --assigned-to')}
-    ${c.cyan("new")} "<title>"        Create a task   ${c.dim('flags: --ai --type --area --priority --body')}
+    ${c.cyan("update")} <id>           Edit a task's metadata/body   ${c.dim("flags: --title --area --priority --type --body --branch --assigned-to")}
+    ${c.cyan("new")} "<title>"        Create a task   ${c.dim("flags: --ai --type --area --priority --body")}
     ${c.cyan("new-doc")} "<desc>"     Create a document from a description via PM agent
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("gc")} [--yes|--dry-run] Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)
@@ -104,12 +106,25 @@ function main(): void {
   }
 
   // Staleness check — skip for version/help since those read no source.
-  const skipCheck = new Set(["version", "--version", "-v", undefined, "check", "help", "--help", "-h", "upgrade"]);
+  const skipCheck = new Set([
+    "version",
+    "--version",
+    "-v",
+    undefined,
+    "check",
+    "help",
+    "--help",
+    "-h",
+    "upgrade",
+  ]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
     if (result.stale) {
       const config = loadConfig();
-      const strict = config.strictBuild || process.env.REPOOS_STRICT_BUILD === "1" || process.argv.includes("--strict-build");
+      const strict =
+        config.strictBuild ||
+        process.env.REPOOS_STRICT_BUILD === "1" ||
+        process.argv.includes("--strict-build");
       if (strict) {
         console.error(c.red("  ✗ ") + result.message);
         process.exit(1);

@@ -49,9 +49,7 @@ describe("ensureWorktree", () => {
       expect(res.created).toBe(true);
       expect(res.path).toBe(realpathSync(join(worktreesDir(root), "feat/one")));
       expect(git(root, ["branch", "--show-current"])).toBe(before);
-      expect(
-        git(root, ["worktree", "list", "--porcelain"]),
-      ).toContain(res.path);
+      expect(git(root, ["worktree", "list", "--porcelain"])).toContain(res.path);
     } finally {
       clean();
     }
@@ -83,9 +81,7 @@ describe("ensureWorktree", () => {
 
       expect(again.created).toBe(false);
       expect(again.path).toBe(created.path);
-      expect(
-        git(root, ["worktree", "list"]).split("\n").filter(Boolean),
-      ).toHaveLength(2);
+      expect(git(root, ["worktree", "list"]).split("\n").filter(Boolean)).toHaveLength(2);
     } finally {
       clean();
     }
@@ -475,7 +471,12 @@ describe("mergeBranch conflict reporting (#0271)", () => {
         "---\nid: '0120'\nstatus: done\n---\nbody\nupdated on main\n",
         "main: task bookkeeping",
       );
-      commitFile(root, "work/0099-other.md", "---\nid: '0099'\n---\nother\n", "main: concurrent edit");
+      commitFile(
+        root,
+        "work/0099-other.md",
+        "---\nid: '0099'\n---\nother\n",
+        "main: concurrent edit",
+      );
 
       // Candidate reset to main, mirroring validateCandidate's syncCandidate.
       const candidate = ensureWorktree(root, "repoos/integrate/0120");
@@ -544,4 +545,3 @@ describe("mergeBranch conflict reporting (#0271)", () => {
     }
   });
 });
-

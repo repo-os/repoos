@@ -38,7 +38,9 @@ const docHtml = computed(() => renderMarkdown(docContent.value));
 const skillHtml = computed(() => renderMarkdown(skillContent.value));
 
 /** The doc list shaped as a tree, then flattened to the rows to render. */
-const flatDocTree = computed(() => flattenDocTree(buildDocTree(docList.value), expandedNodes.value));
+const flatDocTree = computed(() =>
+  flattenDocTree(buildDocTree(docList.value), expandedNodes.value),
+);
 
 function toggleNode(key: string): void {
   if (expandedNodes.value.has(key)) {
@@ -122,7 +124,9 @@ watch(
 
     <div class="ctx-tabs">
       <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="tab = 'docs'">Docs</button>
-      <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="tab = 'skills'">Skills</button>
+      <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="tab = 'skills'">
+        Skills
+      </button>
       <Button
         v-if="tab === 'docs'"
         variant="ghost"

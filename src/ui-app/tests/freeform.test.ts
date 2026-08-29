@@ -197,7 +197,7 @@ describe("parseGeneratedTask with kiro-rendered output (0155)", () => {
     // The horizontal rule is rendered as box-drawing characters instead of literal ---.
     const out = [
       "> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "id: \"0001\"",
+      'id: "0001"',
       "title: Add file tree navigation and refresh button to context page",
       "type: feature",
       "priority: p2",

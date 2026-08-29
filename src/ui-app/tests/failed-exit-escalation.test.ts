@@ -131,7 +131,10 @@ describe("failed-exit escalation to needs_input", () => {
     await waitFor(() => !runner.isRunning(fx.task.id), "non-clean exit");
     // cleanup() writes synchronously on process close, but give the event
     // loop one more tick in case of a race with the "close" listener.
-    await waitFor(() => readFileSync(fx.taskFile, "utf8").includes("needs_input"), "escalation written");
+    await waitFor(
+      () => readFileSync(fx.taskFile, "utf8").includes("needs_input"),
+      "escalation written",
+    );
     const body = readFileSync(fx.taskFile, "utf8");
     expect(body).toMatch(/needs_input:\s*true/);
     expect(body).toContain("agent exited with an error");
@@ -151,7 +154,10 @@ describe("failed-exit escalation to needs_input", () => {
     });
     runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
     await waitFor(() => !runner.isRunning(fx.task.id), "first non-clean exit");
-    await waitFor(() => readFileSync(fx.taskFile, "utf8").includes("dev_error_count"), "first escalation written");
+    await waitFor(
+      () => readFileSync(fx.taskFile, "utf8").includes("dev_error_count"),
+      "first escalation written",
+    );
     expect(readFileSync(fx.taskFile, "utf8")).toMatch(/dev_error_count:\s*1/);
 
     // needs_input is already true — the SECOND error must still increment

@@ -96,9 +96,8 @@ describe("feature releases", () => {
       // ISO timestamps are second-precision, so same-second releases in a
       // fast test can collide — assert on the write itself instead: a SECOND
       // release:success entry actually landed in the append-only log.
-      const releaseCount = (
-        readFileSync(pending.absPath, "utf8").match(/release:success/g) ?? []
-      ).length;
+      const releaseCount = (readFileSync(pending.absPath, "utf8").match(/release:success/g) ?? [])
+        .length;
       expect(releaseCount).toBe(2);
     } finally {
       rmSync(root, { recursive: true, force: true });

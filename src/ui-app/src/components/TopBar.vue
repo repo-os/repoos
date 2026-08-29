@@ -26,18 +26,36 @@ function toggleTheme(): void {
 }
 
 const PALETTE = [
-  "#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9",
-  "#BAE1FF", "#D4BAFF", "#FFBAE1", "#BAFFED",
-  "#FFC8BA", "#E8BAFF", "#BAF2FF", "#C9FFBA",
+  "#FFB3BA",
+  "#FFDFBA",
+  "#FFFFBA",
+  "#BAFFC9",
+  "#BAE1FF",
+  "#D4BAFF",
+  "#FFBAE1",
+  "#BAFFED",
+  "#FFC8BA",
+  "#E8BAFF",
+  "#BAF2FF",
+  "#C9FFBA",
 ];
 
 // 12 dark-mode pastels, paired by hue with the light palette above: the same
 // families, darkened/muted so they read as soft pastels against dark
 // backgrounds (and the favicon/PWA icon they drive).
 const DARK_PALETTE = [
-  "#E07A8A", "#E8A87C", "#E4C86B", "#7FD9A0",
-  "#6FB3E0", "#9E8FD0", "#D98BB0", "#6FD4C4",
-  "#E0946F", "#B58FD0", "#7FC4E0", "#8FCE76",
+  "#E07A8A",
+  "#E8A87C",
+  "#E4C86B",
+  "#7FD9A0",
+  "#6FB3E0",
+  "#9E8FD0",
+  "#D98BB0",
+  "#6FD4C4",
+  "#E0946F",
+  "#B58FD0",
+  "#7FC4E0",
+  "#8FCE76",
 ];
 
 const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
@@ -97,7 +115,9 @@ function applyManifestColor(color: string | null): void {
     link.rel = "manifest";
     document.head.appendChild(link);
   }
-  link.href = color ? `/manifest.webmanifest?c=${encodeURIComponent(color)}` : "/manifest.webmanifest";
+  link.href = color
+    ? `/manifest.webmanifest?c=${encodeURIComponent(color)}`
+    : "/manifest.webmanifest";
 }
 
 /** Apply the chosen color to the favicon + PWA manifest (null clears both). */
@@ -172,7 +192,9 @@ function onUserMenuKeyDown(e: KeyboardEvent): void {
   if (e.key !== "Tab") return;
   const popover = userMenuPopover.value;
   if (!popover) return;
-  const focusable = popover.querySelectorAll<HTMLElement>("button, [href], [tabindex]:not([tabindex='-1'])");
+  const focusable = popover.querySelectorAll<HTMLElement>(
+    "button, [href], [tabindex]:not([tabindex='-1'])",
+  );
   if (focusable.length === 0) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
@@ -238,15 +260,35 @@ watch(repoName, () => {
     <span v-if="isPreviewBuild" class="preview-build-banner">Preview Build</span>
     <div class="logo-mark">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" />
-        <path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="var(--violet)" stroke-width="1.5" stroke-linecap="round" />
+        <path
+          d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
+          stroke="var(--cyan)"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M12 7v10M8 9.5v5M16 9.5v5"
+          stroke="var(--violet)"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
       </svg>
     </div>
     <div class="brand hidden sm:inline">RepoOS<small>repo is the os</small></div>
     <div v-if="health" class="repo-pill-wrapper">
-      <button class="repo-pill" type="button" :aria-expanded="popoverOpen" :style="pillStyle" @click="togglePopover">
+      <button
+        class="repo-pill"
+        type="button"
+        :aria-expanded="popoverOpen"
+        :style="pillStyle"
+        @click="togglePopover"
+      >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-          <path d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.8" />
+          <path
+            d="M6 3v12a3 3 0 003 3h6M6 3a2 2 0 100 4 2 2 0 000-4zM18 18a2 2 0 100-4 2 2 0 000 4z"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
         </svg>
         <span class="mono" :style="pillTextStyle">{{ repoName }}</span>
       </button>
@@ -265,9 +307,7 @@ watch(repoName, () => {
             @click="selectColor(color)"
           />
         </div>
-        <button type="button" class="repo-color-default" @click="clearColor">
-          Default
-        </button>
+        <button type="button" class="repo-color-default" @click="clearColor">Default</button>
       </div>
     </div>
     <div class="spacer"></div>
@@ -305,8 +345,17 @@ watch(repoName, () => {
       >
         <User :size="15" :stroke-width="1.8" />
       </button>
-      <div v-if="userMenuOpen" ref="userMenuPopover" class="user-menu-popover" role="menu" tabindex="-1" @keydown="onUserMenuKeyDown">
-        <span class="user-menu-email mono" role="menuitem" :title="auth.email ?? undefined">{{ auth.email }}</span>
+      <div
+        v-if="userMenuOpen"
+        ref="userMenuPopover"
+        class="user-menu-popover"
+        role="menu"
+        tabindex="-1"
+        @keydown="onUserMenuKeyDown"
+      >
+        <span class="user-menu-email mono" role="menuitem" :title="auth.email ?? undefined">{{
+          auth.email
+        }}</span>
         <button class="user-menu-logout" type="button" role="menuitem" @click="auth.logout()">
           <LogOut :size="13" :stroke-width="1.8" />
           <span>Log out</span>
@@ -354,7 +403,9 @@ watch(repoName, () => {
   border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
-  transition: border-color 0.15s, transform 0.1s;
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
 }
 .repo-color-swatch:hover {
   transform: scale(1.15);
@@ -393,7 +444,7 @@ watch(repoName, () => {
   background: var(--panel);
   color: var(--txt-dim);
   cursor: pointer;
-  transition: .15s;
+  transition: 0.15s;
 }
 .user-menu-trigger:hover {
   color: var(--txt);
@@ -439,7 +490,7 @@ watch(repoName, () => {
   border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
-  transition: .15s;
+  transition: 0.15s;
 }
 .user-menu-logout:hover {
   background: var(--red-tint);

@@ -27,7 +27,12 @@ function safeConfigForBrowser(config: Record<string, unknown>): Record<string, u
     apiKey?: string;
   };
   const whisperEnabled = whisper.provider !== "none" && !!whisper.apiKey;
-  const { whisper: _ignoredWhisper, theme: _ignoredTheme, uiTheme: _ignoredUiTheme, ...rest } = config;
+  const {
+    whisper: _ignoredWhisper,
+    theme: _ignoredTheme,
+    uiTheme: _ignoredUiTheme,
+    ...rest
+  } = config;
   // Strip auth secrets
   const authRaw = rest.auth as Record<string, unknown> | undefined;
   let safeAuth: Record<string, unknown> | undefined;
@@ -147,7 +152,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   // git-tracked. They're rejected here even if a client sends them, and must
   // be set via REPOOS_RESEND_API_KEY / REPOOS_GOOGLE_CLIENT_SECRET in .env
   // instead (see docs/native-auth.md and the tracked .env.example).
-  if (body["auth.emailProvider.apiKey"] !== undefined || body["auth.google.clientSecret"] !== undefined) {
+  if (
+    body["auth.emailProvider.apiKey"] !== undefined ||
+    body["auth.google.clientSecret"] !== undefined
+  ) {
     return json(res, 400, {
       error:
         "auth.emailProvider.apiKey and auth.google.clientSecret can't be set here — repoos.toml is git-tracked. " +
@@ -177,11 +185,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     patch["auth.emailProvider.type"] = "resend";
   }
   if (body["auth.emailProvider.fromAddress"] !== undefined) {
-    const val = typeof body["auth.emailProvider.fromAddress"] === "string" ? body["auth.emailProvider.fromAddress"].trim() : "";
+    const val =
+      typeof body["auth.emailProvider.fromAddress"] === "string"
+        ? body["auth.emailProvider.fromAddress"].trim()
+        : "";
     if (val) patch["auth.emailProvider.fromAddress"] = val;
   }
   if (body["auth.google.clientId"] !== undefined) {
-    const val = typeof body["auth.google.clientId"] === "string" ? body["auth.google.clientId"].trim() : "";
+    const val =
+      typeof body["auth.google.clientId"] === "string" ? body["auth.google.clientId"].trim() : "";
     if (val) patch["auth.google.clientId"] = val;
   }
 
@@ -190,12 +202,16 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   // request body — see the rejection above.
   const enablingAuth = patch["auth.enabled"] === true;
   if (enablingAuth) {
-    const hasEmailProvider =
-      !!(repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress);
-    const hasGoogle = !!(repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret);
+    const hasEmailProvider = !!(
+      repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress
+    );
+    const hasGoogle = !!(
+      repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret
+    );
     if (!hasEmailProvider && !hasGoogle) {
       return json(res, 400, {
-        error: "Cannot enable auth: configure at least one login provider (email OTP or Google OAuth) first",
+        error:
+          "Cannot enable auth: configure at least one login provider (email OTP or Google OAuth) first",
       });
     }
   }
@@ -234,9 +250,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       // in the runtime config, so persist them as TOML numeric syntax rather
       // than `maxActiveTasks = "5"`, which loadConfig intentionally rejects.
       patch[field.key] =
-        field.key === "maxActiveTasks" || field.key === "maxConcurrentAgents"
-          ? Number(val)
-          : val;
+        field.key === "maxActiveTasks" || field.key === "maxConcurrentAgents" ? Number(val) : val;
     } else if (field.type === "array") {
       if (!Array.isArray(val) || !val.length) {
         return json(res, 400, { error: `${field.label} must be a non-empty array` });
@@ -252,8 +266,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     }
   }
 
-  const tunnelEnabled =
-    typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
+  const tunnelEnabled = typeof patch.tunnelEnabled === "boolean" ? patch.tunnelEnabled : undefined;
   delete patch.tunnelEnabled;
 
   // An empty `whisper.apiKey` alone means "leave the key as-is" — a no-op
@@ -264,7 +277,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     bodyKeys[0] === "whisper.apiKey" &&
     (typeof body["whisper.apiKey"] !== "string" || !body["whisper.apiKey"].trim());
 
-  if (Object.keys(patch).length === 0 && tunnelEnabled === undefined && !builtInAgentsChanged && !authEnabledChanged && !onlyEmptyWhisperKey) {
+  if (
+    Object.keys(patch).length === 0 &&
+    tunnelEnabled === undefined &&
+    !builtInAgentsChanged &&
+    !authEnabledChanged &&
+    !onlyEmptyWhisperKey
+  ) {
     return json(res, 400, { error: "No valid fields to update" });
   }
 

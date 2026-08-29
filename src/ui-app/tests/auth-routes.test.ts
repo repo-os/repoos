@@ -36,7 +36,11 @@ beforeEach(() => {
 afterEach(() => {
   store.close();
   resetAuthStoreInstance();
-  try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  try {
+    rmSync(tmpDir, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
 });
 
 // ---------------------------------------------------------------------------

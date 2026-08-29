@@ -45,7 +45,10 @@ export function resolveBun(): string | null {
   try {
     const r = spawnSync(finder, ["bun"], { encoding: "utf8", timeout: 4000 });
     if (r.status !== 0) return null;
-    const first = r.stdout.split(/\r?\n/).map((s) => s.trim()).find(Boolean);
+    const first = r.stdout
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .find(Boolean);
     return first && existsSync(first) ? first : null;
   } catch {
     return null;
@@ -115,7 +118,9 @@ export function reexecServeUnderBunIfRequested(): boolean {
   const env: NodeJS.ProcessEnv = { ...process.env, REPOOS_RUNTIME_REEXEC: "1" };
 
   // Preferred: true exec — same PID, no wrapper, signals land directly.
-  const execve = (process as { execve?: (f: string, a: readonly string[], e: NodeJS.ProcessEnv) => never }).execve;
+  const execve = (
+    process as { execve?: (f: string, a: readonly string[], e: NodeJS.ProcessEnv) => never }
+  ).execve;
   if (typeof execve === "function") {
     try {
       execve(bun, [bun, ...argv], env);
@@ -154,7 +159,7 @@ export function reexecServeUnderBunIfRequested(): boolean {
     process.exit(1);
   });
   child.on("exit", (code, signal) => {
-    process.exit(signal ? 1 : code ?? 0);
+    process.exit(signal ? 1 : (code ?? 0));
   });
 
   // The live child handle and signal listeners keep this parent alive; it

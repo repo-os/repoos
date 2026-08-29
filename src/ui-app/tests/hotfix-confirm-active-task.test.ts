@@ -59,9 +59,7 @@ describe("Hotfix confirm dialog (#0295-adjacent latent bug)", () => {
     await flush();
     expect(ui.active).toBeNull();
 
-    const onBranch = wrapper
-      .findAll("button")
-      .find((b) => b.text().includes("Hotfix on branch"));
+    const onBranch = wrapper.findAll("button").find((b) => b.text().includes("Hotfix on branch"));
     expect(onBranch, "dialog target button present").toBeTruthy();
     await onBranch!.trigger("click");
     await flush();

@@ -21,13 +21,18 @@ export interface CreateDocumentResult {
  * Callback for running a prompt via PM agent (e.g. from server/agents.ts).
  * Takes description, returns { path, content } or throws.
  */
-export type FreeformDocumentGenerator = (description: string) => Promise<{ path: string; content: string }>;
+export type FreeformDocumentGenerator = (
+  description: string,
+) => Promise<{ path: string; content: string }>;
 
 /**
  * Validates a document path to ensure it stays within docsDir.
  * Rejects absolute paths and paths with ".." traversal.
  */
-export function validateDocPath(config: RepoOSConfig, path: string): { valid: boolean; reason?: string } {
+export function validateDocPath(
+  config: RepoOSConfig,
+  path: string,
+): { valid: boolean; reason?: string } {
   if (!path) return { valid: false, reason: "path is required" };
 
   if (path.includes("..") || path.startsWith("/")) {
@@ -63,7 +68,10 @@ export function skillSlug(name: string): string {
  * slug of lowercase alphanumerics and dashes. Skills live in their own dir, not
  * under docsDir, so this is a separate check from validateDocPath.
  */
-export function validateSkillPath(config: RepoOSConfig, path: string): { valid: boolean; reason?: string } {
+export function validateSkillPath(
+  config: RepoOSConfig,
+  path: string,
+): { valid: boolean; reason?: string } {
   if (!path) return { valid: false, reason: "path is required" };
   if (path.includes("..") || path.startsWith("/")) {
     return { valid: false, reason: "invalid path: no .. or absolute paths" };
@@ -85,7 +93,13 @@ function yamlQuote(v: string): string {
 
 /** Assemble a SKILL.md body with the required `name` / `description` frontmatter. */
 export function buildSkillMarkdown(name: string, description: string, body: string): string {
-  const fm = ["---", `name: ${yamlQuote(name)}`, `description: ${yamlQuote(description)}`, "---", ""].join("\n");
+  const fm = [
+    "---",
+    `name: ${yamlQuote(name)}`,
+    `description: ${yamlQuote(description)}`,
+    "---",
+    "",
+  ].join("\n");
   return `${fm}\n${body.trim()}\n`;
 }
 

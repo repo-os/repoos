@@ -12,13 +12,7 @@
  */
 import { spawn, spawnSync, execFileSync, type ChildProcess } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
@@ -223,9 +217,7 @@ function isPreviewProcess(pid: number, port: number): boolean {
       timeout: 4000,
     });
     return (
-      /cli[/\\]index\.(js|ts)/.test(cmd) &&
-      cmd.includes("serve") &&
-      cmd.includes(`--port ${port}`)
+      /cli[/\\]index\.(js|ts)/.test(cmd) && cmd.includes("serve") && cmd.includes(`--port ${port}`)
     );
   } catch {
     return false;
@@ -280,7 +272,8 @@ export class PreviewManager {
     if (process.env[CHILD_ENV] === "1") {
       return {
         ok: false,
-        error: "Preview servers are read-only; only the main RepoOS control plane can start previews",
+        error:
+          "Preview servers are read-only; only the main RepoOS control plane can start previews",
       };
     }
     if (!task.id) {
@@ -333,7 +326,11 @@ export class PreviewManager {
     try {
       port = await reservePort();
     } catch {
-      this.logLifecycle("start-failed", task.id, "could not allocate an ephemeral port for the preview");
+      this.logLifecycle(
+        "start-failed",
+        task.id,
+        "could not allocate an ephemeral port for the preview",
+      );
       return { ok: false, error: "could not allocate an ephemeral port for the preview" };
     }
 
@@ -467,15 +464,11 @@ export class PreviewManager {
     }
     let child: ChildProcess;
     try {
-      child = spawn(
-        process.execPath,
-        [entry, "serve", "--port", String(port), "--host", HOST],
-        {
-          cwd: root,
-          stdio: ["ignore", "ignore", "pipe"],
-          env: { ...process.env, [CHILD_ENV]: "1" },
-        },
-      );
+      child = spawn(process.execPath, [entry, "serve", "--port", String(port), "--host", HOST], {
+        cwd: root,
+        stdio: ["ignore", "ignore", "pipe"],
+        env: { ...process.env, [CHILD_ENV]: "1" },
+      });
     } catch (err) {
       return { ok: false, error: `could not launch preview server: ${(err as Error).message}` };
     }

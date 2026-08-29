@@ -90,25 +90,39 @@ describe("searchAll", () => {
 
   it("matches tasks by id, title, and body, case-insensitively", () => {
     const byTitle = searchAll("search bar", { tasks, docs, fields });
-    expect(byTitle.filter((r) => r.kind === "task").map((r) => r.title)).toEqual(["Search bar in the top bar"]);
+    expect(byTitle.filter((r) => r.kind === "task").map((r) => r.title)).toEqual([
+      "Search bar in the top bar",
+    ]);
 
     const byId = searchAll("0008", { tasks, docs, fields });
     expect(byId.filter((r) => r.kind === "task").map((r) => r.title)).toEqual(["Theme picker"]);
 
     const byBody = searchAll("GLOBAL SEARCH", { tasks, docs, fields });
-    expect(byBody.filter((r) => r.kind === "task").map((r) => r.title)).toEqual(["Search bar in the top bar"]);
+    expect(byBody.filter((r) => r.kind === "task").map((r) => r.title)).toEqual([
+      "Search bar in the top bar",
+    ]);
   });
 
   it("matches docs by title and path", () => {
     const hits = searchAll("architecture", { tasks, docs, fields });
     expect(hits.filter((r) => r.kind === "doc").map((r) => r.title)).toEqual(["Architecture"]);
-    expect(searchAll("docs/arch", { tasks, docs, fields }).filter((r) => r.kind === "doc").length).toBeGreaterThan(0);
+    expect(
+      searchAll("docs/arch", { tasks, docs, fields }).filter((r) => r.kind === "doc").length,
+    ).toBeGreaterThan(0);
   });
 
   it("searches doc contents and provides snippets", () => {
     const docsWithContent = [
-      { path: "AGENTS.md", title: "Agent instructions", content: "This document contains important agent rules and instructions for deployment." },
-      { path: "docs/architecture.md", title: "Architecture", content: "The system uses a modular architecture with components." },
+      {
+        path: "AGENTS.md",
+        title: "Agent instructions",
+        content: "This document contains important agent rules and instructions for deployment.",
+      },
+      {
+        path: "docs/architecture.md",
+        title: "Architecture",
+        content: "The system uses a modular architecture with components.",
+      },
     ];
     const hits = searchAll("deployment", { tasks: [], docs: docsWithContent, fields: [] });
     const doc = hits.find((r) => r.kind === "doc");
@@ -151,7 +165,9 @@ describe("searchAll", () => {
   });
 
   it("caps per kind", () => {
-    const many = Array.from({ length: RESULT_CAP + 5 }, (_, i) => makeTask({ id: `00${i}`, title: "theme task", body: "" }));
+    const many = Array.from({ length: RESULT_CAP + 5 }, (_, i) =>
+      makeTask({ id: `00${i}`, title: "theme task", body: "" }),
+    );
     const hits = searchAll("theme task", { tasks: many, docs: [], fields: [] });
     expect(hits.filter((r) => r.kind === "task")).toHaveLength(RESULT_CAP);
   });
@@ -202,7 +218,8 @@ function docSnippet(query: string, content: string): string | undefined {
     fields: [],
   });
   const doc = hits.find((r) => r.kind === "doc" && r.path === "test.md");
-  if (!doc || doc.kind !== "doc" || typeof doc.snippet === "string" || !doc.snippet) return undefined;
+  if (!doc || doc.kind !== "doc" || typeof doc.snippet === "string" || !doc.snippet)
+    return undefined;
   return doc.snippet.html;
 }
 

@@ -203,27 +203,26 @@ export interface BoardIndex {
  * lines from claude/qwen/codex and pre-JSON sessions); entries derived from
  * opencode's `--format json` stream carry a `type` discriminator.
  */
-export type AgentOutputEntry =
-  (
-    | { type: "text"; text: string }
-    | { type: "human"; text: string }
-    | {
-        type: "tool";
-        tool: string;
-        input?: string;
-        output?: string;
-        state?: string;
-      }
-    | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
-    | { type: "sys"; d: string }
-    | { s: "out" | "err" | "sys"; d: string }
-  ) & {
-    /**
-     * ISO timestamp of when the entry was created (0258). Populated by the
-     * server on every entry it creates; absent on persisted legacy transcripts.
-     */
-    at?: string;
-  };
+export type AgentOutputEntry = (
+  | { type: "text"; text: string }
+  | { type: "human"; text: string }
+  | {
+      type: "tool";
+      tool: string;
+      input?: string;
+      output?: string;
+      state?: string;
+    }
+  | { type: "step"; kind: "start" | "finish"; reason?: string; at?: string }
+  | { type: "sys"; d: string }
+  | { s: "out" | "err" | "sys"; d: string }
+) & {
+  /**
+   * ISO timestamp of when the entry was created (0258). Populated by the
+   * server on every entry it creates; absent on persisted legacy transcripts.
+   */
+  at?: string;
+};
 
 /**
 /**
@@ -429,9 +428,23 @@ export type RepoEvent =
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
   | { type: "test-run.done"; code: number | null; at: string }
-  | { type: "task-check.started"; taskId: string; checkId: string; checkKind: TaskCheckKind; at: string }
+  | {
+      type: "task-check.started";
+      taskId: string;
+      checkId: string;
+      checkKind: TaskCheckKind;
+      at: string;
+    }
   | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
-  | { type: "task-check.done"; taskId: string; checkId: string; code: number | null; passed: boolean; durationMs: number; at: string };
+  | {
+      type: "task-check.done";
+      taskId: string;
+      checkId: string;
+      code: number | null;
+      passed: boolean;
+      durationMs: number;
+      at: string;
+    };
 
 /** A server-run `repoos check` for a task (0310 Debug tab) — either the
  *  handoff-finalize check or the MTD merge-gate check. */

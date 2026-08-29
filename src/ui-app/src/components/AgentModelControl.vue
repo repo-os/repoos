@@ -25,12 +25,7 @@ const modelLabel = computed(() => (props.model ? labelForModel(props.model) : "M
 </script>
 
 <template>
-  <button
-    type="button"
-    class="am-control"
-    :disabled="disabled"
-    @click="modalOpen = true"
-  >
+  <button type="button" class="am-control" :disabled="disabled" @click="modalOpen = true">
     <Settings2 class="size-3.5 am-control-icon" />
     <span class="am-control-label">{{ cliLabel }} + {{ modelLabel }}</span>
   </button>

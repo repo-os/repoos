@@ -8,15 +8,16 @@ createApp(App).use(createPinia()).use(router).mount("#app");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
+    navigator.serviceWorker
+      .register("/sw.js")
       .then((registration) => {
-      registration.update();
-      const refresh = () => {
-        if (document.visibilityState === "visible") registration.update();
-      };
-      document.addEventListener("visibilitychange", refresh);
-      window.addEventListener("focus", refresh);
-    })
+        registration.update();
+        const refresh = () => {
+          if (document.visibilityState === "visible") registration.update();
+        };
+        document.addEventListener("visibilitychange", refresh);
+        window.addEventListener("focus", refresh);
+      })
       .catch(() => {
         /* offline shell unavailable — app still works online */
       });

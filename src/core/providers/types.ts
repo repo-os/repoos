@@ -66,7 +66,9 @@ export function oneLineReason(description: string | undefined | null, fallback: 
 export async function parseJsonResponse<T>(res: Response, providerLabel: string): Promise<T> {
   const contentType = res.headers?.get("content-type") ?? "";
   if (contentType && !contentType.includes("json")) {
-    throw new Error(`${providerLabel} returned a non-JSON response (${contentType || "unknown content type"})`);
+    throw new Error(
+      `${providerLabel} returned a non-JSON response (${contentType || "unknown content type"})`,
+    );
   }
   try {
     return (await res.json()) as T;

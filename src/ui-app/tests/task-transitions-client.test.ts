@@ -5,7 +5,12 @@
  * instead of only failing after the fact in `onDrop`.
  */
 import { describe, expect, it } from "vitest";
-import { isValidBoardMove, boardMoveRejectionReason, GENERIC_PATCH_TARGETS, DRAG_ACTION_TARGETS } from "../src/lib/taskTransitions";
+import {
+  isValidBoardMove,
+  boardMoveRejectionReason,
+  GENERIC_PATCH_TARGETS,
+  DRAG_ACTION_TARGETS,
+} from "../src/lib/taskTransitions";
 
 describe("isValidBoardMove", () => {
   it("rejects dropping a card back on its own column", () => {

@@ -8,7 +8,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, SupervisorConfig, Task } from "../../core/types.js";
 import type { RepoEvent } from "../../server/live-index.js";
-import { AgentSupervisor, DEFAULT_SUPERVISOR_CONFIG, SupervisorConfig_ } from "../../server/supervisor.js";
+import {
+  AgentSupervisor,
+  DEFAULT_SUPERVISOR_CONFIG,
+  SupervisorConfig_,
+} from "../../server/supervisor.js";
 import { LiveIndex } from "../../server/live-index.js";
 import { createRepoOS } from "../../core/repoos.js";
 

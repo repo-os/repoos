@@ -36,8 +36,7 @@ function boardRepoOS() {
 
 function assigneeLabel(t: Task): string {
   if (t.assignee === "ai") return c.magenta("◆ AI");
-  if (t.assignee === "human")
-    return c.cyan("◇ " + (t.assignedTo || "human"));
+  if (t.assignee === "human") return c.cyan("◇ " + (t.assignedTo || "human"));
   return c.dim("· unassigned");
 }
 
@@ -54,9 +53,7 @@ export function cmdList(statusArg?: string): void {
 
   if (idx.taskCount === 0) {
     console.log(
-      c.dim("\n  No tasks yet. Create one with ") +
-        c.cyan('repoos new "Title"') +
-        c.dim(".\n"),
+      c.dim("\n  No tasks yet. Create one with ") + c.cyan('repoos new "Title"') + c.dim(".\n"),
     );
     return;
   }
@@ -67,21 +64,13 @@ export function cmdList(statusArg?: string): void {
       ? [statusArg as Status]
       : STATUSES.filter((s) => s !== "draft");
 
-  console.log(
-    c.bold("\n  " + idx.root.split("/").pop()) +
-      c.dim(`  ·  ${idx.taskCount} tasks\n`),
-  );
+  console.log(c.bold("\n  " + idx.root.split("/").pop()) + c.dim(`  ·  ${idx.taskCount} tasks\n`));
 
   for (const status of cols) {
     const tasks = idx.tasks.filter((t) => t.status === status);
     if (tasks.length === 0 && statusArg === undefined) continue;
     const sc = statusColor(status);
-    console.log(
-      "  " +
-        sc("● ") +
-        c.bold(status.toUpperCase()) +
-        c.dim(`  (${tasks.length})`),
-    );
+    console.log("  " + sc("● ") + c.bold(status.toUpperCase()) + c.dim(`  (${tasks.length})`));
     for (const t of tasks) {
       const line =
         "    " +
@@ -120,11 +109,8 @@ export function cmdShow(id?: string): void {
       "  " +
       priorityColor(t.priority)(t.priority),
   );
-  console.log(
-    c.dim("  ─────────────────────────────────────────────────────────"),
-  );
-  const row = (k: string, v: string) =>
-    console.log("  " + c.dim(pad(k, 12)) + v);
+  console.log(c.dim("  ─────────────────────────────────────────────────────────"));
+  const row = (k: string, v: string) => console.log("  " + c.dim(pad(k, 12)) + v);
   row("id", t.id);
   row("type", t.type);
   row("area", t.area);
@@ -135,9 +121,7 @@ export function cmdShow(id?: string): void {
     row("last commit", c.dim(t.git.lastCommit + "  " + (t.git.lastCommitAt ?? "")));
   if (t.created_at) row("created", t.created_at);
   if (t.updated_at) row("updated", t.updated_at);
-  console.log(
-    c.dim("  ─────────────────────────────────────────────────────────\n"),
-  );
+  console.log(c.dim("  ─────────────────────────────────────────────────────────\n"));
   // print body, lightly indented
   for (const line of t.body.split("\n")) console.log("  " + line);
   console.log("");
@@ -166,7 +150,7 @@ export function cmdShow(id?: string): void {
 export function cmdMv(id?: string, status?: string, note?: string): void {
   if (!id || !status) {
     console.error(
-      c.red("  Usage: repoos mv <id> <status> [--note \"...\"]") +
+      c.red('  Usage: repoos mv <id> <status> [--note "..."]') +
         c.dim(`   (${STATUSES.join(" | ")})`),
     );
     process.exitCode = 1;
@@ -181,11 +165,7 @@ export function cmdMv(id?: string, status?: string, note?: string): void {
   try {
     const t = repoos.updateStatus(id, status as Status, note);
     console.log(
-      "  " +
-        c.green("moved ") +
-        c.dim("#" + t.id) +
-        " → " +
-        statusColor(t.status)(t.status),
+      "  " + c.green("moved ") + c.dim("#" + t.id) + " → " + statusColor(t.status)(t.status),
     );
     if (note && note.trim()) {
       console.log("  " + c.dim("note: ") + note.trim());
@@ -293,9 +273,7 @@ export function cmdUpdate(args: string[]): void {
   }
   try {
     const updated = patchTaskFile(repoos.config, task.absPath, patch);
-    console.log(
-      "  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title,
-    );
+    console.log("  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title);
   } catch (e) {
     console.error(c.red("  " + (e as Error).message));
     process.exitCode = 1;
@@ -353,23 +331,13 @@ export function cmdNew(args: string[]): void {
     body: (flags.body as string) || undefined,
   });
   console.log(
-    "  " +
-      c.green("created ") +
-      c.dim("#" + t.id) +
-      "  " +
-      t.title +
-      c.dim("  → " + t.path),
+    "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
   );
   const res = repoos.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
   if (res.ok) {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
   } else {
-    console.log(
-      "  " +
-        c.yellow("warning: ") +
-        c.dim("file left uncommitted — ") +
-        res.reason,
-    );
+    console.log("  " + c.yellow("warning: ") + c.dim("file left uncommitted — ") + res.reason);
   }
 }
 
@@ -387,8 +355,6 @@ export function cmdIndex(args: string[]): void {
       idx.taskCount +
       c.dim(" tasks  ·  cache → " + repoos.config.cacheDir + "/index.json"),
   );
-  const parts = STATUSES.map(
-    (s) => statusColor(s)(s) + c.dim(" " + idx.counts[s]),
-  );
+  const parts = STATUSES.map((s) => statusColor(s)(s) + c.dim(" " + idx.counts[s]));
   console.log("  " + parts.join(c.dim("  ·  ")));
 }

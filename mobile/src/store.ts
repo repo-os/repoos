@@ -80,7 +80,10 @@ export async function loadLock(): Promise<import("./types").LockSettings> {
   if (!raw) return { enabled: false, scope: "reopen" };
   try {
     const parsed = JSON.parse(raw);
-    return { enabled: Boolean(parsed.enabled), scope: parsed.scope === "server" ? "server" : "reopen" };
+    return {
+      enabled: Boolean(parsed.enabled),
+      scope: parsed.scope === "server" ? "server" : "reopen",
+    };
   } catch {
     return { enabled: false, scope: "reopen" };
   }

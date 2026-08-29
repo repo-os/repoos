@@ -18,7 +18,9 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
     // A 200 that isn't JSON is almost always the SPA fallback answering for an
     // API route the running server build doesn't have — surface that instead
     // of the raw JSON parse error (`Unexpected token '<'`).
-    throw new Error("The server returned an unexpected (non-JSON) response — the running server build may be older than this UI. Rebuild and reload.");
+    throw new Error(
+      "The server returned an unexpected (non-JSON) response — the running server build may be older than this UI. Rebuild and reload.",
+    );
   }
 }
 

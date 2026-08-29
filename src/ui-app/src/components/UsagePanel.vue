@@ -41,8 +41,7 @@ const hasUsage = computed(() => (stats.value?.totalSessions ?? 0) > 0);
 /** The per-role breakdown, omitting empty roles so a quiet board stays compact. */
 const visibleRoles = computed(() =>
   (stats.value?.roles ?? []).filter(
-    (r) =>
-      (r.totalSessions ?? 0) > 0 || (r.totalCostUsd ?? 0) > 0 || (r.totalElapsedMs ?? 0) > 0,
+    (r) => (r.totalSessions ?? 0) > 0 || (r.totalCostUsd ?? 0) > 0 || (r.totalElapsedMs ?? 0) > 0,
   ),
 );
 
@@ -126,7 +125,9 @@ const days = computed(() => stats.value?.days ?? []);
         </div>
       </div>
 
-      <div v-if="stats.costSource === 'mixed'" class="usage-legend">* mixed cost sources — estimates &amp; credits shown alongside USD</div>
+      <div v-if="stats.costSource === 'mixed'" class="usage-legend">
+        * mixed cost sources — estimates &amp; credits shown alongside USD
+      </div>
     </template>
     <div v-else>No AI usage recorded yet.</div>
   </div>

@@ -55,7 +55,9 @@ async function loadUsers(): Promise<void> {
   try {
     const data = await api<{ users: AuthUser[] }>("/api/auth/users");
     users.value = data.users;
-  } catch { /* ignore */ } finally {
+  } catch {
+    /* ignore */
+  } finally {
     loadingUsers.value = false;
   }
 }
@@ -65,7 +67,9 @@ async function loadAudit(): Promise<void> {
   try {
     const data = await api<{ entries: AuditEntry[] }>("/api/auth/audit?limit=30");
     auditLog.value = data.entries;
-  } catch { /* ignore */ } finally {
+  } catch {
+    /* ignore */
+  } finally {
     loadingAudit.value = false;
   }
 }
@@ -77,10 +81,13 @@ async function addUser(): Promise<void> {
   errorMsg.value = "";
   successMsg.value = "";
   try {
-    await api("/api/auth/users", JSON_OPTS("POST", {
-      email,
-      role: newRole.value,
-    }));
+    await api(
+      "/api/auth/users",
+      JSON_OPTS("POST", {
+        email,
+        role: newRole.value,
+      }),
+    );
     successMsg.value = `Added ${email}`;
     newEmail.value = "";
     newRole.value = "member";
@@ -122,13 +129,20 @@ async function removeUser(email: string): Promise<void> {
 
 async function toggleRole(user: AuthUser): Promise<void> {
   const newR = user.role === "admin" ? "member" : "admin";
-  if (newR === "member" && user.role === "admin" && users.value.filter((u) => u.role === "admin").length <= 1) {
+  if (
+    newR === "member" &&
+    user.role === "admin" &&
+    users.value.filter((u) => u.role === "admin").length <= 1
+  ) {
     errorMsg.value = "Cannot demote the last admin";
     return;
   }
   errorMsg.value = "";
   try {
-    await api(`/api/auth/users/${encodeURIComponent(user.email)}`, JSON_OPTS("PATCH", { role: newR }));
+    await api(
+      `/api/auth/users/${encodeURIComponent(user.email)}`,
+      JSON_OPTS("PATCH", { role: newR }),
+    );
     await loadUsers();
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : "Failed to change role";
@@ -267,7 +281,8 @@ function formatDate(iso: string): string {
   font-size: 12px;
   margin: 4px 0;
 }
-.auth-loading, .auth-empty {
+.auth-loading,
+.auth-empty {
   padding: 12px 0;
   font-size: 13px;
   color: var(--text-secondary, #999);

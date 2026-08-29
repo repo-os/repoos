@@ -71,7 +71,8 @@ function stubFetch(sentMessages: string[], outputLines: unknown[] = []) {
           taskCount: 0,
         });
       if (u.includes("/api/agents/running")) return json({ tasks: [] });
-      if (u.includes("/review")) return json({ ok: true, running: false, enabled: false, review: null });
+      if (u.includes("/review"))
+        return json({ ok: true, running: false, enabled: false, review: null });
       throw new Error("unexpected fetch: " + u);
     }),
   );
@@ -150,7 +151,8 @@ describe("canned PM messages above the compose box", () => {
       "fetch",
       vi.fn(async (url: string) => {
         const u = String(url);
-        if (u.includes("/output")) return json({ ok: true, lines: [{ type: "human", text: "already chatted" }] });
+        if (u.includes("/output"))
+          return json({ ok: true, lines: [{ type: "human", text: "already chatted" }] });
         if (u.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
         if (u.includes("/api/board") || u.includes("/api/index"))

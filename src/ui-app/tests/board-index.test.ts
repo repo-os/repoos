@@ -24,7 +24,9 @@ describe("LiveIndex board snapshot", () => {
     try {
       const work = join(root, "work");
       mkdirSync(work, { recursive: true });
-      writeFileSync(join(work, "0223-board.md"), `---
+      writeFileSync(
+        join(work, "0223-board.md"),
+        `---
 id: "0223"
 title: Board payload fixture
 type: bug
@@ -33,7 +35,8 @@ priority: p1
 area: web
 ---
 ${"x".repeat(650)}
-`);
+`,
+      );
 
       const index = new LiveIndex(config(root));
       index.refreshAll();

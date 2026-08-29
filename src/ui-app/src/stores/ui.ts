@@ -44,7 +44,9 @@ export const useUiStore = defineStore("ui", () => {
   /** Cloudflare setup drawer is independent of the task drawer. */
   const tunnelOpen = ref(false);
   /** Active drawer tab: task details, the agent session, agent review, or PM. */
-  const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes" | "tokens" | "debug">("details");
+  const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes" | "tokens" | "debug">(
+    "details",
+  );
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
   /** True when showing the new-skill panel instead of a task. */

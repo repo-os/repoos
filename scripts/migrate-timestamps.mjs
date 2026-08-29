@@ -95,7 +95,8 @@ function migrateFile(filePath) {
 
   // Add Activity section if missing, with a created entry
   if (!hasActivity) {
-    const ts = normalizeTimestamp(createdVal) || normalizeTimestamp(updatedVal) || "1970-01-01T00:00:00Z";
+    const ts =
+      normalizeTimestamp(createdVal) || normalizeTimestamp(updatedVal) || "1970-01-01T00:00:00Z";
     const activityLine = `- ${ts} · created · (migrated)`;
     const trimmed = body.replace(/\s+$/, "");
     body = `${trimmed}\n\n## Activity\n\n${activityLine}\n`;
@@ -111,7 +112,9 @@ function migrateFile(filePath) {
 // Find all .md files under work/
 const root = new URL("..", import.meta.url).pathname;
 const workDir = join(root, "work");
-const files = readdirSync(workDir).filter((f) => extname(f) === ".md").map((f) => join(workDir, f));
+const files = readdirSync(workDir)
+  .filter((f) => extname(f) === ".md")
+  .map((f) => join(workDir, f));
 
 let count = 0;
 for (const f of files) {

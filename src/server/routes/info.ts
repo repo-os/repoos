@@ -15,7 +15,10 @@ const REPO_GUIDE_SESSION_ID = "repoos-guide";
 let loadedHash: string;
 let tunnelReadinessFn: (root: string, port?: number) => Promise<any>;
 
-export function initInfoHandlers(hash: string, tunnelFn: (root: string, port?: number) => Promise<any>) {
+export function initInfoHandlers(
+  hash: string,
+  tunnelFn: (root: string, port?: number) => Promise<any>,
+) {
   loadedHash = hash;
   tunnelReadinessFn = tunnelFn;
 }

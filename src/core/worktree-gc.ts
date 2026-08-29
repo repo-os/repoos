@@ -112,10 +112,7 @@ function isInside(dir: string, candidate: string): boolean {
  * Sweep stale worktrees/branches. Synchronous and fail-soft — any git hiccup is
  * recorded in `report.errors` and the sweep moves on.
  */
-export function sweepStaleWorktrees(
-  config: RepoOSConfig,
-  opts: SweepOptions,
-): GcReport {
+export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): GcReport {
   const root = config.root;
   const report: GcReport = {
     mode: opts.mode,
@@ -189,7 +186,11 @@ export function sweepStaleWorktrees(
       if (!existsSync(w.path)) {
         report.removedWorktrees.push({ branch: "", path: w.path });
       } else {
-        report.keptDirty.push({ branch: "", path: w.path, reason: "detached worktree, directory present" });
+        report.keptDirty.push({
+          branch: "",
+          path: w.path,
+          reason: "detached worktree, directory present",
+        });
       }
       continue;
     }
@@ -205,9 +206,7 @@ export function sweepStaleWorktrees(
       report.keptDirty.push({
         branch,
         path: w.path,
-        reason: !merged
-          ? `commits not in ${mainBranch}`
-          : "uncommitted changes",
+        reason: !merged ? `commits not in ${mainBranch}` : "uncommitted changes",
       });
     }
   }

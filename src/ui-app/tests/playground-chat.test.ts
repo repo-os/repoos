@@ -5,7 +5,11 @@
  * has to be folded into the prompt text).
  */
 import { describe, expect, it } from "vitest";
-import { buildPlaygroundPrompt, isKnownRunId, sanitizePlaygroundHistory } from "../../server/routes/playground";
+import {
+  buildPlaygroundPrompt,
+  isKnownRunId,
+  sanitizePlaygroundHistory,
+} from "../../server/routes/playground";
 
 describe("sanitizePlaygroundHistory", () => {
   it("keeps well-formed user/assistant turns in order", () => {

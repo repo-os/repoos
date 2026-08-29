@@ -23,7 +23,9 @@ function tempRoot(): string {
 afterEach(() => {
   resetDbInstance();
   for (const r of roots) {
-    try { rmSync(r, { recursive: true, force: true }); } catch {}
+    try {
+      rmSync(r, { recursive: true, force: true });
+    } catch {}
   }
   roots.length = 0;
 });
@@ -56,14 +58,24 @@ describe("recordOneShotSession — tracking AI usage outside the AgentRunner (03
 
   it("records board-level work (doc / dispatch) with a null taskId that still rolls into board stats", () => {
     const root = tempRoot();
-    recordOneShotSession(root, pm, { ok: true, output: "…", elapsedMs: 800, totalTokens: 3000, costUsd: 0.002 }, {
-      sessionType: "pm",
-      taskId: null,
-    });
-    recordOneShotSession(root, pm, { ok: true, output: "…", elapsedMs: 500, totalTokens: 1500, costUsd: 0.0009 }, {
-      sessionType: "dispatch",
-      taskId: null,
-    });
+    recordOneShotSession(
+      root,
+      pm,
+      { ok: true, output: "…", elapsedMs: 800, totalTokens: 3000, costUsd: 0.002 },
+      {
+        sessionType: "pm",
+        taskId: null,
+      },
+    );
+    recordOneShotSession(
+      root,
+      pm,
+      { ok: true, output: "…", elapsedMs: 500, totalTokens: 1500, costUsd: 0.0009 },
+      {
+        sessionType: "dispatch",
+        taskId: null,
+      },
+    );
 
     const db = new RepoOSDb(root);
     // No task attribution…
@@ -79,10 +91,15 @@ describe("recordOneShotSession — tracking AI usage outside the AgentRunner (03
 
   it("falls back to a token-based cost estimate when the CLI reports none", () => {
     const root = tempRoot();
-    recordOneShotSession(root, pm, { ok: true, output: "…", elapsedMs: 1000, totalTokens: 50_000 }, {
-      sessionType: "pm",
-      taskId: "0312",
-    });
+    recordOneShotSession(
+      root,
+      pm,
+      { ok: true, output: "…", elapsedMs: 1000, totalTokens: 50_000 },
+      {
+        sessionType: "pm",
+        taskId: "0312",
+      },
+    );
 
     const db = new RepoOSDb(root);
     const pmRole = db.getTaskStats("0312")!.roles.find((r) => r.role === "pm");
@@ -93,10 +110,15 @@ describe("recordOneShotSession — tracking AI usage outside the AgentRunner (03
 
   it("still books the session (as errored) when the run failed", () => {
     const root = tempRoot();
-    recordOneShotSession(root, pm, { ok: false, error: "timed out after 180s", elapsedMs: 180_000 }, {
-      sessionType: "pm",
-      taskId: "0313",
-    });
+    recordOneShotSession(
+      root,
+      pm,
+      { ok: false, error: "timed out after 180s", elapsedMs: 180_000 },
+      {
+        sessionType: "pm",
+        taskId: "0313",
+      },
+    );
 
     const db = new RepoOSDb(root);
     expect(db.getTaskStats("0313")!.sessions[0]?.status).toBe("errored");

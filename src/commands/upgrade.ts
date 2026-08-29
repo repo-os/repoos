@@ -6,7 +6,16 @@
  * touched here — those update through the package manager itself.
  */
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +30,9 @@ function installRoot(): string {
 
 function readVersion(root: string): string | null {
   try {
-    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as { version?: string };
+    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as {
+      version?: string;
+    };
     return info.version ?? null;
   } catch {
     return null;
@@ -49,7 +60,9 @@ export async function cmdUpgrade(_args: string[]): Promise<void> {
 
   const current = readVersion(root);
   if (!current) {
-    console.log(c.yellow("  repoos appears to be running from a source checkout, not a standalone install."));
+    console.log(
+      c.yellow("  repoos appears to be running from a source checkout, not a standalone install."),
+    );
     console.log(c.dim("  Update it with: git pull && bun run build"));
     return;
   }

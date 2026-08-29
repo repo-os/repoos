@@ -34,7 +34,14 @@ export interface TransitionEdge {
   /** Human-readable one-liner: what happens when this edge fires. */
   effect: string;
   /** Where this edge is actually performed. */
-  via: "generic-patch" | "action:start" | "action:done" | "action:pause" | "action:abandon" | "action:reopen" | "automated";
+  via:
+    | "generic-patch"
+    | "action:start"
+    | "action:done"
+    | "action:pause"
+    | "action:abandon"
+    | "action:reopen"
+    | "automated";
 }
 
 /** The full 12-edge allow-list. Absence of a `(from, to)` pair here means the
@@ -49,20 +56,36 @@ export const TRANSITIONS: Partial<Record<Status, Partial<Record<Status, Transiti
   },
   ready: {
     inbox: { effect: "none", via: "generic-patch" },
-    active: { effect: "provision branch/worktree if new; clear needsInput; spawn agent", via: "action:start" },
+    active: {
+      effect: "provision branch/worktree if new; clear needsInput; spawn agent",
+      via: "action:start",
+    },
   },
   active: {
     active: { effect: "resume agent on existing worktree", via: "action:start" },
-    review: { effect: "commit + validate diff; auto-sync branch; kick off automatic review", via: "generic-patch" },
+    review: {
+      effect: "commit + validate diff; auto-sync branch; kick off automatic review",
+      via: "generic-patch",
+    },
     ready: { effect: "stop agent if running; worktree kept, not deleted", via: "action:abandon" },
   },
   review: {
-    active: { effect: "resume engineer with reviewer feedback as instruction", via: "generic-patch" },
-    done: { effect: "close-out job: merge, build, check, cleanup worktree+branch", via: "action:done" },
+    active: {
+      effect: "resume engineer with reviewer feedback as instruction",
+      via: "generic-patch",
+    },
+    done: {
+      effect: "close-out job: merge, build, check, cleanup worktree+branch",
+      via: "action:done",
+    },
     ready: { effect: "cancel running review; worktree kept, not deleted", via: "action:abandon" },
   },
   done: {
-    ready: { effect: "clear stale branch reference + needsInput; re-provisioning happens on the next Start", via: "action:reopen" },
+    ready: {
+      effect:
+        "clear stale branch reference + needsInput; re-provisioning happens on the next Start",
+      via: "action:reopen",
+    },
   },
 };
 
@@ -89,7 +112,10 @@ const SUGGESTED_ACTION: Partial<Record<Status, string>> = {
  * is allowed. `from === to` is always fine (no-op). Returns a reason and a
  * pointer to the right endpoint when rejected.
  */
-export function checkGenericStatusPatch(from: Status, to: Status): { ok: true } | { ok: false; reason: string } {
+export function checkGenericStatusPatch(
+  from: Status,
+  to: Status,
+): { ok: true } | { ok: false; reason: string } {
   if (from === to) return { ok: true };
   const edge = TRANSITIONS[from]?.[to];
   if (!edge) {

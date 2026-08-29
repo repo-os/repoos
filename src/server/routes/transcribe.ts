@@ -1,7 +1,11 @@
 import { json } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 
-async function transcribeWithGroq(apiKey: string, audioBuffer: Buffer, mimeType: string): Promise<string> {
+async function transcribeWithGroq(
+  apiKey: string,
+  audioBuffer: Buffer,
+  mimeType: string,
+): Promise<string> {
   const formData = new FormData();
   const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
   const extension = mimeType.split("/")[1] || "webm";
@@ -25,7 +29,11 @@ async function transcribeWithGroq(apiKey: string, audioBuffer: Buffer, mimeType:
   return result.text || "";
 }
 
-async function transcribeWithOpenAI(apiKey: string, audioBuffer: Buffer, mimeType: string): Promise<string> {
+async function transcribeWithOpenAI(
+  apiKey: string,
+  audioBuffer: Buffer,
+  mimeType: string,
+): Promise<string> {
   const formData = new FormData();
   const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
   const extension = mimeType.split("/")[1] || "webm";
@@ -49,7 +57,10 @@ async function transcribeWithOpenAI(apiKey: string, audioBuffer: Buffer, mimeTyp
   return result.text || "";
 }
 
-function parseMultipart(buffer: Buffer, boundary: string): Map<string, { data: Buffer; mimeType?: string }> {
+function parseMultipart(
+  buffer: Buffer,
+  boundary: string,
+): Map<string, { data: Buffer; mimeType?: string }> {
   const parts = new Map<string, { data: Buffer; mimeType?: string }>();
   const bufferStr = buffer.toString("binary");
   const delimiter = `--${boundary}`;

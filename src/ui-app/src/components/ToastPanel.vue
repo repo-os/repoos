@@ -94,7 +94,9 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 .toast-close:hover {
   color: var(--txt);

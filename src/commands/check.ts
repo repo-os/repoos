@@ -10,7 +10,16 @@
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { cpus, tmpdir, totalmem } from "node:os";
 import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
@@ -19,7 +28,6 @@ import { findRepoRoot } from "../core/config.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
 import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
-
 
 interface CheckResult {
   name: string;
@@ -276,7 +284,12 @@ function resolveVar(value: string, map: Record<string, string>, depth = 0): stri
   return next !== undefined ? resolveVar(next, map, depth + 1) : value;
 }
 
-interface RGB { r: number; g: number; b: number; a: number }
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
 
 function parseColor(v: string): RGB | null {
   const s = v.trim().toLowerCase();
@@ -285,7 +298,10 @@ function parseColor(v: string): RGB | null {
   if (s.startsWith("#")) {
     const h = s.slice(1);
     if (h.length === 3 || h.length === 4) {
-      const full = h.split("").map((ch) => ch + ch).join("");
+      const full = h
+        .split("")
+        .map((ch) => ch + ch)
+        .join("");
       return parseColor("#" + full);
     }
     if (h.length === 6 || h.length === 8) {
@@ -307,9 +323,16 @@ function parseColor(v: string): RGB | null {
   return null;
 }
 
-function composite(fg: RGB, bg: { r: number; g: number; b: number }): { r: number; g: number; b: number } {
+function composite(
+  fg: RGB,
+  bg: { r: number; g: number; b: number },
+): { r: number; g: number; b: number } {
   const a = fg.a;
-  return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a) };
+  return {
+    r: fg.r * a + bg.r * (1 - a),
+    g: fg.g * a + bg.g * (1 - a),
+    b: fg.b * a + bg.b * (1 - a),
+  };
 }
 
 function channelLum(ch: number): number {
@@ -327,7 +350,11 @@ function contrastRatio(a: number, b: number): number {
 }
 
 /** Resolve a token value to concrete colors (composited over `bg`). */
-function colorCandidates(raw: string, map: Record<string, string>, bg: { r: number; g: number; b: number }): { r: number; g: number; b: number }[] {
+function colorCandidates(
+  raw: string,
+  map: Record<string, string>,
+  bg: { r: number; g: number; b: number },
+): { r: number; g: number; b: number }[] {
   const resolved = resolveVar(raw, map);
   const out: { r: number; g: number; b: number }[] = [];
   if (resolved.includes("gradient(")) {
@@ -358,7 +385,9 @@ function themeContrastOffenders(css: string): string[] {
     for (const tk of GRADIENT_TOKENS) {
       const raw = map[tk];
       if (raw !== undefined && !resolveVar(raw, map).includes("gradient(")) {
-        out.push(`${variant} · ${tk} must be a gradient — button.vue consumes it via background-image`);
+        out.push(
+          `${variant} · ${tk} must be a gradient — button.vue consumes it via background-image`,
+        );
       }
     }
 
@@ -371,10 +400,11 @@ function themeContrastOffenders(css: string): string[] {
       const bgs = colorCandidates(map[bgK], map, bg);
       if (!fgs.length || !bgs.length) continue;
       let worst = Infinity;
-      for (const f of fgs) for (const b of bgs) {
-        const c = contrastRatio(luminance(f), luminance(b));
-        if (c < worst) worst = c;
-      }
+      for (const f of fgs)
+        for (const b of bgs) {
+          const c = contrastRatio(luminance(f), luminance(b));
+          if (c < worst) worst = c;
+        }
       if (worst < MIN_CONTRAST) {
         out.push(`${variant} · ${fgK} on ${bgK} → ${worst.toFixed(2)} (need ≥${MIN_CONTRAST})`);
       }
@@ -396,10 +426,7 @@ function themeContrastOffenders(css: string): string[] {
  */
 export type BuildStepAction = "skip" | "build" | "build-not-fresh";
 
-export function skipBuildAction(
-  env: NodeJS.ProcessEnv,
-  buildFresh: boolean,
-): BuildStepAction {
+export function skipBuildAction(env: NodeJS.ProcessEnv, buildFresh: boolean): BuildStepAction {
   if (env.REPOOS_SKIP_BUILD !== "1") return "build";
   return buildFresh ? "skip" : "build-not-fresh";
 }
@@ -496,7 +523,8 @@ export async function cmdCheck(): Promise<void> {
       console.log(c.green("  ✔ bun.lock matches package.json"));
       results.push(pass("lockfile-sync"));
     } catch {
-      const msg = "bun.lock is out of sync with package.json — run `bun install` and commit the updated lockfile";
+      const msg =
+        "bun.lock is out of sync with package.json — run `bun install` and commit the updated lockfile";
       console.log(c.red("  ✗ " + msg));
       results.push(fail("lockfile-sync", msg));
       exitCode = 1;
@@ -514,7 +542,9 @@ export async function cmdCheck(): Promise<void> {
   heading("Full build");
   const buildAction = skipBuildAction(process.env, buildFresh);
   if (buildAction === "skip") {
-    console.log(c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"));
+    console.log(
+      c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"),
+    );
     results.push(pass("build", "skipped — caller already built, build verified fresh"));
   } else {
     if (buildAction === "build-not-fresh") {
@@ -581,10 +611,10 @@ export async function cmdCheck(): Promise<void> {
     const offenders = bareRequireOffenders();
     if (offenders.length > 0) {
       const msg =
-        "Bare require() in ESM source (this package is \"type\": \"module\" — a bare require throws " +
+        'Bare require() in ESM source (this package is "type": "module" — a bare require throws ' +
         "ReferenceError at runtime in dist/, silently if caught):\n    " +
         offenders.slice(0, 10).join("\n    ") +
-        "\n    Import from \"node:...\" normally, or use createRequire(import.meta.url) if you " +
+        '\n    Import from "node:..." normally, or use createRequire(import.meta.url) if you ' +
         "genuinely need CJS interop (see ui-harness.ts).";
       console.log(c.red("  ✗ " + msg.split("\n")[0]));
       results.push(fail("bare-require", msg));
@@ -606,7 +636,9 @@ export async function cmdCheck(): Promise<void> {
   // with REPOOS_SKIP_TESTS=1 for only the cheap static guards + UI smoke.
   // Standalone `repoos check` never sets it, so the CLI gate is unchanged.
   if (process.env.REPOOS_SKIP_TESTS === "1") {
-    console.log(c.dim("  · Skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)"));
+    console.log(
+      c.dim("  · Skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)"),
+    );
     results.push(pass("tests", "skipped — ran on the remote validation runner"));
   } else if (hasTestScript || hasTestFiles) {
     // Only the vitest-backed `bun run test` script understands `--changed`;
@@ -629,7 +661,9 @@ export async function cmdCheck(): Promise<void> {
     // Worker pool: `undefined` keeps the config floor (2). A solo run with
     // headroom scales up — passed through env, read back in vite.config.ts.
     const workers = hasTestScript ? testPoolSize(process.env) : undefined;
-    const testEnv = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
+    const testEnv = workers
+      ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) }
+      : process.env;
     if (workers && !changedRef) {
       const availGiB = (availableMemBytes() / 1024 ** 3).toFixed(1);
       console.log(c.dim(`  · Full suite · ${workers} workers (${availGiB} GiB reclaimable)`));
@@ -667,7 +701,9 @@ export async function cmdCheck(): Promise<void> {
       msg.includes("Executable doesn't exist");
     if (notInstalled) {
       console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
-      console.log(c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"));
+      console.log(
+        c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"),
+      );
       results.push(pass("ui-smoke", "skipped — playwright/browser not available"));
     } else {
       console.log(c.red("  ✗ UI smoke test failed: " + msg.split("\n")[0]));
@@ -703,7 +739,7 @@ export async function cmdCheck(): Promise<void> {
 function makeSmokeFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
   mkdirSync(join(root, "work"), { recursive: true });
-  writeFileSync(join(root, "repoos.toml"), "theme = \"dark\"\nuiTheme = \"classic\"\n\n");
+  writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n\n');
   return root;
 }
 
@@ -766,9 +802,7 @@ async function runUISmokeTest(): Promise<void> {
     const appEl = await page.$("#app");
     if (!appEl) throw new Error("#app element not found");
 
-    const hasBrand = await page.evaluate(() =>
-      document.body.innerText.includes("RepoOS"),
-    );
+    const hasBrand = await page.evaluate(() => document.body.innerText.includes("RepoOS"));
     if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
 
     // Navigate to work page and click +New Task
@@ -805,11 +839,17 @@ async function runUISmokeTest(): Promise<void> {
           p: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
           px: ["paddingLeft", "paddingRight"],
           py: ["paddingTop", "paddingBottom"],
-          pt: ["paddingTop"], pr: ["paddingRight"], pb: ["paddingBottom"], pl: ["paddingLeft"],
+          pt: ["paddingTop"],
+          pr: ["paddingRight"],
+          pb: ["paddingBottom"],
+          pl: ["paddingLeft"],
           m: ["marginTop", "marginRight", "marginBottom", "marginLeft"],
           mx: ["marginLeft", "marginRight"],
           my: ["marginTop", "marginBottom"],
-          mt: ["marginTop"], mr: ["marginRight"], mb: ["marginBottom"], ml: ["marginLeft"],
+          mt: ["marginTop"],
+          mr: ["marginRight"],
+          mb: ["marginBottom"],
+          ml: ["marginLeft"],
         };
         const bad: string[] = [];
         for (const el of Array.from(document.querySelectorAll("*"))) {
@@ -855,9 +895,7 @@ async function runUISmokeTest(): Promise<void> {
       throw new Error(msg);
     }
     if (pageErrors.length > 0) {
-      throw new Error(
-        "Page errors (" + pageErrors.length + "): " + pageErrors.join("; "),
-      );
+      throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
     }
   } finally {
     if (browser) await browser.close();

@@ -69,7 +69,14 @@ function readTask(fx: Fixture): Task {
     root: fx.root,
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
-    git: { branchExists: false, worktreeExists: false, lastCommit: null, lastCommitAt: null, worktreePath: null, dirty: false },
+    git: {
+      branchExists: false,
+      worktreeExists: false,
+      lastCommit: null,
+      lastCommitAt: null,
+      worktreePath: null,
+      dirty: false,
+    },
   });
 }
 
@@ -96,7 +103,8 @@ function makeFakeRunner(sendOk = true): { runner: AgentRunner; calls: FakeRunner
   return { runner, calls };
 }
 
-const REASON = "merge conflict in src/ui-app/src/components/TaskDrawer.vue — resolve it in the feature branch's own worktree (merge main into the branch), then retry";
+const REASON =
+  "merge conflict in src/ui-app/src/components/TaskDrawer.vue — resolve it in the feature branch's own worktree (merge main into the branch), then retry";
 
 describe("scheduleMergeConflictRetry (#0271 follow-up)", () => {
   beforeEach(() => {

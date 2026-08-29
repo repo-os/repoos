@@ -150,16 +150,14 @@ async function sendResendEmail(
     }
     return res.ok;
   } catch (err) {
-    console.error(`Resend send to ${toEmail} threw: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `Resend send to ${toEmail} threw: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return false;
   }
 }
 
-async function sendOtpEmail(
-  config: RepoOSConfig,
-  toEmail: string,
-  code: string,
-): Promise<boolean> {
+async function sendOtpEmail(config: RepoOSConfig, toEmail: string, code: string): Promise<boolean> {
   const repoName = basename(config.root);
   return sendResendEmail(
     config,
@@ -244,7 +242,10 @@ function base64UrlToBuffer(b64url: string): Buffer {
   return Buffer.from(padded, "base64");
 }
 
-function importRsaPublicKey(n: string, e: string): ReturnType<typeof import("node:crypto").createPublicKey> {
+function importRsaPublicKey(
+  n: string,
+  e: string,
+): ReturnType<typeof import("node:crypto").createPublicKey> {
   const nBuf = base64UrlToBuffer(n);
   const eBuf = base64UrlToBuffer(e);
 
@@ -252,22 +253,43 @@ function importRsaPublicKey(n: string, e: string): ReturnType<typeof import("nod
     if (len < 0x80) return Buffer.from([len]);
     const bytes: number[] = [];
     let l = len;
-    while (l > 0) { bytes.unshift(l & 0xff); l >>= 8; }
+    while (l > 0) {
+      bytes.unshift(l & 0xff);
+      l >>= 8;
+    }
     return Buffer.from([0x80 | bytes.length, ...bytes]);
   }
 
   function encodeInteger(buf: Buffer): Buffer {
     const prefix = buf[0] & 0x80 ? Buffer.from([0x00]) : Buffer.alloc(0);
-    return Buffer.concat([Buffer.from([0x02]), encodeLength(buf.length + prefix.length), prefix, buf]);
+    return Buffer.concat([
+      Buffer.from([0x02]),
+      encodeLength(buf.length + prefix.length),
+      prefix,
+      buf,
+    ]);
   }
 
   const nEncoded = encodeInteger(nBuf);
   const eEncoded = encodeInteger(eBuf);
-  const rsaPubKey = Buffer.concat([Buffer.from([0x30]), encodeLength(nEncoded.length + eEncoded.length), nEncoded, eEncoded]);
+  const rsaPubKey = Buffer.concat([
+    Buffer.from([0x30]),
+    encodeLength(nEncoded.length + eEncoded.length),
+    nEncoded,
+    eEncoded,
+  ]);
 
   const algId = Buffer.from("300d06092a864886f70d01010b0500", "hex");
 
-  const spki = Buffer.concat([Buffer.from([0x30]), encodeLength(algId.length + rsaPubKey.length + 1), algId, Buffer.from([0x03]), encodeLength(rsaPubKey.length + 1), Buffer.from([0x00]), rsaPubKey]);
+  const spki = Buffer.concat([
+    Buffer.from([0x30]),
+    encodeLength(algId.length + rsaPubKey.length + 1),
+    algId,
+    Buffer.from([0x03]),
+    encodeLength(rsaPubKey.length + 1),
+    Buffer.from([0x00]),
+    rsaPubKey,
+  ]);
 
   return createPublicKey({ key: spki, format: "der", type: "spki" });
 }
@@ -776,7 +798,9 @@ export const sendInvite: RouteHandler = async (ctx, req, res) => {
   // Extract email from URL path: /api/auth/users/:email/invite
   const url = new URL(req.url ?? "/", "http://localhost");
   const segments = url.pathname.split("/").filter(Boolean);
-  const email = decodeURIComponent(segments[segments.length - 2] ?? "").trim().toLowerCase();
+  const email = decodeURIComponent(segments[segments.length - 2] ?? "")
+    .trim()
+    .toLowerCase();
 
   if (!isValidEmail(email)) {
     return json(res, 400, { error: "Invalid email" });
@@ -792,7 +816,9 @@ export const sendInvite: RouteHandler = async (ctx, req, res) => {
   const loginUrl = `${requestOrigin(req)}/login`;
   const sent = await sendInviteEmail(config, email, loginUrl);
   if (!sent) {
-    return json(res, 502, { error: "Failed to send invite email — check server logs for the provider error" });
+    return json(res, 502, {
+      error: "Failed to send invite email — check server logs for the provider error",
+    });
   }
 
   store.logAudit("invite_sent", email, admin.email);
@@ -810,7 +836,9 @@ export const deleteUser: RouteHandler = async (ctx, req, res) => {
 
   // Extract email from URL path: /api/auth/users/:email
   const url = new URL(req.url ?? "/", "http://localhost");
-  const email = decodeURIComponent(url.pathname.split("/").pop() ?? "").trim().toLowerCase();
+  const email = decodeURIComponent(url.pathname.split("/").pop() ?? "")
+    .trim()
+    .toLowerCase();
 
   if (!isValidEmail(email)) {
     return json(res, 400, { error: "Invalid email" });
@@ -845,7 +873,9 @@ export const updateUserRole: RouteHandler = async (ctx, req, res) => {
 
   // Extract email from URL path
   const url = new URL(req.url ?? "/", "http://localhost");
-  const email = decodeURIComponent(url.pathname.split("/").pop() ?? "").trim().toLowerCase();
+  const email = decodeURIComponent(url.pathname.split("/").pop() ?? "")
+    .trim()
+    .toLowerCase();
 
   if (!isValidEmail(email)) {
     return json(res, 400, { error: "Invalid email" });

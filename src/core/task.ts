@@ -103,7 +103,10 @@ export function extractSection(body: string, heading: string): string | null {
   const lines = body.split("\n");
   const start = sectionStart(lines, heading);
   if (start === -1) return null;
-  return lines.slice(start, nextSection(lines, start + 1)).join("\n").trim();
+  return lines
+    .slice(start, nextSection(lines, start + 1))
+    .join("\n")
+    .trim();
 }
 
 /**
@@ -247,7 +250,8 @@ export function parseTask(args: ParseTaskArgs): Task {
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,
-    needsInputReason: typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
+    needsInputReason:
+      typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
@@ -274,9 +278,8 @@ export function parseTask(args: ParseTaskArgs): Task {
     reviewCliOverride,
     reviewModelOverride,
     hotfix: data.hotfix === true ? true : undefined,
-    hotfixTarget: data.hotfix === true
-      ? (data.hotfix_target === "main" ? "main" : "branch")
-      : undefined,
+    hotfixTarget:
+      data.hotfix === true ? (data.hotfix_target === "main" ? "main" : "branch") : undefined,
     git: args.git ?? emptyGitInfo(),
   };
 }

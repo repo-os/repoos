@@ -33,16 +33,22 @@ function loadSqlite(): void {
         const sqlite = runtimeRequire("bun:sqlite");
         Database = sqlite.Database;
         dbAvailable = true;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     if (!dbAvailable) {
       try {
         const sqlite = runtimeRequire("node:sqlite");
         Database = sqlite.DatabaseSync;
         dbAvailable = true;
-      } catch { /* unavailable */ }
+      } catch {
+        /* unavailable */
+      }
     }
-  } catch { /* degrade */ }
+  } catch {
+    /* degrade */
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -197,15 +203,19 @@ export class AuthStore {
   upsertUser(email: string, role: AuthRole, addedBy: string | null, displayName?: string): void {
     if (!this.available) return;
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(`
         INSERT INTO auth_users (email, role, display_name, added_by, updated_at)
         VALUES (?, ?, ?, ?, datetime('now'))
         ON CONFLICT(email) DO UPDATE SET
           role = excluded.role,
           display_name = COALESCE(excluded.display_name, display_name),
           updated_at = datetime('now')
-      `).run(email, role, displayName ?? null, addedBy);
-    } catch { /* ignore */ }
+      `)
+        .run(email, role, displayName ?? null, addedBy);
+    } catch {
+      /* ignore */
+    }
   }
 
   deleteUser(email: string): boolean {
@@ -221,7 +231,9 @@ export class AuthStore {
   getAdminCount(): number {
     if (!this.available) return 0;
     try {
-      const rows = this.db.prepare("SELECT COUNT(*) as cnt FROM auth_users WHERE role = 'admin'").all();
+      const rows = this.db
+        .prepare("SELECT COUNT(*) as cnt FROM auth_users WHERE role = 'admin'")
+        .all();
       return (rows[0] as any)?.cnt ?? 0;
     } catch {
       return 0;
@@ -238,11 +250,15 @@ export class AuthStore {
     const now = new Date();
     const expires = new Date(now.getTime() + maxAgeSeconds * 1000);
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(`
         INSERT INTO auth_sessions (session_id, token_hash, email, role, created_at, expires_at)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(sessionId, tokenHash, email, role, now.toISOString(), expires.toISOString());
-    } catch { return ""; }
+      `)
+        .run(sessionId, tokenHash, email, role, now.toISOString(), expires.toISOString());
+    } catch {
+      return "";
+    }
     return token;
   }
 
@@ -251,10 +267,12 @@ export class AuthStore {
     const tokenHash = hashSessionToken(token);
     try {
       const now = new Date().toISOString();
-      const rows = this.db.prepare(`
+      const rows = this.db
+        .prepare(`
         SELECT * FROM auth_sessions
         WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ?
-      `).all(tokenHash, now);
+      `)
+        .all(tokenHash, now);
       return rows.length > 0 ? this.toSession(rows[0]) : null;
     } catch {
       return null;
@@ -265,9 +283,11 @@ export class AuthStore {
     if (!this.available) return false;
     const tokenHash = hashSessionToken(token);
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(`
         UPDATE auth_sessions SET revoked_at = datetime('now') WHERE token_hash = ? AND revoked_at IS NULL
-      `).run(tokenHash);
+      `)
+        .run(tokenHash);
       return true;
     } catch {
       return false;
@@ -277,10 +297,12 @@ export class AuthStore {
   revokeAllSessions(email: string): number {
     if (!this.available) return 0;
     try {
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(`
         UPDATE auth_sessions SET revoked_at = datetime('now')
         WHERE email = ? AND revoked_at IS NULL
-      `).run(email);
+      `)
+        .run(email);
       return result.changes ?? 0;
     } catch {
       return 0;
@@ -291,10 +313,12 @@ export class AuthStore {
   updateSessionRoles(email: string, newRole: AuthRole): number {
     if (!this.available) return 0;
     try {
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(`
         UPDATE auth_sessions SET role = ?
         WHERE email = ? AND revoked_at IS NULL
-      `).run(newRole, email);
+      `)
+        .run(newRole, email);
       return result.changes ?? 0;
     } catch {
       return 0;
@@ -305,9 +329,11 @@ export class AuthStore {
     if (!this.available) return 0;
     try {
       const now = new Date().toISOString();
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(`
         DELETE FROM auth_sessions WHERE expires_at < ?
-      `).run(now);
+      `)
+        .run(now);
       return result.changes ?? 0;
     } catch {
       return 0;
@@ -317,15 +343,22 @@ export class AuthStore {
   // ---- OTP ----
 
   /** Store a hashed OTP challenge. Returns the challenge id. */
-  createOtpChallenge(email: string, codeHash: string, ttlSeconds: number, sourceIp: string | null): number {
+  createOtpChallenge(
+    email: string,
+    codeHash: string,
+    ttlSeconds: number,
+    sourceIp: string | null,
+  ): number {
     if (!this.available) return -1;
     const now = new Date();
     const expires = new Date(now.getTime() + ttlSeconds * 1000);
     try {
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(`
         INSERT INTO auth_otp (email, code_hash, created_at, expires_at, source_ip)
         VALUES (?, ?, ?, ?, ?)
-      `).run(email, codeHash, now.toISOString(), expires.toISOString(), sourceIp);
+      `)
+        .run(email, codeHash, now.toISOString(), expires.toISOString(), sourceIp);
       return result.lastInsertRowid ?? -1;
     } catch {
       return -1;
@@ -337,11 +370,13 @@ export class AuthStore {
     if (!this.available) return null;
     const now = new Date().toISOString();
     try {
-      const rows = this.db.prepare(`
+      const rows = this.db
+        .prepare(`
         SELECT * FROM auth_otp
         WHERE email = ? AND code_hash = ? AND used_at IS NULL AND expires_at > ?
         ORDER BY created_at DESC LIMIT 1
-      `).all(email, codeHash, now);
+      `)
+        .all(email, codeHash, now);
       return rows.length > 0 ? this.toOtp(rows[0]) : null;
     } catch {
       return null;
@@ -352,10 +387,14 @@ export class AuthStore {
   markOtpUsed(otpId: number): void {
     if (!this.available) return;
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(`
         UPDATE auth_otp SET used_at = datetime('now') WHERE id = ?
-      `).run(otpId);
-    } catch { /* ignore */ }
+      `)
+        .run(otpId);
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Count OTP requests for this email in the given time window. */
@@ -363,10 +402,12 @@ export class AuthStore {
     if (!this.available) return 0;
     try {
       const cutoff = new Date(Date.now() - windowSeconds * 1000).toISOString();
-      const rows = this.db.prepare(`
+      const rows = this.db
+        .prepare(`
         SELECT COUNT(*) as cnt FROM auth_otp
         WHERE email = ? AND created_at > ?
-      `).all(email, cutoff);
+      `)
+        .all(email, cutoff);
       return (rows[0] as any)?.cnt ?? 0;
     } catch {
       return 0;
@@ -378,10 +419,12 @@ export class AuthStore {
     if (!this.available) return 0;
     try {
       const cutoff = new Date(Date.now() - windowSeconds * 1000).toISOString();
-      const rows = this.db.prepare(`
+      const rows = this.db
+        .prepare(`
         SELECT COUNT(*) as cnt FROM auth_otp
         WHERE email = ? AND created_at > ? AND used_at IS NOT NULL AND code_hash != ''
-      `).all(email, cutoff);
+      `)
+        .all(email, cutoff);
       return (rows[0] as any)?.cnt ?? 0;
     } catch {
       return 0;
@@ -392,9 +435,11 @@ export class AuthStore {
     if (!this.available) return 0;
     try {
       const now = new Date().toISOString();
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(`
         DELETE FROM auth_otp WHERE expires_at < ?
-      `).run(now);
+      `)
+        .run(now);
       return result.changes ?? 0;
     } catch {
       return 0;
@@ -403,22 +448,34 @@ export class AuthStore {
 
   // ---- Audit Log ----
 
-  logAudit(action: string, targetEmail: string | null, actorEmail: string | null, details?: string): void {
+  logAudit(
+    action: string,
+    targetEmail: string | null,
+    actorEmail: string | null,
+    details?: string,
+  ): void {
     if (!this.available) return;
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(`
         INSERT INTO auth_audit_log (action, target_email, actor_email, details, created_at)
         VALUES (?, ?, ?, ?, datetime('now'))
-      `).run(action, targetEmail, actorEmail, details ?? null);
-    } catch { /* ignore */ }
+      `)
+        .run(action, targetEmail, actorEmail, details ?? null);
+    } catch {
+      /* ignore */
+    }
   }
 
   getAuditLog(limit: number = 50): AuditLogEntry[] {
     if (!this.available) return [];
     try {
-      return this.db.prepare(`
+      return this.db
+        .prepare(`
         SELECT * FROM auth_audit_log ORDER BY created_at DESC LIMIT ?
-      `).all(limit).map((r: any) => this.toAuditEntry(r));
+      `)
+        .all(limit)
+        .map((r: any) => this.toAuditEntry(r));
     } catch {
       return [];
     }
@@ -475,7 +532,11 @@ export class AuthStore {
 
   close(): void {
     if (this.db) {
-      try { this.db.close(); } catch { /* ignore */ }
+      try {
+        this.db.close();
+      } catch {
+        /* ignore */
+      }
       this.db = null;
     }
   }

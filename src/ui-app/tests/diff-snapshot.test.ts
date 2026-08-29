@@ -8,14 +8,20 @@ describe("durable task diff snapshots", () => {
   it("round-trips a completed task's stats and patch", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-diff-snapshot-"));
     try {
-      saveDiffSnapshot(root, ".repoos", "0123", {
-        filesChanged: 2,
-        additions: 14,
-        deletions: 3,
-      }, {
-        patch: "diff --git a/a.ts b/a.ts\n",
-        truncated: false,
-      });
+      saveDiffSnapshot(
+        root,
+        ".repoos",
+        "0123",
+        {
+          filesChanged: 2,
+          additions: 14,
+          deletions: 3,
+        },
+        {
+          patch: "diff --git a/a.ts b/a.ts\n",
+          truncated: false,
+        },
+      );
 
       expect(loadDiffSnapshot(root, ".repoos", "0123")).toMatchObject({
         stats: { filesChanged: 2, additions: 14, deletions: 3 },
@@ -29,11 +35,17 @@ describe("durable task diff snapshots", () => {
   it("does not create paths from an unsafe task id", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-diff-snapshot-"));
     try {
-      saveDiffSnapshot(root, ".repoos", "../escape", {
-        filesChanged: 1,
-        additions: 1,
-        deletions: 0,
-      }, { patch: "x", truncated: false });
+      saveDiffSnapshot(
+        root,
+        ".repoos",
+        "../escape",
+        {
+          filesChanged: 1,
+          additions: 1,
+          deletions: 0,
+        },
+        { patch: "x", truncated: false },
+      );
       expect(loadDiffSnapshot(root, ".repoos", "../escape")).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });

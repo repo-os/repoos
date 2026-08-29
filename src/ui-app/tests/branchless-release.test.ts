@@ -35,7 +35,12 @@ function makeRepo(): { root: string; config: RepoOSConfig; clean: () => void } {
   git(root, ["commit", "-m", "init"]);
   return {
     root,
-    config: { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+    config: {
+      root,
+      workDir: "work",
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+    } as RepoOSConfig,
     clean: () => rmSync(root, { recursive: true, force: true }),
   };
 }
@@ -54,7 +59,9 @@ function readTask(root: string, config: RepoOSConfig): Task {
 describe("isBranchlessReleaseEligible", () => {
   it("is eligible: no branch, not done, not review", () => {
     expect(isBranchlessReleaseEligible({ branch: "", status: "ready" } as Task)).toBe(true);
-    expect(isBranchlessReleaseEligible({ branch: undefined, status: "active" } as unknown as Task)).toBe(true);
+    expect(
+      isBranchlessReleaseEligible({ branch: undefined, status: "active" } as unknown as Task),
+    ).toBe(true);
     expect(isBranchlessReleaseEligible({ branch: "", status: "inbox" } as Task)).toBe(true);
   });
 
@@ -95,7 +102,10 @@ describe("releaseBranchless", () => {
     try {
       const task = readTask(root, config);
       const before = readFileSync(join(root, "work", "T1-hotfix.md"), "utf8");
-      const failingCheck = (): CheckResult => ({ ok: false, output: "1 test failed: something broke" });
+      const failingCheck = (): CheckResult => ({
+        ok: false,
+        output: "1 test failed: something broke",
+      });
 
       const result = await releaseBranchless(config, task, failingCheck);
 

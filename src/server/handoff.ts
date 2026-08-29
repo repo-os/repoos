@@ -10,7 +10,12 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch, currentBranch, branchChangesSinceBase } from "../core/git.js";
+import {
+  runGit,
+  worktreePathForBranch,
+  currentBranch,
+  branchChangesSinceBase,
+} from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
@@ -95,19 +100,23 @@ function clearCheckRetryCount(absPath: string): void {
     delete doc.data.check_retry_count;
     writeFileSync(absPath, serializeDocument(doc.data, `\n${doc.body}\n`, Object.keys(doc.data)));
   } catch (err) {
-    console.error(`[repoos] could not clear check_retry_count for ${absPath}: ${(err as Error).message}`);
+    console.error(
+      `[repoos] could not clear check_retry_count for ${absPath}: ${(err as Error).message}`,
+    );
   }
 }
 
 function concise(run: RunResult): string {
   if (run.error) return run.error.message;
-  return [run.stdout, run.stderr]
-    .join("\n")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(-8)
-    .join(" · ") || `exit ${run.status}`;
+  return (
+    [run.stdout, run.stderr]
+      .join("\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(-8)
+      .join(" · ") || `exit ${run.status}`
+  );
 }
 
 async function runCheck(
@@ -170,7 +179,11 @@ export async function handoffTask(
     setTimeout(() => {
       if (!settled) {
         settled = true;
-        resolve({ ok: false, step: "check", detail: "server-side finalization timed out (deadline exceeded)" });
+        resolve({
+          ok: false,
+          step: "check",
+          detail: "server-side finalization timed out (deadline exceeded)",
+        });
       }
     }, HANDOFF_DEADLINE_MS);
   });
@@ -179,24 +192,44 @@ export async function handoffTask(
     try {
       onProgress?.("validate");
       if (!request.runId || request.taskId !== task.id) {
-        return { ok: false, step: "validate", detail: "handoff does not match the active runner session" };
+        return {
+          ok: false,
+          step: "validate",
+          detail: "handoff does not match the active runner session",
+        };
       }
       if (task.status !== "active" && task.status !== "review") {
-        return { ok: false, step: "validate", detail: `task must be active or review, but is ${task.status}` };
+        return {
+          ok: false,
+          step: "validate",
+          detail: `task must be active or review, but is ${task.status}`,
+        };
       }
       if (!task.branch || request.branch !== task.branch) {
-        return { ok: false, step: "validate", detail: "handoff branch does not match the task branch" };
+        return {
+          ok: false,
+          step: "validate",
+          detail: "handoff branch does not match the task branch",
+        };
       }
       const isHotfix = task.hotfix === true;
       const registered = worktreePathForBranch(config.root, task.branch);
       const registeredIsRoot = registered ? samePath(registered, config.root) : false;
       if (isHotfix) {
         if (!registeredIsRoot || !samePath(config.root, request.workdir)) {
-          return { ok: false, step: "validate", detail: "hotfix handoff must run in the main checkout" };
+          return {
+            ok: false,
+            step: "validate",
+            detail: "hotfix handoff must run in the main checkout",
+          };
         }
       } else {
         if (!registered || !samePath(registered, request.workdir) || !existsSync(registered)) {
-          return { ok: false, step: "validate", detail: "handoff worktree does not match the registered task worktree" };
+          return {
+            ok: false,
+            step: "validate",
+            detail: "handoff worktree does not match the registered task worktree",
+          };
         }
       }
       // After validation, `registered` is non-null for both paths — hotfix
@@ -204,11 +237,19 @@ export async function handoffTask(
       const workdir = isHotfix ? config.root : registered!;
       const branch = await runGit(workdir, ["branch", "--show-current"], 10_000);
       if (branch.status !== 0 || branch.stdout.trim() !== task.branch) {
-        return { ok: false, step: "validate", detail: "registered worktree is not on the expected branch" };
+        return {
+          ok: false,
+          step: "validate",
+          detail: "registered worktree is not on the expected branch",
+        };
       }
       const worktreeTaskPath = join(workdir, task.path);
       if (!existsSync(worktreeTaskPath)) {
-        return { ok: false, step: "validate", detail: "task file is missing from the registered worktree" };
+        return {
+          ok: false,
+          step: "validate",
+          detail: "task file is missing from the registered worktree",
+        };
       }
       let worktreeTask: Task;
       try {
@@ -220,10 +261,21 @@ export async function handoffTask(
           defaultAssignee: config.defaultAssignee,
         });
       } catch (error) {
-        return { ok: false, step: "validate", detail: `could not parse the worktree task: ${(error as Error).message}` };
+        return {
+          ok: false,
+          step: "validate",
+          detail: `could not parse the worktree task: ${(error as Error).message}`,
+        };
       }
-      if (worktreeTask.id !== task.id || (worktreeTask.branch && worktreeTask.branch !== task.branch)) {
-        return { ok: false, step: "validate", detail: "worktree task identity does not match the active task" };
+      if (
+        worktreeTask.id !== task.id ||
+        (worktreeTask.branch && worktreeTask.branch !== task.branch)
+      ) {
+        return {
+          ok: false,
+          step: "validate",
+          detail: "worktree task identity does not match the active task",
+        };
       }
 
       if (task.status === "review" && worktreeTask.status === "review") {
@@ -231,9 +283,10 @@ export async function handoffTask(
       }
 
       onProgress?.("check");
-      const checkHandle = taskChecks && onTaskCheckEvent
-        ? taskChecks.start(task.id, "handoff-finalize", onTaskCheckEvent)
-        : undefined;
+      const checkHandle =
+        taskChecks && onTaskCheckEvent
+          ? taskChecks.start(task.id, "handoff-finalize", onTaskCheckEvent)
+          : undefined;
       const check = await runCheck(workdir, config, checkHandle?.chunk);
       checkHandle?.done(check.status);
       if (check.status !== 0) {
@@ -250,13 +303,16 @@ export async function handoffTask(
       onProgress?.("review");
       if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
         try {
-          patchTaskFile(
-            { ...config, root: workdir },
-            worktreeTaskPath,
-            { status: "review", branch: task.branch },
-          );
+          patchTaskFile({ ...config, root: workdir }, worktreeTaskPath, {
+            status: "review",
+            branch: task.branch,
+          });
         } catch (error) {
-          return { ok: false, step: "review", detail: `could not update the worktree task: ${(error as Error).message}` };
+          return {
+            ok: false,
+            step: "review",
+            detail: `could not update the worktree task: ${(error as Error).message}`,
+          };
         }
       }
 
@@ -271,38 +327,64 @@ export async function handoffTask(
           if (isHotfix && task.hotfixTarget !== "main") {
             const onHotfixBranch = await runGit(config.root, ["branch", "--show-current"], 10_000);
             if (onHotfixBranch.status !== 0 || onHotfixBranch.stdout.trim() !== task.branch) {
-              return { ok: false, step: "main", detail: "hotfix checkout changed before canonical task sync" };
+              return {
+                ok: false,
+                step: "main",
+                detail: "hotfix checkout changed before canonical task sync",
+              };
             }
             const checkoutMain = await runGit(config.root, ["checkout", "main"], 20_000);
             if (checkoutMain.status !== 0) {
-              return { ok: false, step: "main", detail: `could not check out main for task sync: ${concise(checkoutMain)}` };
+              return {
+                ok: false,
+                step: "main",
+                detail: `could not check out main for task sync: ${concise(checkoutMain)}`,
+              };
             }
             try {
-              patchTaskFile(config, join(config.root, task.path), {
-                status: "review",
-                branch: task.branch,
-                hotfix: true,
-                hotfixTarget: task.hotfixTarget,
-              }, {
-                onStatusChange: onStatusChange
-                  ? (updated, prev, next) => onStatusChange(updated, prev, next)
-                  : undefined,
-              });
+              patchTaskFile(
+                config,
+                join(config.root, task.path),
+                {
+                  status: "review",
+                  branch: task.branch,
+                  hotfix: true,
+                  hotfixTarget: task.hotfixTarget,
+                },
+                {
+                  onStatusChange: onStatusChange
+                    ? (updated, prev, next) => onStatusChange(updated, prev, next)
+                    : undefined,
+                },
+              );
             } finally {
               const restore = await runGit(config.root, ["checkout", task.branch], 20_000);
               if (restore.status !== 0) {
-                return { ok: false, step: "main", detail: `canonical task synced but could not restore hotfix checkout: ${concise(restore)}` };
+                return {
+                  ok: false,
+                  step: "main",
+                  detail: `canonical task synced but could not restore hotfix checkout: ${concise(restore)}`,
+                };
               }
             }
           } else {
-            patchTaskFile(config, task.absPath, { status: "review" }, {
-            onStatusChange: onStatusChange
-              ? (updated, prev, next) => onStatusChange(updated, prev, next)
-              : undefined,
-            });
+            patchTaskFile(
+              config,
+              task.absPath,
+              { status: "review" },
+              {
+                onStatusChange: onStatusChange
+                  ? (updated, prev, next) => onStatusChange(updated, prev, next)
+                  : undefined,
+              },
+            );
           }
         } catch (error) {
-          return { ok: false, step: "main", detail: `could not update the canonical task: ${(error as Error).message}` };
+          return {
+            ok: false,
+            step: "main",
+            detail: `could not update the canonical task: ${(error as Error).message}`,
+          };
         }
       }
       onProgress?.("done");
@@ -356,13 +438,21 @@ export function scheduleCheckFailureRetry(
   const detail = result.detail ?? "repoos check failed";
 
   if (retries >= MAX_CHECK_RETRY_ATTEMPTS) {
-    runner.persistHandoffFailure(task.id, task, `check failed after ${MAX_CHECK_RETRY_ATTEMPTS} automatic retries · ${detail}`);
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      `check failed after ${MAX_CHECK_RETRY_ATTEMPTS} automatic retries · ${detail}`,
+    );
     return false;
   }
 
   const engineer = resolveAgentForTask(config, task);
   if (!engineer) {
-    runner.persistHandoffFailure(task.id, task, `check failed and no engineer is configured to retry · ${detail}`);
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      `check failed and no engineer is configured to retry · ${detail}`,
+    );
     return false;
   }
 
@@ -377,32 +467,46 @@ export function scheduleCheckFailureRetry(
     ].join("\n");
     const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
     if (!sent.ok) {
-      runner.system(task.id, `✗ automatic check-failure retry could not resume: ${sent.reason ?? "unknown error"}`);
-      runner.persistHandoffFailure(task.id, task, `could not auto-retry after check failure · ${sent.reason ?? "unknown error"}`);
+      runner.system(
+        task.id,
+        `✗ automatic check-failure retry could not resume: ${sent.reason ?? "unknown error"}`,
+      );
+      runner.persistHandoffFailure(
+        task.id,
+        task,
+        `could not auto-retry after check failure · ${sent.reason ?? "unknown error"}`,
+      );
       return;
     }
     try {
       const raw = readFileSync(task.absPath, "utf8");
       const doc = parseDocument(raw);
       doc.data.check_retry_count = attempt;
-      
+
       // Persist parseable handoff-check failure details
       doc.data.last_check_failure = {
         stage: "check",
         command: "repoos check",
         exitCode: result.detail?.match(/exit (\d+)/)?.[1] || null,
         detail: detail,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
-      const keys = Object.keys(doc.data).filter((k) => k !== "check_retry_count" && k !== "last_check_failure");
+
+      const keys = Object.keys(doc.data).filter(
+        (k) => k !== "check_retry_count" && k !== "last_check_failure",
+      );
       keys.unshift("check_retry_count", "last_check_failure");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       onFileChange?.(task.absPath);
     } catch (err) {
-      console.error(`[repoos] could not persist check_retry_count for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] could not persist check_retry_count for #${task.id}: ${(err as Error).message}`,
+      );
     }
-    runner.system(task.id, `↻ automatically resuming after check failure (attempt ${attempt} of ${MAX_CHECK_RETRY_ATTEMPTS})`);
+    runner.system(
+      task.id,
+      `↻ automatically resuming after check failure (attempt ${attempt} of ${MAX_CHECK_RETRY_ATTEMPTS})`,
+    );
   }, CHECK_RETRY_DELAY_MS);
 
   return true;
@@ -467,7 +571,11 @@ export function scheduleMergeConflictRetry(
 
   const engineer = resolveAgentForTask(config, task);
   if (!engineer) {
-    runner.persistHandoffFailure(task.id, task, `merge conflict and no engineer is configured to retry · ${reason}`);
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      `merge conflict and no engineer is configured to retry · ${reason}`,
+    );
     return false;
   }
 
@@ -478,12 +586,19 @@ export function scheduleMergeConflictRetry(
       "",
       reason,
       "",
-      "In YOUR OWN branch's worktree (not the candidate — the candidate is discarded and rebuilt from your branch on every attempt): merge main into your branch, resolve the conflict by understanding what BOTH sides were trying to do — do not blindly prefer one side over the other unless one is genuinely obsolete — verify `repoos check` passes, and commit the merge. The task is already in `review`, so do NOT re-emit the handoff signal (it will just report \"already finalized\" and do nothing) — simply end your turn once the merge is committed and verified. The close-out retries automatically the moment your turn ends.",
+      'In YOUR OWN branch\'s worktree (not the candidate — the candidate is discarded and rebuilt from your branch on every attempt): merge main into your branch, resolve the conflict by understanding what BOTH sides were trying to do — do not blindly prefer one side over the other unless one is genuinely obsolete — verify `repoos check` passes, and commit the merge. The task is already in `review`, so do NOT re-emit the handoff signal (it will just report "already finalized" and do nothing) — simply end your turn once the merge is committed and verified. The close-out retries automatically the moment your turn ends.',
     ].join("\n");
     const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
     if (!sent.ok) {
-      runner.system(task.id, `✗ automatic merge-conflict retry could not resume: ${sent.reason ?? "unknown error"}`);
-      runner.persistHandoffFailure(task.id, task, `could not auto-retry after merge conflict · ${sent.reason ?? "unknown error"}`);
+      runner.system(
+        task.id,
+        `✗ automatic merge-conflict retry could not resume: ${sent.reason ?? "unknown error"}`,
+      );
+      runner.persistHandoffFailure(
+        task.id,
+        task,
+        `could not auto-retry after merge conflict · ${sent.reason ?? "unknown error"}`,
+      );
       return;
     }
     try {
@@ -495,9 +610,14 @@ export function scheduleMergeConflictRetry(
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       onFileChange?.(task.absPath);
     } catch (err) {
-      console.error(`[repoos] could not persist merge_conflict_retry_count for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] could not persist merge_conflict_retry_count for #${task.id}: ${(err as Error).message}`,
+      );
     }
-    runner.system(task.id, `↻ automatically resuming after merge conflict (attempt ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`);
+    runner.system(
+      task.id,
+      `↻ automatically resuming after merge conflict (attempt ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
+    );
   }, MERGE_CONFLICT_RETRY_DELAY_MS);
 
   return true;
@@ -557,7 +677,9 @@ export function scheduleHandoffSignalRetry(
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       onFileChange?.(task.absPath);
     } catch (err) {
-      console.error(`[repoos] could not persist handoff_signal_retry_count for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] could not persist handoff_signal_retry_count for #${task.id}: ${(err as Error).message}`,
+      );
     }
   };
 
@@ -573,7 +695,10 @@ export function scheduleHandoffSignalRetry(
     const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
     persistAttempt();
     if (!sent.ok) return; // capped; the watchdog's next scan surfaces it normally
-    runner.system(task.id, `↻ automatically resuming after a missed handoff signal (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`);
+    runner.system(
+      task.id,
+      `↻ automatically resuming after a missed handoff signal (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
+    );
   }, HANDOFF_SIGNAL_RETRY_DELAY_MS);
 
   return true;

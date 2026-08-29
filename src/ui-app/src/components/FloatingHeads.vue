@@ -16,7 +16,10 @@ function agentEnabled(head: string): boolean {
     return config.agents.some((a) => a.name.toLowerCase() === "cto" && a.enabled);
   }
   if (head === "ross") {
-    return config.agents.some((a) => (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide") && a.enabled);
+    return config.agents.some(
+      (a) =>
+        (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide") && a.enabled,
+    );
   }
   if (head === "debugger") {
     const data = config.data as Record<string, unknown> | null;
@@ -115,20 +118,24 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
   border: 2px solid var(--border-bright);
   border-radius: 50%;
   background: var(--panel-solid);
-  box-shadow: 0 14px 36px rgba(0,0,0,.24);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
   cursor: pointer;
-  transition: transform .18s ease, box-shadow .18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
   overflow: hidden;
 }
 
 .head-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 17px 42px rgba(0,0,0,.3);
+  box-shadow: 0 17px 42px rgba(0, 0, 0, 0.3);
 }
 
 .head-btn.active {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 3px var(--cyan-dim), 0 14px 36px rgba(0,0,0,.24);
+  box-shadow:
+    0 0 0 3px var(--cyan-dim),
+    0 14px 36px rgba(0, 0, 0, 0.24);
 }
 
 .head-btn img {
@@ -152,10 +159,12 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
 }
 
 @keyframes head-pulse {
-  50% { opacity: .35 }
+  50% {
+    opacity: 0.35;
+  }
 }
 
-@media(max-width: 760px) {
+@media (max-width: 760px) {
   .floating-heads {
     right: 12px;
     bottom: calc(74px + var(--safe-bot));
@@ -169,8 +178,9 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
   }
 }
 
-@media(prefers-reduced-motion: reduce) {
-  .head-btn, .live-dot {
+@media (prefers-reduced-motion: reduce) {
+  .head-btn,
+  .live-dot {
     animation: none;
     transition: none;
   }

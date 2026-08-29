@@ -71,7 +71,9 @@ export function sanitizePlaygroundHistory(raw: unknown): PlaygroundChatMessage[]
  * Exported for tests.
  */
 export function buildPlaygroundPrompt(runId: string, history: PlaygroundChatMessage[]): string {
-  const turns = history.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n\n");
+  const turns = history
+    .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+    .join("\n\n");
   return [
     `You are the model ${runId}, being tried out in a quick chat playground. Answer the user's latest message directly and concisely.`,
     turns,

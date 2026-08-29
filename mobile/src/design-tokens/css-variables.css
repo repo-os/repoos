@@ -3,37 +3,37 @@
   /* Background colors */
   --bg: #070a12;
   --bg-2: #0b1020;
-  --panel: rgba(17,23,41,0.6);
+  --panel: rgba(17, 23, 41, 0.6);
   --panel-solid: #0e1426;
-  
+
   /* Border colors */
-  --border: rgba(120,140,200,0.14);
-  --border-bright: rgba(120,160,255,0.35);
-  
+  --border: rgba(120, 140, 200, 0.14);
+  --border-bright: rgba(120, 160, 255, 0.35);
+
   /* Text colors */
   --txt: #e7ecf7;
   --txt-dim: #8a96b4;
   --txt-faint: #566081;
-  
+
   /* Core colors */
   --cyan: #39e0ff;
-  --cyan-dim: rgba(57,224,255,0.12);
+  --cyan-dim: rgba(57, 224, 255, 0.12);
   --violet: #9d7bff;
-  --violet-dim: rgba(157,123,255,0.12);
+  --violet-dim: rgba(157, 123, 255, 0.12);
   --green: #4ef0a8;
   --red: #ff6b7d;
   --amber: #ffb454;
-  
+
   /* Safe areas */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
-  
+
   /* Fonts */
-  --font-sans: 'Sora', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  
+  --font-sans: "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -44,11 +44,11 @@
   --spacing-3xl: 48px;
   --spacing-4xl: 56px;
   --spacing-5xl: 64px;
-  
+
   /* Touch targets */
   --touch-target: 44px;
   --touch-minimum: 44px;
-  
+
   /* Typography */
   --font-size-xs: 10px;
   --font-size-sm: 11px;
@@ -58,7 +58,7 @@
   --font-size-xl: 20px;
   --font-size-2xl: 23px;
   --font-size-3xl: 28px;
-  
+
   /* Border radius */
   --radius-none: 0px;
   --radius-sm: 4px;
@@ -68,58 +68,58 @@
   --radius-2xl: 15px;
   --radius-3xl: 16px;
   --radius-full: 9999px;
-  
+
   /* Border width */
   --border-width-none: 0px;
   --border-width-thin: 1px;
   --border-width-thick: 2px;
-  
+
   /* Shadows */
   --shadow-none: none;
   --shadow-xs: 0 0 4px currentColor;
   --shadow-sm: 0 0 7px currentColor;
-  --shadow-md: 0 0 14px rgba(0,0,0,0.06);
-  --shadow-lg: 0 0 18px rgba(57,224,255,0.35);
-  --shadow-xl: 0 3.5px 14px -7px rgba(57,224,255,0.4);
-  --shadow-2xl: 0 12px 0 80px -20px rgba(0,0,0,0.6);
-  --shadow-3xl: 0 20px 60px rgba(0,0,0,0.5);
-  
+  --shadow-md: 0 0 14px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 0 18px rgba(57, 224, 255, 0.35);
+  --shadow-xl: 0 3.5px 14px -7px rgba(57, 224, 255, 0.4);
+  --shadow-2xl: 0 12px 0 80px -20px rgba(0, 0, 0, 0.6);
+  --shadow-3xl: 0 20px 60px rgba(0, 0, 0, 0.5);
+
   /* Specialized shadows */
-  --card-glow: 0 0 0 1px rgba(57,224,255,0.16), 0 3.5px 14px -7px rgba(57,224,255,0.4);
-  --logo-shadow: 0 0 18px rgba(57,224,255,0.35);
-  --overlay-bg: rgba(4,7,14,0.6);
-  --drawer-shadow: 0 12px 0 80px -20px rgba(0,0,0,0.6);
+  --card-glow: 0 0 0 1px rgba(57, 224, 255, 0.16), 0 3.5px 14px -7px rgba(57, 224, 255, 0.4);
+  --logo-shadow: 0 0 18px rgba(57, 224, 255, 0.35);
+  --overlay-bg: rgba(4, 7, 14, 0.6);
+  --drawer-shadow: 0 12px 0 80px -20px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="light"] {
   /* Background colors */
   --bg: #f4f6fb;
   --bg-2: #eef0f6;
-  --panel: rgba(255,255,255,0.7);
+  --panel: rgba(255, 255, 255, 0.7);
   --panel-solid: #fff;
-  
+
   /* Border colors */
-  --border: rgba(0,0,0,0.07);
-  --border-bright: rgba(60,100,200,0.2);
-  
+  --border: rgba(0, 0, 0, 0.07);
+  --border-bright: rgba(60, 100, 200, 0.2);
+
   /* Text colors */
   --txt: #1e2130;
   --txt-dim: #5d6880;
   --txt-faint: #91a0bb;
-  
+
   /* Core colors */
   --cyan: #0678b3;
-  --cyan-dim: rgba(6,120,179,0.08);
+  --cyan-dim: rgba(6, 120, 179, 0.08);
   --violet: #6b3fc0;
-  --violet-dim: rgba(107,63,192,0.08);
+  --violet-dim: rgba(107, 63, 192, 0.08);
   --green: #15865a;
   --red: #c93a4e;
   --amber: #b87a2a;
-  
+
   /* Shadows */
-  --shadow-md: 0 0 14px rgba(0,0,0,0.06);
-  --shadow-lg: 0 2px 16px rgba(6,120,179,0.15);
-  --shadow-xl: 0 0 0 1px rgba(6,120,179,0.06), 0 3.5px 14px -7px rgba(0,0,0,0.06);
-  --shadow-2xl: 0 12px 0 80px -20px rgba(0,0,0,0.1);
-  --overlay-bg: rgba(220,225,235,0.6);
+  --shadow-md: 0 0 14px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 2px 16px rgba(6, 120, 179, 0.15);
+  --shadow-xl: 0 0 0 1px rgba(6, 120, 179, 0.06), 0 3.5px 14px -7px rgba(0, 0, 0, 0.06);
+  --shadow-2xl: 0 12px 0 80px -20px rgba(0, 0, 0, 0.1);
+  --overlay-bg: rgba(220, 225, 235, 0.6);
 }

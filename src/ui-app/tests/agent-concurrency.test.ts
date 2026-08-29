@@ -127,7 +127,10 @@ describe("agent start concurrency cap", () => {
       expect(runner.isRunning("0002")).toBe(false);
       expect(runner.isRunning("0003")).toBe(false);
 
-      await waitFor(() => spawnOrder(fx).length === 3, "all three turns to have spawned in sequence");
+      await waitFor(
+        () => spawnOrder(fx).length === 3,
+        "all three turns to have spawned in sequence",
+      );
       expect(spawnOrder(fx)).toEqual(["0001", "0002", "0003"]);
     } finally {
       runner.dispose();

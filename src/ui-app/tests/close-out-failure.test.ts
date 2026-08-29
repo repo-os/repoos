@@ -20,7 +20,9 @@ const CONFLICT_HINT =
 
 describe("classifyFailure", () => {
   it("classifies a merge conflict ahead of everything else", () => {
-    expect(classifyFailure("validating", "merge conflict in src/a.ts — resolve it")).toBe("conflict");
+    expect(classifyFailure("validating", "merge conflict in src/a.ts — resolve it")).toBe(
+      "conflict",
+    );
     expect(classifyFailure("publishing", "merge conflict: src/a.ts")).toBe("conflict");
   });
 
@@ -32,9 +34,9 @@ describe("classifyFailure", () => {
   });
 
   it("classifies a dirty publish as dirty, not a conflict", () => {
-    expect(
-      classifyFailure("publishing", "main has 1 uncommitted file at publish time"),
-    ).toBe("dirty");
+    expect(classifyFailure("publishing", "main has 1 uncommitted file at publish time")).toBe(
+      "dirty",
+    );
   });
 
   it("classifies syncing failures", () => {
@@ -47,12 +49,15 @@ describe("classifyFailure", () => {
   });
 
   it("classifies unresolved conflict markers as conflict, not other", () => {
-    expect(classifyFailure("validating", "unresolved conflict markers in src/config.ts")).toBe("conflict");
+    expect(classifyFailure("validating", "unresolved conflict markers in src/config.ts")).toBe(
+      "conflict",
+    );
     expect(classifyFailure(undefined, "unresolved conflict markers in README.md")).toBe("conflict");
   });
 
   it("classifies 'could not verify main is clean at publish time' as dirty", () => {
-    const reason = 'could not verify main is clean at publish time (dirty). The candidate was NOT merged; retry, or commit/stash main\'s working tree first.';
+    const reason =
+      "could not verify main is clean at publish time (dirty). The candidate was NOT merged; retry, or commit/stash main's working tree first.";
     expect(classifyFailure("publishing", reason)).toBe("dirty");
     // Also matches when phase is undefined (sync-path /done handler).
     expect(classifyFailure(undefined, reason)).toBe("dirty");
@@ -65,7 +70,8 @@ describe("classifyFailure", () => {
 
 describe("describeCloseOutFailure", () => {
   it("maps a validating check failure to check output + retry, never conflicts", () => {
-    const reason = "check failed: \u001b[31m✗\u001b[0m deletion detected by watcher\n  at tests/x.test.ts:12";
+    const reason =
+      "check failed: \u001b[31m✗\u001b[0m deletion detected by watcher\n  at tests/x.test.ts:12";
     const err = describeCloseOutFailure("validating", reason);
 
     // ANSI escapes are stripped from the reason before display.
@@ -105,7 +111,10 @@ describe("describeCloseOutFailure", () => {
   it("keeps a headline short even when the raw reason is huge, moving the rest to detail", () => {
     // A real merge-conflict reason can carry a long file listing/diff excerpt —
     // that must never end up rendered unclamped in the task panel (0253).
-    const hugeReason = "merge conflict in " + Array.from({ length: 50 }, (_, i) => `src/file-${i}.ts`).join(", ") + " — resolve it";
+    const hugeReason =
+      "merge conflict in " +
+      Array.from({ length: 50 }, (_, i) => `src/file-${i}.ts`).join(", ") +
+      " — resolve it";
     const err = describeCloseOutFailure(undefined, hugeReason);
     expect(err.message.length).toBeLessThanOrEqual(240);
     expect(err.detail).toBe(hugeReason);
@@ -126,7 +135,10 @@ describe("describeCloseOutFailure", () => {
   });
 
   it("extracts files from 'unresolved conflict markers in X' form", () => {
-    const err = describeCloseOutFailure("validating", "unresolved conflict markers in src/config.ts");
+    const err = describeCloseOutFailure(
+      "validating",
+      "unresolved conflict markers in src/config.ts",
+    );
     expect(err.conflicts).toEqual(["src/config.ts"]);
     expect(err.hint).toBe(CONFLICT_HINT);
   });
@@ -134,7 +146,7 @@ describe("describeCloseOutFailure", () => {
   it("says the tree is dirty and names the files for a dirty publish", () => {
     const err = describeCloseOutFailure(
       "publishing",
-      "main has 2 uncommitted files at publish time, so the merge would abort: dirty.txt, note.md. The candidate was NOT merged; commit or stash those on main (or use \"Commit & continue\") and retry.",
+      'main has 2 uncommitted files at publish time, so the merge would abort: dirty.txt, note.md. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.',
     );
     expect(err.conflicts).toEqual([]);
     expect(err.message).toContain("dirty.txt");

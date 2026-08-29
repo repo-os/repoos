@@ -118,10 +118,7 @@ describe("debugger agent integration", () => {
     // agent.running / agent.exited events keyed by the server's session id. If
     // the two drift apart, live output and busy state silently stop routing to
     // the panel even though the transcript still hydrates on mount.
-    const source = readFileSync(
-      resolve(__dirname, "../src/components/DebuggerChat.vue"),
-      "utf8",
-    );
+    const source = readFileSync(resolve(__dirname, "../src/components/DebuggerChat.vue"), "utf8");
     expect(source).toContain(`const CHAT_ID = "${debuggerSessionId}"`);
     expect(source).toContain("Change agent or model");
     expect(source).toContain("useRouter");

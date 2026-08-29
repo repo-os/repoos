@@ -44,7 +44,12 @@ describe("Ross (Repository Assistant)", () => {
   });
 
   it("resolves both the new Ross name and the legacy RepoOS Guide name", () => {
-    const legacyGuide = { name: "RepoOS Guide", cli: "opencode", model: "big pickle", enabled: true };
+    const legacyGuide = {
+      name: "RepoOS Guide",
+      cli: "opencode",
+      model: "big pickle",
+      enabled: true,
+    };
     expect(resolveRepoGuide(config([legacyGuide]))?.name).toBe("Ross");
   });
 
@@ -195,13 +200,19 @@ describe("RepoOS Guide message submission", () => {
     textarea.value = "日本語";
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const composing = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    const composing = new KeyboardEvent("keydown", {
+      key: "Enter",
+      bubbles: true,
+      cancelable: true,
+    });
     Object.defineProperty(composing, "isComposing", { value: true });
     textarea.dispatchEvent(composing);
     await nextTick();
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
 
-    textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    textarea.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+    );
     await vi.waitFor(() =>
       expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1),
     );

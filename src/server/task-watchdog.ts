@@ -152,7 +152,12 @@ const ACTIVITY_SCAN_FILE_LIMIT = 2000;
  * Depth-first, bounded by `ACTIVITY_SCAN_FILE_LIMIT`, returns at the first
  * qualifying file found rather than walking the whole tree.
  */
-function hasRecentMtime(dir: string, withinMs: number, now: number, budget: { left: number }): boolean {
+function hasRecentMtime(
+  dir: string,
+  withinMs: number,
+  now: number,
+  budget: { left: number },
+): boolean {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -211,10 +216,7 @@ export function hasRecentWorktreeActivity(
  * `handoff failed · …` entry); `runner.output(id)` reveals whether the task
  * ever had a session (in-memory or persisted) at all.
  */
-export function classifyDeadAgentReason(
-  task: Task,
-  runner: AgentRunner,
-): DeadAgentClassification {
+export function classifyDeadAgentReason(task: Task, runner: AgentRunner): DeadAgentClassification {
   // A persisted handoff failure is the strongest signal: the turn reached the
   // handoff boundary but its process ended uncleanly (or the task could not be
   // resolved) — the "killed mid-turn" shape.
@@ -227,13 +229,14 @@ export function classifyDeadAgentReason(
         reason: `check-failed-after-retries · ${failed}`,
       };
     }
-    
+
     // Recovery was attempted but finalization failed — surface that outcome,
     // not the original "retained for recovery" which is now stale (#0235).
     if (HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) {
       return {
         kind: "crashed",
-        reason: "handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed",
+        reason:
+          "handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed",
       };
     }
     // A "retained for recovery" failure means the request was persisted and
@@ -241,7 +244,8 @@ export function classifyDeadAgentReason(
     if (HANDOFF_RETAINED.test(failed)) {
       return {
         kind: "crashed",
-        reason: "agent turn was interrupted with a pending handoff — retained for recovery on next server start",
+        reason:
+          "agent turn was interrupted with a pending handoff — retained for recovery on next server start",
       };
     }
     return {
@@ -487,7 +491,8 @@ export class TaskWatchdog {
     // Handoffs fired and finalization failed, the Activity log will contain a
     // "handoff recovery attempted" entry and the watchdog must be free to
     // surface/escalate the task again.
-    if (HANDOFF_RETAINED.test(task.body) && !HANDOFF_RECOVERY_ATTEMPTED.test(task.body)) return false;
+    if (HANDOFF_RETAINED.test(task.body) && !HANDOFF_RECOVERY_ATTEMPTED.test(task.body))
+      return false;
     if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
     // The Activity log looks stale, but `isRunning()` above only reflects the
     // in-memory registry, which is empty after every server restart with no
@@ -542,13 +547,13 @@ export class TaskWatchdog {
     if (alreadySurfaced(current.body)) return;
 
     const { kind, reason } = classifyDeadAgentReason(current, this.runner);
-    
+
     // Check if this is a terminal check failure that should immediately set needs_input
     if (reason.startsWith("check-failed-after-retries")) {
       this.escalateToNeedsInput(current, reason);
       return;
     }
-    
+
     // #0271 follow-up: `exited-without-handoff` is the one dead-session shape
     // with a plausible quick fix — the agent may have simply mis-emitted the
     // signal line (#0154/#0155) or just needs a nudge to finish. Give the
@@ -556,12 +561,12 @@ export class TaskWatchdog {
     // to surfacing (which is still the correct outcome for `never-started` —
     // nothing to resume — and `crashed`, which already has its own recovery
     // path via the persisted-handoff-failure machinery).
-    if (kind === "exited-without-handoff" && scheduleHandoffSignalRetry(
-      this.config,
-      current,
-      this.runner,
-      (absPath) => this.index.applyFileChange(absPath, { guarded: true }),
-    )) {
+    if (
+      kind === "exited-without-handoff" &&
+      scheduleHandoffSignalRetry(this.config, current, this.runner, (absPath) =>
+        this.index.applyFileChange(absPath, { guarded: true }),
+      )
+    ) {
       return;
     }
     if (this.autoTransition) {
@@ -670,9 +675,7 @@ export class TaskWatchdog {
     if (current.needsInput || alreadySurfaced(current.body)) return;
 
     const reason =
-      failureReason ??
-      extractHandoffFailure(current.body) ??
-      "handoff signal was not detected";
+      failureReason ?? extractHandoffFailure(current.body) ?? "handoff signal was not detected";
 
     const note = `watchdog: escalated to needs_input · ${reason} · next step: ${suggestNextStep(reason)}`;
     try {
@@ -681,7 +684,9 @@ export class TaskWatchdog {
       recordChange(current, note);
       this.writeTask(current);
     } catch (err) {
-      console.error(`[repoos] watchdog: failed to write escalation for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] watchdog: failed to write escalation for #${task.id}: ${(err as Error).message}`,
+      );
     }
   }
 

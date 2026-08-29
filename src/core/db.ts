@@ -325,7 +325,9 @@ export class RepoOSDb {
     try {
       let currentVersion = 0;
       try {
-        const result = this.db.prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").all();
+        const result = this.db
+          .prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+          .all();
         currentVersion = result.length > 0 ? (result[0] as { version: number }).version : 0;
       } catch {
         // No schema_version yet — run all migrations below.
@@ -448,7 +450,9 @@ export class RepoOSDb {
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];
     try {
-      return this.db.prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC").all(taskId) as SessionRecord[];
+      return this.db
+        .prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC")
+        .all(taskId) as SessionRecord[];
     } catch {
       return [];
     }
@@ -492,7 +496,9 @@ export class RepoOSDb {
   getDailyTotals(): DailyTotals[] {
     if (!this.available || !this.db) return [];
     try {
-      const rows = this.db.prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL").all() as SessionRecord[];
+      const rows = this.db
+        .prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL")
+        .all() as SessionRecord[];
       const byDay = new Map<string, SessionRecord[]>();
       for (const r of rows) {
         const d = new Date(r.endedAt as string);
@@ -552,7 +558,10 @@ export class RepoOSDb {
   }
 
   /** Group sessions by a key, preserving insertion order of keys. */
-  private groupRows(rows: SessionRecord[], key: (r: SessionRecord) => string): Array<[string, SessionRecord[]]> {
+  private groupRows(
+    rows: SessionRecord[],
+    key: (r: SessionRecord) => string,
+  ): Array<[string, SessionRecord[]]> {
     const map = new Map<string, SessionRecord[]>();
     for (const r of rows) {
       const k = key(r);
@@ -659,24 +668,30 @@ export class RepoOSDb {
     }
 
     try {
-      const summary = this.db.prepare(`
+      const summary = this.db
+        .prepare(`
         SELECT
           COUNT(*) as totalSessions,
           COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
           SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
         FROM sessions
-      `).all()[0] as any;
+      `)
+        .all()[0] as any;
 
-      const mostExpensive = this.db.prepare(`
+      const mostExpensive = this.db
+        .prepare(`
         SELECT * FROM sessions
         WHERE costUsd IS NOT NULL
         ORDER BY costUsd DESC
         LIMIT 1
-      `).all();
-      const mostExpensiveSession = mostExpensive.length > 0 ? (mostExpensive[0] as SessionRecord) : null;
+      `)
+        .all();
+      const mostExpensiveSession =
+        mostExpensive.length > 0 ? (mostExpensive[0] as SessionRecord) : null;
 
-      const mostExpensiveTaskResult = this.db.prepare(`
+      const mostExpensiveTaskResult = this.db
+        .prepare(`
         SELECT
           taskId,
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as costUsd
@@ -685,10 +700,14 @@ export class RepoOSDb {
         GROUP BY taskId
         ORDER BY costUsd DESC
         LIMIT 1
-      `).all();
+      `)
+        .all();
       const mostExpensiveTask =
         mostExpensiveTaskResult.length > 0
-          ? { taskId: (mostExpensiveTaskResult[0] as any).taskId, costUsd: (mostExpensiveTaskResult[0] as any).costUsd }
+          ? {
+              taskId: (mostExpensiveTaskResult[0] as any).taskId,
+              costUsd: (mostExpensiveTaskResult[0] as any).costUsd,
+            }
           : null;
 
       // Representative cost source across the whole board — mirrors the per-role
@@ -700,7 +719,11 @@ export class RepoOSDb {
         )
         .all() as { costSource: string }[];
       const costSource =
-        sourceRows.length > 1 ? "mixed" : sourceRows.length === 1 ? sourceRows[0].costSource : "none";
+        sourceRows.length > 1
+          ? "mixed"
+          : sourceRows.length === 1
+            ? sourceRows[0].costSource
+            : "none";
 
       return {
         totalSessions: summary.totalSessions || 0,
@@ -775,15 +798,17 @@ export function getSessionTypeStats(repoRoot: string): SessionTypeStats[] {
 /** Convenience function to get board stats from the singleton database. */
 export function getBoardStats(repoRoot: string): BoardStats {
   const db = getRepoOSDb(repoRoot);
-  return db?.getBoardStats() ?? {
-    totalSessions: 0,
-    totalElapsedMs: 0,
-    totalTokens: null,
-    totalCostUsd: null,
-    costSource: "none",
-    mostExpensiveSession: null,
-    mostExpensiveTask: null,
-    roles: [],
-    days: [],
-  };
+  return (
+    db?.getBoardStats() ?? {
+      totalSessions: 0,
+      totalElapsedMs: 0,
+      totalTokens: null,
+      totalCostUsd: null,
+      costSource: "none",
+      mostExpensiveSession: null,
+      mostExpensiveTask: null,
+      roles: [],
+      days: [],
+    }
+  );
 }

@@ -41,7 +41,7 @@ function task(title = "Fix the widget"): Task {
     status: "active",
     needsInput: false,
     needsMerge: false,
-  noSourceChange: false,
+    noSourceChange: false,
     priority: "p2",
     area: "ui",
     assignee: "ai",
@@ -127,7 +127,8 @@ describe("formatNotification", () => {
 
   it("truncates long titles to fit on one line", () => {
     const spec = { headline: "▶️ Started", priority: "low" as const };
-    const longTitle = "Add file tree navigation and refresh button and context menu to context page and activity log";
+    const longTitle =
+      "Add file tree navigation and refresh button and context menu to context page and activity log";
     const msg = formatNotification(spec, longTitle);
     expect(msg.length).toBeLessThanOrEqual(60); // ~50 char target + some buffer
     expect(msg).toContain("…");
@@ -236,7 +237,11 @@ describe("notifyStatusChange / notifyTaskCreated", () => {
   it("posts to a configured base URL when set", () => {
     stubFetch();
     notifyStatusChange(
-      config({ ntfyEnabled: true, ntfyTopic: "repoos_test", ntfyBaseUrl: "https://ntfy.example.com" }),
+      config({
+        ntfyEnabled: true,
+        ntfyTopic: "repoos_test",
+        ntfyBaseUrl: "https://ntfy.example.com",
+      }),
       task(),
       "review",
       "done",

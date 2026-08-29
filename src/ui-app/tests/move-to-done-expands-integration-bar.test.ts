@@ -142,7 +142,11 @@ describe("Move to done (#0202-adjacent UX): closes the drawer and expands the in
           return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
         if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
         if (url.endsWith("/done") && opts?.method === "POST")
-          return { ok: false, status: 500, json: async () => ({ ok: false, error: "check failed" }) };
+          return {
+            ok: false,
+            status: 500,
+            json: async () => ({ ok: false, error: "check failed" }),
+          };
         throw new Error("unexpected fetch: " + url);
       }),
     );

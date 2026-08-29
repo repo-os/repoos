@@ -46,7 +46,9 @@ interface Col {
   tasks: Task[];
 }
 
-function cols(...groups: Array<[string, string[]] | [string, string[], { collapsed: boolean }]>): Col[] {
+function cols(
+  ...groups: Array<[string, string[]] | [string, string[], { collapsed: boolean }]>
+): Col[] {
   return groups.map(([id, ids, opts]) => ({
     id,
     collapsed: opts?.collapsed ?? false,
@@ -69,11 +71,26 @@ const Harness = defineComponent({
   setup(props, { emit }) {
     const containerRef = ref<HTMLElement | null>(null);
     const tasks = ref(props.columns.flatMap((c) => c.tasks));
-    watch(() => props.columns, (v) => { tasks.value = v.flatMap((c) => c.tasks); });
+    watch(
+      () => props.columns,
+      (v) => {
+        tasks.value = v.flatMap((c) => c.tasks);
+      },
+    );
     const enabled = ref(props.enabled);
-    watch(() => props.enabled, (v) => { enabled.value = v; });
+    watch(
+      () => props.enabled,
+      (v) => {
+        enabled.value = v;
+      },
+    );
     const panelOpen = ref(props.panelOpen);
-    watch(() => props.panelOpen, (v) => { panelOpen.value = v; });
+    watch(
+      () => props.panelOpen,
+      (v) => {
+        panelOpen.value = v;
+      },
+    );
     const nav = useBoardKeyboardNav({
       containerRef,
       tasks,
@@ -89,7 +106,11 @@ const Harness = defineComponent({
         props.columns.map((col) =>
           h(
             "div",
-            { class: ["board-col", col.collapsed ? "collapsed" : ""], "data-col": col.id, key: "col" + col.id },
+            {
+              class: ["board-col", col.collapsed ? "collapsed" : ""],
+              "data-col": col.id,
+              key: "col" + col.id,
+            },
             col.tasks.map((t) =>
               h(
                 "div",
@@ -113,7 +134,12 @@ async function press(
   opts: { shiftKey?: boolean } = {},
 ): Promise<void> {
   target.dispatchEvent(
-    new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, shiftKey: opts.shiftKey ?? false }),
+    new KeyboardEvent("keydown", {
+      key,
+      bubbles: true,
+      cancelable: true,
+      shiftKey: opts.shiftKey ?? false,
+    }),
   );
   // The highlighted class binds reactively; allow a render tick before asserting.
   await nextTick();

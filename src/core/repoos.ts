@@ -4,12 +4,7 @@
  * mutations edit the underlying markdown file directly — the file is always the
  * source of truth, status is a frontmatter field, and files NEVER move folders.
  */
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { buildIndex, writeIndexCache } from "./indexer.js";
@@ -27,13 +22,7 @@ import {
   emptyGitInfo,
   type CommitNewFileResult,
 } from "./git.js";
-import {
-  STATUSES,
-  type RepoOSConfig,
-  type RepoIndex,
-  type Task,
-  type Status,
-} from "./types.js";
+import { STATUSES, type RepoOSConfig, type RepoIndex, type Task, type Status } from "./types.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -61,10 +50,7 @@ export { ORIGINAL_PROMPT_HEADING };
  * left untouched. This keeps the raw capture in the file no matter how a later
  * agent pass rewrites the rest of the body.
  */
-export function withOriginalPromptSection(
-  body: string,
-  originalPrompt?: string,
-): string {
+export function withOriginalPromptSection(body: string, originalPrompt?: string): string {
   if (!originalPrompt) return body;
   if (body.includes(ORIGINAL_PROMPT_HEADING)) return body;
   const section = `${ORIGINAL_PROMPT_HEADING}\n\n${originalPrompt.trim()}`;
@@ -195,9 +181,7 @@ export function createRepoOS(root?: string): RepoOS {
 
     updateStatus(id: string, status: Status, note?: string) {
       if (!(STATUSES as readonly string[]).includes(status)) {
-        throw new Error(
-          `Invalid status "${status}". Valid: ${STATUSES.join(", ")}`,
-        );
+        throw new Error(`Invalid status "${status}". Valid: ${STATUSES.join(", ")}`);
       }
       const task = findFile(id);
       if (!task) throw new Error(`Task #${id} not found.`);
@@ -253,8 +237,7 @@ export function createRepoOS(root?: string): RepoOS {
         noSourceChange: false,
         priority: input.priority ?? "p2",
         area: input.area ?? "general",
-        assignee:
-          (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
+        assignee: (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
         assignedTo: input.assignedTo ?? "",
         createdBy: input.createdBy ?? "",
         branch: input.branch ?? "",
@@ -283,9 +266,7 @@ export function createRepoOS(root?: string): RepoOS {
         git: emptyGitInfo(),
       };
 
-      const content = input.body
-        ? serializeTask(task)
-        : TASK_TEMPLATE(task);
+      const content = input.body ? serializeTask(task) : TASK_TEMPLATE(task);
       writeFileSync(absPath, content);
       try {
         writeIndexCache(config, freshIndex());

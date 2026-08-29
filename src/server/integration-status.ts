@@ -11,7 +11,13 @@ import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
 import type { DoneStep } from "./done.js";
 
 /** The five discrete stages surfaced to the user, in pipeline order. */
-export const PIPELINE_STAGES: readonly string[] = ["sync", "merge", "build", "check", "done"] as const;
+export const PIPELINE_STAGES: readonly string[] = [
+  "sync",
+  "merge",
+  "build",
+  "check",
+  "done",
+] as const;
 
 export interface IntegrationSnapshot {
   /** True when nothing is queued or in progress — the idle empty state. */

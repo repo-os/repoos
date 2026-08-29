@@ -21,9 +21,11 @@ import { detectTailscaleIPv4 } from "../core/tailscale.js";
  * though the actual bind is 0.0.0.0) so callers can show the address other
  * tailnet devices should actually use.
  */
-export function resolveServeHost(
-  explicitHost?: string,
-): { host: string; tailscaleDetected: boolean; tailscaleIP?: string } {
+export function resolveServeHost(explicitHost?: string): {
+  host: string;
+  tailscaleDetected: boolean;
+  tailscaleIP?: string;
+} {
   if (explicitHost) return { host: explicitHost, tailscaleDetected: false };
   const tailscaleIP = detectTailscaleIPv4();
   if (tailscaleIP) return { host: "0.0.0.0", tailscaleDetected: true, tailscaleIP };
@@ -38,28 +40,31 @@ export function resolveServeHost(
  * processes keep working. Exported for the defense-in-depth tests (#0096).
  */
 export function directServeBlockedByAgent(env: NodeJS.ProcessEnv = process.env): boolean {
-  return (
-    env.REPOOS_AGENT === "1" &&
-    env.REPOOS_PREVIEW_CHILD !== "1" &&
-    env.REPOOS_RELOAD !== "1"
-  );
+  return env.REPOOS_AGENT === "1" && env.REPOOS_PREVIEW_CHILD !== "1" && env.REPOOS_RELOAD !== "1";
 }
 
-export async function cmdServe(args: string[], opts: { onShutdown?: () => void } = {}): Promise<void> {
+export async function cmdServe(
+  args: string[],
+  opts: { onShutdown?: () => void } = {},
+): Promise<void> {
   // Defense in depth (#0096): a managed agent process must never start its own
   // `repoos serve`. An agent that ignores the mission and runs `repoos serve`
   // directly is rejected here BEFORE binding, so it can never grab the main
   // server port.
   if (directServeBlockedByAgent()) {
+    console.error(c.red("  ✗ Managed agent processes may not launch `repoos serve`."));
     console.error(
-      c.red("  ✗ Managed agent processes may not launch `repoos serve`."),
+      c.dim(
+        "    RepoOS owns previews and the control-plane port. Request a managed preview instead:",
+      ),
     );
     console.error(
-      c.dim("    RepoOS owns previews and the control-plane port. Request a managed preview instead:"),
+      c.dim(`      include this exact line in your response: ${PREVIEW_REQUEST_SIGNAL}`),
     );
-    console.error(c.dim(`      include this exact line in your response: ${PREVIEW_REQUEST_SIGNAL}`));
     console.error(
-      c.dim("    RepoOS starts the preview from your worktree, probes it server-side, and records the URL + result in your transcript."),
+      c.dim(
+        "    RepoOS starts the preview from your worktree, probes it server-side, and records the URL + result in your transcript.",
+      ),
     );
     process.exitCode = 1;
     return;
@@ -88,8 +93,7 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
     const msg = (e as Error).message;
     if (msg.includes("EADDRINUSE")) {
       console.error(
-        c.red(`  Port ${port} is in use.`) +
-          c.dim(` Try: repoos serve --port ${port + 1}`),
+        c.red(`  Port ${port} is in use.`) + c.dim(` Try: repoos serve --port ${port + 1}`),
       );
     } else {
       console.error(c.red("  Failed to start server: " + msg));
@@ -99,14 +103,8 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
   }
 
   const snap = handle.index.snapshot();
-  console.log(
-    c.bold(c.cyan("\n  RepoOS server")) +
-      c.dim("  ·  ") +
-      c.bold(handle.url),
-  );
-  console.log(
-    c.dim("  open ") + c.cyan(handle.url) + c.dim(" in your browser for the UI"),
-  );
+  console.log(c.bold(c.cyan("\n  RepoOS server")) + c.dim("  ·  ") + c.bold(handle.url));
+  console.log(c.dim("  open ") + c.cyan(handle.url) + c.dim(" in your browser for the UI"));
   console.log(
     c.dim("  watching ") +
       snap.taskCount +
@@ -118,8 +116,7 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
     : `Node ${process.versions.node}`;
   console.log(c.dim("  runtime ") + rt);
   console.log(
-    c.dim("  api: ") +
-      c.dim("/api/tasks  /api/tasks/:id  /api/counts  /api/index  /api/docs"),
+    c.dim("  api: ") + c.dim("/api/tasks  /api/tasks/:id  /api/counts  /api/index  /api/docs"),
   );
   if (tailscaleDetected) {
     console.log(
@@ -144,12 +141,13 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
       else if (e.type === "task.updated") {
         const changed = Object.keys(e.prev).join(", ");
         const statusBit =
-          e.prev.status !== undefined
-            ? " → " + statusColor(e.task.status)(e.task.status)
-            : "";
+          e.prev.status !== undefined ? " → " + statusColor(e.task.status)(e.task.status) : "";
         console.log(
-          stamp + c.cyan("updated ") + c.dim("#" + e.task.id) +
-            statusBit + c.dim("  (" + changed + ")"),
+          stamp +
+            c.cyan("updated ") +
+            c.dim("#" + e.task.id) +
+            statusBit +
+            c.dim("  (" + changed + ")"),
         );
       } else if (e.type === "task.deleted")
         console.log(stamp + c.red("deleted ") + c.dim("#" + e.id));
@@ -160,7 +158,9 @@ export async function cmdServe(args: string[], opts: { onShutdown?: () => void }
   const shutdown = async (signal: "SIGINT" | "SIGTERM") => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(c.dim(`\n  shutting down after ${signal} (pid ${process.pid}, port ${handle.port})…`));
+    console.log(
+      c.dim(`\n  shutting down after ${signal} (pid ${process.pid}, port ${handle.port})…`),
+    );
     await handle.close(`received ${signal}`);
     opts.onShutdown?.();
     process.exit(0);

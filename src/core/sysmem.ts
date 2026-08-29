@@ -11,7 +11,11 @@ import { freemem, platform } from "node:os";
 
 function run(cmd: string, args: string[]): string | null {
   try {
-    return execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 4000 });
+    return execFileSync(cmd, args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 4000,
+    });
   } catch {
     return null;
   }

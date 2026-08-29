@@ -98,15 +98,9 @@ export async function guardReviewTransition(
 
   if (isHotfix) {
     const touched = agentTouchedFiles(registered, "HEAD");
-    const sourceFiles = touched.filter(
-      (p) => !isGeneratedOrTask(p, task.path),
-    );
+    const sourceFiles = touched.filter((p) => !isGeneratedOrTask(p, task.path));
     if (sourceFiles.length > 0) {
-      const add = await runGit(
-        registered,
-        ["add", "--", ...sourceFiles],
-        30_000,
-      );
+      const add = await runGit(registered, ["add", "--", ...sourceFiles], 30_000);
       if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
     }
     const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
@@ -116,7 +110,8 @@ export async function guardReviewTransition(
         ["commit", "-m", `hotfix(${task.id}): ${task.title}`],
         30_000,
       );
-      if (commit.status !== 0) return { ok: false, detail: `git commit failed: ${concise(commit)}` };
+      if (commit.status !== 0)
+        return { ok: false, detail: `git commit failed: ${concise(commit)}` };
     } else if (staged.status !== 0) {
       return { ok: false, detail: `could not inspect staged changes: ${concise(staged)}` };
     }
@@ -181,11 +176,13 @@ interface RunResult {
 }
 
 function concise(run: RunResult): string {
-  return [run.stdout, run.stderr]
-    .join("\n")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(-8)
-    .join(" · ") || `exit ${run.status}`;
+  return (
+    [run.stdout, run.stderr]
+      .join("\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(-8)
+      .join(" · ") || `exit ${run.status}`
+  );
 }

@@ -32,19 +32,15 @@ describe("buildDocTree", () => {
   });
 
   it("keys directories by full path so same-named dirs stay distinct", () => {
-    const tree = buildDocTree([
-      { path: "a/api/readme.md" },
-      { path: "b/api/readme.md" },
-    ]);
+    const tree = buildDocTree([{ path: "a/api/readme.md" }, { path: "b/api/readme.md" }]);
     const dirs = tree.flatMap((n) => n.children!).filter((n) => !n.isFile);
     expect(dirs.map((n) => n.key).sort()).toEqual(["a/api", "b/api"]);
   });
 
   it("sorts directories before files and ignores empty paths", () => {
-    expect(buildDocTree([{ path: "" }, { path: "b.md" }, { path: "a/x.md" }]).map((n) => n.name)).toEqual([
-      "a",
-      "b.md",
-    ]);
+    expect(
+      buildDocTree([{ path: "" }, { path: "b.md" }, { path: "a/x.md" }]).map((n) => n.name),
+    ).toEqual(["a", "b.md"]);
   });
 });
 

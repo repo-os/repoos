@@ -51,14 +51,17 @@ const offlineFetch = (() => {
 
 const latestFetch = (latest: string): typeof fetch =>
   (() =>
-    Promise.resolve({ ok: true, json: () => Promise.resolve({ version: latest }) })) as unknown as typeof fetch;
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ version: latest }),
+    })) as unknown as typeof fetch;
 
 const byType = (issues: TechDebtIssue[], type: TechDebtIssue["type"]) =>
   issues.filter((i) => i.type === type);
 
 describe("stripCommentsAndStrings", () => {
   it("blanks line comments, block comments, and string literals", () => {
-    const src = "// var a = 1\n/* var b = 2 */\nconst s = \"var c\";\nvar real = 1;\n";
+    const src = '// var a = 1\n/* var b = 2 */\nconst s = "var c";\nvar real = 1;\n';
     const cleaned = stripCommentsAndStrings(src);
     expect(cleaned).toContain("var real");
     expect(/var a/.test(cleaned)).toBe(false);
@@ -67,7 +70,7 @@ describe("stripCommentsAndStrings", () => {
   });
 
   it("preserves length and newlines so line numbers map 1:1", () => {
-    const src = "// comment\nx = \"str\";\nvar y = 2;\n";
+    const src = '// comment\nx = "str";\nvar y = 2;\n';
     const cleaned = stripCommentsAndStrings(src);
     expect(cleaned.length).toBe(src.length);
     expect(cleaned.split("\n").length).toBe(src.split("\n").length);
@@ -142,14 +145,20 @@ describe("scanForTechDebt", () => {
 
   it("flags exported symbols never referenced elsewhere as unused", async () => {
     const root = makeRepo({
-      "src/a.ts": "export function orphan(): number { return 1; }\nexport function helper(): number { return 2; }\n",
-      "src/b.ts": 'import { helper } from "./a.js";\nexport function use(): number { return helper(); }\n',
+      "src/a.ts":
+        "export function orphan(): number { return 1; }\nexport function helper(): number { return 2; }\n",
+      "src/b.ts":
+        'import { helper } from "./a.js";\nexport function use(): number { return helper(); }\n',
       "package.json": "{}",
     });
     const result = await scanForTechDebt(configFor(root), { fetchImpl: offlineFetch });
     const issues = byType(result.issues, "unused-code");
-    expect(issues.map((i) => i.description)).toContain('Exported "orphan" is never referenced by any other file — consider removing it');
-    expect(issues.map((i) => i.description)).not.toContain('Exported "helper" is never referenced by any other file — consider removing it');
+    expect(issues.map((i) => i.description)).toContain(
+      'Exported "orphan" is never referenced by any other file — consider removing it',
+    );
+    expect(issues.map((i) => i.description)).not.toContain(
+      'Exported "helper" is never referenced by any other file — consider removing it',
+    );
   });
 
   it("skips node_modules and dist", async () => {
@@ -176,8 +185,14 @@ describe("scanForTechDebt", () => {
       fetchImpl: latestFetch("3.0.0"),
     });
     const issues = byType(result.issues, "outdated-dependency");
-    expect(issues.some((i) => i.description.includes("left-pad") && i.description.includes("latest is 3.0.0"))).toBe(true);
-    expect(issues.some((i) => i.description.includes("alpha-pkg") && i.description.includes("beta"))).toBe(true);
+    expect(
+      issues.some(
+        (i) => i.description.includes("left-pad") && i.description.includes("latest is 3.0.0"),
+      ),
+    ).toBe(true);
+    expect(
+      issues.some((i) => i.description.includes("alpha-pkg") && i.description.includes("beta")),
+    ).toBe(true);
     expect(result.checkedDependencies).toBeGreaterThan(0);
   });
 
@@ -199,7 +214,7 @@ describe("createTechDebtTasks", () => {
       {
         type: "outdated-dependency",
         file: "package.json",
-        description: "Dependency \"left-pad\" is outdated: installed ^1.0.0, latest is 3.0.0",
+        description: 'Dependency "left-pad" is outdated: installed ^1.0.0, latest is 3.0.0',
         severity: "medium",
       },
       {
@@ -225,7 +240,7 @@ describe("createTechDebtTasks", () => {
   it("assigns sequential ids past existing tasks", async () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
-    writeFileSync(join(root, "work", "0007-existing.md"), "---\nid: \"0007\"\n---\n");
+    writeFileSync(join(root, "work", "0007-existing.md"), '---\nid: "0007"\n---\n');
     const issues: TechDebtIssue[] = [
       {
         type: "high-complexity",
@@ -484,7 +499,7 @@ describe("createPerformanceTasks", () => {
     const blockingTask = files.find((f) => f.includes("blocking"))!;
     const content = readFileSync(join(root, "work", blockingTask), "utf8");
     expect(content).toContain('title: "Fix blocking operations"');
-    expect(content).toContain('created_by: performance-agent');
+    expect(content).toContain("created_by: performance-agent");
   });
 
   it("throws a clear error when the work dir does not exist", async () => {
@@ -552,7 +567,9 @@ describe("scanForDesignIssues", () => {
       "src/ui-app/src/views/Page.vue": '<div style="color: red; background: blue">Hi</div>',
     });
     const result = await scanForDesignIssues(configFor(root));
-    const bugs = result.findings.filter((f) => f.category === "ui-bug" && f.description.includes("inline style"));
+    const bugs = result.findings.filter(
+      (f) => f.category === "ui-bug" && f.description.includes("inline style"),
+    );
     expect(bugs.length).toBeGreaterThan(0);
     expect(bugs[0].file).toBe("views/Page.vue");
     expect(bugs[0].recommendation).toContain("theme");
@@ -560,29 +577,35 @@ describe("scanForDesignIssues", () => {
 
   it("flags click handlers on non-interactive elements", async () => {
     const root = makeRepo({
-      "src/ui-app/src/components/Item.vue": "<div @click=\"select()\">Item</div>",
+      "src/ui-app/src/components/Item.vue": '<div @click="select()">Item</div>',
     });
     const result = await scanForDesignIssues(configFor(root));
-    const friction = result.findings.filter((f) => f.category === "ux-friction" && f.description.includes("@click"));
+    const friction = result.findings.filter(
+      (f) => f.category === "ux-friction" && f.description.includes("@click"),
+    );
     expect(friction.length).toBeGreaterThan(0);
     expect(friction[0].recommendation).toContain("role");
   });
 
   it("flags inputs without a label or aria-label", async () => {
     const root = makeRepo({
-      "src/ui-app/src/components/Form.vue": "<input type=\"text\" />",
+      "src/ui-app/src/components/Form.vue": '<input type="text" />',
     });
     const result = await scanForDesignIssues(configFor(root));
-    const friction = result.findings.filter((f) => f.category === "ux-friction" && f.description.includes("input"));
+    const friction = result.findings.filter(
+      (f) => f.category === "ux-friction" && f.description.includes("input"),
+    );
     expect(friction.length).toBeGreaterThan(0);
   });
 
   it("flags v-html usage as a ui-bug", async () => {
     const root = makeRepo({
-      "src/ui-app/src/components/Blob.vue": "<div v-html=\"html\"></div>",
+      "src/ui-app/src/components/Blob.vue": '<div v-html="html"></div>',
     });
     const result = await scanForDesignIssues(configFor(root));
-    const bugs = result.findings.filter((f) => f.category === "ui-bug" && f.description.includes("v-html"));
+    const bugs = result.findings.filter(
+      (f) => f.category === "ui-bug" && f.description.includes("v-html"),
+    );
     expect(bugs.length).toBeGreaterThan(0);
   });
 
@@ -596,7 +619,7 @@ describe("scanForDesignIssues", () => {
 
 describe("generateDesignReport", () => {
   it("writes a timestamped markdown report with the Design_report_YYYY-MM-DD-HHMM name", async () => {
-    const root = makeRepo({ "src/ui-app/src/views/Page.vue": "<div style=\"color:red\">x</div>" });
+    const root = makeRepo({ "src/ui-app/src/views/Page.vue": '<div style="color:red">x</div>' });
     const scan = await scanForDesignIssues(configFor(root));
     const { reportPath, fileName } = await generateDesignReport(configFor(root), scan);
     expect(fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
@@ -618,7 +641,7 @@ describe("generateDesignReport", () => {
 describe("runDesignAgent", () => {
   it("runs the pipeline, writes the report, and records lastRunAt", async () => {
     const root = makeRepo({
-      "src/ui-app/src/views/Page.vue": "<div style=\"color:red\">x</div>",
+      "src/ui-app/src/views/Page.vue": '<div style="color:red">x</div>',
     });
     const config = configFor(root);
     const result = await runDesignAgent(config);

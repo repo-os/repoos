@@ -6,7 +6,13 @@ export interface HighlightedSnippet {
 
 export type SearchResult =
   | { kind: "task"; title: string; subtitle: string; task: Task; statusColor?: string }
-  | { kind: "doc"; title: string; subtitle: string; path: string; snippet?: string | HighlightedSnippet }
+  | {
+      kind: "doc";
+      title: string;
+      subtitle: string;
+      path: string;
+      snippet?: string | HighlightedSnippet;
+    }
   | { kind: "setting"; title: string; subtitle: string; key: string };
 
 export interface SearchSource {
@@ -28,13 +34,14 @@ function editDistance(a: string, b: string): number {
   if (aLow === bLow) return 0;
   if (!aLow || !bLow) return Math.max(aLow.length, bLow.length);
   const dp: number[][] = Array.from({ length: aLow.length + 1 }, (_, i) =>
-    Array.from({ length: bLow.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+    Array.from({ length: bLow.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
   );
   for (let i = 1; i <= aLow.length; i++) {
     for (let j = 1; j <= bLow.length; j++) {
-      dp[i][j] = aLow[i - 1] === bLow[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      dp[i][j] =
+        aLow[i - 1] === bLow[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
     }
   }
   return dp[aLow.length][bLow.length];
@@ -47,7 +54,7 @@ function fuzzyMatch(text: string | null | undefined, query: string): boolean {
   // 2-3 char queries allow 1 edit, 4+ allow up to 2 edits.
   const maxDist = query.length <= 1 ? 0 : query.length <= 3 ? 1 : 2;
   const words = text.toLowerCase().split(/\s+/);
-  return words.some(w => editDistance(w, query) <= maxDist);
+  return words.some((w) => editDistance(w, query) <= maxDist);
 }
 
 function escapeHtml(text: string): string {
@@ -81,9 +88,12 @@ function extractSnippet(text: string, query: string, contextLen: number = 60): H
           return { html: escapeHtml(snippet) };
         }
         const clampedEnd = Math.min(wordEnd, snippet.length);
-        const html = escapeHtml(snippet.substring(0, wordStart)) +
-                     "<mark>" + escapeHtml(snippet.substring(wordStart, clampedEnd)) + "</mark>" +
-                     escapeHtml(snippet.substring(clampedEnd));
+        const html =
+          escapeHtml(snippet.substring(0, wordStart)) +
+          "<mark>" +
+          escapeHtml(snippet.substring(wordStart, clampedEnd)) +
+          "</mark>" +
+          escapeHtml(snippet.substring(clampedEnd));
         return { html };
       }
     }
@@ -92,13 +102,17 @@ function extractSnippet(text: string, query: string, contextLen: number = 60): H
 
   const start = Math.max(0, idx - contextLen / 2);
   const end = Math.min(text.length, idx + contextLen / 2);
-  const snippet = (start > 0 ? "…" : "") + text.substring(start, end) + (end < text.length ? "…" : "");
+  const snippet =
+    (start > 0 ? "…" : "") + text.substring(start, end) + (end < text.length ? "…" : "");
   const matchStart = idx - start + (start > 0 ? 1 : 0);
   const matchEnd = matchStart + query.length;
 
-  const html = escapeHtml(snippet.substring(0, matchStart)) +
-               "<mark>" + escapeHtml(snippet.substring(matchStart, matchEnd)) + "</mark>" +
-               escapeHtml(snippet.substring(matchEnd));
+  const html =
+    escapeHtml(snippet.substring(0, matchStart)) +
+    "<mark>" +
+    escapeHtml(snippet.substring(matchStart, matchEnd)) +
+    "</mark>" +
+    escapeHtml(snippet.substring(matchEnd));
   return { html };
 }
 
@@ -156,11 +170,19 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   // stray body/content mention, so they must outrank it even when the body
   // hit came first in source order (0007 follow-up — search results were
   // effectively unranked, just capped at the first 8 array-order matches).
-  const taskIdf = buildIdf(src.tasks.map((t) => `${t.title} ${t.body}`.toLowerCase()), terms);
+  const taskIdf = buildIdf(
+    src.tasks.map((t) => `${t.title} ${t.body}`.toLowerCase()),
+    terms,
+  );
   const scoredTasks: { result: SearchResult; score: number }[] = [];
   for (const t of src.tasks) {
-    if (includes(t.id, q) || includes(t.title, q) || includes(t.body, q) ||
-        fuzzyMatch(t.title, q) || fuzzyMatch(t.body, q)) {
+    if (
+      includes(t.id, q) ||
+      includes(t.title, q) ||
+      includes(t.body, q) ||
+      fuzzyMatch(t.title, q) ||
+      fuzzyMatch(t.body, q)
+    ) {
       const score =
         fieldScore(t.id, 8, terms, taskIdf, q) +
         fieldScore(t.title, 4, terms, taskIdf, q) +
@@ -213,15 +235,24 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   }
   const docHits = topByScore(scoredDocs);
 
-  const settingIdf = buildIdf(src.fields.map((f) => `${f.label} ${f.key}`.toLowerCase()), terms);
+  const settingIdf = buildIdf(
+    src.fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
+    terms,
+  );
   const scoredSettings: { result: SearchResult; score: number }[] = [];
   for (const f of src.fields) {
-    if (includes(f.label, q) || includes(f.key, q) ||
-        fuzzyMatch(f.label, q) || fuzzyMatch(f.key, q)) {
+    if (
+      includes(f.label, q) ||
+      includes(f.key, q) ||
+      fuzzyMatch(f.label, q) ||
+      fuzzyMatch(f.key, q)
+    ) {
       const score =
-        fieldScore(f.label, 3, terms, settingIdf, q) +
-        fieldScore(f.key, 2, terms, settingIdf, q);
-      scoredSettings.push({ result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key }, score });
+        fieldScore(f.label, 3, terms, settingIdf, q) + fieldScore(f.key, 2, terms, settingIdf, q);
+      scoredSettings.push({
+        result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key },
+        score,
+      });
     }
   }
   const settingHits = topByScore(scoredSettings);

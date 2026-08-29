@@ -49,7 +49,7 @@ function fakeHetzner(opts: FakeHetznerOpts = {}) {
       calls.push(`get:${id}`);
       const s = servers.get(id);
       if (!s) return null;
-      const status = statusQueue.length > 1 ? statusQueue.shift()! : statusQueue[0] ?? "running";
+      const status = statusQueue.length > 1 ? statusQueue.shift()! : (statusQueue[0] ?? "running");
       s.status = status;
       return { ...s };
     },
@@ -70,12 +70,10 @@ function fakeExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
     bundleRepo: vi.fn(async () => ({ ok: true })),
     uploadFile: vi.fn(async () => ({ ok: true })),
     downloadDir: vi.fn(async () => undefined),
-    runRemote: vi.fn(
-      async (_h, _c, onChunk): Promise<RemoteExecResult> => {
-        onChunk("build ok\ntest ok\n");
-        return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
-      },
-    ),
+    runRemote: vi.fn(async (_h, _c, onChunk): Promise<RemoteExecResult> => {
+      onChunk("build ok\ntest ok\n");
+      return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
+    }),
     probeTcp: vi.fn(async () => true),
     ...over,
   };
@@ -132,13 +130,21 @@ describe("RemoteValidationRunner", () => {
     }
   });
 
-  const mkOpts = (taskId = "0999") => ({ taskId, worktreePath: root, candidateSha: "abc123def456" });
+  const mkOpts = (taskId = "0999") => ({
+    taskId,
+    worktreePath: root,
+    candidateSha: "abc123def456",
+  });
   const opts = () => mkOpts();
 
   it("passes when the remote gate exits 0, and writes a per-task log", async () => {
     const h = fakeHetzner();
     const exec = fakeExec();
-    const r = new RemoteValidationRunner(config, undefined, { hetzner: h.client, exec, timings: FAST });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
 
     const res = await r.validate(opts());
 
@@ -163,7 +169,11 @@ describe("RemoteValidationRunner", () => {
         return { code: 1, output: "FAIL src/foo.test.ts\n  expected 1 to be 2\n", timedOut: false };
       }),
     });
-    const r = new RemoteValidationRunner(config, undefined, { hetzner: h.client, exec, timings: FAST });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
 
     const res = await r.validate(opts());
 
@@ -182,7 +192,11 @@ describe("RemoteValidationRunner", () => {
         timedOut: false,
       })),
     });
-    const r = new RemoteValidationRunner(config, undefined, { hetzner: h.client, exec, timings: FAST });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
 
     const res = await r.validate(opts());
     expect(res.ok).toBe(false);
@@ -199,7 +213,11 @@ describe("RemoteValidationRunner", () => {
         timedOut: false,
       })),
     });
-    const r = new RemoteValidationRunner(config, undefined, { hetzner: h.client, exec, timings: FAST });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
 
     const res = await r.validate(opts());
     expect(res.ok).toBe(false);
@@ -253,12 +271,13 @@ describe("RemoteValidationRunner", () => {
         return { code: 0, output: "ok", timedOut: false };
       }),
     });
-    const r = new RemoteValidationRunner(config, undefined, { hetzner: h.client, exec, timings: FAST });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
 
-    const [a, b] = await Promise.all([
-      r.validate(mkOpts("1001")),
-      r.validate(mkOpts("1002")),
-    ]);
+    const [a, b] = await Promise.all([r.validate(mkOpts("1001")), r.validate(mkOpts("1002"))]);
 
     expect(a.ok && b.ok).toBe(true);
     expect(h.calls.filter((c) => c.startsWith("create:")).length).toBe(1);

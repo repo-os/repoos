@@ -12,7 +12,16 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, readdirSync, utimesSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+  utimesSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { AgentRunner, HANDOFF_READY_SIGNAL } from "../../server/agents";
@@ -197,12 +206,7 @@ function makeGitFx(transitionAgeMs: number, opts: GitFxOptions = {}): Fx {
   git(fx.root, ["config", "user.name", "Test"]);
   git(fx.root, ["add", "work/0001-stuck.md"]);
   git(fx.root, ["commit", "-q", "-m", "init"]);
-  const wtDir = join(
-    dirname(fx.root),
-    `${basename(fx.root)}-worktrees`,
-    "feat",
-    "x",
-  );
+  const wtDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
   if (opts.committedWork) {
     git(fx.root, ["worktree", "add", "-q", "-b", "feat/x", wtDir, "HEAD"]);
     writeFileSync(join(wtDir, "src.ts"), "export const worked = true;\n");
@@ -250,7 +254,9 @@ describe("stuck detection", () => {
   it("does not flag a task with recent activity after its transition", () => {
     const now = Date.now();
     // 10 minutes since the transition, but a real work entry 30s ago.
-    expect(isStuckActiveTask(taskMdWithFreshActivity(600_000, 30_000), 5 * 60_000, now)).toBe(false);
+    expect(isStuckActiveTask(taskMdWithFreshActivity(600_000, 30_000), 5 * 60_000, now)).toBe(
+      false,
+    );
   });
 
   it("does not flag a task with no status→active transition in its Activity log", () => {
@@ -294,7 +300,10 @@ describe("hasRecentWorktreeActivity (#0203)", () => {
     try {
       // Uncommitted, freshly-written — the exact shape of a live agent
       // mid-edit, no commit yet.
-      writeFileSync(join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x", "live.txt"), "editing now\n");
+      writeFileSync(
+        join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x", "live.txt"),
+        "editing now\n",
+      );
       expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
     } finally {
       fx.clean();
@@ -367,7 +376,9 @@ describe("classifyDeadAgentReason", () => {
   it("classifies a session that ran and ended without a handoff as exited", () => {
     const fx = makeFx(1000);
     const task = parseTaskAt(fx);
-    const runner = { output: () => ({ lines: [], pending: "", bytes: 0 }) } as unknown as AgentRunner;
+    const runner = {
+      output: () => ({ lines: [], pending: "", bytes: 0 }),
+    } as unknown as AgentRunner;
     const cl = classifyDeadAgentReason(task, runner);
     expect(cl.kind).toBe("exited-without-handoff");
     expect(cl.reason).toContain("exited without emitting the handoff signal");
@@ -401,7 +412,9 @@ describe("suggestNextStep", () => {
     expect(suggestNextStep("agent turn was interrupted")).toMatch(/interrupted/);
     expect(suggestNextStep("stalled past the timeout")).toMatch(/DEFAULT_STALL_TIMEOUT_MS/);
     expect(suggestNextStep("an answer is waiting on your approval")).toMatch(/permission/);
-    expect(suggestNextStep("handoff signal was not detected")).toContain("::repoos-handoff-ready::");
+    expect(suggestNextStep("handoff signal was not detected")).toContain(
+      "::repoos-handoff-ready::",
+    );
     expect(suggestNextStep("mystery failure")).toMatch(/resume the session manually/);
   });
 });
@@ -440,20 +453,18 @@ describe("TaskWatchdog", () => {
     fx.clean();
   });
 
-  it(
-    "re-surfaces a task that gets stuck a SECOND time, after an earlier surface + restart (#0271 follow-up, confirmed bug: task #0243)",
-    async () => {
-      const fx = makeFx(10_000);
-      // Simulate a task that was already surfaced once, then restarted to
-      // active again (by a human, or a fresh run) — and is now stuck a
-      // second time. The OLD marker from the first, already-resolved session
-      // must not permanently block the watchdog from ever catching this task
-      // again; before the #0271 fix it did, silently, forever (#0243 sat
-      // `active` for 4+ days this way).
-      const firstTransition = new Date(Date.now() - 3_600_000).toISOString(); // 1h ago
-      const surfaced = new Date(Date.now() - 3_500_000).toISOString();
-      const secondTransition = new Date(Date.now() - 10_000).toISOString(); // 10s ago, past the 1s threshold
-      const body = `---
+  it("re-surfaces a task that gets stuck a SECOND time, after an earlier surface + restart (#0271 follow-up, confirmed bug: task #0243)", async () => {
+    const fx = makeFx(10_000);
+    // Simulate a task that was already surfaced once, then restarted to
+    // active again (by a human, or a fresh run) — and is now stuck a
+    // second time. The OLD marker from the first, already-resolved session
+    // must not permanently block the watchdog from ever catching this task
+    // again; before the #0271 fix it did, silently, forever (#0243 sat
+    // `active` for 4+ days this way).
+    const firstTransition = new Date(Date.now() - 3_600_000).toISOString(); // 1h ago
+    const surfaced = new Date(Date.now() - 3_500_000).toISOString();
+    const secondTransition = new Date(Date.now() - 10_000).toISOString(); // 10s ago, past the 1s threshold
+    const body = `---
 id: "0001"
 title: "Restarted after a prior surface"
 type: feature
@@ -472,25 +483,24 @@ Stuck twice.
 - ${surfaced} · watchdog: auto-surfaced stuck task · status active→ready · agent never started · next step: resume manually
 - ${secondTransition} · status ready→active
 `;
-      writeFileSync(fx.taskPath, body);
-      const index = new LiveIndex(fx.config);
-      index.refreshAll();
-      runner = new AgentRunner(fx.config, () => {});
-      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+    writeFileSync(fx.taskPath, body);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
 
-      await watchdog.checkNow();
+    await watchdog.checkNow();
 
-      const after = readFileSync(fx.taskPath, "utf8");
-      const task = parseTaskAt(fx);
-      expect(task.status).toBe("ready"); // surfaced AGAIN, not silently left active
-      // Exactly one NEW surface marker after the second transition — the old
-      // one from the first session is still there too (append-only log), so
-      // this must count occurrences, not just presence.
-      const surfaceCount = (after.match(/watchdog: auto-surfaced stuck task/g) ?? []).length;
-      expect(surfaceCount).toBe(2);
-      fx.clean();
-    },
-  );
+    const after = readFileSync(fx.taskPath, "utf8");
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("ready"); // surfaced AGAIN, not silently left active
+    // Exactly one NEW surface marker after the second transition — the old
+    // one from the first session is still there too (append-only log), so
+    // this must count occurrences, not just presence.
+    const surfaceCount = (after.match(/watchdog: auto-surfaced stuck task/g) ?? []).length;
+    expect(surfaceCount).toBe(2);
+    fx.clean();
+  });
 
   it("surfaces a task whose agent was killed mid-turn → ready, showing why (acceptance 1)", async () => {
     const fx = makeFx(10_000);
@@ -510,7 +520,9 @@ Stuck twice.
       const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
       expect(start.ok).toBe(true);
       await waitFor(() => !runner!.isRunning("0001"), "crashed turn exits");
-      expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff failed · agent turn was interrupted");
+      expect(readFileSync(fx.taskPath, "utf8")).toContain(
+        "handoff failed · agent turn was interrupted",
+      );
 
       // A killed turn is fresh activity — the task is candidate-stuck only
       // after the staleness threshold since the interruption.
@@ -531,91 +543,90 @@ Stuck twice.
     }
   });
 
-  it(
-    "on exited-without-handoff, auto-resumes the SAME session instead of immediately surfacing (#0271 follow-up)",
-    async () => {
-      const fx = makeGitFx(10_000, { committedWork: true });
-      oldPath = process.env.PATH ?? "";
-      process.env.PATH = `${fx.bin}:${oldPath}`;
-      process.env.REPOOS_WATCHDOG_LOG = fx.log;
-      try {
-        const index = new LiveIndex(fx.config);
-        index.refreshAll();
-        runner = new AgentRunner(fx.config, () => {});
-        const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+  it("on exited-without-handoff, auto-resumes the SAME session instead of immediately surfacing (#0271 follow-up)", async () => {
+    const fx = makeGitFx(10_000, { committedWork: true });
+    oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    process.env.REPOOS_WATCHDOG_LOG = fx.log;
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
 
-        // A session ran, did the work (committed in the worktree) and exited
-        // without emitting the handoff signal — the #0172 shape.
-        const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
-        expect(start.ok).toBe(true);
-        await waitFor(() => !runner!.isRunning("0001"), "turn exits without handoff");
-        await new Promise((r) => setTimeout(r, 1200));
+      // A session ran, did the work (committed in the worktree) and exited
+      // without emitting the handoff signal — the #0172 shape.
+      const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
+      expect(start.ok).toBe(true);
+      await waitFor(() => !runner!.isRunning("0001"), "turn exits without handoff");
+      await new Promise((r) => setTimeout(r, 1200));
 
-        await watchdog.checkNow();
+      await watchdog.checkNow();
 
-        // NOT surfaced yet — a retry was scheduled instead (task #0268 sat
-        // surfaced-but-unresumed until a human noticed; this is what replaces
-        // that).
-        expect(parseTaskAt(fx).status).toBe("active");
-        expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog: auto-surfaced");
-        expect(spawns(fx)).toHaveLength(1); // retry hasn't fired yet (3s delay)
+      // NOT surfaced yet — a retry was scheduled instead (task #0268 sat
+      // surfaced-but-unresumed until a human noticed; this is what replaces
+      // that).
+      expect(parseTaskAt(fx).status).toBe("active");
+      expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog: auto-surfaced");
+      expect(spawns(fx)).toHaveLength(1); // retry hasn't fired yet (3s delay)
 
-        // The scheduled retry fires ~3s later and resumes the SAME session —
-        // a second spawn, and the retry count is persisted to the file.
-        await waitFor(() => spawns(fx).length === 2, "automatic retry spawns a resumed session", 6000);
-        expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 1");
-        expect(parseTaskAt(fx).status).toBe("active");
-      } finally {
-        fx.clean();
-      }
-    },
-    15_000,
-  );
+      // The scheduled retry fires ~3s later and resumes the SAME session —
+      // a second spawn, and the retry count is persisted to the file.
+      await waitFor(
+        () => spawns(fx).length === 2,
+        "automatic retry spawns a resumed session",
+        6000,
+      );
+      expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 1");
+      expect(parseTaskAt(fx).status).toBe("active");
+    } finally {
+      fx.clean();
+    }
+  }, 15_000);
 
-  it(
-    "surfaces to review only after both automatic retries are exhausted (#0271 follow-up)",
-    async () => {
-      const fx = makeGitFx(10_000, { committedWork: true });
-      oldPath = process.env.PATH ?? "";
-      process.env.PATH = `${fx.bin}:${oldPath}`;
-      process.env.REPOOS_WATCHDOG_LOG = fx.log;
-      try {
-        const index = new LiveIndex(fx.config);
-        index.refreshAll();
-        runner = new AgentRunner(fx.config, () => {});
-        const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+  it("surfaces to review only after both automatic retries are exhausted (#0271 follow-up)", async () => {
+    const fx = makeGitFx(10_000, { committedWork: true });
+    oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    process.env.REPOOS_WATCHDOG_LOG = fx.log;
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
 
-        // Original turn: exits without handoff.
-        expect(runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root }).ok).toBe(true);
-        await waitFor(() => !runner!.isRunning("0001"), "turn 1 exits without handoff");
-        await new Promise((r) => setTimeout(r, 1200));
-        await watchdog.checkNow(); // schedules retry 1
+      // Original turn: exits without handoff.
+      expect(runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root }).ok).toBe(true);
+      await waitFor(() => !runner!.isRunning("0001"), "turn 1 exits without handoff");
+      await new Promise((r) => setTimeout(r, 1200));
+      await watchdog.checkNow(); // schedules retry 1
 
-        await waitFor(() => spawns(fx).length === 2, "retry 1 spawns", 6000);
-        await waitFor(() => !runner!.isRunning("0001"), "turn 2 (retry 1) exits without handoff — same fake binary, same behavior");
-        await new Promise((r) => setTimeout(r, 1200));
-        await watchdog.checkNow(); // schedules retry 2 (cap: 2)
+      await waitFor(() => spawns(fx).length === 2, "retry 1 spawns", 6000);
+      await waitFor(
+        () => !runner!.isRunning("0001"),
+        "turn 2 (retry 1) exits without handoff — same fake binary, same behavior",
+      );
+      await new Promise((r) => setTimeout(r, 1200));
+      await watchdog.checkNow(); // schedules retry 2 (cap: 2)
 
-        await waitFor(() => spawns(fx).length === 3, "retry 2 spawns", 6000);
-        expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 2");
-        await waitFor(() => !runner!.isRunning("0001"), "turn 3 (retry 2) exits without handoff");
-        await new Promise((r) => setTimeout(r, 1200));
-        await watchdog.checkNow(); // cap reached — falls through to normal surfacing
+      await waitFor(() => spawns(fx).length === 3, "retry 2 spawns", 6000);
+      expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 2");
+      await waitFor(() => !runner!.isRunning("0001"), "turn 3 (retry 2) exits without handoff");
+      await new Promise((r) => setTimeout(r, 1200));
+      await watchdog.checkNow(); // cap reached — falls through to normal surfacing
 
-        const body = readFileSync(fx.taskPath, "utf8");
-        const task = parseTaskAt(fx);
-        expect(task.status).toBe("review");
-        expect(task.needsInput).toBe(false);
-        expect(body).toContain("watchdog: auto-surfaced stuck task");
-        expect(body).toContain("status active→review");
-        expect(body).toContain("exited without emitting the handoff signal");
-        expect(spawns(fx)).toHaveLength(3); // the original turn + exactly 2 retries, never a 3rd
-      } finally {
-        fx.clean();
-      }
-    },
-    30_000,
-  );
+      const body = readFileSync(fx.taskPath, "utf8");
+      const task = parseTaskAt(fx);
+      expect(task.status).toBe("review");
+      expect(task.needsInput).toBe(false);
+      expect(body).toContain("watchdog: auto-surfaced stuck task");
+      expect(body).toContain("status active→review");
+      expect(body).toContain("exited without emitting the handoff signal");
+      expect(spawns(fx)).toHaveLength(3); // the original turn + exactly 2 retries, never a 3rd
+    } finally {
+      fx.clean();
+    }
+  }, 30_000);
 
   it("never touches a task whose agent is legitimately paused", async () => {
     const fx = makeFx(10_000);
@@ -863,7 +874,9 @@ Stuck twice.
 
     // A stale report is ignored — the current dead reviewer is retried once.
     expect(runs).toHaveLength(1);
-    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: auto-retried dead reviewer session");
+    expect(readFileSync(fx.taskPath, "utf8")).toContain(
+      "watchdog: auto-retried dead reviewer session",
+    );
     fx.clean();
   });
 

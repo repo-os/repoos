@@ -158,7 +158,10 @@ function parsePsLine(line: string): PsRecord | null {
  * One `ps` call covers all PIDs at once. Export for testing.
  */
 export function parsePsOutput(output: string): PsRecord[] {
-  return output.split("\n").map(parsePsLine).filter((r): r is PsRecord => r !== null);
+  return output
+    .split("\n")
+    .map(parsePsLine)
+    .filter((r): r is PsRecord => r !== null);
 }
 
 function machineInfo(): MachineInfo {
@@ -183,7 +186,11 @@ const REPO_STATS_TTL_MS = 30_000;
  */
 export function sampleRepoStats(root: string): RepoStats | null {
   const now = Date.now();
-  if (repoStatsCache && repoStatsCache.root === root && now - repoStatsCache.at < REPO_STATS_TTL_MS) {
+  if (
+    repoStatsCache &&
+    repoStatsCache.root === root &&
+    now - repoStatsCache.at < REPO_STATS_TTL_MS
+  ) {
     return repoStatsCache.stats;
   }
   const worktreeOut = safeExecFileSync("git", ["-C", root, "worktree", "list", "--porcelain"]);
@@ -218,8 +225,10 @@ function sampleProcesses(pids: number[]): PsRecord[] {
   if (pids.length === 0) return [];
   const pidArgs = pids.map(String);
   const output = safeExecFileSync("ps", [
-    "-o", "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
-    "-p", ...pidArgs,
+    "-o",
+    "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
+    "-p",
+    ...pidArgs,
   ]);
   if (!output) return [];
   return parsePsOutput(output);
@@ -296,7 +305,9 @@ const SERVE_CMD_RE = /[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.
 
 /** Extract the repo root a serve process is running from, or null. */
 export function parseServeRoot(command: string): string | null {
-  const m = command.match(/(\S+?)[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/);
+  const m = command.match(
+    /(\S+?)[/\\](?:dist[/\\]cli[/\\]index\.js|src[/\\]cli[/\\]index\.ts)\s+serve\b/,
+  );
   return m ? m[1] : null;
 }
 
@@ -339,23 +350,28 @@ export function parseServeScan(
     const root = parseServeRoot(command);
     // A parent of 1 means the process was reparented after its spawner died.
     const supervised = ppid !== 1 && livePids.has(ppid);
-    const kind: ServeProcessInfo["kind"] = pid === serverPid
-      ? "control-plane"
-      : knownPids.has(pid)
-        ? "known-preview"
-        : supervised
-          ? "in-flight"
-          : "stray";
-    processes.push({ pid, ppid, port: parseServePort(command), root, rootExists: rootExists(root), kind });
+    const kind: ServeProcessInfo["kind"] =
+      pid === serverPid
+        ? "control-plane"
+        : knownPids.has(pid)
+          ? "known-preview"
+          : supervised
+            ? "in-flight"
+            : "stray";
+    processes.push({
+      pid,
+      ppid,
+      port: parseServePort(command),
+      root,
+      rootExists: rootExists(root),
+      kind,
+    });
   }
 
   const strays = processes.filter((p) => p.kind === "stray");
   const deadRoot = strays.filter((p) => !p.rootExists).length;
-  const level: ServeScan["level"] = strays.length === 0
-    ? "ok"
-    : strays.length >= SERVE_WARN_THRESHOLD
-      ? "warn"
-      : "notice";
+  const level: ServeScan["level"] =
+    strays.length === 0 ? "ok" : strays.length >= SERVE_WARN_THRESHOLD ? "warn" : "notice";
   return {
     total: processes.length,
     strays: strays.length,
@@ -379,7 +395,12 @@ export function scanServeProcesses(serverPid: number, knownPids: Set<number>): S
   if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
   const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,command="]);
   if (output === null) return serveScanCache?.scan ?? null;
-  const scan = parseServeScan(output, serverPid, knownPids, (root) => root !== null && existsSync(root));
+  const scan = parseServeScan(
+    output,
+    serverPid,
+    knownPids,
+    (root) => root !== null && existsSync(root),
+  );
   serveScanCache = { at: now, scan };
   return scan;
 }
@@ -573,8 +594,10 @@ function isProcessAlive(pid: number): boolean {
 
 function sampleSingleProcess(pid: number): PsRecord | null {
   const output = safeExecFileSync("ps", [
-    "-o", "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
-    "-p", String(pid),
+    "-o",
+    "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
+    "-p",
+    String(pid),
   ]);
   if (!output) return null;
   const records = parsePsOutput(output);

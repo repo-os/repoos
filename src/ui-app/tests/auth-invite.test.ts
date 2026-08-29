@@ -83,7 +83,10 @@ describe("sendInvite route", () => {
     store.upsertUser("member@example.com", "member", "admin@example.com");
     const token = store.createSession("admin@example.com", "admin", 3600);
 
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => "" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, text: async () => "" })),
+    );
 
     const ctx = makeCtx(root);
     const { res, fake } = makeRes();
@@ -93,7 +96,9 @@ describe("sendInvite route", () => {
     expect(fake.payload).toEqual({ ok: true });
 
     const entries = store.getAuditLog(10);
-    expect(entries.some((e) => e.action === "invite_sent" && e.targetEmail === "member@example.com")).toBe(true);
+    expect(
+      entries.some((e) => e.action === "invite_sent" && e.targetEmail === "member@example.com"),
+    ).toBe(true);
   });
 
   it("rejects a non-admin caller", async () => {
@@ -126,7 +131,10 @@ describe("sendInvite route", () => {
     store.upsertUser("member@example.com", "member", "admin@example.com");
     const token = store.createSession("admin@example.com", "admin", 3600);
 
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, text: async () => "domain not verified" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 403, text: async () => "domain not verified" })),
+    );
 
     const ctx = makeCtx(root);
     const { res, fake } = makeRes();

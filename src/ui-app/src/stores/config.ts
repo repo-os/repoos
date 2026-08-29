@@ -66,7 +66,10 @@ export const useConfigStore = defineStore("config", () => {
    * static `agentsMeta.models` until the probe lands, plus `saved` so a value
    * already on a task or agent is never silently dropped from its own dropdown.
    */
-  function modelsFor(cli: string, saved?: string): { value: string; label: string; disabled: boolean }[] {
+  function modelsFor(
+    cli: string,
+    saved?: string,
+  ): { value: string; label: string; disabled: boolean }[] {
     const out: { value: string; label: string; disabled: boolean }[] = [];
     const seen = new Set<string>();
     const push = (m: string): void => {

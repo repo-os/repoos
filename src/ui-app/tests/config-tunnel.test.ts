@@ -38,11 +38,11 @@ describe("Cloudflare Tunnel UI config", () => {
     writeFileSync(
       path,
       [
-        "theme = \"dark\"",
+        'theme = "dark"',
         "",
         "[[agents]]",
-        "name = \"engineer\"",
-        "cli = \"opencode\"",
+        'name = "engineer"',
+        'cli = "opencode"',
         "enabled = true",
       ].join("\n"),
       "utf8",

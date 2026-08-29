@@ -24,7 +24,11 @@ export function stripAnsi(text: string): string {
  * em-dash/following text begins.
  */
 export function extractConflicts(message: string): string[] {
-  const forms = ["merge conflict in ", "merge conflict: ", "unresolved conflict markers in "] as const;
+  const forms = [
+    "merge conflict in ",
+    "merge conflict: ",
+    "unresolved conflict markers in ",
+  ] as const;
   let hit: { form: string; idx: number } | null = null;
   for (const form of forms) {
     const idx = message.indexOf(form);
@@ -71,9 +75,12 @@ export function classifyFailure(
   reason: string,
   conflicts = extractConflicts(reason),
 ): CloseOutFailureKind {
-  if (conflicts.length > 0 || /merge conflict|unresolved conflict markers/i.test(reason)) return "conflict";
-  if (/^(?:repoos\s+)?(?:check|build) failed:/i.test(reason) || phase === "validating") return "validating";
-  if (/uncommitted|dirty|would be overwritten|clean at publish|not merged/i.test(reason)) return "dirty";
+  if (conflicts.length > 0 || /merge conflict|unresolved conflict markers/i.test(reason))
+    return "conflict";
+  if (/^(?:repoos\s+)?(?:check|build) failed:/i.test(reason) || phase === "validating")
+    return "validating";
+  if (/uncommitted|dirty|would be overwritten|clean at publish|not merged/i.test(reason))
+    return "dirty";
   if (phase === "syncing" || /could not.*(?:sync|up to date|bring)/i.test(reason)) return "syncing";
   if (phase === "publishing" || (!phase && reason)) return "publishing";
   return "other";

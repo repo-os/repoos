@@ -134,7 +134,9 @@ describe("pending handoff persistence (#0235)", () => {
     const runner = new AgentRunner(fx.config, () => {}, {
       writeDelayMs: 5,
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => { handoffs.push(request); },
+      onHandoff: (request) => {
+        handoffs.push(request);
+      },
     });
     try {
       runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
@@ -167,9 +169,15 @@ describe("pending handoff persistence (#0235)", () => {
       await waitFor(() => !runner.isRunning(fx.task.id), "interrupted turn exit");
       const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
       expect(existsSync(pendingFile)).toBe(true);
-      const data = JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: AgentHandoffRequest[] };
+      const data = JSON.parse(readFileSync(pendingFile, "utf8")) as {
+        requests: AgentHandoffRequest[];
+      };
       expect(data.requests).toHaveLength(1);
-      expect(data.requests[0]).toMatchObject({ taskId: fx.task.id, branch: fx.task.branch, workdir: fx.root });
+      expect(data.requests[0]).toMatchObject({
+        taskId: fx.task.id,
+        branch: fx.task.branch,
+        workdir: fx.root,
+      });
       // The transcript notes the handoff is retained for recovery
       const output = runner.output(fx.task.id)!;
       const sysLines = output.lines.map((l) => (l as { d?: string }).d ?? "");
@@ -194,7 +202,9 @@ describe("pending handoff persistence (#0235)", () => {
     const runner = new AgentRunner(fx.config, () => {}, {
       writeDelayMs: 5,
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => { handoffs.push(request); },
+      onHandoff: (request) => {
+        handoffs.push(request);
+      },
     });
     try {
       runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
@@ -252,13 +262,23 @@ describe("pending handoff persistence (#0235)", () => {
     mkdirSync(fx.cacheDir, { recursive: true });
     writeFileSync(
       join(fx.cacheDir, "pending-handoffs.json"),
-      JSON.stringify({
-        requests: [{ taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root }],
-      }, null, 2),
+      JSON.stringify(
+        {
+          requests: [
+            { taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root },
+          ],
+        },
+        null,
+        2,
+      ),
     );
     runner.recoverPendingHandoffs();
     await waitFor(() => handoffs.length > 0, "recovery fired onHandoff");
-    expect(handoffs[0]).toMatchObject({ taskId: fx.task.id, branch: fx.task.branch, workdir: fx.root });
+    expect(handoffs[0]).toMatchObject({
+      taskId: fx.task.id,
+      branch: fx.task.branch,
+      workdir: fx.root,
+    });
     // The capability was consumed by consumeHandoff (authorizedHandoffs cleaned up)
     expect(runner.validateHandoff(handoffs[0])).toBe(false);
   });
@@ -277,15 +297,28 @@ describe("pending handoff persistence (#0235)", () => {
     mkdirSync(fx.cacheDir, { recursive: true });
     writeFileSync(
       join(fx.cacheDir, "pending-handoffs.json"),
-      JSON.stringify({
-        requests: [{ taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root }],
-      }, null, 2),
+      JSON.stringify(
+        {
+          requests: [
+            { taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root },
+          ],
+        },
+        null,
+        2,
+      ),
     );
     runner.recoverPendingHandoffs();
     // Wait for the async onHandoff to settle (it is fire-and-forget)
     await new Promise((r) => setTimeout(r, 100));
     // The capability was admitted then cleaned up — validateHandoff should be false
-    expect(runner.validateHandoff({ taskId: fx.task.id, runId: "old-run-id", branch: fx.task.branch, workdir: fx.root })).toBe(false);
+    expect(
+      runner.validateHandoff({
+        taskId: fx.task.id,
+        runId: "old-run-id",
+        branch: fx.task.branch,
+        workdir: fx.root,
+      }),
+    ).toBe(false);
   });
 
   it("recoverPendingHandoffs drops pending for completed tasks", async () => {
@@ -293,14 +326,22 @@ describe("pending handoff persistence (#0235)", () => {
     const handoffs: AgentHandoffRequest[] = [];
     const runner = new AgentRunner(fx.config, () => {}, {
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => { handoffs.push(request); },
+      onHandoff: (request) => {
+        handoffs.push(request);
+      },
     });
     mkdirSync(fx.cacheDir, { recursive: true });
     writeFileSync(
       join(fx.cacheDir, "pending-handoffs.json"),
-      JSON.stringify({
-        requests: [{ taskId: fx.task.id, runId: "old-run", branch: fx.task.branch, workdir: fx.root }],
-      }, null, 2),
+      JSON.stringify(
+        {
+          requests: [
+            { taskId: fx.task.id, runId: "old-run", branch: fx.task.branch, workdir: fx.root },
+          ],
+        },
+        null,
+        2,
+      ),
     );
     runner.recoverPendingHandoffs();
     await new Promise((r) => setTimeout(r, 100));
@@ -312,14 +353,22 @@ describe("pending handoff persistence (#0235)", () => {
     const handoffs: AgentHandoffRequest[] = [];
     const runner = new AgentRunner(fx.config, () => {}, {
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => { handoffs.push(request); },
+      onHandoff: (request) => {
+        handoffs.push(request);
+      },
     });
     mkdirSync(fx.cacheDir, { recursive: true });
     writeFileSync(
       join(fx.cacheDir, "pending-handoffs.json"),
-      JSON.stringify({
-        requests: [{ taskId: fx.task.id, runId: "old-run", branch: "feat/WRONG", workdir: fx.root }],
-      }, null, 2),
+      JSON.stringify(
+        {
+          requests: [
+            { taskId: fx.task.id, runId: "old-run", branch: "feat/WRONG", workdir: fx.root },
+          ],
+        },
+        null,
+        2,
+      ),
     );
     runner.recoverPendingHandoffs();
     await new Promise((r) => setTimeout(r, 100));

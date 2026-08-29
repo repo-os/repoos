@@ -10,7 +10,17 @@
  */
 import { readFileSync, existsSync, realpathSync } from "node:fs";
 import { join, extname } from "node:path";
-import type { AgentOutputEntry, AgentSessionStats, RepoOSConfig, Task, Status, RepoIndex, BoardTask, BoardIndex, SupervisorHeartbeat } from "../core/types.js";
+import type {
+  AgentOutputEntry,
+  AgentSessionStats,
+  RepoOSConfig,
+  Task,
+  Status,
+  RepoIndex,
+  BoardTask,
+  BoardIndex,
+  SupervisorHeartbeat,
+} from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import type { IntegrationSnapshot } from "./integration-status.js";
@@ -130,9 +140,23 @@ export type RepoEvent =
    * show check history and live-stream a check currently running for the
    * task the drawer has open.
    */
-  | { type: "task-check.started"; taskId: string; checkId: string; checkKind: "handoff-finalize" | "merge-gate"; at: string }
+  | {
+      type: "task-check.started";
+      taskId: string;
+      checkId: string;
+      checkKind: "handoff-finalize" | "merge-gate";
+      at: string;
+    }
   | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
-  | { type: "task-check.done"; taskId: string; checkId: string; code: number | null; passed: boolean; durationMs: number; at: string };
+  | {
+      type: "task-check.done";
+      taskId: string;
+      checkId: string;
+      code: number | null;
+      passed: boolean;
+      durationMs: number;
+      at: string;
+    };
 
 type Listener = (e: RepoEvent) => void;
 
@@ -177,9 +201,7 @@ export class LiveIndex {
     this.byId.clear();
     this.pathToId.clear();
     this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit
-      ? localBranches(this.config.root)
-      : new Set();
+    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
     for (const t of idx.tasks) {
       this.byId.set(t.id, t);
       this.pathToId.set(t.absPath, t.id);
@@ -206,9 +228,7 @@ export class LiveIndex {
     this.byId.clear();
     this.pathToId.clear();
     this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit
-      ? localBranches(this.config.root)
-      : new Set();
+    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
     for (const t of idx.tasks) {
       this.byId.set(t.id, t);
       this.pathToId.set(t.absPath, t.id);
@@ -235,14 +255,11 @@ export class LiveIndex {
   async reconcileWorktreeStatus(): Promise<void> {
     if (!this.useGit) return;
     const baseBranch = currentBranch(this.config.root);
-    const branches = [...this.byId.values()]
-      .map((t) => t.branch)
-      .filter((b): b is string => !!b);
-    const { statuses, cache, changed } = await resolveWorktreeStatuses(
-      this.config.root,
-      branches,
-      { baseBranch, cache: readWorktreeDirtyCache(this.config) },
-    );
+    const branches = [...this.byId.values()].map((t) => t.branch).filter((b): b is string => !!b);
+    const { statuses, cache, changed } = await resolveWorktreeStatuses(this.config.root, branches, {
+      baseBranch,
+      cache: readWorktreeDirtyCache(this.config),
+    });
     if (changed) writeWorktreeDirtyCache(this.config, cache);
     for (const [id, t] of this.byId) {
       if (!t.branch) continue;
@@ -301,12 +318,8 @@ export class LiveIndex {
         ? worktreeStatus(this.config.root, task.branch)
         : { path: null, dirty: false };
       task.git = {
-        branchExists: task.branch
-          ? this.branchCache.has(task.branch)
-          : false,
-        worktreeExists: task.branch
-          ? worktreePaths(this.config.root).has(task.branch)
-          : false,
+        branchExists: task.branch ? this.branchCache.has(task.branch) : false,
+        worktreeExists: task.branch ? worktreePaths(this.config.root).has(task.branch) : false,
         lastCommit: subject,
         lastCommitAt: date,
         worktreePath: wt.path,
@@ -316,9 +329,7 @@ export class LiveIndex {
 
     const existing = this.byId.get(task.id);
     // If the id moved to a different file, treat the old path as stale.
-    const priorPath = [...this.pathToId.entries()].find(
-      ([, id]) => id === task.id,
-    )?.[0];
+    const priorPath = [...this.pathToId.entries()].find(([, id]) => id === task.id)?.[0];
     if (priorPath && priorPath !== absPath) this.pathToId.delete(priorPath);
 
     // #0210: a transition INTO `review` that did not already pass through the
@@ -361,11 +372,7 @@ export class LiveIndex {
    * using the same safe write path as a server edit — so the bypass can never
    * leave a task sitting in `review` with uncommitted work.
    */
-  private async runReviewGuard(
-    absPath: string,
-    task: Task,
-    existing: Task,
-  ): Promise<void> {
+  private async runReviewGuard(absPath: string, task: Task, existing: Task): Promise<void> {
     if (!this.reviewGuard) {
       this.applyParsed(absPath, task, existing);
       return;
@@ -431,7 +438,7 @@ export class LiveIndex {
       /* keep the configured root */
     }
     for (const [id, t] of this.byId) {
-      let worktreePath = t.branch ? worktrees.get(t.branch)?.path ?? null : null;
+      let worktreePath = t.branch ? (worktrees.get(t.branch)?.path ?? null) : null;
       if (worktreePath) {
         let rp = worktreePath;
         try {
@@ -474,10 +481,7 @@ export class LiveIndex {
   }
 
   counts(): Record<Status, number> {
-    const c = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<
-      Status,
-      number
-    >;
+    const c = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
     for (const t of this.byId.values()) c[t.status]++;
     return c;
   }
@@ -556,9 +560,13 @@ function toBoardTask(t: Task): BoardTask {
     preview: null,
     checkRetryCount: typeof t.extra?.check_retry_count === "number" ? t.extra.check_retry_count : 0,
     mergeConflictRetryCount:
-      typeof t.extra?.merge_conflict_retry_count === "number" ? t.extra.merge_conflict_retry_count : 0,
+      typeof t.extra?.merge_conflict_retry_count === "number"
+        ? t.extra.merge_conflict_retry_count
+        : 0,
     handoffSignalRetryCount:
-      typeof t.extra?.handoff_signal_retry_count === "number" ? t.extra.handoff_signal_retry_count : 0,
+      typeof t.extra?.handoff_signal_retry_count === "number"
+        ? t.extra.handoff_signal_retry_count
+        : 0,
   };
 }
 

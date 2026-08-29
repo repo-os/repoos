@@ -228,12 +228,20 @@ describe("push availability diagnostics (#0316)", () => {
 
   it("sendTestPush also rings the bell when sound is enabled", async () => {
     const bell = vi.fn();
-    vi.stubGlobal("AudioContext", class {
-      currentTime = 0;
-      destination = {};
-      createOscillator() { bell(); return { type: "", frequency: { value: 0 }, connect() {}, start() {}, stop() {} }; }
-      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
-    });
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        currentTime = 0;
+        destination = {};
+        createOscillator() {
+          bell();
+          return { type: "", frequency: { value: 0 }, connect() {}, start() {}, stop() {} };
+        }
+        createGain() {
+          return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} };
+        }
+      },
+    );
     const n = useNotificationsStore();
     n.setSoundEnabled(true);
     FakeNotification.permission = "granted";
@@ -368,7 +376,10 @@ describe("transition detection (repo store)", () => {
     n.setPushEnabled(true);
     n.setTypeEnabled("needsInput", true);
     const { es } = await bootRepo();
-    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active", needsInput: false }) });
+    es.emit("task.created", {
+      type: "task.created",
+      task: makeTask({ status: "active", needsInput: false }),
+    });
     es.emit("task.updated", {
       type: "task.updated",
       prev: { needsInput: false },
@@ -388,7 +399,11 @@ describe("transition detection (repo store)", () => {
     // A task.updated with an empty prev (no status change, e.g. hydration or a
     // body edit) on a task already in review must not fire.
     const { es } = await bootRepo();
-    es.emit("task.updated", { type: "task.updated", prev: {}, task: makeTask({ status: "review" }) });
+    es.emit("task.updated", {
+      type: "task.updated",
+      prev: {},
+      task: makeTask({ status: "review" }),
+    });
     await flush();
     expect(FakeNotification.instances).toHaveLength(0);
   });
@@ -415,7 +430,7 @@ describe("transition detection (repo store)", () => {
     expect(FakeNotification.instances[0].title).toBe("Task looks stuck");
   });
 
-  it("fires stuck (not \"review ready\") when a stuck task is surfaced to `review`", async () => {
+  it('fires stuck (not "review ready") when a stuck task is surfaced to `review`', async () => {
     const n = useNotificationsStore();
     n.setPushEnabled(true);
     // Only the *stuck* type is enabled; a misclassification would gate the
@@ -439,7 +454,7 @@ describe("transition detection (repo store)", () => {
     expect(FakeNotification.instances[0].title).toBe("Task looks stuck");
   });
 
-  it("still fires \"review ready\" for a genuine active -> review handoff", async () => {
+  it('still fires "review ready" for a genuine active -> review handoff', async () => {
     const n = useNotificationsStore();
     n.setPushEnabled(true);
     n.setTypeEnabled("stuck", true);
@@ -479,7 +494,10 @@ describe("transition detection (repo store)", () => {
     n.setPushEnabled(true);
     n.setTypeEnabled("stuck", true);
     const { es } = await bootRepo();
-    es.emit("task.created", { type: "task.created", task: makeTask({ status: "active", needsInput: false }) });
+    es.emit("task.created", {
+      type: "task.created",
+      task: makeTask({ status: "active", needsInput: false }),
+    });
     es.emit("task.updated", {
       type: "task.updated",
       prev: { needsInput: false },

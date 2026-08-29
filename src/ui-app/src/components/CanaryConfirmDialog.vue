@@ -33,14 +33,19 @@ function onConfirm(): void {
         </DialogClose>
       </div>
       <DialogDescription class="cc-modal-desc">
-        Clicking the canary starts a <strong>real, billed agent run</strong> — it is not preview-only.
+        Clicking the canary starts a <strong>real, billed agent run</strong> — it is not
+        preview-only.
       </DialogDescription>
       <div class="cc-modal-body">
-        <p>The canary task is deliberately trivial: it walks
-          <code>draft → inbox → ready → active → review → merge → done</code>.</p>
-        <p>The only change is a <strong>one-line diff</strong> to <code>src/core/canary.ts</code>:
+        <p>
+          The canary task is deliberately trivial: it walks
+          <code>draft → inbox → ready → active → review → merge → done</code>.
+        </p>
+        <p>
+          The only change is a <strong>one-line diff</strong> to <code>src/core/canary.ts</code>:
           increment <code>CANARY_COUNTER</code> by 1 (wrapping 9 → 0) — nothing else, no
-          tests/comments, and <code>CANARY_PROMPT</code> itself stays untouched.</p>
+          tests/comments, and <code>CANARY_PROMPT</code> itself stays untouched.
+        </p>
       </div>
       <div class="cc-modal-actions">
         <DialogClose as-child>

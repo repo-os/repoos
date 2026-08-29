@@ -16,7 +16,11 @@ import { sweepStaleWorktrees, type GcReport } from "../core/worktree-gc.js";
 
 function printReport(report: GcReport, title: string): void {
   console.log(c.bold(`  ${title}`));
-  if (report.removedWorktrees.length === 0 && report.keptDirty.length === 0 && report.errors.length === 0) {
+  if (
+    report.removedWorktrees.length === 0 &&
+    report.keptDirty.length === 0 &&
+    report.errors.length === 0
+  ) {
     console.log(c.dim("    nothing to collect"));
   }
   for (const w of report.removedWorktrees) {
@@ -24,7 +28,9 @@ function printReport(report: GcReport, title: string): void {
     console.log(`    ${c.green(verb)} ${w.branch || c.dim("(detached)")} ${c.dim(w.path)}`);
   }
   for (const k of report.keptDirty) {
-    console.log(`    ${c.yellow("kept")}    ${k.branch || c.dim("(detached)")} ${c.dim(`— ${k.reason}`)}`);
+    console.log(
+      `    ${c.yellow("kept")}    ${k.branch || c.dim("(detached)")} ${c.dim(`— ${k.reason}`)}`,
+    );
   }
   for (const e of report.errors) {
     console.log(`    ${c.red("error")}   ${e}`);
@@ -50,11 +56,19 @@ export function cmdGc(argv: string[]): void {
   }
 
   // Default: do the safe part for real, preview the rest.
-  printReport(sweepStaleWorktrees(config, { mode: "integrate-only" }), "gc — candidates + stale metadata");
+  printReport(
+    sweepStaleWorktrees(config, { mode: "integrate-only" }),
+    "gc — candidates + stale metadata",
+  );
   const preview = sweepStaleWorktrees(config, { mode: "full", dryRun: true });
-  const pendingFeature = preview.removedWorktrees.filter((w) => !w.branch.startsWith("repoos/integrate/"));
+  const pendingFeature = preview.removedWorktrees.filter(
+    (w) => !w.branch.startsWith("repoos/integrate/"),
+  );
   if (pendingFeature.length || preview.keptDirty.length) {
     console.log();
-    printReport({ ...preview, removedWorktrees: pendingFeature }, "feature worktrees — run `repoos gc --yes` to apply");
+    printReport(
+      { ...preview, removedWorktrees: pendingFeature },
+      "feature worktrees — run `repoos gc --yes` to apply",
+    );
   }
 }

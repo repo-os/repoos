@@ -56,7 +56,9 @@ const statusLine = computed(() => {
     case "pm-unavailable":
       return "No PM agent is configured, so nothing was started. Configure one on the Agents page.";
     case "pm-failed":
-      return d.error ? `The PM agent failed: ${d.error}` : "The PM agent run failed, so nothing was started.";
+      return d.error
+        ? `The PM agent failed: ${d.error}`
+        : "The PM agent run failed, so nothing was started.";
     default:
       return "";
   }
@@ -95,8 +97,8 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
 
     <div v-if="!enabled" class="off-note">
       Automatic task selection is <b>off</b>. Turn it on in
-      <router-link to="/settings" class="link">Settings</router-link> to keep engineer slots
-      filled automatically.
+      <router-link to="/settings" class="link">Settings</router-link> to keep engineer slots filled
+      automatically.
     </div>
 
     <div v-else>
@@ -111,7 +113,9 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
         <div class="metric">
           <div class="metric-label">Active now</div>
           <div class="metric-val">
-            <span class="metric-big" :class="{ full: activeCount >= maxActiveTasks }">{{ activeCount }}</span>
+            <span class="metric-big" :class="{ full: activeCount >= maxActiveTasks }">{{
+              activeCount
+            }}</span>
             <span class="metric-sub">in progress</span>
           </div>
         </div>
@@ -124,7 +128,13 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
         </div>
       </div>
 
-      <div class="status-line" :class="{ warn: decision?.outcome === 'no-ready-work', err: decision?.outcome === 'pm-unavailable' || decision?.outcome === 'pm-failed' }">
+      <div
+        class="status-line"
+        :class="{
+          warn: decision?.outcome === 'no-ready-work',
+          err: decision?.outcome === 'pm-unavailable' || decision?.outcome === 'pm-failed',
+        }"
+      >
         {{ statusLine }}
       </div>
 
@@ -133,7 +143,11 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
         <span>·</span>
         <span>triggered by {{ triggerLabel(decision.trigger) }}</span>
         <span>·</span>
-        <span>{{ decision.candidateIds.length }} ready candidate{{ decision.candidateIds.length === 1 ? "" : "s" }}</span>
+        <span
+          >{{ decision.candidateIds.length }} ready candidate{{
+            decision.candidateIds.length === 1 ? "" : "s"
+          }}</span
+        >
       </div>
     </div>
   </Card>

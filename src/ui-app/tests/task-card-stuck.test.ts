@@ -105,7 +105,8 @@ describe("TaskCard stuck-agent detection", () => {
         if (url.includes("/api/index"))
           return json({ tasks: [task], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
-        if (url.includes("/diff-stats")) return json({ filesChanged: 0, additions: 0, deletions: 0 });
+        if (url.includes("/diff-stats"))
+          return json({ filesChanged: 0, additions: 0, deletions: 0 });
         throw new Error("unexpected fetch: " + url);
       }),
     );
@@ -114,7 +115,11 @@ describe("TaskCard stuck-agent detection", () => {
 
     const wrapper = await mountCard(pinia, task);
 
-    FakeEventSource.instances[0].emit("agent.running", { type: "agent.running", id: "0001", at: new Date().toISOString() });
+    FakeEventSource.instances[0].emit("agent.running", {
+      type: "agent.running",
+      id: "0001",
+      at: new Date().toISOString(),
+    });
     await flush();
 
     let hint = wrapper.find(".tc-hint");
@@ -148,7 +153,8 @@ describe("TaskCard stuck-agent detection", () => {
         if (url.includes("/api/index"))
           return json({ tasks: [task], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
-        if (url.includes("/diff-stats")) return json({ filesChanged: 0, additions: 0, deletions: 0 });
+        if (url.includes("/diff-stats"))
+          return json({ filesChanged: 0, additions: 0, deletions: 0 });
         throw new Error("unexpected fetch: " + url);
       }),
     );
@@ -156,7 +162,11 @@ describe("TaskCard stuck-agent detection", () => {
     await repo.init();
 
     const wrapper = await mountCard(pinia, task);
-    FakeEventSource.instances[0].emit("agent.running", { type: "agent.running", id: "0001", at: new Date().toISOString() });
+    FakeEventSource.instances[0].emit("agent.running", {
+      type: "agent.running",
+      id: "0001",
+      at: new Date().toISOString(),
+    });
     await flush();
 
     // Keep emitting real output every minute for 6 minutes — never silent

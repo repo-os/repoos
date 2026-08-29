@@ -134,7 +134,6 @@ function insertTextAtCursor(textarea: HTMLTextAreaElement, text: string): void {
   textarea.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;

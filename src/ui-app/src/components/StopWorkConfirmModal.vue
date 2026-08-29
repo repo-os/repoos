@@ -107,11 +107,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="open"
-      class="stop-work-overlay"
-      @click.self="onOverlayClick"
-    >
+    <div v-if="open" class="stop-work-overlay" @click.self="onOverlayClick">
       <div
         ref="modalEl"
         class="stop-work-modal"
@@ -136,27 +132,15 @@ onBeforeUnmount(() => {
         </div>
 
         <p id="stop-work-confirm-description" class="stop-work-modal-message">
-          Stop work on task {{ taskId || "this task" }} and send it back to ready?
-          The current worktree is kept, not deleted.
+          Stop work on task {{ taskId || "this task" }} and send it back to ready? The current
+          worktree is kept, not deleted.
         </p>
 
         <div class="stop-work-modal-actions">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            :disabled="busy"
-            @click="close"
-          >
+          <Button type="button" variant="outline" size="sm" :disabled="busy" @click="close">
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            :disabled="busy"
-            @click="confirm"
-          >
+          <Button type="button" variant="destructive" size="sm" :disabled="busy" @click="confirm">
             Stop Work
           </Button>
         </div>
@@ -195,7 +179,7 @@ onBeforeUnmount(() => {
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(.98);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -224,8 +208,13 @@ onBeforeUnmount(() => {
   line-height: 1;
   padding: 2px 6px;
 }
-.stop-work-close:hover { color: var(--txt); }
-.stop-work-close:disabled { cursor: not-allowed; opacity: 0.5; }
+.stop-work-close:hover {
+  color: var(--txt);
+}
+.stop-work-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .stop-work-modal-message {
   font-size: 13px;
   line-height: 1.55;

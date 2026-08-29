@@ -116,7 +116,11 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
         if (url.includes("/api/index"))
-          return json({ tasks: [makeTask()], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+          return json({
+            tasks: [makeTask()],
+            counts: { ...EMPTY_COUNTS, review: 1 },
+            taskCount: 1,
+          });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         if (url.includes("/review"))
           return json({ ok: true, running: true, enabled: true, review: null, lines: [] });

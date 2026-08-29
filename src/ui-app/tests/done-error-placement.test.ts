@@ -61,7 +61,11 @@ async function repoWithDoneError(id: string): Promise<ReturnType<typeof useRepoS
       if (url.includes("/api/health"))
         return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
       if (url.includes("/api/board") || url.includes("/api/index"))
-        return json({ tasks: [], counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 }, taskCount: 0 });
+        return json({
+          tasks: [],
+          counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 },
+          taskCount: 0,
+        });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       throw new Error("unexpected fetch: " + url);
     }),
@@ -121,7 +125,11 @@ describe("move-to-done inline error placement", () => {
         if (url.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
         if (url.includes("/api/board") || url.includes("/api/index"))
-          return json({ tasks: [], counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 }, taskCount: 0 });
+          return json({
+            tasks: [],
+            counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 },
+            taskCount: 0,
+          });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
         throw new Error("unexpected fetch: " + url);
       }),

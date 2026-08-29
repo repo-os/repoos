@@ -111,9 +111,7 @@ describe("task note mechanism", () => {
         .split("\n")
         .filter((l) => l.startsWith("- ") && l.includes("· note:"));
       expect(noteLines.length).toBe(1);
-      expect(noteLines[0]).toContain(
-        "note: Fix the regression and the rendering issue, please",
-      );
+      expect(noteLines[0]).toContain("note: Fix the regression and the rendering issue, please");
       // No paragraph break leaks a partial note below the activity entry.
       expect(updated.body).not.toMatch(/note: Fix the regression\n\n/);
     } finally {

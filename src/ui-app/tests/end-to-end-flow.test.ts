@@ -9,13 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
@@ -173,8 +167,16 @@ function makeFlowFixture(): FlowFixture {
     task,
     taskPath,
     clean: () => {
-      try { rmSync(root, { recursive: true, force: true }); } catch { /* ok */ }
-      try { rmSync(worktree, { recursive: true, force: true }); } catch { /* ok */ }
+      try {
+        rmSync(root, { recursive: true, force: true });
+      } catch {
+        /* ok */
+      }
+      try {
+        rmSync(worktree, { recursive: true, force: true });
+      } catch {
+        /* ok */
+      }
     },
   };
 }
@@ -222,11 +224,8 @@ describe("end-to-end flow: version-bump task", () => {
 
       // ── Step 1: Handoff (active → review) ───────────────────────────
       const steps: string[] = [];
-      const handoffResult = await handoffTask(
-        fx.config,
-        initial,
-        request(fx),
-        (step) => steps.push(step),
+      const handoffResult = await handoffTask(fx.config, initial, request(fx), (step) =>
+        steps.push(step),
       );
       expect(handoffResult).toMatchObject({ ok: true, step: "done" });
       expect(steps).toEqual(["validate", "check", "commit", "review", "main", "done"]);
@@ -283,7 +282,9 @@ describe("end-to-end flow: version-bump task", () => {
       expect(finalTask.status).toBe("done");
 
       // Verify: branch is gone (merged and deleted)
-      const branches = git(fx.root, ["branch"]).split("\n").map((b) => b.trim().replace(/^\*/, "").trim());
+      const branches = git(fx.root, ["branch"])
+        .split("\n")
+        .map((b) => b.trim().replace(/^\*/, "").trim());
       expect(branches).not.toContain("feat/bump-version");
     } finally {
       process.env.PATH = oldPath;
@@ -340,11 +341,10 @@ describe("end-to-end flow: version-bump task", () => {
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       const initial = readTask(fx);
-      const result = await handoffTask(
-        fx.config,
-        initial,
-        { ...request(fx), branch: "feat/wrong" },
-      );
+      const result = await handoffTask(fx.config, initial, {
+        ...request(fx),
+        branch: "feat/wrong",
+      });
       expect(result).toMatchObject({ ok: false, step: "validate" });
       expect(readTask(fx).status).toBe("active");
     } finally {

@@ -44,7 +44,9 @@ const pmAgentReady = computed(() => {
 /** The freeform skill is authored by the PM agent; the coding agent + model
  *  default to the PM role's config and can be overridden here (no role picker —
  *  the role is always PM). */
-const pmBase = computed(() => (config.agents ?? []).find((a) => a.enabled && a.name === "pm") ?? null);
+const pmBase = computed(
+  () => (config.agents ?? []).find((a) => a.enabled && a.name === "pm") ?? null,
+);
 
 const freeformOverride = reactive({ cli: "", model: "" });
 
@@ -60,7 +62,9 @@ const overrideIsCustom = computed(() => {
 });
 
 const cliOptions = computed(() => config.agentsMeta.clis ?? []);
-const modelOptions = computed(() => config.modelsFor(freeformOverride.cli, freeformOverride.model || undefined));
+const modelOptions = computed(() =>
+  config.modelsFor(freeformOverride.cli, freeformOverride.model || undefined),
+);
 
 /** Preview the folder slug the way the server derives it. */
 const slug = computed(() =>
@@ -155,7 +159,7 @@ function onUploadFileSelected(e: Event): void {
 }
 
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
-  const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
+  const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
   return raw.map((e) => {
     if ("type" in e) {
       return { s: "out", d: e.type === "text" ? e.text : ((e as { d?: string }).d ?? "") };
@@ -245,7 +249,11 @@ watch(freeformLines, () => {
           <div v-if="freeformError" class="ff-error">{{ freeformError }}</div>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close()">Cancel</Button>
-            <Button variant="default" @click="createFreeform" :disabled="ui.saving || !freeformText.trim()">
+            <Button
+              variant="default"
+              @click="createFreeform"
+              :disabled="ui.saving || !freeformText.trim()"
+            >
               <ActivityIndicator v-if="freeformRunning" />
               {{ freeformRunning ? "Asking the PM agent…" : "Create skill" }}
             </Button>
@@ -298,7 +306,12 @@ watch(freeformLines, () => {
             <Button
               variant="default"
               @click="createManual"
-              :disabled="ui.saving || !ui.ns.name.trim() || !ui.ns.description.trim() || !ui.ns.content.trim()"
+              :disabled="
+                ui.saving ||
+                !ui.ns.name.trim() ||
+                !ui.ns.description.trim() ||
+                !ui.ns.content.trim()
+              "
             >
               Create
             </Button>
@@ -313,7 +326,12 @@ watch(freeformLines, () => {
           </div>
           <div class="field">
             <label for="ns-upload-file">Select SKILL.md</label>
-            <input id="ns-upload-file" type="file" class="upload-input" @change="onUploadFileSelected" />
+            <input
+              id="ns-upload-file"
+              type="file"
+              class="upload-input"
+              @change="onUploadFileSelected"
+            />
             <div v-if="uploadFile" class="upload-file-info">
               {{ uploadFile.name }} ({{ (uploadFile.size / 1024).toFixed(1) }} KB)
             </div>

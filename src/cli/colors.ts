@@ -1,6 +1,5 @@
 /** Minimal ANSI styling. Honors NO_COLOR and non-TTY output. */
-const enabled =
-  process.env.NO_COLOR === undefined && process.stdout.isTTY === true;
+const enabled = process.env.NO_COLOR === undefined && process.stdout.isTTY === true;
 
 const wrap = (open: number, close: number) => (s: string) =>
   enabled ? `\x1b[${open}m${s}\x1b[${close}m` : s;

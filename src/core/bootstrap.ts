@@ -110,7 +110,10 @@ const STEP_NAMES = {
  * a `src/` directory AND a `package.json` with a build script. Without both,
  * there is no compiled output to check — the bootstrap skips this step.
  */
-function checkOrchestrationBuild(config: RepoOSConfig, cwd: string): { ok: boolean; detail: string } {
+function checkOrchestrationBuild(
+  config: RepoOSConfig,
+  cwd: string,
+): { ok: boolean; detail: string } {
   const hasSrc = existsSync(join(config.root, "src"));
   const pkgPath = join(config.root, "package.json");
   let hasBuild = false;
@@ -127,7 +130,10 @@ function checkOrchestrationBuild(config: RepoOSConfig, cwd: string): { ok: boole
   }
   const buildMarker = join(config.root, "dist", ".build-info.json");
   if (!existsSync(buildMarker)) {
-    return { ok: false, detail: "dist/.build-info.json missing — run `bun run build` in the main checkout" };
+    return {
+      ok: false,
+      detail: "dist/.build-info.json missing — run `bun run build` in the main checkout",
+    };
   }
   return { ok: true, detail: "build marker present" };
 }
@@ -186,7 +192,8 @@ function installDeps(dir: string): { ok: boolean; detail: string } {
   }
   const proc = spawnSync(cmd.cmd, cmd.args, { cwd: dir, timeout: 120_000 });
   if (proc.status !== 0) {
-    const err = proc.stderr?.toString("utf8").trim().split("\n").slice(-3).join(" ") || "unknown error";
+    const err =
+      proc.stderr?.toString("utf8").trim().split("\n").slice(-3).join(" ") || "unknown error";
     return { ok: false, detail: `${cmd.cmd} install failed: ${err}` };
   }
   return { ok: true, detail: `dependencies installed with ${cmd.cmd}` };
@@ -252,7 +259,9 @@ export async function bootstrap(
   }
 
   // Step 3: check orchestration build
-  const { value: buildOk, durationMs: buildDur } = timedSync(() => checkOrchestrationBuild(config, cwd));
+  const { value: buildOk, durationMs: buildDur } = timedSync(() =>
+    checkOrchestrationBuild(config, cwd),
+  );
   if (!add(STEP_NAMES.CHECK_BUILD, buildOk.ok, buildDur, buildOk.detail)) {
     return {
       ok: false,

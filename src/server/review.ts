@@ -27,16 +27,16 @@
  *
  * Zero runtime deps — node:fs / node:path only.
  */
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { commitTaskFile, currentBranch, headCommitISO, worktreePathForBranch } from "../core/git.js";
+import {
+  commitTaskFile,
+  currentBranch,
+  headCommitISO,
+  worktreePathForBranch,
+} from "../core/git.js";
 import { parseTask, utcTimestamp } from "../core/task.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
@@ -254,12 +254,7 @@ export function reviewFollowupMission(
     spec || "(the task file has no body)",
     "",
     ...(previousReport
-      ? [
-          "## Your previous review",
-          "",
-          previousReport.markdown.trim().slice(0, REPORT_CHARS),
-          "",
-        ]
+      ? ["## Your previous review", "", previousReport.markdown.trim().slice(0, REPORT_CHARS), ""]
       : []),
     "## Hard boundaries",
     "",
@@ -298,7 +293,9 @@ interface Run {
 const REVERT_CLAIM_MS = 30_000;
 
 /** Parse the verdict from the review report markdown. */
-function parseVerdict(markdown: string): "good to go" | "needs some work" | "back to the drawing board" | null {
+function parseVerdict(
+  markdown: string,
+): "good to go" | "needs some work" | "back to the drawing board" | null {
   const lines = markdown.split("\n");
   for (const line of lines) {
     if (line.includes("`good to go`")) return "good to go";
@@ -314,7 +311,9 @@ function parseVerdict(markdown: string): "good to go" | "needs some work" | "bac
  * reports written before this section existed — callers must treat `null` as
  * "unknown", not as "still relevant".
  */
-function parseRelevance(markdown: string): "still relevant" | "no longer needed" | "needs rescoping" | null {
+function parseRelevance(
+  markdown: string,
+): "still relevant" | "no longer needed" | "needs rescoping" | null {
   const lines = markdown.split("\n");
   for (const line of lines) {
     if (line.includes("`still relevant`")) return "still relevant";
@@ -381,7 +380,11 @@ function extractReportSections(markdown: string): {
  * path (kiro) keeps each line as an `{ s: "out", d }` entry whose `d` values
  * concatenate into the report.
  */
-function extractReportFromSession(cli: string, lines: AgentOutputEntry[], fallback: string): string {
+function extractReportFromSession(
+  cli: string,
+  lines: AgentOutputEntry[],
+  fallback: string,
+): string {
   let lastText = "";
   const outLines: string[] = [];
   for (const line of lines) {
@@ -603,9 +606,7 @@ export class ReviewManager {
       this.logger.task(task.id, "info", "review skipped — agent disabled");
       return { ok: false, skipped: true, reason: "the review agent is disabled" };
     }
-    const workdir = task.branch
-      ? worktreePathForBranch(this.config.root, task.branch)
-      : null;
+    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
     if (!workdir) {
       this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
       return { ok: false, skipped: true, reason: "the task has no worktree to review" };
@@ -619,7 +620,11 @@ export class ReviewManager {
     const run: Run = { cancelled: false, mode: "run" };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
-    this.logger.task(task.id, "info", "review started", { agent: agent.name, cli: agent.cli, model: agent.model });
+    this.logger.task(task.id, "info", "review started", {
+      agent: agent.name,
+      cli: agent.cli,
+      model: agent.model,
+    });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
     const mission = reviewMission(task, agent, workdir, baseBranch);
@@ -664,7 +669,9 @@ export class ReviewManager {
         error: started?.reason ?? "could not start the review",
       });
       this.appendMarker(taskId, `✗ review could not start: ${started?.reason ?? "unknown error"}`);
-      this.logger.task(taskId, "error", "review failed to start", { error: started?.reason ?? "unknown" });
+      this.logger.task(taskId, "error", "review failed to start", {
+        error: started?.reason ?? "unknown",
+      });
       return;
     }
     // A fresh spawn expresses fresh intent — drop any cancellation recorded by
@@ -735,9 +742,7 @@ export class ReviewManager {
       const report = this.read(task.id);
       const headAt = headCommitISO(workdir);
       const stale =
-        !report ||
-        !report.at ||
-        (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
+        !report || !report.at || (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
       if (!stale) continue;
 
       this.appendMarker(
@@ -810,7 +815,13 @@ export class ReviewManager {
     task: Task,
     agent: Agent,
     lines: AgentOutputEntry[],
-    session: { accumulatedMs?: number; inputTokens?: number; outputTokens?: number; tokens?: number; costUsd?: number } | null,
+    session: {
+      accumulatedMs?: number;
+      inputTokens?: number;
+      outputTokens?: number;
+      tokens?: number;
+      costUsd?: number;
+    } | null,
     timedOut: boolean,
   ): void {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
@@ -835,9 +846,7 @@ export class ReviewManager {
     const reportText = result.output?.trim() ?? "";
     const state: ReviewReport["state"] = ok && reportText ? "ok" : "failed";
     const body =
-      state === "ok"
-        ? reportText
-        : `The review agent produced no report: ${error ?? "no report"}`;
+      state === "ok" ? reportText : `The review agent produced no report: ${error ?? "no report"}`;
     const report: ReviewReport = {
       id: task.id,
       at: now(),
@@ -873,7 +882,10 @@ export class ReviewManager {
     // human, same as the relevance-flag escalation below.
     if (state === "failed" && !task.needsInput) {
       try {
-        patchTaskFile(this.config, task.absPath, { needsInput: true, needsInputReason: "review-failed" });
+        patchTaskFile(this.config, task.absPath, {
+          needsInput: true,
+          needsInputReason: "review-failed",
+        });
         this.emit({
           type: "task.corrected",
           id: task.id,
@@ -882,7 +894,9 @@ export class ReviewManager {
           at: now(),
         });
       } catch (err) {
-        console.error(`[repoos] could not escalate failed review for #${task.id}: ${(err as Error).message}`);
+        console.error(
+          `[repoos] could not escalate failed review for #${task.id}: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -896,7 +910,9 @@ export class ReviewManager {
       try {
         patchTaskFile(this.config, task.absPath, { needsInput: false, needsInputReason: null });
       } catch (err) {
-        console.error(`[repoos] could not clear stale needs_input for #${task.id}: ${(err as Error).message}`);
+        console.error(
+          `[repoos] could not clear stale needs_input for #${task.id}: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -906,7 +922,9 @@ export class ReviewManager {
       const verdict = parseVerdict(report.markdown);
       if (verdict) {
         this.autoBounce(task, report, verdict).catch((err) => {
-          console.error(`[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`);
+          console.error(
+            `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
+          );
         });
       }
     }
@@ -937,7 +955,10 @@ export class ReviewManager {
       const raw = readFileSync(task.absPath, "utf8");
       const doc = parseDocument(raw);
       const current = doc.data.review_passes as number | undefined;
-      const passes = typeof current === "number" && Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0;
+      const passes =
+        typeof current === "number" && Number.isFinite(current)
+          ? Math.max(0, Math.floor(current))
+          : 0;
       doc.data.review_passes = passes + 1;
       doc.data.updated_at = utcTimestamp();
       const keys = Object.keys(doc.data).filter((k) => k !== "review_passes" && k !== "updated_at");
@@ -945,7 +966,9 @@ export class ReviewManager {
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       commitTaskFile(this.config.root, task.absPath, `docs(${task.id}): update task`);
     } catch (err) {
-      console.error(`[repoos] could not update review_passes for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] could not update review_passes for #${task.id}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -1013,7 +1036,14 @@ export class ReviewManager {
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
 
-    const mission = reviewFollowupMission(task, agent, workdir, baseBranch, text, this.read(task.id));
+    const mission = reviewFollowupMission(
+      task,
+      agent,
+      workdir,
+      baseBranch,
+      text,
+      this.read(task.id),
+    );
     if (run.cancelled) {
       this.runs.delete(task.id);
       this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
@@ -1029,7 +1059,13 @@ export class ReviewManager {
     task: Task,
     agent: Agent,
     lines: AgentOutputEntry[],
-    session: { accumulatedMs?: number; inputTokens?: number; outputTokens?: number; tokens?: number; costUsd?: number } | null,
+    session: {
+      accumulatedMs?: number;
+      inputTokens?: number;
+      outputTokens?: number;
+      tokens?: number;
+      costUsd?: number;
+    } | null,
     timedOut: boolean,
   ): void {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
@@ -1053,7 +1089,10 @@ export class ReviewManager {
     const success = result.ok;
 
     if (!result.ok) {
-      this.appendMarker(task.id, `✗ the reviewer could not answer: ${result.error ?? "unknown error"}`);
+      this.appendMarker(
+        task.id,
+        `✗ the reviewer could not answer: ${result.error ?? "unknown error"}`,
+      );
       this.emit({
         type: "review",
         id: task.id,
@@ -1072,7 +1111,13 @@ export class ReviewManager {
   }
 
   /** Record a review chat turn to the database. Best-effort, never fails. */
-  private recordReviewChatTurn(taskId: string, agent: Agent, result: PromptResult, completedAt: string, success: boolean): void {
+  private recordReviewChatTurn(
+    taskId: string,
+    agent: Agent,
+    result: PromptResult,
+    completedAt: string,
+    success: boolean,
+  ): void {
     if (!this.db) return;
     try {
       const sessionId = `review:${taskId}-chat-${completedAt}`;
@@ -1138,7 +1183,8 @@ export class ReviewManager {
     for (const id of [...this.runs.keys()]) this.cancel(id);
     // Also stop adopted review sessions re-attached after a reload (0288).
     for (const r of this.runner?.running() ?? []) {
-      if (r.id.startsWith(REVIEW_SESSION_ID_PREFIX)) this.cancel(r.id.slice(REVIEW_SESSION_ID_PREFIX.length));
+      if (r.id.startsWith(REVIEW_SESSION_ID_PREFIX))
+        this.cancel(r.id.slice(REVIEW_SESSION_ID_PREFIX.length));
     }
   }
 
@@ -1258,7 +1304,9 @@ export class ReviewManager {
     // Extract the report sections
     const sections = extractReportSections(report.markdown);
     const messageParts: string[] = [];
-    messageParts.push(`The automated review found the following (review round ${reviewRounds + 1}):`);
+    messageParts.push(
+      `The automated review found the following (review round ${reviewRounds + 1}):`,
+    );
     messageParts.push("");
 
     if (sections.bugs) {
@@ -1279,7 +1327,9 @@ export class ReviewManager {
       messageParts.push("");
     }
 
-    messageParts.push(`Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`);
+    messageParts.push(
+      `Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`,
+    );
     const message = messageParts.join("\n");
 
     // Start the engineer before changing the task state. If the session cannot
@@ -1322,7 +1372,9 @@ export class ReviewManager {
         keys.unshift("review_rounds");
         writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       } catch (err) {
-        console.error(`[repoos] could not update review_rounds for #${task.id}: ${(err as Error).message}`);
+        console.error(
+          `[repoos] could not update review_rounds for #${task.id}: ${(err as Error).message}`,
+        );
         return;
       }
 
@@ -1447,9 +1499,7 @@ export class ReviewManager {
       patchTaskFile(this.config, task.absPath, { status: "review" });
     } catch (err) {
       this.reverted.delete(task.id);
-      console.error(
-        `[repoos] could not revert #${task.id} to review: ${(err as Error).message}`,
-      );
+      console.error(`[repoos] could not revert #${task.id} to review: ${(err as Error).message}`);
       return;
     }
     // Reflect the revert into the index immediately (trusted write — see the

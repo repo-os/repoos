@@ -17,7 +17,7 @@ describe("skipBuildAction — repoos check's Full-build step", () => {
     expect(skipBuildAction({}, false)).toBe("build");
   });
 
-  it("only the exact value \"1\" enables the skip path", () => {
+  it('only the exact value "1" enables the skip path', () => {
     expect(skipBuildAction({ REPOOS_SKIP_BUILD: "1" }, true)).toBe("skip");
     expect(skipBuildAction({ REPOOS_SKIP_BUILD: "0" }, true)).toBe("build");
     expect(skipBuildAction({ REPOOS_SKIP_BUILD: "true" }, true)).toBe("build");

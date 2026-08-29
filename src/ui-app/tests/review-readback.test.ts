@@ -16,22 +16,10 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  boardRoot,
-  findRepoRoot,
-  isLinkedWorktreeRoot,
-  mainCheckoutRoot,
-} from "../../core/config";
+import { boardRoot, findRepoRoot, isLinkedWorktreeRoot, mainCheckoutRoot } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
 import { AgentRunner } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
@@ -117,7 +105,12 @@ const task = (root: string): Task => ({
   },
 });
 
-const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });
+const agent = (cli: string): Agent => ({
+  name: "engineer",
+  cli,
+  model: "big pickle",
+  enabled: true,
+});
 
 async function waitFor(fn: () => boolean, label: string, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
@@ -219,7 +212,9 @@ describe("self-heal defense-in-depth (#0077)", () => {
     const bins = fakeBins();
     try {
       const runner = new AgentRunner(config(fx.root), () => {});
-      const started = runner.start(task(fx.root), "feat/0068", agent("claude code"), { cwd: fx.wt });
+      const started = runner.start(task(fx.root), "feat/0068", agent("claude code"), {
+        cwd: fx.wt,
+      });
       expect(started.ok).toBe(true);
       await waitFor(() => !runner.isRunning("0068"), "agent turn exit");
 

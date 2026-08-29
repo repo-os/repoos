@@ -36,14 +36,16 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <h3 id="dirty-main-title" class="dirty-title">main has uncommitted changes</h3>
         <p class="dirty-body">
           <b>{{ files.length }} file{{ files.length === 1 ? "" : "s" }}</b>
-          on <code class="mono">main</code> would block the merge for task
-          #{{ task.id }}. Commit them and continue, or cancel to stay in review.
+          on <code class="mono">main</code> would block the merge for task #{{ task.id }}. Commit
+          them and continue, or cancel to stay in review.
         </p>
         <div class="dirty-list">
           <div v-for="f in files" :key="f" class="dirty-file mono">{{ f }}</div>
         </div>
         <div class="dirty-actions">
-          <Button type="button" variant="outline" size="sm" @click.stop="emit('cancel')">Cancel</Button>
+          <Button type="button" variant="outline" size="sm" @click.stop="emit('cancel')"
+            >Cancel</Button
+          >
           <Button type="button" variant="accent" size="sm" @click.stop="emit('commit')">
             Commit &amp; continue
           </Button>

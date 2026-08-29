@@ -145,27 +145,13 @@ export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
  * status. Only statuses with a defined set show chips; others show none.
  */
 export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
-  draft: [
-    "Can you flesh this out?",
-    "Suggest how to turn this stub into a complete task.",
-  ],
-  inbox: [
-    "Can you flesh this out?",
-    "Suggest how to turn this stub into a complete task.",
-  ],
-  active: [
-    "What's going on with this task?",
-    "What's wrong?",
-    "What should I do next?",
-  ],
-  review: [
-    "What's blocking this from being done?",
-    "Is this actually ready?",
-  ],
+  draft: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
+  inbox: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
+  active: ["What's going on with this task?", "What's wrong?", "What should I do next?"],
+  review: ["What's blocking this from being done?", "Is this actually ready?"],
 };
 
-export const pmCannedMessagesFor = (s: string): string[] =>
-  PM_CANNED_MESSAGES[s as Status] ?? [];
+export const pmCannedMessagesFor = (s: string): string[] => PM_CANNED_MESSAGES[s as Status] ?? [];
 
 /**
  * The human-action reasons a task earns on the "Needs your attention" panel,
@@ -376,7 +362,9 @@ export const useRepoStore = defineStore("repo", () => {
   /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
   const cto = ref<CtoState>({ running: false, enabled: false, report: null, lines: [] });
   /** Diff statistics per task: files changed, additions, deletions. */
-  const diffStats = ref<Record<string, { filesChanged: number; additions: number; deletions: number }>>({});
+  const diffStats = ref<
+    Record<string, { filesChanged: number; additions: number; deletions: number }>
+  >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
@@ -449,10 +437,12 @@ export const useRepoStore = defineStore("repo", () => {
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const repoName = computed(() => (health.value ? health.value.root.split("/").pop() ?? "" : ""));
+  const repoName = computed(() => (health.value ? (health.value.root.split("/").pop() ?? "") : ""));
   const workDir = computed(() => (health.value ? health.value.workDir : "work"));
   const total = computed(() => tasks.value.length);
-  const aiTasks = computed(() => tasks.value.filter((t) => t.assignee === "ai" && t.status !== "done"));
+  const aiTasks = computed(() =>
+    tasks.value.filter((t) => t.assignee === "ai" && t.status !== "done"),
+  );
 
   /** Priority rank for the needs-you sort: p0 first, then p1/p2/p3. */
   const PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
@@ -772,7 +762,11 @@ export const useRepoStore = defineStore("repo", () => {
         typeof e.task.extra?.check_retry_count === "number"
           ? e.task.extra.check_retry_count
           : (before?.checkRetryCount ?? 0);
-      const merged = { ...e.task, preview: e.task.preview ?? before?.preview ?? null, checkRetryCount };
+      const merged = {
+        ...e.task,
+        preview: e.task.preview ?? before?.preview ?? null,
+        checkRetryCount,
+      };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
       const ui = useUiStore();
@@ -786,7 +780,11 @@ export const useRepoStore = defineStore("repo", () => {
       // "creation completed" moment — move the card into its persistent
       // highlight. Only ids this browser marked at create time qualify, so
       // manually created tasks are never affected.
-      if (prevStatus === "draft" && e.task.status !== "draft" && aiCreatePending.value.has(e.task.id)) {
+      if (
+        prevStatus === "draft" &&
+        e.task.status !== "draft" &&
+        aiCreatePending.value.has(e.task.id)
+      ) {
         promoteAiCreated(e.task.id);
       }
       // A close-out error only makes sense while the task is still in review;
@@ -849,7 +847,11 @@ export const useRepoStore = defineStore("repo", () => {
       const wasPending = aiCreatePending.value.has(e.id);
       dropAiCreatePending(e.id);
       if (wasPending) {
-        pushFeed(`<b>PM agent failed</b> on #${e.id} — draft kept as-is`, "#ffb454", "task.aiCreateFailed");
+        pushFeed(
+          `<b>PM agent failed</b> on #${e.id} — draft kept as-is`,
+          "#ffb454",
+          "task.aiCreateFailed",
+        );
       }
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
@@ -907,7 +909,9 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "agent.exited") {
       const wasRunning = runningIds.value.includes(e.id);
       runningIds.value = runningIds.value.filter((x) => x !== e.id);
-      runningSince.value = Object.fromEntries(Object.entries(runningSince.value).filter(([id]) => id !== e.id));
+      runningSince.value = Object.fromEntries(
+        Object.entries(runningSince.value).filter(([id]) => id !== e.id),
+      );
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
       agentExitedAt.value = { ...agentExitedAt.value, [e.id]: Date.now() };
       // A deliberate pause (0100): a running agent stops on a task that stays
@@ -1076,7 +1080,9 @@ export const useRepoStore = defineStore("repo", () => {
   /** Hydrate the integration-pipeline snapshot after a refresh/SSE gap (0207). */
   async function refreshIntegration(): Promise<void> {
     try {
-      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>("/api/integration/pipeline");
+      const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>(
+        "/api/integration/pipeline",
+      );
       if (r.pipeline) integration.value = r.pipeline;
     } catch {
       /* non-fatal — the bar falls back to its idle state */
@@ -1097,9 +1103,13 @@ export const useRepoStore = defineStore("repo", () => {
    *  next chunk arrives. */
   async function refreshTestRun(): Promise<void> {
     try {
-      const r = await api<{ running: boolean; startedAt: string | null; finishedAt: string | null; code: number | null; output: string }>(
-        "/api/system/run-tests",
-      );
+      const r = await api<{
+        running: boolean;
+        startedAt: string | null;
+        finishedAt: string | null;
+        code: number | null;
+        output: string;
+      }>("/api/system/run-tests");
       testRun.running = r.running;
       testRun.startedAt = r.startedAt;
       testRun.finishedAt = r.finishedAt;
@@ -1113,7 +1123,9 @@ export const useRepoStore = defineStore("repo", () => {
   /** Starts a full `bun run test` run. Output/completion arrive over SSE
    *  (test-run.output / test-run.done), not in this response. */
   async function startTestRun(): Promise<void> {
-    const r = await api<{ ok: boolean; error?: string }>("/api/system/run-tests", { method: "POST" });
+    const r = await api<{ ok: boolean; error?: string }>("/api/system/run-tests", {
+      method: "POST",
+    });
     if (!r.ok) {
       const message = r.error ?? "could not start the test run";
       pushToast(message, "error");
@@ -1185,7 +1197,30 @@ export const useRepoStore = defineStore("repo", () => {
     es.onerror = () => {
       connected.value = false;
     };
-    for (const t of ["hello", "index.rebuilt", "task.created", "task.updated", "task.deleted", "task.aiCreateFailed", "task.progress", "task.corrected", "preview", "review", "cto", "agent.running", "agent.exited", "agent.output", "agent.stats", "system.stats", "build.available", "reload.failed", "integration", "test-run.started", "test-run.output", "test-run.done"]) {
+    for (const t of [
+      "hello",
+      "index.rebuilt",
+      "task.created",
+      "task.updated",
+      "task.deleted",
+      "task.aiCreateFailed",
+      "task.progress",
+      "task.corrected",
+      "preview",
+      "review",
+      "cto",
+      "agent.running",
+      "agent.exited",
+      "agent.output",
+      "agent.stats",
+      "system.stats",
+      "build.available",
+      "reload.failed",
+      "integration",
+      "test-run.started",
+      "test-run.output",
+      "test-run.done",
+    ]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         try {
@@ -1245,7 +1280,11 @@ export const useRepoStore = defineStore("repo", () => {
     // whole history, and never while a review is live). Fire-and-forget so
     // hydration isn't blocked; the verdict badge updates when the fetch lands.
     for (const task of idx.tasks) {
-      if (task.status === "review" && task.automaticReview?.enabled && !task.automaticReview.running) {
+      if (
+        task.status === "review" &&
+        task.automaticReview?.enabled &&
+        !task.automaticReview.running
+      ) {
         void loadReview(task.id);
       }
     }
@@ -1288,7 +1327,7 @@ export const useRepoStore = defineStore("repo", () => {
         typeof h.buildAvailableHash === "string" && h.buildAvailableHash !== ""
           ? h.buildAvailableHash
           : null;
-      const parkedAt = parkedHash === null ? null : h.buildAvailableAt ?? null;
+      const parkedAt = parkedHash === null ? null : (h.buildAvailableAt ?? null);
 
       if (parkedHash !== null) {
         const runningServesParked = h.buildHash !== null && h.buildHash === parkedHash;
@@ -1471,19 +1510,27 @@ export const useRepoStore = defineStore("repo", () => {
    * `commitDirty`), the dirty file list is stored per task and a
    * `DirtyMainError` is thrown so the caller can show the confirmation modal.
    */
-  async function completeTask(
-    t: Task,
-    opts: { commitDirty?: boolean } = {},
-  ): Promise<DoneResult> {
+  async function completeTask(t: Task, opts: { commitDirty?: boolean } = {}): Promise<DoneResult> {
     const raw = await fetch(`/api/tasks/${t.id}/done`, {
       method: "POST",
       ...(opts.commitDirty
-        ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commitDirty: true }) }
+        ? {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ commitDirty: true }),
+          }
         : {}),
     });
-    let body: Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean } = {};
+    let body: Partial<DoneResult> & {
+      needsCommit?: boolean;
+      dirtyFiles?: string[];
+      dirtyCheckFailed?: boolean;
+    } = {};
     try {
-      body = (await raw.json()) as Partial<DoneResult> & { needsCommit?: boolean; dirtyFiles?: string[]; dirtyCheckFailed?: boolean };
+      body = (await raw.json()) as Partial<DoneResult> & {
+        needsCommit?: boolean;
+        dirtyFiles?: string[];
+        dirtyCheckFailed?: boolean;
+      };
     } catch {
       body = {};
     }
@@ -1690,7 +1737,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (!r.ok) {
       const message = r.conflicts?.length
         ? `Rebase hit conflicts in: ${r.conflicts.join(", ")}`
-        : r.error ?? "could not sync with main";
+        : (r.error ?? "could not sync with main");
       pushToast(message, "error");
       throw new Error(message);
     }
@@ -1853,10 +1900,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /** Create a document manually with the provided path and content. */
-  async function createDocument(form: {
-    path: string;
-    content: string;
-  }): Promise<{ ok: true }> {
+  async function createDocument(form: { path: string; content: string }): Promise<{ ok: true }> {
     return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
   }
 

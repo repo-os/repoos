@@ -71,7 +71,11 @@ export function testModelCombination(
       resolve(result);
     };
     const timer = setTimeout(() => {
-      try { proc.kill("SIGKILL"); } catch { /* already exited */ }
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* already exited */
+      }
       done(finish("timed_out", `Timed out after ${opts.timeoutMs ?? MODEL_TEST_TIMEOUT_MS}ms`));
     }, opts.timeoutMs ?? MODEL_TEST_TIMEOUT_MS);
     proc.stdout?.on("data", (chunk: Buffer) => {
@@ -102,18 +106,22 @@ export async function testModelCombinations(
   for (const [cli, source] of Object.entries(byCli)) {
     const models = [...new Set(source.models.length ? source.models : ["default"])];
     if (!source.supported) {
-      for (const model of models) results.push({ cli, model, status: "not_testable", durationMs: 0 });
+      for (const model of models)
+        results.push({ cli, model, status: "not_testable", durationMs: 0 });
       continue;
     }
     for (const model of models) queued.push({ cli, model });
   }
   let next = 0;
-  const workers = Array.from({ length: Math.min(Math.max(1, opts.concurrency ?? 2), queued.length) }, async () => {
-    while (next < queued.length) {
-      const item = queued[next++];
-      results.push(await testModelCombination(item.cli, item.model, opts));
-    }
-  });
+  const workers = Array.from(
+    { length: Math.min(Math.max(1, opts.concurrency ?? 2), queued.length) },
+    async () => {
+      while (next < queued.length) {
+        const item = queued[next++];
+        results.push(await testModelCombination(item.cli, item.model, opts));
+      }
+    },
+  );
   await Promise.all(workers);
   return results.sort((a, b) => a.cli.localeCompare(b.cli) || a.model.localeCompare(b.model));
 }

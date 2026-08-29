@@ -18,7 +18,10 @@ export * from "./types.js";
 export { parseDeepInfraFeatured } from "./deepinfra.js";
 export { curateOpenRouterModels } from "./openrouter.js";
 
-export const PLAYGROUND_PROVIDERS: PlaygroundProviderAdapter[] = [deepinfraProvider, openrouterProvider];
+export const PLAYGROUND_PROVIDERS: PlaygroundProviderAdapter[] = [
+  deepinfraProvider,
+  openrouterProvider,
+];
 
 export const CACHE_TTL_MS = 15 * 60 * 1000;
 
@@ -36,7 +39,10 @@ export function resetPlaygroundProviderCache(): void {
   inFlight.clear();
 }
 
-async function loadProvider(adapter: PlaygroundProviderAdapter, refresh: boolean): Promise<PlaygroundProviderGroup> {
+async function loadProvider(
+  adapter: PlaygroundProviderAdapter,
+  refresh: boolean,
+): Promise<PlaygroundProviderGroup> {
   const cached = cache.get(adapter.id);
   if (!refresh && cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.group;
 
@@ -57,7 +63,13 @@ async function loadProvider(adapter: PlaygroundProviderAdapter, refresh: boolean
     } catch (err) {
       if (cached) return cached.group;
       const reason = err instanceof Error ? err.message : String(err);
-      return { id: adapter.id, label: adapter.label, models: [], error: reason, fetchedAt: new Date().toISOString() };
+      return {
+        id: adapter.id,
+        label: adapter.label,
+        models: [],
+        error: reason,
+        fetchedAt: new Date().toISOString(),
+      };
     } finally {
       inFlight.delete(adapter.id);
     }
@@ -67,6 +79,8 @@ async function loadProvider(adapter: PlaygroundProviderAdapter, refresh: boolean
 }
 
 /** Fetch (or serve cached) model catalogs from every registered provider. Never throws. */
-export async function listPlaygroundModels(opts: { refresh?: boolean } = {}): Promise<PlaygroundProviderGroup[]> {
+export async function listPlaygroundModels(
+  opts: { refresh?: boolean } = {},
+): Promise<PlaygroundProviderGroup[]> {
   return Promise.all(PLAYGROUND_PROVIDERS.map((p) => loadProvider(p, opts.refresh ?? false)));
 }

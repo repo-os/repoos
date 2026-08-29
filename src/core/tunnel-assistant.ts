@@ -34,7 +34,8 @@ export function validateTunnelPublishInput(input: TunnelPublishInput): string[] 
     errors.push("Enter a valid Cloudflare zone such as repoos.org.");
   }
   const app = input.app.trim().toLowerCase();
-  if (!isValidAppName(app)) errors.push("App name must use letters, numbers, hyphens, or underscores.");
+  if (!isValidAppName(app))
+    errors.push("App name must use letters, numbers, hyphens, or underscores.");
   const port = Number(input.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     errors.push("Local port must be an integer from 1 to 65535.");
@@ -42,8 +43,10 @@ export function validateTunnelPublishInput(input: TunnelPublishInput): string[] 
   if (!input.noAccess) {
     const rawEmails = Array.isArray(input.emails) ? input.emails : input.emails.split(",");
     const emails = rawEmails.map((email) => email.trim()).filter(Boolean);
-    if (!emails.length) errors.push("Add at least one allowed email address (or skip Cloudflare Access).");
-    if (emails.some((email) => !isValidEmail(email))) errors.push("Every allowed email must be a valid email address.");
+    if (!emails.length)
+      errors.push("Add at least one allowed email address (or skip Cloudflare Access).");
+    if (emails.some((email) => !isValidEmail(email)))
+      errors.push("Every allowed email must be a valid email address.");
   }
   if (input.runMode !== "foreground" && input.runMode !== "background") {
     errors.push("Choose foreground or background run mode.");
@@ -59,11 +62,19 @@ export function buildTunnelPublishPlan(input: TunnelPublishInput): TunnelPublish
   const port = Number(input.port);
   const noAccess = !!input.noAccess;
   const rawEmails = Array.isArray(input.emails) ? input.emails : input.emails.split(",");
-  const emails = noAccess ? [] : [...new Set(rawEmails.map((email) => email.trim().toLowerCase()).filter(Boolean))];
+  const emails = noAccess
+    ? []
+    : [...new Set(rawEmails.map((email) => email.trim().toLowerCase()).filter(Boolean))];
   const hostname = `${app}.${zone}`;
   const allow = emails.join(",");
   return {
-    zone, app, port, emails, runMode: input.runMode, noAccess, hostname,
+    zone,
+    app,
+    port,
+    emails,
+    runMode: input.runMode,
+    noAccess,
+    hostname,
     publicUrl: `https://${hostname}`,
     localOrigin: `http://localhost:${port}`,
     commands: {

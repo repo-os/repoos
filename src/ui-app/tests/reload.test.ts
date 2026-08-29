@@ -8,13 +8,7 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createServer as createTcpServer } from "node:net";
 import { createServer as createHttpServer } from "node:http";
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ReloadManager, readBuildHash, type ReloadManagerOptions } from "../../server/reload";
@@ -312,7 +306,10 @@ describe("ReloadManager", () => {
     const fx = await makeFixture();
     try {
       expect(readBuildHash(fx.repo)).toBe("hash-aaa");
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-zzz" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-zzz" }),
+      );
       expect(readBuildHash(fx.repo)).toBe("hash-zzz");
       expect(readBuildHash(join(fx.repo, "nope"))).toBeNull();
     } finally {
@@ -326,7 +323,10 @@ describe("ReloadManager", () => {
     const { manager, calls } = makeManager(fx);
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
 
       await waitFor(() => calls.confirmed > 0, "reload confirmed after hash change");
       const [spawn] = spawns(fx);
@@ -387,7 +387,10 @@ describe("ReloadManager", () => {
     try {
       manager.start();
       // Write a new build hash so the reload actually fires (not not-stale).
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       const state = manager.requestReload("test");
       // 0214: agent-turn deferral was removed — a reload proceeds immediately
       // even while an agent is running, because the new server re-attaches to
@@ -427,7 +430,10 @@ describe("ReloadManager", () => {
     });
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       const state = manager.requestReload("test");
       expect(state.state).toBe("reloading");
 
@@ -451,7 +457,10 @@ describe("ReloadManager", () => {
     });
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       expect(manager.requestReload("test").state).toBe("reloading");
       await waitFor(() => calls.failed > 0, "first reload failure reported");
       expect(spawns(fx).length).toBe(1);
@@ -488,7 +497,10 @@ describe("ReloadManager", () => {
     });
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-closeout" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-closeout" }),
+      );
 
       await waitFor(() => available === "hash-closeout", "build parked and surfaced");
       await sleep(300);
@@ -522,7 +534,10 @@ describe("ReloadManager", () => {
       },
     });
     try {
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-closeout" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-closeout" }),
+      );
       const state = manager.requestReload("manual restart");
       expect(state.state).toBe("deferred");
       expect(available).toBe("hash-closeout");
@@ -572,7 +587,10 @@ describe("ReloadManager", () => {
     });
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       manager.requestReload("test");
 
       await waitFor(() => calls.failed > 0, "flash replacement treated as failed");
@@ -582,17 +600,14 @@ describe("ReloadManager", () => {
       expect(spawn.flash).toBe(true);
       // The flash process must not survive the failed handoff — the parent
       // kills it (or it already died), never leaving a listenerless serve.
-      await waitFor(
-        () => {
-          try {
-            process.kill(spawn.pid!, 0);
-            return false;
-          } catch {
-            return true;
-          }
-        },
-        "flash replacement process is gone",
-      );
+      await waitFor(() => {
+        try {
+          process.kill(spawn.pid!, 0);
+          return false;
+        } catch {
+          return true;
+        }
+      }, "flash replacement process is gone");
     } finally {
       manager.stop();
       fx.clean();
@@ -620,7 +635,10 @@ describe("ReloadManager", () => {
     });
     try {
       manager.start();
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
 
       await waitFor(() => calls.failed > 0, "first reload failure reported");
       // Let any racing poll ticks that fired during the cleanup window settle.
@@ -648,7 +666,7 @@ describe("ReloadManager", () => {
     }
   });
 
-  it("#0284: reports a loud \"port stolen\" reason when a foreign process grabs the port during the drain", async () => {
+  it('#0284: reports a loud "port stolen" reason when a foreign process grabs the port during the drain', async () => {
     if (process.platform === "win32") return;
     const fx = await makeFixture();
     process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
@@ -689,7 +707,10 @@ describe("ReloadManager", () => {
       handshakeTimeoutMs: 1000,
     });
     try {
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       manager.requestReload("test drain-window steal");
 
       await waitFor(() => calls.failed > 0, "reload failure reported");
@@ -713,22 +734,32 @@ describe("ReloadManager", () => {
       cliEntry: () => fx.descendantCli,
       graceMs: 20,
       handshakeTimeoutMs: 500,
-    });    try {
-      writeFileSync(join(fx.repo, "dist", ".build-info.json"), JSON.stringify({ hash: "hash-bbb" }));
+    });
+    try {
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
       manager.requestReload("test descendant cleanup");
       await waitFor(() => calls.failed > 0, "descendant replacement failure");
       const tree = spawns(fx);
-      const pids = tree.map((entry) => entry.pid).filter((pid): pid is number => typeof pid === "number");
-      expect(tree.map((entry) => (entry as { tree?: string }).tree).sort()).toEqual(["child", "parent"]);
+      const pids = tree
+        .map((entry) => entry.pid)
+        .filter((pid): pid is number => typeof pid === "number");
+      expect(tree.map((entry) => (entry as { tree?: string }).tree).sort()).toEqual([
+        "child",
+        "parent",
+      ]);
       await waitFor(
-        () => pids.every((pid) => {
-          try {
-            process.kill(pid, 0);
-            return false;
-          } catch {
-            return true;
-          }
-        }),
+        () =>
+          pids.every((pid) => {
+            try {
+              process.kill(pid, 0);
+              return false;
+            } catch {
+              return true;
+            }
+          }),
         "failed replacement process group is gone",
       );
     } finally {
@@ -747,7 +778,8 @@ describe("Agent adoption across restarts (0214)", () => {
     // verifies that adoptRunningAgents() picks it up when the PID is alive.
     const { AgentRunner } = await import("../../server/agents");
     const { resolve } = await import("node:path");
-    const { appendFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { appendFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } =
+      await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
 
@@ -761,7 +793,9 @@ describe("Agent adoption across restarts (0214)", () => {
 
       // Write a task file so loadHotSessions doesn't fail
       const taskFile = join(root, "work", "0001-adopt.md");
-      writeFileSync(taskFile, `---
+      writeFileSync(
+        taskFile,
+        `---
 id: "0001"
 title: Adoption test
 type: feature
@@ -772,17 +806,33 @@ assigned_to: ai
 branch: feat/adopt-test
 ---
 ## Test
-`);
+`,
+      );
 
       // Write a durable registry entry pointing at our OWN pid (always alive)
       const registryFile = join(fullCacheDir, "agents.json");
-      writeFileSync(registryFile, JSON.stringify({
-        entries: [
-          { taskId: "0001", pid: process.pid, workdir: root, branch: "feat/adopt-test", runId: "adopt-run-1" },
-          // Also include a stale entry pointing at a PID that can't possibly exist
-          { taskId: "0002", pid: 999999, workdir: root, branch: "feat/dead-test", runId: "adopt-run-2" },
-        ],
-      }));
+      writeFileSync(
+        registryFile,
+        JSON.stringify({
+          entries: [
+            {
+              taskId: "0001",
+              pid: process.pid,
+              workdir: root,
+              branch: "feat/adopt-test",
+              runId: "adopt-run-1",
+            },
+            // Also include a stale entry pointing at a PID that can't possibly exist
+            {
+              taskId: "0002",
+              pid: 999999,
+              workdir: root,
+              branch: "feat/dead-test",
+              runId: "adopt-run-2",
+            },
+          ],
+        }),
+      );
 
       // Separate durable stream logs retain the original output classification
       // while the server process is absent.
@@ -825,12 +875,20 @@ branch: feat/adopt-test
       // Verify the gap output was caught up
       const session = runner.output("0001");
       expect(session).not.toBeNull();
-      expect(session!.lines.some((l: any) => l.d === "hello 🙂 from stdout gap" && l.s === "out")).toBe(true);
-      expect(session!.lines.some((l: any) => l.d === "hello from stderr gap" && l.s === "err")).toBe(true);
+      expect(
+        session!.lines.some((l: any) => l.d === "hello 🙂 from stdout gap" && l.s === "out"),
+      ).toBe(true);
+      expect(
+        session!.lines.some((l: any) => l.d === "hello from stderr gap" && l.s === "err"),
+      ).toBe(true);
 
       appendFileSync(outLog, "live output ✓ after adoption\n");
       await waitFor(
-        () => runner.output("0001")?.lines.some((l: any) => l.d === "live output ✓ after adoption" && l.s === "out") === true,
+        () =>
+          runner
+            .output("0001")
+            ?.lines.some((l: any) => l.d === "live output ✓ after adoption" && l.s === "out") ===
+          true,
         "Unicode output tailed after adoption",
       );
 
@@ -862,7 +920,9 @@ describe("Review reload durability (0288)", () => {
       const fullCacheDir = join(root, cacheDir);
       mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
       mkdirSync(join(root, "work"), { recursive: true });
-      writeFileSync(join(root, "work", "0001-review.md"), `---
+      writeFileSync(
+        join(root, "work", "0001-review.md"),
+        `---
 id: "0001"
 title: Review adopt
 type: feature
@@ -873,7 +933,8 @@ assigned_to: ai
 branch: feat/review-adopt
 ---
 ## Test
-`);
+`,
+      );
 
       // A registry entry for a REVIEW whose PID is long dead (its process
       // finished during the reload handoff before the new server could adopt).
@@ -881,7 +942,15 @@ branch: feat/review-adopt
         join(fullCacheDir, "agents.json"),
         JSON.stringify({
           entries: [
-            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "run" },
+            {
+              taskId: "review:0001",
+              pid: 999999,
+              workdir: root,
+              branch: "",
+              runId: "r1",
+              kind: "review",
+              reviewKind: "run",
+            },
           ],
         }),
       );
@@ -929,7 +998,9 @@ branch: feat/review-adopt
       const fullCacheDir = join(root, cacheDir);
       mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
       mkdirSync(join(root, "work"), { recursive: true });
-      writeFileSync(join(root, "work", "0001-review.md"), `---
+      writeFileSync(
+        join(root, "work", "0001-review.md"),
+        `---
 id: "0001"
 title: Chat adopt
 type: feature
@@ -940,7 +1011,8 @@ assigned_to: ai
 branch: feat/review-chat
 ---
 ## Test
-`);
+`,
+      );
 
       // A dead CHAT review entry (reviewKind: "chat") whose process finished
       // during the handoff. Its session holds a follow-up ANSWER, not a report.
@@ -948,7 +1020,15 @@ branch: feat/review-chat
         join(fullCacheDir, "agents.json"),
         JSON.stringify({
           entries: [
-            { taskId: "review:0001", pid: 999999, workdir: root, branch: "", runId: "r1", kind: "review", reviewKind: "chat" },
+            {
+              taskId: "review:0001",
+              pid: 999999,
+              workdir: root,
+              branch: "",
+              runId: "r1",
+              kind: "review",
+              reviewKind: "chat",
+            },
           ],
         }),
       );
@@ -1021,7 +1101,8 @@ ${extra}
 
   it("finalizes an adopted CHAT turn as a chat — no report overwrite, no pass bump (Bug 3)", async () => {
     const { ReviewManager } = await import("../../server/review");
-    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } = await import("node:fs");
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } =
+      await import("node:fs");
     const { tmpdir } = await import("node:os");
 
     const root = mkdtempSync(join(tmpdir(), "repoos-revchat-"));
@@ -1031,7 +1112,7 @@ ${extra}
       // A previously-written report that a chat follow-up must NOT clobber.
       const reportFile = join(root, ".repoos", "reviews", "0001.md");
       mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
-      writeFileSync(reportFile, "task: \"0001\"\nstate: ok\n\nORIGINAL REVIEW REPORT\n");
+      writeFileSync(reportFile, 'task: "0001"\nstate: ok\n\nORIGINAL REVIEW REPORT\n');
       const absPath = join(root, "work", "0001-t.md");
 
       const events: Array<{ type: string; state?: unknown; id?: unknown }> = [];
@@ -1039,7 +1120,10 @@ ${extra}
       const runner: any = {
         output: () => ({
           lines: [
-            { type: "text", text: "the empty-list case is handled by the early return in src/thing.ts." },
+            {
+              type: "text",
+              text: "the empty-list case is handled by the early return in src/thing.ts.",
+            },
           ],
           accumulatedMs: 500,
         }),
@@ -1220,18 +1304,15 @@ function configForRoot(root: string, cacheDir: string) {
 }
 
 describe("POST /api/server/restart", () => {
-  it.skip("returns a reload state from the running server",
-    async () => {
-      const server = await startServer({ host: "127.0.0.1", port: 0 });
-      try {
-        const res = await fetch(`${server.url}/api/server/restart`, { method: "POST" });
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { state: string };
-        expect(["reloading", "deferred", "not-stale"]).toContain(body.state);
-      } finally {
-        await server.close();
-      }
-    },
-    30_000,
-  );
+  it.skip("returns a reload state from the running server", async () => {
+    const server = await startServer({ host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/server/restart`, { method: "POST" });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { state: string };
+      expect(["reloading", "deferred", "not-stale"]).toContain(body.state);
+    } finally {
+      await server.close();
+    }
+  }, 30_000);
 });

@@ -1,12 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-  chmodSync,
-  existsSync,
-} from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, chmodSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -40,11 +34,7 @@ const REAL_BUN: string | null = (() => {
   }
 })();
 
-const ENV_KEYS = [
-  "REPOOS_RUNTIME",
-  "REPOOS_RUNTIME_REEXEC",
-  "REPOOS_BUN_PATH",
-] as const;
+const ENV_KEYS = ["REPOOS_RUNTIME", "REPOOS_RUNTIME_REEXEC", "REPOOS_BUN_PATH"] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {

@@ -113,7 +113,8 @@ describe("Stop work confirmation modal", () => {
     await stopButton!.trigger("click");
     await flush();
 
-    const confirmButton = () => wrapper.findAll("button").find((b) => b.text().trim() === "Stop Work");
+    const confirmButton = () =>
+      wrapper.findAll("button").find((b) => b.text().trim() === "Stop Work");
     expect(confirmButton(), "modal still open after first open").toBeTruthy();
     await confirmButton()!.trigger("click");
     await flush();
@@ -170,9 +171,15 @@ describe("Stop work confirmation modal", () => {
     });
     await flush();
 
-    await wrapper.findAll("button").find((b) => b.text().trim() === "Stop work")!.trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().trim() === "Stop work")!
+      .trigger("click");
     await flush();
-    await wrapper.findAll("button").find((b) => b.text().trim() === "Stop Work")!.trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().trim() === "Stop Work")!
+      .trigger("click");
     await flush();
 
     expect(ui.saving && release.fn !== null, "stop request in flight").toBe(true);

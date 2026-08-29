@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MODEL_TEST_TIMEOUT_MS, sanitizeDiagnostic, testModelCombination, testModelCombinations } from "../../server/model-test";
+import {
+  MODEL_TEST_TIMEOUT_MS,
+  sanitizeDiagnostic,
+  testModelCombination,
+  testModelCombinations,
+} from "../../server/model-test";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -52,7 +57,9 @@ describe("model compatibility runner", () => {
   });
 
   it("bypasses Codex's trusted-directory preflight for the probe", async () => {
-    const fixture = fakeCodex('case "$*" in *--skip-git-repo-check*) echo REPOOS_MODEL_OK;; *) echo "missing trust flag" >&2; exit 2;; esac');
+    const fixture = fakeCodex(
+      'case "$*" in *--skip-git-repo-check*) echo REPOOS_MODEL_OK;; *) echo "missing trust flag" >&2; exit 2;; esac',
+    );
     const old = process.env.PATH;
     process.env.PATH = fixture.path;
     try {
@@ -67,7 +74,9 @@ describe("model compatibility runner", () => {
   });
 
   it("reports success and failure independently", async () => {
-    const fixture = fakeOpenCode('case "$*" in *bad*) echo "denied" >&2; exit 2;; *) echo REPOOS_MODEL_OK;; esac');
+    const fixture = fakeOpenCode(
+      'case "$*" in *bad*) echo "denied" >&2; exit 2;; *) echo REPOOS_MODEL_OK;; esac',
+    );
     const old = process.env.PATH;
     process.env.PATH = fixture.path;
     try {
@@ -88,7 +97,9 @@ describe("model compatibility runner", () => {
       { "claude code": { supported: false, refreshable: false, models: [] } },
       { cwd: process.cwd() },
     );
-    expect(results).toEqual([{ cli: "claude code", model: "default", status: "not_testable", durationMs: 0 }]);
+    expect(results).toEqual([
+      { cli: "claude code", model: "default", status: "not_testable", durationMs: 0 },
+    ]);
   });
 
   it("strips ANSI and control characters from bounded diagnostics", () => {

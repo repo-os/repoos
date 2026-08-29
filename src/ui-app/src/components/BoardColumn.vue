@@ -6,7 +6,11 @@ import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import { applyCollapseDefaults, isColumnCollapsed, toggleColumnCollapsed } from "../lib/boardCollapse";
+import {
+  applyCollapseDefaults,
+  isColumnCollapsed,
+  toggleColumnCollapsed,
+} from "../lib/boardCollapse";
 import { isValidBoardMove, boardMoveRejectionReason } from "../lib/taskTransitions";
 
 const GENZ_EMPTY: Record<string, string> = {
@@ -18,8 +22,15 @@ const GENZ_EMPTY: Record<string, string> = {
 };
 
 const props = withDefaults(
-  defineProps<{ col: Column; emptyText?: string; barColor?: string; forceExpand?: boolean; dragEnabled?: boolean; highlightId?: string | null }>(),
-  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true, highlightId: null }
+  defineProps<{
+    col: Column;
+    emptyText?: string;
+    barColor?: string;
+    forceExpand?: boolean;
+    dragEnabled?: boolean;
+    highlightId?: string | null;
+  }>(),
+  { emptyText: "—", barColor: "", forceExpand: false, dragEnabled: true, highlightId: null },
 );
 
 const repo = useRepoStore();
@@ -28,8 +39,8 @@ const collapsed = computed(() => !props.forceExpand && isColumnCollapsed(props.c
 
 const displayEmpty = computed(() =>
   config.uiTheme === "gen z"
-    ? GENZ_EMPTY[props.col.id] ?? "nothing here yet — add something"
-    : props.emptyText || "—"
+    ? (GENZ_EMPTY[props.col.id] ?? "nothing here yet — add something")
+    : props.emptyText || "—",
 );
 
 watch(
@@ -37,7 +48,7 @@ watch(
   (loading) => {
     if (!loading) applyCollapseDefaults({ byStatus: repo.byStatus, columns: COLUMNS });
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const bodyEl = ref<HTMLElement | null>(null);
@@ -94,15 +105,20 @@ const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() 
   const t = repo.draggingTask;
   if (!t || t.status === props.col.id) return null;
   if (props.col.id === "done") {
-    if (t.status !== "review") return { valid: false, reason: "Only review tasks can be moved to done." };
-    if (repo.reviewFor(t.id)?.running) return { valid: false, reason: "Waiting for automatic review to finish." };
+    if (t.status !== "review")
+      return { valid: false, reason: "Only review tasks can be moved to done." };
+    if (repo.reviewFor(t.id)?.running)
+      return { valid: false, reason: "Waiting for automatic review to finish." };
     return { valid: true, reason: null };
   }
   // Mirrors the drawer's Review button, which disables itself while the
   // agent is running: the commit-and-validate gate would otherwise run
   // against a worktree the agent might still be writing to.
   if (t.status === "active" && props.col.id === "review" && repo.isRunning(t.id)) {
-    return { valid: false, reason: "The agent is still coding — Review becomes available when the turn ends." };
+    return {
+      valid: false,
+      reason: "The agent is still coding — Review becomes available when the turn ends.",
+    };
   }
   const valid = isValidBoardMove(t.status, props.col.id);
   return { valid, reason: valid ? null : boardMoveRejectionReason(t.status, props.col.id) };
@@ -229,7 +245,12 @@ const unackedBadge = computed(() =>
 <template>
   <div
     class="board-col"
-    :class="{ collapsed, scrollable, 'drag-over': dragOver, 'drop-invalid': dragOver && dropIsValid === false }"
+    :class="{
+      collapsed,
+      scrollable,
+      'drag-over': dragOver,
+      'drop-invalid': dragOver && dropIsValid === false,
+    }"
     @dragenter="onDragEnter"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
@@ -244,11 +265,24 @@ const unackedBadge = computed(() =>
       @keydown.enter="toggle"
       @keydown.space.prevent="toggle"
     >
-      <div v-if="collapsed" class="col-cap" :style="{ background: collapsedColor, color: barTextColor }">
+      <div
+        v-if="collapsed"
+        class="col-cap"
+        :style="{ background: collapsedColor, color: barTextColor }"
+      >
         <span class="col-cap-count">{{ repo.byStatus(col.id).length }}</span>
-        <span v-if="unackedBadge" class="col-cap-ack" :title="`${unackedBadge} fresh done task${unackedBadge === 1 ? '' : 's'} to acknowledge`">{{ unackedBadge }}</span>
+        <span
+          v-if="unackedBadge"
+          class="col-cap-ack"
+          :title="`${unackedBadge} fresh done task${unackedBadge === 1 ? '' : 's'} to acknowledge`"
+          >{{ unackedBadge }}</span
+        >
       </div>
-      <span v-else class="cdot" :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"></span>
+      <span
+        v-else
+        class="cdot"
+        :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"
+      ></span>
       <span class="col-label">{{ col.label }}</span>
       <span v-if="!collapsed" class="col-count">{{ repo.byStatus(col.id).length }}</span>
       <svg class="col-chev" viewBox="0 0 24 24" fill="none">

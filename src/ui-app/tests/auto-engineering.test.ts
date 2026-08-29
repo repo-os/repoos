@@ -10,9 +10,8 @@ import type { RepoOSConfig, Task } from "../../core/types.js";
 // CLI spawn. resolvePmAgent stays real — a config with an enabled `pm` agent
 // reaches runPrompt, which the tests below stub per-case.
 vi.mock("../../server/agents.js", async () => {
-  const actual = await vi.importActual<typeof import("../../server/agents.js")>(
-    "../../server/agents.js",
-  );
+  const actual =
+    await vi.importActual<typeof import("../../server/agents.js")>("../../server/agents.js");
   return { ...actual, runPrompt: vi.fn() };
 });
 
@@ -25,7 +24,7 @@ function mockTask(id: string, status: "active" | "ready" | "inbox" | "review" = 
     status,
     needsInput: false,
     needsMerge: false,
-  noSourceChange: false,
+    noSourceChange: false,
     priority: "p2",
     area: "test",
     assignee: "ai",
@@ -288,10 +287,7 @@ describe("AutoEngineeringOrchestrator", () => {
   describe("custom maximum", () => {
     it("respects custom maxActiveTasks setting", async () => {
       const config = mockConfig(true, 10);
-      const tasks = [
-        mockTask("001", "active"),
-        mockTask("002", "ready"),
-      ];
+      const tasks = [mockTask("001", "active"), mockTask("002", "ready")];
 
       await orchestrator.reconcile(config, tasks, "startup");
 
@@ -390,11 +386,7 @@ describe("AutoEngineeringOrchestrator — PM selection (0124)", () => {
     });
     const config = configWithPm(1);
     // max 1, nothing active → exactly one slot; the PM over-selects three.
-    const tasks = [
-      mockTask("002", "ready"),
-      mockTask("003", "ready"),
-      mockTask("004", "ready"),
-    ];
+    const tasks = [mockTask("002", "ready"), mockTask("003", "ready"), mockTask("004", "ready")];
 
     const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 

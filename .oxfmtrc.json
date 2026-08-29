@@ -1,0 +1,16 @@
+{
+  "ignorePatterns": [
+    "**/*.md",
+    "**/*.json",
+    "**/*.jsonc",
+    "**/*.toml",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.html",
+    "dist/**",
+    "mobile/ios/**",
+    "mobile/android/**",
+    "**/*.min.js",
+    "**/__snapshots__/**"
+  ]
+}

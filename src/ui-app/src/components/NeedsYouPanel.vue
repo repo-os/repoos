@@ -44,10 +44,7 @@ const { humanNeeds } = storeToRefs(repo);
         style="cursor: pointer"
         @click="ui.openTask(item.task)"
       >
-        <div
-          class="feed-dot"
-          :style="{ background: repo.statusColor(item.task.status) }"
-        ></div>
+        <div class="feed-dot" :style="{ background: repo.statusColor(item.task.status) }"></div>
         <div class="feed-line"></div>
         <div style="flex: 1; min-width: 0">
           <div class="feed-msg">

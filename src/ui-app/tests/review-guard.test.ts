@@ -165,7 +165,14 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
     pendingReview: new Set<string>(),
     uiDir: null,
     reload: null,
-    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as unknown as RouteContext["logger"],
+    logger: {
+      task: () => {},
+      system: () => {},
+      agent: () => {},
+      getTaskLogs: () => [],
+      getAgentLogs: () => [],
+      getSystemLogs: () => [],
+    } as unknown as RouteContext["logger"],
     onServerStatusChange: () => {},
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
@@ -183,7 +190,9 @@ describe("guardReviewTransition (0210)", () => {
       expect(res.ok).toBe(true);
       expect(git(fx.worktree, ["rev-parse", "--short", "HEAD"])).not.toBe(before);
       expect(dirtyPaths(fx)).toEqual([]);
-      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toBe("feat(0210): implement Patch bypass fixture");
+      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toBe(
+        "feat(0210): implement Patch bypass fixture",
+      );
     } finally {
       fx.clean();
     }
@@ -273,7 +282,9 @@ describe("PATCH /api/tasks/:id → review (0210)", () => {
       expect(fake.status).toBe(200);
       expect((fake.payload as { status: string }).status).toBe("review");
       expect(dirtyPaths(fx)).toEqual([]);
-      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toBe("feat(0210): implement Patch bypass fixture");
+      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toBe(
+        "feat(0210): implement Patch bypass fixture",
+      );
     } finally {
       fx.clean();
     }

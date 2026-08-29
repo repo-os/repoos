@@ -38,18 +38,37 @@ watch(
       <div class="hotfix-card">
         <h3 id="hotfix-confirm-title" class="hotfix-title">Start hotfix?</h3>
         <p class="hotfix-body">
-          Run this task as a <strong>hotfix</strong> in the main checkout (no worktree). The agent works
-          in the repo root on a <code>hotfix/{{ taskId }}-…</code> branch. Previews and diff-based review
-          are skipped.
+          Run this task as a <strong>hotfix</strong> in the main checkout (no worktree). The agent
+          works in the repo root on a <code>hotfix/{{ taskId }}-…</code> branch. Previews and
+          diff-based review are skipped.
         </p>
         <div class="hotfix-actions">
-          <Button ref="cancelButton" type="button" variant="outline" size="sm" :disabled="busy" @click="emit('cancel')">
+          <Button
+            ref="cancelButton"
+            type="button"
+            variant="outline"
+            size="sm"
+            :disabled="busy"
+            @click="emit('cancel')"
+          >
             Cancel
           </Button>
-          <Button type="button" variant="default" size="sm" :disabled="busy" @click="emit('start', 'branch')">
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            :disabled="busy"
+            @click="emit('start', 'branch')"
+          >
             Hotfix on branch
           </Button>
-          <Button type="button" variant="destructive" size="sm" :disabled="busy" @click="emit('start', 'main')">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            :disabled="busy"
+            @click="emit('start', 'main')"
+          >
             Hotfix on main
           </Button>
         </div>

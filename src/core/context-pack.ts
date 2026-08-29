@@ -25,22 +25,55 @@ const PACK_BYTE_BUDGET = 24 * 1024;
 
 /** File extensions we consider source code for relevance ranking. */
 const SOURCE_EXTS = new Set([
-  ".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte",
-  ".css", ".scss", ".less",
-  ".rs", ".go", ".py", ".rb",
-  ".json", ".toml", ".yaml", ".yml",
-  ".md", ".mdx",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".vue",
+  ".svelte",
+  ".css",
+  ".scss",
+  ".less",
+  ".rs",
+  ".go",
+  ".py",
+  ".rb",
+  ".json",
+  ".toml",
+  ".yaml",
+  ".yml",
+  ".md",
+  ".mdx",
 ]);
 
 /** File extensions that are tests. */
-const TEST_EXTS = new Set([".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx",
-  ".test.js", ".test.jsx", ".spec.js", ".spec.jsx",
-  ".test.py", ".test.rs", ".test.go"]);
+const TEST_EXTS = new Set([
+  ".test.ts",
+  ".test.tsx",
+  ".spec.ts",
+  ".spec.tsx",
+  ".test.js",
+  ".test.jsx",
+  ".spec.js",
+  ".spec.jsx",
+  ".test.py",
+  ".test.rs",
+  ".test.go",
+]);
 
 /** Directories we skip altogether when scanning source files. */
 const SKIP_DIRS = new Set([
-  "node_modules", ".git", ".repoos", "dist", ".next", ".nuxt",
-  "build", "coverage", "__pycache__", ".venv", "venv",
+  "node_modules",
+  ".git",
+  ".repoos",
+  "dist",
+  ".next",
+  ".nuxt",
+  "build",
+  "coverage",
+  "__pycache__",
+  ".venv",
+  "venv",
 ]);
 
 /** Context pack — the product handed to the agent. */
@@ -129,7 +162,11 @@ function repoMapPath(config: RepoOSConfig): string {
  */
 function headHash(root: string): string {
   try {
-    const run = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", timeout: 4000 });
+    const run = spawnSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+      timeout: 4000,
+    });
     return run.status === 0 ? run.stdout.trim() : "unknown";
   } catch {
     return "unknown";
@@ -146,9 +183,11 @@ function isTestFile(name: string): boolean {
 
 function isSourceFile(name: string): boolean {
   const ext = extname(name).toLowerCase();
-  return SOURCE_EXTS.has(ext) ||
+  return (
+    SOURCE_EXTS.has(ext) ||
     // Also include files in test directories with test patterns
-    isTestFile(name);
+    isTestFile(name)
+  );
 }
 
 /**
@@ -172,12 +211,7 @@ function extractImports(content: string): string[] {
 }
 
 /** Walk a directory tree for source files and return map entries. */
-function walkSourceFiles(
-  dir: string,
-  root: string,
-  skip: Set<string>,
-  acc: MapEntry[],
-): void {
+function walkSourceFiles(dir: string, root: string, skip: Set<string>, acc: MapEntry[]): void {
   if (!existsSync(dir)) return;
   for (const entry of readdirSync(dir)) {
     if (entry.startsWith(".") || skip.has(entry)) continue;
@@ -390,7 +424,11 @@ function worktreeState(
   let diffSummary = "";
 
   try {
-    const status = spawnSync("git", ["status", "--porcelain"], { cwd, encoding: "utf8", timeout: 4000 });
+    const status = spawnSync("git", ["status", "--porcelain"], {
+      cwd,
+      encoding: "utf8",
+      timeout: 4000,
+    });
     if (status.status === 0 && status.stdout.trim()) {
       dirty = true;
       const lines = status.stdout.trim().split("\n");
@@ -431,19 +469,24 @@ function worktreeState(
  */
 function areaToDirs(area: string): string[] {
   const map: Record<string, string[]> = {
-    "agent": ["src/server/agents.ts", "src/server/server.ts", "src/core/git.ts"],
-    "server": ["src/server/"],
-    "core": ["src/core/"],
-    "cli": ["src/cli/", "src/commands/"],
-    "ui": ["src/ui-app/"],
-    "build": ["src/core/build.ts", "scripts/", "tsconfig.json"],
-    "config": ["src/core/config.ts", "repoos.toml"],
-    "git": ["src/core/git.ts"],
-    "tasks": ["src/core/task.ts", "src/server/write.ts", "src/core/indexer.ts", "src/core/frontmatter.ts"],
-    "checks": ["src/commands/check.ts"],
-    "tests": ["src/ui-app/tests/"],
-    "docs": ["docs/"],
-    "review": ["src/server/done.ts", "src/server/write.ts"],
+    agent: ["src/server/agents.ts", "src/server/server.ts", "src/core/git.ts"],
+    server: ["src/server/"],
+    core: ["src/core/"],
+    cli: ["src/cli/", "src/commands/"],
+    ui: ["src/ui-app/"],
+    build: ["src/core/build.ts", "scripts/", "tsconfig.json"],
+    config: ["src/core/config.ts", "repoos.toml"],
+    git: ["src/core/git.ts"],
+    tasks: [
+      "src/core/task.ts",
+      "src/server/write.ts",
+      "src/core/indexer.ts",
+      "src/core/frontmatter.ts",
+    ],
+    checks: ["src/commands/check.ts"],
+    tests: ["src/ui-app/tests/"],
+    docs: ["docs/"],
+    review: ["src/server/done.ts", "src/server/write.ts"],
   };
   return map[area] ?? map[area.toLowerCase()] ?? [];
 }
@@ -472,11 +515,7 @@ function extractFileReferences(body: string): string[] {
  * Each file gets a relevance rank (higher = more relevant). The pack includes
  * files sorted by rank, capped by the byte budget.
  */
-function rankFiles(
-  config: RepoOSConfig,
-  task: Task,
-  repoMap: RepoMap,
-): RelevantFile[] {
+function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): RelevantFile[] {
   const scores = new Map<string, { score: number; reasons: string[] }>();
   const add = (path: string, score: number, reason: string) => {
     if (!scores.has(path)) {
@@ -553,8 +592,10 @@ function rankFiles(
         .replace(/\.test\./, ".")
         .replace(/\.spec\./, ".");
       for (const sp of scoredPaths) {
-        if (sp.includes(sourcePath.replace(/^src\//, "")) ||
-            sourcePath.includes(sp.replace(/^src\//, ""))) {
+        if (
+          sp.includes(sourcePath.replace(/^src\//, "")) ||
+          sourcePath.includes(sp.replace(/^src\//, ""))
+        ) {
           add(f.path, 3, `test for relevant area`);
           break;
         }
@@ -610,9 +651,8 @@ function renderPack(
   push("");
   // Include the task body (up to 3KB to leave budget for other sections)
   const bodyMax = 3 * 1024;
-  const body = task.body.length > bodyMax
-    ? task.body.slice(0, bodyMax) + "\n\n... (truncated)"
-    : task.body;
+  const body =
+    task.body.length > bodyMax ? task.body.slice(0, bodyMax) + "\n\n... (truncated)" : task.body;
   push(body || "(no task body)");
   push("");
 
@@ -622,7 +662,9 @@ function renderPack(
   push(`**Root:** ${config.root}`);
   push(`**Branch:** ${branch}`);
   push(`**Worktree:** ${cwd}`);
-  push(`**Dirty:** ${worktreeInfo.dirty ? "YES — uncommitted changes or untracked files" : "clean"}`);
+  push(
+    `**Dirty:** ${worktreeInfo.dirty ? "YES — uncommitted changes or untracked files" : "clean"}`,
+  );
   if (worktreeInfo.untracked.length > 0) {
     push("**Untracked files:**");
     for (const u of worktreeInfo.untracked.slice(0, 10)) {
@@ -649,9 +691,11 @@ function renderPack(
     // Include the first 2KB of AGENTS.md — enough for the operating loop
     // and rules without ballooning the pack.
     const agentsMax = 2 * 1024;
-    const agents = agentsContent.length > agentsMax
-      ? agentsContent.slice(0, agentsMax) + "\n\n... (AGENTS.md truncated — read the full file when needed)"
-      : agentsContent;
+    const agents =
+      agentsContent.length > agentsMax
+        ? agentsContent.slice(0, agentsMax) +
+          "\n\n... (AGENTS.md truncated — read the full file when needed)"
+        : agentsContent;
     push(agents);
     push("");
   }
@@ -718,9 +762,15 @@ function renderPack(
   push("### Managed Preview");
   push("");
   push("RepoOS serves a read-only preview of the worktree — you never need localhost or a port:");
-  push("- Preview requests are the human's to make — the human requests one manually from the UI when they want to see a change. Do NOT auto-request one before handoff.");
-  push("- Request (only if the human explicitly asks you to verify a change the way a browser would see it): emit the exact signal line `::repoos-preview-request::` in your response");
-  push("- RepoOS validates your live run, starts the preview from your worktree, probes it server-side, and records the preview URL + result in your transcript");
+  push(
+    "- Preview requests are the human's to make — the human requests one manually from the UI when they want to see a change. Do NOT auto-request one before handoff.",
+  );
+  push(
+    "- Request (only if the human explicitly asks you to verify a change the way a browser would see it): emit the exact signal line `::repoos-preview-request::` in your response",
+  );
+  push(
+    "- RepoOS validates your live run, starts the preview from your worktree, probes it server-side, and records the preview URL + result in your transcript",
+  );
   push("- View: the recorded preview URL (or the UI's Preview button)");
   push("- Stop: `POST /api/tasks/:id/preview/stop` or close via UI");
   push("- Previews are ephemeral: they stop when the task leaves active/review");
@@ -738,7 +788,9 @@ function renderPack(
     push("**Steps:**");
     for (const step of bootstrapResult.steps) {
       const icon = step.ok ? "✓" : "✗";
-      push(`  ${icon} ${step.name} (${step.durationMs}ms)${step.detail ? ` — ${step.detail}` : ""}`);
+      push(
+        `  ${icon} ${step.name} (${step.durationMs}ms)${step.detail ? ` — ${step.detail}` : ""}`,
+      );
     }
     push("");
   }
@@ -774,7 +826,14 @@ export function generateContextPack(
   const wtState = worktreeState(config, branch, cwd);
 
   // Build cache inputs
-  const inputs = buildCacheInputs(config, task, head, wtState.dirty, wtState.untracked, wtState.diffSummary);
+  const inputs = buildCacheInputs(
+    config,
+    task,
+    head,
+    wtState.dirty,
+    wtState.untracked,
+    wtState.diffSummary,
+  );
   const key = inputsHash(inputs);
 
   // Check task-specific cache
@@ -791,15 +850,17 @@ export function generateContextPack(
           generationMs: Date.now() - start,
           content: cached.content,
           size: cached.size,
-          bootstrap: bootstrapResult ? {
-            ok: bootstrapResult.ok,
-            durationMs: bootstrapResult.durationMs,
-            steps: bootstrapResult.steps.map((s) => ({
-              name: s.name,
-              ok: s.ok,
-              durationMs: s.durationMs,
-            })),
-          } : undefined,
+          bootstrap: bootstrapResult
+            ? {
+                ok: bootstrapResult.ok,
+                durationMs: bootstrapResult.durationMs,
+                steps: bootstrapResult.steps.map((s) => ({
+                  name: s.name,
+                  ok: s.ok,
+                  durationMs: s.durationMs,
+                })),
+              }
+            : undefined,
         };
       }
     } catch {
@@ -814,7 +875,16 @@ export function generateContextPack(
   const relevantFiles = rankFiles(config, task, repoMap);
 
   // Render the pack
-  const content = renderPack(config, task, branch, cwd, false, bootstrapResult, relevantFiles, wtState);
+  const content = renderPack(
+    config,
+    task,
+    branch,
+    cwd,
+    false,
+    bootstrapResult,
+    relevantFiles,
+    wtState,
+  );
   const size = content.length;
 
   // Persist in task cache
@@ -842,15 +912,17 @@ export function generateContextPack(
     generationMs: cached.generationMs,
     content,
     size,
-    bootstrap: bootstrapResult ? {
-      ok: bootstrapResult.ok,
-      durationMs: bootstrapResult.durationMs,
-      steps: bootstrapResult.steps.map((s) => ({
-        name: s.name,
-        ok: s.ok,
-        durationMs: s.durationMs,
-      })),
-    } : undefined,
+    bootstrap: bootstrapResult
+      ? {
+          ok: bootstrapResult.ok,
+          durationMs: bootstrapResult.durationMs,
+          steps: bootstrapResult.steps.map((s) => ({
+            name: s.name,
+            ok: s.ok,
+            durationMs: s.durationMs,
+          })),
+        }
+      : undefined,
   };
 }
 

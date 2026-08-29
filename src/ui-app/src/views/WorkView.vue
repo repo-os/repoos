@@ -45,9 +45,7 @@ const filterCol = computed<Column | null>(() => {
 // keyboard highlight index mirrors exactly what is on screen. Collapsed
 // columns are skipped so the highlight never lands on a hidden row (req 3).
 const visibleTasks = computed<Task[]>(() => {
-  const order = statusFilter.value
-    ? [filterCol.value!]
-    : [DRAFT_COL, ...COLUMNS];
+  const order = statusFilter.value ? [filterCol.value!] : [DRAFT_COL, ...COLUMNS];
   const out: Task[] = [];
   for (const col of order) {
     // In the filtered single-column view the column is force-expanded, so it is
@@ -119,7 +117,10 @@ const boardKey = useBoardKeyboardNav({
 
     <div v-if="statusFilter" class="filter-bar">
       <span class="filter-chip">
-        <span class="cdot" :style="{ background: filterCol!.color, boxShadow: '0 0 6px ' + filterCol!.color }"></span>
+        <span
+          class="cdot"
+          :style="{ background: filterCol!.color, boxShadow: '0 0 6px ' + filterCol!.color }"
+        ></span>
         {{ filterCol!.label }} · {{ repo.byStatus(statusFilter).length }}
       </span>
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
@@ -137,8 +138,18 @@ const boardKey = useBoardKeyboardNav({
         />
       </template>
       <template v-else>
-        <BoardColumn :col="DRAFT_COL" :bar-color="DRAFT_BAR" :empty-text="DRAFT_EMPTY" :highlight-id="boardKey.highlightId.value" />
-        <BoardColumn v-for="col in COLUMNS" :key="col.id" :col="col" :highlight-id="boardKey.highlightId.value" />
+        <BoardColumn
+          :col="DRAFT_COL"
+          :bar-color="DRAFT_BAR"
+          :empty-text="DRAFT_EMPTY"
+          :highlight-id="boardKey.highlightId.value"
+        />
+        <BoardColumn
+          v-for="col in COLUMNS"
+          :key="col.id"
+          :col="col"
+          :highlight-id="boardKey.highlightId.value"
+        />
       </template>
     </div>
 

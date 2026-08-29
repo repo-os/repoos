@@ -14,14 +14,21 @@ afterEach(() => {
 
 describe("api()", () => {
   it("parses JSON responses as before", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ hello: "world" }) })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({ hello: "world" }) })),
+    );
     await expect(api("/x")).resolves.toEqual({ hello: "world" });
   });
 
   it("keeps server-provided error bodies on non-2xx responses", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({ ok: false, statusText: "Bad Gateway", json: async () => ({ error: "boom" }) })),
+      vi.fn(async () => ({
+        ok: false,
+        statusText: "Bad Gateway",
+        json: async () => ({ error: "boom" }),
+      })),
     );
     await expect(api("/x")).rejects.toThrow("boom");
   });

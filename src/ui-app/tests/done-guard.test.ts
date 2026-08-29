@@ -79,8 +79,7 @@ const reviewTask = (root: string, over: Partial<Task> = {}): Task => ({
 
 function makeRepo(): { root: string; clean: () => void } {
   const root = mkdtempSync(join(tmpdir(), "repoos-done-guard-"));
-  const git = (args: string[]) =>
-    execSync(`git ${args.join(" ")}`, { cwd: root, stdio: "ignore" });
+  const git = (args: string[]) => execSync(`git ${args.join(" ")}`, { cwd: root, stdio: "ignore" });
   git(["-C", root, "init", "-q"]);
   git(["config", "user.email", "t@example.com"]);
   git(["config", "user.name", "Test"]);
@@ -91,11 +90,7 @@ function makeRepo(): { root: string; clean: () => void } {
   return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
 }
 
-function makeCtx(
-  root: string,
-  task: Task,
-  opts: { onEnqueue?: () => void } = {},
-): RouteContext {
+function makeCtx(root: string, task: Task, opts: { onEnqueue?: () => void } = {}): RouteContext {
   return {
     config: { root } as any,
     index: { getTask: () => task } as any,
@@ -117,7 +112,14 @@ function makeCtx(
     pendingReview: new Set(),
     uiDir: null,
     reload: null,
-    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as any,
+    logger: {
+      task: () => {},
+      system: () => {},
+      agent: () => {},
+      getTaskLogs: () => [],
+      getAgentLogs: () => [],
+      getSystemLogs: () => [],
+    } as any,
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
     onServerStatusChange: () => {},
   };
@@ -133,12 +135,10 @@ describe("move-to-done dirty-main guard (#0211)", () => {
       const enqueue = vi.fn();
       const res = makeRes();
 
-      await taskAction(
-        makeCtx(root, task, { onEnqueue: enqueue }),
-        makeReq(),
-        res as any,
-        { param1: "0211", param2: "done" },
-      );
+      await taskAction(makeCtx(root, task, { onEnqueue: enqueue }), makeReq(), res as any, {
+        param1: "0211",
+        param2: "done",
+      });
 
       expect(res.statusCode).toBe(409);
       expect(res.body.needsCommit).toBe(true);
@@ -158,12 +158,10 @@ describe("move-to-done dirty-main guard (#0211)", () => {
       const enqueue = vi.fn();
       const res = makeRes();
 
-      await taskAction(
-        makeCtx(notARepo, task, { onEnqueue: enqueue }),
-        makeReq(),
-        res as any,
-        { param1: "0211", param2: "done" },
-      );
+      await taskAction(makeCtx(notARepo, task, { onEnqueue: enqueue }), makeReq(), res as any, {
+        param1: "0211",
+        param2: "done",
+      });
 
       expect(res.statusCode).toBe(409);
       expect(res.body.needsCommit).toBe(true);

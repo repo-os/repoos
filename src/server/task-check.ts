@@ -38,7 +38,11 @@ export interface TaskCheckRun {
 
 export type TaskCheckEventKind = "started" | "output" | "done";
 
-export type TaskCheckListener = (run: TaskCheckRun, event: TaskCheckEventKind, chunk?: string) => void;
+export type TaskCheckListener = (
+  run: TaskCheckRun,
+  event: TaskCheckEventKind,
+  chunk?: string,
+) => void;
 
 export interface TaskCheckHandle {
   readonly id: string;

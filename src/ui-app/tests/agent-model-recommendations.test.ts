@@ -97,7 +97,9 @@ describe("agent-model-recommendations.md", () => {
 
   it("uses evidence-based terminology: confidence, sample size, last verified", () => {
     // Each recommendation table should have these columns
-    const tables = content.match(/^\| Role \| CLI \| Model \| Confidence \| Sample \| Last verified \|$/gm);
+    const tables = content.match(
+      /^\| Role \| CLI \| Model \| Confidence \| Sample \| Last verified \|$/gm,
+    );
     expect(tables).not.toBeNull();
     expect(tables!.length).toBeGreaterThanOrEqual(REQUIRED_CATEGORIES.length);
   });

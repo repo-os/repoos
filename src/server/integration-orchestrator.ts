@@ -260,8 +260,7 @@ export class CloseOutOrchestrator {
     const live = this.getTask?.(taskId);
     const workDir = this.config.workDir;
     const path =
-      live?.absPath ??
-      (workDir ? findTaskFileById(this.config.root, workDir, taskId) : null);
+      live?.absPath ?? (workDir ? findTaskFileById(this.config.root, workDir, taskId) : null);
     if (path && existsSync(path)) {
       try {
         const task = parseTask({
@@ -398,7 +397,9 @@ export class CloseOutOrchestrator {
         if (!validateRes.ok && validateRes.retryable === false) {
           // Deterministic by construction — a second run proves nothing and
           // costs the user another full gate cycle.
-          this.logger?.integration(job.taskId, "error", "validation failed (non-retryable)", { reason: validateRes.reason });
+          this.logger?.integration(job.taskId, "error", "validation failed (non-retryable)", {
+            reason: validateRes.reason,
+          });
           // A named, real conflict (not the task's own bookkeeping file or a
           // generated path — those auto-resolve inside validateCandidate and
           // never reach here) is the one non-retryable failure with an
@@ -407,18 +408,22 @@ export class CloseOutOrchestrator {
           // leaving the job sitting `failed` until a human notices (#0271
           // follow-up).
           const conflict = validateRes.reason?.startsWith("merge conflict in ");
-          return this.failOrReconcile(job, "validating", validateRes.reason, conflict
-            ? () => this.onMergeConflict?.(job.taskId, validateRes.reason!)
-            : undefined);
+          return this.failOrReconcile(
+            job,
+            "validating",
+            validateRes.reason,
+            conflict ? () => this.onMergeConflict?.(job.taskId, validateRes.reason!) : undefined,
+          );
         }
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
           validateRes = await this.validateCandidate(job);
           if (!validateRes.ok) {
             const secondReason = validateRes.reason ?? "unknown";
-            const reason = firstReason === secondReason
-              ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
-              : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
+            const reason =
+              firstReason === secondReason
+                ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
+                : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
             return this.failOrReconcile(job, "validating", reason);
           }
         }
@@ -437,12 +442,19 @@ export class CloseOutOrchestrator {
           const currentJob = this.coordinator.getJob(job.taskId);
           if (currentJob && currentJob.phase === "syncing") {
             // Drift detected and handled - will retry on next processNext() call
-            this.logger?.integration(job.taskId, "info", "main drifted during publish — resyncing", {
-              reason: pubRes.reason,
-            });
+            this.logger?.integration(
+              job.taskId,
+              "info",
+              "main drifted during publish — resyncing",
+              {
+                reason: pubRes.reason,
+              },
+            );
             return pubRes;
           }
-          this.logger?.integration(job.taskId, "error", "publish failed", { reason: pubRes.reason });
+          this.logger?.integration(job.taskId, "error", "publish failed", {
+            reason: pubRes.reason,
+          });
           return this.failOrReconcile(job, "publishing", pubRes.reason);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "cleanup" })!;
@@ -453,7 +465,9 @@ export class CloseOutOrchestrator {
         const cleanRes = await this.cleanup(job);
         if (!cleanRes.ok) {
           // Log but don't fail: the merge succeeded, so task is done even if cleanup is messy.
-          this.logger?.integration(job.taskId, "warn", "cleanup warning", { reason: cleanRes.reason });
+          this.logger?.integration(job.taskId, "warn", "cleanup warning", {
+            reason: cleanRes.reason,
+          });
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "done" })!;
@@ -468,7 +482,9 @@ export class CloseOutOrchestrator {
     }
   }
 
-  private async syncCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+  private async syncCandidate(
+    job: IntegrationJob,
+  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
     this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
@@ -540,7 +556,9 @@ export class CloseOutOrchestrator {
    * the point. Everything else defaults to retryable: build and check failures
    * are where genuine flakiness lives.
    */
-  private async validateCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }> {
+  private async validateCandidate(
+    job: IntegrationJob,
+  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
     const wtPath = worktreePathForBranch(root, branch);
@@ -610,7 +628,7 @@ export class CloseOutOrchestrator {
         retryable: false,
         reason: merge.conflicts.length
           ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
-          : merge.reason ?? "merge failed",
+          : (merge.reason ?? "merge failed"),
       };
     }
 
@@ -723,11 +741,17 @@ export class CloseOutOrchestrator {
     };
     const localCli = join(wtPath, "dist", "cli", "index.js");
     const localCliPresent = existsSync(localCli);
-    const checkHandle = this.taskChecks && this.onTaskCheckEvent
-      ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
-      : undefined;
+    const checkHandle =
+      this.taskChecks && this.onTaskCheckEvent
+        ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
+        : undefined;
     const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
-      runProcess(cli, args, { cwd: wtPath, timeout: 600_000, env: skipBuildEnv, onChunk: checkHandle?.chunk });
+      runProcess(cli, args, {
+        cwd: wtPath,
+        timeout: 600_000,
+        env: skipBuildEnv,
+        onChunk: checkHandle?.chunk,
+      });
     // A check whose ONLY failure is a stale build marker: the same marker the
     // close-out build above should have refreshed. This is the self-resolving
     // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
@@ -1018,7 +1042,9 @@ export class CloseOutOrchestrator {
         }
       }
       if (!canBuild) {
-        console.error(`Post-merge rebuild of ${root} skipped for task ${job.taskId}: no package.json`);
+        console.error(
+          `Post-merge rebuild of ${root} skipped for task ${job.taskId}: no package.json`,
+        );
       } else if (rebuildRes && rebuildRes.status !== 0) {
         console.error(
           `Post-merge rebuild of ${root} failed for task ${job.taskId}: ${tailLine(rebuildRes.stdout, rebuildRes.stderr)}`,
@@ -1052,7 +1078,9 @@ export class CloseOutOrchestrator {
         branch: featureBranch,
         path: stuck ?? "unknown",
       });
-      console.warn(`Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck ?? "unknown"})`);
+      console.warn(
+        `Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck ?? "unknown"})`,
+      );
     }
     deleteBranch(root, featureBranch);
     pruneWorktrees(root);
@@ -1068,11 +1096,15 @@ export class CloseOutOrchestrator {
     // to a direct on-disk lookup by id makes this step independent of index
     // freshness — the file is exactly what markTaskReleased writes to anyway.
     try {
-      const absPath = this.getTask?.(job.taskId)?.absPath ?? findTaskFileById(root, this.config.workDir, job.taskId);
+      const absPath =
+        this.getTask?.(job.taskId)?.absPath ??
+        findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
         markTaskReleased(this.config, absPath);
       } else {
-        console.error(`Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`);
+        console.error(
+          `Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`,
+        );
       }
     } catch (err) {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);

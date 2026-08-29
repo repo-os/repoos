@@ -21,7 +21,19 @@ import {
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
-import { commitTaskFile, commitDirtyFiles, dirtyFiles, worktreePathForBranch, ensureWorktree, resetWorktree, getDiffStatsAsync, getDiff, GitDirtyCheckError, ensureHotfix, agentTouchedFiles } from "../../core/git.js";
+import {
+  commitTaskFile,
+  commitDirtyFiles,
+  dirtyFiles,
+  worktreePathForBranch,
+  ensureWorktree,
+  resetWorktree,
+  getDiffStatsAsync,
+  getDiff,
+  GitDirtyCheckError,
+  ensureHotfix,
+  agentTouchedFiles,
+} from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
@@ -72,9 +84,9 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   // as `originalPrompt` so the raw capture is stored under `## Original prompt`.
   const originalPrompt =
     body.status === "draft"
-      ? (typeof body.originalPrompt === "string" && body.originalPrompt
-          ? body.originalPrompt
-          : taskBody)
+      ? typeof body.originalPrompt === "string" && body.originalPrompt
+        ? body.originalPrompt
+        : taskBody
       : undefined;
   const created = repoos.createTask({
     title: body.title,
@@ -124,15 +136,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
 
   const freeformAgentName =
-    typeof body?.agentOverride === "string" && body.agentOverride
-      ? body.agentOverride
-      : undefined;
+    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
   const freeformCli =
     typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
   const freeformModel =
-    typeof body?.modelOverride === "string" && body.modelOverride
-      ? body.modelOverride
-      : undefined;
+    typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
   // "default" is the sentinel for "use the configured pm agent's own
   // model" — not a real pin (same bug class as resolveAgentForTask /
   // resolveReviewerForTask / the PM-message override above).
@@ -200,7 +208,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         // 0320: nothing will promote this draft now — tell every client so
         // its "AI creation in flight" marker is dropped and a later manual
         // move of the stale draft cannot falsely flag the card.
-        emitEvent({ type: "task.aiCreateFailed", id: created.id, reason, at: new Date().toISOString() });
+        emitEvent({
+          type: "task.aiCreateFailed",
+          id: created.id,
+          reason,
+          at: new Date().toISOString(),
+        });
         return;
       }
       const fields = parseGeneratedTask(result.output);
@@ -238,10 +251,20 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      logger.task(created.id, "warn", "PM agent update failed; keeping draft with original prompt", {
+      logger.task(
+        created.id,
+        "warn",
+        "PM agent update failed; keeping draft with original prompt",
+        {
+          reason,
+        },
+      );
+      emitEvent({
+        type: "task.aiCreateFailed",
+        id: created.id,
         reason,
+        at: new Date().toISOString(),
       });
-      emitEvent({ type: "task.aiCreateFailed", id: created.id, reason, at: new Date().toISOString() });
     }
   })();
 
@@ -293,7 +316,9 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     // drawer's dropdown, board drag-drop, or a direct API call.
     const check = checkGenericStatusPatch(prevStatus, body.status);
     if (!check.ok) {
-      return json(res, 400, { error: `Cannot move task #${existing.id} from ${prevStatus} to ${body.status}: ${check.reason}` });
+      return json(res, 400, {
+        error: `Cannot move task #${existing.id} from ${prevStatus} to ${body.status}: ${check.reason}`,
+      });
     }
   }
 
@@ -304,7 +329,9 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     // transition unless the task opts out via no_source_change.
     const gate = await guardReviewTransition(config, existing);
     if (!gate.ok) {
-      return json(res, 400, { error: `Cannot move task #${existing.id} to review: ${gate.detail}` });
+      return json(res, 400, {
+        error: `Cannot move task #${existing.id} to review: ${gate.detail}`,
+      });
     }
   }
 
@@ -433,7 +460,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         defaultAssignee: config.defaultAssignee,
       });
     } catch (error) {
-      return json(res, 500, { error: `Could not refresh task #${id} before starting: ${(error as Error).message}` });
+      return json(res, 500, {
+        error: `Could not refresh task #${id} before starting: ${(error as Error).message}`,
+      });
     }
   }
 
@@ -511,9 +540,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 
     const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
     const resumeContext =
-      clean || !existing.branch
-        ? undefined
-        : resumePreamble(config, taskForLaunch, branch, cwd);
+      clean || !existing.branch ? undefined : resumePreamble(config, taskForLaunch, branch, cwd);
     const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
@@ -692,7 +719,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 
     // Reflect the new queue entry in the pinned status bar immediately (0207),
     // even before job processing's own snapshot emission picks it up.
-    ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}) });
+    ctx.emitEvent({
+      type: "integration",
+      pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+    });
 
     // Trigger job processing to start the pipeline.
     ctx.triggerJobProcessing();
@@ -870,8 +900,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
 
     const body = (await readBody(req)) as { hotfixTarget?: unknown };
-    const hotfixTarget: "branch" | "main" =
-      body?.hotfixTarget === "main" ? "main" : "branch";
+    const hotfixTarget: "branch" | "main" = body?.hotfixTarget === "main" ? "main" : "branch";
 
     const branch = `hotfix/${existing.id}-${existing.title
       .toLowerCase()
@@ -923,13 +952,18 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 
     let updated: Task;
     try {
-      updated = patchTaskFile(config, existing.absPath, {
-        hotfix: true,
-        hotfixTarget,
-        branch,
-      }, {
-        onStatusChange: onServerStatusChange,
-      });
+      updated = patchTaskFile(
+        config,
+        existing.absPath,
+        {
+          hotfix: true,
+          hotfixTarget,
+          branch,
+        },
+        {
+          onStatusChange: onServerStatusChange,
+        },
+      );
     } catch (err) {
       rootLock.release(existing.id);
       throw err;
@@ -1082,7 +1116,9 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   // thread. Falls back to the unscoped id when auth is off, matching every
   // existing single-user setup exactly as before.
   const currentUserEmail = getCurrentUser(req, config)?.email;
-  const pmSessionId = currentUserEmail ? `pm-task-v2:${id}::${currentUserEmail}` : `pm-task-v2:${id}`;
+  const pmSessionId = currentUserEmail
+    ? `pm-task-v2:${id}::${currentUserEmail}`
+    : `pm-task-v2:${id}`;
   const body = (await readBody(req)) as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) {
@@ -1312,17 +1348,24 @@ export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) 
     return json(res, 404, { error: `Task #${id} not found` });
   }
   if (!task.branch) {
-    return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noBranch: true });
+    return json(res, 200, {
+      ok: true,
+      stats: { filesChanged: 0, additions: 0, deletions: 0 },
+      noBranch: true,
+    });
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
-    const snapshot = task.status === "done"
-      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
-      : null;
+    const snapshot =
+      task.status === "done" ? loadDiffSnapshot(config.root, config.cacheDir, task.id) : null;
     if (snapshot) {
       return json(res, 200, { ok: true, stats: snapshot.stats, snapshot: true });
     }
-    return json(res, 200, { ok: true, stats: { filesChanged: 0, additions: 0, deletions: 0 }, noWorktree: true });
+    return json(res, 200, {
+      ok: true,
+      stats: { filesChanged: 0, additions: 0, deletions: 0 },
+      noWorktree: true,
+    });
   }
   // Async (spawn-based) rather than the sync/execFileSync getDiffStats: every
   // card on the Work board fires this on mount, and the synchronous version
@@ -1345,9 +1388,8 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
-    const snapshot = task.status === "done"
-      ? loadDiffSnapshot(config.root, config.cacheDir, task.id)
-      : null;
+    const snapshot =
+      task.status === "done" ? loadDiffSnapshot(config.root, config.cacheDir, task.id) : null;
     if (snapshot) {
       return json(res, 200, { ok: true, diff: snapshot.diff, snapshot: true });
     }

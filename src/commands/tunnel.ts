@@ -159,7 +159,9 @@ function cloudflaredList(bin: string): TunnelRow[] {
     });
     const rows: TunnelRow[] = [];
     for (const line of out.split("\n")) {
-      const m = line.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+(\S+)/);
+      const m = line.match(
+        /([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+(\S+)/,
+      );
       if (m) rows.push({ id: m[1], name: m[2] });
     }
     return rows;
@@ -241,16 +243,40 @@ async function installCloudflared(): Promise<boolean> {
 function tokenStoreCmds(): { get: string[]; set: (token: string) => string[] } | null {
   if (process.platform === "darwin") {
     return {
-      get: ["security", "find-generic-password", "-a", "repoos", "-s", "repoos:cloudflare-token", "-w"],
-      set: (token) =>
-        ["security", "add-generic-password", "-U", "-a", "repoos", "-s", "repoos:cloudflare-token", "-w", token],
+      get: [
+        "security",
+        "find-generic-password",
+        "-a",
+        "repoos",
+        "-s",
+        "repoos:cloudflare-token",
+        "-w",
+      ],
+      set: (token) => [
+        "security",
+        "add-generic-password",
+        "-U",
+        "-a",
+        "repoos",
+        "-s",
+        "repoos:cloudflare-token",
+        "-w",
+        token,
+      ],
     };
   }
   if (process.platform === "linux") {
     return {
       get: ["secret-tool", "lookup", "service", "repoos:cloudflare-token", "user", "repoos"],
-      set: () =>
-        ["secret-tool", "store", "--label=RepoOS Cloudflare API token", "service", "repoos:cloudflare-token", "user", "repoos"],
+      set: () => [
+        "secret-tool",
+        "store",
+        "--label=RepoOS Cloudflare API token",
+        "service",
+        "repoos:cloudflare-token",
+        "user",
+        "repoos",
+      ],
     };
   }
   return null;
@@ -271,7 +297,11 @@ function storeToken(token: string): boolean {
   const cmds = tokenStoreCmds();
   if (!cmds) return false;
   try {
-    execFileSync(cmds.set(token)[0], cmds.set(token).slice(1), { input: token, encoding: "utf8", timeout: 10_000 });
+    execFileSync(cmds.set(token)[0], cmds.set(token).slice(1), {
+      input: token,
+      encoding: "utf8",
+      timeout: 10_000,
+    });
     return true;
   } catch {
     return false;
@@ -346,12 +376,18 @@ async function resolveAccountId(token: string, bin: string | null): Promise<stri
 
 async function findAccessApp(token: string, accountId: string, hostname: string) {
   const json = await cfFetch(token, `/accounts/${accountId}/access/apps?per_page=100`, "GET");
-  const apps = Array.isArray(json.result) ? (json.result as { id?: string; domain?: string }[]) : [];
+  const apps = Array.isArray(json.result)
+    ? (json.result as { id?: string; domain?: string }[])
+    : [];
   return apps.find((a) => a.domain === hostname) ?? null;
 }
 
 async function findAccessPolicy(token: string, accountId: string, appId: string) {
-  const json = await cfFetch(token, `/accounts/${accountId}/access/apps/${appId}/policies?per_page=100`, "GET");
+  const json = await cfFetch(
+    token,
+    `/accounts/${accountId}/access/apps/${appId}/policies?per_page=100`,
+    "GET",
+  );
   const policies = Array.isArray(json.result)
     ? (json.result as { id?: string; name?: string }[])
     : [];
@@ -371,7 +407,12 @@ async function reconcileAccessPolicy(
 ): Promise<void> {
   let app = await findAccessApp(token, accountId, hostname);
   if (!app) {
-    const created = await cfFetch(token, `/accounts/${accountId}/access/apps`, "POST", buildAccessAppBody(hostname));
+    const created = await cfFetch(
+      token,
+      `/accounts/${accountId}/access/apps`,
+      "POST",
+      buildAccessAppBody(hostname),
+    );
     app = created.result as { id?: string; domain?: string };
   }
   const appId = String(app.id ?? "");
@@ -379,7 +420,12 @@ async function reconcileAccessPolicy(
   const body = buildAccessPolicyBody(emails);
   const existing = await findAccessPolicy(token, accountId, appId);
   if (existing && existing.id) {
-    await cfFetch(token, `/accounts/${accountId}/access/apps/${appId}/policies/${existing.id}`, "PUT", body);
+    await cfFetch(
+      token,
+      `/accounts/${accountId}/access/apps/${appId}/policies/${existing.id}`,
+      "PUT",
+      body,
+    );
   } else {
     await cfFetch(token, `/accounts/${accountId}/access/apps/${appId}/policies`, "POST", body);
   }
@@ -404,7 +450,8 @@ async function accessClient(): Promise<{ token: string; accountId: string }> {
     const entered = await prompt("  Cloudflare account ID (not auto-detectable with this token): ");
     if (entered) accountId = entered;
   }
-  if (!accountId) fail("Could not determine your Cloudflare account ID — check the API token permissions.");
+  if (!accountId)
+    fail("Could not determine your Cloudflare account ID — check the API token permissions.");
   return { token, accountId };
 }
 
@@ -438,21 +485,34 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   if (existsSync(certPem)) {
     console.log(c.dim("  ✔ cloudflared is already logged in") + c.dim(` (${certPem})`));
   } else {
-    console.log(c.bold("\n  Sign in to Cloudflare: ") + c.dim("a browser window will open — authorize the account and zones you want to publish under."));
+    console.log(
+      c.bold("\n  Sign in to Cloudflare: ") +
+        c.dim(
+          "a browser window will open — authorize the account and zones you want to publish under.",
+        ),
+    );
     let code: number;
     try {
       code = await runInteractive(bin, ["tunnel", "login"]);
     } catch (e) {
       fail("failed to launch `cloudflared tunnel login`: " + (e as Error).message);
     }
-    if (code !== 0) fail("`cloudflared tunnel login` did not complete — re-run `repoos tunnel setup`.");
+    if (code !== 0)
+      fail("`cloudflared tunnel login` did not complete — re-run `repoos tunnel setup`.");
   }
 
   // 2. Cloudflare API token (for Access + DNS reconciliation) — stored in the
   //    OS keychain / secret storage, never in the repo.
   const existingToken = await resolveApiToken();
   if (existingToken) {
-    console.log(c.dim("  ✔ Cloudflare API token " + (process.env.CLOUDFLARE_API_TOKEN ? "(from CLOUDFLARE_API_TOKEN)" : "(stored in keychain)")));
+    console.log(
+      c.dim(
+        "  ✔ Cloudflare API token " +
+          (process.env.CLOUDFLARE_API_TOKEN
+            ? "(from CLOUDFLARE_API_TOKEN)"
+            : "(stored in keychain)"),
+      ),
+    );
   }
 
   // 3. Create or reuse one tunnel per machine.
@@ -463,9 +523,13 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   const byId = tunnelId ? tunnels.some((t) => t.id === tunnelId) : false;
   if (byName) {
     tunnelId = byName.id;
-    console.log(c.dim("  ✔ reusing existing tunnel ") + c.cyan(tunnel.name) + c.dim(` (${byName.id})`));
+    console.log(
+      c.dim("  ✔ reusing existing tunnel ") + c.cyan(tunnel.name) + c.dim(` (${byName.id})`),
+    );
   } else if (byId) {
-    console.log(c.dim("  ✔ tunnel already registered ") + c.cyan(tunnel.name) + c.dim(` (${tunnelId})`));
+    console.log(
+      c.dim("  ✔ tunnel already registered ") + c.cyan(tunnel.name) + c.dim(` (${tunnelId})`),
+    );
   } else {
     console.log(c.bold(`\n  Creating tunnel `) + c.cyan(tunnel.name) + c.dim(" …"));
     let code: number;
@@ -484,12 +548,18 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   let domain = tunnel.domain;
   if (!domain) {
     for (;;) {
-      const entered = await prompt("  Base domain for publishing (e.g. repoos.org, blank to skip): ");
+      const entered = await prompt(
+        "  Base domain for publishing (e.g. repoos.org, blank to skip): ",
+      );
       if (!entered || isValidBaseDomain(entered)) {
         domain = entered;
         break;
       }
-      console.log(c.yellow(`  "${entered}" doesn't look like a domain (need at least one dot, e.g. repoos.org) — try again, or leave blank to skip.`));
+      console.log(
+        c.yellow(
+          `  "${entered}" doesn't look like a domain (need at least one dot, e.g. repoos.org) — try again, or leave blank to skip.`,
+        ),
+      );
     }
   }
 
@@ -501,22 +571,30 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   console.log("\n  " + c.green("✔ Tunnel configured."));
   console.log(c.dim("  tunnel:  ") + c.cyan(tunnel.name) + c.dim(`  (${tunnelId})`));
   if (tunnel.domain) console.log(c.dim("  domain:  ") + c.cyan(tunnel.domain));
-  console.log(c.dim("  publish: ") + c.cyan("repoos tunnel create <name> --port <port> --allow alice@example.com"));
+  console.log(
+    c.dim("  publish: ") +
+      c.cyan("repoos tunnel create <name> --port <port> --allow alice@example.com"),
+  );
 }
 
 async function cmdTunnelCreate(args: string[]): Promise<void> {
   const { positionals, flags } = parseArgs(args);
   const name = positionals[0];
   if (!name) {
-    fail("Usage: repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>] [--no-access]");
+    fail(
+      "Usage: repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>] [--no-access]",
+    );
   }
-  if (!isValidAppName(name)) fail(`Invalid app name "${name}" — use letters, digits, hyphens and underscores only.`);
+  if (!isValidAppName(name))
+    fail(`Invalid app name "${name}" — use letters, digits, hyphens and underscores only.`);
 
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
   if (tunnel.apps[name]) {
-    fail(`App "${name}" already exists — use \`repoos tunnel allow/deny\` to manage its allowlist.`);
+    fail(
+      `App "${name}" already exists — use \`repoos tunnel allow/deny\` to manage its allowlist.`,
+    );
   }
 
   const port = flags.get("port");
@@ -527,7 +605,9 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   let hostname = flags.get("domain") ?? "";
   if (!hostname) {
     if (!tunnel.domain) {
-      fail("No base domain configured and no --domain given — run `repoos tunnel setup` or pass --domain.");
+      fail(
+        "No base domain configured and no --domain given — run `repoos tunnel setup` or pass --domain.",
+      );
     }
     hostname = inferHostname(name, tunnel.domain);
   }
@@ -539,7 +619,9 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   // — refuse otherwise rather than silently publish an unprotected app.
   const noAccess = flags.has("no-access");
   if (noAccess && flags.has("allow")) {
-    fail("--no-access and --allow are mutually exclusive — --no-access means there is no Access allowlist to configure.");
+    fail(
+      "--no-access and --allow are mutually exclusive — --no-access means there is no Access allowlist to configure.",
+    );
   }
   if (noAccess && cfg.auth?.enabled !== true) {
     fail(
@@ -559,7 +641,10 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   const creds = tunnelCredentialsPath(tunnel.tunnelId);
   if (!existsSync(creds)) {
     const known = cloudflaredList(bin).some((t) => t.id === tunnel.tunnelId);
-    if (!known) fail(`Tunnel ${tunnel.name} is not in this Cloudflare account — re-run \`repoos tunnel setup\`.`);
+    if (!known)
+      fail(
+        `Tunnel ${tunnel.name} is not in this Cloudflare account — re-run \`repoos tunnel setup\`.`,
+      );
   }
 
   // Resolve Access credentials BEFORE mutating config so a missing token can't
@@ -567,9 +652,20 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   // --no-access, which never touches Access at all.
   const accessCreds = noAccess ? null : await accessClient();
 
-  tunnel.apps[name] = { hostname, service: `http://localhost:${portNum}`, access: emails, noAccess };
+  tunnel.apps[name] = {
+    hostname,
+    service: `http://localhost:${portNum}`,
+    access: emails,
+    noAccess,
+  };
   writeTunnelConfig(cfg.root, tunnel);
-  console.log(c.green("  ✔ configured ") + c.cyan(name) + c.dim(` → `) + hostname + c.dim(` → http://localhost:${portNum}`));
+  console.log(
+    c.green("  ✔ configured ") +
+      c.cyan(name) +
+      c.dim(` → `) +
+      hostname +
+      c.dim(` → http://localhost:${portNum}`),
+  );
 
   try {
     console.log(c.dim("  · routing DNS ") + hostname + c.dim(" …"));
@@ -579,7 +675,9 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
     });
   } catch {
     console.log(
-      c.yellow("  ⚠ DNS routing failed — authorize the zone in `cloudflared tunnel login`, then run:") +
+      c.yellow(
+        "  ⚠ DNS routing failed — authorize the zone in `cloudflared tunnel login`, then run:",
+      ) +
         "\n    " +
         c.cyan(`cloudflared tunnel route dns --overwrite-dns ${tunnel.name} ${hostname}`),
     );
@@ -590,9 +688,16 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
 
   if (accessCreds) {
     await reconcileAccessPolicy(accessCreds.token, accessCreds.accountId, hostname, emails);
-    console.log(c.green("  ✔ Access policy updated — ") + (emails.length ? emails.join(", ") : "deny all (no emails yet)"));
+    console.log(
+      c.green("  ✔ Access policy updated — ") +
+        (emails.length ? emails.join(", ") : "deny all (no emails yet)"),
+    );
   } else {
-    console.log(c.yellow("  ⚠ No Cloudflare Access policy — this app is fully public at the edge. RepoOS native auth is its only gate."));
+    console.log(
+      c.yellow(
+        "  ⚠ No Cloudflare Access policy — this app is fully public at the edge. RepoOS native auth is its only gate.",
+      ),
+    );
   }
 
   console.log("\n  " + c.green("✔ App published."));
@@ -600,11 +705,20 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   if (noAccess) {
     console.log(c.dim("  access:  ") + c.yellow("none (--no-access) — native auth only"));
   } else if (!emails.length) {
-    console.log(c.dim("  allow:   ") + c.yellow("nobody yet — `repoos tunnel allow " + name + " <email>`") + c.dim(" to let someone in"));
+    console.log(
+      c.dim("  allow:   ") +
+        c.yellow("nobody yet — `repoos tunnel allow " + name + " <email>`") +
+        c.dim(" to let someone in"),
+    );
   } else {
     console.log(c.dim("  allow:   ") + emails.join(", "));
   }
-  console.log(c.dim("  run:     ") + c.cyan("repoos tunnel start") + c.dim("  ·  server: ") + c.cyan("repoos tunnel install"));
+  console.log(
+    c.dim("  run:     ") +
+      c.cyan("repoos tunnel start") +
+      c.dim("  ·  server: ") +
+      c.cyan("repoos tunnel install"),
+  );
 }
 
 /**
@@ -642,20 +756,39 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
         await cfFetch(token, `/accounts/${accountId}/access/apps/${existing.id}`, "DELETE");
         console.log(c.green("  ✔ deleted Cloudflare Access app for ") + c.cyan(app.hostname));
       } else {
-        console.log(c.dim("  · no Cloudflare Access app found for ") + app.hostname + c.dim(" — nothing to delete there."));
+        console.log(
+          c.dim("  · no Cloudflare Access app found for ") +
+            app.hostname +
+            c.dim(" — nothing to delete there."),
+        );
       }
     } catch (e) {
       console.log(c.yellow(`  ⚠ Failed to delete the Access app: ${(e as Error).message}`));
-      console.log(c.dim("    Continuing to remove it from repoos.toml anyway — clean up the stale Access app in the Cloudflare dashboard if needed."));
+      console.log(
+        c.dim(
+          "    Continuing to remove it from repoos.toml anyway — clean up the stale Access app in the Cloudflare dashboard if needed.",
+        ),
+      );
     }
   }
 
   delete tunnel.apps[name];
   writeTunnelConfig(cfg.root, tunnel);
   const derived = writeDerivedConfig(tunnel);
-  console.log(c.green(`  ✔ removed "${name}" from repoos.toml`) + c.dim(" · ingress config rewritten → " + derived));
-  console.log(c.dim("  DNS record for ") + app.hostname + c.dim(" was left as-is — delete it in the Cloudflare dashboard if you don't plan to recreate this app."));
-  console.log(c.dim("  Restart `repoos tunnel start`/reinstall the service to pick up the ingress change."));
+  console.log(
+    c.green(`  ✔ removed "${name}" from repoos.toml`) +
+      c.dim(" · ingress config rewritten → " + derived),
+  );
+  console.log(
+    c.dim("  DNS record for ") +
+      app.hostname +
+      c.dim(
+        " was left as-is — delete it in the Cloudflare dashboard if you don't plan to recreate this app.",
+      ),
+  );
+  console.log(
+    c.dim("  Restart `repoos tunnel start`/reinstall the service to pick up the ingress change."),
+  );
 }
 
 async function cmdTunnelAllow(args: string[]): Promise<void> {
@@ -676,18 +809,28 @@ async function mutateAllowlist(op: "allow" | "deny", args: string[]): Promise<vo
   const app = tunnel.apps[name];
   if (!app) fail(`No app named "${name}" — see \`repoos tunnel list\`.`);
   if (app.noAccess) {
-    fail(`"${name}" was created with --no-access — there is no Access allowlist to manage. It relies on RepoOS native auth only.`);
+    fail(
+      `"${name}" was created with --no-access — there is no Access allowlist to manage. It relies on RepoOS native auth only.`,
+    );
   }
 
   const next = op === "allow" ? addEmail(app.access, email) : removeEmail(app.access, email);
   if (next.length === app.access.length) {
-    console.log(c.dim(`  ${email} is already ${op === "allow" ? "allowed" : "not on the allowlist"} for ${name} — no change.`));
+    console.log(
+      c.dim(
+        `  ${email} is already ${op === "allow" ? "allowed" : "not on the allowlist"} for ${name} — no change.`,
+      ),
+    );
     return;
   }
 
   app.access = next;
   writeTunnelConfig(cfg.root, tunnel);
-  console.log(c.green(`  ✔ ${op === "allow" ? "allowed" : "denied"} `) + c.cyan(email) + c.dim(` on ${name} (${next.length} on allowlist)`));
+  console.log(
+    c.green(`  ✔ ${op === "allow" ? "allowed" : "denied"} `) +
+      c.cyan(email) +
+      c.dim(` on ${name} (${next.length} on allowlist)`),
+  );
 
   const { token, accountId } = await accessClient();
   await reconcileAccessPolicy(token, accountId, app.hostname, app.access);
@@ -699,7 +842,11 @@ async function cmdTunnelStart(_args: string[]): Promise<void> {
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
   if (Object.keys(tunnel.apps).length === 0) {
-    console.log(c.yellow("  ⚠ no apps configured — the tunnel will serve 404s until you `repoos tunnel create` one."));
+    console.log(
+      c.yellow(
+        "  ⚠ no apps configured — the tunnel will serve 404s until you `repoos tunnel create` one.",
+      ),
+    );
   }
   const bin = cloudflaredBin();
   const configPath = writeDerivedConfig(tunnel);
@@ -718,7 +865,11 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
   if (Object.keys(tunnel.apps).length === 0) {
-    console.log(c.yellow("  ⚠ no apps configured yet — the service will start but serve 404s. `repoos tunnel create` one first."));
+    console.log(
+      c.yellow(
+        "  ⚠ no apps configured yet — the service will start but serve 404s. `repoos tunnel create` one first.",
+      ),
+    );
   }
   const bin = cloudflaredBin();
   writeDerivedConfig(tunnel);
@@ -733,7 +884,10 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
     }
     if (code !== 0) fail("`cloudflared service install` failed — see output above.");
     try {
-      execFileSync("launchctl", ["start", "com.cloudflare.cloudflared"], { stdio: "inherit", timeout: 15_000 });
+      execFileSync("launchctl", ["start", "com.cloudflare.cloudflared"], {
+        stdio: "inherit",
+        timeout: 15_000,
+      });
     } catch {
       // already started by the installer
     }
@@ -744,7 +898,9 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
     const args = isRoot
       ? ["--config", userConfig, "service", "install"]
       : [bin, "--config", userConfig, "service", "install"];
-    console.log(c.dim("  · installing cloudflared as a systemd service (may prompt for your password)…"));
+    console.log(
+      c.dim("  · installing cloudflared as a systemd service (may prompt for your password)…"),
+    );
     let code: number;
     try {
       code = await runInteractive(cmd, args);
@@ -752,7 +908,9 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
       fail("failed to run cloudflared service install: " + (e as Error).message);
     }
     if (code !== 0) {
-      fail(`\`cloudflared service install\` failed. Try it manually:\n    sudo cloudflared --config ${userConfig} service install`);
+      fail(
+        `\`cloudflared service install\` failed. Try it manually:\n    sudo cloudflared --config ${userConfig} service install`,
+      );
     }
     try {
       execFileSync("systemctl", ["start", "cloudflared"], { stdio: "inherit", timeout: 15_000 });
@@ -770,10 +928,17 @@ async function cmdTunnelStop(_args: string[]): Promise<void> {
   let stoppedService = false;
   if (process.platform === "darwin") {
     try {
-      execFileSync("launchctl", ["stop", "com.cloudflare.cloudflared"], { stdio: "inherit", timeout: 15_000 });
+      execFileSync("launchctl", ["stop", "com.cloudflare.cloudflared"], {
+        stdio: "inherit",
+        timeout: 15_000,
+      });
       stoppedService = true;
     } catch {
-      console.log(c.yellow("  ⚠ launchctl stop failed — try `sudo launchctl stop com.cloudflare.cloudflared`"));
+      console.log(
+        c.yellow(
+          "  ⚠ launchctl stop failed — try `sudo launchctl stop com.cloudflare.cloudflared`",
+        ),
+      );
     }
   } else if (process.platform === "linux") {
     try {
@@ -791,7 +956,9 @@ async function cmdTunnelStop(_args: string[]): Promise<void> {
       // no foreground process was running
     }
   }
-  console.log(stoppedService ? c.green("  ✔ tunnel stopped.") : c.dim("  No running tunnel process to stop."));
+  console.log(
+    stoppedService ? c.green("  ✔ tunnel stopped.") : c.dim("  No running tunnel process to stop."),
+  );
 }
 
 function cmdTunnelList(_args: string[]): void {
@@ -805,7 +972,11 @@ function cmdTunnelList(_args: string[]): void {
   if (tunnel.domain) console.log(c.dim("  base domain:  ") + tunnel.domain);
   const names = Object.keys(tunnel.apps).sort();
   if (!names.length) {
-    console.log(c.dim("  No apps published yet — `repoos tunnel create <name> --port 3000 --allow alice@example.com`\n"));
+    console.log(
+      c.dim(
+        "  No apps published yet — `repoos tunnel create <name> --port 3000 --allow alice@example.com`\n",
+      ),
+    );
     return;
   }
   for (const name of names) {
@@ -876,7 +1047,14 @@ async function cmdTunnelStatus(_args: string[]): Promise<void> {
       // no dev process
     }
 
-    rows.push(["service", serviceInstalled ? (serviceActive ? "installed + running" : "installed (stopped)") : "not installed"]);
+    rows.push([
+      "service",
+      serviceInstalled
+        ? serviceActive
+          ? "installed + running"
+          : "installed (stopped)"
+        : "not installed",
+    ]);
     rows.push(["running", devRunning || serviceActive ? c.green("yes") : c.red("no")]);
 
     const names = Object.keys(tunnel.apps).sort();
@@ -904,7 +1082,8 @@ async function probeApp(hostname: string): Promise<string> {
       redirect: "manual",
       signal: AbortSignal.timeout(8_000),
     });
-    if (res.status === 301 || res.status === 302 || res.status === 303) return c.yellow(`reachable (redirects to Access)`);
+    if (res.status === 301 || res.status === 302 || res.status === 303)
+      return c.yellow(`reachable (redirects to Access)`);
     if (res.status >= 200 && res.status < 400) return c.green(`healthy (${res.status})`);
     if ([502, 504, 522, 523].includes(res.status)) return c.red(`origin down (${res.status})`);
     return c.yellow(`responds ${res.status}`);

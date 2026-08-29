@@ -37,9 +37,7 @@ export function useFavorites() {
 
   function toggleFavorite(cli: string, model: string): void {
     if (isFavorite(cli, model)) {
-      favorites.value = favorites.value.filter(
-        (f) => !(f.cli === cli && f.model === model),
-      );
+      favorites.value = favorites.value.filter((f) => !(f.cli === cli && f.model === model));
     } else {
       favorites.value.push({
         cli,

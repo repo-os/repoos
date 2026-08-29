@@ -27,12 +27,7 @@ const config = useConfigStore();
 const ui = useUiStore();
 const repo = useRepoStore();
 const notifications = useNotificationsStore();
-const notificationTypes = [
-  "review",
-  "paused",
-  "stuck",
-  "needsInput",
-] as NotificationType[];
+const notificationTypes = ["review", "paused", "stuck", "needsInput"] as NotificationType[];
 const route = useRoute();
 const router = useRouter();
 
@@ -52,7 +47,11 @@ const pushStatus = computed(() => {
     granted: { label: "granted", color: "var(--green)", tone: "ok" as const },
     default: { label: "not requested", color: "var(--txt-dim)", tone: "ok" as const },
     denied: { label: "blocked", color: "var(--red)", tone: "error" as const },
-    insecure: { label: "unavailable (insecure origin)", color: "var(--red)", tone: "error" as const },
+    insecure: {
+      label: "unavailable (insecure origin)",
+      color: "var(--red)",
+      tone: "error" as const,
+    },
     unsupported: { label: "unsupported browser", color: "var(--red)", tone: "error" as const },
   }[a];
   return {
@@ -65,7 +64,9 @@ const tunnelReadiness = ref<Record<string, any> | null>(null);
 const tunnelStatus = computed(() => {
   if (!tunnelReadiness.value?.configured?.tunnelId) return "Not configured";
   if (tunnelReadiness.value.running) return "Running";
-  return tunnelReadiness.value.originCertificate?.usable ? "Configured but stopped" : "Needs attention";
+  return tunnelReadiness.value.originCertificate?.usable
+    ? "Configured but stopped"
+    : "Needs attention";
 });
 const rvStatus = ref<Record<string, any> | null>(null);
 const rvStatusLabel = computed(() => {
@@ -77,11 +78,19 @@ const rvStatusLabel = computed(() => {
   return "Ready";
 });
 async function refreshRvStatus(): Promise<void> {
-  try { rvStatus.value = await api("/api/remote-validation/status"); } catch { rvStatus.value = null; }
+  try {
+    rvStatus.value = await api("/api/remote-validation/status");
+  } catch {
+    rvStatus.value = null;
+  }
 }
 onMounted(async () => {
   notifications.refreshAvailability();
-  try { tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171"); } catch { /* status remains safe default */ }
+  try {
+    tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171");
+  } catch {
+    /* status remains safe default */
+  }
   void refreshRvStatus();
 });
 
@@ -319,7 +328,9 @@ onUnmounted(() => {
             </div>
             <div class="setting-input tunnel-setting-actions">
               <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
-              <Button variant="outline" size="sm" @click="ui.openTunnel()">Configure publishing</Button>
+              <Button variant="outline" size="sm" @click="ui.openTunnel()"
+                >Configure publishing</Button
+              >
             </div>
           </div>
         </div>
@@ -393,7 +404,13 @@ onUnmounted(() => {
                     :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
                     @click="sendTestNotification"
                   >
-                    {{ testState === "sent" ? "✓ Sent!" : testState === "failed" ? "✗ Failed" : "Send test" }}
+                    {{
+                      testState === "sent"
+                        ? "✓ Sent!"
+                        : testState === "failed"
+                          ? "✗ Failed"
+                          : "Send test"
+                    }}
                   </Button>
                 </div>
               </div>
@@ -401,14 +418,14 @@ onUnmounted(() => {
             <aside class="ntfy-info">
               <h3>About ntfy</h3>
               <p>
-                ntfy is a free, open-source push notification service. Install the ntfy app on
-                your phone from the App Store or Google Play, subscribe to a unique topic (e.g.
+                ntfy is a free, open-source push notification service. Install the ntfy app on your
+                phone from the App Store or Google Play, subscribe to a unique topic (e.g.
                 <code>repoos_myproject</code>), and enter that topic below.
               </p>
               <p>
                 Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
-                instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or
-                the <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
+                instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or the
+                <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
               </p>
               <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
                 ntfy install + subscribe guide →
@@ -426,7 +443,9 @@ onUnmounted(() => {
           <div id="setting-auth.enabled" class="setting-row">
             <div class="setting-info">
               <div class="setting-label">Authentication</div>
-              <div class="setting-desc">Require login to access RepoOS (email OTP or Google OAuth).</div>
+              <div class="setting-desc">
+                Require login to access RepoOS (email OTP or Google OAuth).
+              </div>
             </div>
             <div class="setting-input">
               <Switch
@@ -440,7 +459,9 @@ onUnmounted(() => {
           <div id="setting-auth.sessionMaxAge" class="setting-row">
             <div class="setting-info">
               <div class="setting-label">Session duration (days)</div>
-              <div class="setting-desc">How long a login session lasts before requiring sign-in again. Default 7 days.</div>
+              <div class="setting-desc">
+                How long a login session lasts before requiring sign-in again. Default 7 days.
+              </div>
             </div>
             <div class="setting-input">
               <Input
@@ -515,8 +536,8 @@ onUnmounted(() => {
             <div class="setting-info">
               <div class="setting-label">Sound notifications</div>
               <div class="setting-desc">
-                Play a bell sound on your computer when a task moves into a state that needs
-                you. Off by default.
+                Play a bell sound on your computer when a task moves into a state that needs you.
+                Off by default.
               </div>
             </div>
             <div class="setting-input">
@@ -530,9 +551,9 @@ onUnmounted(() => {
             <div class="setting-info">
               <div class="setting-label">Push notifications</div>
               <div class="setting-desc">
-                Send a notification through your computer's notification system when a task
-                moves into a state that needs you. Turning this on will ask for permission.
-                Requires a RepoOS tab to stay open — there's no background service worker.
+                Send a notification through your computer's notification system when a task moves
+                into a state that needs you. Turning this on will ask for permission. Requires a
+                RepoOS tab to stay open — there's no background service worker.
               </div>
             </div>
             <div class="setting-input">
@@ -558,7 +579,10 @@ onUnmounted(() => {
               <div
                 v-if="notifications.testResult"
                 class="setting-desc"
-                :style="{ marginTop: '4px', color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)' }"
+                :style="{
+                  marginTop: '4px',
+                  color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)',
+                }"
               >
                 {{ notifications.testResult.detail }}
               </div>
@@ -574,12 +598,19 @@ onUnmounted(() => {
               </Button>
             </div>
           </div>
-          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--txt-faint); font-weight: 600; padding-top: 8px">Events</div>
           <div
-            v-for="t in notificationTypes"
-            :key="t"
-            class="setting-row"
+            style="
+              font-size: 11px;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+              color: var(--txt-faint);
+              font-weight: 600;
+              padding-top: 8px;
+            "
           >
+            Events
+          </div>
+          <div v-for="t in notificationTypes" :key="t" class="setting-row">
             <div class="setting-info">
               <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
               <div class="setting-desc">
@@ -595,7 +626,10 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="setting-input">
-              <Switch :checked="notifications.types[t]" @update:checked="notifications.setTypeEnabled(t, $event)" />
+              <Switch
+                :checked="notifications.types[t]"
+                @update:checked="notifications.setTypeEnabled(t, $event)"
+              />
             </div>
           </div>
         </div>
@@ -610,9 +644,9 @@ onUnmounted(() => {
             <div class="setting-info">
               <div class="setting-label">Glide animations</div>
               <div class="setting-desc">
-                When a card changes state, animate it gliding between columns to show where it
-                came from and where it went. Off by default; when off, cards change state
-                instantly as before.
+                When a card changes state, animate it gliding between columns to show where it came
+                from and where it went. Off by default; when off, cards change state instantly as
+                before.
               </div>
             </div>
             <div class="setting-input">
@@ -626,8 +660,8 @@ onUnmounted(() => {
                 Power-user shortcut mode: move around the board with the keyboard —
                 <span class="mono">j</span>/<span class="mono">k</span> (
                 <span class="mono">h</span>/<span class="mono">l</span> between columns),
-                <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close
-                or clear. Off by default; when off the board behaves exactly as before.
+                <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close or
+                clear. Off by default; when off the board behaves exactly as before.
               </div>
             </div>
             <div class="setting-input">
@@ -683,7 +717,6 @@ onUnmounted(() => {
           </div>
         </div>
       </Card>
-
     </div>
   </div>
 </template>

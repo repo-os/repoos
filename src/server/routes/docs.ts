@@ -8,8 +8,10 @@ import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
 
 /** Apply optional `cliOverride` / `modelOverride` from a request body onto the base PM agent. */
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
-  const cli = typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
-  const model = typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+  const cli =
+    typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+  const model =
+    typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
   return { ...base, ...(cli ? { cli } : {}), ...(model ? { model } : {}) };
 }
 import {

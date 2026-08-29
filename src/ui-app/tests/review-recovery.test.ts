@@ -22,9 +22,7 @@ function config(root: string): RepoOSConfig {
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
-    agents: [
-      { name: "reviewer", cli: "opencode", model: "deepinfra/m", enabled: true },
-    ],
+    agents: [{ name: "reviewer", cli: "opencode", model: "deepinfra/m", enabled: true }],
   } as RepoOSConfig;
 }
 
@@ -110,13 +108,15 @@ describe("ReviewManager.recoverInterruptedReviews", () => {
   });
 
   it("skips tasks that are not in review", async () => {
-    reviews.recoverInterruptedReviews([parseTask({
-      content: `---\nid: "0002"\ntitle: Done\ntype: feature\nstatus: done\npriority: p1\narea: server\nbranch: ${branch}\n---\nbody\n`,
-      absPath: join(root, "work", "0002.md"),
-      root,
-      defaultStatus: "inbox",
-      defaultAssignee: "unassigned",
-    })]);
+    reviews.recoverInterruptedReviews([
+      parseTask({
+        content: `---\nid: "0002"\ntitle: Done\ntype: feature\nstatus: done\npriority: p1\narea: server\nbranch: ${branch}\n---\nbody\n`,
+        absPath: join(root, "work", "0002.md"),
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      }),
+    ]);
     await vi.advanceTimersByTimeAsync(5000);
     expect(reviews.run).not.toHaveBeenCalled();
   });

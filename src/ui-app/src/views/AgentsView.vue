@@ -4,7 +4,13 @@ import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
-import type { Agent, DetectedAgent, ModelSourcesResponse, ModelTestResponse, ModelTestResult } from "../types";
+import type {
+  Agent,
+  DetectedAgent,
+  ModelSourcesResponse,
+  ModelTestResponse,
+  ModelTestResult,
+} from "../types";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -45,7 +51,9 @@ watch(activeTab, (tab) => {
 // can link straight to a section. Falls back to "default" on page load.
 const tabFromQuery = (): AgentTab => {
   const q = route.query.tab;
-  return typeof q === "string" && (AGENT_TABS as readonly string[]).includes(q) ? (q as AgentTab) : "default";
+  return typeof q === "string" && (AGENT_TABS as readonly string[]).includes(q)
+    ? (q as AgentTab)
+    : "default";
 };
 
 watch(
@@ -74,7 +82,7 @@ const MODEL_PRICING_DOC = "docs/opencode-models.md";
 
 function openModelPricing(): void {
   void docs.loadDoc(MODEL_PRICING_DOC);
-  void router.push({ name: "repo" })
+  void router.push({ name: "repo" });
 }
 
 const localAgents = ref<Agent[]>([]);
@@ -109,8 +117,12 @@ const isDefaultName = (name: string): boolean => defaultNames.value.includes(nam
 // pm) shown in the "Default agents" section. Grouped by lowercase name.
 const TEAM_AGENT_NAMES = ["ross", "cto"];
 const isTeamAgent = (name: string): boolean => TEAM_AGENT_NAMES.includes(name.toLowerCase());
-const headlessAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)));
-const teamAgents = computed(() => localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)));
+const headlessAgents = computed(() =>
+  localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)),
+);
+const teamAgents = computed(() =>
+  localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)),
+);
 const customAgents = computed(() => localAgents.value.filter((a) => !isDefaultName(a.name)));
 
 const CLI_LABELS: Record<string, string> = {
@@ -369,7 +381,6 @@ onUnmounted(() => {
     <div v-if="!config.loaded" class="spin"></div>
 
     <template v-else>
-
       <div class="agent-tabs">
         <button
           v-for="t in AGENT_TABS"
@@ -384,287 +395,345 @@ onUnmounted(() => {
       </div>
 
       <div class="agents-tab-content">
-      <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot"></span>Default agents
-          <!-- <a
+        <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+            <span class="live-dot"></span>Default agents
+            <!-- <a
             class="model-pricing-link"
             href="/repo?doc=docs/opencode-models.md"
             target="_blank"
             rel="noopener noreferrer"
             title="Open model pricing & use cases in the Repo Context docs"
           >Model pricing &amp; use cases</a> -->
-          <button class="model-pricing-link" @click="openModelPricing">
+            <button class="model-pricing-link" @click="openModelPricing">
               Model pricing &amp; use cases →
-          </button>
-          <Button
-            variant="outline"
-            size="sm"
-            style="margin-left: auto"
-            :disabled="modelsLoading"
-            title="Re-probe opencode's live model list (opencode models --refresh)"
-            @click="loadModels(true)"
-          >
-            {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
-          </Button>
-        </div>
-        <div class="agent-desc">
-          Headless task-engine roles that run the roadmap. Toggle them on or off and pick their coding agent and model.
-        </div>
-        <div v-for="a in headlessAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
-          <div class="agent-head">
-            <div class="agent-title">
-              <span class="agent-dot"></span>
-              <span class="agent-name">{{ a.name }}</span>
-              <span class="agent-badge">default</span>
-            </div>
-            <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-          </div>
-          <div class="agent-body">
-            <div class="agent-field">
-              <label>Coding agent + Model</label>
-              <AgentModelControl
-                :cli-options="cliOptions"
-                :model-options="config.modelsFor(a.cli, a.model)"
-                v-model:cli="a.cli"
-                v-model:model="a.model"
-              />
-            </div>
-            <div class="agent-field agent-test-result">
-              <label>Compatibility</label>
-              <div class="agent-test-actions">
-                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
-                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                </Button>
-                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
-                  {{ resultFor(a)!.status.replace('_', ' ') }}
-                </span>
-              </div>
-            </div>
-            <div class="agent-field agent-instr-field">
-              <div class="instr-header">
-                <label>Instructions</label>
-                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
-              </div>
-              <textarea
-                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
-                :value="a.instructions ?? ''"
-                class="agent-instr"
-                rows="2"
-                placeholder="Optional — how this agent should behave"
-                @input="setInstr(a, $event)"
-                @blur="updateAgentInstr(a)"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom agents
-        </div>
-        <div class="agent-desc">
-          Your own roles — data analyst, refactor agent, anything you need.
-        </div>
-
-        <div class="agent-add">
-          <Input
-            v-model="newName"
-            placeholder="e.g. data analyst"
-            class="w-[220px]"
-            @keyup.enter="addCustom"
-          />
-          <Button variant="outline" size="sm" :disabled="!newName.trim()" @click="addCustom">
-            Add agent
-          </Button>
-        </div>
-
-        <div v-if="!customAgents.length" class="agent-empty">
-          No custom agents yet — add one above.
-        </div>
-
-        <div v-for="a in customAgents" :key="a.name" class="agent-card" :class="{ off: !a.enabled }">
-          <div class="agent-head">
-            <div class="agent-title">
-              <span class="agent-dot"></span>
-              <Input :model-value="a.name" class="w-[180px] h-[30px]" @update:model-value="(v) => (a.name = String(v ?? ''))" />
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px">
-              <Button variant="ghost" size="sm" class="agent-remove" @click="removeCustom(a)">
-                Remove
-              </Button>
-              <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-            </div>
-          </div>
-          <div class="agent-body">
-            <div class="agent-field">
-              <label>Coding agent + Model</label>
-              <AgentModelControl
-                :cli-options="cliOptions"
-                :model-options="config.modelsFor(a.cli, a.model)"
-                v-model:cli="a.cli"
-                v-model:model="a.model"
-              />
-            </div>
-            <div class="agent-field agent-test-result">
-              <label>Compatibility</label>
-              <div class="agent-test-actions">
-                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
-                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                </Button>
-                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
-                  {{ resultFor(a)!.status.replace('_', ' ') }}
-                </span>
-              </div>
-            </div>
-            <div class="agent-field agent-instr-field">
-              <div class="instr-header">
-                <label>Instructions</label>
-                <VoiceDictate @transcribed="onCustomInstrTranscribed(a.name, $event)" />
-              </div>
-              <textarea
-                :ref="(el: any) => customInstrRefs.set(a.name, el)"
-                :value="a.instructions ?? ''"
-                class="agent-instr"
-                rows="2"
-                placeholder="Optional — how this agent should behave"
-                @input="setInstr(a, $event)"
-                @blur="updateAgentInstr(a)"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot" style="background: var(--green)"></span>Build your team
-        </div>
-        <div class="agent-desc">
-          The agents that talk back or extend RepoOS. Enable them to add new capabilities.
-        </div>
-
-        <div v-for="a in teamAgents" :key="'team-' + a.name" class="agent-card" :class="{ off: !a.enabled }">
-          <div class="agent-head">
-            <div class="agent-title">
-              <span class="agent-dot"></span>
-              <span class="agent-name">{{ a.name }}</span>
-              <span class="agent-badge">team</span>
-            </div>
-            <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-          </div>
-          <div class="agent-body">
-            <div class="agent-field">
-              <label>Coding agent + Model</label>
-              <AgentModelControl
-                :cli-options="cliOptions"
-                :model-options="config.modelsFor(a.cli, a.model)"
-                v-model:cli="a.cli"
-                v-model:model="a.model"
-              />
-            </div>
-            <div class="agent-field agent-test-result">
-              <label>Compatibility</label>
-              <div class="agent-test-actions">
-                <Button variant="outline" size="sm" :disabled="!!testing[testKey(a)]" @click="testAgent(a)">
-                  <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                  {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                </Button>
-                <span v-if="resultFor(a)" :class="'model-test model-test-' + resultFor(a)!.status" :title="resultFor(a)!.error">
-                  {{ resultFor(a)!.status.replace('_', ' ') }}
-                </span>
-              </div>
-            </div>
-            <div class="agent-field agent-instr-field">
-              <div class="instr-header">
-                <label>Instructions</label>
-                <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
-              </div>
-              <textarea
-                :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
-                :value="a.instructions ?? ''"
-                class="agent-instr"
-                rows="2"
-                placeholder="Optional — how this agent should behave"
-                @input="setInstr(a, $event)"
-                @blur="updateAgentInstr(a)"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <BuiltInAgentCard agent="debugger" interactive />
-        <BuiltInAgentCard agent="tech-debt" />
-        <BuiltInAgentCard agent="performance" />
-        <BuiltInAgentCard agent="architect" />
-        <BuiltInAgentCard agent="design" />
-      </Card>
-
-      <Card v-if="!detectError" v-show="activeTab === 'detected'" style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-          <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
-          Detected coding agents
-        </div>
-        <div class="agent-desc">
-          What's on this machine's PATH — installed &amp; headless-ready, desktop-only, or missing. Click a hint to copy it.
-        </div>
-
-        <div v-if="detectLoading && !detected.length" class="detect-loading">
-          Probing PATH…
-        </div>
-        <div v-else-if="!detected.length" class="agent-empty">
-          No known coding agents detected on PATH.
-        </div>
-
-        <template v-else>
-          <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
-            <div class="detect-row-left">
-              <span class="detect-badge" :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"></span>
-              <span class="agent-name">{{ r.agent.name }}</span>
-              <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
-              <span class="agent-badge" :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'">
-                {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
-              </span>
-            </div>
-            <div class="detect-row-right">
-              <template v-if="r.agent.installed">
-                <span class="detect-bin">{{ r.agent.binary }}</span>
-                <span v-if="r.agent.path" class="detect-path" :title="r.agent.path">{{ r.agent.path }}</span>
-                <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
-                <span v-if="!r.agent.headless" class="detect-hint">
-                  Desktop app shadows PATH — install headless CLI:
-                  <code>{{ r.agent.installHint }}</code>
-                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                  </button>
-                </span>
-              </template>
-              <template v-else>
-                <span class="detect-bin">{{ r.agent.binary }}</span>
-                <span class="detect-hint">
-                  <code>{{ r.agent.installHint }}</code>
-                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                  </button>
-                </span>
-              </template>
-            </div>
-          </div>
-
-          <div class="detect-foot">
-            <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
-              {{ detectLoading ? "Checking…" : "Check again" }}
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              style="margin-left: auto"
+              :disabled="modelsLoading"
+              title="Re-probe opencode's live model list (opencode models --refresh)"
+              @click="loadModels(true)"
+            >
+              {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
             </Button>
           </div>
-        </template>
-      </Card>
+          <div class="agent-desc">
+            Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
+            coding agent and model.
+          </div>
+          <div
+            v-for="a in headlessAgents"
+            :key="a.name"
+            class="agent-card"
+            :class="{ off: !a.enabled }"
+          >
+            <div class="agent-head">
+              <div class="agent-title">
+                <span class="agent-dot"></span>
+                <span class="agent-name">{{ a.name }}</span>
+                <span class="agent-badge">default</span>
+              </div>
+              <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
+            </div>
+            <div class="agent-body">
+              <div class="agent-field">
+                <label>Coding agent + Model</label>
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="config.modelsFor(a.cli, a.model)"
+                  v-model:cli="a.cli"
+                  v-model:model="a.model"
+                />
+              </div>
+              <div class="agent-field agent-test-result">
+                <label>Compatibility</label>
+                <div class="agent-test-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="!!testing[testKey(a)]"
+                    @click="testAgent(a)"
+                  >
+                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                  </Button>
+                  <span
+                    v-if="resultFor(a)"
+                    :class="'model-test model-test-' + resultFor(a)!.status"
+                    :title="resultFor(a)!.error"
+                  >
+                    {{ resultFor(a)!.status.replace("_", " ") }}
+                  </span>
+                </div>
+              </div>
+              <div class="agent-field agent-instr-field">
+                <div class="instr-header">
+                  <label>Instructions</label>
+                  <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+                </div>
+                <textarea
+                  :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
+                  :value="a.instructions ?? ''"
+                  class="agent-instr"
+                  rows="2"
+                  placeholder="Optional — how this agent should behave"
+                  @input="setInstr(a, $event)"
+                  @blur="updateAgentInstr(a)"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </Card>
 
-      <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
+        <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+            <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom
+            agents
+          </div>
+          <div class="agent-desc">
+            Your own roles — data analyst, refactor agent, anything you need.
+          </div>
+
+          <div class="agent-add">
+            <Input
+              v-model="newName"
+              placeholder="e.g. data analyst"
+              class="w-[220px]"
+              @keyup.enter="addCustom"
+            />
+            <Button variant="outline" size="sm" :disabled="!newName.trim()" @click="addCustom">
+              Add agent
+            </Button>
+          </div>
+
+          <div v-if="!customAgents.length" class="agent-empty">
+            No custom agents yet — add one above.
+          </div>
+
+          <div
+            v-for="a in customAgents"
+            :key="a.name"
+            class="agent-card"
+            :class="{ off: !a.enabled }"
+          >
+            <div class="agent-head">
+              <div class="agent-title">
+                <span class="agent-dot"></span>
+                <Input
+                  :model-value="a.name"
+                  class="w-[180px] h-[30px]"
+                  @update:model-value="(v) => (a.name = String(v ?? ''))"
+                />
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <Button variant="ghost" size="sm" class="agent-remove" @click="removeCustom(a)">
+                  Remove
+                </Button>
+                <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
+              </div>
+            </div>
+            <div class="agent-body">
+              <div class="agent-field">
+                <label>Coding agent + Model</label>
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="config.modelsFor(a.cli, a.model)"
+                  v-model:cli="a.cli"
+                  v-model:model="a.model"
+                />
+              </div>
+              <div class="agent-field agent-test-result">
+                <label>Compatibility</label>
+                <div class="agent-test-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="!!testing[testKey(a)]"
+                    @click="testAgent(a)"
+                  >
+                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                  </Button>
+                  <span
+                    v-if="resultFor(a)"
+                    :class="'model-test model-test-' + resultFor(a)!.status"
+                    :title="resultFor(a)!.error"
+                  >
+                    {{ resultFor(a)!.status.replace("_", " ") }}
+                  </span>
+                </div>
+              </div>
+              <div class="agent-field agent-instr-field">
+                <div class="instr-header">
+                  <label>Instructions</label>
+                  <VoiceDictate @transcribed="onCustomInstrTranscribed(a.name, $event)" />
+                </div>
+                <textarea
+                  :ref="(el: any) => customInstrRefs.set(a.name, el)"
+                  :value="a.instructions ?? ''"
+                  class="agent-instr"
+                  rows="2"
+                  placeholder="Optional — how this agent should behave"
+                  @input="setInstr(a, $event)"
+                  @blur="updateAgentInstr(a)"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+            <span class="live-dot" style="background: var(--green)"></span>Build your team
+          </div>
+          <div class="agent-desc">
+            The agents that talk back or extend RepoOS. Enable them to add new capabilities.
+          </div>
+
+          <div
+            v-for="a in teamAgents"
+            :key="'team-' + a.name"
+            class="agent-card"
+            :class="{ off: !a.enabled }"
+          >
+            <div class="agent-head">
+              <div class="agent-title">
+                <span class="agent-dot"></span>
+                <span class="agent-name">{{ a.name }}</span>
+                <span class="agent-badge">team</span>
+              </div>
+              <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
+            </div>
+            <div class="agent-body">
+              <div class="agent-field">
+                <label>Coding agent + Model</label>
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="config.modelsFor(a.cli, a.model)"
+                  v-model:cli="a.cli"
+                  v-model:model="a.model"
+                />
+              </div>
+              <div class="agent-field agent-test-result">
+                <label>Compatibility</label>
+                <div class="agent-test-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="!!testing[testKey(a)]"
+                    @click="testAgent(a)"
+                  >
+                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
+                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
+                  </Button>
+                  <span
+                    v-if="resultFor(a)"
+                    :class="'model-test model-test-' + resultFor(a)!.status"
+                    :title="resultFor(a)!.error"
+                  >
+                    {{ resultFor(a)!.status.replace("_", " ") }}
+                  </span>
+                </div>
+              </div>
+              <div class="agent-field agent-instr-field">
+                <div class="instr-header">
+                  <label>Instructions</label>
+                  <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
+                </div>
+                <textarea
+                  :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
+                  :value="a.instructions ?? ''"
+                  class="agent-instr"
+                  rows="2"
+                  placeholder="Optional — how this agent should behave"
+                  @input="setInstr(a, $event)"
+                  @blur="updateAgentInstr(a)"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <BuiltInAgentCard agent="debugger" interactive />
+          <BuiltInAgentCard agent="tech-debt" />
+          <BuiltInAgentCard agent="performance" />
+          <BuiltInAgentCard agent="architect" />
+          <BuiltInAgentCard agent="design" />
+        </Card>
+
+        <Card
+          v-if="!detectError"
+          v-show="activeTab === 'detected'"
+          style="padding: 0 18px 6px; margin-bottom: 16px"
+        >
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+            <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
+            Detected coding agents
+          </div>
+          <div class="agent-desc">
+            What's on this machine's PATH — installed &amp; headless-ready, desktop-only, or
+            missing. Click a hint to copy it.
+          </div>
+
+          <div v-if="detectLoading && !detected.length" class="detect-loading">Probing PATH…</div>
+          <div v-else-if="!detected.length" class="agent-empty">
+            No known coding agents detected on PATH.
+          </div>
+
+          <template v-else>
+            <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
+              <div class="detect-row-left">
+                <span
+                  class="detect-badge"
+                  :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
+                ></span>
+                <span class="agent-name">{{ r.agent.name }}</span>
+                <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
+                <span
+                  class="agent-badge"
+                  :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'"
+                >
+                  {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
+                </span>
+              </div>
+              <div class="detect-row-right">
+                <template v-if="r.agent.installed">
+                  <span class="detect-bin">{{ r.agent.binary }}</span>
+                  <span v-if="r.agent.path" class="detect-path" :title="r.agent.path">{{
+                    r.agent.path
+                  }}</span>
+                  <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
+                  <span v-if="!r.agent.headless" class="detect-hint">
+                    Desktop app shadows PATH — install headless CLI:
+                    <code>{{ r.agent.installHint }}</code>
+                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                    </button>
+                  </span>
+                </template>
+                <template v-else>
+                  <span class="detect-bin">{{ r.agent.binary }}</span>
+                  <span class="detect-hint">
+                    <code>{{ r.agent.installHint }}</code>
+                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                    </button>
+                  </span>
+                </template>
+              </div>
+            </div>
+
+            <div class="detect-foot">
+              <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
+                {{ detectLoading ? "Checking…" : "Check again" }}
+              </Button>
+            </div>
+          </template>
+        </Card>
+
+        <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
       </div>
-
     </template>
   </div>
 </template>

@@ -115,54 +115,50 @@ function makeFixture(count: number): { root: string; clean: () => void } {
 }
 
 describe("boot timing (#0271 regression guard)", () => {
-  it(
-    "answers /api/health before startServer()'s own promise resolves, and both stay well under the old blocking-boot scale",
-    async () => {
-      const fx = makeFixture(TASK_COUNT);
-      const port = await reservePort();
-      const healthUrl = `http://127.0.0.1:${port}/api/health`;
-      const t0 = Date.now();
+  it("answers /api/health before startServer()'s own promise resolves, and both stay well under the old blocking-boot scale", async () => {
+    const fx = makeFixture(TASK_COUNT);
+    const port = await reservePort();
+    const healthUrl = `http://127.0.0.1:${port}/api/health`;
+    const t0 = Date.now();
 
-      let firstHealthMs: number | null = null;
-      const pollDone = (async () => {
-        while (firstHealthMs === null) {
-          try {
-            const res = await fetch(healthUrl);
-            if (res.ok) {
-              const body = (await res.json()) as { ok?: boolean };
-              if (body.ok) firstHealthMs = Date.now() - t0;
-            }
-          } catch {
-            /* not bound yet */
+    let firstHealthMs: number | null = null;
+    const pollDone = (async () => {
+      while (firstHealthMs === null) {
+        try {
+          const res = await fetch(healthUrl);
+          if (res.ok) {
+            const body = (await res.json()) as { ok?: boolean };
+            if (body.ok) firstHealthMs = Date.now() - t0;
           }
-          if (firstHealthMs === null) await new Promise((r) => setTimeout(r, 25));
+        } catch {
+          /* not bound yet */
         }
-      })();
-
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port });
-      const fullReadyMs = Date.now() - t0;
-      await pollDone;
-
-      try {
-        expect(firstHealthMs).not.toBeNull();
-        // The listener answers before the full index (30 real-git-enriched
-        // tasks) is done — the whole point of the fix. A tolerance equal to
-        // the polling granularity absorbs the measurement skew above (the
-        // poll can timestamp health a few ms after full-ready even when the
-        // listener bound first), without ever masking a regression to the old
-        // synchronous boot.
-        expect(firstHealthMs!).toBeLessThanOrEqual(fullReadyMs + POLL_TOLERANCE_MS);
-        expect(firstHealthMs!).toBeLessThan(HEALTH_CEILING_MS);
-        expect(fullReadyMs).toBeLessThan(FULL_READY_CEILING_MS);
-
-        // The wait for the resolved handle wasn't wasted: it reports the
-        // real count, not a partial/empty index caught mid-build.
-        expect(server.index.snapshot().taskCount).toBe(TASK_COUNT);
-      } finally {
-        await server.close();
-        fx.clean();
+        if (firstHealthMs === null) await new Promise((r) => setTimeout(r, 25));
       }
-    },
-    60_000,
-  );
+    })();
+
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port });
+    const fullReadyMs = Date.now() - t0;
+    await pollDone;
+
+    try {
+      expect(firstHealthMs).not.toBeNull();
+      // The listener answers before the full index (30 real-git-enriched
+      // tasks) is done — the whole point of the fix. A tolerance equal to
+      // the polling granularity absorbs the measurement skew above (the
+      // poll can timestamp health a few ms after full-ready even when the
+      // listener bound first), without ever masking a regression to the old
+      // synchronous boot.
+      expect(firstHealthMs!).toBeLessThanOrEqual(fullReadyMs + POLL_TOLERANCE_MS);
+      expect(firstHealthMs!).toBeLessThan(HEALTH_CEILING_MS);
+      expect(fullReadyMs).toBeLessThan(FULL_READY_CEILING_MS);
+
+      // The wait for the resolved handle wasn't wasted: it reports the
+      // real count, not a partial/empty index caught mid-build.
+      expect(server.index.snapshot().taskCount).toBe(TASK_COUNT);
+    } finally {
+      await server.close();
+      fx.clean();
+    }
+  }, 60_000);
 });

@@ -50,7 +50,7 @@ describe("loadDotEnv", () => {
 
   it("strips matching single or double quotes", () => {
     const root = tmpDir();
-    writeEnv(root, 'QUOTED="hello world"\nSINGLE_QUOTED=\'hi there\'\n');
+    writeEnv(root, "QUOTED=\"hello world\"\nSINGLE_QUOTED='hi there'\n");
     loadDotEnv(root);
     expect(process.env.QUOTED).toBe("hello world");
     expect(process.env.SINGLE_QUOTED).toBe("hi there");

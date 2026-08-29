@@ -20,8 +20,7 @@ function inline(s: string): string {
   // images: ![alt](src) — must run BEFORE links, whose pattern also matches
   // the `[alt](src)` tail. Only http(s) and repo-relative paths are allowed.
   s = s.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()]*\))*)\)/g, (_m, alt: string, src: string) => {
-    const safe =
-      /^(https?:|\/|[a-zA-Z0-9._~/-])/.test(src) && !/^\s*javascript:/i.test(src);
+    const safe = /^(https?:|\/|[a-zA-Z0-9._~/-])/.test(src) && !/^\s*javascript:/i.test(src);
     if (!safe) return alt;
     return `<img src="${src}" alt="${alt}" loading="lazy">`;
   });
@@ -101,7 +100,12 @@ function parseBlocks(src: string): Block[] {
     if (line.includes("|") && delimRow && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(delimRow)) {
       const rows: string[][] = [];
       const splitRow = (l: string): string[] =>
-        l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+        l
+          .trim()
+          .replace(/^\|/, "")
+          .replace(/\|$/, "")
+          .split("|")
+          .map((c) => c.trim());
       while (i < lines.length && lines[i]!.includes("|")) {
         // skip the `| --- | --- |` alignment row (only ever sits after the header)
         if (rows.length === 1 && /^\|?[\s:|-]*-[\s:|-]*\|?$/.test(lines[i]!.trim())) {

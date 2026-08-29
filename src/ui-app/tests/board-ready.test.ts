@@ -35,8 +35,7 @@ async function serve(ctx: RouteContext): Promise<{ url: string; close: () => Pro
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const addr = server.address() as AddressInfo;
-  const close = () =>
-    new Promise<void>((resolve) => server.close(() => resolve()));
+  const close = () => new Promise<void>((resolve) => server.close(() => resolve()));
   return { url: `http://127.0.0.1:${addr.port}/api/board`, close };
 }
 

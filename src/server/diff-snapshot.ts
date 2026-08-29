@@ -6,7 +6,14 @@
  * remains useful for completed tasks without retaining Git resources forever.
  */
 
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { DiffResult, DiffStats } from "../core/git.js";
 
@@ -53,13 +60,21 @@ export function saveDiffSnapshot(
     /* History is a convenience; never block a successfully validated release. */
   } finally {
     if (temp && existsSync(temp)) {
-      try { unlinkSync(temp); } catch { /* best-effort */ }
+      try {
+        unlinkSync(temp);
+      } catch {
+        /* best-effort */
+      }
     }
   }
 }
 
 /** Load the captured completed-task diff, or null if this task predates snapshots. */
-export function loadDiffSnapshot(root: string, cacheDir: string, taskId: string): DiffSnapshot | null {
+export function loadDiffSnapshot(
+  root: string,
+  cacheDir: string,
+  taskId: string,
+): DiffSnapshot | null {
   const file = snapshotPath(root, cacheDir, taskId);
   if (!file || !existsSync(file)) return null;
   try {
@@ -74,7 +89,8 @@ export function loadDiffSnapshot(root: string, cacheDir: string, taskId: string)
       typeof parsed.stats.deletions !== "number" ||
       typeof parsed.diff.patch !== "string" ||
       typeof parsed.diff.truncated !== "boolean"
-    ) return null;
+    )
+      return null;
     return parsed as DiffSnapshot;
   } catch {
     return null;

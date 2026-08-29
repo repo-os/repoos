@@ -48,7 +48,9 @@ describe("appendScreenshotsSection", () => {
     const out = appendScreenshotsSection("## Problem\n\nSomething.\n", [META]);
     expect(out).toContain("## Screenshots");
     expect(out).toContain("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)");
-    expect(out.trimEnd().endsWith("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)")).toBe(true);
+    expect(out.trimEnd().endsWith("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)")).toBe(
+      true,
+    );
   });
 });
 
@@ -90,9 +92,7 @@ describe("saveScreenshot", () => {
       });
       expect("error" in second).toBe(false);
       expect((second as typeof META).id).toBe("2");
-      expect((second as typeof META).path).toBe(
-        `work/.attachments/${task.id}/screenshot-2.png`,
-      );
+      expect((second as typeof META).path).toBe(`work/.attachments/${task.id}/screenshot-2.png`);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -120,9 +120,9 @@ describe("saveScreenshot", () => {
     try {
       const repoos = createRepoOS(root);
       const task = repoos.createTask({ title: "empty" });
-      expect(
-        "error" in saveScreenshot(repoos.config, task, { name: "a", mime: "image/png" }),
-      ).toBe(true);
+      expect("error" in saveScreenshot(repoos.config, task, { name: "a", mime: "image/png" })).toBe(
+        true,
+      );
       expect(
         "error" in saveScreenshot(repoos.config, task, { name: "a", mime: "image/png", data: "" }),
       ).toBe(true);

@@ -54,7 +54,12 @@ describe("release-marking fallback when the live index misses (#0195)", () => {
       // exactly (server.ts wires `(id) => index.getTask(id)`, which returns
       // undefined on a miss; omitting it here is the same `undefined` result).
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+        {
+          root,
+          workDir: "work",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
       );
@@ -79,7 +84,12 @@ describe("release-marking fallback when the live index misses (#0195)", () => {
 
       const absPath = join(root, "work", "T1-test-task.md");
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+        {
+          root,
+          workDir: "work",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -105,7 +115,12 @@ describe("release-marking fallback when the live index misses (#0195)", () => {
       coordinator.updateJob("GHOST", { phase: "cleanup" });
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+        {
+          root,
+          workDir: "work",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
       );

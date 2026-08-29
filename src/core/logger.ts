@@ -65,7 +65,12 @@ export class Logger {
   /**
    * Log agent activity: startup, completion, errors, output streams.
    */
-  agent(agentId: string, level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  agent(
+    agentId: string,
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>,
+  ): void {
     this.write(`agents/${agentId}.log`, {
       timestamp: new Date().toISOString(),
       level,

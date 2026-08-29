@@ -54,10 +54,7 @@ export function safeRepoFile(root: string, urlPath: string): string | null {
 export function findUiDir(root: string): string | null {
   const candidates = [join(root, "dist", "ui")];
   const here = dirname(dirname(fileURLToPath(import.meta.url))); // src/server
-  candidates.push(
-    join(here, "ui"),
-    join(here, "..", "..", "dist", "ui"),
-  );
+  candidates.push(join(here, "ui"), join(here, "..", "..", "dist", "ui"));
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
 }
@@ -161,7 +158,9 @@ export function listSkills(config: RepoOSConfig) {
 export function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   const counts = new Map<string, number>();
   for (const task of tasks) counts.set(task.status, (counts.get(task.status) ?? 0) + 1);
-  const statusSummary = STATUSES.map((status) => `${status}: ${counts.get(status) ?? 0}`).join(", ");
+  const statusSummary = STATUSES.map((status) => `${status}: ${counts.get(status) ?? 0}`).join(
+    ", ",
+  );
   const taskSummary = tasks
     .map(
       (task) =>

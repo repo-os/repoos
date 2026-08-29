@@ -96,9 +96,7 @@ async function mountNewTask(): Promise<{ wrapper: VueWrapper; ui: ReturnType<typ
 async function submitFreeform(wrapper: VueWrapper): Promise<void> {
   const textarea = wrapper.find("#nt-freeform");
   await textarea.setValue("Let's build a thing");
-  const createBtn = wrapper
-    .findAll("button")
-    .find((b) => b.text().includes("Create task"));
+  const createBtn = wrapper.findAll("button").find((b) => b.text().includes("Create task"));
   expect(createBtn).toBeTruthy();
   await createBtn!.trigger("click");
   await flush();
@@ -122,9 +120,7 @@ describe("freeform submit acknowledgment (0311)", () => {
     const { wrapper } = await mountNewTask();
     await submitFreeform(wrapper);
 
-    const another = wrapper
-      .findAll("button")
-      .find((b) => b.text().includes("Create another task"));
+    const another = wrapper.findAll("button").find((b) => b.text().includes("Create another task"));
     await another!.trigger("click");
     await flush();
 

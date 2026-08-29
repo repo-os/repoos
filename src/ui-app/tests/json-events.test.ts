@@ -8,7 +8,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, parseClaudeEvent, parseCodexEvent, parseCopilotEvent, parseJsonEvent, parseQwenEvent } from "../../server/agents";
+import {
+  AgentRunner,
+  parseClaudeEvent,
+  parseCodexEvent,
+  parseCopilotEvent,
+  parseJsonEvent,
+  parseQwenEvent,
+} from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
@@ -75,7 +82,9 @@ describe("parseJsonEvent", () => {
   });
 
   it("parses step boundaries", () => {
-    const start = parseJsonEvent('{"type":"step_start","sessionID":"ses_abc","part":{"type":"step-start"}}');
+    const start = parseJsonEvent(
+      '{"type":"step_start","sessionID":"ses_abc","part":{"type":"step-start"}}',
+    );
     expect(start).toEqual({
       entry: expect.objectContaining({ type: "step", kind: "start" }),
       sessionID: "ses_abc",
@@ -122,7 +131,11 @@ describe("parseJsonEvent", () => {
     expect(parseJsonEvent('{"session_id":"sess-123"}')).toBeNull();
     expect(parseJsonEvent('{"type":"session-id","sessionID":"ses_abc"}')).toBeNull();
     expect(parseJsonEvent('{"type":"title","sessionID":"ses_abc"}')).toBeNull();
-    expect(parseJsonEvent('{"type":"reasoning","sessionID":"ses_abc","part":{"type":"reasoning","text":"..."}}')).toBeNull();
+    expect(
+      parseJsonEvent(
+        '{"type":"reasoning","sessionID":"ses_abc","part":{"type":"reasoning","text":"..."}}',
+      ),
+    ).toBeNull();
     // empty text parts are dropped too
     expect(
       parseJsonEvent('{"type":"text","sessionID":"ses_abc","part":{"type":"text","text":"  "}}'),
@@ -150,9 +163,17 @@ describe("parseClaudeEvent (0109)", () => {
         parseCopilotEvent('{"type":"assistant.message","data":{"content":"Hello from Copilot"}}'),
       ).toEqual({ entry: { type: "text", text: "Hello from Copilot" } });
       expect(
-        parseCopilotEvent('{"type":"tool.execution_complete","data":{"toolName":"shell","arguments":{"command":"git status"},"result":"clean"}}'),
+        parseCopilotEvent(
+          '{"type":"tool.execution_complete","data":{"toolName":"shell","arguments":{"command":"git status"},"result":"clean"}}',
+        ),
       ).toEqual({
-        entry: { type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" },
+        entry: {
+          type: "tool",
+          tool: "shell",
+          input: "git status",
+          output: "clean",
+          state: "completed",
+        },
       });
       expect(parseCopilotEvent('{"type":"result","sessionId":"copilot-session-123"}')).toEqual({
         sessionID: "copilot-session-123",
@@ -163,7 +184,9 @@ describe("parseClaudeEvent (0109)", () => {
       expect(
         parseCopilotEvent('{"type":"assistant.message_delta","data":{"deltaContent":"Hel"}}'),
       ).toEqual({});
-      expect(parseCopilotEvent('{"type":"session.mcp_servers_loaded","data":{"servers":[]}}')).toEqual({});
+      expect(
+        parseCopilotEvent('{"type":"session.mcp_servers_loaded","data":{"servers":[]}}'),
+      ).toEqual({});
       expect(parseCopilotEvent('{"type":"error","data":{"message":"permission denied"}}')).toEqual({
         entry: { type: "sys", d: "error: permission denied" },
       });
@@ -172,7 +195,9 @@ describe("parseClaudeEvent (0109)", () => {
 
   it("swallows rate_limit events", () => {
     expect(
-      parseClaudeEvent('{"type":"rate_limit_event","rate_limit_info":{"status":"allowed_warning","utilization":0.25}}'),
+      parseClaudeEvent(
+        '{"type":"rate_limit_event","rate_limit_info":{"status":"allowed_warning","utilization":0.25}}',
+      ),
     ).toEqual({});
   });
 
@@ -202,7 +227,9 @@ describe("parseClaudeEvent (0109)", () => {
 
   it("swallows thinking-only assistant messages instead of dumping their JSON", () => {
     expect(
-      parseClaudeEvent('{"type":"assistant","message":{"content":[{"type":"thinking","thinking":"…","signature":"s"}]}}'),
+      parseClaudeEvent(
+        '{"type":"assistant","message":{"content":[{"type":"thinking","thinking":"…","signature":"s"}]}}',
+      ),
     ).toEqual({});
   });
 
@@ -229,7 +256,9 @@ describe("parseClaudeEvent (0109)", () => {
 
   it("parses assistant text into a text entry", () => {
     expect(
-      parseClaudeEvent('{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world greeting."}]}}'),
+      parseClaudeEvent(
+        '{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world greeting."}]}}',
+      ),
     ).toEqual({ entry: { type: "text", text: "Hello world greeting." } });
   });
 
@@ -242,13 +271,17 @@ describe("parseClaudeEvent (0109)", () => {
   });
 
   it("falls back to null for non-JSON, malformed, and other engines' JSON", () => {
-    expect(parseClaudeEvent("Warning: no stdin data received in 3s, proceeding without it")).toBeNull();
+    expect(
+      parseClaudeEvent("Warning: no stdin data received in 3s, proceeding without it"),
+    ).toBeNull();
     expect(parseClaudeEvent("")).toBeNull();
     expect(parseClaudeEvent("{not json")).toBeNull();
     expect(parseClaudeEvent('{"type":}')).toBeNull();
     // opencode's shapes must NOT be misread as claude events — the parser
     // branches stay separate (the #0109 regression guard).
-    expect(parseClaudeEvent('{"type":"text","sessionID":"ses","part":{"type":"text","text":"hi"}}')).toBeNull();
+    expect(
+      parseClaudeEvent('{"type":"text","sessionID":"ses","part":{"type":"text","text":"hi"}}'),
+    ).toBeNull();
     expect(parseClaudeEvent('{"type":"step_start","part":{"type":"step-start"}}')).toBeNull();
     expect(parseClaudeEvent('{"session_id":"sess-123"}')).toBeNull();
   });
@@ -256,12 +289,28 @@ describe("parseClaudeEvent (0109)", () => {
 
 describe("agent-specific streaming adapters (0116)", () => {
   it("renders Codex messages and shell work as chat entries", () => {
-    expect(parseCodexEvent('{"type":"thread.started","thread_id":"thread-1"}')).toEqual({ sessionID: "thread-1" });
-    expect(parseCodexEvent('{"type":"item.completed","item":{"type":"agent_message","text":"I found the issue."}}')).toEqual({
+    expect(parseCodexEvent('{"type":"thread.started","thread_id":"thread-1"}')).toEqual({
+      sessionID: "thread-1",
+    });
+    expect(
+      parseCodexEvent(
+        '{"type":"item.completed","item":{"type":"agent_message","text":"I found the issue."}}',
+      ),
+    ).toEqual({
       entry: { type: "text", text: "I found the issue." },
     });
-    expect(parseCodexEvent('{"type":"item.completed","item":{"type":"command_execution","command":"bun test","aggregated_output":"1 passed","status":"completed"}}')).toEqual({
-      entry: { type: "tool", tool: "shell", input: "bun test", output: "1 passed", state: "completed" },
+    expect(
+      parseCodexEvent(
+        '{"type":"item.completed","item":{"type":"command_execution","command":"bun test","aggregated_output":"1 passed","status":"completed"}}',
+      ),
+    ).toEqual({
+      entry: {
+        type: "tool",
+        tool: "shell",
+        input: "bun test",
+        output: "1 passed",
+        state: "completed",
+      },
     });
     expect(parseCodexEvent('{"type":"item.updated","delta":"still working"}')).toEqual({
       entry: { type: "text", text: "still working" },
@@ -269,11 +318,21 @@ describe("agent-specific streaming adapters (0116)", () => {
   });
 
   it("renders Qwen stream-json assistant content and does not leak event JSON", () => {
-    expect(parseQwenEvent('{"type":"session_start","session_id":"qwen-1"}')).toEqual({ sessionID: "qwen-1" });
-    expect(parseQwenEvent('{"type":"assistant","message":{"content":[{"type":"text","text":"I will update the file."}]}}')).toEqual({
+    expect(parseQwenEvent('{"type":"session_start","session_id":"qwen-1"}')).toEqual({
+      sessionID: "qwen-1",
+    });
+    expect(
+      parseQwenEvent(
+        '{"type":"assistant","message":{"content":[{"type":"text","text":"I will update the file."}]}}',
+      ),
+    ).toEqual({
       entry: { type: "text", text: "I will update the file." },
     });
-    expect(parseQwenEvent('{"type":"content_block_delta","delta":{"type":"text_delta","text":"still writing"}}')).toEqual({
+    expect(
+      parseQwenEvent(
+        '{"type":"content_block_delta","delta":{"type":"text_delta","text":"still writing"}}',
+      ),
+    ).toEqual({
       entry: { type: "text", text: "still writing" },
     });
     expect(parseQwenEvent('{"type":"rate_limit_event","status":"allowed"}')).toEqual({});
@@ -365,7 +424,12 @@ const TASK: Task = {
   },
 };
 
-const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "big pickle", enabled: true });
+const agent = (cli: string): Agent => ({
+  name: "engineer",
+  cli,
+  model: "big pickle",
+  enabled: true,
+});
 
 function spawns(fx: { log: string }): SpawnRecord[] {
   const text = readFileSync(fx.log, "utf8").trim();
@@ -430,9 +494,7 @@ describe("opencode driver (structured JSON events)", () => {
 
       const [, resume] = spawns(fx);
       expect(resume.args.slice(0, 3)).toEqual(["run", "--format", "json"]);
-      expect(resume.args).toEqual(
-        expect.arrayContaining(["--session", "ses-123", "--dir", cwd]),
-      );
+      expect(resume.args).toEqual(expect.arrayContaining(["--session", "ses-123", "--dir", cwd]));
       expect(resume.args).toContain("--auto");
     } finally {
       process.env.PATH = oldPath;
@@ -534,7 +596,11 @@ describe("claude code driver (stream-json events, 0109)", () => {
         },
         { type: "text", text: "Hello world greeting.", at: expect.any(String) },
         expect.objectContaining({ type: "step", kind: "finish" }),
-        { s: "out", d: "Warning: no stdin data received in 3s, proceeding without it", at: expect.any(String) },
+        {
+          s: "out",
+          d: "Warning: no stdin data received in 3s, proceeding without it",
+          at: expect.any(String),
+        },
       ]);
       // Session id comes from the system/init event field, not regex scraping.
       expect(runner.output("0045")!.sessionId).toBe("78dc4e6a-abcd");

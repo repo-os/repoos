@@ -190,7 +190,7 @@ const freeformIsCustom = computed(() => {
 });
 
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
-  const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
+  const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
   return raw.map((e) => {
     if ("type" in e) {
       return { s: "out", d: e.type === "text" ? e.text : ((e as { d?: string }).d ?? "") };
@@ -373,7 +373,11 @@ function onDocBodyTranscribed(text: string): void {
           </div>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close()">Cancel</Button>
-            <Button variant="default" @click="createDoc" :disabled="ui.saving || !ui.nd.path || !ui.nd.content">
+            <Button
+              variant="default"
+              @click="createDoc"
+              :disabled="ui.saving || !ui.nd.path || !ui.nd.content"
+            >
               Create
             </Button>
           </div>
@@ -381,11 +385,7 @@ function onDocBodyTranscribed(text: string): void {
         <template v-else-if="newMode === 'upload'">
           <div class="field">
             <label for="nd-upload-path">File path</label>
-            <Input
-              id="nd-upload-path"
-              v-model="uploadPath"
-              placeholder="docs/my-document.md"
-            />
+            <Input id="nd-upload-path" v-model="uploadPath" placeholder="docs/my-document.md" />
           </div>
           <div class="field">
             <label for="nd-upload-file">Select file</label>
@@ -402,7 +402,11 @@ function onDocBodyTranscribed(text: string): void {
           <div v-if="uploadError" class="ff-error">{{ uploadError }}</div>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close()">Cancel</Button>
-            <Button variant="default" @click="uploadDoc" :disabled="ui.saving || !uploadFile || !uploadPath.trim()">
+            <Button
+              variant="default"
+              @click="uploadDoc"
+              :disabled="ui.saving || !uploadFile || !uploadPath.trim()"
+            >
               Upload
             </Button>
           </div>

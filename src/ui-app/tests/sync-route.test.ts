@@ -104,7 +104,14 @@ function makeCtx(
     pendingReview: new Set(),
     uiDir: null,
     reload: null,
-    logger: { task: () => {}, system: () => {}, agent: () => {}, getTaskLogs: () => [], getAgentLogs: () => [], getSystemLogs: () => [] } as any,
+    logger: {
+      task: () => {},
+      system: () => {},
+      agent: () => {},
+      getTaskLogs: () => [],
+      getAgentLogs: () => [],
+      getSystemLogs: () => [],
+    } as any,
     syncTaskBranch: opts.sync ?? (async () => ({ ok: true, conflicts: [] })),
     onServerStatusChange: () => {},
   };
@@ -116,12 +123,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
@@ -133,12 +138,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
@@ -150,12 +153,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(400);
@@ -167,12 +168,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync, running: true }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync, running: true }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(409);
@@ -184,12 +183,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync, reviewing: true }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync, reviewing: true }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(409);
@@ -205,12 +202,10 @@ describe("POST /api/tasks/:id/sync contract (#0318)", () => {
     }));
     const res = makeRes();
 
-    await taskAction(
-      makeCtx(task, { sync }),
-      makeReq(),
-      res as any,
-      { param1: "0318", param2: "sync" },
-    );
+    await taskAction(makeCtx(task, { sync }), makeReq(), res as any, {
+      param1: "0318",
+      param2: "sync",
+    });
 
     expect(sync).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(409);

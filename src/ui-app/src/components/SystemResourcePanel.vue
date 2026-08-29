@@ -111,8 +111,12 @@ const serveMessage = computed(() => {
   const s = serve.value;
   if (!s || s.level === "ok") return "";
   const noun = s.strays === 1 ? "process" : "processes";
-  const dead = s.deadRoot > 0 ? ` ${s.deadRoot} of them are serving a directory that no longer exists.` : "";
-  const busy = s.inFlight > 0 ? ` (${s.inFlight} more are in-flight under a live parent and not counted.)` : "";
+  const dead =
+    s.deadRoot > 0 ? ` ${s.deadRoot} of them are serving a directory that no longer exists.` : "";
+  const busy =
+    s.inFlight > 0
+      ? ` (${s.inFlight} more are in-flight under a live parent and not counted.)`
+      : "";
   return s.level === "warn"
     ? `${s.strays} abandoned repoos serve ${noun} — enough to starve the close-out gate and fail it on unrelated flaky tests.${dead}${busy}`
     : `${s.strays} abandoned repoos serve ${noun} left over from a task or test run.${dead}${busy}`;
@@ -148,7 +152,10 @@ const serveMessage = computed(() => {
           <div class="metric-label">Memory (RepoOS)</div>
           <div class="metric-val">
             <span class="metric-big">{{ fmtBytes(systemStats!.totals.memBytes) }}</span>
-            <span class="metric-sub">/ {{ fmtBytes(systemStats!.machine.totalMem) }} · {{ fmtPct(systemStats!.totals.memPercent) }}%</span>
+            <span class="metric-sub"
+              >/ {{ fmtBytes(systemStats!.machine.totalMem) }} ·
+              {{ fmtPct(systemStats!.totals.memPercent) }}%</span
+            >
           </div>
           <svg class="sparkline" :viewBox="`0 0 120 32`" preserveAspectRatio="none">
             <path
@@ -167,7 +174,9 @@ const serveMessage = computed(() => {
           <div class="metric-label">Agents</div>
           <div class="metric-val">
             <span class="metric-big">{{ runningIds.length }}</span>
-            <span class="metric-sub">running{{ queuedIds.length ? ` · ${queuedIds.length} queued` : "" }}</span>
+            <span class="metric-sub"
+              >running{{ queuedIds.length ? ` · ${queuedIds.length} queued` : "" }}</span
+            >
           </div>
           <div v-if="queuedIds.length" class="metric-extra">
             <span>Waiting for a free slot — starts automatically as agents finish.</span>
@@ -183,12 +192,13 @@ const serveMessage = computed(() => {
           <div class="metric-extra">
             <span
               :title="`Reclaimable on demand (free + inactive + cache). Truly-free pages right now: ${fmtBytes(systemStats!.machine.freeMem)}.`"
-            >Available: {{ fmtBytes(machineAvail!) }}</span>
-            <span>Load: {{ systemStats!.machine.loadavg.map(v => v.toFixed(1)).join(" ") }}</span>
+              >Available: {{ fmtBytes(machineAvail!) }}</span
+            >
+            <span>Load: {{ systemStats!.machine.loadavg.map((v) => v.toFixed(1)).join(" ") }}</span>
             <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
-              Serve: {{ serve.total }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template><template
-                v-else-if="serve.inFlight"
-              > ({{ serve.inFlight }} busy)</template>
+              Serve: {{ serve.total
+              }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template
+              ><template v-else-if="serve.inFlight"> ({{ serve.inFlight }} busy)</template>
             </span>
           </div>
         </div>
@@ -202,7 +212,10 @@ const serveMessage = computed(() => {
           <div class="metric-extra">
             <span
               :title="'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'"
-            >{{ repoStats.worktrees }} git worktree{{ repoStats.worktrees === 1 ? "" : "s" }}</span>
+              >{{ repoStats.worktrees }} git worktree{{
+                repoStats.worktrees === 1 ? "" : "s"
+              }}</span
+            >
             <span>tracked on main · gitignored excluded</span>
           </div>
         </div>
@@ -214,7 +227,12 @@ const serveMessage = computed(() => {
           <span>{{ serveMessage }}</span>
         </div>
         <div class="serve-alert-list">
-          <span v-for="p in strayList" :key="p.pid" class="serve-chip" :class="{ dead: !p.rootExists }">
+          <span
+            v-for="p in strayList"
+            :key="p.pid"
+            class="serve-chip"
+            :class="{ dead: !p.rootExists }"
+          >
             {{ p.pid }}<template v-if="p.port">:{{ p.port }}</template>
             <button
               type="button"
@@ -222,7 +240,9 @@ const serveMessage = computed(() => {
               :disabled="killingPid === p.pid"
               title="Kill this stray process"
               @click="killProcess(p.pid)"
-            >×</button>
+            >
+              ×
+            </button>
           </span>
           <span v-if="serve.strays > strayList.length" class="serve-more">
             +{{ serve.strays - strayList.length }} more
@@ -255,7 +275,9 @@ const serveMessage = computed(() => {
               </router-link>
             </template>
             <template v-else>
-              <span class="task-unknown">{{ p.pid === systemStats!.serverPid ? 'serve' : 'unknown' }}</span>
+              <span class="task-unknown">{{
+                p.pid === systemStats!.serverPid ? "serve" : "unknown"
+              }}</span>
             </template>
             <span v-if="p.orphaned" class="orphan-tag">orphan</span>
             <span v-if="p.unverified" class="unverified-tag">unverified</span>
@@ -271,7 +293,9 @@ const serveMessage = computed(() => {
               :disabled="killingPid === p.pid"
               title="Kill this process"
               @click="killProcess(p.pid)"
-            >{{ killingPid === p.pid ? "…" : "kill" }}</button>
+            >
+              {{ killingPid === p.pid ? "…" : "kill" }}
+            </button>
           </span>
         </div>
       </div>
@@ -620,7 +644,12 @@ const serveMessage = computed(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 </style>

@@ -100,14 +100,22 @@ watch(
 
     <div v-if="testRun.running || testRun.startedAt" class="trp-body">
       <div class="trp-progress">
-        <span v-if="testRun.running">{{ filesSeen }} test file{{ filesSeen === 1 ? "" : "s" }} seen so far</span>
+        <span v-if="testRun.running"
+          >{{ filesSeen }} test file{{ filesSeen === 1 ? "" : "s" }} seen so far</span
+        >
         <template v-else-if="summary">
           <span>{{ summary.testFilesPassed }}/{{ summary.testFilesTotal }} files</span>
           <span>·</span>
           <span :class="{ 'trp-bad-count': summary.testsFailed > 0 }">
-            {{ summary.testsFailed > 0 ? `${summary.testsFailed} failed, ` : "" }}{{ summary.testsPassed }} passed{{ summary.testsSkipped ? `, ${summary.testsSkipped} skipped` : "" }} of {{ summary.testsTotal }}
+            {{ summary.testsFailed > 0 ? `${summary.testsFailed} failed, ` : ""
+            }}{{ summary.testsPassed }} passed{{
+              summary.testsSkipped ? `, ${summary.testsSkipped} skipped` : ""
+            }}
+            of {{ summary.testsTotal }}
           </span>
-          <span v-if="summary.durationSec !== null">· {{ summary.durationSec.toFixed(1) }}s runtime</span>
+          <span v-if="summary.durationSec !== null"
+            >· {{ summary.durationSec.toFixed(1) }}s runtime</span
+          >
         </template>
       </div>
 
@@ -151,7 +159,7 @@ watch(
 }
 
 .trp-status {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
@@ -159,13 +167,25 @@ watch(
   padding: 2px 8px;
   border-radius: 999px;
 }
-.trp-idle { color: var(--txt-faint); background: var(--chip-bg); }
-.trp-running { color: var(--cyan); background: var(--cyan-dim); }
-.trp-passed { color: var(--green); background: var(--green-tint); }
-.trp-failed { color: var(--red); background: var(--red-tint); }
+.trp-idle {
+  color: var(--txt-faint);
+  background: var(--chip-bg);
+}
+.trp-running {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.trp-passed {
+  color: var(--green);
+  background: var(--green-tint);
+}
+.trp-failed {
+  color: var(--red);
+  background: var(--red-tint);
+}
 
 .trp-elapsed {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 12px;
   color: var(--txt-dim);
   font-variant-numeric: tabular-nums;
@@ -173,7 +193,7 @@ watch(
 
 .trp-run {
   margin-left: auto;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   font-weight: 600;
   padding: 6px 12px;
@@ -183,8 +203,13 @@ watch(
   color: var(--cyan);
   cursor: pointer;
 }
-.trp-run:hover:not(:disabled) { filter: brightness(1.15); }
-.trp-run:disabled { cursor: default; opacity: 0.6; }
+.trp-run:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+.trp-run:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
 
 .trp-body {
   margin-top: 12px;
@@ -201,7 +226,10 @@ watch(
   color: var(--txt-dim);
   font-variant-numeric: tabular-nums;
 }
-.trp-bad-count { color: var(--red); font-weight: 600; }
+.trp-bad-count {
+  color: var(--red);
+  font-weight: 600;
+}
 
 .trp-failures {
   border: 1px solid var(--red-border-tint, rgba(255, 107, 125, 0.25));
@@ -224,9 +252,11 @@ watch(
   border-top: 1px solid rgba(255, 107, 125, 0.15);
   font-size: 12px;
 }
-.trp-failure:first-child { border-top: none; }
+.trp-failure:first-child {
+  border-top: none;
+}
 .trp-failure-file {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   color: var(--txt);
   font-weight: 600;
 }
@@ -241,7 +271,7 @@ watch(
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.5;
   color: var(--txt-dim);

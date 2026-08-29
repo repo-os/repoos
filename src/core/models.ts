@@ -133,11 +133,19 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      try { proc.kill("SIGTERM"); } catch { /* already exited */ }
+      try {
+        proc.kill("SIGTERM");
+      } catch {
+        /* already exited */
+      }
       resolve(models);
     };
     const timer = setTimeout(() => {
-      try { proc.kill("SIGKILL"); } catch { /* already exited */ }
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* already exited */
+      }
       done([]);
     }, CODEX_MODELS_TIMEOUT_MS);
     proc.stdout?.on("data", (chunk: Buffer) => {
@@ -151,9 +159,11 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
             result?: { data?: Array<{ model?: unknown }> };
           };
           if (message.id !== 2 || !Array.isArray(message.result?.data)) continue;
-          done(message.result.data
-            .map((entry) => entry.model)
-            .filter((model): model is string => typeof model === "string" && model.length > 0));
+          done(
+            message.result.data
+              .map((entry) => entry.model)
+              .filter((model): model is string => typeof model === "string" && model.length > 0),
+          );
         } catch {
           /* notifications and malformed lines are irrelevant */
         }
@@ -161,19 +171,21 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
     });
     proc.on("error", () => done([]));
     proc.on("close", () => done([]));
-    proc.stdin?.write([
-      JSON.stringify({
-        id: 1,
-        method: "initialize",
-        params: { clientInfo: { name: "repoos", version: "0.3.0" }, capabilities: {} },
-      }),
-      JSON.stringify({
-        id: 2,
-        method: "model/list",
-        params: { limit: 100, includeHidden: false },
-      }),
-      "",
-    ].join("\n"));
+    proc.stdin?.write(
+      [
+        JSON.stringify({
+          id: 1,
+          method: "initialize",
+          params: { clientInfo: { name: "repoos", version: "0.3.0" }, capabilities: {} },
+        }),
+        JSON.stringify({
+          id: 2,
+          method: "model/list",
+          params: { limit: 100, includeHidden: false },
+        }),
+        "",
+      ].join("\n"),
+    );
   });
 }
 
@@ -283,7 +295,13 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   kiro: kiroAdapter,
 };
 for (const known of KNOWN_AGENTS) {
-  if (known.id === "opencode" || known.id === "codex" || known.id === "copilot" || known.id === "kiro") continue;
+  if (
+    known.id === "opencode" ||
+    known.id === "codex" ||
+    known.id === "copilot" ||
+    known.id === "kiro"
+  )
+    continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);
 }
 

@@ -24,12 +24,7 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
-import {
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
@@ -126,14 +121,18 @@ describe("server-owned previews (#0096 integration)", () => {
     const prior = process.env.REPOOS_PREVIEW_CHILD;
     process.env.REPOOS_PREVIEW_CHILD = "1";
     try {
-      const previews = new PreviewManager({
-        root: "/unused",
-        cacheDir: ".repoos",
-      } as any, () => {});
+      const previews = new PreviewManager(
+        {
+          root: "/unused",
+          cacheDir: ".repoos",
+        } as any,
+        () => {},
+      );
       const result = await previews.start({} as any);
       expect(result).toEqual({
         ok: false,
-        error: "Preview servers are read-only; only the main RepoOS control plane can start previews",
+        error:
+          "Preview servers are read-only; only the main RepoOS control plane can start previews",
       });
     } finally {
       if (prior === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
@@ -141,101 +140,95 @@ describe("server-owned previews (#0096 integration)", () => {
     }
   });
 
-  it(
-    "serves each task's own worktree on distinct ports and keeps the main server healthy through a rebuild",
-    async () => {
-      const fx = makeFixture();
-      const mainPort = await reservePort();
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: mainPort });
-      const healthUrl = `http://127.0.0.1:${mainPort}/api/health`;
-      let healthFailures = 0;
-      let stopped = false;
+  it("serves each task's own worktree on distinct ports and keeps the main server healthy through a rebuild", async () => {
+    const fx = makeFixture();
+    const mainPort = await reservePort();
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: mainPort });
+    const healthUrl = `http://127.0.0.1:${mainPort}/api/health`;
+    let healthFailures = 0;
+    let stopped = false;
 
-      // Continuous main-server health probe running for the whole test.
-      const poller = setInterval(async () => {
-        if (stopped) return;
-        try {
-          const res = await fetch(healthUrl);
-          if (!res.ok) healthFailures++;
-        } catch {
-          healthFailures++;
-        }
-      }, 25);
-
+    // Continuous main-server health probe running for the whole test.
+    const poller = setInterval(async () => {
+      if (stopped) return;
       try {
-        expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });
-
-        const ids = ["0001", "0002", "0003"];
-        const branches = ["feat/preview-a", "feat/preview-b", "feat/preview-c"];
-
-        // Cap of 1: each task gets its own OS-allocated port, but starting
-        // the next one evicts the previous — only one is ever live.
-        const urlById: Record<string, string> = {};
-        for (let i = 0; i < ids.length; i++) {
-          const id = ids[i];
-          const res = await api(server, "POST", `/api/tasks/${id}/preview`);
-          expect(res.status).toBe(200);
-          expect(res.body.ok).toBe(true);
-          const url = res.body.url as string;
-          const port = res.body.port as number;
-          expect(url).toBe(`http://127.0.0.1:${port}`);
-          urlById[id] = url;
-
-          // Serves ITS OWN worktree build (a unique marker file).
-          expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
-          const body = await (await fetch(`${url}/notes.md`)).text();
-          expect(body).toContain(`marker-${i + 1}-${branches[i]}`);
-
-          // The previous task's preview (if any) was evicted to hold the cap.
-          if (i > 0) {
-            const prevTask = await api(server, "GET", `/api/tasks/${ids[i - 1]}`);
-            expect(prevTask.body.preview).toBeNull();
-          }
-        }
-
-        // Idempotency: repeat requests for the CURRENTLY live task return the
-        // existing healthy URL rather than evicting-and-restarting itself.
-        const currentId = ids[ids.length - 1];
-        const again = await api(server, "POST", `/api/tasks/${currentId}/preview`);
-        expect(again.status).toBe(200);
-        expect(again.body.url).toBe(urlById[currentId]);
-
-        // Rebuild the live worktree (content change) — re-request is still
-        // the same URL and the preview serves the updated build live.
-        const rebuiltBranch = branches[branches.length - 1];
-        const wt = ensureWorktree(fx.root, rebuiltBranch);
-        const newMarker = "rebuilt-content-42";
-        writeFileSync(join(wt.path, "notes.md"), `# ${rebuiltBranch}\n\n${newMarker}\n`);
-
-        const reRequest = await api(server, "POST", `/api/tasks/${currentId}/preview`);
-        expect(reRequest.status).toBe(200);
-        expect(reRequest.body.url).toBe(urlById[currentId]);
-        const body = await (await fetch(`${urlById[currentId]}/notes.md`)).text();
-        expect(body).toContain(newMarker);
-
-        // The task endpoint surfaces the live preview URL.
-        const task = await api(server, "GET", `/api/tasks/${currentId}`);
-        expect((task.body.preview as { url?: string } | null)?.url).toBe(urlById[currentId]);
-
-        // The main server never flinched: same port, zero failed probes.
-        expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });
-        expect(healthFailures).toBe(0);
-      } finally {
-        stopped = true;
-        clearInterval(poller);
-        await server.close();
-        fx.clean();
+        const res = await fetch(healthUrl);
+        if (!res.ok) healthFailures++;
+      } catch {
+        healthFailures++;
       }
-    },
-    120_000,
-  );
+    }, 25);
 
-  it(
-    "rejects a preview for a task whose worktree is missing (validation before starting anything)",
-    async () => {
-      const fx = makeFixture();
-      // A task with a branch that has NO worktree must not start anything.
-      const ghost = `---
+    try {
+      expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });
+
+      const ids = ["0001", "0002", "0003"];
+      const branches = ["feat/preview-a", "feat/preview-b", "feat/preview-c"];
+
+      // Cap of 1: each task gets its own OS-allocated port, but starting
+      // the next one evicts the previous — only one is ever live.
+      const urlById: Record<string, string> = {};
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const res = await api(server, "POST", `/api/tasks/${id}/preview`);
+        expect(res.status).toBe(200);
+        expect(res.body.ok).toBe(true);
+        const url = res.body.url as string;
+        const port = res.body.port as number;
+        expect(url).toBe(`http://127.0.0.1:${port}`);
+        urlById[id] = url;
+
+        // Serves ITS OWN worktree build (a unique marker file).
+        expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
+        const body = await (await fetch(`${url}/notes.md`)).text();
+        expect(body).toContain(`marker-${i + 1}-${branches[i]}`);
+
+        // The previous task's preview (if any) was evicted to hold the cap.
+        if (i > 0) {
+          const prevTask = await api(server, "GET", `/api/tasks/${ids[i - 1]}`);
+          expect(prevTask.body.preview).toBeNull();
+        }
+      }
+
+      // Idempotency: repeat requests for the CURRENTLY live task return the
+      // existing healthy URL rather than evicting-and-restarting itself.
+      const currentId = ids[ids.length - 1];
+      const again = await api(server, "POST", `/api/tasks/${currentId}/preview`);
+      expect(again.status).toBe(200);
+      expect(again.body.url).toBe(urlById[currentId]);
+
+      // Rebuild the live worktree (content change) — re-request is still
+      // the same URL and the preview serves the updated build live.
+      const rebuiltBranch = branches[branches.length - 1];
+      const wt = ensureWorktree(fx.root, rebuiltBranch);
+      const newMarker = "rebuilt-content-42";
+      writeFileSync(join(wt.path, "notes.md"), `# ${rebuiltBranch}\n\n${newMarker}\n`);
+
+      const reRequest = await api(server, "POST", `/api/tasks/${currentId}/preview`);
+      expect(reRequest.status).toBe(200);
+      expect(reRequest.body.url).toBe(urlById[currentId]);
+      const body = await (await fetch(`${urlById[currentId]}/notes.md`)).text();
+      expect(body).toContain(newMarker);
+
+      // The task endpoint surfaces the live preview URL.
+      const task = await api(server, "GET", `/api/tasks/${currentId}`);
+      expect((task.body.preview as { url?: string } | null)?.url).toBe(urlById[currentId]);
+
+      // The main server never flinched: same port, zero failed probes.
+      expect(await (await fetch(healthUrl)).json()).toMatchObject({ ok: true });
+      expect(healthFailures).toBe(0);
+    } finally {
+      stopped = true;
+      clearInterval(poller);
+      await server.close();
+      fx.clean();
+    }
+  }, 120_000);
+
+  it("rejects a preview for a task whose worktree is missing (validation before starting anything)", async () => {
+    const fx = makeFixture();
+    // A task with a branch that has NO worktree must not start anything.
+    const ghost = `---
 id: "0009"
 title: Ghost
 type: feature
@@ -243,17 +236,15 @@ status: active
 branch: feat/ghost
 ---
 `;
-      writeFileSync(join(fx.root, "work", "0009-ghost.md"), ghost);
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-      try {
-        const res = await api(server, "POST", "/api/tasks/0009/preview");
-        expect(res.status).toBe(400);
-        expect(String(res.body.error ?? "")).toMatch(/no git worktree exists/i);
-      } finally {
-        await server.close();
-        fx.clean();
-      }
-    },
-    60_000,
-  );
+    writeFileSync(join(fx.root, "work", "0009-ghost.md"), ghost);
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await api(server, "POST", "/api/tasks/0009/preview");
+      expect(res.status).toBe(400);
+      expect(String(res.body.error ?? "")).toMatch(/no git worktree exists/i);
+    } finally {
+      await server.close();
+      fx.clean();
+    }
+  }, 60_000);
 });

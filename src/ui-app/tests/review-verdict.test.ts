@@ -23,11 +23,16 @@ describe("parseReviewVerdict", () => {
   });
 
   it("parses 'back to the drawing board' as red", () => {
-    const v = parseReviewVerdict("## Verdict\nback to the drawing board\n\nDoesn't use the required components.");
+    const v = parseReviewVerdict(
+      "## Verdict\nback to the drawing board\n\nDoesn't use the required components.",
+    );
     expect(v).toEqual({ label: "back to the drawing board", tone: "red" });
   });
 
   it("is case-insensitive", () => {
-    expect(parseReviewVerdict("## Verdict\nGood To Go.")).toEqual({ label: "good to go", tone: "green" });
+    expect(parseReviewVerdict("## Verdict\nGood To Go.")).toEqual({
+      label: "good to go",
+      tone: "green",
+    });
   });
 });

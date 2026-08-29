@@ -30,7 +30,12 @@ const modelSearchEl = ref<HTMLInputElement | null>(null);
 const modelListEl = ref<HTMLElement | null>(null);
 const favoritesExpanded = ref(true);
 
-const { isFavorite, toggleFavorite, getFavoritesForCli, hasFavorites: hasAnyFavorites } = useFavorites();
+const {
+  isFavorite,
+  toggleFavorite,
+  getFavoritesForCli,
+  hasFavorites: hasAnyFavorites,
+} = useFavorites();
 
 const currentModelLabel = computed(() => {
   return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
@@ -100,9 +105,7 @@ watch(
           <DialogTitle>Coding Agent + Model</DialogTitle>
           <div class="am-modal-current">{{ cli }} · {{ currentModelLabel }}</div>
         </div>
-        <DialogDescription class="sr-only">
-          Choose a coding agent and model
-        </DialogDescription>
+        <DialogDescription class="sr-only"> Choose a coding agent and model </DialogDescription>
         <DialogClose class="close-x">
           <X class="size-[15px]" />
         </DialogClose>
@@ -148,9 +151,7 @@ watch(
           >
             <span class="am-favorites-title">Favorites</span>
             <span class="am-favorites-count">{{ favoriteItems.length }}</span>
-            <span class="am-favorites-toggle" :class="{ expanded: favoritesExpanded }">
-              ▼
-            </span>
+            <span class="am-favorites-toggle" :class="{ expanded: favoritesExpanded }"> ▼ </span>
           </button>
           <div v-if="favoritesExpanded" class="am-favorites-list">
             <div

@@ -47,10 +47,7 @@ function truncateTitle(title: string, headlineLen: number): string {
  * For active/review → done, returns "Done" (lower priority).
  * Other transitions do not currently trigger notifications.
  */
-export function notificationForStatusChange(
-  prev: Status,
-  next: Status,
-): NotificationSpec | null {
+export function notificationForStatusChange(prev: Status, next: Status): NotificationSpec | null {
   if (prev === "ready" && next === "active") {
     return { headline: "▶️ Started", priority: "low" };
   }

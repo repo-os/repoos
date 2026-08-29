@@ -22,7 +22,8 @@ export const getDebugger: RouteHandler = (ctx, _req, res) => {
 /** Persisted cli/model overrides for the Debugger, sanitized to non-empty strings. */
 function fromPersisted(state: { cli?: string; model?: string }): { cli?: string; model?: string } {
   const cli = typeof state.cli === "string" && state.cli.trim() ? state.cli.trim() : undefined;
-  const model = typeof state.model === "string" && state.model.trim() ? state.model.trim() : undefined;
+  const model =
+    typeof state.model === "string" && state.model.trim() ? state.model.trim() : undefined;
   return { cli, model };
 }
 
@@ -76,15 +77,22 @@ export const repairWithDebugger: RouteHandler = async (ctx, req, res) => {
   const diagnosis = typeof body.diagnosis === "string" ? body.diagnosis.trim() : "";
   const task = index.getTask(taskId);
   if (!task) return json(res, 404, { error: "Task not found" });
-  if (task.status !== "review") return json(res, 400, { error: "Only review tasks can be repaired" });
+  if (task.status !== "review")
+    return json(res, 400, { error: "Only review tasks can be repaired" });
   if (!diagnosis) return json(res, 400, { error: "Debugger diagnosis is required" });
   const engineer = resolveAgentForTask(config, task);
   if (!engineer) return json(res, 400, { error: "No enabled engineer is configured" });
-  const sent = runner.send(task.id, [
-    "The Debugger diagnosed a failed Move-to-done operation. Apply the smallest safe repair in this existing worktree, run repoos check, then hand off to review.",
-    diagnosis,
-  ].join("\n\n"), engineer, { skipBoardDivergence: true });
-  if (!sent.ok) return json(res, sent.busy ? 409 : 400, { error: sent.reason ?? "Could not start engineer" });
+  const sent = runner.send(
+    task.id,
+    [
+      "The Debugger diagnosed a failed Move-to-done operation. Apply the smallest safe repair in this existing worktree, run repoos check, then hand off to review.",
+      diagnosis,
+    ].join("\n\n"),
+    engineer,
+    { skipBoardDivergence: true },
+  );
+  if (!sent.ok)
+    return json(res, sent.busy ? 409 : 400, { error: sent.reason ?? "Could not start engineer" });
   const updated = patchTaskFile(config, task.absPath, { status: "active" });
   index.applyFileChange(updated.absPath);
   return json(res, 200, { ok: true, task: index.getTask(task.id) });

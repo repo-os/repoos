@@ -50,14 +50,9 @@ function gitCapture(root: string, args: string[]): GitRun {
  */
 function gitAsync(root: string, args: string[]): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile(
-      "git",
-      args,
-      { cwd: root, encoding: "utf8", timeout: 4000 },
-      (error, stdout) => {
-        resolve(error ? null : stdout.trim());
-      },
-    );
+    execFile("git", args, { cwd: root, encoding: "utf8", timeout: 4000 }, (error, stdout) => {
+      resolve(error ? null : stdout.trim());
+    });
   });
 }
 
@@ -75,11 +70,7 @@ export interface GitRun {
  * freeze the server's event loop, so SSE progress events can flush in real
  * time while a long command (merge, build, check) is in flight.
  */
-export function runGit(
-  root: string,
-  args: string[],
-  timeout: number,
-): Promise<GitRun> {
+export function runGit(root: string, args: string[], timeout: number): Promise<GitRun> {
   return new Promise((resolve) => {
     const child = spawn("git", args, { cwd: root });
     let stdout = "";
@@ -124,7 +115,12 @@ export function headCommitISO(root: string): string | null {
 export function localBranches(root: string): Set<string> {
   const out = git(root, ["branch", "--format=%(refname:short)"]);
   if (!out) return new Set();
-  return new Set(out.split("\n").map((s) => s.trim()).filter(Boolean));
+  return new Set(
+    out
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
 }
 
 /**
@@ -163,13 +159,7 @@ export function lastCommitForFile(
   root: string,
   relPath: string,
 ): { subject: string | null; date: string | null } {
-  const out = git(root, [
-    "log",
-    "-1",
-    "--format=%s%x00%cI",
-    "--",
-    relPath,
-  ]);
+  const out = git(root, ["log", "-1", "--format=%s%x00%cI", "--", relPath]);
   if (!out) return { subject: null, date: null };
   const [subject, date] = out.split("\u0000");
   return { subject: subject || null, date: date || null };
@@ -180,13 +170,7 @@ export async function lastCommitForFileAsync(
   root: string,
   relPath: string,
 ): Promise<{ subject: string | null; date: string | null }> {
-  const out = await gitAsync(root, [
-    "log",
-    "-1",
-    "--format=%s%x00%cI",
-    "--",
-    relPath,
-  ]);
+  const out = await gitAsync(root, ["log", "-1", "--format=%s%x00%cI", "--", relPath]);
   if (!out) return { subject: null, date: null };
   const [subject, date] = out.split("\u0000");
   return { subject: subject || null, date: date || null };
@@ -513,10 +497,18 @@ export function ensureWorktree(
     // `git worktree add`.  Remove it once and retry — the branch is still valid,
     // only the worktree registration (gitdir) is missing.
     if (existsSync(target)) {
-      try { rmSync(target, { recursive: true, force: true }); } catch { /* best-effort */ }
+      try {
+        rmSync(target, { recursive: true, force: true });
+      } catch {
+        /* best-effort */
+      }
       if (git(root, args) !== null) {
         let path = target;
-        try { path = realpathSync(target); } catch { /* keep */ }
+        try {
+          path = realpathSync(target);
+        } catch {
+          /* keep */
+        }
         if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
         return { ok: true, path, created: true };
       }
@@ -591,9 +583,8 @@ export function worktreeStatus(
   const status = git(path, ["status", "--porcelain"]);
   const uncommitted = status !== null && status !== "";
   const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
-  const count = base && base !== branch
-    ? git(root, ["rev-list", "--count", `${base}..${branch}`])
-    : null;
+  const count =
+    base && base !== branch ? git(root, ["rev-list", "--count", `${base}..${branch}`]) : null;
   const ahead = count !== null && Number(count) > 0;
   return { path, dirty: uncommitted || ahead };
 }
@@ -735,8 +726,7 @@ export async function resolveWorktreeStatuses(
   }
 
   // Fall back to per-branch rev-list when for-each-ref gave nothing (old git).
-  const needAheadFallback =
-    aheadCounts.size === 0 && toCheck.length > 0 && !!opts.baseBranch;
+  const needAheadFallback = aheadCounts.size === 0 && toCheck.length > 0 && !!opts.baseBranch;
 
   const queue = [...toCheck];
   const workers = Array.from(
@@ -872,10 +862,7 @@ function parseNumstat(statOutput: string): DiffStats {
  * Generated build output is excluded because it is not task source.
  * Returns file count and line additions/deletions.
  */
-export function getDiffStats(
-  worktree: string,
-  baseBranch: string,
-): DiffStats {
+export function getDiffStats(worktree: string, baseBranch: string): DiffStats {
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
 
@@ -897,10 +884,7 @@ export function getDiffStats(
  * including whatever `GET /api/tasks/:id` a drawer-opening click was waiting
  * on — which is what made the drawer take several seconds to appear.
  */
-export async function getDiffStatsAsync(
-  worktree: string,
-  baseBranch: string,
-): Promise<DiffStats> {
+export async function getDiffStatsAsync(worktree: string, baseBranch: string): Promise<DiffStats> {
   const base = await runGit(worktree, ["merge-base", baseBranch, "HEAD"], 4000);
   const baseFull = base.status === 0 && !base.timedOut ? base.stdout.trim() : null;
   if (!baseFull) return { filesChanged: 0, additions: 0, deletions: 0 };
@@ -917,10 +901,7 @@ export async function getDiffStatsAsync(
  * generated build output out of the task-facing code review view.
  * Bounded at MAX_DIFF_BYTES to avoid sending giant payloads.
  */
-export async function getDiff(
-  worktree: string,
-  baseBranch: string,
-): Promise<DiffResult> {
+export async function getDiff(worktree: string, baseBranch: string): Promise<DiffResult> {
   const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
   if (!baseFull) return { patch: "", truncated: false };
 
@@ -985,11 +966,7 @@ export interface CommitNewFileResult {
  * Fail-soft: never throws, never leaves content partially staged. On any
  * problem it returns `{ ok: false, reason }` and the caller keeps the file.
  */
-export function commitNewFile(
-  root: string,
-  absPath: string,
-  message: string,
-): CommitNewFileResult {
+export function commitNewFile(root: string, absPath: string, message: string): CommitNewFileResult {
   const relPath = relative(root, absPath).split("\\").join("/");
   if (isAbsolute(relPath) || relPath.startsWith("..")) {
     return { ok: false, reason: `path is outside the repository: ${absPath}` };
@@ -1013,11 +990,7 @@ export function commitNewFile(
  * `git merge-base --is-ancestor` exit codes; null when git is missing or the
  * refs are invalid.
  */
-export function isAncestor(
-  root: string,
-  ancestor: string,
-  descendant: string,
-): boolean | null {
+export function isAncestor(root: string, ancestor: string, descendant: string): boolean | null {
   const run = spawnSync("git", ["merge-base", "--is-ancestor", ancestor, descendant], {
     cwd: root,
     timeout: 4000,
@@ -1150,9 +1123,7 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
 export class GitDirtyCheckError extends Error {
   readonly causeKind: "timeout" | "git-error" | "no-repo";
   constructor(causeKind: "timeout" | "git-error" | "no-repo", detail?: string) {
-    super(
-      `could not determine the dirty state of the checkout${detail ? `: ${detail}` : ""}`,
-    );
+    super(`could not determine the dirty state of the checkout${detail ? `: ${detail}` : ""}`);
     this.name = "GitDirtyCheckError";
     this.causeKind = causeKind;
   }
@@ -1273,7 +1244,9 @@ export async function mergeBranch(
     const autoResolvable = (p: string): boolean =>
       (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
     const keepOurs = (p: string): boolean =>
-      (opts.autoResolveOurs ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+      (opts.autoResolveOurs ?? []).some(
+        (r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"),
+      );
     const blocking = conflicts.filter((p) => !autoResolvable(p) && !keepOurs(p));
     if (conflicts.every((p) => autoResolvable(p) || keepOurs(p))) {
       // Task metadata may be updated concurrently. The closing task's branch
@@ -1355,7 +1328,7 @@ export async function syncBranchWithMain(
     conflicts: result.conflicts,
     reason: result.conflicts.length
       ? `merge conflict: ${result.conflicts.join(", ")}`
-      : result.reason ?? "sync failed",
+      : (result.reason ?? "sync failed"),
   };
 }
 
@@ -1399,8 +1372,16 @@ export function removeWorktree(root: string, branch: string): boolean {
   const path = worktreePaths(root).get(branch);
   if (!path) return true;
   let realRoot = root;
-  try { realRoot = realpathSync(root); } catch { /* keep */ }
-  try { if (realpathSync(path) === realRoot) return false; } catch { /* dir gone — safe to continue */ }
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    /* keep */
+  }
+  try {
+    if (realpathSync(path) === realRoot) return false;
+  } catch {
+    /* dir gone — safe to continue */
+  }
 
   const first = gitCapture(root, ["worktree", "remove", "--force", path]);
   if (first.status === 0) return true;
@@ -1412,7 +1393,11 @@ export function removeWorktree(root: string, branch: string): boolean {
 
   // Last resort: the registration is stale AND a directory is in the way.
   if (existsSync(path)) {
-    try { rmSync(path, { recursive: true, force: true }); } catch { /* best-effort */ }
+    try {
+      rmSync(path, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
   }
   pruneWorktrees(root);
   // Success == the branch no longer resolves to any registered worktree.
@@ -1466,7 +1451,12 @@ export function ensureHotfix(
     }
   } else {
     if (head !== "main") {
-      return { ok: false, path: root, branch, reason: "main-mode hotfix requires the main checkout to be on main" };
+      return {
+        ok: false,
+        path: root,
+        branch,
+        reason: "main-mode hotfix requires the main checkout to be on main",
+      };
     }
   }
 

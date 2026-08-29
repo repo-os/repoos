@@ -65,12 +65,16 @@ describe("parseFailures", () => {
   });
 
   it("deduplicates an identical FAIL line seen twice", () => {
-    const doubled = SAMPLE_OUTPUT + "\n FAIL  tests/agent-review.test.ts > agent review before human sign-off (#0101) > reviews the implementation when a task lands in review and stores the report\n";
+    const doubled =
+      SAMPLE_OUTPUT +
+      "\n FAIL  tests/agent-review.test.ts > agent review before human sign-off (#0101) > reviews the implementation when a task lands in review and stores the report\n";
     expect(parseFailures(doubled)).toHaveLength(3);
   });
 
   it("returns an empty array when nothing failed", () => {
-    expect(parseFailures(" ✓ tests/foo.test.ts (12 tests) 340ms\n Test Files  105 passed (105)\n")).toEqual([]);
+    expect(
+      parseFailures(" ✓ tests/foo.test.ts (12 tests) 340ms\n Test Files  105 passed (105)\n"),
+    ).toEqual([]);
   });
 });
 

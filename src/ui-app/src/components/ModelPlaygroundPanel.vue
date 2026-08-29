@@ -11,7 +11,11 @@ import type {
 } from "../types";
 import Button from "./ui/button.vue";
 
-const STARTER_PROMPTS = ["What's this repo about?", "Explain this codebase", "What would you improve here first?"];
+const STARTER_PROMPTS = [
+  "What's this repo about?",
+  "Explain this codebase",
+  "What would you improve here first?",
+];
 
 /** A catalog model plus the label of the provider it came from, for display. */
 interface CatalogModel extends PlaygroundModel {
@@ -32,7 +36,9 @@ const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 
 const allModels = computed<CatalogModel[]>(() =>
-  providers.value.flatMap((group) => group.models.map((m) => ({ ...m, providerLabel: group.label }))),
+  providers.value.flatMap((group) =>
+    group.models.map((m) => ({ ...m, providerLabel: group.label })),
+  ),
 );
 
 const search = ref("");
@@ -59,7 +65,9 @@ const visibleProviders = computed<PlaygroundProviderGroup[]>(() =>
     .filter((g) => g.models.length > 0 || g.error),
 );
 
-const visibleCount = computed(() => visibleProviders.value.reduce((n, g) => n + g.models.length, 0));
+const visibleCount = computed(() =>
+  visibleProviders.value.reduce((n, g) => n + g.models.length, 0),
+);
 
 const filtersActive = computed(
   () => search.value.trim() !== "" || providerFilter.value !== "" || maxCost.value !== "",
@@ -87,7 +95,9 @@ async function loadModels(refresh = false): Promise<void> {
   loading.value = true;
   loadError.value = "";
   try {
-    const res = await api<PlaygroundModelsResponse>(`/api/playground/models${refresh ? "?refresh=1" : ""}`);
+    const res = await api<PlaygroundModelsResponse>(
+      `/api/playground/models${refresh ? "?refresh=1" : ""}`,
+    );
     providers.value = res.providers;
     const models = allModels.value;
     if (selected.value) {
@@ -178,11 +188,19 @@ onMounted(() => {
           aria-label="Search models by name"
         />
         <div class="playground-filter-row">
-          <select v-model="providerFilter" class="playground-provider-select" aria-label="Filter by provider">
+          <select
+            v-model="providerFilter"
+            class="playground-provider-select"
+            aria-label="Filter by provider"
+          >
             <option value="">All providers</option>
             <option v-for="g in providers" :key="g.id" :value="g.id">{{ g.label }}</option>
           </select>
-          <select v-model="maxCost" class="playground-cost-select" aria-label="Filter by maximum token cost">
+          <select
+            v-model="maxCost"
+            class="playground-cost-select"
+            aria-label="Filter by maximum token cost"
+          >
             <option value="">Any cost</option>
             <option v-for="t in COST_THRESHOLDS" :key="t" :value="String(t)">
               ≤ {{ fmtPrice(t) }} / 1M
@@ -206,14 +224,16 @@ onMounted(() => {
           class="playground-loading playground-no-match"
         >
           No models match your filters.
-          <button v-if="filtersActive" type="button" class="playground-filter-clear" @click="clearFilters">
+          <button
+            v-if="filtersActive"
+            type="button"
+            class="playground-filter-clear"
+            @click="clearFilters"
+          >
             Clear filters
           </button>
         </div>
-        <div
-          v-else-if="loadedOnce && !allModels.length && !loadError"
-          class="playground-loading"
-        >
+        <div v-else-if="loadedOnce && !allModels.length && !loadError" class="playground-loading">
           No models available right now.
         </div>
 
@@ -233,7 +253,9 @@ onMounted(() => {
               <div class="playground-model-name">{{ m.name }}</div>
               <div class="playground-model-reason">{{ m.reason }}</div>
               <div class="playground-model-meta">
-                <span>{{ fmtPrice(m.inputPricePerM) }} / {{ fmtPrice(m.outputPricePerM) }} per 1M</span>
+                <span
+                  >{{ fmtPrice(m.inputPricePerM) }} / {{ fmtPrice(m.outputPricePerM) }} per 1M</span
+                >
                 <span v-if="m.contextWindow">{{ fmtContext(m.contextWindow) }} ctx</span>
               </div>
             </button>
@@ -262,17 +284,34 @@ onMounted(() => {
           </button>
         </header>
 
-        <div ref="log" class="playground-log" role="log" aria-live="polite" :aria-label="`Conversation with ${selected.name}`">
+        <div
+          ref="log"
+          class="playground-log"
+          role="log"
+          aria-live="polite"
+          :aria-label="`Conversation with ${selected.name}`"
+        >
           <div v-if="!messages.length" class="playground-welcome">
             <strong>Try {{ selected.name }}</strong>
             <p>{{ selected.reason }}</p>
             <div class="playground-starters">
-              <button v-for="p in STARTER_PROMPTS" :key="p" type="button" @click="send(p)">{{ p }}</button>
+              <button v-for="p in STARTER_PROMPTS" :key="p" type="button" @click="send(p)">
+                {{ p }}
+              </button>
             </div>
           </div>
-          <div v-for="(m, i) in messages" :key="i" class="playground-row" :class="`playground-row-${m.role}`">
+          <div
+            v-for="(m, i) in messages"
+            :key="i"
+            class="playground-row"
+            :class="`playground-row-${m.role}`"
+          >
             <div class="playground-bubble" :class="`playground-bubble-${m.role}`">
-              <div v-if="m.role === 'assistant'" class="playground-markdown" v-html="renderMarkdown(m.text)"></div>
+              <div
+                v-if="m.role === 'assistant'"
+                class="playground-markdown"
+                v-html="renderMarkdown(m.text)"
+              ></div>
               <span v-else>{{ m.text }}</span>
             </div>
           </div>
@@ -292,7 +331,9 @@ onMounted(() => {
             :aria-label="`Message ${selected.name}`"
             @keydown="onKeydown"
           ></textarea>
-          <button type="submit" :disabled="!draft.trim() || sending" aria-label="Send message">Send</button>
+          <button type="submit" :disabled="!draft.trim() || sending" aria-label="Send message">
+            Send
+          </button>
         </form>
       </template>
       <div v-else class="playground-empty">
@@ -303,86 +344,472 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.playground{display:flex;gap:16px;padding:16px 18px 20px;height:100%;min-height:0}
-.playground-sidebar{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}
-.playground-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:2px}
-.playground-filters{display:flex;flex-direction:column;gap:8px;flex:none}
-.playground-filters input,.playground-filters select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--panel-solid);color:var(--txt);font:12px var(--font-sans);outline:0;transition:.15s}
-.playground-filters input:focus,.playground-filters select:focus{border-color:var(--border-bright)}
-.playground-filters input::placeholder{color:var(--txt-faint)}
-.playground-filter-row{display:flex;gap:8px}
-.playground-filter-row select{min-width:0;flex:1}
-.playground-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
-.playground-no-match{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.playground-filter-clear{border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer;padding:4px 10px;transition:.15s}
-.playground-filter-clear:hover{border-color:var(--border-bright);color:var(--txt)}
-.playground-error,.playground-loading{font-size:11.5px;color:var(--txt-dim);padding:4px 2px}
-.playground-provider-group{display:flex;flex-direction:column;gap:8px}
-.playground-provider-label{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);margin:4px 2px 0}
-.playground-provider-error{font-size:11px;color:var(--amber);padding:0 2px}
-.playground-skeletons{display:flex;flex-direction:column;gap:8px}
-.playground-skeleton{display:flex;flex-direction:column;gap:6px;padding:11px;border:1px solid var(--border);border-radius:11px;background:var(--panel)}
-.playground-skeleton-line{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--panel) 0%,var(--border) 50%,var(--panel) 100%);background-size:200% 100%;animation:playground-shimmer 1.4s ease-in-out infinite}
-.playground-skeleton-line.w-70{width:70%}
-.playground-skeleton-line.w-90{width:90%}
-.playground-skeleton-line.w-45{width:45%}
-.playground-model-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--txt);cursor:pointer;transition:.15s}
-.playground-model-card:hover{border-color:var(--border-bright)}
-.playground-model-card:disabled{opacity:.5;cursor:default}
-.playground-model-card.active{border-color:var(--cyan);box-shadow:var(--card-glow)}
-.playground-model-name{font-size:12.5px;font-weight:600}
-.playground-model-reason{font-size:11px;color:var(--txt-dim);line-height:1.4}
-.playground-model-meta{display:flex;gap:10px;font:500 10px 'JetBrains Mono',monospace;color:var(--txt-faint)}
-
-.playground-chat{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;background:var(--panel-solid);overflow:hidden}
-.playground-chat-head{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--topbar-bg)}
-.playground-active-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex:none}
-.playground-active-info{display:flex;flex-direction:column;gap:2px;min-width:0}
-.playground-active-info strong{font-size:13px;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.playground-active-info span{font:500 10px 'JetBrains Mono',monospace;color:var(--txt-dim)}
-.playground-clear{margin-left:auto;flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer;transition:.15s}
-.playground-clear:hover{border-color:var(--border-bright);color:var(--txt)}
-.playground-clear:disabled{opacity:.5;cursor:default}
-.playground-log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:16px}
-.playground-empty{flex:1;display:grid;place-items:center;color:var(--txt-dim);font-size:12.5px;padding:40px 16px}
-.playground-welcome{margin:auto 0;text-align:center;padding:22px 12px;color:var(--txt-dim)}
-.playground-welcome strong{display:block;color:var(--txt);font-size:14px;margin-bottom:6px}
-.playground-welcome p{font-size:11.5px;line-height:1.55;max-width:320px;margin:0 auto}
-.playground-starters{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin-top:14px}
-.playground-starters button{border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:var(--panel);color:var(--txt-dim);font:500 10.5px var(--font-sans);cursor:pointer}
-.playground-starters button:hover{border-color:var(--border-bright);color:var(--txt)}
-.playground-row{display:flex}
-.playground-row-user{justify-content:flex-end}
-.playground-bubble{max-width:84%;padding:9px 11px;border-radius:13px;font-size:12.5px;line-height:1.55;overflow-wrap:anywhere}
-.playground-bubble-user{color:var(--btn-primary-color);background:var(--btn-primary-bg);border:1px solid var(--border-bright);border-bottom-right-radius:4px}
-.playground-bubble-assistant{color:var(--txt);background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
-.playground-markdown :deep(p){margin:0 0 7px}
-.playground-markdown :deep(p:last-child){margin-bottom:0}
-.playground-markdown :deep(code){font:10.5px 'JetBrains Mono',monospace;background:var(--md-body-bg);border-radius:4px;padding:1px 4px}
-.playground-markdown :deep(pre){overflow:auto;margin:7px 0;padding:8px;background:var(--md-body-bg);border-radius:7px}
-.playground-markdown :deep(pre code){padding:0;background:none}
-.playground-send-error{align-self:center;font-size:11px;color:var(--red)}
-.playground-thinking{display:flex;gap:4px;align-self:flex-start;padding:9px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
-.playground-thinking span{width:5px;height:5px;border-radius:50%;background:var(--txt-faint);animation:playground-bounce 1.2s infinite}
-.playground-thinking span:nth-child(2){animation-delay:.15s}
-.playground-thinking span:nth-child(3){animation-delay:.3s}
-.playground-compose{display:flex;align-items:flex-end;gap:8px;margin:12px;padding:8px 9px 8px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
-.playground-compose:focus-within{border-color:var(--border-bright);box-shadow:0 0 0 3px var(--cyan-dim)}
-.playground-compose textarea{flex:1;min-height:24px;max-height:120px;overflow-y:auto;resize:none;border:0;outline:0;background:transparent;color:var(--txt);font:12.5px/1.55 var(--font-sans)}
-.playground-compose textarea::placeholder{color:var(--txt-faint)}
-.playground-compose textarea:disabled{opacity:.6}
-.playground-compose button{flex:none;padding:7px 14px;border:0;border-radius:9px;background:var(--btn-primary-bg);color:var(--cyan);font:600 11.5px var(--font-sans);cursor:pointer}
-.playground-compose button:disabled{opacity:.4;cursor:default}
-@keyframes playground-bounce{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-3px);opacity:1}}
-@keyframes playground-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-@media(max-width:860px){
-  .playground{height:auto;flex-direction:column}
-  .playground-sidebar{max-height:320px}
-  .playground-chat{width:100%;min-height:420px}
+.playground {
+  display: flex;
+  gap: 16px;
+  padding: 16px 18px 20px;
+  height: 100%;
+  min-height: 0;
 }
-@media(prefers-reduced-motion:reduce){
-  .playground-thinking span{animation:none}
-  .playground-skeleton-line{animation:none}
+.playground-sidebar {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.playground-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+.playground-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+.playground-filters input,
+.playground-filters select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font: 12px var(--font-sans);
+  outline: 0;
+  transition: 0.15s;
+}
+.playground-filters input:focus,
+.playground-filters select:focus {
+  border-color: var(--border-bright);
+}
+.playground-filters input::placeholder {
+  color: var(--txt-faint);
+}
+.playground-filter-row {
+  display: flex;
+  gap: 8px;
+}
+.playground-filter-row select {
+  min-width: 0;
+  flex: 1;
+}
+.playground-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.playground-no-match {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.playground-filter-clear {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--txt-dim);
+  font: 500 10.5px var(--font-sans);
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: 0.15s;
+}
+.playground-filter-clear:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.playground-error,
+.playground-loading {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  padding: 4px 2px;
+}
+.playground-provider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.playground-provider-label {
+  font:
+    600 10px "JetBrains Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+  margin: 4px 2px 0;
+}
+.playground-provider-error {
+  font-size: 11px;
+  color: var(--amber);
+  padding: 0 2px;
+}
+.playground-skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.playground-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+}
+.playground-skeleton-line {
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--panel) 0%, var(--border) 50%, var(--panel) 100%);
+  background-size: 200% 100%;
+  animation: playground-shimmer 1.4s ease-in-out infinite;
+}
+.playground-skeleton-line.w-70 {
+  width: 70%;
+}
+.playground-skeleton-line.w-90 {
+  width: 90%;
+}
+.playground-skeleton-line.w-45 {
+  width: 45%;
+}
+.playground-model-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+  color: var(--txt);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.playground-model-card:hover {
+  border-color: var(--border-bright);
+}
+.playground-model-card:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.playground-model-card.active {
+  border-color: var(--cyan);
+  box-shadow: var(--card-glow);
+}
+.playground-model-name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.playground-model-reason {
+  font-size: 11px;
+  color: var(--txt-dim);
+  line-height: 1.4;
+}
+.playground-model-meta {
+  display: flex;
+  gap: 10px;
+  font:
+    500 10px "JetBrains Mono",
+    monospace;
+  color: var(--txt-faint);
+}
+
+.playground-chat {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-solid);
+  overflow: hidden;
+}
+.playground-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--topbar-bg);
+}
+.playground-active-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  flex: none;
+}
+.playground-active-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.playground-active-info strong {
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.playground-active-info span {
+  font:
+    500 10px "JetBrains Mono",
+    monospace;
+  color: var(--txt-dim);
+}
+.playground-clear {
+  margin-left: auto;
+  flex: none;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--txt-dim);
+  font: 500 10.5px var(--font-sans);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.playground-clear:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.playground-clear:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.playground-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px;
+}
+.playground-empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--txt-dim);
+  font-size: 12.5px;
+  padding: 40px 16px;
+}
+.playground-welcome {
+  margin: auto 0;
+  text-align: center;
+  padding: 22px 12px;
+  color: var(--txt-dim);
+}
+.playground-welcome strong {
+  display: block;
+  color: var(--txt);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.playground-welcome p {
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.playground-starters {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+}
+.playground-starters button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--panel);
+  color: var(--txt-dim);
+  font: 500 10.5px var(--font-sans);
+  cursor: pointer;
+}
+.playground-starters button:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.playground-row {
+  display: flex;
+}
+.playground-row-user {
+  justify-content: flex-end;
+}
+.playground-bubble {
+  max-width: 84%;
+  padding: 9px 11px;
+  border-radius: 13px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.playground-bubble-user {
+  color: var(--btn-primary-color);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--border-bright);
+  border-bottom-right-radius: 4px;
+}
+.playground-bubble-assistant {
+  color: var(--txt);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.playground-markdown :deep(p) {
+  margin: 0 0 7px;
+}
+.playground-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.playground-markdown :deep(code) {
+  font:
+    10.5px "JetBrains Mono",
+    monospace;
+  background: var(--md-body-bg);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.playground-markdown :deep(pre) {
+  overflow: auto;
+  margin: 7px 0;
+  padding: 8px;
+  background: var(--md-body-bg);
+  border-radius: 7px;
+}
+.playground-markdown :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+.playground-send-error {
+  align-self: center;
+  font-size: 11px;
+  color: var(--red);
+}
+.playground-thinking {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+}
+.playground-thinking span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--txt-faint);
+  animation: playground-bounce 1.2s infinite;
+}
+.playground-thinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.playground-thinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.playground-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 12px;
+  padding: 8px 9px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+}
+.playground-compose:focus-within {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--cyan-dim);
+}
+.playground-compose textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--txt);
+  font: 12.5px/1.55 var(--font-sans);
+}
+.playground-compose textarea::placeholder {
+  color: var(--txt-faint);
+}
+.playground-compose textarea:disabled {
+  opacity: 0.6;
+}
+.playground-compose button {
+  flex: none;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--btn-primary-bg);
+  color: var(--cyan);
+  font: 600 11.5px var(--font-sans);
+  cursor: pointer;
+}
+.playground-compose button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@keyframes playground-bounce {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  35% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+@keyframes playground-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .playground {
+    height: auto;
+    flex-direction: column;
+  }
+  .playground-sidebar {
+    max-height: 320px;
+  }
+  .playground-chat {
+    width: 100%;
+    min-height: 420px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .playground-thinking span {
+    animation: none;
+  }
+  .playground-skeleton-line {
+    animation: none;
+  }
 }
 </style>

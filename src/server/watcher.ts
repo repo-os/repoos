@@ -13,13 +13,7 @@
  * a platform-proof fallback, comparing mtimes to catch missed content changes,
  * new files, and deletions. fs.watch remains the primary, low-latency path.
  */
-import {
-  watch,
-  existsSync,
-  readdirSync,
-  statSync,
-  type FSWatcher,
-} from "node:fs";
+import { watch, existsSync, readdirSync, statSync, type FSWatcher } from "node:fs";
 import { join, extname } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";

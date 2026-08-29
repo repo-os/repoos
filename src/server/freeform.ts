@@ -36,11 +36,18 @@ export function explanationTitle(explanation: string): string {
   if (line.length > 0) {
     return line.length <= 60 ? line : `${line.slice(0, 57).trimEnd()}…`;
   }
-  const flat = explanation.replace(/\s+/g, " ").replace(/\s*---\s*/g, " ").trim();
+  const flat = explanation
+    .replace(/\s+/g, " ")
+    .replace(/\s*---\s*/g, " ")
+    .trim();
   return flat.length <= 60 ? flat || "Untitled task" : `${flat.slice(0, 57).trimEnd()}…`;
 }
 
-function firstMatch<T extends string>(value: unknown, allowed: readonly T[], fallback?: T): T | undefined {
+function firstMatch<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback?: T,
+): T | undefined {
   const v = typeof value === "string" ? value.toLowerCase().trim() : "";
   return allowed.find((a) => a === v) ?? fallback;
 }
@@ -49,7 +56,8 @@ function firstMatch<T extends string>(value: unknown, allowed: readonly T[], fal
  * The control-token names a leaked tool call is built from. Kept as bare names
  * so every dialect below is matched by one pattern.
  */
-const TOOL_TOKEN_NAMES = "tool_calls?|tool\u2581calls?|function_calls|function_results|invoke|parameter";
+const TOOL_TOKEN_NAMES =
+  "tool_calls?|tool\u2581calls?|function_calls|function_results|invoke|parameter";
 
 /**
  * A line that is nothing but a tool-call control token. Models that render

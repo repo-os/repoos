@@ -25,7 +25,13 @@ export interface TestRunState {
 }
 
 export class TestRunManager {
-  private state: TestRunState = { running: false, startedAt: null, finishedAt: null, code: null, output: "" };
+  private state: TestRunState = {
+    running: false,
+    startedAt: null,
+    finishedAt: null,
+    code: null,
+    output: "",
+  };
   private proc: ChildProcess | null = null;
 
   getState(): TestRunState {
@@ -47,7 +53,13 @@ export class TestRunManager {
     if (this.state.running) {
       return { ok: false, reason: "a test run is already in progress" };
     }
-    this.state = { running: true, startedAt: new Date().toISOString(), finishedAt: null, code: null, output: "" };
+    this.state = {
+      running: true,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      code: null,
+      output: "",
+    };
 
     const proc = spawn("bun", ["run", "test"], {
       cwd: config.root,

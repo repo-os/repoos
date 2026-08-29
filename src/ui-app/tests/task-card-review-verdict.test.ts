@@ -48,7 +48,16 @@ const makeTask = (over: Partial<Task> = {}): Task => ({
 });
 
 function report(markdown: string) {
-  return { id: "0001", at: new Date().toISOString(), agent: "reviewer", cli: "opencode", model: "default", branch: "feat/x", state: "ok" as const, markdown };
+  return {
+    id: "0001",
+    at: new Date().toISOString(),
+    agent: "reviewer",
+    cli: "opencode",
+    model: "default",
+    branch: "feat/x",
+    state: "ok" as const,
+    markdown,
+  };
 }
 
 function mountCard(task: Task) {
@@ -61,7 +70,14 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     const task = makeTask();
-    repo.reviews = { "0001": { running: false, enabled: true, lines: [], report: report("## Verdict\ngood to go.") } };
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: report("## Verdict\ngood to go."),
+      },
+    };
 
     const wrapper = mountCard(task);
 
@@ -76,7 +92,14 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     const task = makeTask();
-    repo.reviews = { "0001": { running: false, enabled: true, lines: [], report: report("## Verdict\nneeds some work — a few real defects.") } };
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: report("## Verdict\nneeds some work — a few real defects."),
+      },
+    };
 
     const wrapper = mountCard(task);
 
@@ -92,7 +115,14 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     const task = makeTask();
-    repo.reviews = { "0001": { running: false, enabled: true, lines: [], report: report("## Verdict\nback to the drawing board.") } };
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: report("## Verdict\nback to the drawing board."),
+      },
+    };
 
     const wrapper = mountCard(task);
 

@@ -111,9 +111,9 @@ const steps: { label: string; body: string; cmd?: string }[] = [
         <div class="tunnel-drawer-title">
           <DialogTitle class="tunnel-title">Remote validation runner</DialogTitle>
           <DialogDescription class="tunnel-description">
-            Status: <strong>{{ statusLabel }}</strong>. Runs <code>bun run build</code> +
-            <code>bun run test</code> on a disposable Hetzner VM so the close-out gate isn't
-            starved of memory on this machine.
+            Status: <strong>{{ statusLabel }}</strong
+            >. Runs <code>bun run build</code> + <code>bun run test</code> on a disposable Hetzner
+            VM so the close-out gate isn't starved of memory on this machine.
           </DialogDescription>
         </div>
         <DialogClose class="close-x" aria-label="Close remote validation setup">
@@ -123,23 +123,25 @@ const steps: { label: string; body: string; cmd?: string }[] = [
 
       <div class="drawer-body tunnel-drawer-body">
         <div class="tunnel-notice">
-          Enabling this sends a git bundle of the repo to Hetzner for each close-out. The
-          failure output shown in RepoOS is credential-redacted, but the working tree is not —
-          don't enable on a repo with secrets committed in-tree.
+          Enabling this sends a git bundle of the repo to Hetzner for each close-out. The failure
+          output shown in RepoOS is credential-redacted, but the working tree is not — don't enable
+          on a repo with secrets committed in-tree.
         </div>
 
         <div class="tunnel-form-grid" style="grid-template-columns: 1fr auto; gap: 10px 16px">
           <label style="display: flex; flex-direction: column; gap: 2px">
             Enable remote validation
-            <span class="tunnel-help" style="margin: 0">Requires a server restart to take effect.</span>
+            <span class="tunnel-help" style="margin: 0"
+              >Requires a server restart to take effect.</span
+            >
           </label>
           <Switch :checked="enabled" @update:checked="(v: boolean) => (enabled = v)" />
 
           <label style="display: flex; flex-direction: column; gap: 2px">
             Fall back to local on infra failure
             <span class="tunnel-help" style="margin: 0">
-              Off (recommended): if the runner is unreachable the task stays in review for
-              retry. On: run the full gate locally instead.
+              Off (recommended): if the runner is unreachable the task stays in review for retry.
+              On: run the full gate locally instead.
             </span>
           </label>
           <Switch
@@ -197,7 +199,12 @@ const steps: { label: string; body: string; cmd?: string }[] = [
 
           <div class="tunnel-section-heading" style="margin-top: 16px">
             <h3>repoos.toml</h3>
-            <Button variant="outline" size="sm" aria-label="Copy repoos.toml block" @click="copy(tomlBlock)">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Copy repoos.toml block"
+              @click="copy(tomlBlock)"
+            >
               <Check v-if="copied === tomlBlock" class="size-[14px]" />
               <Clipboard v-else class="size-[14px]" />
               {{ copied === tomlBlock ? "Copied" : "Copy" }}
@@ -207,7 +214,12 @@ const steps: { label: string; body: string; cmd?: string }[] = [
 
           <div class="tunnel-section-heading" style="margin-top: 16px">
             <h3>.env (secrets — never commit)</h3>
-            <Button variant="outline" size="sm" aria-label="Copy .env block" @click="copy(envBlock)">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Copy .env block"
+              @click="copy(envBlock)"
+            >
               <Check v-if="copied === envBlock" class="size-[14px]" />
               <Clipboard v-else class="size-[14px]" />
               {{ copied === envBlock ? "Copied" : "Copy" }}

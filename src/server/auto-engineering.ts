@@ -59,7 +59,7 @@ function autoEngineeringPrompt(readyTasks: Task[], availableSlots: number): stri
     '{"selected": ["0123", "0124"], "rationale": "Starting the most impactful high-priority tasks"}',
     "",
     "- `selected`: array of task IDs to start (must not exceed available slots)",
-    '- `rationale`: one-sentence explanation of why these were chosen',
+    "- `rationale`: one-sentence explanation of why these were chosen",
   ].join("\n");
 }
 

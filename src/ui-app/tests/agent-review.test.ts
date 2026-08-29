@@ -159,7 +159,11 @@ async function getReview(server: ServerHandle, id: string): Promise<ReviewRespon
   return (await res.json()) as ReviewResponse;
 }
 
-async function waitForReviewRunning(server: ServerHandle, id: string, running: boolean): Promise<void> {
+async function waitForReviewRunning(
+  server: ServerHandle,
+  id: string,
+  running: boolean,
+): Promise<void> {
   const deadline = Date.now() + 10_000;
   while ((await getReview(server, id)).running !== running) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for review running=${running}`);
@@ -177,10 +181,7 @@ async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<
 }
 
 /** Run `fn` with the fixture's fake binaries on PATH and the server booted. */
-async function withServer(
-  fx: Fixture,
-  fn: (server: ServerHandle) => Promise<void>,
-): Promise<void> {
+async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<void>): Promise<void> {
   const oldPath = process.env.PATH ?? "";
   process.env.PATH = `${fx.bin}:${oldPath}`;
   process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -356,9 +357,13 @@ ${printReport}`,
       const deadline = Date.now() + 10_000;
       while (true) {
         const index = await api(server, "GET", "/api/index");
-        indexed = (index.body.tasks as Array<Record<string, unknown>>).find((t) => t.id === task.id);
-        if ((indexed?.automaticReview as { running?: boolean } | undefined)?.running === true) break;
-        if (Date.now() > deadline) throw new Error("timed out waiting for task index to report review running");
+        indexed = (index.body.tasks as Array<Record<string, unknown>>).find(
+          (t) => t.id === task.id,
+        );
+        if ((indexed?.automaticReview as { running?: boolean } | undefined)?.running === true)
+          break;
+        if (Date.now() > deadline)
+          throw new Error("timed out waiting for task index to report review running");
         await new Promise((resolve) => setTimeout(resolve, 25));
       }
       expect(indexed?.automaticReview).toEqual({ running: true, enabled: true });
@@ -448,7 +453,9 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
 
       // The fresh run replaces the report and drops the prior conversation.
       await waitForAsync(
-        async () => (await getReview(server, task.id)).review?.markdown.includes("SECOND RUN MARKER") ?? false,
+        async () =>
+          (await getReview(server, task.id)).review?.markdown.includes("SECOND RUN MARKER") ??
+          false,
         "the fresh report replaces the old one",
       );
       const served = await getReview(server, task.id);
@@ -485,13 +492,10 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       const task = await taskWithWorktree(server, fx, "Auto-bounce status");
       const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
       expect(started.status).toBe(200);
-      await waitForAsync(
-        async () => {
-          const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
-          return Array.isArray(output.body.lines) && output.body.lines.length > 0;
-        },
-        "an engineer session is available to resume",
-      );
+      await waitForAsync(async () => {
+        const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+        return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+      }, "an engineer session is available to resume");
       await waitForAsync(async () => {
         const response = await fetch(`${server.url}/api/agents/running`);
         const running = (await response.json()) as { tasks: Array<{ id: string }> };
@@ -500,7 +504,10 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
       expect(patched.status).toBe(200);
 
-      await waitForAsync(async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active", "auto-bounce moves task to active");
+      await waitForAsync(
+        async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active",
+        "auto-bounce moves task to active",
+      );
 
       const taskFile = readFileSync(task.absPath, "utf8");
       expect(taskFile).toMatch(/^status: active$/m);
@@ -508,7 +515,9 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       // The passing auto-review run also counted as one full review pass.
       expect(taskFile).toMatch(/^review_passes: 1$/m);
       expect(taskFile).toContain("status review→active");
-      expect(spawns(fx).some((args) => args.join(" ").includes("automated review found"))).toBe(true);
+      expect(spawns(fx).some((args) => args.join(" ").includes("automated review found"))).toBe(
+        true,
+      );
       await new Promise((resolve) => setTimeout(resolve, 250));
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: active$/m);
     });
@@ -545,7 +554,9 @@ else process.stdout.write(${JSON.stringify(reply)} + "\\n");
       await waitForReviewRunning(server, task.id, false);
 
       // Reject an empty follow-up before any process is spawned.
-      const empty = await api(server, "POST", `/api/tasks/${task.id}/review/message`, { text: "  " });
+      const empty = await api(server, "POST", `/api/tasks/${task.id}/review/message`, {
+        text: "  ",
+      });
       expect(empty.status).toBe(400);
 
       const sent = await api(server, "POST", `/api/tasks/${task.id}/review/message`, {
@@ -569,7 +580,9 @@ else process.stdout.write(${JSON.stringify(reply)} + "\\n");
 
       const served = await getReview(server, task.id);
       expect(
-        served.lines.some((l) => l.type === "human" && l.text === "why did you flag the empty list?"),
+        served.lines.some(
+          (l) => l.type === "human" && l.text === "why did you flag the empty list?",
+        ),
       ).toBe(true);
       expect(served.lines.some((l) => l.d?.includes("early return"))).toBe(true);
 

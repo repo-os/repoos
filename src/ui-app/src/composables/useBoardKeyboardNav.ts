@@ -114,7 +114,9 @@ export function useBoardKeyboardNav({
     const anchor = els[currentIndex()] ?? els[0];
     if (!anchor) return 8;
     const cardH = anchor.getBoundingClientRect().height || 120;
-    const viewH = (container && container.clientHeight) || (typeof window !== "undefined" ? window.innerHeight : 0);
+    const viewH =
+      (container && container.clientHeight) ||
+      (typeof window !== "undefined" ? window.innerHeight : 0);
     if (!viewH) return 8;
     return Math.max(1, Math.floor(viewH / cardH));
   }

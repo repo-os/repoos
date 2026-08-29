@@ -53,7 +53,12 @@ describe("moot close-out failure reconciliation (#0289)", () => {
       coordinator.enqueue({ id: "0289", branch: "feat/0289-already-done" } as any);
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+        {
+          root,
+          workDir: "work",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        } as RepoOSConfig,
         coordinator,
       );
 
@@ -84,7 +89,12 @@ describe("moot close-out failure reconciliation (#0289)", () => {
       coordinator.enqueue({ id: "0290", branch: "feat/0290-in-review" } as any);
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work", defaultStatus: "inbox", defaultAssignee: "unassigned" } as RepoOSConfig,
+        {
+          root,
+          workDir: "work",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        } as RepoOSConfig,
         coordinator,
       );
 

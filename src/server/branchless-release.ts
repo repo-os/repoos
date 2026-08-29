@@ -28,8 +28,14 @@ export interface CheckResult {
 export function runCheckOnRoot(root: string): CheckResult {
   const localCli = join(root, "dist", "cli", "index.js");
   const candidates: string[][] = existsSync(localCli)
-    ? [[process.execPath, localCli, "check"], ["repoos", "check"]]
-    : [["repoos", "check"], ["bun", "run", "repoos", "check"]];
+    ? [
+        [process.execPath, localCli, "check"],
+        ["repoos", "check"],
+      ]
+    : [
+        ["repoos", "check"],
+        ["bun", "run", "repoos", "check"],
+      ];
   let last: ReturnType<typeof spawnSync> | null = null;
   for (const [cmd, ...args] of candidates) {
     const r = spawnSync(cmd, args, { cwd: root, encoding: "utf8", timeout: 600_000 });

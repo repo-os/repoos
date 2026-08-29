@@ -17,26 +17,15 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import {
-  AgentRunner,
-  PREVIEW_REQUEST_SIGNAL,
-  type AgentPreviewRequest,
-} from "../../server/agents";
+import { AgentRunner, PREVIEW_REQUEST_SIGNAL, type AgentPreviewRequest } from "../../server/agents";
 import { startServer, type ServerHandle } from "../../server/server";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 
 /** Plain-line text of an entry (legacy `{s,d}` or sys) — narrows the union. */
-const dOf = (entry: AgentOutputEntry): string | undefined =>
-  (entry as { d?: string }).d;
+const dOf = (entry: AgentOutputEntry): string | undefined => (entry as { d?: string }).d;
 
 const PREVIEW_FAKEBIN = `#!/usr/bin/env node
 process.stdout.write("${PREVIEW_REQUEST_SIGNAL}\\n");
@@ -148,11 +137,16 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       const cwd = realpathSync(fx.bin);
       runner.start(TASK, "feat/x", agent("opencode"), { cwd });
-      await waitForAsync(() => Promise.resolve(requests.length === 1), "preview request after clean turn");
+      await waitForAsync(
+        () => Promise.resolve(requests.length === 1),
+        "preview request after clean turn",
+      );
 
       const request = requests[0];
       expect(request).toMatchObject({ taskId: "0001", branch: "feat/x", workdir: cwd });
@@ -176,7 +170,9 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitForAsync(() => Promise.resolve(requests.length === 1), "preview request");
@@ -194,7 +190,9 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitForAsync(() => Promise.resolve(requests.length === 1), "preview request");
@@ -212,7 +210,9 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       const cwd = join(fx.bin, "real");
       mkdirSync(cwd, { recursive: true });
@@ -234,7 +234,9 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitForAsync(() => Promise.resolve(requests.length === 1), "first preview request");
@@ -259,7 +261,9 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       writeFileSync(join(fx.bin, "opencode"), FAIL_FAKEBIN, { mode: 0o755 });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
@@ -281,11 +285,16 @@ describe("runner preview request capability (#0121)", () => {
     try {
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       writeFileSync(join(fx.bin, "codex"), CODEX_PREVIEW_FAKEBIN, { mode: 0o755 });
       runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
-      await waitForAsync(() => Promise.resolve(requests.length === 1), "codex JSON preview request");
+      await waitForAsync(
+        () => Promise.resolve(requests.length === 1),
+        "codex JSON preview request",
+      );
 
       expect(requests[0]).toMatchObject({ taskId: "0001", branch: "feat/x" });
       expect(runner.validatePreview(requests[0])).toBe(true);
@@ -310,7 +319,9 @@ process.stdout.write("done\\n");
       );
       const requests: AgentPreviewRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: (request) => { requests.push(request); },
+        onPreviewRequest: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitForAsync(() => Promise.resolve(!runner.isRunning("0001")), "turn exit");
@@ -329,13 +340,19 @@ process.stdout.write("done\\n");
     const oldPath = withFakePath(fx);
     try {
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onPreviewRequest: async () => { throw new Error("preview start exploded"); },
+        onPreviewRequest: async () => {
+          throw new Error("preview start exploded");
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitForAsync(
-        () => Promise.resolve(
-          runner.output("0001")!.lines.map(dOf).some((d) => (d ?? "").includes("✗ managed preview failed: preview start exploded")),
-        ),
+        () =>
+          Promise.resolve(
+            runner
+              .output("0001")!
+              .lines.map(dOf)
+              .some((d) => (d ?? "").includes("✗ managed preview failed: preview start exploded")),
+          ),
         "preview failure entry",
       );
     } finally {
@@ -429,72 +446,74 @@ async function transcript(server: ServerHandle, id: string): Promise<string[]> {
 }
 
 describe("sandboxed preview request E2E (#0121)", () => {
-  it(
-    "a fake agent with no localhost access requests and receives a server-verified preview",
-    async () => {
-      const fx = makeE2eFixture();
-      const oldPath = process.env.PATH ?? "";
-      process.env.PATH = `${fx.bin}:${oldPath}`;
-      const mainPort = await reservePort();
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: mainPort });
-      try {
-        // Launch the fake agent through the real server. The agent never opens
-        // a socket — it only emits the signal and exits.
-        const startRes = await api(server, "POST", "/api/tasks/0001/start");
-        expect(startRes.status).toBe(200);
-        expect((startRes.body.spawn as { ok?: boolean } | undefined)?.ok).toBe(true);
+  it("a fake agent with no localhost access requests and receives a server-verified preview", async () => {
+    const fx = makeE2eFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    const mainPort = await reservePort();
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: mainPort });
+    try {
+      // Launch the fake agent through the real server. The agent never opens
+      // a socket — it only emits the signal and exits.
+      const startRes = await api(server, "POST", "/api/tasks/0001/start");
+      expect(startRes.status).toBe(200);
+      expect((startRes.body.spawn as { ok?: boolean } | undefined)?.ok).toBe(true);
 
-        // Server-side: capability validated, preview started + probed, and the
-        // trusted progress streamed into the transcript.
-        await waitForAsync(
-          () => transcript(server, "0001").then((lines) => lines.some((l) => l.includes("✓ Managed preview ready:"))),
-          "preview ready transcript entry",
-        );
-        await waitForAsync(
-          () => transcript(server, "0001").then((lines) => lines.some((l) => l.includes("✓ Server-side preview probe passed"))),
-          "server-side probe transcript entry",
-        );
+      // Server-side: capability validated, preview started + probed, and the
+      // trusted progress streamed into the transcript.
+      await waitForAsync(
+        () =>
+          transcript(server, "0001").then((lines) =>
+            lines.some((l) => l.includes("✓ Managed preview ready:")),
+          ),
+        "preview ready transcript entry",
+      );
+      await waitForAsync(
+        () =>
+          transcript(server, "0001").then((lines) =>
+            lines.some((l) => l.includes("✓ Server-side preview probe passed")),
+          ),
+        "server-side probe transcript entry",
+      );
 
-        const lines = await transcript(server, "0001");
-        expect(lines).toContain("✓ agent requested a managed preview");
-        expect(lines.some((l) => l.includes("Server-owned preview requested"))).toBe(true);
+      const lines = await transcript(server, "0001");
+      expect(lines).toContain("✓ agent requested a managed preview");
+      expect(lines.some((l) => l.includes("Server-owned preview requested"))).toBe(true);
 
-        const readyLine = lines.find((l) => l.includes("✓ Managed preview ready:"))!;
-        const url = readyLine.split("✓ Managed preview ready:")[1].trim();
-        expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+      const readyLine = lines.find((l) => l.includes("✓ Managed preview ready:"))!;
+      const url = readyLine.split("✓ Managed preview ready:")[1].trim();
+      expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
 
-        // Exactly one request fired for the run (idempotent single-fire).
-        expect(lines.filter((l) => l.includes("✓ Managed preview ready:")).length).toBe(1);
+      // Exactly one request fired for the run (idempotent single-fire).
+      expect(lines.filter((l) => l.includes("✓ Managed preview ready:")).length).toBe(1);
 
-        // The preview actually serves the worktree.
-        expect((await (await fetch(`${url}/api/health`)).json())).toMatchObject({ ok: true });
+      // The preview actually serves the worktree.
+      expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
 
-        // The task endpoint surfaces the live preview for the human.
-        const task = await api(server, "GET", "/api/tasks/0001");
-        expect((task.body.preview as { url?: string } | null)?.url).toBe(url);
+      // The task endpoint surfaces the live preview for the human.
+      const task = await api(server, "GET", "/api/tasks/0001");
+      expect((task.body.preview as { url?: string } | null)?.url).toBe(url);
 
-        // Cleanup: leaving `active` reaps the preview and it becomes unreachable.
-        // active -> ready now requires the Abandon action (#0296) rather than a
-        // bare PATCH — the transition stops the agent, which a raw status write
-        // never did (that gap was the point of gating it).
-        const patch = await api(server, "POST", "/api/tasks/0001/abandon");
-        expect(patch.status).toBe(200);
-        await waitForAsync(async () => {
-          try {
-            await fetch(`${url}/api/health`);
-            return false;
-          } catch {
-            return true;
-          }
-        }, "preview reaped after status change");
-        const after = await api(server, "GET", "/api/tasks/0001");
-        expect(after.body.preview).toBeNull();
-      } finally {
-        await server.close();
-        process.env.PATH = oldPath;
-        fx.clean();
-      }
-    },
-    120_000,
-  );
+      // Cleanup: leaving `active` reaps the preview and it becomes unreachable.
+      // active -> ready now requires the Abandon action (#0296) rather than a
+      // bare PATCH — the transition stops the agent, which a raw status write
+      // never did (that gap was the point of gating it).
+      const patch = await api(server, "POST", "/api/tasks/0001/abandon");
+      expect(patch.status).toBe(200);
+      await waitForAsync(async () => {
+        try {
+          await fetch(`${url}/api/health`);
+          return false;
+        } catch {
+          return true;
+        }
+      }, "preview reaped after status change");
+      const after = await api(server, "GET", "/api/tasks/0001");
+      expect(after.body.preview).toBeNull();
+    } finally {
+      await server.close();
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  }, 120_000);
 });

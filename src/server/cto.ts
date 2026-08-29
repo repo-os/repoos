@@ -259,7 +259,9 @@ export class CTOManager {
     };
     this.write(report);
     this.appendMarker(
-      state === "ok" ? "✓ CTO monitoring complete" : `✗ CTO run failed: ${result.error ?? "no report"}`,
+      state === "ok"
+        ? "✓ CTO monitoring complete"
+        : `✗ CTO run failed: ${result.error ?? "no report"}`,
     );
     this.persistSession();
     this.recordRun(agent, result, report.at, state === "ok");
@@ -403,7 +405,8 @@ export class CTOManager {
       });
       if (current.status !== "active") return false;
 
-      const note = "CTO nudge: sent engineer a completion reminder after 5m without worktree activity";
+      const note =
+        "CTO nudge: sent engineer a completion reminder after 5m without worktree activity";
       recordChange(current, note);
       writeFileSync(task.absPath, serializeTask(current));
       commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record CTO nudge`);
@@ -411,7 +414,9 @@ export class CTOManager {
       this.emit({ type: "task.corrected", id: current.id, path: current.path, note, at: now() });
       return true;
     } catch (err) {
-      console.error(`[repoos] CTO: failed to record nudge for #${task.id}: ${(err as Error).message}`);
+      console.error(
+        `[repoos] CTO: failed to record nudge for #${task.id}: ${(err as Error).message}`,
+      );
       return false;
     }
   }
@@ -434,7 +439,12 @@ export class CTOManager {
    * Only call this after human confirmation or verification that the task is
    * actually stuck (not just slow). The action is logged to task activity.
    */
-  moveTaskStatus(taskAbsPath: string, fromStatus: string, toStatus: string, reason: string): boolean {
+  moveTaskStatus(
+    taskAbsPath: string,
+    fromStatus: string,
+    toStatus: string,
+    reason: string,
+  ): boolean {
     try {
       const content = readFileSync(taskAbsPath, "utf8");
       const task = parseTask({
@@ -546,7 +556,12 @@ ${body}
    * type, real wall-clock elapsed time, and any CLI-reported tokens/cost.
    * Best-effort — never crashes the monitor.
    */
-  private recordRun(agent: Agent, result: PromptResult, completedAt: string, success: boolean): void {
+  private recordRun(
+    agent: Agent,
+    result: PromptResult,
+    completedAt: string,
+    success: boolean,
+  ): void {
     if (!this.db) return;
     try {
       const sessionId = `cto:${completedAt}`;

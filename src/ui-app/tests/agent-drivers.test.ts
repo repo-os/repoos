@@ -8,13 +8,19 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, extractUsage, HANDOFF_READY_SIGNAL, PREVIEW_REQUEST_SIGNAL, promptCommand, runPrompt } from "../../server/agents";
+import {
+  AgentRunner,
+  extractUsage,
+  HANDOFF_READY_SIGNAL,
+  PREVIEW_REQUEST_SIGNAL,
+  promptCommand,
+  runPrompt,
+} from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
 import { waitFor } from "./helpers";
 
 /** Plain-line text of an entry (legacy `{s,d}` or sys) — narrows the union. */
-const dOf = (entry: AgentOutputEntry): string | undefined =>
-  (entry as { d?: string }).d;
+const dOf = (entry: AgentOutputEntry): string | undefined => (entry as { d?: string }).d;
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
@@ -204,9 +210,7 @@ describe("qwen code driver", () => {
       const [run] = spawns(fx);
       expect(run.args[0]).toBe("-p");
       expect(run.args[1]).toContain("Task #0001");
-      expect(run.args).toEqual(
-        expect.arrayContaining(["--output-format", "stream-json"]),
-      );
+      expect(run.args).toEqual(expect.arrayContaining(["--output-format", "stream-json"]));
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       const resumed = runner.send("0001", "continue the work", agent("qwen code"));
@@ -281,9 +285,7 @@ describe("codex driver", () => {
       const [run] = spawns(fx);
       expect(run.args[0]).toBe("exec");
       expect(run.args[1]).toContain("Task #0001");
-      expect(run.args).toEqual(
-        expect.arrayContaining(["--json", "--sandbox", "workspace-write"]),
-      );
+      expect(run.args).toEqual(expect.arrayContaining(["--json", "--sandbox", "workspace-write"]));
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
@@ -406,24 +408,47 @@ describe("claude code driver", () => {
         await waitFor(() => !runner.isRunning("0001"), "Copilot first-turn exit");
 
         expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
-        expect(runner.output("0001")!.lines).toEqual(expect.arrayContaining([
-          expect.objectContaining({ type: "text", text: "Copilot response" }),
-          expect.objectContaining({ type: "tool", tool: "shell", input: "git status", output: "clean", state: "completed" }),
-        ]));
+        expect(runner.output("0001")!.lines).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ type: "text", text: "Copilot response" }),
+            expect.objectContaining({
+              type: "tool",
+              tool: "shell",
+              input: "git status",
+              output: "clean",
+              state: "completed",
+            }),
+          ]),
+        );
         const [run] = spawns(fx);
-        expect(run.args).toEqual(expect.arrayContaining([
-          "-p", "--output-format", "json", "--no-ask-user",
-          "--allow-tool", "write", "shell(git:*)",
-        ]));
-        expect(run.args).not.toEqual(expect.arrayContaining(["--allow-all", "--allow-all-tools", "--yolo"]));
+        expect(run.args).toEqual(
+          expect.arrayContaining([
+            "-p",
+            "--output-format",
+            "json",
+            "--no-ask-user",
+            "--allow-tool",
+            "write",
+            "shell(git:*)",
+          ]),
+        );
+        expect(run.args).not.toEqual(
+          expect.arrayContaining(["--allow-all", "--allow-all-tools", "--yolo"]),
+        );
         expect(run.cwd).toBe(realpathSync(cwd));
 
         runner.send("0001", "continue the work", agent("github copilot"));
         await waitFor(() => spawns(fx).length === 2, "Copilot resume spawn");
         const [, resume] = spawns(fx);
-        expect(resume.args).toEqual(expect.arrayContaining([
-          "-p", "continue the work", "--resume=copilot-session-123", "--output-format", "json",
-        ]));
+        expect(resume.args).toEqual(
+          expect.arrayContaining([
+            "-p",
+            "continue the work",
+            "--resume=copilot-session-123",
+            "--output-format",
+            "json",
+          ]),
+        );
       } finally {
         process.env.PATH = oldPath;
         delete process.env.REPOOS_FAKEBIN_LOG;
@@ -568,7 +593,7 @@ process.stdout.write("Test problem description\\x1b[0m\\n");
       // Verify ANSI codes are stripped but box-drawing characters remain.
       expect(result.output).not.toContain("\x1b");
       expect(result.output).toContain("> ━━━━━━━━━━━━━━━━");
-      expect(result.output).toContain("id: \"0001\"");
+      expect(result.output).toContain('id: "0001"');
       expect(result.output).toContain("## Problem");
       expect(result.output).not.toContain("[38;5;141m");
       expect(result.output).not.toContain("[0m");
@@ -625,7 +650,9 @@ describe("structured runner handoff (#0094)", () => {
     try {
       const requests: unknown[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onHandoff: (request) => { requests.push(request); },
+        onHandoff: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
@@ -644,7 +671,9 @@ describe("structured runner handoff (#0094)", () => {
     try {
       const requests: unknown[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onHandoff: (request) => { requests.push(request); },
+        onHandoff: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
       await waitFor(() => requests.length === 1, "Codex JSON handoff request");
@@ -661,9 +690,12 @@ describe("structured runner handoff (#0094)", () => {
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
     process.env.REPOOS_FAKEBIN_HANDOFF = "1";
     try {
-      const requests: Array<{ taskId: string; runId: string; branch: string; workdir: string }> = [];
+      const requests: Array<{ taskId: string; runId: string; branch: string; workdir: string }> =
+        [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onHandoff: (request) => { requests.push(request); },
+        onHandoff: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
       await waitFor(() => requests.length === 1, "initial handoff request");
@@ -691,7 +723,9 @@ describe("structured runner handoff (#0094)", () => {
     try {
       const requests: unknown[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
-        onHandoff: (request) => { requests.push(request); },
+        onHandoff: (request) => {
+          requests.push(request);
+        },
       });
       runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0001"), "failed turn exit");
@@ -742,7 +776,7 @@ describe("server-owned previews in the mission and spawn env (#0096/#0121)", () 
       expect(mission).not.toContain("To verify a UI change, request THIS task's managed preview");
       // The old mandatory localhost curl is gone from the mission — the signal
       // replaces it, so an agent is never told to reach the control plane.
-      expect(mission).not.toContain('curl -s -X POST');
+      expect(mission).not.toContain("curl -s -X POST");
       expect(mission).not.toContain('"${REPOOS_API_URL}/api/tasks/${REPOOS_TASK_ID}/preview"');
       expect(mission).not.toContain("--port 7171");
 
@@ -769,7 +803,9 @@ describe("server-owned previews in the mission and spawn env (#0096/#0121)", () 
 describe("extractUsage (0080)", () => {
   it("reads token/cost fields from a JSON usage payload", () => {
     expect(
-      extractUsage(JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.0021 })),
+      extractUsage(
+        JSON.stringify({ usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.0021 }),
+      ),
     ).toEqual({ inputTokens: 10, outputTokens: 5, totalTokens: 15, costUsd: 0.0021 });
   });
 
@@ -940,7 +976,11 @@ setTimeout(() => {
       await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
       expect(runner.isRunning("0001")).toBe(true); // stalled is never "dead"
 
-      await waitFor(() => runner.stats("0001").stalled === false, "stall flag cleared by output", 2000);
+      await waitFor(
+        () => runner.stats("0001").stalled === false,
+        "stall flag cleared by output",
+        2000,
+      );
       await waitFor(() => !runner.isRunning("0001"), "turn exit");
       expect(runner.stats("0001").stalled).toBe(false);
     } finally {

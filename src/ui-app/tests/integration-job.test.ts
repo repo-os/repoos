@@ -60,38 +60,43 @@ describe("integration jobs (0118)", () => {
   it("should be idempotent: repeated enqueue returns existing job", () => {
     const coordinator = createJobCoordinator(testRepo);
 
-    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any);
-    const job1Again = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any);
+    const job1 = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any);
+    const job1Again = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any);
 
     expect(job1!.enqueuedAt).toBe(job1Again!.enqueuedAt);
     expect(coordinator.allJobs()).toHaveLength(1);
   });
 
-  it(
-    "removeJob actually deletes the job file from disk (#0271 follow-up, confirmed live bug: task #0258)",
-    () => {
-      // removeJob() used a bare require("fs") — this package is "type":
-      // "module", so require is undefined at runtime in the compiled dist/
-      // output; the ReferenceError was silently swallowed by the try/catch,
-      // so the file was NEVER actually deleted. A moot close-out job (task
-      // already done, branch/worktree gone) kept getting re-picked-up and
-      // re-processed forever — a live, CPU-burning infinite loop in
-      // production (task #0258) until someone noticed. This test asserts
-      // the actual on-disk effect, not just that the call doesn't throw —
-      // that's what let the bug ship silently in the first place (vitest's
-      // own module loader provides a working require(), so calling
-      // removeJob() under test never reproduced the ReferenceError itself).
-      const coordinator = createJobCoordinator(testRepo);
-      coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
-      const path = join(testRepo, ".repoos", "integration-jobs", "task1.json");
-      expect(existsSync(path)).toBe(true);
+  it("removeJob actually deletes the job file from disk (#0271 follow-up, confirmed live bug: task #0258)", () => {
+    // removeJob() used a bare require("fs") — this package is "type":
+    // "module", so require is undefined at runtime in the compiled dist/
+    // output; the ReferenceError was silently swallowed by the try/catch,
+    // so the file was NEVER actually deleted. A moot close-out job (task
+    // already done, branch/worktree gone) kept getting re-picked-up and
+    // re-processed forever — a live, CPU-burning infinite loop in
+    // production (task #0258) until someone noticed. This test asserts
+    // the actual on-disk effect, not just that the call doesn't throw —
+    // that's what let the bug ship silently in the first place (vitest's
+    // own module loader provides a working require(), so calling
+    // removeJob() under test never reproduced the ReferenceError itself).
+    const coordinator = createJobCoordinator(testRepo);
+    coordinator.enqueue({ id: "task1", branch: "feat/task1" } as any);
+    const path = join(testRepo, ".repoos", "integration-jobs", "task1.json");
+    expect(existsSync(path)).toBe(true);
 
-      coordinator.removeJob("task1");
+    coordinator.removeJob("task1");
 
-      expect(existsSync(path)).toBe(false);
-      expect(coordinator.getJob("task1")).toBeNull();
-    },
-  );
+    expect(existsSync(path)).toBe(false);
+    expect(coordinator.getJob("task1")).toBeNull();
+  });
 
   it("re-enqueues fresh when a DONE job's task is no longer done (0195)", async () => {
     // Nothing blocks a task leaving `done` via a plain PATCH (e.g. a manual
@@ -100,7 +105,11 @@ describe("integration jobs (0118)", () => {
     // done" returned the stale finished job with ok:true and started nothing.
     const coordinator = createJobCoordinator(testRepo);
 
-    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    const job1 = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any)!;
     coordinator.updateJob("task1", { phase: "done" });
 
     // Task reopened: back to review, same branch, no new job yet.
@@ -108,7 +117,11 @@ describe("integration jobs (0118)", () => {
     expect(stale.phase).toBe("done");
 
     await new Promise((r) => setTimeout(r, 5));
-    const retried = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    const retried = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any)!;
     expect(retried.phase).toBe("queued");
     expect(retried.enqueuedAt).not.toBe(job1.enqueuedAt);
   });
@@ -118,10 +131,18 @@ describe("integration jobs (0118)", () => {
     // be spuriously re-enqueued.
     const coordinator = createJobCoordinator(testRepo);
 
-    const job1 = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any)!;
+    const job1 = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any)!;
     coordinator.updateJob("task1", { phase: "done" });
 
-    const again = coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "done" } as any)!;
+    const again = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "done",
+    } as any)!;
     expect(again.enqueuedAt).toBe(job1.enqueuedAt);
     expect(again.phase).toBe("done");
   });
@@ -182,7 +203,10 @@ describe("integration jobs (0118)", () => {
     mkdirSync(repoosDirPath, { recursive: true });
     const lockPath = join(repoosDirPath, "close-out.lock");
     const staleTime = Date.now() - 70_000; // 70 seconds ago in milliseconds
-    writeFileSync(lockPath, JSON.stringify({ taskId: "stale", acquiredAt: new Date(staleTime).toISOString() }));
+    writeFileSync(
+      lockPath,
+      JSON.stringify({ taskId: "stale", acquiredAt: new Date(staleTime).toISOString() }),
+    );
 
     // Set the file's actual modification time to be stale
     utimesSync(lockPath, staleTime / 1000, staleTime / 1000);
@@ -232,7 +256,10 @@ describe("integration jobs (0118)", () => {
 
   it("e2e: concurrent close-outs with main drift and cleanup", async () => {
     // Create a real temp repo for end-to-end testing
-    const e2eRepo = join(tmpdir(), `repoos-e2e-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const e2eRepo = join(
+      tmpdir(),
+      `repoos-e2e-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    );
     mkdirSync(e2eRepo, { recursive: true });
     const gitCmd = `git -C ${e2eRepo}`;
 
@@ -353,7 +380,10 @@ describe("integration jobs (0118)", () => {
   it("e2e: main drift during publish triggers retry instead of failure", async () => {
     // This test verifies that when main advances between validation and publishing,
     // the job correctly goes back to "syncing" (not "failed") so it can retry.
-    const driftRepo = join(tmpdir(), `repoos-drift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const driftRepo = join(
+      tmpdir(),
+      `repoos-drift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    );
     mkdirSync(driftRepo, { recursive: true });
     const gitCmd = `git -C ${driftRepo}`;
 

@@ -290,8 +290,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
         }
       }
       const desktopOnly =
-        appBundle ||
-        (agent.id === "opencode" && isDesktopOutputSignature(version));
+        appBundle || (agent.id === "opencode" && isDesktopOutputSignature(version));
       return {
         ...agent,
         installed: true,

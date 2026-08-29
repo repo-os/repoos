@@ -231,13 +231,21 @@ describe("runDoneStep — diagnosable gate failures", () => {
     try {
       const timeout = await runDoneStep({
         cwd: root,
-        candidates: [[process.execPath, "-e", "console.error('timed out waiting for fixture'); process.exit(1)"]],
+        candidates: [
+          [
+            process.execPath,
+            "-e",
+            "console.error('timed out waiting for fixture'); process.exit(1)",
+          ],
+        ],
         label: "repoos check",
         stage: "check",
       });
       const assertion = await runDoneStep({
         cwd: root,
-        candidates: [[process.execPath, "-e", "console.error('Expected true to be false'); process.exit(1)"]],
+        candidates: [
+          [process.execPath, "-e", "console.error('Expected true to be false'); process.exit(1)"],
+        ],
         label: "repoos check",
         stage: "check",
       });
@@ -334,7 +342,8 @@ describe("describeRetryFailure — honest retry classification (#0216)", () => {
   });
 
   it("calls a retry that reproduced the first failure identically a real defect", () => {
-    const out = "✗ watcher: waitFor timed out waiting for deletion\n   at tests/watcher.test.ts:147";
+    const out =
+      "✗ watcher: waitFor timed out waiting for deletion\n   at tests/watcher.test.ts:147";
     const result = describeRetryFailure(failed(out), failed(out));
     expect(result.detail).toMatch(/identical output/);
     expect(result.detail).toMatch(/genuine defect/);
@@ -358,10 +367,13 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
   it("retries a transient timeout once and lets a green retry pass the gate", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-done-retry-"));
     try {
-      const { log } = fakeCheckCli(root, `
+      const { log } = fakeCheckCli(
+        root,
+        `
         if (n === 1) { console.error("timed out waiting for deletion detected by reconciliation poll"); process.exit(1); }
         process.exit(0);
-      `);
+      `,
+      );
       const result = await runCloseOutCheck(root);
       expect(result.ok).toBe(true);
       // Exactly two invocations: the failed first run plus one retry.
@@ -374,10 +386,13 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
   it("does not retry a genuine assertion failure", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-done-assert-"));
     try {
-      const { log } = fakeCheckCli(root, `
+      const { log } = fakeCheckCli(
+        root,
+        `
         console.error("Expected true to be false");
         process.exit(1);
-      `);
+      `,
+      );
       const result = await runCloseOutCheck(root);
       expect(result.ok).toBe(false);
       expect(result.transient).toBe(false);
@@ -392,10 +407,13 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
   it("flags a timeout that reproduces identically as a genuine defect", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-done-identical-"));
     try {
-      const { log } = fakeCheckCli(root, `
+      const { log } = fakeCheckCli(
+        root,
+        `
         console.error("timed out waiting for fixture");
         process.exit(1);
-      `);
+      `,
+      );
       const result = await runCloseOutCheck(root);
       expect(result.ok).toBe(false);
       expect(result.transient).toBe(true);
@@ -410,10 +428,13 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
   it("reads a timeout that fails differently on the retry as machine load", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-done-loaded-"));
     try {
-      const { log } = fakeCheckCli(root, `
+      const { log } = fakeCheckCli(
+        root,
+        `
         console.error(n === 1 ? "timed out waiting for deletion" : "timed out waiting for mount");
         process.exit(1);
-      `);
+      `,
+      );
       const result = await runCloseOutCheck(root);
       expect(result.ok).toBe(false);
       expect(result.transient).toBe(true);
@@ -435,10 +456,13 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
       // process — the exact wiring the skip depends on (and the mirror image
       // of the direct runDoneStep-level test above).
       const envOut = join(root, "env.out");
-      const { log } = fakeCheckCli(root, `
+      const { log } = fakeCheckCli(
+        root,
+        `
         require("node:fs").writeFileSync(${JSON.stringify(envOut)}, process.env.REPOOS_SKIP_BUILD ?? "unset");
         process.exit(0);
-      `);
+      `,
+      );
       const result = await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_BUILD: "1" });
       expect(result.ok).toBe(true);
       expect(readFileSync(envOut, "utf8")).toBe("1");
@@ -489,15 +513,10 @@ describe("completeTask — resume and recovery", () => {
       git(fx.root, ["merge", "--no-edit", "feat/rel"]);
 
       const progress: string[] = [];
-      const result = await completeTask(
-        config(fx.root),
-        task,
-        (step) => progress.push(step),
-        {
-          build: async () => ({ ok: true }),
-          check: async () => ({ ok: true }),
-        },
-      );
+      const result = await completeTask(config(fx.root), task, (step) => progress.push(step), {
+        build: async () => ({ ok: true }),
+        check: async () => ({ ok: true }),
+      });
 
       // Screenshot regeneration is not part of the close-out at all: it is an
       // on-demand `repoos screenshots` run, never a merge-time step.
@@ -521,22 +540,18 @@ describe("completeTask — resume and recovery", () => {
     try {
       git(fx.root, ["merge", "--no-edit", "feat/fail"]);
 
-      const result = await completeTask(
-        config(fx.root),
-        task,
-        undefined,
-        {
-          build: async () => ({ ok: true }),
-          check: async () => ({
-            ok: false,
-            stage: "check",
-            command: "node dist/cli/index.js check",
-            exitCode: 1,
-            output: "1 check(s) failed.\n✗ ui-smoke: WebKit could not mount the app",
-            detail: "repoos check failed (exit 1) — node dist/cli/index.js check — 1 check(s) failed.",
-          }),
-        },
-      );
+      const result = await completeTask(config(fx.root), task, undefined, {
+        build: async () => ({ ok: true }),
+        check: async () => ({
+          ok: false,
+          stage: "check",
+          command: "node dist/cli/index.js check",
+          exitCode: 1,
+          output: "1 check(s) failed.\n✗ ui-smoke: WebKit could not mount the app",
+          detail:
+            "repoos check failed (exit 1) — node dist/cli/index.js check — 1 check(s) failed.",
+        }),
+      });
 
       expect(result.ok).toBe(false);
       expect(result.merged).toBe(true);
@@ -570,15 +585,10 @@ describe("completeTask — resume and recovery", () => {
       // Drift main so the branch merge conflicts on b.txt.
       commitFile(fx.root, "b.txt", "main edit\n", "main edit");
 
-      const result = await completeTask(
-        config(fx.root),
-        task,
-        undefined,
-        {
-          build: async () => ({ ok: true }),
-          check: async () => ({ ok: true }),
-        },
-      );
+      const result = await completeTask(config(fx.root), task, undefined, {
+        build: async () => ({ ok: true }),
+        check: async () => ({ ok: true }),
+      });
 
       expect(result.ok).toBe(false);
       expect(result.merged).toBe(false);

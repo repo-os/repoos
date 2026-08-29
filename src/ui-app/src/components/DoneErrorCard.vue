@@ -30,17 +30,20 @@ async function fix(): Promise<void> {
   if (fixing.value || !props.taskId) return;
   fixing.value = true;
   try {
-    await api("/api/debugger/message", JSON_OPTS("POST", {
-      text: [
-        `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
-        `Phase: ${props.step ?? "unknown"}.`,
-        `Error: ${props.message}`,
-        // `message` is a capped headline (0253) — the full output, when there
-        // is one, only lives in `detail`.
-        ...(props.detail ? [`Full output:\n${props.detail}`] : []),
-        "Identify the concrete cause and the smallest safe repair so the task can be retried.",
-      ].join("\n"),
-    }));
+    await api(
+      "/api/debugger/message",
+      JSON_OPTS("POST", {
+        text: [
+          `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
+          `Phase: ${props.step ?? "unknown"}.`,
+          `Error: ${props.message}`,
+          // `message` is a capped headline (0253) — the full output, when there
+          // is one, only lives in `detail`.
+          ...(props.detail ? [`Full output:\n${props.detail}`] : []),
+          "Identify the concrete cause and the smallest safe repair so the task can be retried.",
+        ].join("\n"),
+      }),
+    );
     fixSent.value = true;
     window.dispatchEvent(new CustomEvent("repoos:open-debugger"));
   } finally {
@@ -118,7 +121,13 @@ const outputOpen = ref(true);
       </p>
     </div>
 
-    <button v-if="taskId" type="button" class="done-error-fix" :disabled="fixing || fixSent" @click="fix">
+    <button
+      v-if="taskId"
+      type="button"
+      class="done-error-fix"
+      :disabled="fixing || fixSent"
+      @click="fix"
+    >
       <Wrench class="size-3.5" />
       {{ fixing ? "Sending…" : fixSent ? "Sent to Debugger" : "Fix" }}
     </button>

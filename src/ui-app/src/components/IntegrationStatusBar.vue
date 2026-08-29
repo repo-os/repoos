@@ -41,12 +41,10 @@ const failedIndex = computed(() => {
 
 function retry(): void {
   if (!active.value) return;
-  repo
-    .retryIntegration(active.value.taskId)
-    .catch((err) => {
-      const message = err instanceof Error ? err.message : String(err);
-      repo.pushToast(message, "error");
-    });
+  repo.retryIntegration(active.value.taskId).catch((err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    repo.pushToast(message, "error");
+  });
 }
 
 /** What each pipeline stage actually does — shown as a hover tooltip so the
@@ -55,9 +53,12 @@ function retry(): void {
  *  hang). Order matches INTEGRATION_STAGES. */
 const STAGE_INFO: Record<string, string> = {
   sync: "Syncing: fast-forwarding the task's branch onto the latest main before validating, so it's tested against current main, not a stale base.",
-  merge: "Merge: merging the branch into a temporary candidate alongside current main. Fast — a real hang here is unusual.",
-  build: "Build: compiling the merged candidate (tsc + asset bundling) to catch build breaks the branch's own diff couldn't see.",
-  check: "Check: running the full repoos check — typecheck, the complete test suite (1000+ tests), and a UI smoke test — against the merged candidate. This is normally the slowest stage, often several minutes; it is not scoped to just this branch's changes since it's validating the actual merge onto main.",
+  merge:
+    "Merge: merging the branch into a temporary candidate alongside current main. Fast — a real hang here is unusual.",
+  build:
+    "Build: compiling the merged candidate (tsc + asset bundling) to catch build breaks the branch's own diff couldn't see.",
+  check:
+    "Check: running the full repoos check — typecheck, the complete test suite (1000+ tests), and a UI smoke test — against the merged candidate. This is normally the slowest stage, often several minutes; it is not scoped to just this branch's changes since it's validating the actual merge onto main.",
   done: "Done: fast-forwarding main to the validated candidate and cleaning up the temporary worktree/branch.",
 };
 
@@ -82,16 +83,24 @@ function stageClass(s: string, i: number): string {
       v-if="collapsed"
       type="button"
       class="ibar-strip"
-      :title="'Integration pipeline — ' + (idle ? 'idle' : active ? '#' + active.taskId + ' ' + (active.stage ?? '…') : '')"
+      :title="
+        'Integration pipeline — ' +
+        (idle ? 'idle' : active ? '#' + active.taskId + ' ' + (active.stage ?? '…') : '')
+      "
       @click="collapsed = false"
     >
-      <span class="strip-dot" :class="{ idle, run: !idle && !active?.failed, err: active?.failed }"></span>
+      <span
+        class="strip-dot"
+        :class="{ idle, run: !idle && !active?.failed, err: active?.failed }"
+      ></span>
       <span class="strip-label">
         <template v-if="idle">Integration pipeline idle</template>
         <template v-else-if="active">
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
-          <template v-else> integrating… <span class="mono dim">{{ active.stage ?? "" }}</span></template>
+          <template v-else>
+            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span></template
+          >
         </template>
         <template v-else>Integrating…</template>
       </span>
@@ -101,7 +110,12 @@ function stageClass(s: string, i: number): string {
     <!-- Expanded bar -->
     <div v-else class="ibar">
       <div class="ibar-top">
-        <button type="button" class="ibar-toggle" :title="'Collapse integration pipeline'" @click="collapsed = true">
+        <button
+          type="button"
+          class="ibar-toggle"
+          :title="'Collapse integration pipeline'"
+          @click="collapsed = true"
+        >
           <ChevronDown class="bar-chev" aria-hidden="true" />
         </button>
 
@@ -110,7 +124,9 @@ function stageClass(s: string, i: number): string {
             <span class="bar-dot idle"></span>
             Integration pipeline idle
           </span>
-          <span class="ibar-idle-hint">Queued close-outs appear here as they are synced, merged, built and checked.</span>
+          <span class="ibar-idle-hint"
+            >Queued close-outs appear here as they are synced, merged, built and checked.</span
+          >
         </template>
 
         <template v-else-if="active">
@@ -131,19 +147,33 @@ function stageClass(s: string, i: number): string {
             >
               <span class="stage-mark" aria-hidden="true">
                 <svg v-if="i < currentIndex" viewBox="0 0 24 24" class="stage-check" fill="none">
-                  <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <path
+                    d="M5 13l4 4L19 7"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </svg>
-                <span v-else class="stage-dot" :class="{ spinning: i === currentIndex && !active.failed }"></span>
+                <span
+                  v-else
+                  class="stage-dot"
+                  :class="{ spinning: i === currentIndex && !active.failed }"
+                ></span>
               </span>
               <span class="stage-name">{{ s }}</span>
-              <span v-if="i < INTEGRATION_STAGES.length - 1" class="stage-arrow" aria-hidden="true">→</span>
+              <span v-if="i < INTEGRATION_STAGES.length - 1" class="stage-arrow" aria-hidden="true"
+                >→</span
+              >
             </li>
           </ol>
 
           <div v-if="active.failed" class="ibar-err">
             <div class="ibar-err-text">
               <span class="err-label">Failed at {{ active.stage ?? "…" }}</span>
-              <span class="err-msg">{{ active.error ?? "The integration could not be completed." }}</span>
+              <span class="err-msg">{{
+                active.error ?? "The integration could not be completed."
+              }}</span>
             </div>
             <button type="button" class="bar-btn" @click="retry">Retry</button>
           </div>

@@ -46,9 +46,8 @@ function confirm(): void {
       <div class="ste-card">
         <h3 id="ste-confirm-title" class="ste-title">{{ title }}</h3>
         <p class="ste-body">
-          This returns the task to <strong>active</strong> and resumes the
-          engineer with the reviewer findings. Add a short note to give the
-          engineer specific instructions (optional).
+          This returns the task to <strong>active</strong> and resumes the engineer with the
+          reviewer findings. Add a short note to give the engineer specific instructions (optional).
         </p>
         <textarea
           ref="textarea"
@@ -70,13 +69,7 @@ function confirm(): void {
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="accent"
-            size="sm"
-            :disabled="busy"
-            @click="confirm"
-          >
+          <Button type="button" variant="accent" size="sm" :disabled="busy" @click="confirm">
             Send to engineer{{ note.trim() ? " with note" : "" }}
           </Button>
         </div>

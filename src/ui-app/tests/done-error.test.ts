@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { extractConflicts, DirtyMainError, MoveToDoneError, useRepoStore } from "../src/stores/repo";
+import {
+  extractConflicts,
+  DirtyMainError,
+  MoveToDoneError,
+  useRepoStore,
+} from "../src/stores/repo";
 import type { Task } from "../src/types";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
@@ -80,8 +85,7 @@ function stubDone(failures: Record<string, { ok: boolean; error?: string }>): vo
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/done")) {
         const outcome = failures["/done"];
-        if (outcome?.ok)
-          return json({ ok: true, merged: true, conflicts: [], ff: true });
+        if (outcome?.ok) return json({ ok: true, merged: true, conflicts: [], ff: true });
         return jsonFail({ ok: false, error: outcome?.error ?? "could not complete task" });
       }
       throw new Error("unexpected fetch: " + url);

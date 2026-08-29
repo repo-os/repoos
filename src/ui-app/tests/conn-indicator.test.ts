@@ -66,7 +66,7 @@ describe("top-bar connection indicator (0205)", () => {
         connected: state === "live",
       });
       expect(conn.classes()).toContain(state);
-      expect(css).toContain(`.conn.${state}{`);
+      expect(css).toMatch(new RegExp(`\\.conn\\.${state}\\s*\\{`));
     }
   });
 });

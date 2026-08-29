@@ -1,7 +1,27 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { X, Play, Pause, Send, CheckCheck, ExternalLink, Square, ArrowRight, ArrowDown, RotateCcw, ImagePlus, FileText, MessageSquare, Bot, Diff, ShieldCheck, ChevronsDownUp, Coins, Bug } from "lucide-vue-next";
+import {
+  X,
+  Play,
+  Pause,
+  Send,
+  CheckCheck,
+  ExternalLink,
+  Square,
+  ArrowRight,
+  ArrowDown,
+  RotateCcw,
+  ImagePlus,
+  FileText,
+  MessageSquare,
+  Bot,
+  Diff,
+  ShieldCheck,
+  ChevronsDownUp,
+  Coins,
+  Bug,
+} from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -56,7 +76,9 @@ const allStatuses = computed(() => [
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;
   const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];
-  return allStatuses.value.filter((status) => status.id === current || reachable.includes(status.id));
+  return allStatuses.value.filter(
+    (status) => status.id === current || reachable.includes(status.id),
+  );
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -238,7 +260,10 @@ function draftTitle(text: string): string {
   if (line.length > 0) {
     return line.length <= 60 ? line : `${line.slice(0, 57).trimEnd()}…`;
   }
-  const flat = text.replace(/\s+/g, " ").replace(/\s*---\s*/g, " ").trim();
+  const flat = text
+    .replace(/\s+/g, " ")
+    .replace(/\s*---\s*/g, " ")
+    .trim();
   return flat.length <= 60 ? flat || "Untitled task" : `${flat.slice(0, 57).trimEnd()}…`;
 }
 
@@ -410,7 +435,12 @@ function cancelAbandonWork(): void {
 
 async function reopenTask(): Promise<void> {
   if (!ui.active) return;
-  if (!confirm("Reopen this done task? It goes back to ready with a fresh branch on the next Start work.")) return;
+  if (
+    !confirm(
+      "Reopen this done task? It goes back to ready with a fresh branch on the next Start work.",
+    )
+  )
+    return;
   ui.saving = true;
   try {
     await repo.reopenTask(ui.active);
@@ -571,9 +601,7 @@ async function moveToDone(): Promise<void> {
  *  `main` having uncommitted files. `null` hides the modal. */
 const dirtyTask = ref<Task | null>(null);
 
-const dirtyFiles = computed(() =>
-  dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : [],
-);
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : []));
 
 async function confirmCommitDirty(): Promise<void> {
   const t = dirtyTask.value;
@@ -649,9 +677,7 @@ function changedFields(): (keyof TaskDraft)[] {
 
 const dirty = computed(() => changedFields().length > 0);
 
-const transitioned = computed(
-  () => !!(ui.active && repo.transitionState?.id === ui.active.id),
-);
+const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
 /** Title and branch are frozen once a task leaves the planning stages. */
 const locked = computed(() => {
@@ -784,7 +810,7 @@ async function startPreview(): Promise<void> {
  * above stays the only way a task reaches `done`.
  */
 const review = computed<ReviewState | null>(() =>
-  ui.active ? repo.reviews[ui.active.id] ?? null : null,
+  ui.active ? (repo.reviews[ui.active.id] ?? null) : null,
 );
 
 /**
@@ -864,9 +890,7 @@ const reviewHtml = computed(() =>
  *  it describes an earlier worktree state and will be replaced as soon as the
  *  fresh run writes its report (RepoOS preserves the prior report until then).
  */
-const reviewStale = computed(() =>
-  Boolean(review.value?.running && review.value.report),
-);
+const reviewStale = computed(() => Boolean(review.value?.running && review.value.report));
 
 // ---- agent review tab (0110) ----
 
@@ -1006,7 +1030,8 @@ const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
   const task = ui.active;
   const report = review.value?.report ?? null;
-  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value) return;
+  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value)
+    return;
   engineerNoteTask.value = task;
   engineerNoteReport.value = report;
   engineerNoteOpen.value = true;
@@ -1096,9 +1121,7 @@ const pmLines = computed(() => {
 
 /** Check if PM is busy. */
 const pmBusy = computed(
-  () =>
-    pmSubmitting.value ||
-    (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id)))
+  () => pmSubmitting.value || (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
 
 const pmHasConversation = computed(() => pmLines.value.length > 0);
@@ -1150,9 +1173,12 @@ function pmScrollToLatest(): void {
   });
 }
 
-watch(() => pmLines.value.length, () => {
-  pmScrollToLatest();
-});
+watch(
+  () => pmLines.value.length,
+  () => {
+    pmScrollToLatest();
+  },
+);
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
@@ -1174,11 +1200,11 @@ async function pmSend(): Promise<void> {
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
-      })
+      }),
     );
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
-      (_entry, index) => index !== optimisticIndex
+      (_entry, index) => index !== optimisticIndex,
     );
     pmDraft.value = text;
     repo.outputs[sessionId] = [
@@ -1460,10 +1486,13 @@ const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
 
 /** Plain display lines for the in-flight freeform run, fed by agent.output SSE. */
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
-  const raw = freeformRunId.value ? repo.outputs[freeformRunId.value] ?? [] : [];
+  const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
   return raw.map((e) => {
     if ("type" in e) {
-      return { s: "out", d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")) };
+      return {
+        s: "out",
+        d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")),
+      };
     }
     return { s: e.s === "err" ? "err" : "out", d: stripAnsi(e.d) };
   });
@@ -1499,7 +1528,7 @@ interface DisplayEntry {
  * into one block so a multi-part assistant message reads as a single reply.
  */
 const displayEntries = computed<DisplayEntry[]>(() => {
-  const src = ui.active ? repo.outputs[ui.active.id] ?? [] : [];
+  const src = ui.active ? (repo.outputs[ui.active.id] ?? []) : [];
   const out: DisplayEntry[] = [];
   for (const e of src) {
     if ("type" in e) {
@@ -1658,7 +1687,12 @@ function fmtSessionTime(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 /** Human-readable text for why `needsInput` was set — see core/types.ts's NeedsInputReason. */
@@ -1670,7 +1704,10 @@ const NEEDS_INPUT_REASON_LABELS: Record<string, string> = {
 };
 
 function needsInputReasonText(reason: string | undefined): string {
-  return (reason && NEEDS_INPUT_REASON_LABELS[reason]) || "The agent needs your input — reply below to continue.";
+  return (
+    (reason && NEEDS_INPUT_REASON_LABELS[reason]) ||
+    "The agent needs your input — reply below to continue."
+  );
 }
 
 watch(displayEntries, () => {
@@ -1845,7 +1882,9 @@ function scrollToDiffFile(fileId: string): void {
 /** Reset collapsed state when switching tasks or diffs. */
 watch(
   () => taskDiff.value,
-  () => { collapsedFiles.clear(); },
+  () => {
+    collapsedFiles.clear();
+  },
 );
 
 /** Classify a single diff line for syntax highlighting. */
@@ -1853,7 +1892,13 @@ function diffLineClass(line: string): string {
   if (line.startsWith("@@")) return "diff-hunk";
   if (line.startsWith("+")) return "diff-add";
   if (line.startsWith("-")) return "diff-rem";
-  if (line.startsWith("diff ") || line.startsWith("index ") || line.startsWith("--- ") || line.startsWith("+++ ")) return "diff-header";
+  if (
+    line.startsWith("diff ") ||
+    line.startsWith("index ") ||
+    line.startsWith("--- ") ||
+    line.startsWith("+++ ")
+  )
+    return "diff-header";
   return "diff-ctx";
 }
 
@@ -1948,7 +1993,9 @@ const overrideDirty = computed(
 
 watch(
   () => ui.active,
-  (t) => { if (t && !overrideDirty.value) initOverrideDraft(t); },
+  (t) => {
+    if (t && !overrideDirty.value) initOverrideDraft(t);
+  },
   { immediate: true },
 );
 
@@ -2072,10 +2119,21 @@ watch(
 // post-send reset, a restored draft) — those paths emit no `input` event, and
 // `immediate` covers a value already populated when the field first mounts.
 // Live typing is handled by each field's `@input` binding.
-watch(() => pmDraft.value, () => nextTick(adjustPmHeight), { immediate: true });
-watch(() => reviewDraftMsg.value, () => nextTick(adjustReviewHeight), { immediate: true });
-watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: true });
-
+watch(
+  () => pmDraft.value,
+  () => nextTick(adjustPmHeight),
+  { immediate: true },
+);
+watch(
+  () => reviewDraftMsg.value,
+  () => nextTick(adjustReviewHeight),
+  { immediate: true },
+);
+watch(
+  () => draftMsg.value,
+  () => nextTick(adjustDraftMsgHeight),
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -2172,7 +2230,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               </div>
               <p class="ff-done-copy">
                 This may take a few minutes. Your task
-                <template v-if="submittedTask"><span class="mono">#{{ submittedTask.id }}</span> —</template>
+                <template v-if="submittedTask"
+                  ><span class="mono">#{{ submittedTask.id }}</span> —</template
+                >
                 is being created in the background and will be updated automatically when it's
                 ready. You can keep working, or start another task while you wait — nothing is lost.
               </p>
@@ -2198,84 +2258,84 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               </div>
             </div>
             <template v-else>
-            <div class="field">
-              <div class="field-header">
-                <label for="nt-freeform">Describe the task</label>
-              </div>
-              <div class="agent-input-wrapper">
-                <textarea
+              <div class="field">
+                <div class="field-header">
+                  <label for="nt-freeform">Describe the task</label>
+                </div>
+                <div class="agent-input-wrapper">
+                  <textarea
                     id="nt-freeform"
                     ref="freeformTextarea"
                     v-model="freeformText"
                     class="ff-textarea"
                     rows="10"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
-                ></textarea>
-                <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom:14px" />
-              </div>
-            </div>
-            <div class="ff-agent-bar">
-              <div class="agent-pick-grid">
-                <div class="agent-field" style="grid-column: 1 / -1">
-                  <AgentModelControl
-                    :cli-options="cliOptions"
-                    :model-options="freeformModelOptions"
-                    v-model:cli="freeformOverride.cli"
-                    v-model:model="freeformOverride.model"
-                    :disabled="freeformRunning"
-                  />
+                  ></textarea>
+                  <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom: 14px" />
                 </div>
               </div>
-            </div>
-            <div v-if="!pmAgentReady" class="ff-notice">
-              No PM agent is configured.
-              <router-link :to="{ name: 'agents' }" @click="ui.close()">
-                Set one up on the Agents page
-              </router-link>
-              — until then your explanation is saved as a draft task.
-            </div>
-            <div v-if="draftSaved" class="ff-error">
-              The PM agent failed:
-              <span class="mono">{{ freeformError }}</span>
-              — your explanation was saved as draft
-              <span class="mono">#{{ draftSaved.id }}</span> so it isn't lost.
-              <Button variant="outline" size="sm" @click="openDraft">Open draft</Button>
-            </div>
-            <div v-else-if="freeformError" class="ff-error">{{ freeformError }}</div>
-            <div class="btn-row" style="margin-top: 20px">
-              <Button variant="outline" @click="ui.close()">Cancel</Button>
-              <Button
-                variant="outline"
-                @click="createDraft"
-                :disabled="ui.saving || !freeformText.trim()"
-              >
-                Create draft
-              </Button>
-              <Button
-                variant="default"
-                @click="createFreeform"
-                :disabled="ui.saving || !freeformText.trim()"
-              >
-                <ActivityIndicator v-if="freeformRunning" />
-                {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
-              </Button>
-            </div>
-            <div v-if="freeformLines.length" class="ff-stream">
-              <div class="ff-stream-head">
-                <ActivityIndicator />
-                PM agent
+              <div class="ff-agent-bar">
+                <div class="agent-pick-grid">
+                  <div class="agent-field" style="grid-column: 1 / -1">
+                    <AgentModelControl
+                      :cli-options="cliOptions"
+                      :model-options="freeformModelOptions"
+                      v-model:cli="freeformOverride.cli"
+                      v-model:model="freeformOverride.model"
+                      :disabled="freeformRunning"
+                    />
+                  </div>
+                </div>
               </div>
-              <div class="ff-stream-log" ref="ffLogEl">
-                <div
-                  v-for="(line, i) in freeformLines"
-                  :key="i"
-                  class="ff-stream-line"
-                  :class="line.s === 'err' ? 'err' : ''"
+              <div v-if="!pmAgentReady" class="ff-notice">
+                No PM agent is configured.
+                <router-link :to="{ name: 'agents' }" @click="ui.close()">
+                  Set one up on the Agents page
+                </router-link>
+                — until then your explanation is saved as a draft task.
+              </div>
+              <div v-if="draftSaved" class="ff-error">
+                The PM agent failed:
+                <span class="mono">{{ freeformError }}</span>
+                — your explanation was saved as draft
+                <span class="mono">#{{ draftSaved.id }}</span> so it isn't lost.
+                <Button variant="outline" size="sm" @click="openDraft">Open draft</Button>
+              </div>
+              <div v-else-if="freeformError" class="ff-error">{{ freeformError }}</div>
+              <div class="btn-row" style="margin-top: 20px">
+                <Button variant="outline" @click="ui.close()">Cancel</Button>
+                <Button
+                  variant="outline"
+                  @click="createDraft"
+                  :disabled="ui.saving || !freeformText.trim()"
                 >
-                  {{ line.d }}
+                  Create draft
+                </Button>
+                <Button
+                  variant="default"
+                  @click="createFreeform"
+                  :disabled="ui.saving || !freeformText.trim()"
+                >
+                  <ActivityIndicator v-if="freeformRunning" />
+                  {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
+                </Button>
+              </div>
+              <div v-if="freeformLines.length" class="ff-stream">
+                <div class="ff-stream-head">
+                  <ActivityIndicator />
+                  PM agent
+                </div>
+                <div class="ff-stream-log" ref="ffLogEl">
+                  <div
+                    v-for="(line, i) in freeformLines"
+                    :key="i"
+                    class="ff-stream-line"
+                    :class="line.s === 'err' ? 'err' : ''"
+                  >
+                    {{ line.d }}
+                  </div>
                 </div>
               </div>
-            </div>
             </template>
           </template>
           <template v-else>
@@ -2374,13 +2434,15 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 v-if="ui.active.needsInput"
                 class="tc-waiting"
                 :title="needsInputReasonText(ui.active.needsInputReason)"
-              >needs input</span>
+                >needs input</span
+              >
               <span
                 v-if="reviewSubstate"
                 class="rs-chip"
                 :class="reviewSubstate.cls"
                 :title="reviewSubstate.label"
-              >{{ reviewSubstate.label }}</span>
+                >{{ reviewSubstate.label }}</span
+              >
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
@@ -2434,14 +2496,23 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               Move to ready
             </Button>
             <Button
-              v-if="(ui.active.status === 'ready' || ui.active.status === 'active') && (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))"
+              v-if="
+                (ui.active.status === 'ready' || ui.active.status === 'active') &&
+                (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
+              "
               variant="accent"
               :disabled="ui.saving"
               @click="startWork"
             >
               <Play v-if="!startingWork" class="size-3.5" />
               <ActivityIndicator v-else />
-              {{ startingWork ? "Starting work…" : ui.active.status === "active" ? "Restart work" : "Start work" }}
+              {{
+                startingWork
+                  ? "Starting work…"
+                  : ui.active.status === "active"
+                    ? "Restart work"
+                    : "Start work"
+              }}
             </Button>
             <Button
               v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
@@ -2486,19 +2557,36 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               v-if="ui.active.status === 'review'"
               variant="default"
               :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id) || inPipeline"
-              :title="inPipeline ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.' : review?.running ? 'Waiting for automatic review to finish.' : repo.isRunning(ui.active.id) ? 'The engineer is still coding; Move to done becomes available when the turn ends.' : undefined"
+              :title="
+                inPipeline
+                  ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.'
+                  : review?.running
+                    ? 'Waiting for automatic review to finish.'
+                    : repo.isRunning(ui.active.id)
+                      ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                      : undefined
+              "
               @click="moveToDone"
             >
               <CheckCheck v-if="!doingDone && !inPipeline" class="size-3.5" />
               <ActivityIndicator v-else />
-              {{ inPipeline ? `Integrating…${pipelineStage ? ` (${pipelineStage})` : ""}` : doingDone ? doneProgress : "Move to done" }}
+              {{
+                inPipeline
+                  ? `Integrating…${pipelineStage ? ` (${pipelineStage})` : ""}`
+                  : doingDone
+                    ? doneProgress
+                    : "Move to done"
+              }}
             </Button>
           </div>
           <span v-if="review?.running" class="drawer-run reviewing" role="status">
             <ActivityIndicator variant="reviewing" label="Reviewing…" />
             Reviewer is reviewing this task…
           </span>
-          <span v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)" class="drawer-run">
+          <span
+            v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+            class="drawer-run"
+          >
             <ActivityIndicator /> agent coding
           </span>
           <DoneErrorCard
@@ -2514,7 +2602,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             :task-title="ui.active.title"
           />
           <div
-            v-if="(ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview"
+            v-if="
+              (ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview
+            "
             class="quickbar-row"
           >
             <!-- Previews are auto-launched when a task lands in review (#0198);
@@ -2527,40 +2617,38 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 {{ ui.active.preview.url }}
               </a>
             </div>
-            <Button
-              variant="outline"
-              :disabled="ui.saving || previewBusy"
-              @click="stopPreview"
-            >
+            <Button variant="outline" :disabled="ui.saving || previewBusy" @click="stopPreview">
               <Square class="size-3.5" />
               Stop preview
             </Button>
           </div>
           <p
-            v-if="(ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview && !ui.active.branch"
+            v-if="
+              (ui.active.status === 'active' || ui.active.status === 'review') &&
+              !ui.active.preview &&
+              !ui.active.branch
+            "
             class="preview-hint"
           >
             No branch yet — start work to create the worktree this previews.
           </p>
           <p
-            v-else-if="(ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview && !ui.active.git?.worktreeExists"
+            v-else-if="
+              (ui.active.status === 'active' || ui.active.status === 'review') &&
+              !ui.active.preview &&
+              !ui.active.git?.worktreeExists
+            "
             class="preview-hint"
           >
             No git worktree is checked out for
-            <span class="mono">{{ ui.active.branch }}</span>.
+            <span class="mono">{{ ui.active.branch }}</span
+            >.
           </p>
-          <div
-            v-else-if="ui.active.status === 'review' && !ui.active.preview"
-            class="quickbar-row"
-          >
+          <div v-else-if="ui.active.status === 'review' && !ui.active.preview" class="quickbar-row">
             <p class="preview-hint">
               No preview running — the agent didn't request one before handoff.
             </p>
-            <Button
-              variant="outline"
-              :disabled="ui.saving || previewBusy"
-              @click="startPreview"
-            >
+            <Button variant="outline" :disabled="ui.saving || previewBusy" @click="startPreview">
               <Play class="size-3.5" />
               Start preview
             </Button>
@@ -2636,7 +2724,11 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             Debug
           </button>
         </div>
-        <div v-if="ui.activeTab === 'details'" class="drawer-body" :class="{ 'transition-success': transitioned }">
+        <div
+          v-if="ui.activeTab === 'details'"
+          class="drawer-body"
+          :class="{ 'transition-success': transitioned }"
+        >
           <template v-if="!locked">
             <div class="field">
               <label for="et-title">Title</label>
@@ -2689,7 +2781,12 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             </div>
             <div class="field">
               <label for="et-assignee">Assigned to</label>
-              <Input id="et-assignee" v-model="draft.assignedTo" list="assignee-options" placeholder="unassigned" />
+              <Input
+                id="et-assignee"
+                v-model="draft.assignedTo"
+                list="assignee-options"
+                placeholder="unassigned"
+              />
               <datalist id="assignee-options">
                 <option value="ai"></option>
                 <option value="human"></option>
@@ -2794,7 +2891,12 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 recoverable from git; uncommitted or never-committed work is lost.
               </p>
               <div class="delete-actions">
-                <Button variant="outline" size="sm" :disabled="ui.saving" @click="confirmDelete = false">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="ui.saving"
+                  @click="confirmDelete = false"
+                >
                   Cancel
                 </Button>
                 <Button variant="destructive" size="sm" :disabled="ui.saving" @click="deleteTask">
@@ -2804,7 +2906,11 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             </template>
           </div>
         </div>
-        <div v-else-if="ui.activeTab === 'agent'" class="drawer-body drawer-session-body" :class="{ 'transition-success': transitioned }">
+        <div
+          v-else-if="ui.activeTab === 'agent'"
+          class="drawer-body drawer-session-body"
+          :class="{ 'transition-success': transitioned }"
+        >
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field" style="grid-column: 1 / -1">
@@ -2817,9 +2923,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 />
               </div>
               <div class="agent-field">
-                  <div v-if="overrideDirty" class="agent-override-actions" style='padding-top:20px'>
-                    <span class="agent-save-hint">saving…</span>
-                  </div>
+                <div v-if="overrideDirty" class="agent-override-actions" style="padding-top: 20px">
+                  <span class="agent-save-hint">saving…</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2828,8 +2934,8 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <div>
               <div class="agent-stalled-title">quiet — may be stalled</div>
               <div class="agent-stalled-sub">
-                No new output for a while. This isn't proof it's stuck — a slow step looks the
-                same from here — but if it stays quiet, check in.
+                No new output for a while. This isn't proof it's stuck — a slow step looks the same
+                from here — but if it stays quiet, check in.
               </div>
             </div>
           </div>
@@ -2837,7 +2943,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <span class="agent-waiting-dot"></span>
             <div>
               <div class="agent-waiting-title">waiting for you</div>
-              <div class="agent-waiting-sub">{{ needsInputReasonText(ui.active.needsInputReason) }}</div>
+              <div class="agent-waiting-sub">
+                {{ needsInputReasonText(ui.active.needsInputReason) }}
+              </div>
             </div>
           </div>
           <div class="agent-log-wrap">
@@ -2876,22 +2984,31 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 >
                   <span class="agent-step-dot"></span>
                   <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
-                  <span v-if="entry.stepReason !== 'stop' && entry.stepAt" class="agent-step-time">{{
-                    repo.fmtDate(entry.stepAt)
+                  <span
+                    v-if="entry.stepReason !== 'stop' && entry.stepAt"
+                    class="agent-step-time"
+                    >{{ repo.fmtDate(entry.stepAt) }}</span
+                  >
+                  <span v-if="entry.stepReason" class="agent-step-reason">{{
+                    entry.stepReason
                   }}</span>
-                  <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
                 </div>
                 <!-- collapsible tool card -->
                 <details v-else class="agent-tool" :class="entry.toolState">
                   <summary>
-                    <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
+                    <span class="agent-tool-icon">{{
+                      entry.toolState === "error" ? "✕" : "›"
+                    }}</span>
                     <span class="agent-tool-name">{{ entry.toolName }}</span>
                     <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
                       entry.toolInput
                     }}</span>
-                    <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
-                      entry.toolState
-                    }}</span>
+                    <span
+                      v-if="entry.toolState"
+                      class="agent-tool-state"
+                      :class="entry.toolState"
+                      >{{ entry.toolState }}</span
+                    >
                   </summary>
                   <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
                 </details>
@@ -2939,9 +3056,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <ActivityIndicator /> agent is working — wait for this turn to finish
           </div>
           <div
-            v-else-if="
-              ui.active && ui.active.status !== 'active' && ui.active.status !== 'review'
-            "
+            v-else-if="ui.active && ui.active.status !== 'active' && ui.active.status !== 'review'"
             class="agent-hint"
           >
             Task is {{ ui.active.status }} — start work to run an agent turn.
@@ -2959,15 +3074,24 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                   :disabled="ui.saving"
                 />
               </div>
-               <div class="agent-field">
-                  <div v-if="reviewOverrideDirty" class="agent-override-actions" style="padding-top:20px">
-                    <span class="agent-save-hint">saving…</span>
-                  </div>
+              <div class="agent-field">
+                <div
+                  v-if="reviewOverrideDirty"
+                  class="agent-override-actions"
+                  style="padding-top: 20px"
+                >
+                  <span class="agent-save-hint">saving…</span>
+                </div>
               </div>
             </div>
           </div>
           <div class="review-toolbar">
-            <div v-if="review?.report" class="review-pane-tabs" role="tablist" aria-label="Reviewer content">
+            <div
+              v-if="review?.report"
+              class="review-pane-tabs"
+              role="tablist"
+              aria-label="Reviewer content"
+            >
               <button
                 type="button"
                 class="review-pane-tab"
@@ -2994,7 +3118,11 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running"
-              :title="review?.running ? 'Waiting for the current review run to finish.' : 'Start a fresh review of the current worktree state'"
+              :title="
+                review?.running
+                  ? 'Waiting for the current review run to finish.'
+                  : 'Start a fresh review of the current worktree state'
+              "
               @click="reviewAgain"
             >
               <RotateCcw v-if="!reviewBusy" class="size-3.5" />
@@ -3005,8 +3133,14 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               v-if="ui.active.status === 'review'"
               variant="accent"
               size="sm"
-              :disabled="ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report"
-              :title="!review?.report ? 'Wait for a completed review before sending this task back to the engineer.' : 'Return this task to active and resume the engineer with the reviewer findings'"
+              :disabled="
+                ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report
+              "
+              :title="
+                !review?.report
+                  ? 'Wait for a completed review before sending this task back to the engineer.'
+                  : 'Return this task to active and resume the engineer with the reviewer findings'
+              "
               @click="sendToEngineer"
             >
               <Send v-if="!sendingToEngineer" class="size-3.5" />
@@ -3015,12 +3149,18 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             </Button>
           </div>
 
-          <section v-if="review?.report && reviewPane === 'report'" class="review-pane review-report-pane" role="tabpanel">
+          <section
+            v-if="review?.report && reviewPane === 'report'"
+            class="review-pane review-report-pane"
+            role="tabpanel"
+          >
             <div v-if="reviewStale" class="review-stale" role="status">
               <ActivityIndicator variant="reviewing" />
               <div class="review-stale-body">
                 <span class="review-stale-title">This report is stale</span>
-                <span class="review-stale-sub">A new review is running and will replace it shortly.</span>
+                <span class="review-stale-sub"
+                  >A new review is running and will replace it shortly.</span
+                >
               </div>
             </div>
             <div v-if="review.report.state === 'failed'" class="review-failed">
@@ -3055,59 +3195,71 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             <p v-else-if="review && !review.enabled" class="review-hint">
               The review agent is disabled on the Agents page, so no automatic review runs.
             </p>
-            <p v-else-if="!review?.report" class="review-hint">No agent review for this task yet.</p>
+            <p v-else-if="!review?.report" class="review-hint">
+              No agent review for this task yet.
+            </p>
 
             <div class="review-log-wrap">
               <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
-              <template v-if="reviewEntries.length === 0">
-                <div v-if="review?.running" class="review-thinking" role="status">
-                  <ActivityIndicator variant="reviewing" label="Reviewing…" />
-                  The reviewer is thinking…
-                </div>
-                <div v-else class="agent-empty">
-                  The reviewer's conversation appears here once a review runs.
-                  <br />
-                  Start a review to see the reviewer at work, then chat below.
-                </div>
-              </template>
-              <div v-for="entry in reviewEntries" :key="entry.key" class="agent-entry">
-                <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
-                  <span class="agent-pfx" :class="entry.s">{{
-                    entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
-                  }}</span>
-                  <span class="agent-d">{{ entry.d }}</span>
-                </div>
-                <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
-                  <span class="agent-pfx">·</span>
-                  <span class="agent-d">{{ entry.d }}</span>
-                </div>
-                <div v-else-if="entry.kind === 'human'" class="agent-human">
-                  <div class="agent-human-bubble">{{ entry.text }}</div>
-                </div>
-                <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
-                <div
-                  v-else-if="entry.kind === 'step'"
-                  class="agent-step"
-                  :class="{ fin: entry.stepKind === 'finish' }"
-                >
-                  <span class="agent-step-dot"></span>
-                  <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
-                  <span v-if="entry.stepReason" class="agent-step-reason">{{ entry.stepReason }}</span>
-                </div>
-                <details v-else class="agent-tool" :class="entry.toolState">
-                  <summary>
-                    <span class="agent-tool-icon">{{ entry.toolState === "error" ? "✕" : "›" }}</span>
-                    <span class="agent-tool-name">{{ entry.toolName }}</span>
-                    <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
-                      entry.toolInput
+                <template v-if="reviewEntries.length === 0">
+                  <div v-if="review?.running" class="review-thinking" role="status">
+                    <ActivityIndicator variant="reviewing" label="Reviewing…" />
+                    The reviewer is thinking…
+                  </div>
+                  <div v-else class="agent-empty">
+                    The reviewer's conversation appears here once a review runs.
+                    <br />
+                    Start a review to see the reviewer at work, then chat below.
+                  </div>
+                </template>
+                <div v-for="entry in reviewEntries" :key="entry.key" class="agent-entry">
+                  <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
+                    <span class="agent-pfx" :class="entry.s">{{
+                      entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
                     }}</span>
-                    <span v-if="entry.toolState" class="agent-tool-state" :class="entry.toolState">{{
-                      entry.toolState
+                    <span class="agent-d">{{ entry.d }}</span>
+                  </div>
+                  <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                    <span class="agent-pfx">·</span>
+                    <span class="agent-d">{{ entry.d }}</span>
+                  </div>
+                  <div v-else-if="entry.kind === 'human'" class="agent-human">
+                    <div class="agent-human-bubble">{{ entry.text }}</div>
+                  </div>
+                  <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
+                  <div
+                    v-else-if="entry.kind === 'step'"
+                    class="agent-step"
+                    :class="{ fin: entry.stepKind === 'finish' }"
+                  >
+                    <span class="agent-step-dot"></span>
+                    <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
+                    <span v-if="entry.stepReason" class="agent-step-reason">{{
+                      entry.stepReason
                     }}</span>
-                  </summary>
-                  <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
-                </details>
-              </div>
+                  </div>
+                  <details v-else class="agent-tool" :class="entry.toolState">
+                    <summary>
+                      <span class="agent-tool-icon">{{
+                        entry.toolState === "error" ? "✕" : "›"
+                      }}</span>
+                      <span class="agent-tool-name">{{ entry.toolName }}</span>
+                      <span
+                        v-if="entry.toolInput"
+                        class="agent-tool-cmd"
+                        :title="entry.toolInput"
+                        >{{ entry.toolInput }}</span
+                      >
+                      <span
+                        v-if="entry.toolState"
+                        class="agent-tool-state"
+                        :class="entry.toolState"
+                        >{{ entry.toolState }}</span
+                      >
+                    </summary>
+                    <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
+                  </details>
+                </div>
               </div>
               <button
                 v-if="!reviewStick"
@@ -3160,7 +3312,11 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
           <template v-else-if="!ui.active.branch">
             <p class="changes-empty">No branch yet — start work to create the worktree.</p>
           </template>
-          <template v-else-if="!ui.active.git?.worktreeExists && taskDiff !== undefined && taskDiff.patch === ''">
+          <template
+            v-else-if="
+              !ui.active.git?.worktreeExists && taskDiff !== undefined && taskDiff.patch === ''
+            "
+          >
             <p class="changes-empty">
               No saved code changes are available for this completed task.
             </p>
@@ -3178,11 +3334,15 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 </div>
                 <div class="diff-stat-item">
                   <span class="stat-label">Added:</span>
-                  <span class="stat-value" style="color: #4ef0a8;">+{{ taskDiffStats.additions }}</span>
+                  <span class="stat-value" style="color: #4ef0a8"
+                    >+{{ taskDiffStats.additions }}</span
+                  >
                 </div>
                 <div class="diff-stat-item">
                   <span class="stat-label">Deleted:</span>
-                  <span class="stat-value" style="color: #ff6b6b;">−{{ taskDiffStats.deletions }}</span>
+                  <span class="stat-value" style="color: #ff6b6b"
+                    >−{{ taskDiffStats.deletions }}</span
+                  >
                 </div>
               </div>
               <div v-else class="diff-stats-loading">
@@ -3190,7 +3350,8 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 Loading changes…
               </div>
               <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
-                This diff looks much bigger than the task — main has likely drifted since the branch was cut.
+                This diff looks much bigger than the task — main has likely drifted since the branch
+                was cut.
                 <template v-if="ui.active?.branch">
                   <Button
                     variant="outline"
@@ -3209,60 +3370,84 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               <span>Loading full diff… this may take a moment for large changes.</span>
             </div>
             <template v-else>
-            <div v-if="diffFiles.length > 0" class="diff-file-list">
-              <button
-                v-for="file in diffFiles"
-                :key="file.filename"
-                type="button"
-                class="diff-file-item"
-                @click="scrollToDiffFile(file.filename)"
-              >
-                <span
-                  class="diff-file-badge"
-                  :class="`diff-file-badge-${file.type}`"
-                >{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
-                <span class="diff-file-name" :title="file.filename">{{ file.filename }}</span>
-                <span class="diff-file-delta">
-                  <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
-                  <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
-                </span>
-              </button>
-              <button
-                v-if="diffFiles.length > 8"
-                type="button"
-                class="diff-file-collapse-all"
-                @click="collapsedFiles.size === diffFiles.length ? collapsedFiles.clear() : diffFiles.forEach(f => collapsedFiles.add(f.filename))"
-              >
-                <ChevronsDownUp class="size-3" />
-                {{ collapsedFiles.size === diffFiles.length ? 'Expand all' : 'Collapse all' }}
-              </button>
-            </div>
-            <div v-if="taskDiff.truncated" class="diff-truncated">
-              Diff output was truncated — showing the first ~250 kB.
-            </div>
-            <div class="diff-sections">
-              <div v-for="file in diffFiles" :key="file.filename" :id="file.filename" class="diff-section">
-                <div
-                  class="diff-section-header"
-                  role="button"
-                  tabindex="0"
-                  @click="toggleFileCollapse(file.filename)"
-                  @keydown.enter="toggleFileCollapse(file.filename)"
+              <div v-if="diffFiles.length > 0" class="diff-file-list">
+                <button
+                  v-for="file in diffFiles"
+                  :key="file.filename"
+                  type="button"
+                  class="diff-file-item"
+                  @click="scrollToDiffFile(file.filename)"
                 >
-                  <svg class="diff-section-chevron" :class="{ collapsed: collapsedFiles.has(file.filename) }" viewBox="0 0 24 24" fill="none">
-                    <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{ file.type === 'added' ? 'A' : file.type === 'deleted' ? 'D' : 'M' }}</span>
-                  <span class="diff-section-name">{{ file.filename }}</span>
+                  <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
+                    file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
+                  }}</span>
+                  <span class="diff-file-name" :title="file.filename">{{ file.filename }}</span>
                   <span class="diff-file-delta">
                     <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                     <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                   </span>
-                </div>
-                <pre v-if="!collapsedFiles.has(file.filename)" class="diff-section-content"><code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
-</template></code></pre>
+                </button>
+                <button
+                  v-if="diffFiles.length > 8"
+                  type="button"
+                  class="diff-file-collapse-all"
+                  @click="
+                    collapsedFiles.size === diffFiles.length
+                      ? collapsedFiles.clear()
+                      : diffFiles.forEach((f) => collapsedFiles.add(f.filename))
+                  "
+                >
+                  <ChevronsDownUp class="size-3" />
+                  {{ collapsedFiles.size === diffFiles.length ? "Expand all" : "Collapse all" }}
+                </button>
               </div>
-            </div>
+              <div v-if="taskDiff.truncated" class="diff-truncated">
+                Diff output was truncated — showing the first ~250 kB.
+              </div>
+              <div class="diff-sections">
+                <div
+                  v-for="file in diffFiles"
+                  :key="file.filename"
+                  :id="file.filename"
+                  class="diff-section"
+                >
+                  <div
+                    class="diff-section-header"
+                    role="button"
+                    tabindex="0"
+                    @click="toggleFileCollapse(file.filename)"
+                    @keydown.enter="toggleFileCollapse(file.filename)"
+                  >
+                    <svg
+                      class="diff-section-chevron"
+                      :class="{ collapsed: collapsedFiles.has(file.filename) }"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        d="m6 9 6 6 6-6"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
+                      file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
+                    }}</span>
+                    <span class="diff-section-name">{{ file.filename }}</span>
+                    <span class="diff-file-delta">
+                      <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
+                      <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
+                    </span>
+                  </div>
+                  <pre
+                    v-if="!collapsedFiles.has(file.filename)"
+                    class="diff-section-content"
+                  ><code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+</template></code></pre>
+                </div>
+              </div>
             </template>
           </template>
         </div>
@@ -3308,7 +3493,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               </span>
               <span class="agent-stat">
                 <span class="agent-stat-label">total cost</span>
-                <span class="agent-stat-value">{{ fmtCost(taskUsage.totalCostUsd, taskUsage.costSource) }}</span>
+                <span class="agent-stat-value">{{
+                  fmtCost(taskUsage.totalCostUsd, taskUsage.costSource)
+                }}</span>
               </span>
               <span
                 class="agent-stat"
@@ -3345,7 +3532,10 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                 </table>
               </div>
             </div>
-            <div v-if="taskUsage.sessions && taskUsage.sessions.length > 0" class="task-usage-sessions">
+            <div
+              v-if="taskUsage.sessions && taskUsage.sessions.length > 0"
+              class="task-usage-sessions"
+            >
               <div class="task-usage-title">individual sessions</div>
               <div class="task-usage-table-wrap">
                 <table class="task-usage-table">
@@ -3357,8 +3547,18 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                       <th class="ta-left">ended</th>
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
-                      <th class="ta-right" title="Share of this session's input served from the provider's prompt cache (hover a cell for raw token counts)">cache</th>
-                      <th class="ta-right" title="Model round-trips (one turn may run several tool calls). A high count relative to the work usually means the agent was thrashing.">turns</th>
+                      <th
+                        class="ta-right"
+                        title="Share of this session's input served from the provider's prompt cache (hover a cell for raw token counts)"
+                      >
+                        cache
+                      </th>
+                      <th
+                        class="ta-right"
+                        title="Model round-trips (one turn may run several tool calls). A high count relative to the work usually means the agent was thrashing."
+                      >
+                        turns
+                      </th>
                       <th class="ta-right">cost</th>
                     </tr>
                   </thead>
@@ -3376,16 +3576,25 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                         @click="toggleSessionAgentExpand()"
                       >
                         <div>{{ s.codingAgent }}</div>
-                        <div v-if="sessionAgentsExpanded" class="task-usage-session-model">{{ s.model }}</div>
+                        <div v-if="sessionAgentsExpanded" class="task-usage-session-model">
+                          {{ s.model }}
+                        </div>
                       </td>
                       <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
-                      <td class="ta-left">{{ s.endedAt ? fmtSessionTime(s.endedAt) : (s.status === "active" ? "running…" : "—") }}</td>
+                      <td class="ta-left">
+                        {{
+                          s.endedAt
+                            ? fmtSessionTime(s.endedAt)
+                            : s.status === "active"
+                              ? "running…"
+                              : "—"
+                        }}
+                      </td>
                       <td class="ta-right">{{ fmtElapsed(s.elapsedMs) }}</td>
                       <td class="ta-right">{{ fmtTokens(s.totalTokens) }}</td>
-                      <td
-                        class="ta-right"
-                        :title="cacheCellTitle(s)"
-                      >{{ cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens) }}</td>
+                      <td class="ta-right" :title="cacheCellTitle(s)">
+                        {{ cacheHitPct(s.inputTokens, s.cacheReadTokens, s.cacheCreationTokens) }}
+                      </td>
                       <td class="ta-right">{{ s.turns ?? "—" }}</td>
                       <td class="ta-right">{{ fmtCost(s.costUsd, s.costSource) }}</td>
                     </tr>
@@ -3394,7 +3603,10 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               </div>
             </div>
           </div>
-          <div v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)" class="agent-empty">
+          <div
+            v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)"
+            class="agent-empty"
+          >
             <p>No token or usage data yet.</p>
           </div>
         </div>
@@ -3413,10 +3625,14 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
                   :disabled="ui.saving"
                 />
               </div>
-               <div class="agent-field">
-                  <div v-if="pmOverrideDirty" class="agent-override-actions" style="padding-top:20px">
-                    <span class="agent-save-hint">saving…</span>
-                  </div>
+              <div class="agent-field">
+                <div
+                  v-if="pmOverrideDirty"
+                  class="agent-override-actions"
+                  style="padding-top: 20px"
+                >
+                  <span class="agent-save-hint">saving…</span>
+                </div>
               </div>
             </div>
           </div>
@@ -3428,12 +3644,22 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
             </div>
             <template v-else>
               <template v-for="(entry, index) in pmLines" :key="index">
-                <div v-if="pmLineKind(entry) !== 'hidden'" class="pm-row" :class="`pm-row-${pmLineKind(entry)}`">
+                <div
+                  v-if="pmLineKind(entry) !== 'hidden'"
+                  class="pm-row"
+                  :class="`pm-row-${pmLineKind(entry)}`"
+                >
                   <div v-if="pmLineKind(entry) === 'assistant'" class="pm-mini-avatar">PM</div>
                   <div class="pm-bubble" :class="`pm-bubble-${pmLineKind(entry)}`">
-                    <div v-if="pmLineKind(entry) === 'assistant'" class="pm-markdown" v-html="renderMarkdown(pmLineText(entry))"></div>
+                    <div
+                      v-if="pmLineKind(entry) === 'assistant'"
+                      class="pm-markdown"
+                      v-html="renderMarkdown(pmLineText(entry))"
+                    ></div>
                     <span v-else>{{ pmLineText(entry) }}</span>
-                    <span v-if="pmLineKind(entry) !== 'status' && entry.at" class="msg-time">{{ fmtTime(entry.at) }}</span>
+                    <span v-if="pmLineKind(entry) !== 'status' && entry.at" class="msg-time">{{
+                      fmtTime(entry.at)
+                    }}</span>
                   </div>
                 </div>
               </template>
@@ -3444,8 +3670,30 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
           </div>
 
           <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
-            <div v-for="(msg, i) in pmCannedMessages" :key="i" class="pm-canned-item" role="button" tabindex="0" @click="pmSendCanned(msg)" @keydown.enter="pmSendCanned(msg)">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8 4 3 10l5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <div
+              v-for="(msg, i) in pmCannedMessages"
+              :key="i"
+              class="pm-canned-item"
+              role="button"
+              tabindex="0"
+              @click="pmSendCanned(msg)"
+              @keydown.enter="pmSendCanned(msg)"
+            >
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M8 4 3 10l5 6"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M5 10h11"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                />
+              </svg>
               <span>{{ msg }}</span>
             </div>
           </div>
@@ -3455,7 +3703,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               v-model="pmDraft"
               rows="1"
               :disabled="!pmAgentEnabled"
-              :placeholder="pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'"
+              :placeholder="
+                pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'
+              "
               aria-label="Message PM"
               @keydown="pmOnKeydown"
               @input="adjustPmHeight"
@@ -3468,10 +3718,30 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
               title="Stop response"
               @click="pmInterrupt"
             >
-              <svg viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" /></svg>
+              <svg viewBox="0 0 20 20" fill="none">
+                <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
+              </svg>
             </button>
-            <button v-else type="submit" :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled" aria-label="Send message">
-              <svg viewBox="0 0 20 20" fill="none"><path d="m3 9 13-6-5.5 14-2-5.5L3 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /><path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+            <button
+              v-else
+              type="submit"
+              :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled"
+              aria-label="Send message"
+            >
+              <svg viewBox="0 0 20 20" fill="none">
+                <path
+                  d="m3 9 13-6-5.5 14-2-5.5L3 9Z"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="m8.5 11.5 3-3"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                />
+              </svg>
             </button>
           </form>
         </div>
@@ -3639,7 +3909,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
   margin-top: 3px;
   text-align: right;
   color: var(--txt-faint);
-  font: 500 8.5px 'JetBrains Mono', monospace;
+  font:
+    500 8.5px "JetBrains Mono",
+    monospace;
   opacity: 0.8;
 }
 
@@ -3651,7 +3923,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
   padding: 4px 8px;
   background: transparent;
   color: var(--txt-faint);
-  font: 500 9.5px 'JetBrains Mono', monospace;
+  font:
+    500 9.5px "JetBrains Mono",
+    monospace;
   text-align: center;
 }
 
@@ -3670,7 +3944,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
 }
 
 .pm-markdown :deep(code) {
-  font: 10.5px 'JetBrains Mono', monospace;
+  font:
+    10.5px "JetBrains Mono",
+    monospace;
   background: var(--md-body-bg);
   border-radius: 4px;
   padding: 1px 4px;
@@ -3800,7 +4076,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
   font-size: 12.5px;
   line-height: 1.4;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .pm-canned-item svg {
@@ -3818,7 +4096,9 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
 }
 
 @keyframes pm-bounce {
-  0%, 70%, 100% {
+  0%,
+  70%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -3905,7 +4185,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
   border-radius: 7px;
   color: var(--txt-faint);
   font: 600 10px/1 var(--font-mono);
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
@@ -3919,7 +4199,7 @@ watch(() => draftMsg.value, () => nextTick(adjustDraftMsgHeight), { immediate: t
   color: var(--txt-faint);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 

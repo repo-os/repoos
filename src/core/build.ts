@@ -170,7 +170,9 @@ export function readBuildStamp(root: string): string | null {
       return null;
     }
   };
-  return read(join(root, "dist", ".build-stamp.json")) ?? read(join(root, "dist", ".build-info.json"));
+  return (
+    read(join(root, "dist", ".build-stamp.json")) ?? read(join(root, "dist", ".build-info.json"))
+  );
 }
 
 /** Platform path separator pattern for import.meta.url detection. */

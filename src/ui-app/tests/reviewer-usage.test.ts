@@ -22,12 +22,14 @@ function tempRoot(): string {
 }
 afterEach(() => {
   for (const r of roots) {
-    try { rmSync(r, { recursive: true, force: true }); } catch {}
+    try {
+      rmSync(r, { recursive: true, force: true });
+    } catch {}
   }
   roots.length = 0;
 });
 
-function engineer (name: "engineer" | "reviewer", over = {}) {
+function engineer(name: "engineer" | "reviewer", over = {}) {
   return { name, cli: "claude code", model: "haiku", enabled: true, ...over } as const;
 }
 
@@ -59,11 +61,7 @@ function waitFor(cond: () => boolean, label = "condition", ms = 3000): Promise<v
 describe("reviewer usage wiring (0273)", () => {
   it("reviewCommand emits structured stream usage for claude/qwen/codex", () => {
     const base = { name: "reviewer", model: "provider/m", enabled: true } as const;
-    const claude = reviewCommand(
-      { ...base, cli: "claude code" },
-      "review",
-      "/worktree",
-    );
+    const claude = reviewCommand({ ...base, cli: "claude code" }, "review", "/worktree");
     expect(claude.args).toContain("--output-format");
     expect(claude.args).toContain("stream-json");
     expect(claude.args).toContain("--dangerously-skip-permissions");
@@ -82,7 +80,10 @@ describe("reviewer usage wiring (0273)", () => {
   });
 
   it("parseOneShotLine renders claude stream text and swallows voiceless events", () => {
-    const text = JSON.stringify({ type: "assistant", message: { content: [{ type: "text", text: "the report" }] } });
+    const text = JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "the report" }] },
+    });
     const entry = parseOneShotLine("claude code", text);
     expect(entry).toEqual({ type: "text", text: "the report" });
 
@@ -92,7 +93,10 @@ describe("reviewer usage wiring (0273)", () => {
     const init = JSON.stringify({ type: "system", subtype: "init", session_id: "x" });
     expect(parseOneShotLine("claude code", init)).toBeNull();
 
-    expect(parseOneShotLine("claude code", "a plain warning line")).toEqual({ s: "out", d: "a plain warning line" });
+    expect(parseOneShotLine("claude code", "a plain warning line")).toEqual({
+      s: "out",
+      d: "a plain warning line",
+    });
   });
 
   it("extractOneShotReportText isolates the final answer from a codex stream", () => {

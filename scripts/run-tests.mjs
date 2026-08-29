@@ -51,9 +51,8 @@ const bulk = vitest([
 // Pass 2 — the latency-sensitive suites with the machine to themselves. The
 // basenames are positional name filters (substring-matched against the path).
 // `--passWithNoTests` because a `--changed` run may touch none of them.
-const isolated = vitest(
-  [...passthrough, "--passWithNoTests", "--retry", "2", ...ISOLATED],
-  { REPOOS_TEST_WORKERS: "1" },
-);
+const isolated = vitest([...passthrough, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
+  REPOOS_TEST_WORKERS: "1",
+});
 
 process.exit(bulk || isolated);

@@ -112,11 +112,15 @@ describe("trusted server-side handoff", () => {
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       const steps: string[] = [];
-      const first = await handoffTask(fx.config, readTask(fx), request(fx), (step) => steps.push(step));
+      const first = await handoffTask(fx.config, readTask(fx), request(fx), (step) =>
+        steps.push(step),
+      );
       expect(first).toMatchObject({ ok: true, step: "done" });
       expect(steps).toEqual(["validate", "check", "commit", "review", "main", "done"]);
       expect(readTask(fx).status).toBe("review");
-      expect(readFileSync(join(fx.worktree, "work", "0001-handoff.md"), "utf8")).toContain("status: review");
+      expect(readFileSync(join(fx.worktree, "work", "0001-handoff.md"), "utf8")).toContain(
+        "status: review",
+      );
       expect(git(fx.worktree, ["status", "--porcelain"])).toBe("");
       const count = Number(git(fx.worktree, ["rev-list", "--count", "HEAD"]));
 
@@ -136,7 +140,10 @@ describe("trusted server-side handoff", () => {
     try {
       const base = git(fx.worktree, ["rev-parse", "HEAD"]);
       writeFileSync(join(fx.worktree, "dist", "app.js"), "built in feature worktree\n");
-      writeFileSync(join(fx.worktree, "screenshots", "board.png"), "captured in feature worktree\n");
+      writeFileSync(
+        join(fx.worktree, "screenshots", "board.png"),
+        "captured in feature worktree\n",
+      );
       git(fx.worktree, ["add", "dist", "screenshots"]); // Even pre-staged artifacts are excluded.
 
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
@@ -144,8 +151,12 @@ describe("trusted server-side handoff", () => {
       expect(result).toMatchObject({ ok: true, step: "done" });
       const committed = git(fx.worktree, ["diff", "--name-only", `${base}..HEAD`]).split("\n");
       expect(committed).toContain("source.txt");
-      expect(committed.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/"))).toBe(false);
-      expect(git(fx.worktree, ["status", "--porcelain", "--", "dist", "screenshots"])).toContain("dist/app.js");
+      expect(
+        committed.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/")),
+      ).toBe(false);
+      expect(git(fx.worktree, ["status", "--porcelain", "--", "dist", "screenshots"])).toContain(
+        "dist/app.js",
+      );
 
       // Main can regenerate the same tracked artifacts without creating an
       // artifact conflict when the feature branch is merged.
@@ -162,7 +173,9 @@ describe("trusted server-side handoff", () => {
       const conflicts = git(fx.root, ["diff", "--name-only", "--diff-filter=U"])
         .split("\n")
         .filter(Boolean);
-      expect(conflicts.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/"))).toBe(false);
+      expect(
+        conflicts.some((path) => path.startsWith("dist/") || path.startsWith("screenshots/")),
+      ).toBe(false);
       git(fx.root, ["merge", "--abort"]);
     } finally {
       process.env.PATH = oldPath;
@@ -233,7 +246,10 @@ describe("trusted server-side handoff", () => {
       writeFileSync(join(fx.worktree, "source.txt"), "base\n");
       // Both pre-staged and just-dirty generated artifacts stay excluded.
       writeFileSync(join(fx.worktree, "dist", "app.js"), "built in feature worktree\n");
-      writeFileSync(join(fx.worktree, "screenshots", "board.png"), "recaptured in feature worktree\n");
+      writeFileSync(
+        join(fx.worktree, "screenshots", "board.png"),
+        "recaptured in feature worktree\n",
+      );
       git(fx.worktree, ["add", "dist", "screenshots"]);
       // Task-file churn alone is not implementation either.
       writeFileSync(
@@ -257,7 +273,10 @@ describe("trusted server-side handoff", () => {
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       writeFileSync(join(fx.worktree, "source.txt"), "base\n");
-      const taskWithFlag = taskText("active").replace("branch: feat/handoff", "branch: feat/handoff\nno_source_change: true");
+      const taskWithFlag = taskText("active").replace(
+        "branch: feat/handoff",
+        "branch: feat/handoff\nno_source_change: true",
+      );
       writeFileSync(fx.taskPath, taskWithFlag);
       writeFileSync(join(fx.worktree, "work", "0001-handoff.md"), taskWithFlag);
 
@@ -288,7 +307,11 @@ describe("trusted server-side handoff", () => {
     const fx = makeFixture();
     const oldHead = git(fx.worktree, ["rev-parse", "HEAD"]);
     try {
-      const result = await handoffTask(fx.config, readTask(fx), request(fx, { branch: "feat/other" }));
+      const result = await handoffTask(
+        fx.config,
+        readTask(fx),
+        request(fx, { branch: "feat/other" }),
+      );
       expect(result).toMatchObject({ ok: false, step: "validate" });
       expect(git(fx.worktree, ["rev-parse", "HEAD"])).toBe(oldHead);
     } finally {

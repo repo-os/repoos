@@ -6,7 +6,13 @@ import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
-import { EMPTY_COUNTS, makeTask as makeTaskBase, FakeEventSource, json, flush } from "./component-test-helpers";
+import {
+  EMPTY_COUNTS,
+  makeTask as makeTaskBase,
+  FakeEventSource,
+  json,
+  flush,
+} from "./component-test-helpers";
 
 // jsdom has no Element.scrollTo; TaskDrawer calls it while streaming session output.
 (Element.prototype as unknown as { scrollTo: () => void }).scrollTo ??= () => {};
@@ -82,9 +88,7 @@ describe("Send to engineer note dialog (#0295)", () => {
     await flush();
 
     // The reviewer report has loaded, so the "Send engineer" button is enabled.
-    const sendBtn = wrapper
-      .findAll("button")
-      .find((b) => b.text().includes("Send engineer"));
+    const sendBtn = wrapper.findAll("button").find((b) => b.text().includes("Send engineer"));
     expect(sendBtn, "Send engineer button present").toBeTruthy();
     expect(sendBtn!.attributes("disabled")).toBeUndefined();
 

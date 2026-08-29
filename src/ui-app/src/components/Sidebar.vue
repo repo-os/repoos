@@ -47,7 +47,9 @@ onBeforeUnmount(() => {
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
 const age = computed(() => relTime(health.value?.buildAt ?? null, new Date(now.value)));
 const buildTitle = computed(() =>
-  health.value?.buildAt ? `Built ${new Date(health.value.buildAt).toLocaleString()}` : "Build info unavailable",
+  health.value?.buildAt
+    ? `Built ${new Date(health.value.buildAt).toLocaleString()}`
+    : "Build info unavailable",
 );
 </script>
 
@@ -65,9 +67,15 @@ const buildTitle = computed(() =>
     </RouterLink>
 
     <div class="side-foot">
-      <div class="row"><span>server</span><b>{{ connected ? "connected" : "—" }}</b></div>
-      <div class="row"><span>tasks</span><b>{{ total }}</b></div>
-      <div class="row"><span>events</span><b>{{ eventCount }}</b></div>
+      <div class="row">
+        <span>server</span><b>{{ connected ? "connected" : "—" }}</b>
+      </div>
+      <div class="row">
+        <span>tasks</span><b>{{ total }}</b>
+      </div>
+      <div class="row">
+        <span>events</span><b>{{ eventCount }}</b>
+      </div>
     </div>
 
     <div class="theme-switch" role="group" aria-label="Design theme">

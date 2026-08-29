@@ -80,7 +80,9 @@ describe("resolveSessionTaskId — role-to-task attribution (0230)", () => {
 
 describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety", () => {
   it("extracts authoritative tokens and cost from a JSON usage event", () => {
-    const u = extractUsage('{"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30,"cost_usd":0.05}}');
+    const u = extractUsage(
+      '{"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30,"cost_usd":0.05}}',
+    );
     expect(u.inputTokens).toBe(10);
     expect(u.outputTokens).toBe(20);
     expect(u.totalTokens).toBe(30);
@@ -97,7 +99,9 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
   });
 
   it("maps codex's cached_input_tokens to cacheReadTokens", () => {
-    const u = extractUsage('{"usage":{"input_tokens":300,"output_tokens":50,"cached_input_tokens":2048}}');
+    const u = extractUsage(
+      '{"usage":{"input_tokens":300,"output_tokens":50,"cached_input_tokens":2048}}',
+    );
     expect(u.cacheReadTokens).toBe(2048);
     expect(u.cacheCreationTokens).toBeUndefined();
   });
@@ -109,10 +113,14 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
   });
 
   it("counts turns: claude num_turns from a result event, 1 per opencode step_finish", () => {
-    expect(extractUsage('{"type":"result","total_cost_usd":6.07,"num_turns":146,"usage":{}}').turns).toBe(146);
+    expect(
+      extractUsage('{"type":"result","total_cost_usd":6.07,"num_turns":146,"usage":{}}').turns,
+    ).toBe(146);
     expect(extractUsage('{"type":"step_finish","part":{"type":"step-finish"}}').turns).toBe(1);
     expect(extractUsage('{"type":"step_start"}').turns).toBeUndefined();
-    expect(extractUsage('{"type":"assistant","message":{"usage":{"input_tokens":5}}}').turns).toBeUndefined();
+    expect(
+      extractUsage('{"type":"assistant","message":{"usage":{"input_tokens":5}}}').turns,
+    ).toBeUndefined();
   });
 
   it("folds turns by SUM across invocations (not max / overwrite)", () => {
@@ -157,7 +165,10 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
       costUsd?: number;
     } = {};
     // A transient mid-stream spike latches high under plain Math.max.
-    foldUsage(total, '{"type":"assistant","message":{"usage":{"input_tokens":22086,"output_tokens":10}}}');
+    foldUsage(
+      total,
+      '{"type":"assistant","message":{"usage":{"input_tokens":22086,"output_tokens":10}}}',
+    );
     expect(total.inputTokens).toBe(22086);
     // The authoritative turn summary corrects it downward (#0310: real input 236).
     foldUsage(
@@ -215,7 +226,10 @@ process.stdout.write('the reviewer verdict\\n');
       expect(result.totalTokens).toBe(33);
       expect(result.costUsd).toBeCloseTo(0.07, 10);
     } finally {
-      process.env.PATH = (process.env.PATH ?? "").split(":").filter((p) => p !== bin).join(":");
+      process.env.PATH = (process.env.PATH ?? "")
+        .split(":")
+        .filter((p) => p !== bin)
+        .join(":");
     }
   });
 });
@@ -314,8 +328,21 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       status: "finished",
       lastActivityAt: ended,
     };
-    db.upsertSession({ ...base, sessionId: "c-1", inputTokens: 100, cacheReadTokens: 9000, cacheCreationTokens: 200, turns: 40 });
-    db.upsertSession({ ...base, sessionId: "c-2", inputTokens: 50, cacheReadTokens: 4000, turns: 12 });
+    db.upsertSession({
+      ...base,
+      sessionId: "c-1",
+      inputTokens: 100,
+      cacheReadTokens: 9000,
+      cacheCreationTokens: 200,
+      turns: 40,
+    });
+    db.upsertSession({
+      ...base,
+      sessionId: "c-2",
+      inputTokens: 50,
+      cacheReadTokens: 4000,
+      turns: 12,
+    });
     // A session whose CLI reported no cache figures — must stay NULL, not 0.
     db.upsertSession({ ...base, sessionId: "c-3", inputTokens: 20 });
 
@@ -344,14 +371,31 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       lastActivityAt: ended,
     };
     // First insert: base config agent (no per-task override applied yet).
-    db.upsertSession({ ...row, agent: "engineer", model: "deepinfra/Qwen/Qwen3-Coder", codingAgent: "opencode" });
+    db.upsertSession({
+      ...row,
+      agent: "engineer",
+      model: "deepinfra/Qwen/Qwen3-Coder",
+      codingAgent: "opencode",
+    });
     // Later turn ran under the resolved override (cli_override: claude code).
-    db.upsertSession({ ...row, agent: "engineer", model: "sonnet", codingAgent: "claude", status: "finished" });
+    db.upsertSession({
+      ...row,
+      agent: "engineer",
+      model: "sonnet",
+      codingAgent: "claude",
+      status: "finished",
+    });
     let r = db.getTaskSessions("0310")[0];
     expect(r.model).toBe("sonnet");
     expect(r.codingAgent).toBe("claude");
     // A bare fallback ("default"/"unknown") must NOT overwrite the real value.
-    db.upsertSession({ ...row, agent: "unknown", model: "default", codingAgent: "unknown", status: "finished" });
+    db.upsertSession({
+      ...row,
+      agent: "unknown",
+      model: "default",
+      codingAgent: "unknown",
+      status: "finished",
+    });
     r = db.getTaskSessions("0310")[0];
     expect(r.model).toBe("sonnet");
     expect(r.codingAgent).toBe("claude");
@@ -455,12 +499,24 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       });
 
     // A single Kiro-credits session → its source is preserved.
-    session({ sessionId: "k1", sessionType: "engineer", costUsd: 0.15, costSource: "kiro-credits", totalTokens: 30 });
+    session({
+      sessionId: "k1",
+      sessionType: "engineer",
+      costUsd: 0.15,
+      costSource: "kiro-credits",
+      totalTokens: 30,
+    });
     const one = db.getTaskStats("0001")!;
     expect(one.costSource).toBe("kiro-credits");
 
     // Adding an authoritative-USD session mixes the sources.
-    session({ sessionId: "k2", sessionType: "pm", costUsd: 0.05, costSource: "extractUsage", totalTokens: 10 });
+    session({
+      sessionId: "k2",
+      sessionType: "pm",
+      costUsd: 0.05,
+      costSource: "extractUsage",
+      totalTokens: 10,
+    });
     const mixed = db.getTaskStats("0001")!;
     expect(mixed.costSource).toBe("mixed");
     // The board aggregates across tasks/sources and must also say "mixed".

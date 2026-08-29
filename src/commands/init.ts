@@ -10,25 +10,13 @@
  * initial commit.
  */
 import { spawn } from "node:child_process";
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { findRepoRoot, loadConfig } from "../core/config.js";
-import {
-  gitAvailable,
-  gitCommitAll,
-  gitConfig,
-  gitInit,
-  isGitRepo,
-} from "../core/git.js";
+import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe, resolveServeHost } from "./serve.js";
 
@@ -138,7 +126,10 @@ active/review.
 `;
 
 function repoosToml(layout: "root" | "repoos"): string {
-  const ns = layout === "repoos" ? `workDir = "repoos/work"\ndocsDir = "repoos/docs"\ncacheDir = "repoos/.repoos"\n` : "";
+  const ns =
+    layout === "repoos"
+      ? `workDir = "repoos/work"\ndocsDir = "repoos/docs"\ncacheDir = "repoos/.repoos"\n`
+      : "";
   return `# RepoOS configuration. All fields optional — these are the defaults.
 
 ${ns}defaultStatus = "inbox"
@@ -192,11 +183,7 @@ const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
 type ScaffoldLayout = "root" | "repoos";
 
-function scaffoldInto(
-  root: string,
-  description: string,
-  layout: ScaffoldLayout = "root",
-) {
+function scaffoldInto(root: string, description: string, layout: ScaffoldLayout = "root") {
   const created: string[] = [];
   const skipped: string[] = [];
 
@@ -283,15 +270,11 @@ function findRepoOSDir(start: string): string | null {
 }
 
 function warnAlreadySetUp(dir: string, hint: string): void {
-  console.log(
-    c.yellow("\n  RepoOS is already set up in ") + c.cyan(dir) + c.yellow("."),
-  );
+  console.log(c.yellow("\n  RepoOS is already set up in ") + c.cyan(dir) + c.yellow("."));
   if (hint) console.log(c.dim(`  ${hint}`));
   const marker = repoOSMarker(dir);
   if (marker) {
-    console.log(
-      c.dim("  Detected because ") + c.cyan(marker) + c.dim(" exists."),
-    );
+    console.log(c.dim("  Detected because ") + c.cyan(marker) + c.dim(" exists."));
   }
   console.log(
     c.dim("  To initialize a brand-new project, run repoos init in a different (empty) directory."),
@@ -321,7 +304,9 @@ async function askLayout(): Promise<ScaffoldLayout> {
     const answer = (
       await ask(
         "  Where should RepoOS live?" +
-          c.dim("  r = repo root (default), n = repoos/ subfolder — avoids clashing with existing dirs") +
+          c.dim(
+            "  r = repo root (default), n = repoos/ subfolder — avoids clashing with existing dirs",
+          ) +
           ": ",
       )
     ).toLowerCase();
@@ -398,41 +383,34 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   const cwd = process.cwd();
   let projectName = (args[0] ?? "").trim();
   if (projectName && !/^[A-Za-z0-9._-]+$/.test(projectName)) {
-    console.error(
-      c.red(`  Invalid project name "${projectName}" — use letters, digits, . _ -`),
-    );
+    console.error(c.red(`  Invalid project name "${projectName}" — use letters, digits, . _ -`));
     process.exitCode = 1;
     return;
   }
 
   console.log(c.dim("\n  Not inside a git repository."));
-  console.log(
-    c.cyan("  repoos init will create a new RepoOS project here."),
-  );
+  console.log(c.cyan("  repoos init will create a new RepoOS project here."));
   console.log(
     c.dim("  Default: the CURRENT directory. Enter a project name to use a subdirectory instead."),
   );
 
   if (!projectName) {
-    projectName = await ask(
-      "  Project name" + c.dim(" (Enter = current directory)") + ": ",
-    );
+    projectName = await ask("  Project name" + c.dim(" (Enter = current directory)") + ": ");
   }
 
   let target = cwd;
   if (projectName) {
     target = join(cwd, projectName);
     if (repoOSMarker(target)) {
-      warnAlreadySetUp(
-        target,
-        "Nothing to create — that project already exists.",
-      );
+      warnAlreadySetUp(target, "Nothing to create — that project already exists.");
       process.exitCode = 1;
       return;
     }
     console.log();
     const ok = await confirm(
-      "  Create the project in a new subdirectory " + c.cyan(`./${projectName}`) + c.dim(`  →  ${target}`),
+      "  Create the project in a new subdirectory " +
+        c.cyan(`./${projectName}`) +
+        c.dim(`  →  ${target}`),
       true,
     );
     if (!ok) {
@@ -478,22 +456,20 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       c.yellow("\n  Warning: git doesn't appear to be installed — scaffolding without git."),
     );
   } else if (!gitConfig(target, "user.name") && !gitConfig(target, "user.email")) {
+    console.log(c.yellow("\n  Warning: no git identity is configured."));
+    console.log(c.dim("    git may auto-detect it, or the initial commit may fail. Set it with:"));
     console.log(
-      c.yellow("\n  Warning: no git identity is configured."),
+      c.dim(
+        '    git config --global user.name "You" && git config --global user.email you@example.com',
+      ),
     );
-    console.log(
-      c.dim("    git may auto-detect it, or the initial commit may fail. Set it with:"),
-    );
-    console.log(c.dim('    git config --global user.name "You" && git config --global user.email you@example.com'));
   }
 
   const { created, skipped } = scaffoldInto(target, description, layout);
   reportInit(target, created, skipped);
 
   if (!gitOk) {
-    console.log(
-      c.dim("  To add git later: git init && git add -A && git commit"),
-    );
+    console.log(c.dim("  To add git later: git init && git add -A && git commit"));
   } else if (gitInit(target)) {
     console.log("  " + c.green("git init") + c.dim("  ok"));
   } else {
@@ -506,7 +482,9 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       console.log("  " + c.green("committed ") + c.dim(hash));
     } else {
       console.log(
-        c.yellow("  Warning: initial commit failed (unconfigured identity or a hook) — files left uncommitted."),
+        c.yellow(
+          "  Warning: initial commit failed (unconfigured identity or a hook) — files left uncommitted.",
+        ),
       );
     }
   }
@@ -517,9 +495,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     if (preferred > 0) {
       const free = await nextFreePort(preferred);
       if (free !== preferred) {
-        console.log(
-          c.yellow(`  Port ${preferred} is in use — using ${free} instead.`),
-        );
+        console.log(c.yellow(`  Port ${preferred} is in use — using ${free} instead.`));
         port = free;
       }
     }
@@ -531,8 +507,10 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     if (port > 0) openBrowser(`http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
     if (dirHint) {
       console.log(
-        c.dim("\n  Your shell is still in ") + c.cyan(cwd) +
-          c.dim(" — this new project lives in ") + c.cyan(target) +
+        c.dim("\n  Your shell is still in ") +
+          c.cyan(cwd) +
+          c.dim(" — this new project lives in ") +
+          c.cyan(target) +
           c.dim("."),
       );
     }

@@ -47,7 +47,13 @@ function hexToRgb(h: string): [number, number, number] | null {
  * darkened version of the same hue so the mark stays legible against it.
  * Returns null when the hex is invalid.
  */
-function schemeForHex(hex: string): { glow: [number, number, number]; bgTop: [number, number, number]; bgBottom: [number, number, number] } | null {
+function schemeForHex(
+  hex: string,
+): {
+  glow: [number, number, number];
+  bgTop: [number, number, number];
+  bgBottom: [number, number, number];
+} | null {
   const rgb = hexToRgb(hex);
   if (!rgb) return null;
   const [r, g, b] = rgb;
@@ -134,8 +140,12 @@ export function renderInstanceIcon(repoName: string, size: number, color?: strin
   const pad = size * 0.07;
   const r = size * 0.22; // rounded-corner radius
   const glow: [number, number, number] = chosen ? chosen.glow : hslToRgb(hue as number, 0.7, 0.5);
-  const bgTop: [number, number, number] = chosen ? chosen.bgTop : hslToRgb(hue as number, 0.55, 0.14);
-  const bgBottom: [number, number, number] = chosen ? chosen.bgBottom : hslToRgb(hue as number, 0.6, 0.26);
+  const bgTop: [number, number, number] = chosen
+    ? chosen.bgTop
+    : hslToRgb(hue as number, 0.55, 0.14);
+  const bgBottom: [number, number, number] = chosen
+    ? chosen.bgBottom
+    : hslToRgb(hue as number, 0.6, 0.26);
   const inner = [7, 10, 18] as const; // --bg-2
 
   // Diamond mark, same geometry as the favicon (a square rotated 45°).
@@ -173,7 +183,8 @@ export function renderInstanceIcon(repoName: string, size: number, color?: strin
       if (!inRoundRect(x + 0.5, y + 0.5)) continue;
       let c: [number, number, number];
       const inOuter = inPolygon(x + 0.5, y + 0.5, outer);
-      if (inOuter) c = inPolygon(x + 0.5, y + 0.5, innerPts) ? [inner[0], inner[1], inner[2]] : glow;
+      if (inOuter)
+        c = inPolygon(x + 0.5, y + 0.5, innerPts) ? [inner[0], inner[1], inner[2]] : glow;
       else {
         const t = bgTop[0] + (bgBottom[0] - bgTop[0]) * a;
         const u = bgTop[1] + (bgBottom[1] - bgTop[1]) * a;

@@ -58,10 +58,7 @@ const done = [];
 
 /** Non-critical resources whose load failures are ignored by the screenshot guard. */
 function isNonCriticalResource(url) {
-  return (
-    url.includes("fonts.gstatic.com") ||
-    /\/(favicon|icon|apple-touch-icon)/i.test(url)
-  );
+  return url.includes("fonts.gstatic.com") || /\/(favicon|icon|apple-touch-icon)/i.test(url);
 }
 
 async function capture(newPage, name, url, ready, act) {

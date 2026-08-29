@@ -13,13 +13,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
@@ -115,10 +109,7 @@ function alive(pid: number): boolean {
   }
 }
 
-async function waitForAsync(
-  fn: () => Promise<boolean>,
-  label: string,
-): Promise<void> {
+async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
   const start = Date.now();
   while (!(await fn())) {
     if (Date.now() - start > 10_000) throw new Error(`timed out waiting for ${label}`);

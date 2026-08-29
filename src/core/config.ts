@@ -21,7 +21,14 @@ import type {
 import { STATUSES } from "./types.js";
 
 /** Coding agents an Agent can run under. */
-export const AGENT_CLIS = ["opencode", "claude code", "qwen code", "kiro", "codex", "github copilot"] as const;
+export const AGENT_CLIS = [
+  "opencode",
+  "claude code",
+  "qwen code",
+  "kiro",
+  "codex",
+  "github copilot",
+] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
@@ -89,7 +96,7 @@ export function agentsForConfig(config: Pick<RepoOSConfig, "agents">): Agent[] {
   const migrated = stored.map((agent) =>
     agent.name.toLowerCase() === REPO_GUIDE_LEGACY_NAME.toLowerCase()
       ? { ...agent, name: REPO_GUIDE_NAME }
-      : agent
+      : agent,
   );
 
   const names = new Set(migrated.map((agent) => agent.name.toLowerCase()));
@@ -383,7 +390,10 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
-    if (typeof whisperProvider === "string" && ["groq", "openai", "none"].includes(whisperProvider)) {
+    if (
+      typeof whisperProvider === "string" &&
+      ["groq", "openai", "none"].includes(whisperProvider)
+    ) {
       cfg.whisper = { ...cfg.whisper, provider: whisperProvider as "groq" | "openai" | "none" };
     }
     const whisperApiKey = parsed["whisper.apiKey"];
@@ -399,7 +409,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
           ? process.env.GROQ_API_KEY
           : provider === "openai"
             ? process.env.OPENAI_API_KEY
-            : process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY);
+            : (process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY));
       if (envKey) {
         cfg.whisper = { ...cfg.whisper, apiKey: envKey };
       }
@@ -426,7 +436,8 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     }
     // Secrets prefer an env var over the (git-tracked) config file, same
     // fallback pattern as [whisper] above — env wins when both are set.
-    const authSessionSecret = parsed["auth.sessionSecret"] ?? process.env.REPOOS_AUTH_SESSION_SECRET;
+    const authSessionSecret =
+      parsed["auth.sessionSecret"] ?? process.env.REPOOS_AUTH_SESSION_SECRET;
     if (typeof authSessionSecret === "string" && authSessionSecret) {
       cfg.auth = { ...cfg.auth, sessionSecret: authSessionSecret };
     }
@@ -442,7 +453,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     // never end up in a git-tracked config file. `verifyOtp` also refuses to
     // honor it outside NODE_ENV !== "production" as a second guard.
     const authDevBackdoorCode = process.env.REPOOS_AUTH_DEV_BACKDOOR_CODE;
-    if (typeof authDevBackdoorCode === "string" && authDevBackdoorCode && process.env.NODE_ENV !== "production") {
+    if (
+      typeof authDevBackdoorCode === "string" &&
+      authDevBackdoorCode &&
+      process.env.NODE_ENV !== "production"
+    ) {
       cfg.auth = { ...cfg.auth, devBackdoorCode: authDevBackdoorCode };
     }
     // Email provider — fromAddress isn't sensitive and stays config-only;
@@ -459,7 +474,9 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
             type: "resend",
             apiKey: emailApiKey,
             fromAddress: emailFrom,
-            ...(typeof emailFromName === "string" && emailFromName ? { fromName: emailFromName } : {}),
+            ...(typeof emailFromName === "string" && emailFromName
+              ? { fromName: emailFromName }
+              : {}),
           },
         };
       }
@@ -467,8 +484,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     // Google OAuth — clientId isn't sensitive and stays config-only;
     // clientSecret may come from the config file or REPOOS_GOOGLE_CLIENT_SECRET.
     const googleClientId = parsed["auth.google.clientId"];
-    const googleClientSecret = parsed["auth.google.clientSecret"] ?? process.env.REPOOS_GOOGLE_CLIENT_SECRET;
-    if (typeof googleClientId === "string" && typeof googleClientSecret === "string" && googleClientSecret) {
+    const googleClientSecret =
+      parsed["auth.google.clientSecret"] ?? process.env.REPOOS_GOOGLE_CLIENT_SECRET;
+    if (
+      typeof googleClientId === "string" &&
+      typeof googleClientSecret === "string" &&
+      googleClientSecret
+    ) {
       cfg.auth = {
         ...cfg.auth,
         google: { clientId: googleClientId, clientSecret: googleClientSecret },
@@ -868,7 +890,9 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       // way to know the table "ended" without a following header). Insert
       // before the first header line instead, so newly-saved keys are always
       // unambiguously root-level regardless of what tables follow.
-      const firstHeaderIndex = result.findIndex((l) => l.replace(/#.*$/, "").trim().startsWith("["));
+      const firstHeaderIndex = result.findIndex((l) =>
+        l.replace(/#.*$/, "").trim().startsWith("["),
+      );
       if (firstHeaderIndex === -1) {
         result.push(`${key} = ${serialized}`);
       } else {
@@ -901,10 +925,7 @@ export function sanitizeBuiltInAgent(value: unknown): BuiltInAgentConfig | null 
   const raw = value as Record<string, unknown>;
   const out: BuiltInAgentConfig = {};
   if (typeof raw.enabled === "boolean") out.enabled = raw.enabled;
-  if (
-    typeof raw.schedule === "string" &&
-    (BUILT_IN_SCHEDULES as string[]).includes(raw.schedule)
-  ) {
+  if (typeof raw.schedule === "string" && (BUILT_IN_SCHEDULES as string[]).includes(raw.schedule)) {
     out.schedule = raw.schedule as BuiltInAgentSchedule;
   }
   if (typeof raw.lastRunAt === "string" && !Number.isNaN(Date.parse(raw.lastRunAt))) {

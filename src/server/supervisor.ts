@@ -13,7 +13,13 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { RepoOSConfig, SupervisorConfig, SupervisorHeartbeat, TaskHealthStatus, Task } from "../core/types.js";
+import type {
+  RepoOSConfig,
+  SupervisorConfig,
+  SupervisorHeartbeat,
+  TaskHealthStatus,
+  Task,
+} from "../core/types.js";
 import type { RepoEvent } from "./live-index.js";
 import type { LiveIndex } from "./live-index.js";
 import { createLogger, type Logger } from "../core/logger.js";
@@ -94,11 +100,7 @@ export class AgentSupervisor {
    *  the cache dir is a separate, UI-facing thing, not the NDJSON pipeline. */
   private readonly logger: Logger;
 
-  constructor(
-    cfg: RepoOSConfig,
-    index: LiveIndex,
-    emitEvent: (e: RepoEvent) => void,
-  ) {
+  constructor(cfg: RepoOSConfig, index: LiveIndex, emitEvent: (e: RepoEvent) => void) {
     this.repoosCfg = cfg;
     this.config = new SupervisorConfig_(cfg.supervisor);
     this.index = index;
@@ -172,7 +174,9 @@ export class AgentSupervisor {
       totalActive: result.totalActive,
       healthy,
       warnings,
-      flagged: reports.filter((r) => r.warning || r.action).map((r) => ({ id: r.id, status: r.status, warning: r.warning, action: r.action })),
+      flagged: reports
+        .filter((r) => r.warning || r.action)
+        .map((r) => ({ id: r.id, status: r.status, warning: r.warning, action: r.action })),
     });
 
     this.emitHeartbeat(result);

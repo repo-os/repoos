@@ -129,10 +129,7 @@ export interface ArchitectRunResult {
 
 export class ArchitectureError extends Error {}
 
-export type DesignFindingCategory =
-  | "ui-bug"
-  | "ux-friction"
-  | "design-recommendation";
+export type DesignFindingCategory = "ui-bug" | "ux-friction" | "design-recommendation";
 
 export interface DesignFinding {
   category: DesignFindingCategory;
@@ -303,10 +300,7 @@ function parseMajor(spec: string): number | null {
   return Number.isInteger(major) ? major : null;
 }
 
-async function fetchLatestVersion(
-  name: string,
-  fetchImpl: typeof fetch,
-): Promise<string | null> {
+async function fetchLatestVersion(name: string, fetchImpl: typeof fetch): Promise<string | null> {
   try {
     const res = await fetchImpl(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`, {
       signal: AbortSignal.timeout(5000),
@@ -378,18 +372,16 @@ async function checkOutdatedDependencies(
   const candidates = Object.entries(raw)
     .filter(([, version]) => {
       const s = String(version);
-      return !s.includes("alpha") && !s.includes("beta") && !s.includes("*") && parseMajor(s) !== null;
+      return (
+        !s.includes("alpha") && !s.includes("beta") && !s.includes("*") && parseMajor(s) !== null
+      );
     })
     .slice(0, MAX_REGISTRY_PROBES);
 
-  const results = await mapLimit(
-    candidates,
-    REGISTRY_CONCURRENCY,
-    async ([name, version]) => {
-      const latest = await fetchLatestVersion(name, fetchImpl);
-      return { name, version: String(version), latest };
-    },
-  );
+  const results = await mapLimit(candidates, REGISTRY_CONCURRENCY, async ([name, version]) => {
+    const latest = await fetchLatestVersion(name, fetchImpl);
+    return { name, version: String(version), latest };
+  });
 
   let checked = 0;
   for (const { name, version, latest } of results) {
@@ -535,9 +527,7 @@ export async function scanForTechDebt(
     if (unusedCount >= MAX_UNUSED_ISSUES) break;
     if (decl.name.length < MIN_EXPORT_NAME_LENGTH) continue;
     const nameRe = new RegExp(`\\b${decl.name}\\b`);
-    const referencedElsewhere = scanned.some(
-      (f) => f.rel !== decl.file && nameRe.test(f.content),
-    );
+    const referencedElsewhere = scanned.some((f) => f.rel !== decl.file && nameRe.test(f.content));
     if (referencedElsewhere) continue;
     issues.push({
       type: "unused-code",
@@ -622,9 +612,7 @@ updated_at: "${now}"
       result.created++;
     } catch (err) {
       result.failed++;
-      result.errors.push(
-        `${taskPath}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -697,7 +685,10 @@ export async function scanForPerformanceIssues(
     for (let i = 0; i < cleaned.length; i++) {
       const char = cleaned[i];
       if (char === "\n") lineNum++;
-      if (char === "{" && cleaned.substring(Math.max(0, i - 50), i).match(/\b(?:for|while|forEach)\s*[\(\{]/)) {
+      if (
+        char === "{" &&
+        cleaned.substring(Math.max(0, i - 50), i).match(/\b(?:for|while|forEach)\s*[\(\{]/)
+      ) {
         currentDepth++;
         if (currentDepth > maxDepth) {
           maxDepth = currentDepth;
@@ -722,7 +713,10 @@ export async function scanForPerformanceIssues(
     const syncPatterns = [
       { pattern: /\bfs\.readFileSync\b/, desc: "Synchronous file read blocks the event loop" },
       { pattern: /\bfs\.writeFileSync\b/, desc: "Synchronous file write blocks the event loop" },
-      { pattern: /\bJSON\.stringify\(.*\)\s*;/, desc: "Large object serialization could block; consider streaming" },
+      {
+        pattern: /\bJSON\.stringify\(.*\)\s*;/,
+        desc: "Large object serialization could block; consider streaming",
+      },
     ];
 
     for (const { pattern, desc } of syncPatterns) {
@@ -877,9 +871,7 @@ updated_at: "${now}"
       result.created++;
     } catch (err) {
       result.failed++;
-      result.errors.push(
-        `${taskPath}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -897,21 +889,16 @@ export async function runTechDebtAgent(
 ): Promise<TechDebtRunResult> {
   logger?.agent("tech-debt", "info", "Tech Debt Agent scan started");
   const scan = await scanForTechDebt(config, options);
-  logger?.agent(
-    "tech-debt",
-    "info",
-    `Tech Debt scan completed`,
-    { issuesFound: scan.issues.length, scannedFiles: scan.scannedFiles },
-  );
+  logger?.agent("tech-debt", "info", `Tech Debt scan completed`, {
+    issuesFound: scan.issues.length,
+    scannedFiles: scan.scannedFiles,
+  });
 
   const created = await createTechDebtTasks(config, scan.issues);
   if (created.failed > 0) {
-    logger?.agent(
-      "tech-debt",
-      "error",
-      `Failed to create ${created.failed} tech debt tasks`,
-      { errors: created.errors },
-    );
+    logger?.agent("tech-debt", "error", `Failed to create ${created.failed} tech debt tasks`, {
+      errors: created.errors,
+    });
   }
   if (created.created > 0) {
     logger?.agent("tech-debt", "info", `Created ${created.created} tech debt tasks`);
@@ -938,9 +925,7 @@ export async function runTechDebtAgent(
  * Run the Performance Agent end to end: scan, create tasks, record lastRunAt.
  * The caller owns overlap protection (a single in-flight guard in server.ts).
  */
-export async function runPerformanceAgent(
-  config: RepoOSConfig,
-): Promise<PerformanceRunResult> {
+export async function runPerformanceAgent(config: RepoOSConfig): Promise<PerformanceRunResult> {
   const scan = await scanForPerformanceIssues(config);
   const created = await createPerformanceTasks(config, scan.issues);
 
@@ -1005,7 +990,8 @@ export async function scanForArchitectureIssues(
       file: maxDepFile,
       description: `File has ${maxDependencies} internal dependencies — consider refactoring to reduce coupling`,
       severity: "medium",
-      recommendation: "Extract common functionality into shared utilities and use dependency injection.",
+      recommendation:
+        "Extract common functionality into shared utilities and use dependency injection.",
     });
   }
 
@@ -1034,7 +1020,9 @@ export async function scanForArchitectureIssues(
     }
   }
 
-  const complexCount = scanned.filter((f) => f.content.includes("abstract") || f.content.includes("decorator")).length;
+  const complexCount = scanned.filter(
+    (f) => f.content.includes("abstract") || f.content.includes("decorator"),
+  ).length;
   if (complexCount > 5) {
     issues.push({
       type: "over-engineering",
@@ -1050,7 +1038,8 @@ export async function scanForArchitectureIssues(
       type: "scalability-risk",
       description: `${largeFiles.length} files exceed 1000 lines — these may be bottlenecks as the system scales`,
       severity: "medium",
-      recommendation: "Consider breaking large files into smaller modules with clear responsibilities.",
+      recommendation:
+        "Consider breaking large files into smaller modules with clear responsibilities.",
     });
   }
 
@@ -1068,15 +1057,25 @@ export async function scanForArchitectureIssues(
       if (!taskFile.endsWith(".md")) continue;
       try {
         const content = readFileSync(join(workDir, taskFile), "utf8");
-        if (content.includes("architecture") || content.includes("design") || content.includes("refactor")) {
+        if (
+          content.includes("architecture") ||
+          content.includes("design") ||
+          content.includes("refactor")
+        ) {
           activeArchTasks++;
         }
-      } catch { /* skip unreadable files */ }
+      } catch {
+        /* skip unreadable files */
+      }
     }
-  } catch { /* work directory might not exist */ }
+  } catch {
+    /* work directory might not exist */
+  }
 
   if (activeArchTasks > 0) {
-    insights.push(`Found ${activeArchTasks} active tasks related to architecture and design decisions.`);
+    insights.push(
+      `Found ${activeArchTasks} active tasks related to architecture and design decisions.`,
+    );
   }
 
   return { issues, scannedFiles: scanned.length, taskCount, insights };
@@ -1132,9 +1131,12 @@ export async function generateArchitectureReport(
   report += `## Recommendations\n\n`;
   report += `1. Schedule periodic architecture reviews (quarterly) to track progress.\n`;
   report += `2. Maintain an up-to-date architecture document reflecting actual system design.\n`;
-  if (scan.issues.some((i) => i.severity === "high")) report += `3. Address high-severity issues first.\n`;
-  if (scan.issues.some((i) => i.type === "tight-coupling")) report += `4. Implement dependency injection and clear module boundaries to reduce tight coupling.\n`;
-  if (scan.issues.some((i) => i.type === "scalability-risk")) report += `5. Plan refactoring for large modules that may become bottlenecks.\n`;
+  if (scan.issues.some((i) => i.severity === "high"))
+    report += `3. Address high-severity issues first.\n`;
+  if (scan.issues.some((i) => i.type === "tight-coupling"))
+    report += `4. Implement dependency injection and clear module boundaries to reduce tight coupling.\n`;
+  if (scan.issues.some((i) => i.type === "scalability-risk"))
+    report += `5. Plan refactoring for large modules that may become bottlenecks.\n`;
   report += `\n## Next Steps\n\n`;
   report += `- Review this report with the team\n`;
   report += `- Create tasks for addressing identified issues\n`;
@@ -1188,7 +1190,9 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
   }
   const scanned = readScannedFiles(uiRoot, files);
 
-  const components = scanned.filter((f) => f.rel.startsWith("components/") && f.rel.endsWith(".vue"));
+  const components = scanned.filter(
+    (f) => f.rel.startsWith("components/") && f.rel.endsWith(".vue"),
+  );
   const views = scanned.filter((f) => f.rel.startsWith("views/") && f.rel.endsWith(".vue"));
 
   insights.push(
@@ -1211,13 +1215,15 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
       // is the theme-unsafe one.
       if (value.includes("{") || value.length === 0) continue;
       findings.push({
-        category: value.includes("color") || value.includes("background") || value.includes("border")
-          ? "ui-bug"
-          : "design-recommendation",
+        category:
+          value.includes("color") || value.includes("background") || value.includes("border")
+            ? "ui-bug"
+            : "design-recommendation",
         file: file.rel,
         line: findLineAt(file.content, m.index),
         description: `Hardcoded inline style "${value}" bypasses the shared design system.`,
-        rationale: "Inline styles ignore the centralized CSS variables and can drift from the theme, especially across dark mode.",
+        rationale:
+          "Inline styles ignore the centralized CSS variables and can drift from the theme, especially across dark mode.",
         recommendation: `Move this styling into a scoped class or a shared utility so it inherits the app's theme tokens (see how neighboring \`src/ui-app/src/components/*.vue\` components style via CSS variables).`,
         severity: "medium",
       });
@@ -1235,8 +1241,10 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: findLineAt(cleaned, m.index),
         description: `Hardcoded hex color ${m[0]} used instead of a theme variable.`,
-        rationale: "Hardcoded colors do not adapt to the app's light/dark theme and make palette changes require editing many files.",
-        recommendation: "Replace with a CSS variable (e.g. `var(--text-primary)`, `var(--border)`) so it follows the active theme.",
+        rationale:
+          "Hardcoded colors do not adapt to the app's light/dark theme and make palette changes require editing many files.",
+        recommendation:
+          "Replace with a CSS variable (e.g. `var(--text-primary)`, `var(--border)`) so it follows the active theme.",
         severity: "low",
       });
     }
@@ -1265,7 +1273,8 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: findLineAt(file.content, m.index),
         description: "A button appears to have no visible label or `aria-label`.",
-        rationale: "Icon-only or label-less buttons are inaccessible to screen readers and confusing to users.",
+        rationale:
+          "Icon-only or label-less buttons are inaccessible to screen readers and confusing to users.",
         recommendation: "Add a visible label or an `aria-label` describing the action.",
         severity: "medium",
       });
@@ -1287,7 +1296,8 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: findLineAt(file.content, m.index),
         description: `A <${m[1]}> element carries a @click handler but no role="button" or tabindex.`,
-        rationale: "Click-only handlers on non-interactive elements are unreachable by keyboard and screen readers don't announce them as actionable.",
+        rationale:
+          "Click-only handlers on non-interactive elements are unreachable by keyboard and screen readers don't announce them as actionable.",
         recommendation: `Add role="button" and tabindex="0" (plus Enter/Space handling) or use a real <button> in \`${file.rel}\`.`,
         severity: "medium",
       });
@@ -1304,8 +1314,10 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: findLineAt(file.content, m.index),
         description: "Uses `v-html`, which injects raw HTML.",
-        rationale: "v-html can render unsanitized HTML (XSS risk) and makes styling/consistency harder to control.",
-        recommendation: "Prefer Vue interpolation or a dedicated render approach; if v-html is required, ensure the source is trusted and sanitized.",
+        rationale:
+          "v-html can render unsanitized HTML (XSS risk) and makes styling/consistency harder to control.",
+        recommendation:
+          "Prefer Vue interpolation or a dedicated render approach; if v-html is required, ensure the source is trusted and sanitized.",
         severity: "high",
       });
     }
@@ -1319,7 +1331,9 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
     while ((m = INPUT_RE.exec(file.content)) !== null) {
       const attrs = m[1];
       if (/type\s*=\s*["'](?:hidden|checkbox|radio)["']/i.test(attrs)) continue;
-      const hasName = /aria-label\s*=|aria-labelledby\s*=|id\s*=|placeholder\s*=|v-model\s*/.test(attrs);
+      const hasName = /aria-label\s*=|aria-labelledby\s*=|id\s*=|placeholder\s*=|v-model\s*/.test(
+        attrs,
+      );
       if (hasName) continue;
       const before = file.content.slice(Math.max(0, m.index - 80), m.index);
       if (/<label\b/.test(before)) continue;
@@ -1328,8 +1342,10 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: findLineAt(file.content, m.index),
         description: "An <input> has no explicit label, aria-label, or labelled-by association.",
-        rationale: "Inputs without accessible labels are hard to fill out for screen-reader users and can be ambiguous for everyone.",
-        recommendation: "Wrap or associate the input with a <label>, or add aria-label/aria-labelledby.",
+        rationale:
+          "Inputs without accessible labels are hard to fill out for screen-reader users and can be ambiguous for everyone.",
+        recommendation:
+          "Wrap or associate the input with a <label>, or add aria-label/aria-labelledby.",
         severity: "medium",
       });
     }
@@ -1344,8 +1360,10 @@ export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignS
         file: file.rel,
         line: 1,
         description: `Component file is ${file.lineCount} lines long.`,
-        rationale: "Very large single-file components are hard to maintain and tend to accumulate inconsistent, copy-pasted styling.",
-        recommendation: "Break the component into smaller focused components and extract repeated markup/styling into shared primitives.",
+        rationale:
+          "Very large single-file components are hard to maintain and tend to accumulate inconsistent, copy-pasted styling.",
+        recommendation:
+          "Break the component into smaller focused components and extract repeated markup/styling into shared primitives.",
         severity: "low",
       });
     }
@@ -1406,7 +1424,10 @@ export async function generateDesignReport(
     const labels: Record<DesignFindingCategory, { title: string; heading: string }> = {
       "ui-bug": { title: "UI Bugs", heading: "UI Bugs" },
       "ux-friction": { title: "UX Friction", heading: "UX Friction" },
-      "design-recommendation": { title: "Design Recommendations", heading: "Proposed Updates, Fixes, and New Designs" },
+      "design-recommendation": {
+        title: "Design Recommendations",
+        heading: "Proposed Updates, Fixes, and New Designs",
+      },
     };
     const order: DesignFindingCategory[] = ["ui-bug", "ux-friction", "design-recommendation"];
     for (const cat of order) {
@@ -1580,4 +1601,3 @@ function findNextTaskId(workDir: string): string {
     return "0001";
   }
 }
-

@@ -88,16 +88,17 @@ export function generateOAuthState(): string {
 export function generatePkceVerifier(): string {
   const buf = randomBytes(32);
   // base64url encode
-  return buf
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /** SHA-256 hash for PKCE code challenge, base64url encoded. */
 export function pkceChallenge(verifier: string): string {
-  return createHash("sha256").update(verifier).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return createHash("sha256")
+    .update(verifier)
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 // ---------------------------------------------------------------------------
@@ -107,11 +108,7 @@ export function pkceChallenge(verifier: string): string {
 export const SESSION_COOKIE_NAME = "repoos_session";
 export const DEFAULT_SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-export function buildSessionCookie(
-  token: string,
-  maxAge: number,
-  secure: boolean,
-): string {
+export function buildSessionCookie(token: string, maxAge: number, secure: boolean): string {
   const parts = [
     `${SESSION_COOKIE_NAME}=${token}`,
     "HttpOnly",

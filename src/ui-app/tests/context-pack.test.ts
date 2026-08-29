@@ -14,11 +14,7 @@ import {
   resumePreamble,
   type ContextPack,
 } from "../../core/context-pack.js";
-import {
-  bootstrap,
-  detectPackageManager,
-  type BootstrapResult,
-} from "../../core/bootstrap.js";
+import { bootstrap, detectPackageManager, type BootstrapResult } from "../../core/bootstrap.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
 // ---- Test helpers ----
@@ -48,10 +44,7 @@ function makeConfig(root: string): RepoOSConfig {
   };
 }
 
-function makeTask(
-  id: string,
-  overrides: Partial<Task> = {},
-): Task {
+function makeTask(id: string, overrides: Partial<Task> = {}): Task {
   return {
     id,
     title: `Test task ${id}`,
@@ -198,22 +191,32 @@ describe("context pack", () => {
     root = tmpDir();
     config = makeConfig(root);
     // Create minimal repo structure for the repo map
-    writeFile(join(root, "src", "core", "types.ts"),
-      `export interface Foo { bar: string; }`);
-    writeFile(join(root, "src", "core", "git.ts"),
-      `import { Foo } from "./types.js";\nexport function git() {}`);
-    writeFile(join(root, "src", "server", "agents.ts"),
-      `import { git } from "../core/git.js";\nexport function run() {}`);
-    writeFile(join(root, "src", "server", "server.ts"),
-      `import { run } from "./agents.js";\nexport function serve() {}`);
-    writeFile(join(root, "src", "commands", "check.ts"),
-      `export function check() {}`);
-    writeFile(join(root, "src", "ui-app", "tests", "agents.test.ts"),
-      `import { describe, it, expect } from "vitest";\nimport { run } from "../../server/agents.js";`);
-    writeFile(join(root, "AGENTS.md"),
-      `# AGENTS.md\n\n## Operating loop\n\n1. Read this file first.\n2. Run \`repoos check\`.`);
-    writeFile(join(root, config.docsDir, "architecture.md"),
-      `# Architecture\n\nThe system has three layers.`);
+    writeFile(join(root, "src", "core", "types.ts"), `export interface Foo { bar: string; }`);
+    writeFile(
+      join(root, "src", "core", "git.ts"),
+      `import { Foo } from "./types.js";\nexport function git() {}`,
+    );
+    writeFile(
+      join(root, "src", "server", "agents.ts"),
+      `import { git } from "../core/git.js";\nexport function run() {}`,
+    );
+    writeFile(
+      join(root, "src", "server", "server.ts"),
+      `import { run } from "./agents.js";\nexport function serve() {}`,
+    );
+    writeFile(join(root, "src", "commands", "check.ts"), `export function check() {}`);
+    writeFile(
+      join(root, "src", "ui-app", "tests", "agents.test.ts"),
+      `import { describe, it, expect } from "vitest";\nimport { run } from "../../server/agents.js";`,
+    );
+    writeFile(
+      join(root, "AGENTS.md"),
+      `# AGENTS.md\n\n## Operating loop\n\n1. Read this file first.\n2. Run \`repoos check\`.`,
+    );
+    writeFile(
+      join(root, config.docsDir, "architecture.md"),
+      `# Architecture\n\nThe system has three layers.`,
+    );
     task = makeTask("0099");
   });
 
@@ -283,7 +286,12 @@ describe("context pack", () => {
       durationMs: 42,
       steps: [
         { name: "validate-repo-root", ok: true, durationMs: 1 },
-        { name: "install-dependencies", ok: true, durationMs: 40, detail: "dependencies installed with bun" },
+        {
+          name: "install-dependencies",
+          ok: true,
+          durationMs: 40,
+          detail: "dependencies installed with bun",
+        },
       ],
     };
     const pack = generateContextPack(config, task, task.branch, root, fakeBootstrap);
@@ -441,16 +449,23 @@ describe("file relevance", () => {
   beforeEach(() => {
     root = tmpDir();
     // Create source files with imports to test relevance ranking
-    writeFile(join(root, "src", "core", "types.ts"),
-      `export interface Config { root: string; }`);
-    writeFile(join(root, "src", "core", "config.ts"),
-      `import { Config } from "./types.js";\nexport function loadConfig(): Config { return { root: "/" }; }`);
-    writeFile(join(root, "src", "server", "agents.ts"),
-      `import { Config } from "../core/types.js";\nimport { loadConfig } from "../core/config.js";\nexport class AgentRunner {}`);
-    writeFile(join(root, "src", "server", "server.ts"),
-      `import { AgentRunner } from "./agents.js";\nexport function start() {}`);
-    writeFile(join(root, "src", "ui-app", "tests", "server.test.ts"),
-      `import { start } from "../../server/server.js";\ndescribe("server", () => {});`);
+    writeFile(join(root, "src", "core", "types.ts"), `export interface Config { root: string; }`);
+    writeFile(
+      join(root, "src", "core", "config.ts"),
+      `import { Config } from "./types.js";\nexport function loadConfig(): Config { return { root: "/" }; }`,
+    );
+    writeFile(
+      join(root, "src", "server", "agents.ts"),
+      `import { Config } from "../core/types.js";\nimport { loadConfig } from "../core/config.js";\nexport class AgentRunner {}`,
+    );
+    writeFile(
+      join(root, "src", "server", "server.ts"),
+      `import { AgentRunner } from "./agents.js";\nexport function start() {}`,
+    );
+    writeFile(
+      join(root, "src", "ui-app", "tests", "server.test.ts"),
+      `import { start } from "../../server/server.js";\ndescribe("server", () => {});`,
+    );
     writeFile(join(root, "AGENTS.md"), "# AGENTS");
   });
 
@@ -469,7 +484,7 @@ describe("file relevance", () => {
     const pack = generateContextPack(config, task, task.branch, root, null);
     // agent area should rank agents.ts highest
     expect(pack.content).toContain("src/server/agents.ts");
-    expect(pack.content).toContain("area match: \"agent\"");
+    expect(pack.content).toContain('area match: "agent"');
   });
 
   it("ranks files by task body reference", () => {
@@ -539,7 +554,10 @@ describe("bootstrap integration", () => {
     // Need src/ + package.json with build script for the check to activate
     mkdirSync(join(root, "src"), { recursive: true });
     writeFile(join(root, "package.json"), JSON.stringify({ scripts: { build: "tsc" } }));
-    writeFile(join(root, "dist", ".build-info.json"), JSON.stringify({ hash: "abc", generatedAt: new Date().toISOString() }));
+    writeFile(
+      join(root, "dist", ".build-info.json"),
+      JSON.stringify({ hash: "abc", generatedAt: new Date().toISOString() }),
+    );
     const task = makeTask("0099");
     const result = await bootstrap(config, task, task.branch, root);
     const buildStep = result.steps.find((s) => s.name === "check-orchestration-build");

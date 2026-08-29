@@ -211,7 +211,11 @@ describe("createSkill", () => {
   it("writes SKILL.md with assembled frontmatter (manual)", () => {
     const root = tmpDir();
     const config = makeConfig(root);
-    const res = createSkill(config, { name: "My Skill", description: "when to use it", body: "# Hi\nbody" });
+    const res = createSkill(config, {
+      name: "My Skill",
+      description: "when to use it",
+      body: "# Hi\nbody",
+    });
     expect(res.path).toBe("skills/my-skill/SKILL.md");
     const text = readFileSync(join(root, res.path), "utf8");
     expect(text).toContain('name: "My Skill"');

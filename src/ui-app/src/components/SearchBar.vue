@@ -32,22 +32,20 @@ const docsWithContent = ref<Map<string, string>>(new Map());
 
 const searchSource = computed(() => ({
   tasks: tasks.value,
-  docs: docList.value.map(d => ({
+  docs: docList.value.map((d) => ({
     ...d,
     content: docsWithContent.value.get(d.path),
   })),
   fields: searchableFields.value,
 }));
 
-const results = computed(() =>
-  searchAll(query.value, searchSource.value),
-);
+const results = computed(() => searchAll(query.value, searchSource.value));
 
 const showRecent = computed(() => query.value.trim().length === 0);
 
 const displayItems = computed(() => {
   if (showRecent.value) {
-    return recentSearches.value.map(s => ({
+    return recentSearches.value.map((s) => ({
       kind: "recent" as const,
       title: s,
       subtitle: "Recent search",
@@ -103,7 +101,10 @@ async function loadDocContents(): Promise<void> {
 function addRecentSearch(q: string): void {
   const trimmed = q.trim();
   if (!trimmed) return;
-  recentSearches.value = [trimmed, ...recentSearches.value.filter(s => s !== trimmed)].slice(0, 5);
+  recentSearches.value = [trimmed, ...recentSearches.value.filter((s) => s !== trimmed)].slice(
+    0,
+    5,
+  );
 }
 
 function openResult(r: SearchResult): void {
@@ -193,18 +194,18 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
 // doc body content was never fetched, so full-text doc search silently only
 // ever matched on title/path. Watching re-fires once the list actually
 // arrives (and again if new docs get created later).
-watch(docList, () => {
-  void loadDocContents();
-}, { immediate: true });
+watch(
+  docList,
+  () => {
+    void loadDocContents();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <div class="search-wrap">
-    <button
-      class="search-input"
-      type="button"
-      @click="openOverlay"
-    >
+    <button class="search-input" type="button" @click="openOverlay">
       <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -223,7 +224,12 @@ watch(docList, () => {
           <div class="search-overlay-header">
             <svg class="search-ico" width="20" height="20" viewBox="0 0 24 24" fill="none">
               <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
-              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
             </svg>
             <input
               ref="inputEl"
@@ -242,7 +248,12 @@ watch(docList, () => {
               aria-label="Close search"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
               </svg>
             </button>
           </div>
@@ -261,13 +272,22 @@ watch(docList, () => {
                 >
                   <div class="search-row-content">
                     <template v-if="(g.kind as string) === 'task'">
-                      <span class="cdot" :style="{ backgroundColor: statusColor((item.r as any).task.status) }"></span>
+                      <span
+                        class="cdot"
+                        :style="{ backgroundColor: statusColor((item.r as any).task.status) }"
+                      ></span>
                     </template>
                     <div class="search-row-text">
                       <div class="search-row-title">{{ item.r.title }}</div>
                       <div class="search-row-sub">{{ item.r.subtitle }}</div>
                       <div v-if="(item.r as any).snippet" class="search-row-snippet">
-                        <template v-if="(item.r as any).snippet && typeof (item.r as any).snippet === 'object' && 'html' in (item.r as any).snippet">
+                        <template
+                          v-if="
+                            (item.r as any).snippet &&
+                            typeof (item.r as any).snippet === 'object' &&
+                            'html' in (item.r as any).snippet
+                          "
+                        >
                           <span v-html="(item.r as any).snippet.html"></span>
                         </template>
                         <template v-else>

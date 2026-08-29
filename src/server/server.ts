@@ -128,9 +128,21 @@ import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
-import { sampleSystem, psAvailable, reapStrayServeProcesses, killTrackedProcess, type SystemStats } from "./system.js";
+import {
+  sampleSystem,
+  psAvailable,
+  reapStrayServeProcesses,
+  killTrackedProcess,
+  type SystemStats,
+} from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
-import { notifyStatusChange, notifyTaskCreated, notifyNeedsInput, publish, ntfyBaseUrl } from "./ntfy.js";
+import {
+  notifyStatusChange,
+  notifyTaskCreated,
+  notifyNeedsInput,
+  publish,
+  ntfyBaseUrl,
+} from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
@@ -279,7 +291,9 @@ const REPO_GUIDE_SESSION_ID = "repoos-guide";
 function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   const counts = new Map<string, number>();
   for (const task of tasks) counts.set(task.status, (counts.get(task.status) ?? 0) + 1);
-  const statusSummary = STATUSES.map((status) => `${status}: ${counts.get(status) ?? 0}`).join(", ");
+  const statusSummary = STATUSES.map((status) => `${status}: ${counts.get(status) ?? 0}`).join(
+    ", ",
+  );
   const taskSummary = tasks
     .map(
       (task) =>
@@ -725,7 +739,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const requestedPort = opts.port ?? 7171;
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
   const isControlPlane = requestedPort !== 0 && !isPreviewChild;
-  const mode = isPreviewChild ? "preview" : requestedPort === 0 ? "ephemeral" : opts.reloadReplacement ? "reload-replacement" : "control-plane";
+  const mode = isPreviewChild
+    ? "preview"
+    : requestedPort === 0
+      ? "ephemeral"
+      : opts.reloadReplacement
+        ? "reload-replacement"
+        : "control-plane";
   logger.system("info", "RepoOS server starting", {
     root: config.root,
     pid: process.pid,
@@ -741,13 +761,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // When auth is enabled, the server must have a usable login method and a
   // bootstrap admin path — otherwise enable auth silently locks everyone out.
   if (config.auth?.enabled) {
-    const hasEmailProvider = !!(config.auth.emailProvider?.apiKey && config.auth.emailProvider?.fromAddress);
+    const hasEmailProvider = !!(
+      config.auth.emailProvider?.apiKey && config.auth.emailProvider?.fromAddress
+    );
     const hasGoogle = !!(config.auth.google?.clientId && config.auth.google?.clientSecret);
     if (!hasEmailProvider && !hasGoogle) {
       throw new Error(
         "Auth is enabled but no login provider is configured. " +
-        "Set [auth.emailProvider] (Resend API key + from address) or " +
-        "[auth.google] (client ID + secret) in your config, or disable auth.",
+          "Set [auth.emailProvider] (Resend API key + from address) or " +
+          "[auth.google] (client ID + secret) in your config, or disable auth.",
       );
     }
     // Auto-generate a session secret if none was provided. The secret is
@@ -762,8 +784,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (userCount === 0 && !config.auth.bootstrapAdmin) {
       throw new Error(
         "Auth is enabled but no users exist and no bootstrap admin email is configured. " +
-        "Set [auth.bootstrapAdmin] to an email address in your config, " +
-        "or use the Settings UI to add users before enabling auth.",
+          "Set [auth.bootstrapAdmin] to an email address in your config, " +
+          "or use the Settings UI to add users before enabling auth.",
       );
     }
     logger.system("info", "Auth enabled — login providers validated", {
@@ -818,7 +840,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         logger.system("warn", `remote validation reconcile failed: ${(e as Error).message}`);
       });
     } catch (e) {
-      logger.system("error", `remote validation runner disabled — init failed: ${(e as Error).message}`);
+      logger.system(
+        "error",
+        `remote validation runner disabled — init failed: ${(e as Error).message}`,
+      );
       remoteValidator = undefined;
     }
   }
@@ -887,9 +912,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const taskChecks = new TaskCheckManager();
   const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
     if (eventKind === "started") {
-      emitEvent({ type: "task-check.started", taskId: run.taskId, checkId: run.id, checkKind: run.kind, at: run.startedAt });
+      emitEvent({
+        type: "task-check.started",
+        taskId: run.taskId,
+        checkId: run.id,
+        checkKind: run.kind,
+        at: run.startedAt,
+      });
     } else if (eventKind === "output") {
-      emitEvent({ type: "task-check.output", taskId: run.taskId, checkId: run.id, chunk: chunk ?? "", at: new Date().toISOString() });
+      emitEvent({
+        type: "task-check.output",
+        taskId: run.taskId,
+        checkId: run.id,
+        chunk: chunk ?? "",
+        at: new Date().toISOString(),
+      });
     } else {
       emitEvent({
         type: "task-check.done",
@@ -910,7 +947,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
   const emitIntegration = (): void => {
-    emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, reportedStages) });
+    emitEvent({
+      type: "integration",
+      pipeline: buildIntegrationSnapshot(jobCoordinator, reportedStages),
+    });
   };
 
   // Initialize job processing (runs after emitEvent is available) (0118)
@@ -1096,101 +1136,125 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
       }
     },
-    { logger, getTask: (taskId) => index.getTask(taskId), onHandoff: async (request) => {
-      if (!runner.consumeHandoff(request)) {
-        runner.system(request.taskId, "✗ server-side handoff rejected: invalid or expired runner session");
-        return;
-      }
-      // AgentRunner marks the handoff as in-flight *before* invoking this
-      // callback so it cannot be mistaken for a stalled task or restarted
-      // mid-finalization. The capability above is single-use, so a duplicate
-      // callback has already been rejected by consumeHandoff(). Checking the
-      // in-flight marker here would reject this very handoff every time.
-      const task = index.getTask(request.taskId);
-      if (!task) {
-        runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
-        return;
-      }
-      runner.system(request.taskId, "Server finalization started — validating the runner handoff");
-      const result = await handoffTask(
-        config,
-        task,
-        request,
-        (step) => {
-          emitEvent({ type: "task.progress", id: task.id, step: `handoff:${step}`, at: new Date().toISOString() });
-          if (step !== "validate" && step !== "done") {
-            runner.system(task.id, `Server finalization: ${step}`);
-          }
-        },
-        onServerStatusChange,
-        taskChecks,
-        onTaskCheckEvent,
-      );
-      if (result.ok) {
-        index.applyFileChange(task.absPath, { guarded: true });
-        runner.system(task.id, "✓ Server finalization complete — task moved to review");
-      } else {
-        runner.system(
-          task.id,
-          `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
-        );
-        scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
-          index.applyFileChange(absPath, { guarded: true }),
-        );
-      }
-    },
-    onPreviewRequest: async (request) => {
-      // The capability was minted by the runner for THIS run: task id, run id,
-      // registered branch, and registered worktree all bind to server state.
-      // Anything else — a forged or expired run, a cross-task claim, or a
-      // substituted path — is rejected before any process is started (#0121).
-      if (!runner.validatePreview(request)) {
-        runner.system(request.taskId, "✗ managed preview request rejected: no matching live runner run");
-        return;
-      }
-      const task = index.getTask(request.taskId);
-      if (!task) {
-        runner.system(request.taskId, "✗ managed preview request failed: task no longer exists");
-        return;
-      }
-      runner.system(
-        request.taskId,
-        "Server-owned preview requested — validating the run and starting the worktree preview",
-      );
-      // Reuse the existing PreviewManager: idempotent per task, RepoOS chooses
-      // the port and owns the process lifecycle. Never a parallel implementation.
-      const result = await previews.start(task);
-      if (!result.ok) {
+    {
+      logger,
+      getTask: (taskId) => index.getTask(taskId),
+      onHandoff: async (request) => {
+        if (!runner.consumeHandoff(request)) {
+          runner.system(
+            request.taskId,
+            "✗ server-side handoff rejected: invalid or expired runner session",
+          );
+          return;
+        }
+        // AgentRunner marks the handoff as in-flight *before* invoking this
+        // callback so it cannot be mistaken for a stalled task or restarted
+        // mid-finalization. The capability above is single-use, so a duplicate
+        // callback has already been rejected by consumeHandoff(). Checking the
+        // in-flight marker here would reject this very handoff every time.
+        const task = index.getTask(request.taskId);
+        if (!task) {
+          runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
+          return;
+        }
         runner.system(
           request.taskId,
-          `✗ managed preview failed: ${result.error ?? "could not start the preview"}. The worktree is unchanged and the same session can be resumed.`,
+          "Server finalization started — validating the runner handoff",
         );
-        return;
-      }
-      const url = result.url ?? "";
-      runner.system(request.taskId, `✓ Managed preview ready: ${url}`);
-      // The sandbox may not be able to open the URL — probe it from the
-      // privileged server side and record the structured outcome.
-      const probe = await probePreview(url);
-      if (probe.ok) {
-        runner.system(request.taskId, `✓ Server-side preview probe passed — ${probe.detail ?? "preview responds"}`);
-      } else {
-        runner.system(request.taskId, `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`);
-      }
+        const result = await handoffTask(
+          config,
+          task,
+          request,
+          (step) => {
+            emitEvent({
+              type: "task.progress",
+              id: task.id,
+              step: `handoff:${step}`,
+              at: new Date().toISOString(),
+            });
+            if (step !== "validate" && step !== "done") {
+              runner.system(task.id, `Server finalization: ${step}`);
+            }
+          },
+          onServerStatusChange,
+          taskChecks,
+          onTaskCheckEvent,
+        );
+        if (result.ok) {
+          index.applyFileChange(task.absPath, { guarded: true });
+          runner.system(task.id, "✓ Server finalization complete — task moved to review");
+        } else {
+          runner.system(
+            task.id,
+            `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
+          );
+          scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
+            index.applyFileChange(absPath, { guarded: true }),
+          );
+        }
+      },
+      onPreviewRequest: async (request) => {
+        // The capability was minted by the runner for THIS run: task id, run id,
+        // registered branch, and registered worktree all bind to server state.
+        // Anything else — a forged or expired run, a cross-task claim, or a
+        // substituted path — is rejected before any process is started (#0121).
+        if (!runner.validatePreview(request)) {
+          runner.system(
+            request.taskId,
+            "✗ managed preview request rejected: no matching live runner run",
+          );
+          return;
+        }
+        const task = index.getTask(request.taskId);
+        if (!task) {
+          runner.system(request.taskId, "✗ managed preview request failed: task no longer exists");
+          return;
+        }
+        runner.system(
+          request.taskId,
+          "Server-owned preview requested — validating the run and starting the worktree preview",
+        );
+        // Reuse the existing PreviewManager: idempotent per task, RepoOS chooses
+        // the port and owns the process lifecycle. Never a parallel implementation.
+        const result = await previews.start(task);
+        if (!result.ok) {
+          runner.system(
+            request.taskId,
+            `✗ managed preview failed: ${result.error ?? "could not start the preview"}. The worktree is unchanged and the same session can be resumed.`,
+          );
+          return;
+        }
+        const url = result.url ?? "";
+        runner.system(request.taskId, `✓ Managed preview ready: ${url}`);
+        // The sandbox may not be able to open the URL — probe it from the
+        // privileged server side and record the structured outcome.
+        const probe = await probePreview(url);
+        if (probe.ok) {
+          runner.system(
+            request.taskId,
+            `✓ Server-side preview probe passed — ${probe.detail ?? "preview responds"}`,
+          );
+        } else {
+          runner.system(
+            request.taskId,
+            `✗ Server-side preview probe failed: ${probe.error ?? "unreachable"}`,
+          );
+        }
+      },
+      // A durable review turn completed (0288), possibly re-attached after a
+      // reload. The ReviewManager finalizes the report from its own durable
+      // session rather than a post-`runPrompt` continuation that would have died
+      // with the old process. `reviews` is assigned below but the callback only
+      // fires asynchronously after completion, so the closure is safe.
+      onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
+        if (!reviews) return;
+        try {
+          reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
+        } catch (err) {
+          console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
+        }
+      },
     },
-    // A durable review turn completed (0288), possibly re-attached after a
-    // reload. The ReviewManager finalizes the report from its own durable
-    // session rather than a post-`runPrompt` continuation that would have died
-    // with the old process. `reviews` is assigned below but the callback only
-    // fires asynchronously after completion, so the closure is safe.
-    onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
-      if (!reviews) return;
-      try {
-        reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
-      } catch (err) {
-        console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
-      }
-    } },
   );
 
   // Adopt any agent children that survived a server restart (0214).
@@ -1229,8 +1293,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
   // leaves tasks stuck in `review` with a stale/missing report and nothing
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
-  const runReviewRecovery = (): void =>
-    reviews.recoverInterruptedReviews(index.getTasks());
+  const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
   void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
@@ -1241,13 +1304,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // agent is disabled, so enabling it from the Agents page takes effect on the
   // next tick without a restart, and disabling it stops runs immediately.
   // Interval configurable from config if present; default to 5 minutes.
-  const ctoIntervalMs = (config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined || 5 * 60 * 1000;
+  const ctoIntervalMs =
+    ((config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined) ||
+    5 * 60 * 1000;
   ctoMonitor.start(ctoIntervalMs);
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
   // refresh/reconnect cannot leave a card stuck in (or missing) Reviewing.
-  const withReviewStatus = <T extends Task>(task: T): T & {
+  const withReviewStatus = <T extends Task>(
+    task: T,
+  ): T & {
     automaticReview: { running: boolean; enabled: boolean };
   } => ({
     ...task,
@@ -1292,7 +1359,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!psAvailable()) return;
         try {
           const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
-          if (reaped > 0) console.log(`serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`);
+          if (reaped > 0)
+            console.log(
+              `serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`,
+            );
           // The PPID-based pass above cannot see every deleted-root orphan;
           // repeat the narrower root sweep so leaks created after boot do not
           // wait until the next control-plane restart.
@@ -1565,7 +1635,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
-  setIconRenderer((size: number, color?: string) => renderInstanceIcon(basename(config.root) || "repoos", size, color));
+  setIconRenderer((size: number, color?: string) =>
+    renderInstanceIcon(basename(config.root) || "repoos", size, color),
+  );
 
   // Create and register all routes with the router
   const router = new Router();
@@ -1717,7 +1789,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
-  router.register("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/, taskAction);
+  router.register(
+    "POST",
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/,
+    taskAction,
+  );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
@@ -1746,50 +1822,54 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
-  router.register("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/, async (ctx, _req, res, params) => {
-    const agentName = params.param1;
-    const cfg = ctx.repoos.config;
-    // The Debugger is chat-only (its floating head / bug-paste panel). It has
-    // no scan to run now, and exposing a dead endpoint invites a 500 when the
-    // dispatch returns null — reject it explicitly before touching the
-    // in-flight guard (0201).
-    if (agentName === "debugger") {
-      return json(res, 400, {
-        error: `"${agentName}" is chat-only — talk to it from its floating head instead of running it`,
-      });
-    }
-    // Manual and scheduled runs share one in-flight guard, so two scans can
-    // never overlap and block the server twice over.
-    if (builtInRun.inFlight) {
-      return json(res, 409, {
-        error: `A built-in agent run is already in progress — wait for it to finish`,
-      });
-    }
-    builtInRun.inFlight = true;
-    try {
-      const result = await runBuiltInAgent(agentName, cfg, logger);
-      if (!result) {
-        return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+  router.register(
+    "POST",
+    /^\/api\/agents\/built-in\/([^/]+)\/run$/,
+    async (ctx, _req, res, params) => {
+      const agentName = params.param1;
+      const cfg = ctx.repoos.config;
+      // The Debugger is chat-only (its floating head / bug-paste panel). It has
+      // no scan to run now, and exposing a dead endpoint invites a 500 when the
+      // dispatch returns null — reject it explicitly before touching the
+      // in-flight guard (0201).
+      if (agentName === "debugger") {
+        return json(res, 400, {
+          error: `"${agentName}" is chat-only — talk to it from its floating head instead of running it`,
+        });
       }
-      ctx.index.refreshAll();
-      return json(res, 200, {
-        ok: true,
-        taskCount: result.created,
-        skipped: "skipped" in result ? result.skipped : 0,
-        failed: result.failed,
-        errors: result.errors,
-        issuesFound: "issuesFound" in result ? result.issuesFound : 0,
-        findingsFound: "findingsFound" in result ? result.findingsFound : 0,
-        scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to run built-in agent";
-      logger.agent(agentName, "error", `Manual run of built-in agent failed`, { error: message });
-      return json(res, 500, { error: message });
-    } finally {
-      builtInRun.inFlight = false;
-    }
-  });
+      // Manual and scheduled runs share one in-flight guard, so two scans can
+      // never overlap and block the server twice over.
+      if (builtInRun.inFlight) {
+        return json(res, 409, {
+          error: `A built-in agent run is already in progress — wait for it to finish`,
+        });
+      }
+      builtInRun.inFlight = true;
+      try {
+        const result = await runBuiltInAgent(agentName, cfg, logger);
+        if (!result) {
+          return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+        }
+        ctx.index.refreshAll();
+        return json(res, 200, {
+          ok: true,
+          taskCount: result.created,
+          skipped: "skipped" in result ? result.skipped : 0,
+          failed: result.failed,
+          errors: result.errors,
+          issuesFound: "issuesFound" in result ? result.issuesFound : 0,
+          findingsFound: "findingsFound" in result ? result.findingsFound : 0,
+          scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to run built-in agent";
+        logger.agent(agentName, "error", `Manual run of built-in agent failed`, { error: message });
+        return json(res, 500, { error: message });
+      } finally {
+        builtInRun.inFlight = false;
+      }
+    },
+  );
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
@@ -1833,155 +1913,155 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         return;
       }
 
-    // ---- Auth middleware ----
-    // When auth is enabled, every request except public routes must carry a
-    // valid session cookie. Public routes: /api/health, /api/auth/*,
-    // /login, static UI assets, manifest, icons, and OPTIONS. Unauthenticated
-    // API requests get 401; browser navigations to non-public non-SPA routes
-    // redirect to /login. Auth-disabled deployments pass everything through.
-    const authEnabled = config.auth?.enabled === true;
-    if (authEnabled) {
-      const PUBLIC_PREFIXES = ["/api/health", "/api/auth/"];
-      const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
-      const isPublicRoute =
-        PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
-        PUBLIC_PATHS.includes(path) ||
-        path.startsWith("/icons/") ||
-        path.startsWith("/assets/") ||
-        method === "OPTIONS";
-      if (!isPublicRoute) {
-        const cookies = parseCookies(req.headers.cookie);
-        const sessionToken = cookies[SESSION_COOKIE_NAME];
-        let validSession = false;
-        if (sessionToken) {
-          const authStore = getAuthStore(config.root);
-          const session = authStore?.getSession(sessionToken);
-          validSession = !!session;
-        }
-        if (!validSession) {
-          // API requests get 401 JSON; browser GETs to SPA routes are served
-          // the login page (via SPA fallback) so the client-side router can
-          // render the login UI. Other browser navigations redirect to /login.
-          const isApiRequest = path.startsWith("/api/");
-          const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
-          if (isApiRequest) {
+      // ---- Auth middleware ----
+      // When auth is enabled, every request except public routes must carry a
+      // valid session cookie. Public routes: /api/health, /api/auth/*,
+      // /login, static UI assets, manifest, icons, and OPTIONS. Unauthenticated
+      // API requests get 401; browser navigations to non-public non-SPA routes
+      // redirect to /login. Auth-disabled deployments pass everything through.
+      const authEnabled = config.auth?.enabled === true;
+      if (authEnabled) {
+        const PUBLIC_PREFIXES = ["/api/health", "/api/auth/"];
+        const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
+        const isPublicRoute =
+          PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
+          PUBLIC_PATHS.includes(path) ||
+          path.startsWith("/icons/") ||
+          path.startsWith("/assets/") ||
+          method === "OPTIONS";
+        if (!isPublicRoute) {
+          const cookies = parseCookies(req.headers.cookie);
+          const sessionToken = cookies[SESSION_COOKIE_NAME];
+          let validSession = false;
+          if (sessionToken) {
+            const authStore = getAuthStore(config.root);
+            const session = authStore?.getSession(sessionToken);
+            validSession = !!session;
+          }
+          if (!validSession) {
+            // API requests get 401 JSON; browser GETs to SPA routes are served
+            // the login page (via SPA fallback) so the client-side router can
+            // render the login UI. Other browser navigations redirect to /login.
+            const isApiRequest = path.startsWith("/api/");
+            const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
+            if (isApiRequest) {
+              return json(res, 401, { error: "Authentication required" });
+            }
+            if (isNavigation && uiDir) {
+              // Serve the SPA shell so the client router renders /login
+              const indexPath = join(uiDir, "index.html");
+              if (existsSync(indexPath)) {
+                res.writeHead(200, {
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Access-Control-Allow-Origin": "*",
+                });
+                res.end(readFileSync(indexPath, "utf8"));
+                return;
+              }
+            }
+            if (isNavigation) {
+              res.writeHead(302, { Location: `/login?redirect=${encodeURIComponent(path)}` });
+              return res.end();
+            }
             return json(res, 401, { error: "Authentication required" });
           }
-          if (isNavigation && uiDir) {
-            // Serve the SPA shell so the client router renders /login
-            const indexPath = join(uiDir, "index.html");
-            if (existsSync(indexPath)) {
-              res.writeHead(200, {
-                "Content-Type": "text/html; charset=utf-8",
-                "Access-Control-Allow-Origin": "*",
-              });
-              res.end(readFileSync(indexPath, "utf8"));
-              return;
+        }
+      }
+
+      // ---- SSE stream ----
+      if (path === "/api/events" && method === "GET") {
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.write(`retry: 2000\n\n`);
+        // A reload handoff spawns the replacement already accepting connections
+        // while the full index build runs in the background (0285). Emit `hello`
+        // (which the client treats as "the server is ready to be asked about the
+        // index") only once that rebuild has actually completed, so its taskCount
+        // is truthful rather than a mid-build 0.
+        await indexReady;
+        const hello: RepoEvent = {
+          type: "hello",
+          taskCount: index.snapshot().taskCount,
+          at: new Date().toISOString(),
+        };
+        res.write(`event: hello\ndata: ${JSON.stringify(hello)}\n\n`);
+        clients.add(res);
+        // keep-alive comment ping every 25s so proxies don't drop the connection
+        const ping = setInterval(() => {
+          try {
+            res.write(`: ping\n\n`);
+          } catch {
+            /* ignore */
+          }
+        }, 25000);
+        req.on("close", () => {
+          clearInterval(ping);
+          clients.delete(res);
+        });
+        return;
+      }
+
+      // ---- Supervisor routes ----
+      if (path === "/api/supervisor/status" && method === "GET") {
+        const heartbeat = supervisor?.getLatestHeartbeat() ?? null;
+        return json(res, 200, {
+          ok: true,
+          enabled: supervisor?.config.enabled ?? false,
+          mode: supervisor?.config.mode ?? "observe",
+          latestHeartbeat: heartbeat,
+        });
+      }
+      if (path === "/api/supervisor/heartbeats" && method === "GET") {
+        const limit = Math.min(Number(url.searchParams.get("limit") ?? "10"), 100);
+        const heartbeats = supervisor?.getRecentHeartbeats(limit) ?? [];
+        return json(res, 200, { ok: true, heartbeats });
+      }
+      if (path === "/api/supervisor/check-now" && method === "POST") {
+        if (!supervisor) {
+          return json(res, 503, { error: "Supervisor not available" });
+        }
+        void supervisor.runCycle();
+        return json(res, 202, { ok: true, message: "Supervisor check started" });
+      }
+
+      // Create the route context with all necessary dependencies
+      const routeContext: RouteContext = {
+        config,
+        index,
+        indexReady,
+        runner,
+        previews,
+        reviews,
+        cto,
+        repoos,
+        logger,
+        emitEvent: (e: RepoEvent) => {
+          for (const client of clients) {
+            try {
+              client.write(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`);
+            } catch {
+              /* client disconnected */
             }
           }
-          if (isNavigation) {
-            res.writeHead(302, { Location: `/login?redirect=${encodeURIComponent(path)}` });
-            return res.end();
-          }
-          return json(res, 401, { error: "Authentication required" });
-        }
-      }
-    }
+        },
+        closeOutLock,
+        rootLock,
+        jobCoordinator,
+        reportedStages,
+        triggerJobProcessing,
+        pendingReview,
+        uiDir,
+        syncTaskBranch,
+        onServerStatusChange,
+        reload,
+      } as RouteContext;
 
-    // ---- SSE stream ----
-    if (path === "/api/events" && method === "GET") {
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "*",
-      });
-      res.write(`retry: 2000\n\n`);
-      // A reload handoff spawns the replacement already accepting connections
-      // while the full index build runs in the background (0285). Emit `hello`
-      // (which the client treats as "the server is ready to be asked about the
-      // index") only once that rebuild has actually completed, so its taskCount
-      // is truthful rather than a mid-build 0.
-      await indexReady;
-      const hello: RepoEvent = {
-        type: "hello",
-        taskCount: index.snapshot().taskCount,
-        at: new Date().toISOString(),
-      };
-      res.write(`event: hello\ndata: ${JSON.stringify(hello)}\n\n`);
-      clients.add(res);
-      // keep-alive comment ping every 25s so proxies don't drop the connection
-      const ping = setInterval(() => {
-        try {
-          res.write(`: ping\n\n`);
-        } catch {
-          /* ignore */
-        }
-      }, 25000);
-      req.on("close", () => {
-        clearInterval(ping);
-        clients.delete(res);
-      });
-      return;
-    }
-
-    // ---- Supervisor routes ----
-    if (path === "/api/supervisor/status" && method === "GET") {
-      const heartbeat = supervisor?.getLatestHeartbeat() ?? null;
-      return json(res, 200, {
-        ok: true,
-        enabled: supervisor?.config.enabled ?? false,
-        mode: supervisor?.config.mode ?? "observe",
-        latestHeartbeat: heartbeat,
-      });
-    }
-    if (path === "/api/supervisor/heartbeats" && method === "GET") {
-      const limit = Math.min(Number(url.searchParams.get("limit") ?? "10"), 100);
-      const heartbeats = supervisor?.getRecentHeartbeats(limit) ?? [];
-      return json(res, 200, { ok: true, heartbeats });
-    }
-    if (path === "/api/supervisor/check-now" && method === "POST") {
-      if (!supervisor) {
-        return json(res, 503, { error: "Supervisor not available" });
-      }
-      void supervisor.runCycle();
-      return json(res, 202, { ok: true, message: "Supervisor check started" });
-    }
-
-    // Create the route context with all necessary dependencies
-    const routeContext: RouteContext = {
-      config,
-      index,
-      indexReady,
-      runner,
-      previews,
-      reviews,
-      cto,
-      repoos,
-      logger,
-      emitEvent: (e: RepoEvent) => {
-        for (const client of clients) {
-          try {
-            client.write(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`);
-          } catch {
-            /* client disconnected */
-          }
-        }
-      },
-      closeOutLock,
-      rootLock,
-      jobCoordinator,
-      reportedStages,
-      triggerJobProcessing,
-      pendingReview,
-      uiDir,
-      syncTaskBranch,
-      onServerStatusChange,
-      reload,
-    } as RouteContext;
-
-    // Try to dispatch through the router for all API routes
-    const handled = await router.dispatch(routeContext, method, path, req, res);
+      // Try to dispatch through the router for all API routes
+      const handled = await router.dispatch(routeContext, method, path, req, res);
       if (handled) return;
 
       // ---- Not an API route; try doc serving ----
@@ -2286,7 +2366,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         },
         log: (msg) => {
           console.log(msg);
-          logger.system("info", "RepoOS reload lifecycle", { pid: process.pid, port: actualPort, message: msg });
+          logger.system("info", "RepoOS reload lifecycle", {
+            pid: process.pid,
+            port: actualPort,
+            message: msg,
+          });
         },
       });
       reload.start();

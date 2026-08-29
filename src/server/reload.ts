@@ -238,7 +238,6 @@ export class ReloadManager {
       : { hash: this.buildAvailableHash, buildAt: this.buildAvailableAt };
   }
 
-
   /** Begin watching dist/.build-info.json (fs.watch + fallback hash poll). */
   start(): void {
     if (!this.enabled) return;
@@ -446,7 +445,9 @@ export class ReloadManager {
     });
     child.on("exit", (code, signal) => {
       this.childExited = true;
-      this.log(`reload: replacement pid ${child.pid ?? "unknown"} exited (code=${code ?? "null"}, signal=${signal ?? "none"})`);
+      this.log(
+        `reload: replacement pid ${child.pid ?? "unknown"} exited (code=${code ?? "null"}, signal=${signal ?? "none"})`,
+      );
     });
 
     this.log(
@@ -513,7 +514,9 @@ export class ReloadManager {
           ` — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
       );
       this.options.onReloadFailed?.(
-        rebound === "bound" ? "replacement did not become ready" : `replacement failed and ${rebound}`,
+        rebound === "bound"
+          ? "replacement did not become ready"
+          : `replacement failed and ${rebound}`,
       );
     }
     this.child = null;
@@ -630,7 +633,10 @@ export class ReloadManager {
 
   private armRetry(): void {
     if (this.retryTimer) return;
-    this.retryTimer = setInterval(() => this.tryFirePending(), this.options.retryMs ?? DEFAULT_RETRY_MS);
+    this.retryTimer = setInterval(
+      () => this.tryFirePending(),
+      this.options.retryMs ?? DEFAULT_RETRY_MS,
+    );
     this.retryTimer.unref?.();
   }
 

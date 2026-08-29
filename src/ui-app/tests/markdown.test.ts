@@ -37,7 +37,9 @@ describe("renderMarkdown", () => {
   it("renders ordered lists and safe links", () => {
     const html = renderMarkdown("1. first\n2. [docs](https://example.com)\n");
     expect(html).toContain("<ol>");
-    expect(html).toContain('<a href="https://example.com" target="_blank" rel="noopener noreferrer">docs</a>');
+    expect(html).toContain(
+      '<a href="https://example.com" target="_blank" rel="noopener noreferrer">docs</a>',
+    );
   });
 
   it("drops javascript: links", () => {

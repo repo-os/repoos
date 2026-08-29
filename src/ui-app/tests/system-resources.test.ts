@@ -3,7 +3,16 @@
  * and orphan-detection logic are pure functions tested against fixture strings.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parsePsOutput, parseServeScan, parseServeRoot, parseServePort, sampleSystem, sampleRepoStats, reapStrayServeProcesses, killTrackedProcess } from "../../server/system";
+import {
+  parsePsOutput,
+  parseServeScan,
+  parseServeRoot,
+  parseServePort,
+  sampleSystem,
+  sampleRepoStats,
+  reapStrayServeProcesses,
+  killTrackedProcess,
+} from "../../server/system";
 import type { RunningAgentInfo } from "../../server/agents";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -142,9 +151,7 @@ describe("sampleSystem", () => {
         cacheDir: tmp,
         runningAgents: [],
       });
-      const orphan = result.processes.find(
-        (p) => p.pid === process.pid && p.orphaned,
-      );
+      const orphan = result.processes.find((p) => p.pid === process.pid && p.orphaned);
       if (orphan) {
         expect(orphan.taskId).toBe("0100");
       }
@@ -233,7 +240,11 @@ describe("parseServeScan", () => {
   });
 
   it("does not flag the gate's own fixture servers while their parent is alive", () => {
-    const out = [WORKER, line(100, 1, REAL, 7171), ...[301, 302, 303, 304, 305].map((p, i) => line(p, 5000, REAL, 5000 + i))].join("\n");
+    const out = [
+      WORKER,
+      line(100, 1, REAL, 7171),
+      ...[301, 302, 303, 304, 305].map((p, i) => line(p, 5000, REAL, 5000 + i)),
+    ].join("\n");
     const scan = parseServeScan(out, 100, new Set(), exists);
     expect(scan.strays).toBe(0);
     expect(scan.inFlight).toBe(5);
@@ -242,7 +253,10 @@ describe("parseServeScan", () => {
 
   it("flags those same servers once their parent has exited", () => {
     // Identical to the previous case except the worker is gone, so they reparent to 1.
-    const out = [line(100, 1, REAL, 7171), ...[301, 302, 303, 304, 305].map((p, i) => line(p, 1, REAL, 5000 + i))].join("\n");
+    const out = [
+      line(100, 1, REAL, 7171),
+      ...[301, 302, 303, 304, 305].map((p, i) => line(p, 1, REAL, 5000 + i)),
+    ].join("\n");
     const scan = parseServeScan(out, 100, new Set(), exists);
     expect(scan.strays).toBe(5);
     expect(scan.inFlight).toBe(0);
@@ -250,12 +264,22 @@ describe("parseServeScan", () => {
   });
 
   it("treats a parent that is not in the process table as dead", () => {
-    const scan = parseServeScan([line(100, 1, REAL, 7171), line(300, 4242, REAL, 5001)].join("\n"), 100, new Set(), exists);
+    const scan = parseServeScan(
+      [line(100, 1, REAL, 7171), line(300, 4242, REAL, 5001)].join("\n"),
+      100,
+      new Set(),
+      exists,
+    );
     expect(scan.processes[1].kind).toBe("stray");
   });
 
   it("is ok when only the control plane and known previews are running", () => {
-    const scan = parseServeScan([line(100, 1, REAL, 7171), line(200, 100, REAL, 5001)].join("\n"), 100, new Set([200]), exists);
+    const scan = parseServeScan(
+      [line(100, 1, REAL, 7171), line(200, 100, REAL, 5001)].join("\n"),
+      100,
+      new Set([200]),
+      exists,
+    );
     expect(scan.strays).toBe(0);
     expect(scan.level).toBe("ok");
   });
@@ -293,9 +317,30 @@ describe("reapStrayServeProcesses", () => {
       deadRoot: 0,
       level: "warn" as const,
       processes: [
-        { pid: 100, ppid: 1, port: 7171, root: "/r", rootExists: true, kind: "control-plane" as const },
-        { pid: 200, ppid: 100, port: 5001, root: "/r", rootExists: true, kind: "known-preview" as const },
-        { pid: 300, ppid: 5000, port: 5002, root: "/r", rootExists: true, kind: "in-flight" as const },
+        {
+          pid: 100,
+          ppid: 1,
+          port: 7171,
+          root: "/r",
+          rootExists: true,
+          kind: "control-plane" as const,
+        },
+        {
+          pid: 200,
+          ppid: 100,
+          port: 5001,
+          root: "/r",
+          rootExists: true,
+          kind: "known-preview" as const,
+        },
+        {
+          pid: 300,
+          ppid: 5000,
+          port: 5002,
+          root: "/r",
+          rootExists: true,
+          kind: "in-flight" as const,
+        },
         { pid: 400, ppid: 1, port: 5003, root: "/r", rootExists: false, kind: "stray" as const },
         { pid: 401, ppid: 1, port: 5004, root: "/r", rootExists: true, kind: "stray" as const },
       ],
@@ -317,7 +362,9 @@ describe("reapStrayServeProcesses", () => {
       inFlight: 0,
       deadRoot: 0,
       level: "notice" as const,
-      processes: [{ pid: 500, ppid: 1, port: 5005, root: null, rootExists: false, kind: "stray" as const }],
+      processes: [
+        { pid: 500, ppid: 1, port: 5005, root: null, rootExists: false, kind: "stray" as const },
+      ],
     });
 
     const reaped = reapStrayServeProcesses(100, new Set(), fakeKill, fakeScan);
@@ -326,7 +373,14 @@ describe("reapStrayServeProcesses", () => {
 
   it("returns 0 without calling kill when the underlying scan is unavailable (ps missing)", () => {
     let killCalled = false;
-    const reaped = reapStrayServeProcesses(100, new Set(), () => { killCalled = true; }, () => null);
+    const reaped = reapStrayServeProcesses(
+      100,
+      new Set(),
+      () => {
+        killCalled = true;
+      },
+      () => null,
+    );
     expect(reaped).toBe(0);
     expect(killCalled).toBe(false);
   });
@@ -339,9 +393,25 @@ describe("reapStrayServeProcesses", () => {
       inFlight: 0,
       deadRoot: 0,
       level: "ok" as const,
-      processes: [{ pid: 100, ppid: 1, port: 7171, root: "/r", rootExists: true, kind: "control-plane" as const }],
+      processes: [
+        {
+          pid: 100,
+          ppid: 1,
+          port: 7171,
+          root: "/r",
+          rootExists: true,
+          kind: "control-plane" as const,
+        },
+      ],
     });
-    const reaped = reapStrayServeProcesses(100, new Set(), () => { killCalled = true; }, fakeScan);
+    const reaped = reapStrayServeProcesses(
+      100,
+      new Set(),
+      () => {
+        killCalled = true;
+      },
+      fakeScan,
+    );
     expect(reaped).toBe(0);
     expect(killCalled).toBe(false);
   });

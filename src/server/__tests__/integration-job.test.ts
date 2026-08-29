@@ -117,7 +117,10 @@ describe("integration jobs (0118)", () => {
     // Write a stale lock file (>60 seconds old)
     const lockPath = join(testRepo, ".repoos/close-out.lock");
     const staleTime = new Date(Date.now() - 70_000); // 70 seconds ago
-    writeFileSync(lockPath, JSON.stringify({ taskId: "stale", acquiredAt: staleTime.toISOString() }));
+    writeFileSync(
+      lockPath,
+      JSON.stringify({ taskId: "stale", acquiredAt: staleTime.toISOString() }),
+    );
 
     // Should be able to acquire even though file exists (it's stale)
     expect(lock.acquire("task1")).toBe(true);

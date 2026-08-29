@@ -42,7 +42,11 @@ describe("parseDeepInfraFeatured", () => {
   it("drops non-text-generation and non-token-priced entries", () => {
     const models = parseDeepInfraFeatured([
       { model_name: "img/model", type: "text-to-image", pricing: { type: "image_units" } },
-      { model_name: "tts/model", type: "text-generation", pricing: { type: "input_character_length" } },
+      {
+        model_name: "tts/model",
+        type: "text-generation",
+        pricing: { type: "input_character_length" },
+      },
       { model_name: "ok/model", type: "text-generation", pricing: { type: "tokens" } },
     ]);
     expect(models.map((m) => m.id)).toEqual(["ok/model"]);
@@ -94,7 +98,10 @@ describe("curateOpenRouterModels", () => {
   it("excludes free-tier, non-text, zero-priced, and low-context models", () => {
     const models = curateOpenRouterModels([
       model({ id: "vendor/free-model:free", pricing: { prompt: "0", completion: "0" } }),
-      model({ id: "vendor/image-model", architecture: { input_modalities: ["text", "image"], output_modalities: ["image"] } }),
+      model({
+        id: "vendor/image-model",
+        architecture: { input_modalities: ["text", "image"], output_modalities: ["image"] },
+      }),
       model({ id: "vendor/zero-priced", pricing: { prompt: "0", completion: "0" } }),
       model({ id: "vendor/tiny-context", context_length: 4000 }),
       model({ id: "vendor/keeper" }),
@@ -115,7 +122,9 @@ describe("curateOpenRouterModels", () => {
     // Unlike the prompt price (filtered out entirely by the candidate filter
     // above), a bad completion price only surfaces once mapped — it must not
     // convert to a negative dollar amount.
-    const [m] = curateOpenRouterModels([model({ pricing: { prompt: "0.000001", completion: "-0.000003" } })]);
+    const [m] = curateOpenRouterModels([
+      model({ pricing: { prompt: "0.000001", completion: "-0.000003" } }),
+    ]);
     expect(m.inputPricePerM).toBeCloseTo(1);
     expect(m.outputPricePerM).toBeNull();
   });
@@ -123,7 +132,10 @@ describe("curateOpenRouterModels", () => {
 
 describe("parseJsonResponse", () => {
   it("parses a well-formed JSON body", async () => {
-    const res = { headers: new Headers({ "content-type": "application/json" }), json: async () => ({ a: 1 }) } as Response;
+    const res = {
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => ({ a: 1 }),
+    } as Response;
     await expect(parseJsonResponse(res, "TestProvider")).resolves.toEqual({ a: 1 });
   });
 
@@ -134,7 +146,7 @@ describe("parseJsonResponse", () => {
     const res = {
       headers: new Headers({ "content-type": "text/html" }),
       json: async () => {
-        throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON');
+        throw new SyntaxError("Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON");
       },
     } as unknown as Response;
     await expect(parseJsonResponse(res, "TestProvider")).rejects.toThrow(
@@ -146,12 +158,14 @@ describe("parseJsonResponse", () => {
     const res = {
       headers: new Headers({ "content-type": "application/json" }),
       json: async () => {
-        throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON');
+        throw new SyntaxError("Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON");
       },
     } as unknown as Response;
     const err = await parseJsonResponse(res, "TestProvider").catch((e: Error) => e);
     expect(err).toBeInstanceOf(Error);
-    expect((err as Error).message).toBe("TestProvider returned a response that could not be parsed as JSON");
+    expect((err as Error).message).toBe(
+      "TestProvider returned a response that could not be parsed as JSON",
+    );
     expect((err as Error).message).not.toContain("<!DOCTYPE");
   });
 });
@@ -168,11 +182,13 @@ describe("provider adapters surface clean errors for non-JSON (e.g. block-page) 
         ok: true,
         headers: new Headers({ "content-type": "text/html" }),
         json: async () => {
-          throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE html>..." is not valid JSON');
+          throw new SyntaxError("Unexpected token '<', \"<!DOCTYPE html>...\" is not valid JSON");
         },
       })),
     );
-    await expect(deepinfraProvider.fetchModels()).rejects.toThrow(/DeepInfra returned a non-JSON response/);
+    await expect(deepinfraProvider.fetchModels()).rejects.toThrow(
+      /DeepInfra returned a non-JSON response/,
+    );
   });
 
   it("openrouterProvider.fetchModels rejects without leaking the HTML body", async () => {
@@ -182,11 +198,13 @@ describe("provider adapters surface clean errors for non-JSON (e.g. block-page) 
         ok: true,
         headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
         json: async () => {
-          throw new SyntaxError('Unexpected token \'<\', "<!DOCTYPE html>..." is not valid JSON');
+          throw new SyntaxError("Unexpected token '<', \"<!DOCTYPE html>...\" is not valid JSON");
         },
       })),
     );
-    await expect(openrouterProvider.fetchModels()).rejects.toThrow(/OpenRouter returned a non-JSON response/);
+    await expect(openrouterProvider.fetchModels()).rejects.toThrow(
+      /OpenRouter returned a non-JSON response/,
+    );
   });
 });
 

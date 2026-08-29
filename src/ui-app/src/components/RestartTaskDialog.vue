@@ -43,30 +43,20 @@ function cancel(): void {
         This task's worktree has uncommitted changes from the last run
         <span v-if="task.git?.worktreePath" class="restart-path mono">{{
           task.git.worktreePath
-        }}</span>.
+        }}</span
+        >.
       </p>
       <p class="restart-body dim">
-        <b>Resume worktree</b> continues where the last run left off, keeping its
-        changes. <b>Start clean</b> discards the worktree — and any commits on
-        this branch that aren't merged into main — and begins from a fresh
-        checkout.
+        <b>Resume worktree</b> continues where the last run left off, keeping its changes.
+        <b>Start clean</b> discards the worktree — and any commits on this branch that aren't merged
+        into main — and begins from a fresh checkout.
       </p>
       <div class="restart-actions">
         <Button variant="outline" size="sm" :disabled="busy" @click="cancel">Cancel</Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          :disabled="busy"
-          @click="choose('clean')"
-        >
+        <Button variant="destructive" size="sm" :disabled="busy" @click="choose('clean')">
           {{ busy ? "Working…" : "Start clean" }}
         </Button>
-        <Button
-          variant="accent"
-          size="sm"
-          :disabled="busy"
-          @click="choose('resume')"
-        >
+        <Button variant="accent" size="sm" :disabled="busy" @click="choose('resume')">
           <span class="restart-play">▶</span>
           Resume worktree
         </Button>

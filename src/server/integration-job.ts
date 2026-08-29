@@ -7,11 +7,25 @@
  * Failures retain phase and recovery action; retry resumes safely from where it was interrupted.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readdirSync,
+  unlinkSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { Task } from "../core/types.js";
 
-export type JobPhase = "queued" | "syncing" | "validating" | "publishing" | "cleanup" | "done" | "failed";
+export type JobPhase =
+  | "queued"
+  | "syncing"
+  | "validating"
+  | "publishing"
+  | "cleanup"
+  | "done"
+  | "failed";
 
 export interface IntegrationJob {
   /** Unique ID: task ID */

@@ -43,7 +43,9 @@ function deepinfraGroup(overrides: Partial<PlaygroundProviderGroup> = {}): Playg
   };
 }
 
-function openrouterGroup(overrides: Partial<PlaygroundProviderGroup> = {}): PlaygroundProviderGroup {
+function openrouterGroup(
+  overrides: Partial<PlaygroundProviderGroup> = {},
+): PlaygroundProviderGroup {
   return {
     id: "openrouter",
     label: "OpenRouter",
@@ -66,7 +68,10 @@ function openrouterGroup(overrides: Partial<PlaygroundProviderGroup> = {}): Play
 function stubModelsFetch(providers: PlaygroundProviderGroup[]): ReturnType<typeof vi.fn> {
   const fn = vi.fn(async (url: string) => {
     if (typeof url === "string" && url.includes("/api/playground/models")) {
-      return { ok: true, json: async () => ({ providers, at: new Date().toISOString() }) } as Response;
+      return {
+        ok: true,
+        json: async () => ({ providers, at: new Date().toISOString() }),
+      } as Response;
     }
     return { ok: true, json: async () => ({}) } as Response;
   });
@@ -109,7 +114,13 @@ describe("ModelPlaygroundPanel — model list rendering", () => {
     // each provider group renders independently.
     stubModelsFetch([
       deepinfraGroup(),
-      { id: "openrouter", label: "OpenRouter", models: [], fetchedAt: new Date().toISOString(), error: "OpenRouter returned a non-JSON response (text/html)" },
+      {
+        id: "openrouter",
+        label: "OpenRouter",
+        models: [],
+        fetchedAt: new Date().toISOString(),
+        error: "OpenRouter returned a non-JSON response (text/html)",
+      },
     ]);
     const wrapper = mount(ModelPlaygroundPanel);
     await flushPromises();
@@ -126,7 +137,11 @@ describe("ModelPlaygroundPanel — model list rendering", () => {
   it("shows a clean loadError message (not raw markup) when the catalog request itself fails", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({ ok: false, statusText: "Bad Gateway", json: async () => ({ error: "playground catalog unavailable" }) })),
+      vi.fn(async () => ({
+        ok: false,
+        statusText: "Bad Gateway",
+        json: async () => ({ error: "playground catalog unavailable" }),
+      })),
     );
     const wrapper = mount(ModelPlaygroundPanel);
     await flushPromises();
@@ -156,7 +171,10 @@ describe("ModelPlaygroundPanel — interaction", () => {
     const fetchMock = stubModelsFetch([deepinfraGroup()]);
     fetchMock.mockImplementation(async (url: string, opts?: RequestInit) => {
       if (url.includes("/api/playground/models")) {
-        return { ok: true, json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }) } as Response;
+        return {
+          ok: true,
+          json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }),
+        } as Response;
       }
       if (url.includes("/api/playground/chat")) {
         const body = JSON.parse(String(opts?.body));
@@ -184,9 +202,16 @@ describe("ModelPlaygroundPanel — interaction", () => {
     const fetchMock = stubModelsFetch([deepinfraGroup()]);
     fetchMock.mockImplementation(async (url: string) => {
       if (url.includes("/api/playground/models")) {
-        return { ok: true, json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }) } as Response;
+        return {
+          ok: true,
+          json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }),
+        } as Response;
       }
-      return { ok: false, statusText: "Bad Gateway", json: async () => ({ error: "the model returned no output" }) } as Response;
+      return {
+        ok: false,
+        statusText: "Bad Gateway",
+        json: async () => ({ error: "the model returned no output" }),
+      } as Response;
     });
 
     const wrapper = mount(ModelPlaygroundPanel);
@@ -203,7 +228,10 @@ describe("ModelPlaygroundPanel — interaction", () => {
 
 describe("ModelPlaygroundPanel — loading state and session controls", () => {
   it("shows skeleton cards while the catalog is loading, before any model exists", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    );
     const wrapper = mount(ModelPlaygroundPanel);
     await nextTick();
 
@@ -215,7 +243,10 @@ describe("ModelPlaygroundPanel — loading state and session controls", () => {
     const fetchMock = stubModelsFetch([deepinfraGroup()]);
     fetchMock.mockImplementation(async (url: string) => {
       if (url.includes("/api/playground/models")) {
-        return { ok: true, json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }) } as Response;
+        return {
+          ok: true,
+          json: async () => ({ providers: [deepinfraGroup()], at: new Date().toISOString() }),
+        } as Response;
       }
       return { ok: true, json: async () => ({ ok: true, text: "It's RepoOS." }) } as Response;
     });
@@ -288,12 +319,19 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await nextTick();
 
     expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
-    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["DeepInfra", "OpenRouter"]);
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual([
+      "DeepInfra",
+      "OpenRouter",
+    ]);
 
     await wrapper.find(".playground-provider-select").setValue("openrouter");
     await nextTick();
-    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["OpenRouter"]);
-    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["meta-llama/Llama-4-Maverick"]);
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual([
+      "OpenRouter",
+    ]);
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual([
+      "meta-llama/Llama-4-Maverick",
+    ]);
 
     await wrapper.find(".playground-provider-select").setValue("");
     await nextTick();
@@ -344,7 +382,9 @@ describe("ModelPlaygroundPanel — filtering", () => {
 
     await wrapper.find(".playground-cost-select").setValue("0.5");
     await nextTick();
-    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["unknown/mystery-model"]);
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual([
+      "unknown/mystery-model",
+    ]);
   });
 
   it("composes search, provider, and cost filters, and can clear them", async () => {
@@ -356,7 +396,9 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await wrapper.find(".playground-provider-select").setValue("deepinfra");
     await wrapper.find(".playground-cost-select").setValue("1");
     await nextTick();
-    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual(["zai-org/GLM-5.3-Flash"]);
+    expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual([
+      "zai-org/GLM-5.3-Flash",
+    ]);
 
     await wrapper.find(".playground-search").setValue("Maverick");
     await nextTick();
@@ -372,7 +414,13 @@ describe("ModelPlaygroundPanel — filtering", () => {
   it("still shows a provider error group when filters hide other providers' models", async () => {
     stubModelsFetch([
       deepinfraGroup(),
-      { id: "together", label: "Together", models: [], fetchedAt: new Date().toISOString(), error: "Together is down" },
+      {
+        id: "together",
+        label: "Together",
+        models: [],
+        fetchedAt: new Date().toISOString(),
+        error: "Together is down",
+      },
     ]);
     const wrapper = mount(ModelPlaygroundPanel);
     await flushPromises();
@@ -380,7 +428,10 @@ describe("ModelPlaygroundPanel — filtering", () => {
 
     await wrapper.find(".playground-cost-select").setValue("1");
     await nextTick();
-    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual(["DeepInfra", "Together"]);
+    expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual([
+      "DeepInfra",
+      "Together",
+    ]);
     expect(wrapper.find(".playground-provider-error").text()).toBe("Together is down");
   });
 });
