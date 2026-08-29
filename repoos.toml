@@ -26,12 +26,12 @@ maxConcurrentAgents = 5
 # CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
 ctoMonitorIntervalMs = 300000
 
-# Native auth (email OTP + optional Google OAuth) — opt-in, currently off.
+# Native auth (email OTP + optional Google OAuth).
 # Full guide: docs/native-auth.md. Restart-tier: takes effect on the next
 # `repoos serve`, not live. The server refuses to start with enabled = true
 # unless a login provider AND bootstrapAdmin are both set.
-auth.enabled = false
-auth.sessionMaxAge = "259200"
+auth.enabled = true
+auth.sessionMaxAge = "604800"
 auth.bootstrapAdmin = "hello@repoos.org"   # ONLY this email can claim the founding admin account
 auth.emailProvider.type = "resend"
 auth.emailProvider.fromAddress = "otp@send.repoos.org"
