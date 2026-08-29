@@ -16,6 +16,12 @@ export interface NewDocForm {
   content: string;
 }
 
+export interface NewSkillForm {
+  name: string;
+  description: string;
+  content: string;
+}
+
 /** A screenshot picked in the New task panel, held in memory until the task exists. */
 export interface PendingScreenshot {
   name: string;
@@ -41,6 +47,8 @@ export const useUiStore = defineStore("ui", () => {
   const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes" | "tokens" | "debug">("details");
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
+  /** True when showing the new-skill panel instead of a task. */
+  const isNewSkill = ref(false);
 
   const GLIDE_PERSIST_KEY = "repoos.board.glide";
   /** Off by default; when on, cards glide between columns on a status change
@@ -130,6 +138,12 @@ export const useUiStore = defineStore("ui", () => {
     content: "",
   });
 
+  const ns = reactive<NewSkillForm>({
+    name: "",
+    description: "",
+    content: "",
+  });
+
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
   /** Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human"). */
@@ -137,6 +151,7 @@ export const useUiStore = defineStore("ui", () => {
     isNew.value = true;
     active.value = null;
     isNewDoc.value = false;
+    isNewSkill.value = false;
     nt.title = "";
     nt.area = "web";
     nt.priority = "p2";
@@ -147,10 +162,21 @@ export const useUiStore = defineStore("ui", () => {
 
   function openNewDoc(): void {
     isNewDoc.value = true;
+    isNewSkill.value = false;
     active.value = null;
     isNew.value = false;
     nd.path = "";
     nd.content = "";
+  }
+
+  function openNewSkill(): void {
+    isNewSkill.value = true;
+    isNewDoc.value = false;
+    active.value = null;
+    isNew.value = false;
+    ns.name = "";
+    ns.description = "";
+    ns.content = "";
   }
 
   /** Read each image file into memory as a data URL and queue it for the new task. */
@@ -228,6 +254,7 @@ export const useUiStore = defineStore("ui", () => {
     active.value = null;
     isNew.value = false;
     isNewDoc.value = false;
+    isNewSkill.value = false;
     activeTab.value = "details";
   }
 
@@ -269,18 +296,21 @@ export const useUiStore = defineStore("ui", () => {
     active,
     isNew,
     isNewDoc,
+    isNewSkill,
     saving,
     drawerWidth,
     tunnelOpen,
     activeTab,
     nt,
     nd,
+    ns,
     pendingScreenshots,
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
     openNewTask,
     openNewDoc,
+    openNewSkill,
     open,
     syncActive,
     openTask,

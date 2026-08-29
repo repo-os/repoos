@@ -47,6 +47,120 @@ export function validateDocPath(config: RepoOSConfig, path: string): { valid: bo
 }
 
 /**
+ * Turn a human skill name into a directory slug: lowercase, non-alphanumerics
+ * collapsed to single dashes, leading/trailing dashes trimmed.
+ */
+export function skillSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Validates a skill path — must be exactly `<skillsDir>/<slug>/SKILL.md` with a
+ * slug of lowercase alphanumerics and dashes. Skills live in their own dir, not
+ * under docsDir, so this is a separate check from validateDocPath.
+ */
+export function validateSkillPath(config: RepoOSConfig, path: string): { valid: boolean; reason?: string } {
+  if (!path) return { valid: false, reason: "path is required" };
+  if (path.includes("..") || path.startsWith("/")) {
+    return { valid: false, reason: "invalid path: no .. or absolute paths" };
+  }
+  const parts = path.split("/");
+  if (parts.length !== 3 || parts[0] !== config.skillsDir || parts[2] !== "SKILL.md") {
+    return { valid: false, reason: `path must be ${config.skillsDir}/<name>/SKILL.md` };
+  }
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(parts[1])) {
+    return { valid: false, reason: "skill name must be lowercase letters, digits and dashes" };
+  }
+  return { valid: true };
+}
+
+/** Assemble a SKILL.md body with the required `name` / `description` frontmatter. */
+export function buildSkillMarkdown(name: string, description: string, body: string): string {
+  const fm = ["---", `name: ${name.trim()}`, `description: ${description.trim()}`, "---", ""].join("\n");
+  return `${fm}\n${body.trim()}\n`;
+}
+
+/**
+ * Create a skill: `<skillsDir>/<slug>/SKILL.md`. When `content` is given it is
+ * written verbatim (upload); otherwise frontmatter is assembled from `name` and
+ * `description` and prepended to `body` (manual).
+ */
+export function createSkill(
+  config: RepoOSConfig,
+  input: { name: string; description?: string; body?: string; content?: string },
+): CreateDocumentResult {
+  const slug = skillSlug(input.name);
+  const path = `${config.skillsDir}/${slug}/SKILL.md`;
+  const validation = validateSkillPath(config, path);
+  if (!validation.valid) {
+    throw new Error(validation.reason || "invalid skill name");
+  }
+  const content =
+    typeof input.content === "string" && input.content.length > 0
+      ? input.content
+      : buildSkillMarkdown(input.name, input.description ?? "", input.body ?? "");
+
+  const absPath = join(config.root, path);
+  mkdirSync(dirname(absPath), { recursive: true });
+  writeFileSync(absPath, content, "utf8");
+  return { path, absPath };
+}
+
+/** Create a skill via the PM agent (freeform), mirroring createFreeformDocument. */
+export async function createFreeformSkill(
+  config: RepoOSConfig,
+  description: string,
+  generator: FreeformDocumentGenerator,
+): Promise<CreateDocumentResult> {
+  const { path, content } = await generator(description);
+  if (!path || !content) {
+    throw new Error("freeform generator returned unusable output (missing path or content)");
+  }
+  const validation = validateSkillPath(config, path);
+  if (!validation.valid) {
+    throw new Error(validation.reason || "invalid skill path from freeform generator");
+  }
+  const absPath = join(config.root, path);
+  mkdirSync(dirname(absPath), { recursive: true });
+  writeFileSync(absPath, content, "utf8");
+  return { path, absPath };
+}
+
+/** Build the PM agent's prompt for authoring a new skill. */
+export function skillFreeformPrompt(description: string): string {
+  return [
+    "You are the PM agent for RepoOS. Turn the user's description into a complete",
+    "Claude skill: a single SKILL.md file with YAML frontmatter.",
+    "",
+    "The user's description:",
+    "",
+    "```",
+    description.trim(),
+    "```",
+    "",
+    "Respond with a frontmatter block giving the destination path, then the SKILL.md",
+    "content, like:",
+    "---",
+    "path: skills/<name>/SKILL.md   # <name> is lowercase letters, digits and dashes",
+    "---",
+    "---",
+    "name: <name>",
+    "description: <one-line description of when to use this skill>",
+    "---",
+    "",
+    "# <Title>",
+    "Instructions the agent should follow when this skill is active.",
+    "",
+    "Respond with ONLY the outer frontmatter block and the file content, starting with",
+    "the opening '---' line and with no preamble, commentary, or code fences.",
+  ].join("\n");
+}
+
+/**
  * Create a document with explicit path and content.
  * Validates path to stay within config.docsDir.
  */

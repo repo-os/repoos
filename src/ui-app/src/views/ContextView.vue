@@ -9,6 +9,7 @@ import { buildDocTree, flattenDocTree } from "../lib/docTree";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import NewDocPanel from "../components/NewDocPanel.vue";
+import NewSkillPanel from "../components/NewSkillPanel.vue";
 import { RotateCcw, ChevronDown, ChevronRight, File } from "lucide-vue-next";
 
 const docs = useDocsStore();
@@ -102,7 +103,11 @@ watch(
         <div class="page-title">Repo Context</div>
         <div class="page-desc" style="margin: 3px 0 0">AI-readable docs · ADRs · skills</div>
       </div>
-      <Button variant="accent" class="new-btn" @click="ui.openNewDoc()">
+      <Button
+        variant="accent"
+        class="new-btn"
+        @click="tab === 'skills' ? ui.openNewSkill() : ui.openNewDoc()"
+      >
         <svg viewBox="0 0 24 24" fill="none">
           <path
             d="M12 5v14M5 12h14"
@@ -111,7 +116,7 @@ watch(
             stroke-linecap="round"
           />
         </svg>
-        New doc
+        {{ tab === "skills" ? "New skill" : "New doc" }}
       </Button>
     </div>
 
@@ -214,6 +219,7 @@ watch(
     </div>
 
     <NewDocPanel />
+    <NewSkillPanel />
   </div>
 </template>
 

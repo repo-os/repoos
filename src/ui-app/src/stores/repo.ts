@@ -1893,6 +1893,35 @@ export const useRepoStore = defineStore("repo", () => {
     return r;
   }
 
+  /** Create a skill manually (name + description + body) or from an uploaded SKILL.md (name + content). */
+  async function createSkill(form: {
+    name: string;
+    description?: string;
+    body?: string;
+    content?: string;
+  }): Promise<{ ok: true; path?: string }> {
+    return api<{ ok: true; path?: string }>("/api/skills/create", JSON_OPTS("POST", form));
+  }
+
+  /** Create a skill via the PM agent from a freeform description. */
+  async function createFreeformSkill(
+    description: string,
+    runId?: string,
+  ): Promise<{ ok: boolean; reason?: string; path?: string }> {
+    const body: Record<string, unknown> = { description };
+    if (runId) body.runId = runId;
+    const r = await api<{ ok: boolean; reason?: string; path?: string }>(
+      "/api/skills/freeform",
+      JSON_OPTS("POST", body),
+    );
+    if (!r.ok) {
+      const message = r.reason ?? "could not create skill";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    return r;
+  }
+
   function onError(err: unknown): void {
     const message = err instanceof Error ? err.message : String(err);
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
@@ -1999,6 +2028,8 @@ export const useRepoStore = defineStore("repo", () => {
     deleteTask,
     createDocument,
     createFreeformDocument,
+    createSkill,
+    createFreeformSkill,
     isRunning,
     isQueued,
     startWork,

@@ -21,6 +21,8 @@
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
  *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
+ *   POST /api/skills/create    -> create a skill { name, description, body } | { name, content }; returns { ok, path }
+ *   POST /api/skills/freeform  -> create a skill from description via the PM agent; returns { ok, path }
  *   GET  /api/chat             -> RepoOS Guide identity, transcript, and running state
  *   POST /api/chat/message     -> start or continue the persistent repository chat
  *   POST /api/tasks            -> create  { title, type?, area?, priority?, assignedTo? }
@@ -158,6 +160,8 @@ import {
   // Docs routes
   createDoc,
   createFreeformDoc,
+  createSkillRoute,
+  createFreeformSkillRoute,
   // Tasks routes
   getTasks,
   createTask,
@@ -1575,6 +1579,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/create", createDoc);
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/skills", getSkills);
+  router.register("POST", "/api/skills/create", createSkillRoute);
+  router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);

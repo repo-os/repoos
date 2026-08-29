@@ -2,7 +2,17 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateDocPath, createDocument, parseGeneratedDocument, docFreeformPrompt } from "../../core/docs.js";
+import {
+  validateDocPath,
+  createDocument,
+  parseGeneratedDocument,
+  docFreeformPrompt,
+  skillSlug,
+  validateSkillPath,
+  buildSkillMarkdown,
+  createSkill,
+  skillFreeformPrompt,
+} from "../../core/docs.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
 const tmpRoots: string[] = [];
@@ -172,5 +182,69 @@ describe("docFreeformPrompt", () => {
     const prompt = docFreeformPrompt("  \n  Description  \n  ");
     expect(prompt).toContain("Description");
     expect(prompt).not.toContain("\n  Description");
+  });
+});
+
+describe("skillSlug", () => {
+  it("lowercases and dashes non-alphanumerics", () => {
+    expect(skillSlug("My Cool Skill")).toBe("my-cool-skill");
+    expect(skillSlug("  Weird__name!! ")).toBe("weird-name");
+  });
+});
+
+describe("validateSkillPath", () => {
+  it("accepts skills/<slug>/SKILL.md", () => {
+    const config = makeConfig(tmpDir());
+    expect(validateSkillPath(config, "skills/my-skill/SKILL.md").valid).toBe(true);
+  });
+
+  it("rejects paths outside the skills dir or wrong filename", () => {
+    const config = makeConfig(tmpDir());
+    expect(validateSkillPath(config, "docs/my-skill/SKILL.md").valid).toBe(false);
+    expect(validateSkillPath(config, "skills/my-skill/README.md").valid).toBe(false);
+    expect(validateSkillPath(config, "skills/My_Skill/SKILL.md").valid).toBe(false);
+    expect(validateSkillPath(config, "skills/../etc/SKILL.md").valid).toBe(false);
+  });
+});
+
+describe("createSkill", () => {
+  it("writes SKILL.md with assembled frontmatter (manual)", () => {
+    const root = tmpDir();
+    const config = makeConfig(root);
+    const res = createSkill(config, { name: "My Skill", description: "when to use it", body: "# Hi\nbody" });
+    expect(res.path).toBe("skills/my-skill/SKILL.md");
+    const text = readFileSync(join(root, res.path), "utf8");
+    expect(text).toContain("name: My Skill");
+    expect(text).toContain("description: when to use it");
+    expect(text).toContain("# Hi");
+  });
+
+  it("writes uploaded content verbatim", () => {
+    const root = tmpDir();
+    const config = makeConfig(root);
+    const raw = "---\nname: x\ndescription: y\n---\n\n# Raw\n";
+    const res = createSkill(config, { name: "Raw One", content: raw });
+    expect(readFileSync(join(root, res.path), "utf8")).toBe(raw);
+  });
+
+  it("rejects an empty name", () => {
+    const config = makeConfig(tmpDir());
+    expect(() => createSkill(config, { name: "  " })).toThrow();
+  });
+});
+
+describe("buildSkillMarkdown", () => {
+  it("prepends name/description frontmatter", () => {
+    const md = buildSkillMarkdown("Foo", "bar", "# Foo\ntext");
+    expect(md.startsWith("---\nname: Foo\ndescription: bar\n---\n")).toBe(true);
+  });
+});
+
+describe("skillFreeformPrompt", () => {
+  it("mentions SKILL.md and the skills path", () => {
+    const prompt = skillFreeformPrompt("a linting skill");
+    expect(prompt).toContain("SKILL.md");
+    expect(prompt).toContain("path: skills/");
+    expect(prompt).toContain("a linting skill");
   });
 });
