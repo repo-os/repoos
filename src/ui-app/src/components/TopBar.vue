@@ -27,35 +27,22 @@ function toggleTheme(): void {
 
 const PALETTE = [
   "#FFB3BA",
-  "#FFDFBA",
   "#FFFFBA",
   "#BAFFC9",
   "#BAE1FF",
   "#D4BAFF",
-  "#FFBAE1",
   "#BAFFED",
-  "#FFC8BA",
-  "#E8BAFF",
-  "#BAF2FF",
-  "#C9FFBA",
 ];
 
-// 12 dark-mode pastels, paired by hue with the light palette above: the same
-// families, darkened/muted so they read as soft pastels against dark
-// backgrounds (and the favicon/PWA icon they drive).
+// Dark-mode pastels, paired by hue with the light palette above. The six hue
+// families are intentionally spaced apart so the picker remains easy to scan.
 const DARK_PALETTE = [
   "#E07A8A",
-  "#E8A87C",
   "#E4C86B",
   "#7FD9A0",
   "#6FB3E0",
   "#9E8FD0",
-  "#D98BB0",
   "#6FD4C4",
-  "#E0946F",
-  "#B58FD0",
-  "#7FC4E0",
-  "#8FCE76",
 ];
 
 const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
@@ -77,7 +64,7 @@ function loadSavedColor(): void {
 
 /**
  * Build a data-URI SVG favicon tinted with the chosen repo color: a rounded
- * square in that color with the RepoOS diamond mark as a white outline — the
+ * square in that color with the RepoOS diamond mark as a black outline — the
  * same geometry as the default `/favicon.svg`, so switching repos gives an
  * at-a-glance color cue in the tab bar.
  */
@@ -85,8 +72,8 @@ function faviconDataUri(color: string): string {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">` +
     `<rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="${color}" stroke="rgba(255,255,255,0.7)" stroke-width="0.8"/>` +
-    `<path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.95"/>` +
-    `<path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>` +
+    `<path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#000000" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.95"/>` +
+    `<path d="M12 7v10M8 9.5v5M16 9.5v5" stroke="#000000" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.7"/>` +
     `</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
