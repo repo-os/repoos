@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-08-29T05:17:35Z"
+review_passes: 3
 id: "0318"
 title: Add per-task sync-with-main button to debug tab
 type: feature
@@ -11,8 +13,6 @@ branch: feat/add-per-task-sync-with-main-button-to-de
 model_override: opencode-go/hy3
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-08-28T16:17:21Z"
-updated_at: "2026-08-29T05:16:04Z"
-review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -105,3 +105,4 @@ I think we need a way to trigger a sync with main on individual tasks that have 
 - 2026-08-29T05:11:06Z · status review→active
 - 2026-08-29T05:11:06Z · note: Please read the reviewers suggestions and make the necessary changes
 - 2026-08-29T05:15:07Z · status active→review
+
