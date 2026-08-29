@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/improve-model-playground-layout-and-filt
 created_at: "2026-08-29T04:18:28Z"
-updated_at: "2026-08-29T04:31:43Z"
+updated_at: "2026-08-29T04:56:24Z"
 ---
 ## Problem
 The model playground tab is hard to navigate and use. There is no way to search for a specific model among a long list, no quick way to narrow by provider or by token cost, the whole tab scrolls instead of just the model list (so controls and context get pushed out of view), and the model list is too narrow to comfortably read model names and metadata.
