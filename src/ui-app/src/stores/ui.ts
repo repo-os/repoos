@@ -51,6 +51,8 @@ export const useUiStore = defineStore("ui", () => {
   const isNewDoc = ref(false);
   /** True when showing the new-skill panel instead of a task. */
   const isNewSkill = ref(false);
+  const isNewInput = ref(false);
+  const inputText = ref("");
 
   const GLIDE_PERSIST_KEY = "repoos.board.glide";
   /** Off by default; when on, cards glide between columns on a status change
@@ -154,6 +156,7 @@ export const useUiStore = defineStore("ui", () => {
     active.value = null;
     isNewDoc.value = false;
     isNewSkill.value = false;
+    isNewInput.value = false;
     nt.title = "";
     nt.area = "web";
     nt.priority = "p2";
@@ -167,8 +170,13 @@ export const useUiStore = defineStore("ui", () => {
     isNewSkill.value = false;
     active.value = null;
     isNew.value = false;
+    isNewInput.value = false;
     nd.path = "";
     nd.content = "";
+  }
+
+  function openNewInput(): void {
+    isNewInput.value = true; isNew.value = false; isNewDoc.value = false; isNewSkill.value = false; active.value = null; inputText.value = ""; clearScreenshots();
   }
 
   function openNewSkill(): void {
@@ -184,7 +192,6 @@ export const useUiStore = defineStore("ui", () => {
   /** Read each image file into memory as a data URL and queue it for the new task. */
   function addScreenshots(files: File[]): void {
     for (const file of files) {
-      if (!/^image\/(png|jpe?g|gif|webp|avif|bmp)$/i.test(file.type)) continue;
       if (pendingScreenshots.length >= MAX_PENDING_SCREENSHOTS) break;
       const reader = new FileReader();
       reader.onload = () => {
@@ -257,6 +264,7 @@ export const useUiStore = defineStore("ui", () => {
     isNew.value = false;
     isNewDoc.value = false;
     isNewSkill.value = false;
+    isNewInput.value = false;
     activeTab.value = "details";
   }
 
@@ -299,6 +307,8 @@ export const useUiStore = defineStore("ui", () => {
     isNew,
     isNewDoc,
     isNewSkill,
+    isNewInput,
+    inputText,
     saving,
     drawerWidth,
     tunnelOpen,
@@ -313,6 +323,7 @@ export const useUiStore = defineStore("ui", () => {
     openNewTask,
     openNewDoc,
     openNewSkill,
+    openNewInput,
     open,
     syncActive,
     openTask,

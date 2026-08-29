@@ -296,6 +296,8 @@ export interface RepoOSConfig {
   docsDir: string;
   /** Directory holding skills, relative to root. Default "skills". */
   skillsDir: string;
+  /** Directory holding human-submitted inputs, relative to root. */
+  inputsDir?: string;
   /** Glob-ish: file extensions treated as tasks. Default [".md"]. */
   taskExtensions: string[];
   /** Default status applied to new tasks. */

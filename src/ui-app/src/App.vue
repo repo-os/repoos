@@ -13,6 +13,7 @@ import TunnelDrawer from "./components/TunnelDrawer.vue";
 import RemoteValidationDrawer from "./components/RemoteValidationDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
+import NewInputPanel from "./components/NewInputPanel.vue";
 
 const route = useRoute();
 const repo = useRepoStore();
@@ -62,6 +63,7 @@ onMounted(async () => {
       <RemoteValidationDrawer />
       <ToastPanel />
       <FloatingHeads />
+      <NewInputPanel />
     </template>
   </div>
 </template>

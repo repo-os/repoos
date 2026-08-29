@@ -125,6 +125,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   workDir: "work",
   docsDir: "docs",
   skillsDir: "skills",
+  inputsDir: "inputs",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
   defaultAssignee: "unassigned",
@@ -355,6 +356,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("workDir") === "string") cfg.workDir = get("workDir") as string;
     if (typeof get("docsDir") === "string") cfg.docsDir = get("docsDir") as string;
     if (typeof get("skillsDir") === "string") cfg.skillsDir = get("skillsDir") as string;
+    if (typeof get("inputsDir") === "string") cfg.inputsDir = get("inputsDir") as string;
     if (Array.isArray(get("taskExtensions")))
       cfg.taskExtensions = get("taskExtensions") as string[];
     if (typeof get("defaultStatus") === "string")

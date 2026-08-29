@@ -26,6 +26,7 @@ import type {
   TaskLogEntry,
   TaskUsageStats,
 } from "../types";
+import type { Input } from "../../../core/input.js";
 
 export interface FeedItem {
   key: number;
@@ -1904,6 +1905,11 @@ export const useRepoStore = defineStore("repo", () => {
     return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
   }
 
+  async function loadInputs(): Promise<Input[]> { return api<Input[]>("/api/inputs"); }
+  async function createInput(text: string): Promise<Input> { return api<Input>("/api/inputs", JSON_OPTS("POST", { text })); }
+  async function updateInput(id: string, status: string): Promise<Input> { return api<Input>(`/api/inputs/${id}`, JSON_OPTS("PATCH", { status })); }
+  async function uploadInputAttachment(id: string, s: PendingScreenshot): Promise<void> { await api(`/api/inputs/${id}/attachments`, JSON_OPTS("POST", { name: s.name, data: s.dataUrl.split(",")[1] ?? "" })); }
+
   /** Create a document via the PM agent from a freeform description. */
   async function createFreeformDocument(
     description: string,
@@ -2072,6 +2078,10 @@ export const useRepoStore = defineStore("repo", () => {
     createFreeformTask,
     deleteTask,
     createDocument,
+    loadInputs,
+    createInput,
+    updateInput,
+    uploadInputAttachment,
     createFreeformDocument,
     createSkill,
     createFreeformSkill,

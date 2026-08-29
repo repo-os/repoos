@@ -21,6 +21,12 @@ export const NAV: NavItem[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="4" height="16" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>',
   },
   {
+    id: "inputs",
+    path: "/inputs",
+    label: "Inputs",
+    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 5h14v14H5z" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  },
+  {
     id: "agents",
     path: "/agents",
     label: "Agents",

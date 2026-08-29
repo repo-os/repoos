@@ -12,6 +12,7 @@ export const router = createRouter({
     },
     { path: "/", name: "dashboard", component: () => import("./views/DashboardView.vue") },
     { path: "/work", name: "work", component: () => import("./views/WorkView.vue") },
+    { path: "/inputs", name: "inputs", component: () => import("./views/InputsView.vue") },
     { path: "/repo", name: "repo", component: () => import("./views/ContextView.vue") },
     { path: "/settings", name: "settings", component: () => import("./views/SettingsView.vue") },
     { path: "/agents", name: "agents", component: () => import("./views/AgentsView.vue") },

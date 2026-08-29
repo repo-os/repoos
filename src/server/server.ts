@@ -174,6 +174,10 @@ import {
   createFreeformDoc,
   createSkillRoute,
   createFreeformSkillRoute,
+  getInputs,
+  postInput,
+  patchInput,
+  uploadInputAttachment,
   // Tasks routes
   getTasks,
   createTask,
@@ -1650,6 +1654,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/docs", getDocs);
   router.register("POST", "/api/docs/create", createDoc);
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
+  router.register("GET", "/api/inputs", getInputs);
+  router.register("POST", "/api/inputs", postInput);
+  router.register("PATCH", /^\/api\/inputs\/([^/]+)$/, patchInput);
+  router.register("POST", /^\/api\/inputs\/([^/]+)\/attachments$/, uploadInputAttachment);
   router.register("GET", "/api/skills", getSkills);
   router.register("POST", "/api/skills/create", createSkillRoute);
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
