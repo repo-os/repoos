@@ -701,11 +701,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   }
 
   if (action === "sync") {
-    if (existing.status !== "review") {
-      return json(res, 400, {
-        error: `Only review tasks can be synced (#${id} is ${existing.status})`,
-      });
-    }
     if (!existing.branch) {
       return json(res, 400, { error: `Task #${id} has no branch to sync` });
     }
