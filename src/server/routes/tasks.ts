@@ -709,6 +709,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} has an agent turn in progress`,
       });
     }
+    if (reviews.isRunning(id)) {
+      return json(res, 409, {
+        error: `Task #${id} has a review in progress`,
+      });
+    }
     const sync = await syncTaskBranch(existing);
     index.refreshBranches();
     return json(res, sync.ok ? 200 : 409, {

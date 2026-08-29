@@ -6,15 +6,15 @@
  * divergence auto-sync path). These tests pin the new contract through the
  * `taskAction` route handler directly:
  *
- *   1. a non-review task with a branch now reaches `syncTaskBranch` (200),
- *   2. a task with no branch is still rejected (400),
- *   3. a task with a running agent turn is still rejected (409).
+ *   1. a non-review task with a branch reaches `syncTaskBranch` (200),
+ *   2. a `review` task with a branch still reaches `syncTaskBranch` (200),
+ *   3. a task with no branch is rejected (400),
+ *   4. a task with a running agent turn is rejected (409),
+ *   5. a task with a running review is rejected (409),
+ *   6. a sync that reports conflicts is surfaced as a 409 with the conflict list.
  */
 import { describe, expect, it, vi } from "vitest";
 import type { IncomingMessage } from "node:http";
-import { execSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { taskAction } from "../../server/routes/tasks.js";
 import type { RouteContext } from "../../server/routes/types.js";
@@ -41,7 +41,9 @@ const makeReq = (): IncomingMessage =>
     },
   }) as unknown as IncomingMessage;
 
-const baseTask = (root: string, over: Partial<Task> = {}): Task => ({
+const ROOT = "/tmp/repoos-sync-route-fake-root";
+
+const baseTask = (over: Partial<Task> = {}): Task => ({
   id: "0318",
   title: "Test",
   type: "feature",
@@ -59,7 +61,7 @@ const baseTask = (root: string, over: Partial<Task> = {}): Task => ({
   created_at: null,
   updated_at: null,
   path: "work/0318-test.md",
-  absPath: join(root, "work/0318-test.md"),
+  absPath: join(ROOT, "work/0318-test.md"),
   body: "",
   extra: {},
   agentOverride: null,
@@ -76,32 +78,21 @@ const baseTask = (root: string, over: Partial<Task> = {}): Task => ({
   ...over,
 });
 
-function makeRepo(): { root: string; clean: () => void } {
-  const root = mkdtempSync(join(tmpdir(), "repoos-sync-route-"));
-  const git = (args: string[]) =>
-    execSync(`git ${args.join(" ")}`, { cwd: root, stdio: "ignore" });
-  git(["-C", root, "init", "-q"]);
-  git(["config", "user.email", "t@example.com"]);
-  git(["config", "user.name", "Test"]);
-  mkdirSync(join(root, "work"), { recursive: true });
-  writeFileSync(join(root, "README.md"), "hi\n");
-  git(["add", "README.md"]);
-  git(["commit", "-m", "init"]);
-  return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
-}
-
 function makeCtx(
-  root: string,
   task: Task,
-  opts: { running?: boolean; sync?: () => Promise<{ ok: boolean; conflicts: string[] }> } = {},
+  opts: {
+    running?: boolean;
+    reviewing?: boolean;
+    sync?: () => Promise<{ ok: boolean; conflicts: string[]; reason?: string }>;
+  } = {},
 ): RouteContext {
   return {
-    config: { root } as any,
+    config: { root: ROOT } as any,
     index: { getTask: () => task, refreshBranches: () => {} } as any,
     indexReady: Promise.resolve(),
     runner: { isRunning: () => opts.running ?? false, stop: () => {} } as any,
     previews: { stop: async () => {} } as any,
-    reviews: { isRunning: () => false, cancel: () => {} } as any,
+    reviews: { isRunning: () => opts.reviewing ?? false, cancel: () => {} } as any,
     cto: {} as any,
     repoos: {} as any,
     emitEvent: () => {},
@@ -121,68 +112,110 @@ function makeCtx(
 
 describe("POST /api/tasks/:id/sync contract (#0318)", () => {
   it("allows a non-review task with a branch to sync (no longer review-only)", async () => {
-    const { root, clean } = makeRepo();
-    try {
-      const task = baseTask(root, { status: "active", branch: "feat/0318" });
-      const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
-      const res = makeRes();
+    const task = baseTask({ status: "active", branch: "feat/0318" });
+    const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
+    const res = makeRes();
 
-      await taskAction(
-        makeCtx(root, task, { sync }),
-        makeReq(),
-        res as any,
-        { param1: "0318", param2: "sync" },
-      );
+    await taskAction(
+      makeCtx(task, { sync }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
 
-      expect(sync).toHaveBeenCalledOnce();
-      expect(res.statusCode).toBe(200);
-      expect(res.body.ok).toBe(true);
-    } finally {
-      clean();
-    }
+    expect(sync).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it("still allows a review task with a branch to sync", async () => {
+    const task = baseTask({ status: "review", branch: "feat/0318" });
+    const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
+    const res = makeRes();
+
+    await taskAction(
+      makeCtx(task, { sync }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
+
+    expect(sync).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 
   it("still rejects a task with no branch", async () => {
-    const { root, clean } = makeRepo();
-    try {
-      const task = baseTask(root, { status: "active", branch: "" });
-      const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
-      const res = makeRes();
+    const task = baseTask({ status: "active", branch: "" });
+    const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
+    const res = makeRes();
 
-      await taskAction(
-        makeCtx(root, task, { sync }),
-        makeReq(),
-        res as any,
-        { param1: "0318", param2: "sync" },
-      );
+    await taskAction(
+      makeCtx(task, { sync }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
 
-      expect(sync).not.toHaveBeenCalled();
-      expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/no branch to sync/i);
-    } finally {
-      clean();
-    }
+    expect(sync).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toMatch(/no branch to sync/i);
   });
 
   it("still rejects a task with a running agent turn", async () => {
-    const { root, clean } = makeRepo();
-    try {
-      const task = baseTask(root, { status: "active", branch: "feat/0318" });
-      const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
-      const res = makeRes();
+    const task = baseTask({ status: "active", branch: "feat/0318" });
+    const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
+    const res = makeRes();
 
-      await taskAction(
-        makeCtx(root, task, { sync, running: true }),
-        makeReq(),
-        res as any,
-        { param1: "0318", param2: "sync" },
-      );
+    await taskAction(
+      makeCtx(task, { sync, running: true }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
 
-      expect(sync).not.toHaveBeenCalled();
-      expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/agent turn in progress/i);
-    } finally {
-      clean();
-    }
+    expect(sync).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(409);
+    expect(res.body.error).toMatch(/agent turn in progress/i);
+  });
+
+  it("rejects a task with a running review", async () => {
+    const task = baseTask({ status: "review", branch: "feat/0318" });
+    const sync = vi.fn(async () => ({ ok: true, conflicts: [] }));
+    const res = makeRes();
+
+    await taskAction(
+      makeCtx(task, { sync, reviewing: true }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
+
+    expect(sync).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(409);
+    expect(res.body.error).toMatch(/review in progress/i);
+  });
+
+  it("surfaces a conflicting sync as a 409 with the conflict list", async () => {
+    const task = baseTask({ status: "active", branch: "feat/0318" });
+    const sync = vi.fn(async () => ({
+      ok: false,
+      conflicts: ["src/core/git.ts"],
+      reason: "merge conflict",
+    }));
+    const res = makeRes();
+
+    await taskAction(
+      makeCtx(task, { sync }),
+      makeReq(),
+      res as any,
+      { param1: "0318", param2: "sync" },
+    );
+
+    expect(sync).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(409);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.conflicts).toEqual(["src/core/git.ts"]);
+    expect(res.body.error).toMatch(/merge conflict/i);
   });
 });
