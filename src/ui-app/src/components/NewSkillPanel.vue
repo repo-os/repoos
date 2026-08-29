@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -8,6 +8,7 @@ import { useDocsStore } from "../stores/docs";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import AgentModelControl from "./AgentModelControl.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -40,6 +41,27 @@ const pmAgentReady = computed(() => {
   return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
 });
 
+/** The freeform skill is authored by the PM agent; the coding agent + model
+ *  default to the PM role's config and can be overridden here (no role picker —
+ *  the role is always PM). */
+const pmBase = computed(() => (config.agents ?? []).find((a) => a.enabled && a.name === "pm") ?? null);
+
+const freeformOverride = reactive({ cli: "", model: "" });
+
+function initOverride(): void {
+  freeformOverride.cli = pmBase.value?.cli || "";
+  freeformOverride.model = pmBase.value?.model || "";
+}
+
+const overrideIsCustom = computed(() => {
+  const base = pmBase.value;
+  if (!base) return false;
+  return freeformOverride.cli !== base.cli || freeformOverride.model !== base.model;
+});
+
+const cliOptions = computed(() => config.agentsMeta.clis ?? []);
+const modelOptions = computed(() => config.modelsFor(freeformOverride.cli, freeformOverride.model || undefined));
+
 /** Preview the folder slug the way the server derives it. */
 const slug = computed(() =>
   ui.ns.name
@@ -59,6 +81,7 @@ watch(
     manualError.value = "";
     uploadFile.value = null;
     uploadError.value = "";
+    initOverride();
   },
 );
 
@@ -78,7 +101,10 @@ async function createFreeform(): Promise<void> {
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = crypto.randomUUID();
   try {
-    const res = await repo.createFreeformSkill(text, freeformRunId.value);
+    const overrides = overrideIsCustom.value
+      ? { cli: freeformOverride.cli, model: freeformOverride.model }
+      : undefined;
+    const res = await repo.createFreeformSkill(text, freeformRunId.value, overrides);
     freeformText.value = "";
     await afterCreate(res.path);
   } catch (err) {
@@ -200,6 +226,15 @@ watch(freeformLines, () => {
               placeholder="Describe what the skill should do and when an agent should reach for it. The PM agent writes the SKILL.md and picks the skills/<name>/ folder."
             ></textarea>
           </div>
+          <div class="ff-agent-bar">
+            <AgentModelControl
+              :cli-options="cliOptions"
+              :model-options="modelOptions"
+              v-model:cli="freeformOverride.cli"
+              v-model:model="freeformOverride.model"
+              :disabled="freeformRunning"
+            />
+          </div>
           <div v-if="!pmAgentReady" class="ff-notice">
             No PM agent is configured.
             <router-link :to="{ name: 'agents' }" @click="ui.close()">
@@ -318,6 +353,11 @@ watch(freeformLines, () => {
   font-family: monospace;
   font-size: 11px;
   color: var(--txt-faint);
+}
+
+.ff-agent-bar {
+  display: flex;
+  margin: 12px 0;
 }
 
 .ff-notice {

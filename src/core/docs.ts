@@ -78,9 +78,14 @@ export function validateSkillPath(config: RepoOSConfig, path: string): { valid: 
   return { valid: true };
 }
 
+/** Double-quote a YAML scalar so colons, quotes and `#` in the value stay safe. */
+function yamlQuote(v: string): string {
+  return `"${v.trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 /** Assemble a SKILL.md body with the required `name` / `description` frontmatter. */
 export function buildSkillMarkdown(name: string, description: string, body: string): string {
-  const fm = ["---", `name: ${name.trim()}`, `description: ${description.trim()}`, "---", ""].join("\n");
+  const fm = ["---", `name: ${yamlQuote(name)}`, `description: ${yamlQuote(description)}`, "---", ""].join("\n");
   return `${fm}\n${body.trim()}\n`;
 }
 

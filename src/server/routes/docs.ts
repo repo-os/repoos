@@ -2,8 +2,16 @@
  * Document routes: manual create + PM-agent-backed freeform create.
  */
 import type { RouteHandler } from "./types.js";
+import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
+
+/** Apply optional `cliOverride` / `modelOverride` from a request body onto the base PM agent. */
+function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
+  const cli = typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+  const model = typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+  return { ...base, ...(cli ? { cli } : {}), ...(model ? { model } : {}) };
+}
 import {
   createDocument,
   createFreeformDocument,
@@ -61,10 +69,11 @@ export const createFreeformSkillRoute: RouteHandler = async (ctx, req, res) => {
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
 
-  const pm = resolvePmAgent(config);
-  if (!pm) {
+  const pmBase = resolvePmAgent(config);
+  if (!pmBase) {
     return json(res, 400, { ok: false, reason: "No PM agent is configured" });
   }
+  const pm = pmWithOverrides(pmBase, body);
 
   try {
     const skillResult = await createFreeformSkill(config, description, async (desc) => {
@@ -103,10 +112,12 @@ export const createFreeformDoc: RouteHandler = async (ctx, req, res) => {
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
 
-  const pm = resolvePmAgent(config);
-  if (!pm) {
+  const pmBase = resolvePmAgent(config);
+  if (!pmBase) {
     return json(res, 400, { ok: false, reason: "No PM agent is configured" });
   }
+  // The New doc panel sends cliOverride / modelOverride from its agent picker.
+  const pm = pmWithOverrides(pmBase, body);
 
   try {
     const docResult = await createFreeformDocument(config, description, async (desc) => {

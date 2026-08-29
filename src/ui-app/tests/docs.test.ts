@@ -214,8 +214,8 @@ describe("createSkill", () => {
     const res = createSkill(config, { name: "My Skill", description: "when to use it", body: "# Hi\nbody" });
     expect(res.path).toBe("skills/my-skill/SKILL.md");
     const text = readFileSync(join(root, res.path), "utf8");
-    expect(text).toContain("name: My Skill");
-    expect(text).toContain("description: when to use it");
+    expect(text).toContain('name: "My Skill"');
+    expect(text).toContain('description: "when to use it"');
     expect(text).toContain("# Hi");
   });
 
@@ -236,7 +236,12 @@ describe("createSkill", () => {
 describe("buildSkillMarkdown", () => {
   it("prepends name/description frontmatter", () => {
     const md = buildSkillMarkdown("Foo", "bar", "# Foo\ntext");
-    expect(md.startsWith("---\nname: Foo\ndescription: bar\n---\n")).toBe(true);
+    expect(md.startsWith('---\nname: "Foo"\ndescription: "bar"\n---\n')).toBe(true);
+  });
+
+  it("quotes values so a colon in the description stays valid YAML", () => {
+    const md = buildSkillMarkdown("Foo", "Use when: doing X", "body");
+    expect(md).toContain('description: "Use when: doing X"');
   });
 });
 

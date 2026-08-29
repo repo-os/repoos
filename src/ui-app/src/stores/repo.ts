@@ -1907,9 +1907,12 @@ export const useRepoStore = defineStore("repo", () => {
   async function createFreeformSkill(
     description: string,
     runId?: string,
+    overrides?: { cli?: string; model?: string },
   ): Promise<{ ok: boolean; reason?: string; path?: string }> {
     const body: Record<string, unknown> = { description };
     if (runId) body.runId = runId;
+    if (overrides?.cli) body.cliOverride = overrides.cli;
+    if (overrides?.model) body.modelOverride = overrides.model;
     const r = await api<{ ok: boolean; reason?: string; path?: string }>(
       "/api/skills/freeform",
       JSON_OPTS("POST", body),
