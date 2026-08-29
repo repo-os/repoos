@@ -40,6 +40,14 @@ const SCHEMA: ConfigField[] = [
   }),
   schemaField({ key: "whisper.enabled", label: "Whisper", type: "boolean", default: false }),
   schemaField({ key: "ntfyTopic", label: "ntfy topic", type: "string", default: "" }),
+  schemaField({ key: "auth.enabled", label: "Auth", type: "boolean", default: false }),
+  schemaField({ key: "auth.sessionMaxAge", label: "Session", type: "string", default: 604800 }),
+  schemaField({
+    key: "remoteValidation.enabled",
+    label: "Remote validation",
+    type: "boolean",
+    default: false,
+  }),
 ];
 
 function configResponse(config: Record<string, unknown>) {
@@ -84,6 +92,38 @@ describe("fillForm select coercion (#0240)", () => {
     const body = Object.fromEntries(SCHEMA.map((f) => [f.key, store.form[f.key]]));
     await store.save(body as Record<string, unknown>);
     expect(sent).toEqual(expect.objectContaining({ maxActiveTasks: "5" }));
+  });
+});
+
+describe("fillForm resolves nested config keys", () => {
+  it("reads auth.* / remoteValidation.* from their nested objects, not a flat key", async () => {
+    const store = useConfigStore();
+    // The server sends auth + remoteValidation as nested objects (only
+    // whisper.provider is flattened). A flat `res.config['auth.enabled']`
+    // lookup would miss this and fall back to the schema default (false).
+    api.mockResolvedValueOnce(
+      configResponse({
+        maxActiveTasks: 3,
+        "whisper.enabled": false,
+        ntfyTopic: "",
+        auth: { enabled: true, sessionMaxAge: 604800 },
+        remoteValidation: { enabled: true },
+      }),
+    );
+    await store.load();
+    expect(store.form["auth.enabled"]).toBe(true);
+    expect(store.form["auth.sessionMaxAge"]).toBe(604800);
+    expect(store.form["remoteValidation.enabled"]).toBe(true);
+  });
+
+  it("falls back to the schema default when the nested object is absent", async () => {
+    const store = useConfigStore();
+    api.mockResolvedValueOnce(
+      configResponse({ maxActiveTasks: 3, "whisper.enabled": false, ntfyTopic: "" }),
+    );
+    await store.load();
+    expect(store.form["auth.enabled"]).toBe(false);
+    expect(store.form["remoteValidation.enabled"]).toBe(false);
   });
 });
 

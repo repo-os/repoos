@@ -218,9 +218,29 @@ export const useConfigStore = defineStore("config", () => {
     },
   );
 
+  /**
+   * Resolve a schema key against the config payload. Most keys are flat, but
+   * `auth.*` and `remoteValidation.*` arrive as nested objects (only
+   * `whisper.provider` is flattened server-side) — walk the dotted path for
+   * those. Without this, `res.config["auth.enabled"]` is always `undefined`, so
+   * the auth/session/remote-validation controls fell back to their schema
+   * defaults and a saved toggle "snapped back" on the next reload.
+   */
+  function configValue(config: Record<string, unknown>, key: string): unknown {
+    if (key in config) return config[key];
+    let cur: unknown = config;
+    for (const part of key.split(".")) {
+      if (!cur || typeof cur !== "object" || !(part in (cur as Record<string, unknown>))) {
+        return undefined;
+      }
+      cur = (cur as Record<string, unknown>)[part];
+    }
+    return cur;
+  }
+
   function fillForm(res: ConfigResponse): void {
     for (const f of res.schema) {
-      const val = res.config[f.key] ?? f.default;
+      const val = configValue(res.config, f.key) ?? f.default;
       if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
       else if (f.type === "boolean") form[f.key] = !!val;
       else if (f.type === "select") form[f.key] = String(val);

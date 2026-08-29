@@ -198,16 +198,27 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   // Guard: enabling auth requires a login provider to be configured. Secrets
-  // only ever come from repoos.config (env-var-sourced), never from the
-  // request body — see the rejection above.
+  // only ever come from config (env-var-sourced), never from the request body
+  // — see the rejection above.
+  //
+  // Validate against the config as it exists on disk RIGHT NOW (a fresh
+  // loadConfig re-reads repoos.toml + .env), not the in-memory `repoos.config`:
+  // that copy is only refreshed at the END of this handler, so a server that
+  // booted before the provider was set (empty `auth` block) would otherwise
+  // reject every attempt to turn auth on from Settings — permanently, until a
+  // restart. `patch` values are honored too, since fromAddress / clientId can
+  // arrive in this same save (written just below).
   const enablingAuth = patch["auth.enabled"] === true;
   if (enablingAuth) {
+    const onDisk = loadConfig(config.root);
+    const fromAddress =
+      patch["auth.emailProvider.fromAddress"] ?? onDisk.auth?.emailProvider?.fromAddress;
+    const clientId = patch["auth.google.clientId"] ?? onDisk.auth?.google?.clientId;
     const hasEmailProvider = !!(
-      repoos.config.auth?.emailProvider?.apiKey && repoos.config.auth?.emailProvider?.fromAddress
+      (onDisk.auth?.emailProvider?.apiKey || process.env.REPOOS_RESEND_API_KEY) &&
+      fromAddress
     );
-    const hasGoogle = !!(
-      repoos.config.auth?.google?.clientId && repoos.config.auth?.google?.clientSecret
-    );
+    const hasGoogle = !!(clientId && onDisk.auth?.google?.clientSecret);
     if (!hasEmailProvider && !hasGoogle) {
       return json(res, 400, {
         error:
