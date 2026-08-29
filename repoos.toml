@@ -59,19 +59,19 @@ access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"
 [[agents]]
 name = "engineer"
 cli = "opencode"
-model = "opencode-go/hy3"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 [[agents]]
 name = "reviewer"
 cli = "opencode"
-model = "opencode-go/hy3"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Output ONE short markdown report under 400 words with exactly `"
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "opencode-go/hy3"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
