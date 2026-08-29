@@ -30,8 +30,8 @@ ctoMonitorIntervalMs = 300000
 # Full guide: docs/native-auth.md. Restart-tier: takes effect on the next
 # `repoos serve`, not live. The server refuses to start with enabled = true
 # unless a login provider AND bootstrapAdmin are both set.
-auth.enabled = true
-auth.sessionMaxAge = "604800"
+auth.enabled = false
+auth.sessionMaxAge = "259200"
 auth.bootstrapAdmin = "hello@repoos.org"   # ONLY this email can claim the founding admin account
 auth.emailProvider.type = "resend"
 auth.emailProvider.fromAddress = "otp@send.repoos.org"
@@ -43,8 +43,9 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = true
-remoteValidation.fallbackToLocal = true
+remoteValidation.enabled = false
+remoteValidation.fallbackToLocal = false
+
 [tunnel]
 provider = "cloudflare"
 enabled = true
@@ -56,6 +57,7 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
+
 [[agents]]
 name = "engineer"
 cli = "opencode"

@@ -164,10 +164,10 @@ async function sendOtpEmail(
   return sendResendEmail(
     config,
     toEmail,
-    `Your RepoOS Login Code — ${repoName} repo`,
+    `${code} Your RepoOS Login Code — ${repoName}`,
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="margin-bottom: 16px;">RepoOS Login Code — ${repoName} repo</h2>
+        <h2 style="margin-bottom: 16px;">RepoOS Login Code — ${repoName}</h2>
         <p>Your one-time login code for <strong>${repoName}</strong> is:</p>
         <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0; text-align: center; color: #333;">
           ${code}
