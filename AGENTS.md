@@ -3,6 +3,31 @@
 This repo uses **RepoOS**: tasks are markdown files under `work/`, and the
 repo itself is the source of truth. This file tells AI agents how to operate.
 
+`AGENTS.md` is the cross-tool standard and the single source of truth here.
+Codex, Cursor, Aider, Zed and friends read it directly; `CLAUDE.md` is a
+one-line shim (`@AGENTS.md`) so Claude Code picks it up too. Don't add a
+per-tool file (`CODEX.md`, `GEMINI.md`, …) — add a shim only if a tool you
+actually use ignores both.
+
+## Who this file is for
+
+Two kinds of agent read this file, and some rules apply to only one:
+
+- **RepoOS task-runner agents** — spawned by the RepoOS server to work a
+  specific task. You have a task id, a dedicated worktree, and a task
+  transcript. The operating loop below, the `status:` frontmatter moves, the
+  `::repoos-preview-request::` signal, and "never run `repoos serve` yourself"
+  are all yours — the server enforces them and rejects direct serve attempts
+  from your process.
+- **Interactive / external agent sessions** — a human is driving you directly
+  (Claude Code, Codex CLI, Cursor, …) in an ordinary checkout. You have no
+  task id and no managed preview. Skip the task-lifecycle mechanics; when a
+  rule says "emit the signal line" or "read your task transcript," that is not
+  you. To run or verify the app, use your own harness's tooling (e.g. Claude
+  Code's preview/browser tools, which may launch the dev server defined in
+  `.claude/launch.json`) and get past the login screen with the **Dev login**
+  below.
+
 ## Operating loop
 
 1. Read this file first and any relevant docs under `docs/`. Then run `repoos list` to see current tasks.
@@ -159,18 +184,37 @@ cannot tell from the code alone:
   result from your transcript confirms the change serves, with no OTP involved.
   If a task genuinely needs deeper interactive verification — actually clicking
   through the logged-in UI, not just confirming it serves — log into the
-  preview with the dev backdoor code (`config.auth.devBackdoorCode`, set via
-  `REPOOS_AUTH_DEV_BACKDOOR_CODE`, non-production only) instead of requesting a
-  real email OTP you have no inbox for. It only replaces the OTP step: the
-  email you enter must already be an allowlisted user (e.g. the configured
-  `bootstrapAdmin`) — it does not let you log in as an arbitrary address. This
-  same backdoor works against any locally-served instance, not just managed
-  task previews — e.g. a `repoos serve` a human is already running for manual
-  dev/testing (see `docs/native-auth.md`).
+  preview with the dev backdoor instead of a real email OTP you have no inbox
+  for. See **Dev login** below for the exact email and code.
 - The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
   `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
   ships to every future `repoos init`, so change it deliberately and don't confuse
   it with this repo's own AGENTS.md.
+
+## Dev login (skip the email OTP)
+
+Local `repoos serve` and task previews run with auth **on** by default, but you
+never need a real inbox to get past the login screen:
+
+- **Email:** any allowlisted user. Use `hello@repoos.org` — the `bootstrapAdmin`
+  in `repoos.toml`. The backdoor does **not** let you log in as an arbitrary
+  address; the email must already be allowlisted.
+- **Code:** the value of `REPOOS_AUTH_DEV_BACKDOOR_CODE`, set in the gitignored
+  `.env` at the repo root — run `grep REPOOS_AUTH_DEV_BACKDOOR_CODE .env` to read
+  it. If login fails, that file is the source of truth: the value may have
+  changed, or `.env` may be missing entirely (`.env.example` shows the key with
+  an empty placeholder). It is env-var only, never a `repoos.toml` key, and
+  never honored when `NODE_ENV=production`.
+
+This replaces only the OTP step; the resulting session is otherwise normal, and
+the same code works against any locally-served instance (a task preview, or a
+`repoos serve` a human is already running). Wiring: `src/core/config.ts` reads
+the env var into `config.auth.devBackdoorCode`, and `src/server/routes/auth.ts`
+accepts it in place of the OTP. Background: `docs/native-auth.md`.
+
+Task-runner agents: for "does it serve?", still prefer the server-side probe
+(`::repoos-preview-request::`, no login at all); reach for this dev login only
+when the human explicitly wants the logged-in UI clicked through.
 
 ## Debugging: search the error, then check the versions
 
