@@ -149,6 +149,39 @@ describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety"
     expect(u.cacheCreationTokens).toBe(0);
   });
 
+  it("folds opencode step_finish tokens/cost/cache by SUM, not Math.max", () => {
+    // opencode emits one step_finish per model round-trip; each carries that
+    // step's delta (fresh input + what it read from cache + that step's cost),
+    // never a running total. Math.max folding kept only the largest single step
+    // and undercounted multi-step sessions ~5-15x (0109).
+    const total: {
+      inputTokens?: number;
+      outputTokens?: number;
+      cacheReadTokens?: number;
+      costUsd?: number;
+      turns?: number;
+    } = {};
+    const step = (input: number, read: number, cost: number): string =>
+      `{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":${input},"output":10,"reasoning":0,"cache":{"write":0,"read":${read}}},"cost":${cost}}}`;
+    foldUsage(total, step(630, 26816, 0.00047));
+    foldUsage(total, step(3310, 30784, 0.00099));
+    foldUsage(total, step(1648, 34048, 0.00092));
+    expect(total.inputTokens).toBe(630 + 3310 + 1648);
+    expect(total.outputTokens).toBe(30);
+    expect(total.cacheReadTokens).toBe(26816 + 30784 + 34048);
+    expect(total.costUsd).toBeCloseTo(0.00238, 8);
+    expect(total.turns).toBe(3);
+  });
+
+  it("marks step_finish events as deltas, leaves running-total shapes unmarked", () => {
+    expect(extractUsage('{"type":"step_finish","part":{"tokens":{"input":1}}}').deltas).toBe(true);
+    expect(extractUsage('{"type":"step-finish","part":{}}').deltas).toBe(true);
+    expect(extractUsage('{"usage":{"input_tokens":10}}').deltas).toBeUndefined();
+    expect(
+      extractUsage('{"type":"result","total_cost_usd":1,"usage":{"input_tokens":10}}').deltas,
+    ).toBeUndefined();
+  });
+
   it("never fabricates numbers for output with no usage", () => {
     const u = extractUsage("the agent produced a normal answer with no usage block");
     expect(u.inputTokens).toBeUndefined();

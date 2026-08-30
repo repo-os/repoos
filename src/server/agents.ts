@@ -372,6 +372,15 @@ export interface ExtractedUsage {
    */
   authoritative?: boolean;
   /**
+   * True when parsed from a per-round-trip event (opencode's `step_finish`),
+   * whose token/cost figures are DELTAS for that one model call — NOT a running
+   * total and NOT authoritative. Folds by SUM, like `turns`. Without this,
+   * `Math.max` folding keeps only the single largest step and undercounts a
+   * multi-step opencode session ~5-15x on input and cache-read tokens (a
+   * 17-step reviewer run stored ~34k cache-read instead of the real ~500k).
+   */
+  deltas?: boolean;
+  /**
    * Model round-trips (agent "turns") this line accounts for — claude's
    * `num_turns` from a `result` event, or 1 per opencode `step_finish`. Always
    * a DELTA: folds by SUM (not max/overwrite), so multi-invocation sessions
@@ -400,6 +409,9 @@ export function extractUsage(raw: string): ExtractedUsage {
         out.cacheCreationTokens = cache.cacheCreationTokens;
       const turns = turnsFromObject(obj);
       if (turns !== undefined) out.turns = turns;
+      // opencode emits one `step_finish` per model round-trip; its token/cost
+      // figures are that step's delta, never a running total — fold by SUM.
+      if (obj.type === "step_finish" || obj.type === "step-finish") out.deltas = true;
       // claude's terminal turn summary — authoritative for the whole turn.
       if (obj.type === "result" && typeof obj.total_cost_usd === "number") {
         out.authoritative = true;
@@ -446,8 +458,11 @@ export function extractUsage(raw: string): ExtractedUsage {
  */
 export function foldUsage(total: ExtractedUsage, raw: string): void {
   const found = extractUsage(raw);
-  // A terminal `result` event's numbers are authoritative for the whole turn —
-  // overwrite rather than Math.max, so a transient mid-stream spike can't stick.
+  // Three fold modes:
+  //  - authoritative (claude `result`): overwrite — the turn's real total.
+  //  - deltas (opencode `step_finish`): SUM — each event is one round-trip.
+  //  - otherwise (codex/claude running totals): Math.max — count up, never
+  //    flicker down on a transient mid-stream figure.
   const merge = (
     key:
       | "inputTokens"
@@ -459,7 +474,11 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
   ): void => {
     const v = found[key];
     if (v === undefined) return;
-    total[key] = found.authoritative ? v : Math.max(total[key] ?? 0, v);
+    total[key] = found.authoritative
+      ? v
+      : found.deltas
+        ? (total[key] ?? 0) + v
+        : Math.max(total[key] ?? 0, v);
   };
   merge("inputTokens");
   merge("outputTokens");
@@ -2460,13 +2479,25 @@ export class AgentRunner {
   private replayLog(taskId: string, logFile: string, stream: "out" | "err", tagged = false): void {
     if (!existsSync(logFile)) return;
     const data = readFileSync(logFile, "utf8");
-    for (const line of data.split("\n")) {
-      if (!line) continue;
-      if (tagged && line.startsWith("O:")) this.appendLine(taskId, "out", line.slice(2));
-      else if (tagged && line.startsWith("E:")) this.appendLine(taskId, "err", line.slice(2));
-      else this.appendLine(taskId, stream, line);
+    // Replay rebuilds the transcript only — usage was already folded live and
+    // (for a hot session being re-adopted) re-folding here would double-count,
+    // most visibly the SUM-folded opencode deltas and `turns`. `applyUsage`
+    // still appends to `session_usage_events` (deduped), so no event is lost.
+    this.replayingUsage = true;
+    try {
+      for (const line of data.split("\n")) {
+        if (!line) continue;
+        if (tagged && line.startsWith("O:")) this.appendLine(taskId, "out", line.slice(2));
+        else if (tagged && line.startsWith("E:")) this.appendLine(taskId, "err", line.slice(2));
+        else this.appendLine(taskId, stream, line);
+      }
+    } finally {
+      this.replayingUsage = false;
     }
   }
+
+  /** True only while `replayLog` is rebuilding a transcript — see `applyUsage`. */
+  private replayingUsage = false;
 
   /** Tail one durable stream file into the live transcript. */
   private tailLog(
@@ -3338,7 +3369,7 @@ export class AgentRunner {
    * the flag, never lower it.
    */
   private lineTouched(taskId: string, session: Session, raw: string): void {
-    const usageChanged = this.applyUsage(session, raw);
+    const usageChanged = this.applyUsage(taskId, session, raw);
     session.lastOutputAt = now();
     const stallCleared = session.stalledEmitted;
     session.stalledEmitted = false;
@@ -3541,25 +3572,27 @@ export class AgentRunner {
   }
 
   /**
-   * Fold any usage/cost found in a raw output line into the session, clamped
-   * to never move backward — some CLIs report a running total, some reset per
-   * turn, and this readout must count up, never flicker down. Returns true
-   * when a stored value actually changed (so callers only emit stats when
-   * there's something new to show).
+   * Fold any usage/cost found in a raw output line into the session. Returns
+   * true when a stored value actually changed (so callers only emit stats when
+   * there's something new to show). Also appends the raw event to
+   * `session_usage_events` — the lossless ground truth this rollup derives from.
    *
-   * The clamp also implements claude's contract naturally (0109): its terminal
-   * `result` event reports the authoritative, cumulative-for-the-turn totals,
-   * so `Math.max` "replaces" the per-message figures with the real number
-   * rather than summing it on top of them.
+   * Three fold modes, matching `foldUsage`:
+   *  - authoritative (claude `result`): overwrite with the turn's real total.
+   *  - deltas (opencode `step_finish`): SUM — each event is one round-trip, and
+   *    `Math.max` would keep only the largest step (0109 undercounted a
+   *    17-step reviewer run's cache-reads ~15x).
+   *  - otherwise (codex/claude running totals): Math.max — count up, never
+   *    flicker down on a transient mid-stream figure.
    */
-  private applyUsage(session: Session, raw: string): boolean {
+  private applyUsage(taskKey: string, session: Session, raw: string): boolean {
     const found = extractUsage(raw);
+    this.recordUsageEvent(taskKey, session, raw, found);
+    // During a transcript replay the counters must not move — see `replayLog`.
+    if (this.replayingUsage) return false;
     let changed = false;
-    // A terminal `result` event is authoritative for the whole turn — take its
-    // value directly. Otherwise fold upward (some CLIs report a running total,
-    // some reset per turn).
     const set = (cur: number | undefined, v: number): number =>
-      found.authoritative ? v : Math.max(cur ?? 0, v);
+      found.authoritative ? v : found.deltas ? (cur ?? 0) + v : Math.max(cur ?? 0, v);
     if (found.inputTokens !== undefined) {
       const next = set(session.inputTokens, found.inputTokens);
       if (next !== session.inputTokens) {
@@ -3607,6 +3640,56 @@ export class AgentRunner {
       changed = true;
     }
     return changed;
+  }
+
+  /**
+   * Append one raw usage-bearing line to `session_usage_events` before it is
+   * folded. Skips lines that carried no usage figure at all (the vast majority
+   * — text, tool calls, step_start). Best-effort; keyed by the CLI's own
+   * session id when known, else the runner key, plus the resolved task id and a
+   * timestamp so rows always correlate to a `sessions` row.
+   */
+  private recordUsageEvent(
+    taskKey: string,
+    session: Session,
+    raw: string,
+    found: ExtractedUsage,
+  ): void {
+    if (!this.db) return;
+    if (
+      found.inputTokens === undefined &&
+      found.outputTokens === undefined &&
+      found.totalTokens === undefined &&
+      found.cacheReadTokens === undefined &&
+      found.cacheCreationTokens === undefined &&
+      found.costUsd === undefined &&
+      found.turns === undefined
+    ) {
+      return;
+    }
+    let eventType: string | undefined;
+    try {
+      const parsed = JSON.parse(raw) as { type?: unknown };
+      if (typeof parsed.type === "string") eventType = parsed.type;
+    } catch {
+      /* non-JSON usage line (plain-text summary) — leave eventType null */
+    }
+    this.db.recordUsageEvent({
+      sessionId: session.sessionId || taskKey,
+      taskId: resolveSessionTaskId(taskKey),
+      agent: session.agent ?? null,
+      model: session.model ?? null,
+      codingAgent: session.engine,
+      eventType: eventType ?? null,
+      inputTokens: found.inputTokens ?? null,
+      outputTokens: found.outputTokens ?? null,
+      totalTokens: found.totalTokens ?? null,
+      cacheReadTokens: found.cacheReadTokens ?? null,
+      cacheCreationTokens: found.cacheCreationTokens ?? null,
+      costUsd: found.costUsd ?? null,
+      turns: found.turns ?? null,
+      raw,
+    });
   }
 
   /** Emit the current live-stats snapshot for a task. */

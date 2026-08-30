@@ -174,6 +174,43 @@ const MIGRATIONS: Migration[] = [
     version: 4,
     up: `ALTER TABLE sessions ADD COLUMN turns INTEGER;`,
   },
+  {
+    // Raw per-event usage capture. One row per usage-bearing CLI event
+    // (opencode `step_finish`, claude `result`/`assistant`, codex `usage`),
+    // recorded BEFORE the lossy fold into `sessions`. `sessions` is a derived
+    // rollup; this table is the ground truth you can rebuild it from and diff
+    // extraction bugs against. Append-only, best-effort.
+    version: 5,
+    up: `
+      CREATE TABLE IF NOT EXISTS session_usage_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sessionId TEXT NOT NULL,
+        taskId TEXT,
+        agent TEXT,
+        model TEXT,
+        codingAgent TEXT,
+        eventType TEXT,
+        ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        inputTokens INTEGER,
+        outputTokens INTEGER,
+        totalTokens INTEGER,
+        cacheReadTokens INTEGER,
+        cacheCreationTokens INTEGER,
+        costUsd REAL,
+        turns INTEGER,
+        raw TEXT NOT NULL,
+        -- sessionId + hash(raw): the durable agent log is replayed verbatim on
+        -- server restart/adopt, so the same event line can arrive twice. A
+        -- UNIQUE key + INSERT OR IGNORE keeps this table idempotent under replay.
+        dedupeKey TEXT NOT NULL DEFAULT ''
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_usage_events_sessionId ON session_usage_events(sessionId);
+      CREATE INDEX IF NOT EXISTS idx_usage_events_taskId ON session_usage_events(taskId);
+      CREATE INDEX IF NOT EXISTS idx_usage_events_ts ON session_usage_events(ts);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_events_dedupe ON session_usage_events(dedupeKey);
+    `,
+  },
 ];
 
 /** Singleton database instance. */
@@ -432,6 +469,63 @@ export class RepoOSDb {
       );
     } catch {
       // Operation failed — continue gracefully
+    }
+  }
+
+  /**
+   * Append one raw usage-bearing CLI event, exactly as reported, before it is
+   * folded into the `sessions` rollup. Best-effort and append-only: a failure
+   * here never disturbs the session record or the request.
+   */
+  recordUsageEvent(ev: {
+    sessionId: string;
+    taskId?: string | null;
+    agent?: string | null;
+    model?: string | null;
+    codingAgent?: string | null;
+    eventType?: string | null;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    totalTokens?: number | null;
+    cacheReadTokens?: number | null;
+    cacheCreationTokens?: number | null;
+    costUsd?: number | null;
+    turns?: number | null;
+    raw: string;
+  }): void {
+    if (!this.available || !this.db) return;
+    try {
+      const raw = ev.raw.length > 20_000 ? `${ev.raw.slice(0, 20_000)}…[truncated]` : ev.raw;
+      // djb2 hash — small, dependency-free, only needs to be stable, not secure.
+      let h = 5381;
+      for (let i = 0; i < ev.raw.length; i++) h = ((h << 5) + h + ev.raw.charCodeAt(i)) | 0;
+      const dedupeKey = `${ev.sessionId}:${h >>> 0}`;
+      const stmt = this.db.prepare(`
+        INSERT OR IGNORE INTO session_usage_events (
+          sessionId, taskId, agent, model, codingAgent, eventType,
+          inputTokens, outputTokens, totalTokens,
+          cacheReadTokens, cacheCreationTokens, costUsd, turns, raw, dedupeKey
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(
+        ev.sessionId,
+        ev.taskId ?? null,
+        ev.agent ?? null,
+        ev.model ?? null,
+        ev.codingAgent ?? null,
+        ev.eventType ?? null,
+        ev.inputTokens ?? null,
+        ev.outputTokens ?? null,
+        ev.totalTokens ?? null,
+        ev.cacheReadTokens ?? null,
+        ev.cacheCreationTokens ?? null,
+        ev.costUsd ?? null,
+        ev.turns ?? null,
+        raw,
+        dedupeKey,
+      );
+    } catch {
+      // Append is best-effort — continue gracefully.
     }
   }
 

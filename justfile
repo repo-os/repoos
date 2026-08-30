@@ -34,6 +34,47 @@ test *args:
 test-node *args:
     bun run test -- {{args}}
 
+# open the sqlite db, or run one query: `just db` / `just db "select * from sessions limit 5"`
+db *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v sqlite3 >/dev/null; then
+        echo "error: sqlite3 CLI not found — brew install sqlite (the app itself uses bun:/node:sqlite, not this binary)" >&2
+        exit 1
+    fi
+    if [ -z "{{args}}" ]; then
+        exec sqlite3 -header -column .repoos/repoos.db
+    else
+        exec sqlite3 -header -column .repoos/repoos.db "{{args}}"
+    fi
+
+# per-model token/cache/cost rollup from the sessions table `just db-usage`
+db-usage:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sqlite3 -header -column .repoos/repoos.db "
+      SELECT codingAgent, model, COUNT(*) n,
+             SUM(COALESCE(inputTokens,0))          AS input,
+             SUM(COALESCE(cacheReadTokens,0))      AS cache_read,
+             SUM(COALESCE(cacheCreationTokens,0))  AS cache_write,
+             SUM(COALESCE(turns,0))                AS turns,
+             ROUND(SUM(COALESCE(costUsd,0)),4)     AS cost_usd,
+             ROUND(100.0*SUM(COALESCE(cacheReadTokens,0)) /
+                   NULLIF(SUM(COALESCE(inputTokens,0))+SUM(COALESCE(cacheReadTokens,0)),0),1) AS cache_pct
+      FROM sessions GROUP BY codingAgent, model ORDER BY n DESC;"
+
+# raw per-event usage ground truth, most recent first `just db-usage-raw [sessionId]`
+db-usage-raw *sessionId:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    where=""
+    [ -n "{{sessionId}}" ] && where="WHERE sessionId = '{{sessionId}}'"
+    sqlite3 -header -column .repoos/repoos.db "
+      SELECT substr(ts,1,19) ts, substr(sessionId,1,14) session, taskId, eventType,
+             inputTokens input, cacheReadTokens cache_read, outputTokens output,
+             turns, costUsd cost
+      FROM session_usage_events $where ORDER BY id DESC LIMIT 40;"
+
 # list tasks `repoos list`
 list:
     repoos list
