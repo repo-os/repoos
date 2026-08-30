@@ -63,7 +63,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
-import { readBuildStamp } from "../core/build.js";
+import { readBuildMeta } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
@@ -549,19 +549,6 @@ function listSkills(config: RepoOSConfig): SkillMeta[] {
 }
 
 /**
- * Resolve the package root (the dir containing package.json) relative to the
- * running module — works from both dist/ (compiled) and src/ (dev mode).
- */
-function findPackageRoot(): string | null {
-  const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
-  const grandparent = dirname(dirname(here));
-  if (existsSync(join(grandparent, "package.json"))) return grandparent;
-  const great = dirname(grandparent);
-  if (existsSync(join(great, "package.json"))) return great;
-  return null;
-}
-
-/**
  * Absolute path of the compiled CLI entrypoint, so the reload manager can spawn
  * a replacement `repoos serve` process. Same resolution as preview.ts.
  */
@@ -587,19 +574,9 @@ const RELOAD_BIND_RETRY_MS = 300;
  * Both are best-effort — null when unavailable so the UI can fall back.
  */
 function loadBuildInfo(): { version: string | null; buildAt: string | null } {
-  const root = findPackageRoot();
-  if (!root) return { version: null, buildAt: null };
-  let version: string | null = null;
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-    if (typeof pkg?.version === "string") version = pkg.version;
-  } catch {
-    /* package.json unreadable */
-  }
-  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
-  // marker stays deterministic; readBuildStamp falls back to the legacy
-  // inline field for installs built before the split.
-  return { version, buildAt: readBuildStamp(root) };
+  // Module-relative read of `.build-info.json` / `.build-stamp.json` — the
+  // files that actually ship in a standalone install (see readBuildMeta).
+  return readBuildMeta();
 }
 
 /**

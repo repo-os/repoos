@@ -175,5 +175,85 @@ export function readBuildStamp(root: string): string | null {
   );
 }
 
+function readGeneratedAt(file: string): string | null {
+  try {
+    const info = JSON.parse(readFileSync(file, "utf8")) as { generatedAt?: unknown };
+    return typeof info.generatedAt === "string" && info.generatedAt ? info.generatedAt : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build version + timestamp for the running install, resolved relative to THIS
+ * module so it works for every layout:
+ *
+ *   - standalone (curl / `repoos upgrade`):  <installRoot>/core/build.js
+ *       → `.build-info.json` + `.build-stamp.json` sit at <installRoot>
+ *   - linked dev build (compiled):           <repo>/dist/core/build.js
+ *       → both files sit at <repo>/dist
+ *   - source run (`bun src/cli/index.ts`):   <repo>/src/core/build.ts
+ *       → no marker beside it; fall back to <repo>/dist, then package.json
+ *
+ * The old path read `package.json` only — but the release tarball
+ * (`tar -C dist .`) ships `.build-info.json` (`{ hash, version }`) and
+ * `.build-stamp.json`, NOT `package.json`, so every standalone install
+ * reported its version as "unknown". `.build-info.json` is the source of truth
+ * here; `package.json` is just the last-resort fallback for a source checkout.
+ */
+export function readBuildMeta(): { version: string | null; buildAt: string | null } {
+  const here = dirname(fileURLToPath(import.meta.url)); // <x>/core
+  return readBuildMetaFrom(dirname(here)); // <x>: installRoot | repo/dist | repo/src
+}
+
+/**
+ * The dir-relative core of {@link readBuildMeta}, split out so it can be tested
+ * against synthetic layouts. `markerDir` is where `.build-info.json` /
+ * `.build-stamp.json` are expected to sit (with `<markerDir>/../dist` tried as
+ * the source-checkout fallback).
+ */
+export function readBuildMetaFrom(markerDir: string): {
+  version: string | null;
+  buildAt: string | null;
+} {
+  const dirs = [markerDir, join(markerDir, "..", "dist")];
+
+  let version: string | null = null;
+  let buildAt: string | null = null;
+  for (const dir of dirs) {
+    if (version === null) {
+      try {
+        const info = JSON.parse(readFileSync(join(dir, ".build-info.json"), "utf8")) as {
+          version?: unknown;
+        };
+        if (typeof info.version === "string" && info.version) version = info.version;
+      } catch {
+        /* no marker in this dir */
+      }
+    }
+    if (buildAt === null) {
+      buildAt =
+        readGeneratedAt(join(dir, ".build-stamp.json")) ??
+        readGeneratedAt(join(dir, ".build-info.json"));
+    }
+  }
+
+  if (version === null) {
+    const root = findPackageRoot();
+    if (root) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
+          version?: unknown;
+        };
+        if (typeof pkg.version === "string" && pkg.version) version = pkg.version;
+      } catch {
+        /* package.json unreadable */
+      }
+    }
+  }
+
+  return { version, buildAt };
+}
+
 /** Platform path separator pattern for import.meta.url detection. */
 const pathSep = process.platform === "win32" ? "\\\\" : "/";

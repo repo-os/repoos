@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import { connect } from "node:net";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { STATUSES } from "../../core/types.js";
-import { readBuildStamp } from "../../core/build.js";
+import { readBuildMeta } from "../../core/build.js";
 
 export const UI_MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -68,19 +68,10 @@ export function findPackageRoot(): string | null {
 }
 
 export function loadBuildInfo(): { version: string | null; buildAt: string | null } {
-  const root = findPackageRoot();
-  if (!root) return { version: null, buildAt: null };
-  let version: string | null = null;
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-    if (typeof pkg?.version === "string") version = pkg.version;
-  } catch {
-    /* ignore */
-  }
-  // The timestamp lives in dist/.build-stamp.json (gitignored) so the hash
-  // marker stays deterministic; readBuildStamp falls back to the legacy
-  // inline field for installs built before the split.
-  return { version, buildAt: readBuildStamp(root) };
+  // Reads `.build-info.json` / `.build-stamp.json` relative to the running
+  // module — the only files that ship in a standalone (curl / `repoos upgrade`)
+  // install. The old package.json-only path left those installs at "unknown".
+  return readBuildMeta();
 }
 
 export function skillField(text: string, field: string): string | null {
