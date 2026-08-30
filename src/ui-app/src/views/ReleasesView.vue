@@ -268,14 +268,15 @@ onBeforeUnmount(() => {
               >
             </div>
             <label
-              >Next version <input v-model.trim="newVersion" placeholder="0.0.0" autofocus
+              >Next version
+              <input v-model.trim="newVersion" placeholder="0.0.0" autofocus @keyup.enter="release"
             /></label>
             <div class="release-tag-preview">
               Proposed tag: <code>{{ proposedTag || "—" }}</code>
             </div>
             <label
               >Type <code>{{ proposedTag }}</code> to confirm
-              <input v-model="confirmation" :placeholder="proposedTag"
+              <input v-model="confirmation" :placeholder="proposedTag" @keyup.enter="release"
             /></label>
             <div class="release-actions">
               <Button variant="accent" :disabled="!tagMatches || running" @click="release">{{
