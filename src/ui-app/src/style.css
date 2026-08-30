@@ -6924,6 +6924,21 @@
   padding: 24px;
   margin-top: 8px;
 }
+.release-modal .release-progress {
+  margin: 16px 24px 0;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  border-radius: 9px;
+  border: 1px solid var(--cyan);
+  background: var(--cyan-dim);
+  color: var(--txt);
+  font-size: 13px;
+}
+.release-modal .release-progress span,
+.release-modal .release-progress small {
+  color: var(--txt-dim);
+}
 
 /* Spec edit modal - centred overlay mirroring cc-modal, sized for a markdown editor */
 .sm-modal.drawer-wrap.drawer {

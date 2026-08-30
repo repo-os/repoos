@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -30,6 +30,21 @@ interface ReleaseStatus {
   workflowUrl: string | null;
 }
 
+interface ReleaseRun {
+  state: "idle" | "running" | "succeeded" | "failed";
+  phase:
+    | "preparing"
+    | "committing"
+    | "checking"
+    | "pushing_main"
+    | "tagging"
+    | "pushing_tag"
+    | null;
+  message: string;
+  startedAt: string | null;
+  updatedAt: string | null;
+}
+
 const status = ref<ReleaseStatus | null>(null);
 const loading = ref(true);
 const running = ref(false);
@@ -38,13 +53,24 @@ const confirmation = ref("");
 const newVersion = ref("");
 const message = ref("");
 const error = ref("");
+const run = ref<ReleaseRun | null>(null);
+const now = ref(Date.now());
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 const tagPrefix = computed(() => {
   const tag = status.value?.tag;
   const version = status.value?.version;
   return tag && version && tag.endsWith(version) ? tag.slice(0, -version.length) : "v";
 });
-const suggestedVersion = computed(() => nextReleaseVersion(status.value?.version ?? null));
+const hasUnreleasedManifestVersion = computed(
+  () =>
+    !!status.value?.tag && !status.value.tagExists && status.value.latestTag !== status.value.tag,
+);
+const suggestedVersion = computed(() =>
+  hasUnreleasedManifestVersion.value
+    ? (status.value?.version ?? null)
+    : nextReleaseVersion(status.value?.version ?? null),
+);
 const suggestedTag = computed(() =>
   suggestedVersion.value ? `${tagPrefix.value}${suggestedVersion.value}` : null,
 );
@@ -85,22 +111,59 @@ async function release(): Promise<void> {
   running.value = true;
   error.value = "";
   try {
-    const result = await api<{ output: string }>(
+    const result = await api<{ run: ReleaseRun }>(
       "/api/release",
       JSON_OPTS("POST", { version: newVersion.value, confirmTag: confirmation.value }),
     );
-    message.value = result.output;
-    confirmOpen.value = false;
-    await load();
+    run.value = result.run;
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
     await load();
   } finally {
-    running.value = false;
+    if (run.value?.state !== "running") running.value = false;
   }
 }
 
-onMounted(load);
+async function pollRun(): Promise<void> {
+  try {
+    const latest = await api<ReleaseRun>("/api/release/run");
+    run.value = latest;
+    if (latest.state === "running") return;
+    running.value = false;
+    if (latest.state === "succeeded") {
+      message.value = latest.message;
+      confirmOpen.value = false;
+      await load();
+    } else if (latest.state === "failed" && latest.message) {
+      error.value = latest.message;
+    }
+  } catch {
+    // Keep the existing stage visible through a short server reload.
+  }
+}
+
+function elapsed(): string {
+  if (!run.value?.startedAt) return "";
+  const seconds = Math.max(
+    0,
+    Math.floor((now.value - new Date(run.value.startedAt).getTime()) / 1000),
+  );
+  return seconds < 60
+    ? `${seconds}s elapsed`
+    : `${Math.floor(seconds / 60)}m ${seconds % 60}s elapsed`;
+}
+
+onMounted(() => {
+  void load();
+  void pollRun();
+  pollTimer = setInterval(() => {
+    now.value = Date.now();
+    void pollRun();
+  }, 1000);
+});
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer);
+});
 </script>
 
 <template>
@@ -184,6 +247,13 @@ onMounted(load);
               <code>{{ status.branch }}</code
               >, then pushes an annotated tag to trigger CI.
             </DialogDescription>
+            <div v-if="running && run" class="release-progress" aria-live="polite">
+              <strong>{{ run.message }}</strong>
+              <span>{{ elapsed() }}</span>
+              <small v-if="run.phase === 'checking'"
+                >Full verification commonly takes 1–5 minutes.</small
+              >
+            </div>
             <label
               >Next version <input v-model.trim="newVersion" placeholder="0.0.0" autofocus
             /></label>
@@ -196,7 +266,7 @@ onMounted(load);
             /></label>
             <div class="release-actions">
               <Button variant="accent" :disabled="!tagMatches || running" @click="release">{{
-                running ? "Cutting release…" : "Commit, verify & push"
+                running ? "Release in progress…" : "Commit, verify & push"
               }}</Button>
               <DialogClose as-child
                 ><Button variant="ghost" :disabled="running">Cancel</Button></DialogClose

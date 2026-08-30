@@ -30,6 +30,15 @@ export interface ReleaseStatus {
   workflowUrl: string | null;
 }
 
+export type ReleasePhase =
+  | "preparing"
+  | "committing"
+  | "checking"
+  | "pushing_main"
+  | "tagging"
+  | "pushing_tag";
+export type ReleaseProgress = (phase: ReleasePhase, message: string) => void;
+
 interface CommandResult {
   code: number | null;
   stdout: string;
@@ -184,7 +193,9 @@ export async function cutNewRelease(
   version: string,
   confirmTag: string,
   exec: Run = run,
+  onProgress?: ReleaseProgress,
 ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
+  onProgress?.("preparing", "Validating the configured branch and release version…");
   let status = await getReleaseStatus(config, exec);
   const release = configured(config);
   const tag = `${release?.tagPrefix ?? "v"}${version}`;
@@ -214,6 +225,7 @@ export async function cutNewRelease(
   // version already committed (for example after a transient tag push failure)
   // skips this block and safely resumes from the gate.
   if (status.version !== version) {
+    onProgress?.("committing", `Committing the ${version} version bump…`);
     try {
       const manifest = JSON.parse(readFileSync(versionPath, "utf8")) as Record<string, unknown>;
       manifest.version = version;
@@ -237,6 +249,7 @@ export async function cutNewRelease(
     }
   }
   // The same gate used for task close-out, before any remote ref is changed.
+  onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
   const check = await exec(
     process.execPath,
     [join(config.root, "dist", "cli", "index.js"), "check"],
@@ -252,6 +265,7 @@ export async function cutNewRelease(
   status = await getReleaseStatus(config, exec);
   if (!status.ready || status.tag !== tag)
     return { ok: false, status, output: "Repository state changed while release checks ran." };
+  onProgress?.("pushing_main", `Pushing ${status.branch}…`);
   const pushedMain = await exec(
     "git",
     ["push", release.remote ?? "origin", status.branch],
@@ -266,6 +280,7 @@ export async function cutNewRelease(
         captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
     };
   }
+  onProgress?.("tagging", `Creating annotated tag ${tag}…`);
   const createdTag = await exec("git", ["tag", "-a", tag, "-m", `Release ${tag}`], config.root);
   if (createdTag.code !== 0)
     return {
@@ -273,6 +288,7 @@ export async function cutNewRelease(
       status,
       output: captureOutput(createdTag.stdout, createdTag.stderr) || "Could not create the tag.",
     };
+  onProgress?.("pushing_tag", `Pushing ${tag} to trigger the release workflow…`);
   const pushed = await exec("git", ["push", release.remote ?? "origin", tag], config.root, 120_000);
   if (pushed.code !== 0) {
     await exec("git", ["tag", "-d", tag], config.root);
