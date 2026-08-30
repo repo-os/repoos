@@ -107,7 +107,11 @@ branch: feat/ho-test
 
 const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", enabled: true };
 
-function waitFor(fn: () => boolean, label: string, ms = 3000): Promise<void> {
+// 10s (well under vitest's 15s testTimeout): these steps wait on a real child
+// process spawning / exiting, which can take several seconds on a machine under
+// memory pressure. A 3s cap here flaked `repoos check` — and once blocked a
+// release — for reasons unrelated to any code change.
+function waitFor(fn: () => boolean, label: string, ms = 10_000): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
