@@ -8,6 +8,7 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { api, JSON_OPTS } from "../api";
+import { nextReleaseVersion } from "../releases";
 
 interface ReleaseStatus {
   enabled: boolean;
@@ -43,6 +44,10 @@ const tagPrefix = computed(() => {
   const version = status.value?.version;
   return tag && version && tag.endsWith(version) ? tag.slice(0, -version.length) : "v";
 });
+const suggestedVersion = computed(() => nextReleaseVersion(status.value?.version ?? null));
+const suggestedTag = computed(() =>
+  suggestedVersion.value ? `${tagPrefix.value}${suggestedVersion.value}` : null,
+);
 const proposedTag = computed(() =>
   newVersion.value ? `${tagPrefix.value}${newVersion.value}` : "",
 );
@@ -70,7 +75,7 @@ async function load(): Promise<void> {
 function openConfirm(): void {
   message.value = "";
   error.value = "";
-  newVersion.value = status.value?.version ?? "";
+  newVersion.value = suggestedVersion.value ?? "";
   confirmation.value = "";
   confirmOpen.value = true;
 }
@@ -133,10 +138,10 @@ onMounted(load);
           </div>
           <div class="release-facts">
             <div>
-              <span>Next tag</span><b>{{ status.tag ?? "—" }}</b>
+              <span>Suggested new tag</span><b>{{ suggestedTag ?? "—" }}</b>
             </div>
             <div>
-              <span>Version</span><b>{{ status.version ?? "—" }}</b>
+              <span>Current version</span><b>{{ status.version ?? "—" }}</b>
             </div>
             <div>
               <span>Current commit</span><b>{{ status.head ?? "—" }}</b>
@@ -147,6 +152,10 @@ onMounted(load);
           </div>
           <div v-if="status.blockers.length" class="release-blockers">
             <div v-for="blocker in status.blockers" :key="blocker">{{ blocker }}</div>
+          </div>
+          <div v-if="!status.clean" class="release-dirty">
+            Release is disabled because <code>main</code> has uncommitted changes. Commit or stash
+            them, then refresh this page.
           </div>
           <div class="release-actions">
             <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
@@ -261,6 +270,16 @@ onMounted(load);
   color: var(--txt-dim);
   display: grid;
   gap: 5px;
+}
+.release-dirty {
+  margin-top: 16px;
+  border: 1px solid color-mix(in srgb, var(--red) 55%, transparent);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 11px 12px;
+  font-size: 13px;
+  line-height: 1.45;
 }
 .release-actions {
   display: flex;

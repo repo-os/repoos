@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
 import { markTaskReleased, patchTaskFile } from "../../server/write";
-import { releaseTimelineTasks } from "../src/releases";
+import { nextReleaseVersion, releaseTimelineTasks } from "../src/releases";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,6 +35,12 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
 }
 
 describe("feature releases", () => {
+  it("suggests the next patch version (or stabilizes a prerelease)", () => {
+    expect(nextReleaseVersion("0.5.30")).toBe("0.5.31");
+    expect(nextReleaseVersion("1.2.3-rc.1")).toBe("1.2.3");
+    expect(nextReleaseVersion("not-a-version")).toBeNull();
+  });
+
   it("persists a release marker only through successful completion", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-release-"));
     try {

@@ -6856,6 +6856,75 @@
   margin-top: 8px;
 }
 
+/* Product release modal. Dialog content is body-teleported, so its styling
+   intentionally lives here rather than in the Releases view's scoped CSS. */
+.release-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(540px, 92vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.release-modal-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.release-modal .close-x {
+  flex-shrink: 0;
+}
+.release-modal [role="dialog"] {
+  outline: none;
+}
+.release-modal > [data-slot],
+.release-modal > p {
+  padding: 12px 24px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.release-modal label {
+  display: grid;
+  gap: 7px;
+  padding: 0 24px;
+  color: var(--txt-dim);
+  font-size: 13px;
+  margin-top: 16px;
+}
+.release-modal input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px;
+  font: inherit;
+}
+.release-modal .release-tag-preview {
+  padding: 0 24px;
+  margin-top: 16px;
+  color: var(--txt-dim);
+  font-size: 13px;
+}
+.release-modal .release-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 24px;
+  margin-top: 8px;
+}
+
 /* Spec edit modal - centred overlay mirroring cc-modal, sized for a markdown editor */
 .sm-modal.drawer-wrap.drawer {
   top: 50%;
