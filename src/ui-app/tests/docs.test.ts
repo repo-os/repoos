@@ -86,6 +86,20 @@ describe("validateDocPath", () => {
     expect(result.valid).toBe(false);
     expect(result.reason).toContain("must be under docs");
   });
+
+  it("rejects a path with a trailing slash (a directory, not a file)", () => {
+    const result = validateDocPath(makeConfig(tmpDir()), "docs/design/assets/");
+    expect(result.valid).toBe(false);
+    expect(result.reason).toMatch(/file, not a directory/);
+  });
+
+  it("rejects a path that resolves to an existing directory", () => {
+    const config = makeConfig(tmpDir());
+    createDocument(config, { path: "docs/design/assets/keep.txt", content: "x" });
+    const result = validateDocPath(config, "docs/design/assets");
+    expect(result.valid).toBe(false);
+    expect(result.reason).toMatch(/existing directory/);
+  });
 });
 
 describe("createDocument", () => {
@@ -125,6 +139,22 @@ describe("createDocument", () => {
         content: "test",
       });
     }).toThrow("path must be under docs");
+  });
+
+  it("writes decoded bytes when encoding is base64 (binary asset upload)", () => {
+    const root = tmpDir();
+    const config = makeConfig(root);
+    // 1x1 transparent PNG
+    const pngB64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const result = createDocument(config, {
+      path: "docs/design/assets/pixel.png",
+      content: pngB64,
+      encoding: "base64",
+    });
+    const bytes = readFileSync(result.absPath);
+    expect(bytes.equals(Buffer.from(pngB64, "base64"))).toBe(true);
+    expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a"); // PNG magic
   });
 });
 

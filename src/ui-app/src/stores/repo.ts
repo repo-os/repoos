@@ -1901,7 +1901,9 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /** Create a document manually with the provided path and content. */
-  async function createDocument(form: { path: string; content: string }): Promise<{ ok: true }> {
+  async function createDocument(
+    form: { path: string; content: string } | { path: string; contentBase64: string },
+  ): Promise<{ ok: true }> {
     return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
   }
 

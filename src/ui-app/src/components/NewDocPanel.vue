@@ -61,6 +61,14 @@ const uploadFile = ref<File | null>(null);
 const uploadPath = ref("");
 const uploadError = ref("");
 
+/** Where the upload actually lands: a trailing "/" means "into this folder, keep the filename". */
+const uploadFinalPath = computed(() => {
+  const raw = uploadPath.value.trim();
+  if (!raw) return "";
+  if (!/\/\s*$/.test(raw)) return raw;
+  return uploadFile.value ? raw.replace(/\s*$/, "") + uploadFile.value.name : raw;
+});
+
 const pmAgentReady = computed(() => {
   if (!config.loaded) return true;
   return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
@@ -126,20 +134,35 @@ async function createDoc(): Promise<void> {
   }
 }
 
+/** Read a File as base64 (no data-URL prefix). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.onerror = () => reject(reader.error ?? new Error("could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadDoc(): Promise<void> {
   if (!uploadFile.value || !uploadPath.value.trim()) return;
   ui.saving = true;
   uploadError.value = "";
   try {
-    const path = uploadPath.value.trim();
-    const content = await uploadFile.value.text();
-    await repo.createDocument({ path, content });
+    const file = uploadFile.value;
+    // A path ending in "/" is a target folder — append the picked filename.
+    const path = uploadFinalPath.value;
+    // Always send bytes as base64 so binary assets (png/pdf/fonts) survive —
+    // text files (md/svg) round-trip through base64 fine too.
+    const contentBase64 = await fileToBase64(file);
+    await repo.createDocument({ path, contentBase64 });
     ui.close();
     uploadFile.value = null;
     uploadPath.value = "";
     await repo.refresh();
     await docs.loadDocs();
-    await docs.loadDoc(path);
+    // Only open it in the editor if it's a text doc — binary would render as garbage.
+    if (/\.(md|markdown|txt|svg)$/i.test(path)) await docs.loadDoc(path);
   } catch (err) {
     uploadError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -385,7 +408,11 @@ function onDocBodyTranscribed(text: string): void {
         <template v-else-if="newMode === 'upload'">
           <div class="field">
             <label for="nd-upload-path">File path</label>
-            <Input id="nd-upload-path" v-model="uploadPath" placeholder="docs/my-document.md" />
+            <Input
+              id="nd-upload-path"
+              v-model="uploadPath"
+              placeholder="docs/my-document.md — or docs/design/assets/ to keep the filename"
+            />
           </div>
           <div class="field">
             <label for="nd-upload-file">Select file</label>
@@ -397,6 +424,7 @@ function onDocBodyTranscribed(text: string): void {
             />
             <div v-if="uploadFile" class="upload-file-info">
               {{ uploadFile.name }} ({{ (uploadFile.size / 1024).toFixed(1) }} KB)
+              <span v-if="uploadFinalPath" class="upload-dest">→ {{ uploadFinalPath }}</span>
             </div>
           </div>
           <div v-if="uploadError" class="ff-error">{{ uploadError }}</div>
@@ -562,5 +590,11 @@ function onDocBodyTranscribed(text: string): void {
   border-radius: 6px;
   font-size: 12px;
   color: var(--txt-secondary);
+}
+
+.upload-dest {
+  margin-left: 6px;
+  font-family: var(--font-mono, monospace);
+  color: var(--txt-tertiary, var(--txt-secondary));
 }
 </style>

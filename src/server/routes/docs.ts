@@ -27,14 +27,18 @@ import {
 export const createDoc: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
-  const content = body.content;
+  // `content` is a utf8 string (manual create, text upload); `contentBase64` is
+  // base64-encoded raw bytes (binary upload — images, PDFs, fonts).
+  const isBase64 = typeof body.contentBase64 === "string";
+  const content = isBase64 ? (body.contentBase64 as string) : body.content;
   if (typeof content !== "string") {
-    return json(res, 400, { error: "content is required" });
+    return json(res, 400, { error: "content or contentBase64 is required" });
   }
   try {
     const result = createDocument(config, {
       path: body.path as string,
       content,
+      encoding: isBase64 ? "base64" : "utf8",
     });
     return json(res, 201, { ok: true, path: result.path });
   } catch (err) {

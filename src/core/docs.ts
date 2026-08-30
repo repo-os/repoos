@@ -2,14 +2,17 @@
  * Document creation core functions. Mirrors the task creation pattern
  * from src/core/repoos.ts — manual path+content and PM-agent-backed freeform.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { RepoOSConfig, Agent } from "./types.js";
 import { parseDocument } from "./frontmatter.js";
 
 export interface CreateDocumentInput {
   path: string;
+  /** File body. Decoded from base64 to raw bytes when `encoding` is "base64". */
   content: string;
+  /** "utf8" (default) writes `content` as text; "base64" writes decoded bytes — for image/PDF/font assets. */
+  encoding?: "utf8" | "base64";
 }
 
 export interface CreateDocumentResult {
@@ -39,6 +42,14 @@ export function validateDocPath(
     return { valid: false, reason: "invalid path: no .. or absolute paths" };
   }
 
+  if (/[/\\]\s*$/.test(path)) {
+    return {
+      valid: false,
+      reason:
+        "path must be a file, not a directory — include the filename (e.g. docs/design/assets/logo.svg)",
+    };
+  }
+
   const absPath = join(config.root, path);
   const docsBase = join(config.root, config.docsDir);
   const resolvedPath = resolve(absPath);
@@ -46,6 +57,10 @@ export function validateDocPath(
 
   if (!resolvedPath.startsWith(resolvedBase + "/") && resolvedPath !== resolvedBase) {
     return { valid: false, reason: `path must be under ${config.docsDir}` };
+  }
+
+  if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
+    return { valid: false, reason: `${path} is an existing directory — include the filename` };
   }
 
   return { valid: true };
@@ -195,7 +210,11 @@ export function createDocument(
   const absPath = join(config.root, input.path);
   const dir = dirname(absPath);
   mkdirSync(dir, { recursive: true });
-  writeFileSync(absPath, input.content, "utf8");
+  if (input.encoding === "base64") {
+    writeFileSync(absPath, Buffer.from(input.content, "base64"));
+  } else {
+    writeFileSync(absPath, input.content, "utf8");
+  }
 
   return {
     path: input.path,
