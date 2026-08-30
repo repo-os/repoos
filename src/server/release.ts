@@ -33,6 +33,7 @@ export interface ReleaseStatus {
 export type ReleasePhase =
   | "preparing"
   | "committing"
+  | "building"
   | "checking"
   | "pushing_main"
   | "tagging"
@@ -248,6 +249,24 @@ export async function cutNewRelease(
       };
     }
   }
+  // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
+  // check — any edit or `bun run fmt` since the operator's last build (or a
+  // background agent's work) trips it and aborts the whole release. The release
+  // artifact is built fresh by CI from the tag anyway, so a stale local dist is
+  // irrelevant to what ships; building here makes the gate a non-issue and also
+  // confirms the tree actually compiles before any ref is pushed.
+  onProgress?.("building", "Rebuilding (bun run build)…");
+  const build = await exec("bun", ["run", "build"], config.root, 600_000);
+  if (build.code !== 0)
+    return {
+      ok: false,
+      status,
+      output:
+        captureOutput(build.stdout, build.stderr) ||
+        (build.error?.message.includes("ENOENT")
+          ? "Could not run `bun run build` — is bun on PATH?"
+          : "`bun run build` failed."),
+    };
   // The same gate used for task close-out, before any remote ref is changed.
   onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
   const check = await exec(

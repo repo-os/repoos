@@ -88,10 +88,36 @@ describe("git-tag release status", () => {
       expect.arrayContaining([
         "git add -- package.json",
         "git commit -m release: v1.2.4",
+        "bun run build",
         "git push origin main",
         "git tag -a v1.2.4 -m Release v1.2.4",
         "git push origin v1.2.4",
       ]),
     );
+    // The rebuild must happen before repoos check (whose staleness gate it
+    // defuses) and before any ref is pushed.
+    expect(calls.indexOf("bun run build")).toBeLessThan(
+      calls.findIndex((c) => c.includes("dist") && c.includes("check")),
+    );
+    expect(calls.indexOf("bun run build")).toBeLessThan(calls.indexOf("git push origin main"));
+  });
+
+  it("aborts before pushing anything when the pre-check rebuild fails", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command === "bun") return { code: 1, stdout: "", stderr: "tsc: Type error in foo.ts" };
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("Type error");
+    expect(calls).not.toContain("git push origin main");
+    expect(calls).not.toContain("git tag -a v1.2.4 -m Release v1.2.4");
   });
 });

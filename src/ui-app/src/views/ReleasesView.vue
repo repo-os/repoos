@@ -35,6 +35,7 @@ interface ReleaseRun {
   phase:
     | "preparing"
     | "committing"
+    | "building"
     | "checking"
     | "pushing_main"
     | "tagging"
@@ -53,6 +54,8 @@ const confirmation = ref("");
 const newVersion = ref("");
 const message = ref("");
 const error = ref("");
+/** Full command output from a failed release phase (repoos check log, build errors). */
+const runLog = ref("");
 const run = ref<ReleaseRun | null>(null);
 const now = ref(Date.now());
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -115,6 +118,7 @@ async function load(): Promise<void> {
 function openConfirm(): void {
   message.value = "";
   error.value = "";
+  runLog.value = "";
   newVersion.value = suggestedVersion.value ?? "";
   confirmation.value = "";
   confirmOpen.value = true;
@@ -124,6 +128,7 @@ async function release(): Promise<void> {
   if (!tagMatches.value || running.value) return;
   running.value = true;
   error.value = "";
+  runLog.value = "";
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
@@ -151,7 +156,14 @@ async function pollRun(): Promise<void> {
       confirmOpen.value = false;
       await load();
     } else if (latest.state === "failed" && latest.message) {
-      error.value = latest.message;
+      // A failed phase reports its full command output (repoos check log, build
+      // errors). Show a short summary line, then the log in a scrollable block.
+      const lines = latest.message.split("\n").filter((l) => l.trim());
+      error.value =
+        lines.length > 1
+          ? `Release failed during ${latest.phase ?? "the run"} — see output below.`
+          : latest.message;
+      runLog.value = lines.length > 1 ? latest.message : "";
     }
   } catch {
     // Keep the existing stage visible through a short server reload.
@@ -246,7 +258,10 @@ onBeforeUnmount(() => {
           </div>
         </section>
         <p v-if="message" class="release-success">{{ message }}</p>
-        <p v-if="error" class="release-error">{{ error }}</p>
+        <template v-if="error && !confirmOpen">
+          <p class="release-error">{{ error }}</p>
+          <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
+        </template>
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
           <DialogOverlay />
@@ -263,9 +278,16 @@ onBeforeUnmount(() => {
             <div v-if="running && run" class="release-progress" aria-live="polite">
               <strong>{{ run.message }}</strong>
               <span>{{ elapsed() }}</span>
-              <small v-if="run.phase === 'checking'"
+              <small v-if="run.phase === 'building'"
+                >Rebuilding so the check runs against fresh output.</small
+              >
+              <small v-else-if="run.phase === 'checking'"
                 >Full verification commonly takes 1–5 minutes.</small
               >
+            </div>
+            <div v-if="error && !running" class="release-modal-error" role="alert">
+              <strong>{{ error }}</strong>
+              <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
             </div>
             <label
               >Next version
@@ -382,6 +404,30 @@ onBeforeUnmount(() => {
 .release-error {
   color: var(--red);
   margin: 12px 0;
+}
+.release-modal-error {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+.release-modal-error > strong {
+  color: var(--red);
+  font-size: 13px;
+}
+.release-output {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--txt-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
 }
 .release-modal label {
   display: grid;

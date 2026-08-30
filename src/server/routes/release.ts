@@ -47,7 +47,11 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
   void cutNewRelease(ctx.config, body.version, body.confirmTag, undefined, (phase, message) =>
     updateRun(phase, message),
   )
-    .then((result) => updateRun(null, result.output, result.ok ? "succeeded" : "failed"))
+    // Keep the phase that was in flight when it failed, so the UI can say
+    // "failed during checking" rather than a bare "failed".
+    .then((result) =>
+      updateRun(result.ok ? null : run.phase, result.output, result.ok ? "succeeded" : "failed"),
+    )
     .catch(() =>
       updateRun(
         null,
