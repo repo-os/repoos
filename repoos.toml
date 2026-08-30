@@ -31,7 +31,7 @@ ctoMonitorIntervalMs = 300000
 # `repoos serve`, not live. The server refuses to start with enabled = true
 # unless a login provider AND bootstrapAdmin are both set.
 auth.enabled = true
-auth.sessionMaxAge = "1728000"
+auth.sessionMaxAge = "2592000"
 auth.bootstrapAdmin = "hello@repoos.org"   # ONLY this email can claim the founding admin account
 auth.emailProvider.type = "resend"
 auth.emailProvider.fromAddress = "otp@send.repoos.org"
