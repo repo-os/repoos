@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useDocsStore } from "../stores/docs";
 import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
+import { renderMermaidDiagrams } from "../lib/mermaid";
 import { buildDocTree, flattenDocTree } from "../lib/docTree";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
@@ -30,12 +31,21 @@ const tab = ref<"docs" | "skills">("docs");
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
 const refreshError = ref("");
+const markdownRoot = ref<HTMLElement | null>(null);
 
 /** Markdown files get the same rendered presentation as the tasks panel. */
 const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(path);
 
 const docHtml = computed(() => renderMarkdown(docContent.value));
 const skillHtml = computed(() => renderMarkdown(skillContent.value));
+
+async function renderCurrentDiagrams(): Promise<void> {
+  await nextTick();
+  if (markdownRoot.value) await renderMermaidDiagrams(markdownRoot.value);
+}
+
+watch([docContent, skillContent, tab], () => void renderCurrentDiagrams(), { flush: "post" });
+onMounted(() => void renderCurrentDiagrams());
 
 /** The doc list shaped as a tree, then flattened to the rows to render. */
 const flatDocTree = computed(() =>
@@ -203,7 +213,12 @@ watch(
           <div v-if="docContent">
             <div class="doc-title">{{ docTitle }}</div>
             <div class="doc-path">{{ selDoc }}</div>
-            <div v-if="isMarkdown(selDoc)" class="md-rendered" v-html="docHtml"></div>
+            <div
+              ref="markdownRoot"
+              v-if="isMarkdown(selDoc)"
+              class="md-rendered"
+              v-html="docHtml"
+            ></div>
             <template v-else>{{ docContent }}</template>
           </div>
           <div v-else style="color: var(--txt-faint)">Select a document.</div>
@@ -214,7 +229,12 @@ watch(
             <div class="doc-title">{{ skillName }}</div>
             <div class="doc-path">{{ selSkill }}</div>
             <div v-if="skillDesc" class="skill-desc-line">{{ skillDesc }}</div>
-            <div v-if="isMarkdown(selSkill)" class="md-rendered" v-html="skillHtml"></div>
+            <div
+              ref="markdownRoot"
+              v-if="isMarkdown(selSkill)"
+              class="md-rendered"
+              v-html="skillHtml"
+            ></div>
             <template v-else>{{ skillContent }}</template>
           </div>
           <div v-else style="color: var(--txt-faint)">Select a skill.</div>

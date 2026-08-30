@@ -44,6 +44,7 @@ function inline(s: string): string {
 type Block =
   | { kind: "heading"; level: number; text: string }
   | { kind: "code"; lang: string; lines: string[] }
+  | { kind: "mermaid"; lines: string[] }
   | { kind: "ul"; items: { checked: boolean | null; text: string }[] }
   | { kind: "ol"; items: string[] }
   | { kind: "quote"; lines: string[] }
@@ -65,18 +66,25 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
-    // fenced code
-    const fence = line.match(/^```([\w-]*)\s*$/);
+    // Fenced code. CommonMark permits either backticks or tildes; keeping the
+    // opening marker lets us require a matching closing marker.
+    const fence = line.match(/^(`{3,}|~{3,})([\w-]*)\s*$/);
     if (fence) {
-      const lang = fence[1] || "";
+      const marker = fence[1]!;
+      const lang = fence[2] || "";
       const body: string[] = [];
       i++;
-      while (i < lines.length && !/^```\s*$/.test(lines[i]!)) {
+      const close = new RegExp(`^${marker[0]}{${marker.length},}\\s*$`);
+      while (i < lines.length && !close.test(lines[i]!)) {
         body.push(lines[i]!);
         i++;
       }
       if (i < lines.length) i++; // closing fence
-      blocks.push({ kind: "code", lang, lines: body });
+      if (lang.toLowerCase() === "mermaid") {
+        blocks.push({ kind: "mermaid", lines: body });
+      } else {
+        blocks.push({ kind: "code", lang, lines: body });
+      }
       continue;
     }
 
@@ -163,7 +171,7 @@ function parseBlocks(src: string): Block[] {
     while (i < lines.length) {
       const L = lines[i]!;
       if (/^\s*$/.test(L)) break;
-      if (L.startsWith("```")) break;
+      if (/^(?:`{3,}|~{3,})[\w-]*\s*$/.test(L)) break;
       if (/^#{1,6}\s+/.test(L)) break;
       if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(L)) break;
       if (/^>\s?/.test(L)) break;
@@ -189,6 +197,10 @@ function renderBlock(b: Block): string {
       const cls = b.lang ? ` class="language-${escapeHtml(b.lang)}"` : "";
       return `<pre><code${cls}>${code}</code></pre>`;
     }
+    case "mermaid":
+      // Mermaid reads textContent from this element after Vue has inserted the
+      // already-escaped Markdown. Rendering is intentionally asynchronous.
+      return `<div class="md-mermaid">${escapeHtml(b.lines.join("\n"))}</div>`;
     case "hr":
       return "<hr>";
     case "quote": {

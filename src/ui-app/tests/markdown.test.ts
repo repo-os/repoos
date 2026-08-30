@@ -27,6 +27,14 @@ describe("renderMarkdown", () => {
     expect(html).not.toContain("<em>");
   });
 
+  it("recognises Mermaid diagrams in both CommonMark fence styles", () => {
+    const backticks = renderMarkdown("```mermaid\nflowchart LR\n  A --> B\n```");
+    const tildes = renderMarkdown("~~~mermaid\nflowchart LR\n  A --> B\n~~~");
+
+    expect(backticks).toBe('<div class="md-mermaid">flowchart LR\n  A --&gt; B</div>');
+    expect(tildes).toBe(backticks);
+  });
+
   it("renders task checkboxes and plain lists", () => {
     const html = renderMarkdown("- [x] done\n- [ ] todo\n- plain\n");
     expect(html).toContain('class="md-task md-task-checked"');
