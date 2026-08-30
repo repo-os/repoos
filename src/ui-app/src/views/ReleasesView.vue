@@ -57,6 +57,20 @@ const run = ref<ReleaseRun | null>(null);
 const now = ref(Date.now());
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
+function stopPolling(): void {
+  if (!pollTimer) return;
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+function startPolling(): void {
+  if (pollTimer) return;
+  pollTimer = setInterval(() => {
+    now.value = Date.now();
+    void pollRun();
+  }, 1000);
+}
+
 const tagPrefix = computed(() => {
   const tag = status.value?.tag;
   const version = status.value?.version;
@@ -116,6 +130,7 @@ async function release(): Promise<void> {
       JSON_OPTS("POST", { version: newVersion.value, confirmTag: confirmation.value }),
     );
     run.value = result.run;
+    startPolling();
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
     await load();
@@ -129,6 +144,7 @@ async function pollRun(): Promise<void> {
     const latest = await api<ReleaseRun>("/api/release/run");
     run.value = latest;
     if (latest.state === "running") return;
+    stopPolling();
     running.value = false;
     if (latest.state === "succeeded") {
       message.value = latest.message;
@@ -156,13 +172,10 @@ function elapsed(): string {
 onMounted(() => {
   void load();
   void pollRun();
-  pollTimer = setInterval(() => {
-    now.value = Date.now();
-    void pollRun();
-  }, 1000);
+  startPolling();
 });
 onBeforeUnmount(() => {
-  if (pollTimer) clearInterval(pollTimer);
+  stopPolling();
 });
 </script>
 
