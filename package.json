@@ -1,6 +1,6 @@
 {
   "name": "repoos",
-  "version": "0.5.30",
+  "version": "0.5.31",
   "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
   "type": "module",
   "bin": {
