@@ -133,7 +133,7 @@ const generalFields = computed(() =>
 const sessionMaxAgeDays = computed<number>({
   get: () => {
     const seconds = Number(form["auth.sessionMaxAge"]);
-    return Number.isFinite(seconds) && seconds > 0 ? Math.round((seconds / 86400) * 100) / 100 : 7;
+    return Number.isFinite(seconds) && seconds > 0 ? Math.round((seconds / 86400) * 100) / 100 : 30;
   },
   set: (days: number) => {
     if (!Number.isFinite(days) || days <= 0) return;
@@ -460,7 +460,7 @@ onUnmounted(() => {
             <div class="setting-info">
               <div class="setting-label">Session duration (days)</div>
               <div class="setting-desc">
-                How long a login session lasts before requiring sign-in again. Default 7 days.
+                How long a login session lasts before requiring sign-in again. Default 30 days.
               </div>
             </div>
             <div class="setting-input">

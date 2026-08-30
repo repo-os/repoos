@@ -157,7 +157,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   auth: {
     enabled: false,
-    sessionMaxAge: 604800,
+    sessionMaxAge: 2592000,
   },
   remoteValidation: {
     enabled: false,

@@ -109,7 +109,7 @@ function requireAdmin(
  * notification in notify.ts). auth.emailProvider.fromName overrides it.
  */
 function defaultFromName(config: RepoOSConfig): string {
-  return `RepoOS at ${basename(config.root)} repo`;
+  return `RepoOS at ${basename(config.root)}`;
 }
 
 /**
