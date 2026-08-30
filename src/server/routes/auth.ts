@@ -104,8 +104,8 @@ function requireAdmin(
 // ---------------------------------------------------------------------------
 
 /**
- * The standardized default sender name: "RepoOS at <repo> repo", where
- * <repo> is the checkout's directory name (same convention as the ntfy test
+ * The standardized default sender name: "RepoOS at <repo>", where <repo> is
+ * the checkout's directory name (same convention as the ntfy test
  * notification in notify.ts). auth.emailProvider.fromName overrides it.
  */
 function defaultFromName(config: RepoOSConfig): string {
@@ -193,10 +193,10 @@ async function sendInviteEmail(
   return sendResendEmail(
     config,
     toEmail,
-    `You're invited to RepoOS at ${repoName} repo`,
+    `You're invited to RepoOS at ${repoName}`,
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${repoName} repo</h2>
+        <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${repoName}</h2>
         <p>An admin has added <strong>${toEmail}</strong> to the allowlist for the <strong>${repoName}</strong> repo. Sign in any time with a one-time email code${config.auth?.google ? " or Google" : ""}:</p>
         <p style="margin: 24px 0; text-align: center;">
           <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Sign in to RepoOS</a>
@@ -351,8 +351,8 @@ export const authStatus: RouteHandler = (ctx, _req, res) => {
     hasGoogle: !!(auth.google?.clientId && auth.google?.clientSecret),
     hasEmailProvider: !!(auth.emailProvider?.apiKey && auth.emailProvider?.fromAddress),
     // So the login page can show which instance you're signing into — the
-    // same "RepoOS at <repo> repo" convention used in outbound email. Just
-    // the directory name, never the full server filesystem path.
+    // same "RepoOS at <repo>" convention used in outbound email. Just the
+    // directory name, never the full server filesystem path.
     repoName: basename(config.root),
   });
 };
