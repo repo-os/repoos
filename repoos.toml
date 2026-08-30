@@ -48,6 +48,19 @@ remoteValidation.fallbackToLocal = false
 
 worktreeWarnThreshold = 20
 
+# Product releases are opt-in. Push an annotated v<package version> tag from
+# clean main after repoos check; GitHub Actions then creates the GitHub Release.
+[release]
+enabled = true
+provider = "git-tag"
+name = "Publish RepoOS"
+branch = "main"
+versionFile = "package.json"
+tagPrefix = "v"
+remote = "origin"
+repository = "repo-os/repoos"
+workflow = ".github/workflows/release.yml"
+
 [tunnel]
 provider = "cloudflare"
 enabled = true

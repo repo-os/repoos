@@ -126,6 +126,7 @@ import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
+import { getRelease, runRelease } from "./routes/release.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import {
@@ -1666,6 +1667,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
+  router.register("GET", "/api/release", getRelease);
+  router.register("POST", "/api/release", runRelease);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
   router.register("POST", "/api/chat/interrupt", interruptChatMessage);

@@ -367,6 +367,25 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
     const tunnelEnabled = parsed["tunnel.enabled"];
     if (typeof tunnelEnabled === "boolean") cfg.tunnelEnabled = tunnelEnabled;
+    // Optional release surface. No [release] block means no Releases navigation
+    // or API action, keeping this entirely dormant for other repositories.
+    const releaseEnabled = parsed["release.enabled"];
+    if (typeof releaseEnabled === "boolean") {
+      cfg.release = { ...cfg.release, enabled: releaseEnabled };
+      for (const key of [
+        "provider",
+        "name",
+        "branch",
+        "versionFile",
+        "tagPrefix",
+        "remote",
+        "repository",
+        "workflow",
+      ] as const) {
+        const value = parsed[`release.${key}`];
+        if (typeof value === "string") cfg.release[key] = value as never;
+      }
+    }
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;

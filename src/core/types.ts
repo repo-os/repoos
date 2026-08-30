@@ -353,6 +353,8 @@ export interface RepoOSConfig {
   auth?: AuthConfig;
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
+  /** Optional product-release integration. Omitted means the Releases UI is hidden. */
+  release?: ReleaseConfig;
   /**
    * Advisory ceiling on registered git worktrees (including the main checkout).
    * Above it, the Control page's Codebase card turns amber and the server logs
@@ -360,6 +362,29 @@ export interface RepoOSConfig {
    * Default 20. Set 0 to disable the warning.
    */
   worktreeWarnThreshold?: number;
+}
+
+/**
+ * A deliberately small first release provider. `git-tag` is portable: the
+ * repository's own CI/provider decides what a pushed tag means. Additional
+ * providers can implement the same status + confirmed-action contract later.
+ */
+export interface ReleaseConfig {
+  enabled?: boolean;
+  provider?: "git-tag";
+  name?: string;
+  /** Branch a release must be cut from. Defaults to main. */
+  branch?: string;
+  /** Project manifest containing the committed semantic version. */
+  versionFile?: string;
+  /** Prefix prepended to the version for the git tag. Defaults to v. */
+  tagPrefix?: string;
+  /** Git remote to receive the annotated tag. Defaults to origin. */
+  remote?: string;
+  /** Optional GitHub owner/repo, used only to link to the resulting release. */
+  repository?: string;
+  /** Optional workflow path, shown as release context (not executed by RepoOS). */
+  workflow?: string;
 }
 
 /**

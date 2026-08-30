@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { NAV } from "../nav";
+import { computed } from "vue";
+import { navFor } from "../nav";
+import { useConfigStore } from "../stores/config";
+
+const config = useConfigStore();
+const nav = computed(() =>
+  navFor((config.data?.release as { enabled?: unknown } | undefined)?.enabled === true),
+);
 </script>
 
 <template>
   <div class="tabbar">
     <RouterLink
-      v-for="n in NAV"
+      v-for="n in nav"
       :key="n.id"
       :to="n.path"
       class="tab"
