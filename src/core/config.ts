@@ -450,8 +450,15 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       cfg.auth = { ...cfg.auth, sessionSecret: authSessionSecret };
     }
     const authSessionMaxAge = parsed["auth.sessionMaxAge"];
-    if (typeof authSessionMaxAge === "number" && authSessionMaxAge >= 300) {
-      cfg.auth = { ...cfg.auth, sessionMaxAge: authSessionMaxAge };
+    if (typeof authSessionMaxAge === "number" || typeof authSessionMaxAge === "string") {
+      const num = typeof authSessionMaxAge === "string" ? Number(authSessionMaxAge) : authSessionMaxAge;
+      if (Number.isFinite(num) && num > 0) {
+        // Accept values in days (1-1000) or seconds (>=300s). Assume values <300 are days.
+        const ageInSeconds = num < 300 ? num * 86400 : num;
+        if (ageInSeconds >= 300) {
+          cfg.auth = { ...cfg.auth, sessionMaxAge: ageInSeconds };
+        }
+      }
     }
     const authBootstrapAdmin = parsed["auth.bootstrapAdmin"];
     if (typeof authBootstrapAdmin === "string") {

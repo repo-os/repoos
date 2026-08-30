@@ -176,8 +176,12 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = body["auth.sessionMaxAge"];
     if (typeof val === "string" || typeof val === "number") {
       const num = Number(val);
-      if (Number.isInteger(num) && num >= 300) {
-        patch["auth.sessionMaxAge"] = num;
+      if (Number.isInteger(num) && num > 0) {
+        // Accept values in days (<300) or seconds (>=300). Assume values <300 are days.
+        const ageInSeconds = num < 300 ? num * 86400 : num;
+        if (ageInSeconds >= 300) {
+          patch["auth.sessionMaxAge"] = ageInSeconds;
+        }
       }
     }
   }
