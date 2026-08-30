@@ -10,7 +10,12 @@ const emit = defineEmits<{ "update:checked": [value: boolean] }>();
 <template>
   <CheckboxRoot
     :checked="checked"
-    :class="cn('flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border border-[var(--border-bright)] bg-[var(--bg-secondary)] text-[var(--txt)] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--txt-faint)] disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[var(--txt)] data-[state=checked]:bg-[var(--txt)] data-[state=checked]:text-[var(--bg)]', $props.class)"
+    :class="
+      cn(
+        'flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border border-[var(--border-bright)] bg-[var(--bg-secondary)] text-[var(--txt)] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--txt-faint)] disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[var(--txt)] data-[state=checked]:bg-[var(--txt)] data-[state=checked]:text-[var(--bg)]',
+        $props.class,
+      )
+    "
     @update:checked="(value) => emit('update:checked', value)"
   >
     <CheckboxIndicator><Check class="size-3" :stroke-width="3" /></CheckboxIndicator>

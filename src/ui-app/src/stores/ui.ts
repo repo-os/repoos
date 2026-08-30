@@ -176,7 +176,13 @@ export const useUiStore = defineStore("ui", () => {
   }
 
   function openNewInput(): void {
-    isNewInput.value = true; isNew.value = false; isNewDoc.value = false; isNewSkill.value = false; active.value = null; inputText.value = ""; clearScreenshots();
+    isNewInput.value = true;
+    isNew.value = false;
+    isNewDoc.value = false;
+    isNewSkill.value = false;
+    active.value = null;
+    inputText.value = "";
+    clearScreenshots();
   }
 
   function openNewSkill(): void {

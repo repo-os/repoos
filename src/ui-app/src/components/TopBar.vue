@@ -25,25 +25,11 @@ function toggleTheme(): void {
   void config.setTheme(isDark.value ? "light" : "dark");
 }
 
-const PALETTE = [
-  "#FFB3BA",
-  "#FFFFBA",
-  "#BAFFC9",
-  "#BAE1FF",
-  "#D4BAFF",
-  "#BAFFED",
-];
+const PALETTE = ["#FFB3BA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "#D4BAFF", "#BAFFED"];
 
 // Dark-mode pastels, paired by hue with the light palette above. The six hue
 // families are intentionally spaced apart so the picker remains easy to scan.
-const DARK_PALETTE = [
-  "#E07A8A",
-  "#E4C86B",
-  "#7FD9A0",
-  "#6FB3E0",
-  "#9E8FD0",
-  "#6FD4C4",
-];
+const DARK_PALETTE = ["#E07A8A", "#E4C86B", "#7FD9A0", "#6FB3E0", "#9E8FD0", "#6FD4C4"];
 
 const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
 

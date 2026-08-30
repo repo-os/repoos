@@ -219,11 +219,12 @@ const serveMessage = computed(() => {
           <div class="metric-extra">
             <span
               :class="{ 'wt-warn': worktreesOverLimit }"
-              :title="worktreesOverLimit
-                ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Run \`repoos gc\` to reclaim worktrees left by done / abandoned tasks.`
-                : 'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'"
-              >{{ repoStats.worktrees }} git worktree{{
-                repoStats.worktrees === 1 ? "" : "s"
+              :title="
+                worktreesOverLimit
+                  ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Run \`repoos gc\` to reclaim worktrees left by done / abandoned tasks.`
+                  : 'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'
+              "
+              >{{ repoStats.worktrees }} git worktree{{ repoStats.worktrees === 1 ? "" : "s"
               }}{{ worktreesOverLimit ? " — run `repoos gc`" : "" }}</span
             >
             <span>tracked on main · gitignored excluded</span>

@@ -213,7 +213,10 @@ describe("sweepAndWarn", () => {
       mergedWorktree(root, main, "feat/c"); // main + 3 = 4 registered, no candidates
 
       const over: string[] = [];
-      sweepAndWarn(cfg(root), { threshold: 2, log: (lvl, msg) => lvl === "warn" && over.push(msg) });
+      sweepAndWarn(cfg(root), {
+        threshold: 2,
+        log: (lvl, msg) => lvl === "warn" && over.push(msg),
+      });
       expect(over.length).toBe(1);
       expect(over[0]).toMatch(/run `repoos gc`/);
 

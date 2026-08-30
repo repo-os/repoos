@@ -47,9 +47,7 @@ function hexToRgb(h: string): [number, number, number] | null {
  * darkened version of the same hue so the mark stays legible against it.
  * Returns null when the hex is invalid.
  */
-function schemeForHex(
-  hex: string,
-): {
+function schemeForHex(hex: string): {
   glow: [number, number, number];
   bgTop: [number, number, number];
   bgBottom: [number, number, number];

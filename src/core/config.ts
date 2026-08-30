@@ -451,7 +451,8 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     }
     const authSessionMaxAge = parsed["auth.sessionMaxAge"];
     if (typeof authSessionMaxAge === "number" || typeof authSessionMaxAge === "string") {
-      const num = typeof authSessionMaxAge === "string" ? Number(authSessionMaxAge) : authSessionMaxAge;
+      const num =
+        typeof authSessionMaxAge === "string" ? Number(authSessionMaxAge) : authSessionMaxAge;
       if (Number.isFinite(num) && num > 0) {
         // Accept values in days (1-1000) or seconds (>=300s). Assume values <300 are days.
         const ageInSeconds = num < 300 ? num * 86400 : num;
