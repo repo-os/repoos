@@ -10,13 +10,12 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
@@ -96,28 +95,38 @@ export async function cmdUpgrade(_args: string[]): Promise<void> {
 
   console.log(c.dim(`  Upgrading v${current} → v${latest}…`));
 
-  const tmpTar = join(mkdtempSync(join(tmpdir(), "repoos-upgrade-")), "repoos-dist.tar.gz");
-  execFileSync("curl", ["-fsSL", asset.browser_download_url, "-o", tmpTar], { stdio: "inherit" });
-
-  // Extract as a sibling of the install root so the final swap is a same-filesystem
-  // rename, not a cross-device copy.
+  // Do all the work in siblings of the install root, never in the system temp
+  // dir: `/tmp` is often a small tmpfs (or has a per-user quota — Omarchy sets
+  // one), and a multi-MB download there fails with `curl: (23)`. Siblings of
+  // `root` are on the same filesystem as the install, so there's space and the
+  // final swap is a plain rename.
+  const work = `${root}.upgrade-download`;
   const staged = `${root}.upgrade-staged`;
-  if (existsSync(staged)) rmSync(staged, { recursive: true, force: true });
-  mkdirSync(staged, { recursive: true });
-  execFileSync("tar", ["-xzf", tmpTar, "-C", staged]);
-  execFileSync("chmod", ["+x", join(staged, "cli", "index.js")]);
-
   const displaced = `${root}.upgrade-old`;
-  if (existsSync(displaced)) rmSync(displaced, { recursive: true, force: true });
-  renameSync(root, displaced);
-  try {
-    renameSync(staged, root);
-  } catch (e) {
-    renameSync(displaced, root);
-    throw e;
+  for (const dir of [work, staged, displaced]) {
+    if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
   }
-  rmSync(displaced, { recursive: true, force: true });
-  rmSync(dirname(tmpTar), { recursive: true, force: true });
+  mkdirSync(work, { recursive: true });
+  const tmpTar = join(work, "repoos-dist.tar.gz");
+  try {
+    execFileSync("curl", ["-fsSL", asset.browser_download_url, "-o", tmpTar], { stdio: "inherit" });
+
+    mkdirSync(staged, { recursive: true });
+    execFileSync("tar", ["-xzf", tmpTar, "-C", staged]);
+    execFileSync("chmod", ["+x", join(staged, "cli", "index.js")]);
+
+    renameSync(root, displaced);
+    try {
+      renameSync(staged, root);
+    } catch (e) {
+      renameSync(displaced, root);
+      throw e;
+    }
+    rmSync(displaced, { recursive: true, force: true });
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+    if (existsSync(staged)) rmSync(staged, { recursive: true, force: true });
+  }
 
   regenerateLauncher(root);
 
