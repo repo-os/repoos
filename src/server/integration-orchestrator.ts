@@ -39,6 +39,7 @@ import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
+import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
@@ -236,7 +237,14 @@ function findTaskFileById(root: string, workDir: string, taskId: string): string
  * detected by…` (0215) that read as garbage.
  */
 export function tailLine(stdout: string, stderr: string): string {
-  const lines = redactSecrets(stripAnsi(`${stdout}\n${stderr}`))
+  const cleaned = redactSecrets(stripAnsi(`${stdout}\n${stderr}`));
+  // Vitest's final lines are usually the least useful part of a failure: a
+  // partial received/expected diff followed by its generic runner summary.
+  // Prefer its explicit FAIL block when present; the full transcript remains
+  // available in the task's Debug tab.
+  const testFailure = summarizeCheckFailure(cleaned);
+  if (testFailure) return testFailure;
+  const lines = cleaned
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);

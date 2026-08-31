@@ -82,37 +82,16 @@ const buildTitle = computed(() =>
     </div>
 
     <div class="theme-switch" role="group" aria-label="Design theme">
+      <!-- Starred themes only (#0255); falls back to all when nothing is starred. -->
       <button
-        :class="{ on: config.uiTheme === 'classic' }"
+        v-for="t in config.sidebarThemes"
+        :key="t.id"
+        :class="{ on: config.uiTheme === t.id }"
         type="button"
-        :aria-pressed="config.uiTheme === 'classic'"
-        @click="setUiTheme('classic')"
+        :aria-pressed="config.uiTheme === t.id"
+        @click="setUiTheme(t.id)"
       >
-        Classic
-      </button>
-      <button
-        :class="{ on: config.uiTheme === 'clear' }"
-        type="button"
-        :aria-pressed="config.uiTheme === 'clear'"
-        @click="setUiTheme('clear')"
-      >
-        Clear
-      </button>
-      <button
-        :class="{ on: config.uiTheme === 'gen z' }"
-        type="button"
-        :aria-pressed="config.uiTheme === 'gen z'"
-        @click="setUiTheme('gen z')"
-      >
-        Gen Z
-      </button>
-      <button
-        :class="{ on: config.uiTheme === 'jelly' }"
-        type="button"
-        :aria-pressed="config.uiTheme === 'jelly'"
-        @click="setUiTheme('jelly')"
-      >
-        Jelly
+        {{ t.label }}
       </button>
     </div>
 

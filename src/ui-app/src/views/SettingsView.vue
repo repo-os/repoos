@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useConfigStore } from "../stores/config";
+import { useConfigStore, DESIGN_THEMES } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import {
@@ -149,6 +149,25 @@ function focusSetting(key: string): void {
   window.setTimeout(() => el.classList.remove("flash"), 2000);
   const input = el.querySelector<HTMLElement>("input, select, [role='combobox']");
   if (input) input.focus();
+}
+
+// ---- Design themes (#0255) ----
+
+// Swatch colors mirror each theme's CSS variables (style.css) so the
+// Settings list previews a theme without applying it. [accent, secondary].
+const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
+  classic: { bg: "#0b1020", a: "#39e0ff", b: "#9d7bff" },
+  clear: { bg: "#161b23", a: "#5fb8e6", b: "#9f8cf2" },
+  "gen z": { bg: "#241a3d", a: "#ff5df0", b: "#b58cff" },
+  jelly: { bg: "#1a2a44", a: "#33e6c4", b: "#ff5eb4" },
+};
+function swatchFor(id: string): { bg: string; a: string; b: string } {
+  return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };
+}
+
+/** Clicking a theme row applies it live; the star button toggles favorite. */
+function toggleThemeFavorite(id: string): void {
+  config.toggleThemeFavorite(id);
 }
 
 watch(
@@ -309,6 +328,66 @@ onUnmounted(() => {
               />
             </div>
             <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Themes
+          </div>
+          <div class="theme-list">
+            <div
+              v-for="t in DESIGN_THEMES"
+              :key="t.id"
+              class="theme-row"
+              :class="{ current: config.uiTheme === t.id }"
+              role="button"
+              tabindex="0"
+              :aria-pressed="config.uiTheme === t.id"
+              :aria-label="`Use the ${t.label} theme`"
+              @click="config.setUiTheme(t.id)"
+              @keydown.enter.prevent="config.setUiTheme(t.id)"
+            >
+              <span
+                class="theme-swatch"
+                :style="{
+                  background: swatchFor(t.id).bg,
+                  '--sw-a': swatchFor(t.id).a,
+                  '--sw-b': swatchFor(t.id).b,
+                }"
+                aria-hidden="true"
+              >
+                <i></i><i></i>
+              </span>
+              <span class="theme-name">
+                {{ t.label }}
+                <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
+              </span>
+              <button
+                type="button"
+                class="theme-star"
+                :class="{ on: config.isThemeFavorite(t.id) }"
+                :aria-pressed="config.isThemeFavorite(t.id)"
+                :aria-label="
+                  config.isThemeFavorite(t.id)
+                    ? `Remove ${t.label} from favorites`
+                    : `Add ${t.label} to favorites`
+                "
+                :title="config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'"
+                @click.stop="toggleThemeFavorite(t.id)"
+              >
+                {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
+              </button>
+            </div>
+          </div>
+          <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
+            {{ config.themeFavoritesNotice }}
+          </div>
+          <div class="setting-desc" style="padding: 4px 0 10px">
+            Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
+            theme to apply it.
           </div>
         </div>
       </Card>
