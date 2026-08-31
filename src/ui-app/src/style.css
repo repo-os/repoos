@@ -6313,6 +6313,98 @@
   color: var(--nav-active-color);
 }
 
+/* design-theme favorites list (settings, #0255) */
+.theme-list {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+.theme-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.theme-row:hover {
+  background: var(--nav-hover-bg);
+}
+.theme-row:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: -2px;
+}
+.theme-row.current .theme-name {
+  color: var(--txt);
+}
+.theme-swatch {
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.theme-swatch i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sw-a, var(--cyan));
+  box-shadow: 0 0 6px var(--sw-a, var(--cyan));
+}
+.theme-swatch i + i {
+  background: var(--sw-b, var(--violet));
+  box-shadow: 0 0 6px var(--sw-b, var(--violet));
+}
+.theme-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-active-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+.theme-star {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--txt-faint);
+  border-radius: 8px;
+  transition: 0.15s;
+}
+.theme-star:hover {
+  color: var(--amber);
+  background: var(--nav-hover-bg);
+}
+.theme-star.on {
+  color: var(--amber);
+}
+.theme-fav-note {
+  font-size: 12px;
+  color: var(--amber);
+  padding: 2px 10px 4px;
+}
+
 /* version + build-age widget (lower-left corner of the sidebar) */
 .build-widget {
   margin-top: 9px;

@@ -26,6 +26,49 @@ export interface ConfigResponse {
   agentsMeta?: AgentsMeta;
 }
 
+/** A design theme (the `data-ui-theme` applied to <html>), with its display label. */
+export interface DesignTheme {
+  id: string;
+  label: string;
+}
+
+/** The full design-theme catalog, in fallback (unstarred) display order. */
+export const DESIGN_THEMES: DesignTheme[] = [
+  { id: "classic", label: "Classic" },
+  { id: "clear", label: "Clear" },
+  { id: "gen z", label: "Gen Z" },
+  { id: "jelly", label: "Jelly" },
+];
+
+/** How many themes a user may star as favorites (#0255). */
+export const MAX_FAVORITE_THEMES = 3;
+
+const FAVORITE_THEMES_KEY = "repoos.favoriteThemes";
+
+/**
+ * Read starred themes from localStorage, defensively: unknown ids, non-strings,
+ * duplicates, and over-cap entries (e.g. from hand-edited storage) are dropped
+ * so the favorites array is always valid.
+ */
+function loadFavoriteThemes(): string[] {
+  try {
+    const raw = localStorage.getItem(FAVORITE_THEMES_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const known = new Set(DESIGN_THEMES.map((t) => t.id));
+    const seen = new Set<string>();
+    for (const item of parsed) {
+      if (typeof item !== "string" || !known.has(item) || seen.has(item)) continue;
+      seen.add(item);
+      if (seen.size === MAX_FAVORITE_THEMES) break;
+    }
+    return [...seen];
+  } catch {
+    return [];
+  }
+}
+
 export const useConfigStore = defineStore("config", () => {
   const loaded = ref(false);
   const saving = ref(false);
@@ -36,6 +79,13 @@ export const useConfigStore = defineStore("config", () => {
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
   const uiTheme = ref("classic");
+  // Starred design themes (#0255), in star order. Client-side only like
+  // uiTheme: persisted per browser in localStorage, never sent to the server.
+  // Initialized from storage at store creation so the sidebar renders the
+  // starred set before the async config load resolves.
+  const favoriteThemes = ref<string[]>(loadFavoriteThemes());
+  /** Inline feedback for the favorites cap ("Up to 3 favorites"), cleared on the next toggle. */
+  const themeFavoritesNotice = ref("");
   const agents = ref<Agent[]>([]);
   const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [] });
   // Live model lists per CLI, probed from /api/models. Shared here rather than
@@ -133,6 +183,49 @@ export const useConfigStore = defineStore("config", () => {
       applyUiTheme(prev);
     }
   }
+
+  function isThemeFavorite(id: string): boolean {
+    return favoriteThemes.value.includes(id);
+  }
+
+  /**
+   * Star/unstar a design theme (#0255). Un-starring always succeeds; starring
+   * is capped at MAX_FAVORITE_THEMES — the extra star is rejected with inline
+   * feedback and nothing is silently dropped. Never touches the applied
+   * uiTheme. Returns whether the toggle happened.
+   */
+  function toggleThemeFavorite(id: string): boolean {
+    themeFavoritesNotice.value = "";
+    if (!DESIGN_THEMES.some((t) => t.id === id)) return false;
+    const idx = favoriteThemes.value.indexOf(id);
+    if (idx >= 0) {
+      favoriteThemes.value.splice(idx, 1);
+    } else {
+      if (favoriteThemes.value.length >= MAX_FAVORITE_THEMES) {
+        themeFavoritesNotice.value = "Up to 3 favorites";
+        return false;
+      }
+      favoriteThemes.value.push(id);
+    }
+    try {
+      localStorage.setItem(FAVORITE_THEMES_KEY, JSON.stringify(favoriteThemes.value));
+    } catch {
+      // Storage unavailable (quota/private mode): favorites stay for this
+      // session only, like the useFavorites fallback for model favorites.
+    }
+    return true;
+  }
+
+  /**
+   * The themes the sidebar quick switcher shows: starred themes in star
+   * order, falling back to the full catalog when nothing is starred.
+   */
+  const sidebarThemes = computed<DesignTheme[]>(() => {
+    const starred = favoriteThemes.value
+      .map((id) => DESIGN_THEMES.find((t) => t.id === id))
+      .filter((t): t is DesignTheme => !!t);
+    return starred.length > 0 ? starred : DESIGN_THEMES;
+  });
 
   /** The effective mode the UI is showing right now: resolves "system" to dark/light. */
   const effectiveTheme = computed<string>(() => {
@@ -352,6 +445,11 @@ export const useConfigStore = defineStore("config", () => {
     setTunnelEnabled,
     setConfigValues,
     uiTheme,
+    favoriteThemes,
+    themeFavoritesNotice,
+    isThemeFavorite,
+    toggleThemeFavorite,
+    sidebarThemes,
     agents,
     agentsMeta,
     liveModelsByCli,
