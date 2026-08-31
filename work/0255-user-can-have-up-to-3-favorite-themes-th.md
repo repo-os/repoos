@@ -2,7 +2,7 @@
 id: "0255"
 title: User can have up to 3 favorite themes
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/user-can-have-up-to-3-favorite-themes
 model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-19T07:46:22Z"
-updated_at: "2026-08-31T03:02:11Z"
+updated_at: "2026-08-31T03:10:30Z"
 ---
 **Goal**
 
@@ -52,3 +52,4 @@ User can have up to 3 favorite themes that they can star from settings page them
 - 2026-08-31T02:58:04Z · status inbox→ready
 - 2026-08-31T03:01:09Z · model_override
 - 2026-08-31T03:02:11Z · status ready→active
+- 2026-08-31T03:10:30Z · status active→review
