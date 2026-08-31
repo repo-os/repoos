@@ -8,9 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: feat/user-can-have-up-to-3-favorite-themes
-model_override: default
+model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 created_at: "2026-08-19T07:46:22Z"
-updated_at: "2026-08-31T02:58:04Z"
+updated_at: "2026-08-31T03:01:09Z"
 ---
 **Goal**
 
@@ -50,3 +50,4 @@ User can have up to 3 favorite themes that they can star from settings page them
 - 2026-08-31T02:57:34Z · title, branch
 - 2026-08-31T02:57:52Z · status draft→inbox
 - 2026-08-31T02:58:04Z · status inbox→ready
+- 2026-08-31T03:01:09Z · model_override
