@@ -2,7 +2,7 @@
 id: "0255"
 title: User can have up to 3 favorite themes
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/user-can-have-up-to-3-favorite-themes
 model_override: default
 created_at: "2026-08-19T07:46:22Z"
-updated_at: "2026-08-31T02:57:34Z"
+updated_at: "2026-08-31T02:57:52Z"
 ---
 **Goal**
 
@@ -48,3 +48,4 @@ User can have up to 3 favorite themes that they can star from settings page them
 - 2026-08-19T07:46:33Z · model_override
 - 2026-08-31T02:56:00Z · body
 - 2026-08-31T02:57:34Z · title, branch
+- 2026-08-31T02:57:52Z · status draft→inbox
