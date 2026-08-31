@@ -20,6 +20,17 @@ describe("renderMarkdown", () => {
     expect(html).toContain("<em>hard</em>");
   });
 
+  it("renders soft-wrapped prose across the available width", () => {
+    expect(renderMarkdown("Source-friendly wrap\ncontinues the same paragraph.")).toBe(
+      "<p>Source-friendly wrap continues the same paragraph.</p>",
+    );
+  });
+
+  it("preserves explicit Markdown hard breaks", () => {
+    expect(renderMarkdown("first\\\nsecond")).toBe("<p>first<br>second</p>");
+    expect(renderMarkdown("first  \nsecond")).toBe("<p>first<br>second</p>");
+  });
+
   it("renders fenced code blocks without inline transforms", () => {
     const html = renderMarkdown("```ts\nconst x = 1 * 2;\n```");
     expect(html).toContain('<pre><code class="language-ts">');

@@ -41,6 +41,23 @@ function inline(s: string): string {
   return s;
 }
 
+/**
+ * CommonMark's ordinary in-paragraph newlines are soft breaks. Render them as
+ * spaces so prose that is wrapped for source readability uses the available
+ * width in the UI. A trailing backslash or two spaces is an explicit hard
+ * break and remains a `<br>`.
+ */
+function renderSoftLines(lines: string[]): string {
+  return lines
+    .map((line, index) => {
+      const hardBreak = /\\$| {2,}$/.test(line);
+      const content = hardBreak ? line.replace(/\\$| {2,}$/, "") : line;
+      const separator = index === lines.length - 1 ? "" : hardBreak ? "<br>" : " ";
+      return inline(escapeHtml(content)) + separator;
+    })
+    .join("");
+}
+
 type Block =
   | { kind: "heading"; level: number; text: string }
   | { kind: "code"; lang: string; lines: string[] }
@@ -204,7 +221,7 @@ function renderBlock(b: Block): string {
     case "hr":
       return "<hr>";
     case "quote": {
-      const inner = b.lines.map((l) => inline(escapeHtml(l))).join("<br>");
+      const inner = renderSoftLines(b.lines);
       return `<blockquote>${inner}</blockquote>`;
     }
     case "ul": {
@@ -234,9 +251,7 @@ function renderBlock(b: Block): string {
       return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
     }
     case "p": {
-      // soft line breaks inside a paragraph become <br>
-      const html = b.lines.map((l) => inline(escapeHtml(l))).join("<br>");
-      return `<p>${html}</p>`;
+      return `<p>${renderSoftLines(b.lines)}</p>`;
     }
   }
 }
