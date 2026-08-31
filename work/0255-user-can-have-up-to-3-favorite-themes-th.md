@@ -10,9 +10,33 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-19T07:46:22Z"
-updated_at: "2026-08-25T15:02:20Z"
+updated_at: "2026-08-31T02:56:00Z"
 ---
-User can have up to 3 favorite themes that they can star from settings page theme list, these 3  will show in the quick switcher on the sidebar.
+**Goal**
+
+Let users star up to 3 favorite design themes in Settings; starred themes appear in the sidebar quick theme switcher instead of the current hardcoded list.
+
+**Context (current behavior)**
+
+- Design themes are `classic | clear | gen z | jelly`, applied via `config.uiTheme` (`src/ui-app/src/stores/config.ts`, persisted to `localStorage["repoos.uiTheme"]`).
+- The sidebar (`Sidebar.vue` `.theme-switch`) hardcodes all 4 themes as buttons — there is no favorites concept and no theme list in Settings (`SettingsView.vue` has no theme section today).
+
+**Requirements**
+
+1. Settings page gains a "Themes" section listing all 4 themes with a live preview or swatch, the active one marked.
+2. Each theme row has a star toggle. Starring a 4th theme is rejected with inline feedback ("Up to 3 favorites"); un-starring always works.
+3. Favorites persist per browser in `localStorage` (e.g. `repoos.favoriteThemes`), consistent with how `repoos.uiTheme` is stored — no server API change.
+4. Sidebar quick switcher shows ONLY the starred themes (in star order); if fewer than 1 starred, fall back to showing all themes as today.
+5. The active theme always remains switchable; starring/unstarring never changes the currently applied theme.
+6. State syncs through the existing config store; both Settings and Sidebar stay reactive to the same favorites array.
+
+**Acceptance criteria**
+
+- Starring 3 themes shows exactly those 3 in the sidebar switcher.
+- A 4th star attempt is blocked with visible feedback; nothing silently dropped.
+- Un-starring a theme removes it from the switcher; reloading the page preserves favorites.
+- Empty-favorites state falls back to the current 4-button behavior.
+- `repoos check` passes with existing tests plus new store/UI tests for the favorites cap.
 
 ## Original prompt
 
@@ -22,3 +46,4 @@ User can have up to 3 favorite themes that they can star from settings page them
 
 - 2026-08-19T07:46:22Z · created · unknown
 - 2026-08-19T07:46:33Z · model_override
+- 2026-08-31T02:56:00Z · body
