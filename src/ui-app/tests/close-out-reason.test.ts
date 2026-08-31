@@ -45,6 +45,23 @@ describe("tailLine (reason capture)", () => {
     expect(chunk.trim().split(" ")).toContain(firstWord);
     expect(out).toContain("deletion detected by watcher");
   });
+
+  it("uses the named Vitest failure instead of a trailing assertion diff", () => {
+    const output = [
+      "FAIL  src/ui-app/tests/session-persistence.test.ts > agent session persistence > loads a cold session for start and preserves its earlier lines",
+      "AssertionError: expected output to contain the persisted line",
+      '+ { "at": "2026-08-31T03:31:34.955Z", "d": "persisted output" }',
+      "❯ src/ui-app/tests/session-persistence.test.ts:161:46",
+      "Test Files  1 failed",
+    ].join("\n");
+
+    const out = tailLine(output, "");
+
+    expect(out).toContain("session persistence");
+    expect(out).toContain("session-persistence.test.ts:161:46");
+    expect(out).toContain("AssertionError");
+    expect(out).not.toContain('"at":');
+  });
 });
 
 describe("failing phase recording (0215)", () => {

@@ -154,7 +154,13 @@ describe("agent session persistence", () => {
     const fx = fixture("done");
     mkdirSync(join(fx.root, ".repoos", "sessions"), { recursive: true });
     writeFileSync(fx.file, saved([{ s: "out", d: "from disk" }], "2026-08-01T00:00:00.000Z"));
-    const runner = new AgentRunner(fx.config, () => {}, { writeDelayMs: 10 });
+    // This test is about resuming a cold transcript, not retention. Pin the
+    // clock so its completed fixture cannot silently age out as real time
+    // advances past the 30-day session-retention window.
+    const runner = new AgentRunner(fx.config, () => {}, {
+      writeDelayMs: 10,
+      now: () => new Date("2026-08-15T00:00:00.000Z"),
+    });
 
     expect(runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root }).ok).toBe(true);
     await waitFor(() => !runner.isRunning(fx.task.id), "cold-session agent exit");
