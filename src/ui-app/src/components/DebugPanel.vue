@@ -4,6 +4,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from "lucide-vue-
 import type { Task, TaskCheckRun, TaskLogEntry } from "../types";
 import { useRepoStore } from "../stores/repo";
 import { relTime } from "../lib/time";
+import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
 import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
 
@@ -53,6 +54,7 @@ interface DebugEvent {
   level: EventLevel;
   title: string;
   detail?: string;
+  failureSummary?: string;
   checkRun?: TaskCheckRun;
 }
 
@@ -121,6 +123,7 @@ const events = computed<DebugEvent[]>(() => {
       kind: "check",
       level: c.running ? "info" : c.passed ? "info" : "error",
       title,
+      failureSummary: !c.running && c.passed === false ? summarizeCheckFailure(c.output) ?? undefined : undefined,
       checkRun: c,
     });
   }
@@ -270,6 +273,7 @@ function toggleExpanded(key: string): void {
           <span class="debug-event-title">{{ e.title }}</span>
           <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
         </div>
+        <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
         <pre
           v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
           class="debug-log debug-log-inline"
@@ -484,6 +488,14 @@ function toggleExpanded(key: string): void {
   font-size: 11px;
   color: var(--txt-faint);
   font-variant-numeric: tabular-nums;
+}
+.debug-event-summary {
+  margin: 4px 0 0 20px;
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .debug-level-warn {
