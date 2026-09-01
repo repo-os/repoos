@@ -70,7 +70,10 @@ export async function cmdServe(
     return;
   }
 
-  let port = 7171;
+  // Undefined = "no --port flag"; startServer then resolves it from
+  // repoos.toml's `servePort` or a stable per-repo derived port. Explicit
+  // `--port` still wins.
+  let port: number | undefined;
   let explicitHost: string | undefined;
   let quiet = false;
   for (let i = 0; i < args.length; i++) {
@@ -91,10 +94,14 @@ export async function cmdServe(
     });
   } catch (e) {
     const msg = (e as Error).message;
-    if (msg.includes("EADDRINUSE")) {
-      console.error(
-        c.red(`  Port ${port} is in use.`) + c.dim(` Try: repoos serve --port ${port + 1}`),
-      );
+    if (
+      msg.includes("EADDRINUSE") ||
+      msg.includes("already bound") ||
+      msg.includes("already in use")
+    ) {
+      // The message already names the port (node's EADDRINUSE string or
+      // detectConflict's own text).
+      console.error(c.red("  " + msg) + c.dim("  ·  pass --port N to use a different one"));
     } else {
       console.error(c.red("  Failed to start server: " + msg));
     }

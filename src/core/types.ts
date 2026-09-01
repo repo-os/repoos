@@ -362,6 +362,13 @@ export interface RepoOSConfig {
    * Default 20. Set 0 to disable the warning.
    */
   worktreeWarnThreshold?: number;
+  /**
+   * Port `repoos serve` binds by default (overridable with `--port`). Unset
+   * means "derive a stable per-repo port from the repo root path" so two
+   * checkouts on one machine don't both grab 7171. Pin it here for a repo
+   * whose port other tooling hardcodes (e.g. this dogfood repo → 7171).
+   */
+  servePort?: number;
 }
 
 /**

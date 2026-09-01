@@ -3,7 +3,14 @@
  * can override any field. We parse only the flat subset of TOML we need, again
  * to avoid a runtime dependency.
  */
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { cpus } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type {
@@ -179,6 +186,47 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
  */
 export function worktreesDir(root: string): string {
   return join(dirname(root), `${basename(root)}-worktrees`);
+}
+
+/** The port range `deriveServePort` picks from — deliberately just above the
+ *  classic 7171 so a derived port never collides with a repo that pins it. */
+const DERIVED_PORT_BASE = 7200;
+const DERIVED_PORT_SPAN = 800;
+
+/**
+ * A stable default serve port for a repo, derived from its canonical root
+ * path (djb2 hash → `${DERIVED_PORT_BASE}`..`${DERIVED_PORT_BASE + DERIVED_PORT_SPAN - 1}`).
+ * Deterministic per checkout, so two repos on one machine don't both default
+ * to 7171 and reap each other. Exported for tests.
+ */
+export function deriveServePort(root: string): number {
+  let canonical = root;
+  try {
+    canonical = realpathSync(root);
+  } catch {
+    /* not on disk (a test fixture path) — hash the literal string */
+  }
+  let hash = 5381;
+  for (let i = 0; i < canonical.length; i++) {
+    hash = ((hash << 5) + hash + canonical.charCodeAt(i)) >>> 0;
+  }
+  return DERIVED_PORT_BASE + (hash % DERIVED_PORT_SPAN);
+}
+
+/**
+ * Resolve the port `repoos serve` should bind: an explicit `--port` flag wins,
+ * then `servePort` in repoos.toml, then a stable per-repo derived port.
+ */
+export function resolveServePort(
+  root: string,
+  config: { servePort?: number },
+  portFlag?: number,
+): number {
+  if (Number.isInteger(portFlag) && (portFlag as number) > 0) return portFlag as number;
+  if (Number.isInteger(config.servePort) && (config.servePort as number) > 0) {
+    return config.servePort as number;
+  }
+  return deriveServePort(root);
 }
 
 /**
@@ -402,6 +450,15 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
     else if (typeof worktreeWarnThreshold === "string" && /^\d+$/.test(worktreeWarnThreshold))
       cfg.worktreeWarnThreshold = Number(worktreeWarnThreshold);
+    const servePort = get("servePort");
+    const servePortNum =
+      typeof servePort === "number"
+        ? servePort
+        : typeof servePort === "string" && /^\d+$/.test(servePort)
+          ? Number(servePort)
+          : NaN;
+    if (Number.isInteger(servePortNum) && servePortNum >= 1 && servePortNum <= 65535)
+      cfg.servePort = servePortNum;
     // Older Settings builds wrote this select value as a quoted TOML string.
     // Accept a strict integer string on load so existing repos immediately
     // recover, while the API now writes new values as numbers.

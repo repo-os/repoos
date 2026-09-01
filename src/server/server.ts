@@ -76,6 +76,7 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  resolveServePort,
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
 } from "../core/config.js";
@@ -719,7 +720,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // resolved ServerHandle) awaits `indexReady` explicitly instead.
   const indexReady = index.refreshAllAsync();
 
-  const requestedPort = opts.port ?? 7171;
+  // `opts.port === 0` is the explicit "ephemeral, OS-assigned" marker used by
+  // harnesses — keep it. Only fall through to the resolver when no port was
+  // passed at all (the `repoos serve` path passes `--port` or nothing).
+  const requestedPort = opts.port ?? resolveServePort(config.root, config);
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
   const isControlPlane = requestedPort !== 0 && !isPreviewChild;
   const mode = isPreviewChild
@@ -1065,7 +1069,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Port-0 harnesses and preview children must neither overwrite nor remove
   // the real control-plane lock. They are deliberately short-lived and are
   // not valid evidence about who owns 7171.
-  const reaper = new ServeReaper(config.root, config.cacheDir, isControlPlane);
+  const reaper = new ServeReaper(config.root, config.cacheDir, isControlPlane, requestedPort);
   reaper.cleanupStale();
   // Boot-time sweep for historical orphans whose deleted root took their
   // lockfile with it. Deliberately fire-and-forget: the sweep is async and

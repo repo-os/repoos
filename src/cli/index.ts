@@ -17,6 +17,7 @@ import { cmdNewDoc } from "../commands/docs.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdServe } from "../commands/serve.js";
+import { cmdStop } from "../commands/stop.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
 import { checkBuild } from "../core/build.js";
@@ -77,6 +78,7 @@ function help(): void {
     ${c.cyan("index")} [--json]       Rebuild the derived index cache
     ${c.cyan("gc")} [--yes|--dry-run] Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
+    ${c.cyan("stop")} [--port N]      Stop this repo's serve process (by its own lockfile)
     ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
     ${c.cyan("upgrade")}              Self-update a standalone (curl-installed) repoos to the latest release
 
@@ -178,6 +180,9 @@ function main(): void {
     case "serve":
     case "server":
       void cmdServe(rest);
+      break;
+    case "stop":
+      cmdStop(rest);
       break;
     case "check":
       void cmdCheck();

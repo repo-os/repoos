@@ -16,6 +16,11 @@ defaultTaskMode = "freeform"
 autoEngineeringMode = false
 maxActiveTasks = 3
 
+# Port `repoos serve` binds. Pinned here because `just serve`, the launchd
+# plist, and docs all hardcode 7171 for this dogfood repo. Other repos can
+# omit this — `repoos serve` derives a stable per-repo port from the root path.
+servePort = 7171
+
 # Max agent CLI processes (start/send/chat) running at once — extras queue
 # and spawn automatically as running agents exit. Computed for this
 # machine (10 cores: floor(10/2), capped at 8) — bump it up if the machine

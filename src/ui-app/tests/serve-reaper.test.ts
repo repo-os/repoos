@@ -241,6 +241,33 @@ describe("ServeReaper", () => {
     expect(() => reaper.unregister()).not.toThrow();
   });
 
+  it("scopes the lockfile by port so servers on different ports don't reap each other", () => {
+    mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
+    const lock7171 = join(tmpDir, ".repoos", "serve-7171.lock");
+    const lock8765 = join(tmpDir, ".repoos", "serve-8765.lock");
+
+    // A live control plane on :7171 (this process, so isProcessAlive is true).
+    new ServeReaper(tmpDir, ".repoos", true, 7171).register(7171, "127.0.0.1");
+    expect(existsSync(lock7171)).toBe(true);
+
+    // A second control plane booting on :8765 must not touch the :7171 lock.
+    const other = new ServeReaper(tmpDir, ".repoos", true, 8765);
+    other.cleanupStale();
+    expect(existsSync(lock7171)).toBe(true);
+    other.register(8765, "127.0.0.1");
+    expect(existsSync(lock8765)).toBe(true);
+    expect(existsSync(lock7171)).toBe(true);
+
+    // A :7171 restart still reaps its own stale predecessor.
+    writeFileSync(
+      lock7171,
+      JSON.stringify({ pid: 999999999, port: 7171, host: "127.0.0.1", startedAt: "" }),
+    );
+    new ServeReaper(tmpDir, ".repoos", true, 7171).cleanupStale();
+    expect(existsSync(lock7171)).toBe(false);
+    expect(existsSync(lock8765)).toBe(true);
+  });
+
   it("skips cleanup when REPOOS_RELOAD=1 (reload replacement mode)", () => {
     // Write a stale lockfile
     const lockPath = join(tmpDir, ".repoos", "serve.lock");

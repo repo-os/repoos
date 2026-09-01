@@ -57,9 +57,24 @@ export class ServeReaper {
    */
   private readonly previewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
 
-  constructor(repoRoot: string, cacheDir: string = ".repoos", enabled: boolean = true) {
+  constructor(
+    repoRoot: string,
+    cacheDir: string = ".repoos",
+    enabled: boolean = true,
+    port?: number,
+  ) {
     this.repoRoot = repoRoot;
-    this.lockPath = join(repoRoot, cacheDir, "serve.lock");
+    // Per-PORT lockfile. A repo can legitimately run more than one control
+    // plane (the dogfood `just serve` on :7171 and Claude Code's Browser-pane
+    // preview on another port). With a single `serve.lock`, whichever booted
+    // last reaped the other via `cleanupStale` (it kills the lock's PID without
+    // checking the port). Scoping the lock by port means each server only ever
+    // sees — and only ever reaps a stale predecessor of — its own endpoint.
+    this.lockPath = join(
+      repoRoot,
+      cacheDir,
+      Number.isInteger(port) && (port as number) > 0 ? `serve-${port}.lock` : "serve.lock",
+    );
     this.enabled = enabled;
   }
 

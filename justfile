@@ -2,9 +2,9 @@
 default:
     @just --list
 
-# serve on nohup `just serve` (runs under Bun if present; REPOOS_RUNTIME=node to force Node)
+# serve on nohup `just serve` (port from repoos.toml `servePort`, else per-repo default; this repo pins 7171)
 serve:
-    nohup node dist/cli/index.js serve --port 7171 --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
+    nohup node dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
 # full build `bun run build`
 build:
@@ -79,9 +79,9 @@ db-usage-raw *sessionId:
 list:
     repoos list
 
-# stop the background server (matches node or bun — see REPOOS_RUNTIME)
+# stop THIS repo's background server (by its own .repoos/serve-<port>.lock — never a machine-wide pkill)
 kill:
-    pkill -f "dist/cli/index.js serve" || true
+    node dist/cli/index.js stop || true
 
 # restart: build then kill then serve
 restart: build kill serve
