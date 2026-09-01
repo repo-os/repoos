@@ -303,6 +303,26 @@ describe("parseServeScan", () => {
     expect(scan.level).toBe("ok");
   });
 
+  it("classifies a detached serve for another live repo as foreign, never stray", () => {
+    const OTHER = "/Users/x/other-repo";
+    const bothExist = (r: string | null) => r === REAL || r === OTHER;
+    const out = [
+      line(100, 1, REAL, 7171), // this server's own control plane
+      line(400, 1, OTHER, 7500), // another repo's `just serve` (ppid 1), root present
+      line(500, 1, GONE, 5003), // a genuine orphan — its root is gone
+    ].join("\n");
+    const scan = parseServeScan(out, 100, new Set(), bothExist, REAL);
+    expect(scan.processes.map((p) => p.kind)).toEqual(["control-plane", "foreign", "stray"]);
+    expect(scan.strays).toBe(1); // only the dead-root orphan
+    expect(scan.level).toBe("notice");
+  });
+
+  it("still flags an orphan of the server's OWN root as a stray", () => {
+    const out = [line(100, 1, REAL, 7171), line(400, 1, REAL, 5003)].join("\n");
+    const scan = parseServeScan(out, 100, new Set(), exists, REAL);
+    expect(scan.processes[1].kind).toBe("stray");
+  });
+
   it("recognises a dev-mode serve running from src/", () => {
     const out = `100 1 /opt/bun ${REAL}/src/cli/index.ts serve --port 7171`;
     const scan = parseServeScan(out, 100, new Set(), exists);
@@ -362,13 +382,21 @@ describe("reapStrayServeProcesses", () => {
         },
         { pid: 400, ppid: 1, port: 5003, root: "/r", rootExists: false, kind: "stray" as const },
         { pid: 401, ppid: 1, port: 5004, root: "/r", rootExists: true, kind: "stray" as const },
+        {
+          pid: 402,
+          ppid: 1,
+          port: 5005,
+          root: "/other",
+          rootExists: true,
+          kind: "foreign" as const,
+        },
       ],
     });
 
     const reaped = reapStrayServeProcesses(100, new Set([200]), fakeKill, fakeScan);
 
     expect(reaped).toBe(2);
-    expect(killed.sort()).toEqual([400, 401]);
+    expect(killed.sort()).toEqual([400, 401]); // 402 (foreign) is another repo's — untouched
   });
 
   it("counts a process that's already gone by the time of the kill attempt as not reaped", () => {

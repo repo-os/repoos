@@ -7,7 +7,7 @@
  * ppid is no longer the server's pid, is marked orphaned.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
 import { availableMemBytes } from "../core/sysmem.js";
@@ -53,8 +53,13 @@ export interface ServeProcessInfo {
    * gate's own test suite spawns fixture servers constantly, and while their
    * spawning process is still alive they are doing legitimate work. Only a
    * process whose parent has died (reparented to PID 1) is abandoned.
+   *
+   * `foreign` is a detached serve process for a DIFFERENT, still-present repo
+   * root — another repo's control plane started via `just serve` / `nohup`
+   * (so its ppid is also 1). It is not this server's to reap; never SIGTERMed,
+   * never counted as an abandoned stray.
    */
-  kind: "control-plane" | "known-preview" | "in-flight" | "stray";
+  kind: "control-plane" | "known-preview" | "in-flight" | "stray" | "foreign";
 }
 
 /**
@@ -319,6 +324,17 @@ export function parseServeRoot(command: string): string | null {
   return m ? m[1] : null;
 }
 
+/** True when two repo-root paths point at the same directory (symlink-safe). */
+function sameRoot(a: string | null, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  try {
+    return realpathSync(a) === realpathSync(b);
+  } catch {
+    return false;
+  }
+}
+
 /** Extract `--port N` from a serve command line, or null. */
 export function parseServePort(command: string): number | null {
   const m = command.match(/--port[= ](\d+)/);
@@ -341,6 +357,7 @@ export function parseServeScan(
   serverPid: number,
   knownPids: Set<number>,
   rootExists: (root: string | null) => boolean,
+  ownRoot?: string,
 ): ServeScan {
   const rows: { pid: number; ppid: number; command: string }[] = [];
   const livePids = new Set<number>();
@@ -356,6 +373,7 @@ export function parseServeScan(
   for (const { pid, ppid, command } of rows) {
     if (!SERVE_CMD_RE.test(command)) continue;
     const root = parseServeRoot(command);
+    const rootIsLive = rootExists(root);
     // A parent of 1 means the process was reparented after its spawner died.
     const supervised = ppid !== 1 && livePids.has(ppid);
     const kind: ServeProcessInfo["kind"] =
@@ -365,13 +383,18 @@ export function parseServeScan(
           ? "known-preview"
           : supervised
             ? "in-flight"
-            : "stray";
+            : // A detached serve for another repo whose root still exists is that
+              // repo's control plane (also ppid 1) — not ours to touch. Only an
+              // orphan of OUR root, or one whose root is gone, is a real stray.
+              ownRoot && root && rootIsLive && !sameRoot(root, ownRoot)
+              ? "foreign"
+              : "stray";
     processes.push({
       pid,
       ppid,
       port: parseServePort(command),
       root,
-      rootExists: rootExists(root),
+      rootExists: rootIsLive,
       kind,
     });
   }
@@ -398,7 +421,11 @@ const SERVE_SCAN_TTL_MS = 20_000;
  * Census live `repoos serve` processes. Cached — `ps ax` lists every process on
  * the machine, which is much heavier than the targeted per-PID sample.
  */
-export function scanServeProcesses(serverPid: number, knownPids: Set<number>): ServeScan | null {
+export function scanServeProcesses(
+  serverPid: number,
+  knownPids: Set<number>,
+  ownRoot?: string,
+): ServeScan | null {
   const now = Date.now();
   if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
   const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,command="]);
@@ -408,6 +435,7 @@ export function scanServeProcesses(serverPid: number, knownPids: Set<number>): S
     serverPid,
     knownPids,
     (root) => root !== null && existsSync(root),
+    ownRoot,
   );
   serveScanCache = { at: now, scan };
   return scan;
@@ -439,12 +467,16 @@ export function reapStrayServeProcesses(
   serverPid: number,
   knownPids: Set<number>,
   kill: (pid: number, signal: string) => void = process.kill.bind(process),
-  scan: (serverPid: number, knownPids: Set<number>) => ServeScan | null = (p, k) => {
-    resetServeScanCache();
-    return scanServeProcesses(p, k);
-  },
+  scan?: (serverPid: number, knownPids: Set<number>) => ServeScan | null,
+  ownRoot?: string,
 ): number {
-  const result = scan(serverPid, knownPids);
+  const doScan =
+    scan ??
+    ((p: number, k: Set<number>) => {
+      resetServeScanCache();
+      return scanServeProcesses(p, k, ownRoot);
+    });
+  const result = doScan(serverPid, knownPids);
   if (!result) return 0;
   let reaped = 0;
   for (const p of result.processes) {
@@ -586,7 +618,7 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
       memPercent: Math.round(totalMemPercent * 10) / 10,
     },
     processes,
-    serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? [])),
+    serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? []), opts.root),
     repo: opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : null,
     serverPid,
     at: new Date().toISOString(),

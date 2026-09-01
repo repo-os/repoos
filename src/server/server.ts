@@ -1344,7 +1344,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     ? setInterval(() => {
         if (!psAvailable()) return;
         try {
-          const reaped = reapStrayServeProcesses(process.pid, new Set(previews.knownPids()));
+          const reaped = reapStrayServeProcesses(
+            process.pid,
+            new Set(previews.knownPids()),
+            undefined,
+            undefined,
+            config.root,
+          );
           if (reaped > 0)
             console.log(
               `serve-reaper: reaped ${reaped} orphaned serve process${reaped === 1 ? "" : "es"}`,
