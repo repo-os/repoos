@@ -44,11 +44,24 @@ const starterCatalog = [
   ["ci-and-release", "Delivery", "CI, packaging, and release procedures", "RepoOS catalog"],
   ["observability", "Operations", "Logs, metrics, and tracing conventions", "RepoOS catalog"],
 ] as const;
+type CatalogSkill = (typeof starterCatalog)[number];
+const selectedCatalogSkill = ref<CatalogSkill | null>(null);
 const visibleCatalog = computed(() => {
   const q = skillQuery.value.trim().toLowerCase();
   return !q ? starterCatalog : starterCatalog.filter((skill) => skill.join(" ").toLowerCase().includes(q));
 });
 const installedNames = computed(() => new Set(skills.value.map((skill) => skill.name)));
+
+function selectCatalogSkill(skill: CatalogSkill): void {
+  selectedCatalogSkill.value = skill;
+}
+
+function openInstalledSkill(name: string): void {
+  const installed = skills.value.find((skill) => skill.name === name);
+  if (!installed) return;
+  tab.value = "skills";
+  void docs.loadSkill(installed.path);
+}
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
 const refreshError = ref("");
@@ -236,12 +249,19 @@ watch(
             <span>Recommendations, not a popularity ranking.</span>
             <input v-model="skillQuery" class="ctx-skill-search" placeholder="Search skills" />
           </div>
-          <div v-for="skill in visibleCatalog" :key="skill[0]" class="skill-row">
+          <button
+            v-for="skill in visibleCatalog"
+            :key="skill[0]"
+            type="button"
+            class="skill-row ctx-catalog-skill"
+            :class="{ sel: selectedCatalogSkill?.[0] === skill[0] }"
+            @click="selectCatalogSkill(skill)"
+          >
             <span class="skill-name">{{ skill[0] }}</span>
             <span class="skill-desc">{{ skill[2] }}</span>
             <span class="ctx-skill-meta">{{ skill[1] }} · {{ skill[3] }}</span>
             <span v-if="installedNames.has(skill[0])" class="ctx-installed">Installed</span>
-          </div>
+          </button>
         </template>
       </Card>
 
@@ -277,8 +297,29 @@ watch(
           <div v-else style="color: var(--txt-faint)">Select a skill.</div>
         </template>
         <template v-else>
-          <div class="doc-title">Discover skills</div>
-          <div class="skill-desc-line">Browse a small, curated set first. Installations stay project-scoped and reviewable in <code>skills/&lt;name&gt;/SKILL.md</code>; this deliberately does not rank unverified community skills by popularity.</div>
+          <template v-if="selectedCatalogSkill">
+            <div class="doc-title">{{ selectedCatalogSkill[0] }}</div>
+            <div class="skill-desc-line">{{ selectedCatalogSkill[2] }}</div>
+            <div class="ctx-detail-meta">{{ selectedCatalogSkill[1] }} · {{ selectedCatalogSkill[3] }}</div>
+            <div v-if="installedNames.has(selectedCatalogSkill[0])" class="ctx-detail-copy">
+              This skill is installed in this repository and can be assigned to an agent on the Agents page.
+            </div>
+            <div v-else class="ctx-detail-copy">
+              This is a curated recommendation, not a remotely installable package yet. Create a project-owned skill when you choose its source and procedure.
+            </div>
+            <div class="ctx-detail-actions">
+              <Button
+                v-if="installedNames.has(selectedCatalogSkill[0])"
+                variant="accent"
+                @click="openInstalledSkill(selectedCatalogSkill[0])"
+              >Open installed skill</Button>
+              <Button v-else variant="outline" @click="ui.openNewSkill()">Create project skill</Button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="doc-title">Discover skills</div>
+            <div class="skill-desc-line">Select a skill to see whether it is installed and what action is available. The catalog is curated, not a popularity ranking.</div>
+          </template>
         </template>
       </Card>
     </div>
@@ -298,6 +339,10 @@ watch(
 .ctx-skill-search { width: 100%; margin-top: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--txt); }
 .ctx-skill-meta { color: var(--txt-faint); font-size: 11px; }
 .ctx-installed { color: var(--green); font-size: 11px; font-weight: 700; }
+.ctx-catalog-skill { width: 100%; text-align: left; border: 0; background: transparent; color: inherit; font: inherit; }
+.ctx-detail-meta { color: var(--txt-muted); font-size: 12px; margin-top: 10px; }
+.ctx-detail-copy { color: var(--txt-muted); line-height: 1.55; margin-top: 18px; max-width: 54ch; }
+.ctx-detail-actions { display: flex; gap: 8px; margin-top: 20px; }
 
 .ctx-refresh-btn :deep(svg) {
   transition: transform 200ms ease;
