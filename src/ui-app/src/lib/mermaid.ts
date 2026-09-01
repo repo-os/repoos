@@ -1,5 +1,14 @@
 let mermaidPromise: Promise<typeof import("mermaid").default> | null = null;
 
+function getThemeForMermaid(): "dark" | "default" {
+  const root = document.documentElement;
+  const explicit = root.getAttribute("data-theme");
+  if (explicit === "dark") return "dark";
+  if (explicit === "light") return "default";
+  // Fallback to system preference
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default";
+}
+
 async function loadMermaid(): Promise<typeof import("mermaid").default> {
   if (!mermaidPromise) {
     mermaidPromise = import("mermaid").then(({ default: mermaid }) => {
@@ -8,6 +17,7 @@ async function loadMermaid(): Promise<typeof import("mermaid").default> {
         securityLevel: "strict",
         maxTextSize: 50_000,
         maxEdges: 1_000,
+        theme: getThemeForMermaid(),
       });
       return mermaid;
     });
