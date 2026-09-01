@@ -33,6 +33,28 @@ describe("api()", () => {
     await expect(api("/x")).rejects.toThrow("boom");
   });
 
+  it("turns a network failure into 'can't reach the server', not the browser's 'Failed to fetch'", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    const err = (await api("/api/health").catch((e: Error) => e)) as Error;
+    expect(err.message).toMatch(/can't reach the repoos server/i);
+    expect(err.message).not.toContain("Failed to fetch");
+  });
+
+  it("lets a deliberate AbortError pass through untouched", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new DOMException("aborted", "AbortError");
+      }),
+    );
+    await expect(api("/x")).rejects.toThrow(/aborted/);
+  });
+
   it("throws a friendly message when a 200 body is not valid JSON (SPA fallback answered an API route)", async () => {
     vi.stubGlobal(
       "fetch",

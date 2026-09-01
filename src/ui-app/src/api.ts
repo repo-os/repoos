@@ -1,7 +1,20 @@
 /** Thin fetch wrapper over the RepoOS local server API. */
 
 export async function api<T = unknown>(path: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(path, opts);
+  let r: Response;
+  try {
+    r = await fetch(path, opts);
+  } catch (err) {
+    // A deliberate abort (e.g. a superseded request) should surface as-is.
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    // fetch() rejects only on a network-level failure — the server is down,
+    // the connection was refused, or the browser is offline. It never rejects
+    // on an HTTP error status. Say that instead of the browser's opaque
+    // "Failed to fetch" / "Load failed".
+    throw new Error(
+      "Can't reach the RepoOS server — it may be down. Restart it (`just serve`), then reload.",
+    );
+  }
   if (!r.ok) {
     let message = r.statusText;
     try {
