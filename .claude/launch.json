@@ -3,9 +3,7 @@
   "configurations": [
     {
       "name": "repoos-server",
-      "runtimeExecutable": "bun",
-      "runtimeArgs": ["src/cli/index.ts", "serve", "--port", "8765"],
-      "port": 8765
+      "url": "http://localhost:7171"
     },
     {
       "name": "repoos-ui-dev",
