@@ -87,7 +87,7 @@ export const useConfigStore = defineStore("config", () => {
   /** Inline feedback for the favorites cap ("Up to 3 favorites"), cleared on the next toggle. */
   const themeFavoritesNotice = ref("");
   const agents = ref<Agent[]>([]);
-  const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [] });
+  const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [], skills: [] });
   // Live model lists per CLI, probed from /api/models. Shared here rather than
   // held per-view so the Agents page and the per-task pickers offer exactly
   // the same options from one cache and one fetch.

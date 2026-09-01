@@ -27,7 +27,28 @@ const {
   skillDesc,
 } = storeToRefs(docs);
 
-const tab = ref<"docs" | "skills">("docs");
+type ContextTab = "docs" | "skills" | "discover";
+const tab = ref<ContextTab>("docs");
+const skillQuery = ref("");
+const starterCatalog = [
+  ["frontend-design", "Frontend", "Distinctive production UI implementation", "Anthropic"],
+  ["code-review", "Quality", "Review changes before sign-off", "RepoOS"],
+  ["test-and-verify", "Quality", "Targeted and end-to-end validation", "RepoOS catalog"],
+  ["debug-and-reproduce", "Quality", "Reproduce failures before fixing them", "RepoOS catalog"],
+  ["dependency-upgrade", "Maintenance", "Safe package and runtime upgrades", "RepoOS catalog"],
+  ["api-contracts", "Backend", "Versioned API and schema changes", "RepoOS catalog"],
+  ["database-migrations", "Backend", "Safe schema and data migrations", "RepoOS catalog"],
+  ["security-review", "Security", "Auth, secrets, and trust boundaries", "RepoOS catalog"],
+  ["ui-accessibility", "Frontend", "Keyboard, screen-reader, and motion checks", "RepoOS catalog"],
+  ["performance-investigation", "Quality", "Measure and improve slow paths", "RepoOS catalog"],
+  ["ci-and-release", "Delivery", "CI, packaging, and release procedures", "RepoOS catalog"],
+  ["observability", "Operations", "Logs, metrics, and tracing conventions", "RepoOS catalog"],
+] as const;
+const visibleCatalog = computed(() => {
+  const q = skillQuery.value.trim().toLowerCase();
+  return !q ? starterCatalog : starterCatalog.filter((skill) => skill.join(" ").toLowerCase().includes(q));
+});
+const installedNames = computed(() => new Set(skills.value.map((skill) => skill.name)));
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
 const refreshError = ref("");
@@ -118,7 +139,7 @@ watch(
       <Button
         variant="accent"
         class="new-btn"
-        @click="tab === 'skills' ? ui.openNewSkill() : ui.openNewDoc()"
+        @click="tab === 'docs' ? ui.openNewDoc() : ui.openNewSkill()"
       >
         <svg viewBox="0 0 24 24" fill="none">
           <path
@@ -128,7 +149,7 @@ watch(
             stroke-linecap="round"
           />
         </svg>
-        {{ tab === "skills" ? "New skill" : "New doc" }}
+        {{ tab === "docs" ? "New doc" : "New skill" }}
       </Button>
     </div>
 
@@ -136,6 +157,9 @@ watch(
       <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="tab = 'docs'">Docs</button>
       <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="tab = 'skills'">
         Skills
+      </button>
+      <button class="ctx-tab" :class="{ on: tab === 'discover' }" @click="tab = 'discover'">
+        Discover
       </button>
       <Button
         v-if="tab === 'docs'"
@@ -181,7 +205,7 @@ watch(
           </div>
         </template>
 
-        <template v-else>
+        <template v-else-if="tab === 'skills'">
           <div v-if="!skills.length" class="ctx-empty">
             No skills yet — add a <code>skills/&lt;name&gt;/SKILL.md</code>.
           </div>
@@ -206,6 +230,19 @@ watch(
             <span v-if="s.description" class="skill-desc">{{ s.description }}</span>
           </div>
         </template>
+        <template v-else>
+          <div class="ctx-discover-head">
+            <strong>Curated starter skills</strong>
+            <span>Recommendations, not a popularity ranking.</span>
+            <input v-model="skillQuery" class="ctx-skill-search" placeholder="Search skills" />
+          </div>
+          <div v-for="skill in visibleCatalog" :key="skill[0]" class="skill-row">
+            <span class="skill-name">{{ skill[0] }}</span>
+            <span class="skill-desc">{{ skill[2] }}</span>
+            <span class="ctx-skill-meta">{{ skill[1] }} · {{ skill[3] }}</span>
+            <span v-if="installedNames.has(skill[0])" class="ctx-installed">Installed</span>
+          </div>
+        </template>
       </Card>
 
       <Card class="doc-view">
@@ -224,7 +261,7 @@ watch(
           <div v-else style="color: var(--txt-faint)">Select a document.</div>
         </template>
 
-        <template v-else>
+        <template v-else-if="tab === 'skills'">
           <div v-if="skillContent">
             <div class="doc-title">{{ skillName }}</div>
             <div class="doc-path">{{ selSkill }}</div>
@@ -239,6 +276,10 @@ watch(
           </div>
           <div v-else style="color: var(--txt-faint)">Select a skill.</div>
         </template>
+        <template v-else>
+          <div class="doc-title">Discover skills</div>
+          <div class="skill-desc-line">Browse a small, curated set first. Installations stay project-scoped and reviewable in <code>skills/&lt;name&gt;/SKILL.md</code>; this deliberately does not rank unverified community skills by popularity.</div>
+        </template>
       </Card>
     </div>
 
@@ -251,6 +292,12 @@ watch(
 .ctx-refresh-btn {
   margin-left: auto;
 }
+
+.ctx-discover-head { display: grid; gap: 5px; padding: 12px; color: var(--txt-muted); font-size: 12px; }
+.ctx-discover-head strong { color: var(--txt); font-size: 13px; }
+.ctx-skill-search { width: 100%; margin-top: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--txt); }
+.ctx-skill-meta { color: var(--txt-faint); font-size: 11px; }
+.ctx-installed { color: var(--green); font-size: 11px; font-weight: 700; }
 
 .ctx-refresh-btn :deep(svg) {
   transition: transform 200ms ease;

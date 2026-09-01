@@ -286,6 +286,52 @@ describe("POST /api/models/test", () => {
 });
 
 describe("PATCH /api/config agents validation", () => {
+  it("lists repository skills and persists an agent's enabled skill names", async () => {
+    const root = tmpDir();
+    mkdirSync(join(root, "skills", "frontend-design"), { recursive: true });
+    writeFileSync(
+      join(root, "skills", "frontend-design", "SKILL.md"),
+      "---\nname: frontend-design\ndescription: UI craft\n---\n\nUse thoughtful UI.\n",
+    );
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const listed = await fetch(`${server.url}/api/config`);
+      const listedBody = (await listed.json()) as { agentsMeta: { skills: { name: string }[] } };
+      expect(listedBody.agentsMeta.skills.map((skill) => skill.name)).toContain("frontend-design");
+
+      const saved = await fetch(`${server.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agents: [
+            { name: "engineer", cli: "opencode", model: "default", enabled: true, skills: ["frontend-design"] },
+          ],
+        }),
+      });
+      expect(saved.status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain('skills = ["frontend-design"]');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects non-string skill entries", async () => {
+    const root = tmpDir();
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agents: [{ name: "engineer", cli: "opencode", model: "default", enabled: true, skills: [42] }],
+        }),
+      });
+      expect(res.status).toBe(400);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("accepts any non-empty model string (static or live)", async () => {
     const root = tmpDir();
     const server = await startServer({ root, host: "127.0.0.1", port: 0 });

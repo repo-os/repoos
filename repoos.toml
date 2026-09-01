@@ -84,6 +84,7 @@ cli = "opencode"
 model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
+skills = ["frontend-design"]
 [[agents]]
 name = "reviewer"
 cli = "opencode"

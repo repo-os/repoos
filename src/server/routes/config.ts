@@ -13,6 +13,7 @@ import {
   saveBuiltInAgentsConfig,
 } from "../../core/config.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
+import { listSkills } from "./helpers.js";
 
 /**
  * Config as the browser may see it: `whisper.apiKey` is stripped entirely and
@@ -67,7 +68,12 @@ export const readConfig: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, {
     config: safeConfig,
     schema: getConfigSchema(),
-    agentsMeta: { clis: AGENT_CLIS, models: AGENT_MODELS, defaults: DEFAULT_AGENTS },
+    agentsMeta: {
+      clis: AGENT_CLIS,
+      models: AGENT_MODELS,
+      defaults: DEFAULT_AGENTS,
+      skills: listSkills(repoos.config),
+    },
   });
 };
 
@@ -86,6 +92,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       model: string;
       enabled: boolean;
       instructions?: string;
+      skills?: string[];
     }[] = [];
     for (const agent of body.agents) {
       const a = agent as Record<string, unknown>;
@@ -106,12 +113,19 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       if (a.instructions !== undefined && typeof a.instructions !== "string") {
         return json(res, 400, { error: `agent "${a.name}" instructions must be a string` });
       }
+      if (
+        a.skills !== undefined &&
+        (!Array.isArray(a.skills) || a.skills.some((skill) => typeof skill !== "string"))
+      ) {
+        return json(res, 400, { error: `agent "${a.name}" skills must be an array of strings` });
+      }
       const entry: {
         name: string;
         cli: string;
         model: string;
         enabled: boolean;
         instructions?: string;
+        skills?: string[];
       } = {
         name: a.name.trim(),
         cli: a.cli as string,
@@ -120,6 +134,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       };
       if (typeof a.instructions === "string" && a.instructions.trim()) {
         entry.instructions = a.instructions.trim();
+      }
+      if (Array.isArray(a.skills)) {
+        entry.skills = [...new Set(a.skills.map((skill) => skill.trim()).filter(Boolean))];
       }
       list.push(entry);
     }

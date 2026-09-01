@@ -38,6 +38,7 @@ import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
+import { listSkills } from "./routes/helpers.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
@@ -1814,6 +1815,28 @@ function missionFor(
   parts.push(
     agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
     "",
+  );
+
+  // Skills are intentionally explicit: a repository may contain many
+  // procedures, but an agent sees only the skills enabled for its role. Resolve
+  // names through the discovered list rather than constructing paths from
+  // config input, so a stale or malicious name can never escape skillsDir.
+  const selected = new Set(agent.skills ?? []);
+  const enabledSkills = listSkills(config).filter((skill) => selected.has(skill.name));
+  if (enabledSkills.length) {
+    parts.push("## Enabled repository skills", "");
+    for (const skill of enabledSkills) {
+      try {
+        const text = readFileSync(join(config.root, skill.path), "utf8").trim();
+        if (text) parts.push(`### ${skill.name}`, "", text, "");
+      } catch {
+        // A skill may disappear after configuration was saved. Launching work
+        // must remain safe and useful in that case.
+      }
+    }
+  }
+
+  parts.push(
     `Task #${task.id}: ${task.title}`,
     `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
     `Task file (read this worktree copy for the specification): ${worktreeTask}`,

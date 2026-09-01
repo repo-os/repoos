@@ -241,6 +241,13 @@ function updateAgentInstr(a: Agent): void {
   }
 }
 
+function toggleSkill(a: Agent, skill: string, enabled: boolean): void {
+  const selected = new Set(a.skills ?? []);
+  if (enabled) selected.add(skill);
+  else selected.delete(skill);
+  a.skills = [...selected];
+}
+
 function validatedAgents(): Agent[] | undefined {
   const seen = new Set<string>();
   for (const a of localAgents.value) {
@@ -483,6 +490,18 @@ onUnmounted(() => {
                   @blur="updateAgentInstr(a)"
                 ></textarea>
               </div>
+              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
+                <label>Enabled skills</label>
+                <div class="agent-skills-help">Only selected skills are added to this role's task context.</div>
+                <label v-for="skill in config.agentsMeta.skills" :key="skill.path" class="agent-skill-option">
+                  <input
+                    type="checkbox"
+                    :checked="(a.skills ?? []).includes(skill.name)"
+                    @change="toggleSkill(a, skill.name, ($event.target as HTMLInputElement).checked)"
+                  />
+                  <span><strong>{{ skill.name }}</strong><small v-if="skill.description">{{ skill.description }}</small></span>
+                </label>
+              </div>
             </div>
           </div>
         </Card>
@@ -580,6 +599,14 @@ onUnmounted(() => {
                   @blur="updateAgentInstr(a)"
                 ></textarea>
               </div>
+              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
+                <label>Enabled skills</label>
+                <div class="agent-skills-help">Only selected skills are added to this role's task context.</div>
+                <label v-for="skill in config.agentsMeta.skills" :key="skill.path" class="agent-skill-option">
+                  <input type="checkbox" :checked="(a.skills ?? []).includes(skill.name)" @change="toggleSkill(a, skill.name, ($event.target as HTMLInputElement).checked)" />
+                  <span><strong>{{ skill.name }}</strong><small v-if="skill.description">{{ skill.description }}</small></span>
+                </label>
+              </div>
             </div>
           </div>
         </Card>
@@ -651,6 +678,14 @@ onUnmounted(() => {
                   @input="setInstr(a, $event)"
                   @blur="updateAgentInstr(a)"
                 ></textarea>
+              </div>
+              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
+                <label>Enabled skills</label>
+                <div class="agent-skills-help">Only selected skills are added to this role's task context.</div>
+                <label v-for="skill in config.agentsMeta.skills" :key="skill.path" class="agent-skill-option">
+                  <input type="checkbox" :checked="(a.skills ?? []).includes(skill.name)" @change="toggleSkill(a, skill.name, ($event.target as HTMLInputElement).checked)" />
+                  <span><strong>{{ skill.name }}</strong><small v-if="skill.description">{{ skill.description }}</small></span>
+                </label>
               </div>
             </div>
           </div>

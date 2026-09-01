@@ -5201,6 +5201,27 @@
   width: 100%;
   min-width: 220px;
 }
+
+.agent-skills-help {
+  color: var(--txt-muted);
+  font-size: 11px;
+  margin: -3px 0 7px;
+}
+
+.agent-skill-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.agent-skill-option + .agent-skill-option { margin-top: 6px; }
+.agent-skill-option input { margin-top: 3px; accent-color: var(--cyan); }
+.agent-skill-option span { display: grid; gap: 2px; }
+.agent-skill-option small { color: var(--txt-muted); font-size: 11px; line-height: 1.35; }
 .agent-test-result {
   width: auto;
 }
