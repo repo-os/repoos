@@ -27,7 +27,41 @@ const {
   skillDesc,
 } = storeToRefs(docs);
 
-const tab = ref<"docs" | "skills">("docs");
+type ContextTab = "docs" | "skills" | "discover";
+const tab = ref<ContextTab>("docs");
+const skillQuery = ref("");
+const starterCatalog = [
+  ["frontend-design", "Frontend", "Distinctive production UI implementation", "Anthropic"],
+  ["code-review", "Quality", "Review changes before sign-off", "RepoOS"],
+  ["test-and-verify", "Quality", "Targeted and end-to-end validation", "RepoOS catalog"],
+  ["debug-and-reproduce", "Quality", "Reproduce failures before fixing them", "RepoOS catalog"],
+  ["dependency-upgrade", "Maintenance", "Safe package and runtime upgrades", "RepoOS catalog"],
+  ["api-contracts", "Backend", "Versioned API and schema changes", "RepoOS catalog"],
+  ["database-migrations", "Backend", "Safe schema and data migrations", "RepoOS catalog"],
+  ["security-review", "Security", "Auth, secrets, and trust boundaries", "RepoOS catalog"],
+  ["ui-accessibility", "Frontend", "Keyboard, screen-reader, and motion checks", "RepoOS catalog"],
+  ["performance-investigation", "Quality", "Measure and improve slow paths", "RepoOS catalog"],
+  ["ci-and-release", "Delivery", "CI, packaging, and release procedures", "RepoOS catalog"],
+  ["observability", "Operations", "Logs, metrics, and tracing conventions", "RepoOS catalog"],
+] as const;
+type CatalogSkill = (typeof starterCatalog)[number];
+const selectedCatalogSkill = ref<CatalogSkill | null>(null);
+const visibleCatalog = computed(() => {
+  const q = skillQuery.value.trim().toLowerCase();
+  return !q ? starterCatalog : starterCatalog.filter((skill) => skill.join(" ").toLowerCase().includes(q));
+});
+const installedNames = computed(() => new Set(skills.value.map((skill) => skill.name)));
+
+function selectCatalogSkill(skill: CatalogSkill): void {
+  selectedCatalogSkill.value = skill;
+}
+
+function openInstalledSkill(name: string): void {
+  const installed = skills.value.find((skill) => skill.name === name);
+  if (!installed) return;
+  tab.value = "skills";
+  void docs.loadSkill(installed.path);
+}
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
 const refreshError = ref("");
@@ -118,7 +152,7 @@ watch(
       <Button
         variant="accent"
         class="new-btn"
-        @click="tab === 'skills' ? ui.openNewSkill() : ui.openNewDoc()"
+        @click="tab === 'docs' ? ui.openNewDoc() : ui.openNewSkill()"
       >
         <svg viewBox="0 0 24 24" fill="none">
           <path
@@ -128,7 +162,7 @@ watch(
             stroke-linecap="round"
           />
         </svg>
-        {{ tab === "skills" ? "New skill" : "New doc" }}
+        {{ tab === "docs" ? "New doc" : "New skill" }}
       </Button>
     </div>
 
@@ -136,6 +170,9 @@ watch(
       <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="tab = 'docs'">Docs</button>
       <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="tab = 'skills'">
         Skills
+      </button>
+      <button class="ctx-tab" :class="{ on: tab === 'discover' }" @click="tab = 'discover'">
+        Discover
       </button>
       <Button
         v-if="tab === 'docs'"
@@ -181,7 +218,7 @@ watch(
           </div>
         </template>
 
-        <template v-else>
+        <template v-else-if="tab === 'skills'">
           <div v-if="!skills.length" class="ctx-empty">
             No skills yet — add a <code>skills/&lt;name&gt;/SKILL.md</code>.
           </div>
@@ -206,6 +243,26 @@ watch(
             <span v-if="s.description" class="skill-desc">{{ s.description }}</span>
           </div>
         </template>
+        <template v-else>
+          <div class="ctx-discover-head">
+            <strong>Curated starter skills</strong>
+            <span>Recommendations, not a popularity ranking.</span>
+            <input v-model="skillQuery" class="ctx-skill-search" placeholder="Search skills" />
+          </div>
+          <button
+            v-for="skill in visibleCatalog"
+            :key="skill[0]"
+            type="button"
+            class="skill-row ctx-catalog-skill"
+            :class="{ sel: selectedCatalogSkill?.[0] === skill[0] }"
+            @click="selectCatalogSkill(skill)"
+          >
+            <span class="skill-name">{{ skill[0] }}</span>
+            <span class="skill-desc">{{ skill[2] }}</span>
+            <span class="ctx-skill-meta">{{ skill[1] }} · {{ skill[3] }}</span>
+            <span v-if="installedNames.has(skill[0])" class="ctx-installed">Installed</span>
+          </button>
+        </template>
       </Card>
 
       <Card class="doc-view">
@@ -224,7 +281,7 @@ watch(
           <div v-else style="color: var(--txt-faint)">Select a document.</div>
         </template>
 
-        <template v-else>
+        <template v-else-if="tab === 'skills'">
           <div v-if="skillContent">
             <div class="doc-title">{{ skillName }}</div>
             <div class="doc-path">{{ selSkill }}</div>
@@ -239,6 +296,31 @@ watch(
           </div>
           <div v-else style="color: var(--txt-faint)">Select a skill.</div>
         </template>
+        <template v-else>
+          <template v-if="selectedCatalogSkill">
+            <div class="doc-title">{{ selectedCatalogSkill[0] }}</div>
+            <div class="skill-desc-line">{{ selectedCatalogSkill[2] }}</div>
+            <div class="ctx-detail-meta">{{ selectedCatalogSkill[1] }} · {{ selectedCatalogSkill[3] }}</div>
+            <div v-if="installedNames.has(selectedCatalogSkill[0])" class="ctx-detail-copy">
+              This skill is installed in this repository and can be assigned to an agent on the Agents page.
+            </div>
+            <div v-else class="ctx-detail-copy">
+              This is a curated recommendation, not a remotely installable package yet. Create a project-owned skill when you choose its source and procedure.
+            </div>
+            <div class="ctx-detail-actions">
+              <Button
+                v-if="installedNames.has(selectedCatalogSkill[0])"
+                variant="accent"
+                @click="openInstalledSkill(selectedCatalogSkill[0])"
+              >Open installed skill</Button>
+              <Button v-else variant="outline" @click="ui.openNewSkill()">Create project skill</Button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="doc-title">Discover skills</div>
+            <div class="skill-desc-line">Select a skill to see whether it is installed and what action is available. The catalog is curated, not a popularity ranking.</div>
+          </template>
+        </template>
       </Card>
     </div>
 
@@ -251,6 +333,16 @@ watch(
 .ctx-refresh-btn {
   margin-left: auto;
 }
+
+.ctx-discover-head { display: grid; gap: 5px; padding: 12px; color: var(--txt-muted); font-size: 12px; }
+.ctx-discover-head strong { color: var(--txt); font-size: 13px; }
+.ctx-skill-search { width: 100%; margin-top: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--txt); }
+.ctx-skill-meta { color: var(--txt-faint); font-size: 11px; }
+.ctx-installed { color: var(--green); font-size: 11px; font-weight: 700; }
+.ctx-catalog-skill { width: 100%; text-align: left; border: 0; background: transparent; color: inherit; font: inherit; }
+.ctx-detail-meta { color: var(--txt-muted); font-size: 12px; margin-top: 10px; }
+.ctx-detail-copy { color: var(--txt-muted); line-height: 1.55; margin-top: 18px; max-width: 54ch; }
+.ctx-detail-actions { display: flex; gap: 8px; margin-top: 20px; }
 
 .ctx-refresh-btn :deep(svg) {
   transition: transform 200ms ease;

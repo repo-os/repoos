@@ -183,6 +183,8 @@ export interface Agent {
   enabled: boolean;
   /** Optional instructions describing the agent's role and how it should behave. */
   instructions?: string;
+  /** Names of repository skills this role is allowed to load for its work. */
+  skills?: string[];
 }
 
 /**

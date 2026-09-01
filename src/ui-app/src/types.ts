@@ -535,6 +535,7 @@ export interface Agent {
   model: string;
   enabled: boolean;
   instructions?: string;
+  skills?: string[];
 }
 
 /** Agent options served alongside /api/config. */
@@ -542,6 +543,8 @@ export interface AgentsMeta {
   clis: string[];
   models: string[];
   defaults: Agent[];
+  /** Repository skills available for explicit per-agent assignment. */
+  skills: SkillMeta[];
 }
 
 /** One row from GET /api/agents/detect. */
