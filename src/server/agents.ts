@@ -28,6 +28,7 @@ import type {
   AgentOutputEntry,
   AgentSessionStats,
   RepoOSConfig,
+  SkillMeta,
   Task,
 } from "../core/types.js";
 import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
@@ -1787,6 +1788,31 @@ ${request}`;
 }
 
 /** The mission handed to the coding agent: instructions + task pointer. */
+const SKILL_ROUTING_HINTS: Record<string, string[]> = {
+  "frontend-design": ["frontend", "ui", "ux", "vue", "css", "html", "component", "layout", "page", "style", "accessibility"],
+  "code-review": ["review", "reviewer", "sign-off", "signoff", "diff", "regression"],
+};
+
+/** Pick a small relevant subset; role defaults are preferences, never an unconditional prompt append. */
+function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfig): SkillMeta[] {
+  const taskText = `${task.title} ${task.area} ${task.body}`.toLowerCase();
+  const words = new Set(taskText.match(/[a-z][a-z0-9-]{2,}/g) ?? []);
+  const preferred = new Set(agent.skills ?? []);
+  return listSkills(config)
+    .map((skill) => {
+      const hints = SKILL_ROUTING_HINTS[skill.name] ?? [];
+      const descriptionWords = skill.description.toLowerCase().match(/[a-z][a-z0-9-]{3,}/g) ?? [];
+      const score = hints.filter((hint) => taskText.includes(hint)).length * 2
+        + descriptionWords.filter((word) => words.has(word)).length
+        + (preferred.has(skill.name) && (hints.some((hint) => taskText.includes(hint)) || descriptionWords.some((word) => words.has(word))) ? 1 : 0);
+      return { skill, score };
+    })
+    .filter(({ score }) => score >= 2)
+    .sort((a, b) => b.score - a.score || a.skill.name.localeCompare(b.skill.name))
+    .slice(0, 3)
+    .map(({ skill }) => skill);
+}
+
 function missionFor(
   task: Task,
   branch: string,
@@ -1795,6 +1821,7 @@ function missionFor(
   config: RepoOSConfig,
   contextPack?: string,
   resumePreamble?: string,
+  enabledSkills: SkillMeta[] = [],
 ): string {
   // Source edits stay inside the sandbox. RepoOS owns the privileged Git and
   // canonical-board mutations after the structured signal below (ADR-0005).
@@ -1821,8 +1848,6 @@ function missionFor(
   // procedures, but an agent sees only the skills enabled for its role. Resolve
   // names through the discovered list rather than constructing paths from
   // config input, so a stale or malicious name can never escape skillsDir.
-  const selected = new Set(agent.skills ?? []);
-  const enabledSkills = listSkills(config).filter((skill) => selected.has(skill.name));
   if (enabledSkills.length) {
     parts.push("## Enabled repository skills", "");
     for (const skill of enabledSkills) {
@@ -2874,6 +2899,11 @@ export class AgentRunner {
     session.agent = agent.name;
     session.model = agent.model;
     this.sessions.set(task.id, session);
+    const selectedSkills = selectSkillsForRun(task, agent, this.config);
+    this.recordEntry(task.id, session, "sys", {
+      s: "sys",
+      d: `Skill routing: ${selectedSkills.length ? selectedSkills.map((skill) => skill.name).join(", ") : "no skills selected"}`,
+    });
     const mission = missionFor(
       task,
       branch,
@@ -2882,6 +2912,7 @@ export class AgentRunner {
       this.config,
       opts.contextPack,
       opts.resumePreamble,
+      selectedSkills,
     );
     const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);

@@ -5222,6 +5222,8 @@
 .agent-skill-option input { margin-top: 3px; accent-color: var(--cyan); }
 .agent-skill-option span { display: grid; gap: 2px; }
 .agent-skill-option small { color: var(--txt-muted); font-size: 11px; line-height: 1.35; }
+.agent-skills-summary { color: var(--txt-dim); font-size: 12px; line-height: 1.5; }
+.agent-skill-modal-list { display: grid; gap: 7px; margin-top: 18px; }
 .agent-test-result {
   width: auto;
 }
