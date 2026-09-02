@@ -2459,6 +2459,64 @@
   font-family: "JetBrains Mono", monospace;
   color: var(--txt-dim);
 }
+.ctx-discover-head {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ctx-discover-head strong { color: var(--txt); font-size: 13px; }
+.ctx-skill-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  color: var(--txt);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.ctx-catalog-skill {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.ctx-skill-meta, .ctx-detail-meta {
+  color: var(--txt-faint);
+  font-size: 11px;
+}
+.ctx-installed { color: var(--green); font-size: 11px; font-weight: 700; }
+.ctx-detail-actions { margin-top: 14px; }
+.ctx-refresh-error { padding: 10px 12px; color: var(--red); font-size: 12px; }
+.ctx-detail-copy {
+  margin-top: 18px;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.ctx-detail-copy summary { cursor: pointer; color: var(--cyan); }
+.ctx-detail-copy pre {
+  overflow: auto;
+  padding: 12px;
+  margin: 9px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  white-space: pre-wrap;
+}
+.ctx-review-check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 14px;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ctx-review-check input { margin-top: 2px; accent-color: var(--violet); }
 .doc-view {
   padding: 24px 28px;
   overflow-y: auto;

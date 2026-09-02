@@ -160,6 +160,10 @@ import {
   getBoard,
   getDocs,
   getSkills,
+  getRegistryCurated,
+  searchRegistry,
+  getRegistryDetail,
+  installRegistry,
   getSystem,
   getSystemLogs,
   getTunnelStatus,
@@ -1649,6 +1653,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/inputs\/([^/]+)\/attachments$/, uploadInputAttachment);
   router.register("GET", /^\/api\/inputs\/([^/]+)\/attachments\/([^/]+)$/, getInputAttachment);
   router.register("GET", "/api/skills", getSkills);
+  router.register("GET", "/api/skill-registry/curated", getRegistryCurated);
+  router.register("GET", "/api/skill-registry/search", searchRegistry);
+  router.register("GET", "/api/skill-registry/detail", getRegistryDetail);
+  router.register("POST", "/api/skill-registry/install", installRegistry);
   router.register("POST", "/api/skills/create", createSkillRoute);
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/system", getSystem);

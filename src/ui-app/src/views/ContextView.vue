@@ -7,6 +7,7 @@ import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
 import { renderMermaidDiagrams } from "../lib/mermaid";
 import { buildDocTree, flattenDocTree } from "../lib/docTree";
+import { api, JSON_OPTS } from "../api";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import NewDocPanel from "../components/NewDocPanel.vue";
@@ -30,30 +31,45 @@ const {
 type ContextTab = "docs" | "skills" | "discover";
 const tab = ref<ContextTab>("docs");
 const skillQuery = ref("");
-const starterCatalog = [
-  ["frontend-design", "Frontend", "Distinctive production UI implementation", "Anthropic"],
-  ["code-review", "Quality", "Review changes before sign-off", "RepoOS"],
-  ["test-and-verify", "Quality", "Targeted and end-to-end validation", "RepoOS catalog"],
-  ["debug-and-reproduce", "Quality", "Reproduce failures before fixing them", "RepoOS catalog"],
-  ["dependency-upgrade", "Maintenance", "Safe package and runtime upgrades", "RepoOS catalog"],
-  ["api-contracts", "Backend", "Versioned API and schema changes", "RepoOS catalog"],
-  ["database-migrations", "Backend", "Safe schema and data migrations", "RepoOS catalog"],
-  ["security-review", "Security", "Auth, secrets, and trust boundaries", "RepoOS catalog"],
-  ["ui-accessibility", "Frontend", "Keyboard, screen-reader, and motion checks", "RepoOS catalog"],
-  ["performance-investigation", "Quality", "Measure and improve slow paths", "RepoOS catalog"],
-  ["ci-and-release", "Delivery", "CI, packaging, and release procedures", "RepoOS catalog"],
-  ["observability", "Operations", "Logs, metrics, and tracing conventions", "RepoOS catalog"],
-] as const;
-type CatalogSkill = (typeof starterCatalog)[number];
-const selectedCatalogSkill = ref<CatalogSkill | null>(null);
-const visibleCatalog = computed(() => {
-  const q = skillQuery.value.trim().toLowerCase();
-  return !q ? starterCatalog : starterCatalog.filter((skill) => skill.join(" ").toLowerCase().includes(q));
-});
+interface RegistrySkill { id: string; slug: string; name: string; source: string; installs: number; url: string; isDuplicate?: boolean; }
+interface RegistryDetail { id: string; slug: string; source: string; installs: number; hash: string | null; files: Array<{ path: string; contents: string }> | null; }
+const registrySkills = ref<RegistrySkill[]>([]);
+const registryLoading = ref(false);
+const registryError = ref("");
+const selectedCatalogSkill = ref<RegistryDetail | null>(null);
+const selectedAudit = ref<{ audits: Array<{ provider: string; status: string; summary: string }> } | null>(null);
+const filesReviewed = ref(false);
+const installing = ref(false);
 const installedNames = computed(() => new Set(skills.value.map((skill) => skill.name)));
 
-function selectCatalogSkill(skill: CatalogSkill): void {
-  selectedCatalogSkill.value = skill;
+async function loadRegistry(): Promise<void> {
+  registryLoading.value = true;
+  registryError.value = "";
+  try {
+    const path = skillQuery.value.trim().length >= 2 ? `/api/skill-registry/search?q=${encodeURIComponent(skillQuery.value.trim())}` : "/api/skill-registry/curated";
+    registrySkills.value = (await api<{ skills: RegistrySkill[] }>(path)).skills;
+  } catch (error) { registryError.value = error instanceof Error ? error.message : "Skills.sh is unavailable"; }
+  finally { registryLoading.value = false; }
+}
+
+async function selectCatalogSkill(skill: RegistrySkill): Promise<void> {
+  try {
+    const data = await api<{ detail: RegistryDetail; audit: typeof selectedAudit.value }>(`/api/skill-registry/detail?id=${encodeURIComponent(skill.id)}`);
+    selectedCatalogSkill.value = data.detail;
+    selectedAudit.value = data.audit;
+    filesReviewed.value = false;
+  } catch (error) { registryError.value = error instanceof Error ? error.message : "Could not load skill details"; }
+}
+
+async function installSelectedSkill(): Promise<void> {
+  if (!selectedCatalogSkill.value || installing.value) return;
+  installing.value = true;
+  registryError.value = "";
+  try {
+    await api("/api/skill-registry/install", JSON_OPTS("POST", { id: selectedCatalogSkill.value.id }));
+    await docs.loadSkills();
+  } catch (error) { registryError.value = error instanceof Error ? error.message : "Could not install skill"; }
+  finally { installing.value = false; }
 }
 
 function openInstalledSkill(name: string): void {
@@ -80,6 +96,9 @@ async function renderCurrentDiagrams(): Promise<void> {
 
 watch([docContent, skillContent, tab], () => void renderCurrentDiagrams(), { flush: "post" });
 onMounted(() => void renderCurrentDiagrams());
+watch(tab, (next) => { if (next === "discover" && !registrySkills.value.length) void loadRegistry(); });
+let registrySearchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(skillQuery, () => { clearTimeout(registrySearchTimer); registrySearchTimer = setTimeout(() => void loadRegistry(), 250); });
 
 /** The doc list shaped as a tree, then flattened to the rows to render. */
 const flatDocTree = computed(() =>
@@ -245,22 +264,23 @@ watch(
         </template>
         <template v-else>
           <div class="ctx-discover-head">
-            <strong>Curated starter skills</strong>
-            <span>Recommendations, not a popularity ranking.</span>
+            <strong>Skills.sh curated catalog</strong>
+            <span>Inspect files and audits before installing into this project.</span>
             <input v-model="skillQuery" class="ctx-skill-search" placeholder="Search skills" />
           </div>
+          <div v-if="registryError" class="ctx-refresh-error">{{ registryError }}</div>
+          <div v-else-if="registryLoading" class="ctx-empty">Loading Skills.sh…</div>
           <button
-            v-for="skill in visibleCatalog"
-            :key="skill[0]"
+            v-for="skill in registrySkills"
+            :key="skill.id"
             type="button"
             class="skill-row ctx-catalog-skill"
-            :class="{ sel: selectedCatalogSkill?.[0] === skill[0] }"
+            :class="{ sel: selectedCatalogSkill?.id === skill.id }"
             @click="selectCatalogSkill(skill)"
           >
-            <span class="skill-name">{{ skill[0] }}</span>
-            <span class="skill-desc">{{ skill[2] }}</span>
-            <span class="ctx-skill-meta">{{ skill[1] }} · {{ skill[3] }}</span>
-            <span v-if="installedNames.has(skill[0])" class="ctx-installed">Installed</span>
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="ctx-skill-meta">{{ skill.source }} · {{ skill.installs.toLocaleString() }} installs</span>
+            <span v-if="installedNames.has(skill.slug)" class="ctx-installed">Installed</span>
           </button>
         </template>
       </Card>
@@ -298,27 +318,27 @@ watch(
         </template>
         <template v-else>
           <template v-if="selectedCatalogSkill">
-            <div class="doc-title">{{ selectedCatalogSkill[0] }}</div>
-            <div class="skill-desc-line">{{ selectedCatalogSkill[2] }}</div>
-            <div class="ctx-detail-meta">{{ selectedCatalogSkill[1] }} · {{ selectedCatalogSkill[3] }}</div>
-            <div v-if="installedNames.has(selectedCatalogSkill[0])" class="ctx-detail-copy">
-              This skill is installed in this repository and can be assigned to an agent on the Agents page.
-            </div>
-            <div v-else class="ctx-detail-copy">
-              This is a curated recommendation, not a remotely installable package yet. Create a project-owned skill when you choose its source and procedure.
-            </div>
+            <div class="doc-title">{{ selectedCatalogSkill.slug }}</div>
+            <div class="ctx-detail-meta">{{ selectedCatalogSkill.source }} · {{ selectedCatalogSkill.installs.toLocaleString() }} installs · {{ selectedCatalogSkill.hash ?? "unhashed" }}</div>
+            <div class="ctx-detail-copy">{{ selectedCatalogSkill.files?.length ?? 0 }} files will be copied into <code>skills/{{ selectedCatalogSkill.slug }}/</code> and locked in <code>skills.lock.json</code>.</div>
+            <div v-if="selectedAudit?.audits?.length" class="ctx-detail-copy"><strong>Security audits</strong><br /><span v-for="audit in selectedAudit.audits" :key="audit.provider">{{ audit.provider }}: {{ audit.status }} — {{ audit.summary }}<br /></span></div>
+            <details class="ctx-detail-copy"><summary>Review files before installing</summary><pre v-for="file in selectedCatalogSkill.files" :key="file.path"><strong>{{ file.path }}</strong>\n{{ file.contents }}</pre></details>
+            <label v-if="!installedNames.has(selectedCatalogSkill.slug)" class="ctx-review-check">
+              <input v-model="filesReviewed" type="checkbox" />
+              I reviewed these files and want to add this skill to the project.
+            </label>
             <div class="ctx-detail-actions">
               <Button
-                v-if="installedNames.has(selectedCatalogSkill[0])"
+                v-if="installedNames.has(selectedCatalogSkill.slug)"
                 variant="accent"
-                @click="openInstalledSkill(selectedCatalogSkill[0])"
+                @click="openInstalledSkill(selectedCatalogSkill.slug)"
               >Open installed skill</Button>
-              <Button v-else variant="outline" @click="ui.openNewSkill()">Create project skill</Button>
+              <Button v-else variant="accent" :disabled="installing || !filesReviewed" @click="installSelectedSkill">{{ installing ? "Installing…" : "Install to project" }}</Button>
             </div>
           </template>
           <template v-else>
             <div class="doc-title">Discover skills</div>
-            <div class="skill-desc-line">Select a skill to see whether it is installed and what action is available. The catalog is curated, not a popularity ranking.</div>
+            <div class="skill-desc-line">Select a skill to inspect its exact files, content hash, publisher, and security audit before installing it.</div>
           </template>
         </template>
       </Card>
