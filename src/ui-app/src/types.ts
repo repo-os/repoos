@@ -120,6 +120,8 @@ export interface Health {
   buildAvailableHash: string | null;
   /** On-disk build timestamp of the parked build, or null when none is parked. */
   buildAvailableAt: string | null;
+  /** ISO start time of the serve process (derived from process.uptime()). */
+  serverStartedAt?: string;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
   /** Canary flow-test counter (0-9) — see src/core/canary.ts. */
