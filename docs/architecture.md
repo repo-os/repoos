@@ -85,9 +85,14 @@ lockfile, the build marker, `work/*.md`, and git directly. When the server IS
 up, the picture is enriched best-effort from `/api/health` (running
 confirmation, thin-lockfile start time, version) and
 `/api/tunnel/readiness` (tunnel running state + hostnames); those probes have
-tight timeouts and can never make the command hang. A lockfile naming a dead
-process while the port still answers, or a port answering for a *different*
-repo root, is called out explicitly — those are the "wrong port" traps.
+tight timeouts and can never make the command hang. On auth-protected servers
+the readiness probe 401s (the CLI has no session), and the local computation —
+identical to `repoos tunnel status` — is used instead. A lockfile naming a
+dead process while the port still answers, or a port answering for a
+*different* repo root, is called out explicitly — those are the "wrong port"
+traps. A "running" verdict is grounded in the port: a lockfile whose PID was
+recycled by an unrelated process (verified against the process's command
+line) with nothing listening on the port reports `stopped`.
 
 `repoos status --json` emits the same snapshot for agents/tooling (stable
 shape, covered by test):

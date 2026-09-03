@@ -22,6 +22,7 @@ import { checkBuildForRoot, readBuildStamp } from "../core/build.js";
 import { readTunnelConfig } from "../core/tunnel.js";
 import { currentBranch, runGit } from "../core/git.js";
 import { countWorktrees, sweepStaleWorktrees } from "../core/worktree-gc.js";
+import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
 import { STATUSES, type RepoOSConfig, type Status } from "../core/types.js";
 import { c } from "../cli/colors.js";
 
@@ -29,9 +30,11 @@ import { c } from "../cli/colors.js";
 
 export interface StatusServer {
   /**
-   * True when a serve process for THIS repo is running: a lockfile with a live
-   * PID, or /api/health answering with this repo's root (a lost lockfile must
-   * not hide a live server).
+   * True when a serve process for THIS repo is actually reachable: the
+   * lockfile's PID is alive AND names a repoos serve process AND its port is
+   * answering (or /api/health answers with this repo's root). A lock whose
+   * PID was recycled by an unrelated process is NOT running — "running" is
+   * grounded in the port, not just in /proc existence.
    */
   running: boolean;
   /** Port of the primary serve lock (live first, else most recent), else the probed port. */
@@ -137,18 +140,42 @@ interface ServeLockEntry {
 function pidAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
-    return true;
   } catch (e) {
     return (e as NodeJS.ErrnoException).code === "EPERM";
   }
+  // kill -0 only proves SOME process owns the PID — after OS PID recycling it
+  // may be an unrelated process that has nothing to do with this repo's
+  // server. Verify the command line has the repoos serve shape (the same
+  // matcher ServeReaper's orphan sweep uses) before trusting it. If `ps`
+  // itself fails, keep the existence verdict: collectStatus independently
+  // cross-checks the port before believing "running".
+  if (process.platform === "win32") return true;
+  try {
+    const cmdline = execFileSync("ps", ["-p", String(pid), "-o", "command="], {
+      encoding: "utf8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (!cmdline) return false; // gone between kill(0) and ps
+    return isOrphanServeCommand(cmdline);
+  } catch {
+    return true;
+  }
+}
+
+/** startedAt as a comparable number (missing/unparsable sorts oldest). */
+function lockStartedMs(l: ServeLockEntry): number {
+  const t = Date.parse(l.startedAt ?? "");
+  return Number.isFinite(t) ? t : 0;
 }
 
 /**
  * Read every `.repoos/serve[-<port>].lock`. Locks are scoped per port (see
  * ServeReaper), so there can legitimately be more than one; they are ordered
- * live-first, then newest-first, so the primary is the one that matters.
+ * live-first, then newest-first by `startedAt`, so the primary is the one
+ * that matters. Exported for tests.
  */
-function readServeLocks(root: string, cacheDir: string): ServeLockEntry[] {
+export function readServeLocks(root: string, cacheDir: string): ServeLockEntry[] {
   let files: string[];
   try {
     files = readdirSync(join(root, cacheDir)).filter((f) => /^serve(?:-\d+)?\.lock$/.test(f));
@@ -178,7 +205,7 @@ function readServeLocks(root: string, cacheDir: string): ServeLockEntry[] {
       /* corrupt lockfile — ignore; `repoos serve`'s reaper will clean it up */
     }
   }
-  out.sort((a, b) => Number(b.alive) - Number(a.alive));
+  out.sort((a, b) => Number(b.alive) - Number(a.alive) || lockStartedMs(b) - lockStartedMs(a));
   return out;
 }
 
@@ -295,9 +322,14 @@ export async function collectStatus(
   const primaryAlive = primary?.alive ?? false;
   // Probe the live lock's port; else a stale lock's port (the "lock is dead —
   // is anything still on it?" diagnostic); else this repo's default port.
-  const probePort =
-    opts.probePort ?? primary?.port ?? locks[0]?.port ?? resolveServePort(root, config);
+  const probePort = opts.probePort ?? primary?.port ?? resolveServePort(root, config);
   const health = await probeHealth(probePort, root, timeoutMs);
+  // Ground "running" in the port: when /api/health is unreachable, check
+  // whether anything is actually listening before trusting the lock's
+  // (possibly recycled) live PID.
+  const portActive =
+    health.state !== "unreachable" || (await isPortListening(probePort, "127.0.0.1"));
+  const running = primaryAlive ? portActive : health.state === "ok";
 
   let startedAt = primary?.startedAt ?? null;
   let startedAtSource: "lockfile" | "health" | null = startedAt ? "lockfile" : null;
@@ -308,8 +340,8 @@ export async function collectStatus(
   }
   const uptimeMs = startedAt !== null ? Math.max(0, now.getTime() - Date.parse(startedAt)) : null;
   const server: StatusServer = {
-    running: primaryAlive || health.state === "ok",
-    port: primary?.port ?? locks[0]?.port ?? probePort,
+    running,
+    port: primary?.port ?? probePort,
     pid: primary?.pid ?? null,
     host: primary?.host ?? null,
     startedAt,
@@ -370,7 +402,10 @@ export async function collectStatus(
   if (configured) {
     tunnelRunning = tunnelProcessRunning() || tunnelServiceRunning();
     if (health.state === "ok") {
-      // Server is up — prefer its readiness view (same data, live).
+      // Server is up — prefer its readiness view (same data, live). Best
+      // effort only: on auth-protected servers this endpoint 401s (the CLI
+      // has no session), and the local answer below is identical to what
+      // `repoos tunnel status` computes, so nothing is lost.
       try {
         const res = await fetch(`http://127.0.0.1:${probePort}/api/tunnel/readiness`, {
           signal: AbortSignal.timeout(Math.max(timeoutMs, 2000)),
@@ -534,6 +569,12 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
       sub(
         c.yellow(
           `⚠ port ${sv.port} answers, but it serves ${sv.healthRoot ?? "a different repo"} — wrong port?`,
+        ),
+      );
+    } else if (sv.health === "unreachable") {
+      sub(
+        c.yellow(
+          `⚠ port ${sv.port} is listening but /api/health is not answering — the server may be hung`,
         ),
       );
     } else if (sv.pid === null) {

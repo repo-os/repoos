@@ -22,6 +22,7 @@ import {
   formatSince,
   formatRel,
   cmdStatus,
+  readServeLocks,
 } from "../../commands/status.js";
 
 function git(root: string, args: string[]): string {
@@ -29,12 +30,15 @@ function git(root: string, args: string[]): string {
 }
 
 const roots: string[] = [];
+const lingeringKills: Array<() => void> = [];
 afterEach(() => {
   for (const r of roots) {
     rmSync(r, { recursive: true, force: true });
     rmSync(worktreesDir(r), { recursive: true, force: true });
   }
   roots.length = 0;
+  for (const kill of lingeringKills) kill();
+  lingeringKills.length = 0;
   vi.restoreAllMocks();
 });
 
@@ -54,6 +58,18 @@ function exitedPid(): Promise<number> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, ["-e", "process.exit(0)"]);
     child.on("close", () => resolve(child.pid as number));
+  });
+}
+
+/** A PID that stays alive running an unrelated (non-serve) process. */
+function lingeringPid(): Promise<number> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"]);
+    child.on("spawn", () => {
+      const pid = child.pid as number;
+      lingeringKills.push(() => child.kill("SIGKILL"));
+      resolve(pid);
+    });
   });
 }
 
@@ -258,6 +274,54 @@ describe("collectStatus — server stopped", () => {
     expect(s.build.code).toBe("fresh");
     expect(s.build.message).toBeNull();
     expect(s.build.version).toBe("1.2.3-fixture");
+  });
+
+  it("picks the NEWEST dead lock as primary when several dead locks exist", async () => {
+    const fx = await makeGitFixture();
+    // A second, OLDER dead lock on a different port.
+    const olderPort = await freePort();
+    const olderPid = await exitedPid();
+    writeFileSync(
+      join(fx.root, ".repoos", `serve-${olderPort}.lock`),
+      JSON.stringify({
+        pid: olderPid,
+        port: olderPort,
+        host: "127.0.0.1",
+        startedAt: "2026-09-01T00:00:00Z", // strictly older than the fixture's lock
+      }),
+    );
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    // Primary = the NEWER lock (the fixture's), not readdirSync order.
+    expect(s.server.pid).toBe(fx.deadPid);
+    expect(s.server.port).toBe(fx.lockPort);
+
+    const order = readServeLocks(fx.root, fx.config.cacheDir);
+    expect(order).toHaveLength(2);
+    expect(order[0].pid).toBe(fx.deadPid);
+    expect(Date.parse(order[0].startedAt as string)).toBeGreaterThan(
+      Date.parse(order[1].startedAt as string),
+    );
+  });
+
+  it("does NOT report running when the lock's live PID was recycled by an unrelated process", async () => {
+    const fx = await makeGitFixture();
+    // Rewrite the lock with a LIVE pid that is NOT a repoos serve process —
+    // the OS recycled the serve process's PID into something unrelated.
+    const recycled = await lingeringPid();
+    writeFileSync(
+      join(fx.root, ".repoos", `serve-${fx.lockPort}.lock`),
+      JSON.stringify({
+        pid: recycled,
+        port: fx.lockPort,
+        host: "127.0.0.1",
+        startedAt: new Date(Date.now() - 60_000).toISOString(),
+      }),
+    );
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    // PID is alive but is not a serve process, and the port is dead → stopped.
+    expect(s.server.running).toBe(false);
+    expect(s.server.health).toBe("unreachable");
+    expect(s.server.pid).toBe(recycled);
   });
 
   it("works with no lockfile and no git at all (brand-new repo, server down)", async () => {
