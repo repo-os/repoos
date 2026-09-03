@@ -21,6 +21,18 @@
  * `refreshAll()` would collapse that gap to ~0 (or make BOTH slow), and a
  * generous absolute ceiling below catches the "startup got dramatically
  * slower again" failure mode without flaking on a slow CI box.
+ *
+ * ── Why this suite only runs under REPOOS_STRICT_TIMING ───────────────────
+ * Every assertion here is a wall-clock budget, and a real fixture boot spawns
+ * hundreds of `git` subprocesses. Run inside the parallel worker pool (or an
+ * ad-hoc `vitest` invocation on a busy machine) those durations balloon from
+ * contention, not regressions — a false negative that has cost real debugging
+ * time and made agents loop on "check failed" for tests their diff never
+ * touched. `scripts/run-tests.mjs` runs it in a dedicated pass 2: single
+ * worker, `--retry 2`, `REPOOS_STRICT_TIMING=1`. That is the only context
+ * where these numbers mean anything, so outside it the suite skips itself.
+ * `bun run test` and `repoos check` always exercise pass 2; to run it
+ * directly: `REPOOS_STRICT_TIMING=1 npx vitest boot-timing`.
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -61,6 +73,13 @@ const FULL_READY_CEILING_MS = 15_000;
  * lag full-ready by seconds, comfortably past the guard.
  */
 const POLL_TOLERANCE_MS = 100;
+
+/**
+ * Only `scripts/run-tests.mjs` pass 2 (single worker, machine to itself) sets
+ * this. Everywhere else the wall-clock assertions here measure contention, not
+ * correctness — so the suite skips rather than emit a false failure.
+ */
+const STRICT_TIMING = process.env.REPOOS_STRICT_TIMING === "1";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -119,7 +138,14 @@ function makeFixture(count: number): { root: string; clean: () => void } {
 }
 
 describe("boot timing (#0271 regression guard)", () => {
-  it("answers /api/health before startServer()'s own promise resolves, and both stay well under the old blocking-boot scale", async () => {
+  it("answers /api/health before startServer()'s own promise resolves, and both stay well under the old blocking-boot scale", async (ctx) => {
+    if (!STRICT_TIMING) {
+      ctx.skip(
+        "wall-clock timing suite — only meaningful with the machine to itself. " +
+          "Runs in `bun run test` / `repoos check` (run-tests.mjs pass 2). " +
+          "Direct: `REPOOS_STRICT_TIMING=1 npx vitest boot-timing`.",
+      );
+    }
     const fx = makeFixture(TASK_COUNT);
     const port = await reservePort();
     const healthUrl = `http://127.0.0.1:${port}/api/health`;

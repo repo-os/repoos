@@ -146,9 +146,13 @@ cannot tell from the code alone:
   real regression but is just the wrong runner.
   `bun run test` is `scripts/run-tests.mjs`: a two-pass wrapper that runs the
   bulk suite at the configured pool size, then the latency-sensitive suites
-  (`boot-timing.test.ts`) alone at one worker so their absolute wall-clock
-  ceilings aren't blown by pool contention. `bun run test:vitest` is the raw
-  single-pass invocation. Extra args (`--changed <ref>`) forward to both passes.
+  (`boot-timing.test.ts`) alone at one worker — with `REPOOS_STRICT_TIMING=1` —
+  so their absolute wall-clock ceilings aren't blown by pool contention.
+  `boot-timing.test.ts` **skips itself unless `REPOOS_STRICT_TIMING=1`**, so a
+  raw `bun run test:vitest` (single-pass) or an ad-hoc `vitest boot-timing`
+  won't run it and can't produce a spurious timing failure — run it directly
+  with `REPOOS_STRICT_TIMING=1 npx vitest boot-timing`. Extra args
+  (`--changed <ref>`) forward to both passes.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).

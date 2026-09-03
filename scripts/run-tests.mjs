@@ -9,7 +9,10 @@
  *
  * boot-timing.test.ts (#0271) asserts an absolute ceiling on time-to-first
  * `/api/health`; on a loaded box that ceiling is blown by CPU/memory pressure
- * from the other workers, not by a regression. Pass 2 hands it the machine.
+ * from the other workers, not by a regression. Pass 2 hands it the machine
+ * and sets REPOOS_STRICT_TIMING=1 — the only context where those absolute
+ * wall-clock assertions are meaningful. Outside pass 2 (an ad-hoc `vitest`
+ * run, the parallel pass 1) the suite skips itself rather than flake.
  *
  * Extra args (e.g. `--changed <ref>` from `repoos check` re-verification) are
  * forwarded to BOTH passes; vitest's own change graph then decides whether the
@@ -53,6 +56,7 @@ const bulk = vitest([
 // `--passWithNoTests` because a `--changed` run may touch none of them.
 const isolated = vitest([...passthrough, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
   REPOOS_TEST_WORKERS: "1",
+  REPOOS_STRICT_TIMING: "1",
 });
 
 process.exit(bulk || isolated);
