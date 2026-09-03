@@ -3,6 +3,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /**
+ * Remove a fixture repo AND its `<root>-worktrees` sibling (see config.ts
+ * `worktreesDir`). Any test that calls `ensureWorktree`/`removeWorktree` on a
+ * tmpdir fixture creates that sibling; a bare `rmSync(root)` leaves it behind
+ * forever (the reap only used to catch it as a rider on the primary). Use this
+ * in the fixture's `clean()`/`afterEach` instead of `rmSync(root, …)`.
+ */
+export function rmFixture(root: string): void {
+  rmSync(root, { recursive: true, force: true });
+  rmSync(`${root}-worktrees`, { recursive: true, force: true });
+}
+
+/**
  * Shared test helpers for the process-spawning E2E fixtures (0076).
  *
  * These tests spawn real child processes (fixture CLI stubs on a fake PATH,
@@ -50,19 +62,31 @@ export async function waitFor(
  * stale directories in `beforeAll` — before this suite's own fixtures exist.
  * Anything younger than the sweep age is presumed still in use by a
  * concurrently running suite and left alone.
+ *
+ * Returns the number of directories removed, so a caller (global-reap) can
+ * warn when a leak source is quietly filling the tmpdir.
  */
 export const STALE_FIXTURE_AGE_MS = 10 * 60 * 1000;
 
-export function reapStaleFixtures(prefix: string): void {
+export function reapStaleFixtures(prefix: string): number {
   let entries: string[];
   try {
     entries = readdirSync(tmpdir());
   } catch {
-    return;
+    return 0;
   }
   const cutoff = Date.now() - STALE_FIXTURE_AGE_MS;
+  let removed = 0;
   for (const name of entries) {
-    if (!name.startsWith(prefix) || name.endsWith("-worktrees")) continue;
+    if (!name.startsWith(prefix)) continue;
+    // `<fixture>-worktrees` siblings (config.ts worktreesDir: a fixture at
+    // `<tmp>/repoos-cliwt-XXXX` gets worktrees at `<tmp>/repoos-cliwt-XXXX-worktrees`)
+    // used to be reaped ONLY as a rider on their primary dir. But a test's own
+    // `rmSync(root)` cleanup removes the primary and leaves the sibling, so the
+    // rider never fired and the tmpdir filled with tens of thousands of orphaned
+    // `-worktrees` dirs (see #tmpdir-leak). They carry no spawns.log and no live
+    // process — just age-check and delete them directly.
+    const isWorktreesSibling = name.endsWith("-worktrees");
     const root = join(tmpdir(), name);
     let mtimeMs: number;
     try {
@@ -71,21 +95,33 @@ export function reapStaleFixtures(prefix: string): void {
       continue;
     }
     if (mtimeMs >= cutoff) continue;
-    try {
-      const log = readFileSync(join(root, "spawns.log"), "utf8");
-      for (const line of log.trim().split("\n")) {
-        if (!line) continue;
-        try {
-          const rec = JSON.parse(line) as { pid?: number };
-          if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
-        } catch {
-          /* already gone */
+    if (!isWorktreesSibling) {
+      try {
+        const log = readFileSync(join(root, "spawns.log"), "utf8");
+        for (const line of log.trim().split("\n")) {
+          if (!line) continue;
+          try {
+            const rec = JSON.parse(line) as { pid?: number };
+            if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
+          } catch {
+            /* already gone */
+          }
         }
+      } catch {
+        /* no log — nothing to kill */
       }
-    } catch {
-      /* no log — nothing to kill */
     }
     rmSync(root, { recursive: true, force: true });
-    rmSync(join(tmpdir(), `${name}-worktrees`), { recursive: true, force: true });
+    removed++;
+    if (!isWorktreesSibling) {
+      // Still remove the matching sibling eagerly when the primary is present —
+      // cheaper than waiting for a later iteration, and correct if it sorts before.
+      try {
+        rmSync(join(tmpdir(), `${name}-worktrees`), { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
   }
+  return removed;
 }

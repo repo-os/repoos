@@ -25,5 +25,16 @@
 import { reapStaleFixtures } from "../helpers";
 
 export default function setup(): void {
-  reapStaleFixtures("repoos-");
+  const removed = reapStaleFixtures("repoos-");
+  // A steady trickle is normal (each run leaves a few dirs a torn-down worker
+  // never cleaned). A big number means a test is leaking on every run — surface
+  // it instead of silently absorbing it, the way the `-worktrees` orphan leak
+  // went unnoticed until the tmpdir held ~18k of them.
+  if (removed > 50) {
+    console.warn(
+      `[global-reap] removed ${removed} stale repoos-* fixture dirs from the tmpdir — ` +
+        `a test is likely leaking. Check which prefix dominates ` +
+        `(\`ls "$TMPDIR" | grep '^repoos-' | sed 's/-[A-Za-z0-9]\\{6\\}.*//' | sort | uniq -c | sort -rn\`).`,
+    );
+  }
 }

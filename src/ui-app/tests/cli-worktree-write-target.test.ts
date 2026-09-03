@@ -13,9 +13,10 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git";
 import { cmdMv, cmdUpdate, cmdNew } from "../../commands/tasks";
 
@@ -39,7 +40,7 @@ function makeRepoWithTask(): { root: string; taskPath: string; clean: () => void
   writeFileSync(join(root, "repoos.toml"), "");
   git(root, ["add", "-A"]);
   git(root, ["commit", "-q", "-m", "init"]);
-  return { root, taskPath, clean: () => rmSync(root, { recursive: true, force: true }) };
+  return { root, taskPath, clean: () => rmFixture(root) };
 }
 
 async function withCwd<T>(dir: string, fn: () => Promise<T> | T): Promise<T> {

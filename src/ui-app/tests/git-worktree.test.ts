@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import { rmFixture } from "./helpers";
 import { join, dirname } from "node:path";
 import {
   ensureWorktree,
@@ -34,7 +35,7 @@ function makeRepo(): { root: string; clean: () => void } {
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   git(root, ["commit", "--allow-empty", "-m", "init"]);
-  return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
+  return { root, clean: () => rmFixture(root) };
 }
 
 describe("ensureWorktree", () => {
