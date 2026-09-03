@@ -201,7 +201,13 @@ describe("qwen code driver", () => {
       const start = runner.start(TASK, "feat/x", agent("qwen code"), { cwd });
       expect(start.ok).toBe(true);
 
-      await waitFor(() => runner.output("0001")?.lines.length === 3, "qwen first-turn output");
+      // >= 3, not === 3: a turn now also emits a leading "Skill routing: …"
+      // sys line (ead7245f), and more preamble lines may be added later. The
+      // content assertions below are what actually pin the streamed output.
+      await waitFor(
+        () => (runner.output("0001")?.lines.length ?? 0) >= 3,
+        "qwen first-turn output",
+      );
       const lines = runner.output("0001")!.lines;
       expect(lines.map(dOf)).toContain("fake output line");
       expect(lines.map(dOf)).toContain('{"session_id":"sess-123"}');
@@ -278,7 +284,10 @@ describe("codex driver", () => {
       const start = runner.start(TASK, "feat/x", agent("codex"), { cwd });
       expect(start.ok).toBe(true);
 
-      await waitFor(() => runner.output("0001")?.lines.length === 3, "codex first-turn output");
+      await waitFor(
+        () => (runner.output("0001")?.lines.length ?? 0) >= 3,
+        "codex first-turn output",
+      );
       expect(runner.output("0001")!.lines.map(dOf)).toContain("fake output line");
       expect(runner.output("0001")!.sessionId).toBe("sess-123");
 
@@ -369,7 +378,10 @@ describe("claude code driver", () => {
       const start = runner.start(TASK, "feat/x", agent("claude code"), { cwd });
       expect(start.ok).toBe(true);
 
-      await waitFor(() => runner.output("0001")?.lines.length === 3, "claude first-turn output");
+      await waitFor(
+        () => (runner.output("0001")?.lines.length ?? 0) >= 3,
+        "claude first-turn output",
+      );
       const [run] = spawns(fx);
       expect(run.args[0]).toBe("-p");
       expect(run.args[1]).toContain("Task #0001");
