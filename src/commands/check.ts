@@ -3,9 +3,10 @@
  *
  * Runs, in sequence: build staleness check, full build (tsc + asset copy),
  * CSS layering guard, theme contrast guard (button-gradient validity + WCAG
- * contrast on every theme's fg/bg token pairs), test suite (if present), and a
- * headless browser smoke test that verifies the UI mounts and has zero console
- * errors.
+ * contrast on every theme's fg/bg token pairs), formatting & lint guard
+ * (fmt:check + lint, since nothing else enforces them), test suite (if
+ * present), and a headless browser smoke test that verifies the UI mounts and
+ * has zero console errors.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -625,9 +626,45 @@ export async function cmdCheck(): Promise<void> {
     }
   }
 
+  const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
+
+  // ── 2e. Formatting & lint guard ─────────────────────────────────────
+  // Nothing else runs the formatter/linter — no git hook, no CI job — so
+  // without this step `dist/` builds fine while the source silently drifts out
+  // of the house style (that's how it accumulated ~10 unformatted files). Both
+  // are sub-second with oxfmt/oxlint. Gated on the scripts existing so a plain
+  // `repoos init` repo without them just skips.
+  heading("Formatting & lint guard");
+  for (const [label, script, hint] of [
+    ["Formatting", "fmt:check", "run `bun run fmt` to fix"],
+    ["Lint", "lint", "fix the reported errors"],
+  ] as const) {
+    if (!pkg.scripts?.[script]) {
+      console.log(c.dim(`  · No \`${script}\` script — skipping ${label.toLowerCase()}`));
+      results.push(pass(`check-${script}`, `skipped — no ${script} script`));
+      continue;
+    }
+    try {
+      execSync(`${preferBunForDevTasks() ? "bun run" : "npm run"} ${script}`, {
+        stdio: "pipe",
+        timeout: 120_000,
+      });
+      console.log(c.green(`  ✔ ${label} clean`));
+      results.push(pass(`check-${script}`));
+    } catch (e) {
+      const out = [(e as { stdout?: Buffer }).stdout, (e as { stderr?: Buffer }).stderr]
+        .map((b) => b?.toString().trim())
+        .filter(Boolean)
+        .join("\n");
+      const msg = `${label} check failed — ${hint}:\n${out || (e as Error).message}`;
+      console.log(c.red(`  ✗ ${label} check failed — ${hint}`));
+      results.push(fail(`check-${script}`, msg));
+      exitCode = 1;
+    }
+  }
+
   // ── 3. Tests (if any) ───────────────────────────────────────────────
   heading("Tests");
-  const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
   const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
   const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
   // The close-out pipeline can hand the test suite to the Remote Validation
