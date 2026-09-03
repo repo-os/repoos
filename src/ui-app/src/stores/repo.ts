@@ -1923,6 +1923,33 @@ export const useRepoStore = defineStore("repo", () => {
     );
   }
 
+  /**
+   * Create an input in the background on behalf of the New input panel: POST
+   * the text, upload each attachment against the created id, then announce the
+   * refresh. The panel hands this off and immediately shows its acknowledgment
+   * state (0325), so a failure after the user moved on is surfaced here through
+   * the global error channel instead of the panel. While the input has not yet
+   * been created, the capture is restored for retry (only if the user has not
+   * started a new one); once created, a retry would duplicate it.
+   */
+  async function submitInput(text: string, attachments: PendingScreenshot[]): Promise<void> {
+    const ui = useUiStore();
+    let created = false;
+    try {
+      const input = await createInput(text);
+      created = true;
+      for (const s of attachments) await uploadInputAttachment(input.id, s);
+      window.dispatchEvent(new Event("repoos:inputs-updated"));
+    } catch (err) {
+      onError(err);
+      if (!created) {
+        if (!ui.inputText.trim()) ui.inputText = text;
+        if (!ui.pendingScreenshots.length && attachments.length)
+          ui.pendingScreenshots.push(...attachments);
+      }
+    }
+  }
+
   /** Create a document via the PM agent from a freeform description. */
   async function createFreeformDocument(
     description: string,
@@ -2095,6 +2122,7 @@ export const useRepoStore = defineStore("repo", () => {
     createInput,
     updateInput,
     uploadInputAttachment,
+    submitInput,
     createFreeformDocument,
     createSkill,
     createFreeformSkill,
