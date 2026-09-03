@@ -154,6 +154,13 @@ cannot tell from the code alone:
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
   `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
+- UI sitemap: routes are declared in `src/ui-app/src/router.ts` (path → view),
+  each view is one `src/ui-app/src/views/*View.vue`, and the left-nav order +
+  which links show is in `src/ui-app/src/nav.ts` (some entries are conditional,
+  e.g. Releases only appears when a release provider is configured). To find the
+  code behind a screen, grep `router.ts` for the path or `views/` for the name.
+  Dialog/modal content is body-teleported, so its CSS lives in
+  `src/ui-app/src/style.css`, not the view's `<style scoped>` block.
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
   so the worktree build is fresh. Do NOT automatically request a preview to
   verify it — previews are on request from the human, not something you spin up
