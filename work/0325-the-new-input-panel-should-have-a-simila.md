@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-new-input-panel-ux-with-new-task-s
+review_model_override: openrouter/google/gemini-3.8-flash
 created_at: "2026-09-03T17:46:46Z"
-updated_at: "2026-09-03T17:51:23Z"
+updated_at: "2026-09-03T17:51:30Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ The "new input" panel should have a similar ux to the new task panel whereby the
 - 2026-09-03T17:49:27Z · status draft→inbox, title, area, body
 - 2026-09-03T17:50:35Z · status inbox→ready
 - 2026-09-03T17:51:23Z · status ready→active, branch
+- 2026-09-03T17:51:30Z · review_model_override
