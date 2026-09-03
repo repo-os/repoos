@@ -45,6 +45,10 @@ export const health: RouteHandler = (ctx, req, res) => {
     buildHash: loadedHash,
     buildAvailableHash: parked?.hash ?? null,
     buildAvailableAt: parked?.buildAt ?? null,
+    // ISO start time of this serve process, derived from process.uptime(). Lets
+    // `repoos status` render uptime from /api/health when the serve lockfile is
+    // thin (missing startedAt) — the lockfile stays the primary source.
+    serverStartedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
     canaryCounter: CANARY_COUNTER,
     ...(handshake ? { reloadHandshake: true } : {}),

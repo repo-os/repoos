@@ -20,6 +20,7 @@ import { cmdServe } from "../commands/serve.js";
 import { cmdStop } from "../commands/stop.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
+import { cmdStatus } from "../commands/status.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecServeUnderBunIfRequested } from "../core/runtime.js";
@@ -69,6 +70,7 @@ function help(): void {
     ${c.cyan("check")}               Full definition-of-done: build, typecheck, tests, UI smoke check
     ${c.cyan("init")} [name]           Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console
     ${c.cyan("list")} [status]        Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})
+    ${c.cyan("status")} [--json]      One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git
     ${c.cyan("show")} <id>            Show a task's full spec
     ${c.cyan("mv")} <id> <status>     Move a task to a new status   ${c.dim('flags: --note "..."')}
     ${c.cyan("note")} <id> "<text>"   Append a free-form note to a task's activity log
@@ -92,6 +94,8 @@ function help(): void {
     ${c.dim("$")} repoos note 0012 "Handle the reviewer's suggestions before the next review"
     ${c.dim("$")} repoos update 0012 --title "New title" --area web
     ${c.dim("$")} repoos list ready
+    ${c.dim("$")} repoos status             ${c.dim("# one-screen health snapshot")}
+    ${c.dim("$")} repoos status --json      ${c.dim("# machine-readable, for agents/tools")}
     ${c.dim("$")} repoos index --json   ${c.dim("# machine-readable, for agents/tools")}
     ${c.dim("$")} repoos serve          ${c.dim("# live API + SSE at http://127.0.0.1:7171")}
 `);
@@ -107,13 +111,16 @@ function main(): void {
     return;
   }
 
-  // Staleness check — skip for version/help since those read no source.
+  // Staleness check — skip for version/help since those read no source, and
+  // for `status`/`check` which report staleness themselves as first-class
+  // output (a second, louder warning above their own would be noise).
   const skipCheck = new Set([
     "version",
     "--version",
     "-v",
     undefined,
     "check",
+    "status",
     "help",
     "--help",
     "-h",
@@ -142,6 +149,9 @@ function main(): void {
     case "list":
     case "ls":
       cmdList(rest[0]);
+      break;
+    case "status":
+      void cmdStatus(rest);
       break;
     case "show":
     case "cat":

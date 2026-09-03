@@ -63,7 +63,48 @@ Pure logic, no transport. Everything else calls into this.
 
 Thin shells over the facade. `cli/index.ts` routes argv; each `commands/*.ts`
 calls a facade method and prints. `cli/colors.ts` is the terminal styling.
-Commands: init, list, show, mv, new, index, serve.
+Commands: init, new, new-doc, list, show, note, mv, update, index, gc, status,
+check, serve, stop, tunnel, upgrade.
+
+### `repoos status` — the one-screen health snapshot
+
+`repoos status` answers "what is the state of this repo right now?" in one
+screen (#0324): the serve process (port, PID, uptime from
+`.repoos/serve[-<port>].lock`'s `startedAt`), build freshness (the same
+`src/`-hash vs `dist/.build-info.json` check every `repoos` command runs —
+printed first and loud when stale, since a stale build is this repo's #1
+time-waster), board counts with every `active` task's branch, worktree path
+and last activity (a task whose worktree is missing is flagged), worktree
+count vs `worktreeWarnThreshold` plus everything `repoos gc --dry-run` would
+collect (same sweep, so the numbers match by construction), a one-line tunnel
+summary (configured / running / published hostnames), and the main
+checkout's git state (branch, clean/dirty, ahead/behind `main`).
+
+It works with the server STOPPED — everything above is read from the
+lockfile, the build marker, `work/*.md`, and git directly. When the server IS
+up, the picture is enriched best-effort from `/api/health` (running
+confirmation, thin-lockfile start time, version) and
+`/api/tunnel/readiness` (tunnel running state + hostnames); those probes have
+tight timeouts and can never make the command hang. A lockfile naming a dead
+process while the port still answers, or a port answering for a *different*
+repo root, is called out explicitly — those are the "wrong port" traps.
+
+`repoos status --json` emits the same snapshot for agents/tooling (stable
+shape, covered by test):
+
+```
+{ generatedAt, root,
+  server: { running, port, pid, host, startedAt, startedAtSource,
+            uptimeSeconds, health: "ok"|"foreign"|"unreachable",
+            healthRoot, locks },
+  build:  { code, stale, message, version, buildAt },
+  board:  { taskCount, counts, active: [{ id, title, branch, worktreePath,
+            worktreeMissing, updatedAt, needsInput }] },
+  worktrees: { count, warnThreshold, leaked: [{branch, path}],
+               kept: [{branch, path, reason}] },
+  tunnel: { configured, tunnelName, running, hostnames },
+  git:    { branch, clean, dirtyFiles, isMainBranch, ahead, behind } }
+```
 
 ### src/server — the long-lived process
 
