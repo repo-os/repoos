@@ -2,14 +2,14 @@
 id: "0325"
 title: Align New Input Panel UX with New Task Submission Flow
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-03T17:46:46Z"
-updated_at: "2026-09-03T17:49:27Z"
+updated_at: "2026-09-03T17:50:35Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ The "new input" panel should have a similar ux to the new task panel whereby the
 
 - 2026-09-03T17:46:46Z · created · hello@repoos.org
 - 2026-09-03T17:49:27Z · status draft→inbox, title, area, body
+- 2026-09-03T17:50:35Z · status inbox→ready
