@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { formatDuration } from "../lib/time";
 import { INTEGRATION_STAGES, type IntegrationPipelineSnapshot } from "../types";
+
+/** Grace period the expanded bar stays open once the pipeline is idle
+ *  (nothing active, nothing queued) before it folds itself back to a strip. */
+const AUTO_COLLAPSE_MS = 10_000;
 
 const repo = useRepoStore();
 const { integration } = storeToRefs(repo);
@@ -22,6 +27,79 @@ const snapshot = computed<IntegrationPipelineSnapshot | null>(() => integration.
 const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
+
+// ── Live stopwatch ─────────────────────────────────────────────────────────
+// Ticks once a second only while a job is actually integrating (not failed),
+// so an idle bar isn't running a pointless interval.
+const now = ref(Date.now());
+let clockTimer: ReturnType<typeof setInterval> | null = null;
+
+function syncClock(): void {
+  const running = !!active.value && !active.value.failed;
+  if (running && clockTimer === null) {
+    now.value = Date.now();
+    clockTimer = setInterval(() => (now.value = Date.now()), 1000);
+  } else if (!running && clockTimer !== null) {
+    clearInterval(clockTimer);
+    clockTimer = null;
+  }
+}
+
+/** Elapsed wall-clock time the active job has been integrating, or "". */
+const elapsed = computed(() => {
+  const startedAt = active.value?.startedAt;
+  if (!startedAt || active.value?.failed) return "";
+  const ms = now.value - new Date(startedAt).getTime();
+  return Number.isNaN(ms) ? "" : formatDuration(ms);
+});
+
+// ── Auto-minimise when idle ────────────────────────────────────────────────
+// Keep the bar folded to a strip whenever nothing is going through it. If the
+// user expands it (or a close-out just drained), leave it open for
+// AUTO_COLLAPSE_MS then fold it again — unless something starts integrating,
+// which cancels the fold and keeps it visible.
+let collapseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelAutoCollapse(): void {
+  if (collapseTimer !== null) {
+    clearTimeout(collapseTimer);
+    collapseTimer = null;
+  }
+}
+
+function scheduleAutoCollapse(): void {
+  cancelAutoCollapse();
+  collapseTimer = setTimeout(() => {
+    collapseTimer = null;
+    if (idle.value) collapsed.value = true;
+  }, AUTO_COLLAPSE_MS);
+}
+
+watch(
+  [idle, collapsed],
+  ([isIdle, isCollapsed]) => {
+    syncClock();
+    if (!isIdle) {
+      cancelAutoCollapse(); // something's integrating/queued — keep it open
+    } else if (!isCollapsed) {
+      scheduleAutoCollapse(); // idle + expanded — fold after the grace period
+    } else {
+      cancelAutoCollapse();
+    }
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  // Minimised by default when there's nothing to show.
+  if (idle.value) collapsed.value = true;
+  syncClock();
+});
+
+onUnmounted(() => {
+  if (clockTimer !== null) clearInterval(clockTimer);
+  cancelAutoCollapse();
+});
 
 /** Index of the current stage within INTEGRATION_STAGES, or -1. */
 const currentIndex = computed(() => {
@@ -99,7 +177,8 @@ function stageClass(s: string, i: number): string {
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
           <template v-else>
-            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span></template
+            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span
+            ><span v-if="elapsed" class="mono dim strip-elapsed"> · {{ elapsed }}</span></template
           >
         </template>
         <template v-else>Integrating…</template>
@@ -135,6 +214,12 @@ function stageClass(s: string, i: number): string {
             <span class="mono">#{{ active.taskId }}</span>
             <template v-if="active.failed"> integration failed</template>
             <template v-else> integrating</template>
+            <span
+              v-if="elapsed"
+              class="ibar-elapsed mono"
+              :title="'Elapsed since integration started'"
+              >{{ elapsed }}</span
+            >
           </span>
 
           <ol class="stages" :aria-label="'Integration stages'">
@@ -274,6 +359,20 @@ function stageClass(s: string, i: number): string {
 .ibar-idle-hint {
   font-size: 12px;
   color: var(--txt-faint);
+}
+
+.ibar-elapsed {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  background: var(--chip-bg);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.strip-elapsed {
+  font-variant-numeric: tabular-nums;
 }
 
 .stages {

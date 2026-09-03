@@ -31,6 +31,9 @@ export interface IntegrationSnapshot {
     failed: boolean;
     /** The failure detail from the job, when failed. */
     error?: string;
+    /** When this job started processing (ISO), for the live stopwatch. Falls
+     *  back to the enqueue time when processing hasn't been marked started. */
+    startedAt: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
@@ -100,6 +103,7 @@ export function buildIntegrationSnapshot(
       stage: stageForJob(inFlight, reported[inFlight.taskId]),
       failed,
       error: failed ? inFlight.reason : undefined,
+      startedAt: inFlight.startedAt ?? inFlight.enqueuedAt,
     },
     queue,
     at,

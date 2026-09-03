@@ -500,6 +500,8 @@ export interface IntegrationPipelineSnapshot {
     stage: IntegrationStage | null;
     failed: boolean;
     error?: string;
+    /** When the active job started (ISO), for the live stopwatch. */
+    startedAt: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];

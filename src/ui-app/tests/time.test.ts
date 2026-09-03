@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { relTime } from "../src/lib/time";
+import { formatDuration, relTime } from "../src/lib/time";
 
 const now = new Date("2026-08-07T12:00:00Z");
 
@@ -32,5 +32,30 @@ describe("relTime", () => {
     expect(relTime(null, now)).toBe("unknown");
     expect(relTime(undefined, now)).toBe("unknown");
     expect(relTime("not-a-date", now)).toBe("unknown");
+  });
+});
+
+describe("formatDuration", () => {
+  it("formats sub-minute spans in seconds", () => {
+    expect(formatDuration(0)).toBe("0s");
+    expect(formatDuration(4200)).toBe("4s");
+    expect(formatDuration(59_400)).toBe("59s");
+  });
+
+  it("formats minutes with zero-padded seconds", () => {
+    expect(formatDuration(60_000)).toBe("1m 00s");
+    expect(formatDuration(187_000)).toBe("3m 07s");
+    expect(formatDuration(59 * 60_000 + 59_000)).toBe("59m 59s");
+  });
+
+  it("formats hours with zero-padded minutes", () => {
+    expect(formatDuration(60 * 60_000)).toBe("1h 00m");
+    expect(formatDuration(64 * 60_000 + 30_000)).toBe("1h 04m");
+  });
+
+  it("clamps negative and non-finite input to 0s", () => {
+    expect(formatDuration(-5000)).toBe("0s");
+    expect(formatDuration(Number.NaN)).toBe("0s");
+    expect(formatDuration(Number.POSITIVE_INFINITY)).toBe("0s");
   });
 });

@@ -19,6 +19,19 @@ export function relTime(buildAt: string | null | undefined, now: Date = new Date
 }
 
 /**
+ * Compact elapsed duration for live stopwatches, e.g. "0s", "42s",
+ * "3m 07s", "1h 04m". Negative or non-finite inputs clamp to "0s".
+ */
+export function formatDuration(ms: number): string {
+  const s = Number.isFinite(ms) ? Math.max(0, Math.round(ms / 1000)) : 0;
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${String(s % 60).padStart(2, "0")}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${String(m % 60).padStart(2, "0")}m`;
+}
+
+/**
  * Local clock time of an ISO timestamp for chat message bubbles, e.g.
  * "3:42 PM". Returns an empty string when the input is missing or unparseable
  * so the UI can hide the timestamp gracefully (legacy transcripts have none).
