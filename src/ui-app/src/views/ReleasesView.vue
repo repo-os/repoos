@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { Bug } from "lucide-vue-next";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -149,6 +150,24 @@ async function release(): Promise<void> {
   }
 }
 
+/**
+ * Turn a failed `repoos check` / build log into a one-line headline that names
+ * the likely cause, so the operator doesn't have to scan the raw output to know
+ * whether it's worth a retry or a real regression.
+ */
+function failureSummary(phase: string | null, message: string): string {
+  const where = phase ? `during ${phase.replace(/_/g, " ")}` : "during the run";
+  if (/Test timed out in \d+\s*ms/i.test(message))
+    return `Release failed ${where} — a test timed out. This is usually the known check-gate flake under memory pressure, not a regression; try cutting again before sending it to the Debugger.`;
+  if (/\bFAIL\b|\b\d+ failed\b/.test(message))
+    return `Release failed ${where} — one or more tests failed. See output below.`;
+  if (/error TS\d+|\bType error\b|\btsc:/i.test(message))
+    return `Release failed ${where} — TypeScript did not compile. See output below.`;
+  if (/build is stale|staleness|dist .*out of date/i.test(message))
+    return `Release failed ${where} — the build is stale. See output below.`;
+  return `Release failed ${where} — see output below.`;
+}
+
 async function pollRun(): Promise<void> {
   try {
     const latest = await api<ReleaseRun>("/api/release/run");
@@ -162,12 +181,11 @@ async function pollRun(): Promise<void> {
       await load();
     } else if (latest.state === "failed" && latest.message) {
       // A failed phase reports its full command output (repoos check log, build
-      // errors). Show a short summary line, then the log in a scrollable block.
+      // errors). Classify the common causes into the headline, then show the
+      // full log in a scrollable block.
       const lines = latest.message.split("\n").filter((l) => l.trim());
       error.value =
-        lines.length > 1
-          ? `Release failed during ${latest.phase ?? "the run"} — see output below.`
-          : latest.message;
+        lines.length > 1 ? failureSummary(latest.phase, latest.message) : latest.message;
       runLog.value = lines.length > 1 ? latest.message : "";
     }
   } catch {
@@ -306,12 +324,13 @@ onBeforeUnmount(() => {
           <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
           <div class="release-debugger">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               :disabled="debuggerSending || debuggerSent"
               @click="sendToDebugger"
             >
-              {{ debuggerSent ? "Sent to Debugger ✓" : "Send to Debugger" }}
+              <Bug class="btn-ico" aria-hidden="true" />
+              {{ debuggerSent ? "Sent to Debugger" : debuggerSending ? "Sending…" : "Send to Debugger" }}
             </Button>
             <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
           </div>
@@ -324,47 +343,63 @@ onBeforeUnmount(() => {
               <DialogTitle>Cut new release</DialogTitle>
               <DialogClose class="close-x" aria-label="Close" :disabled="running">×</DialogClose>
             </div>
-            <DialogDescription>
-              RepoOS commits the version bump, runs <code>repoos check</code>, pushes
-              <code>{{ status.branch }}</code
-              >, then pushes an annotated tag to trigger CI.
-            </DialogDescription>
-            <div v-if="running && run" class="release-progress" aria-live="polite">
-              <strong>{{ run.message }}</strong>
-              <span>{{ elapsed() }}</span>
-              <small v-if="run.phase === 'building'"
-                >Rebuilding so the check runs against fresh output.</small
-              >
-              <small v-else-if="run.phase === 'checking'"
-                >Full verification commonly takes 1–5 minutes.</small
-              >
-            </div>
-            <div v-if="error && !running" class="release-modal-error" role="alert">
-              <strong>{{ error }}</strong>
-              <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
-              <div class="release-debugger">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  :disabled="debuggerSending || debuggerSent"
-                  @click="sendToDebugger"
+            <div class="release-modal-body">
+              <DialogDescription>
+                RepoOS commits the version bump, runs <code>repoos check</code>, pushes
+                <code>{{ status.branch }}</code
+                >, then pushes an annotated tag to trigger CI.
+              </DialogDescription>
+              <div v-if="running && run" class="release-progress" aria-live="polite">
+                <strong>{{ run.message }}</strong>
+                <span>{{ elapsed() }}</span>
+                <small v-if="run.phase === 'building'"
+                  >Rebuilding so the check runs against fresh output.</small
                 >
-                  {{ debuggerSent ? "Sent to Debugger ✓" : "Send to Debugger" }}
-                </Button>
-                <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
+                <small v-else-if="run.phase === 'checking'"
+                  >Full verification commonly takes 1–5 minutes.</small
+                >
               </div>
+              <div v-if="error && !running" class="release-modal-error" role="alert">
+                <strong>{{ error }}</strong>
+                <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
+                <div class="release-debugger">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="debuggerSending || debuggerSent"
+                    @click="sendToDebugger"
+                  >
+                    <Bug class="btn-ico" aria-hidden="true" />
+                    {{
+                      debuggerSent
+                        ? "Sent to Debugger"
+                        : debuggerSending
+                          ? "Sending…"
+                          : "Send to Debugger"
+                    }}
+                  </Button>
+                  <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
+                </div>
+              </div>
+              <label>
+                <span class="release-field-label">Next version</span>
+                <input
+                  v-model.trim="newVersion"
+                  placeholder="0.0.0"
+                  autofocus
+                  @keyup.enter="release"
+                />
+              </label>
+              <div class="release-tag-preview">
+                Proposed tag: <code>{{ proposedTag || "—" }}</code>
+              </div>
+              <label>
+                <span class="release-field-label"
+                  >Type <code>{{ proposedTag }}</code> to confirm</span
+                >
+                <input v-model="confirmation" :placeholder="proposedTag" @keyup.enter="release" />
+              </label>
             </div>
-            <label
-              >Next version
-              <input v-model.trim="newVersion" placeholder="0.0.0" autofocus @keyup.enter="release"
-            /></label>
-            <div class="release-tag-preview">
-              Proposed tag: <code>{{ proposedTag || "—" }}</code>
-            </div>
-            <label
-              >Type <code>{{ proposedTag }}</code> to confirm
-              <input v-model="confirmation" :placeholder="proposedTag" @keyup.enter="release"
-            /></label>
             <div class="release-actions">
               <Button variant="accent" :disabled="!tagMatches || running" @click="release">{{
                 running ? "Release in progress…" : "Commit, verify & push"
@@ -470,30 +505,11 @@ onBeforeUnmount(() => {
   color: var(--red);
   margin: 12px 0;
 }
-.release-modal-error {
-  margin-top: 16px;
-  display: grid;
-  gap: 8px;
-}
-.release-modal-error > strong {
-  color: var(--red);
-  font-size: 13px;
-}
-.release-debugger {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-.release-debugger-err {
-  color: var(--txt-dim);
-  font-size: 12px;
-}
 .release-output {
+  max-width: 100%;
   max-height: 260px;
   overflow: auto;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 10px 12px;
   background: var(--input);
   border: 1px solid var(--border);
@@ -504,6 +520,13 @@ onBeforeUnmount(() => {
   line-height: 1.5;
   white-space: pre;
   tab-size: 2;
+}
+.release-debugger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 .release-modal label {
   display: grid;

@@ -7073,6 +7073,7 @@
   bottom: auto;
   width: min(540px, 92vw);
   height: auto;
+  max-height: 88vh;
   transform: translate(-50%, -50%);
   border-radius: 16px;
   border: 1px solid var(--border-bright);
@@ -7081,13 +7082,24 @@
     0 24px 80px rgba(0, 0, 0, 0.45),
     0 0 0 1px var(--border);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .release-modal-head {
-  padding: 20px 24px 0;
+  flex-shrink: 0;
+  padding: 20px 24px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+/* The middle of the modal scrolls; the header and the action row stay put so a
+   long check log can't push "Commit, verify & push" off-screen. */
+.release-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
 }
 .release-modal .close-x {
   flex-shrink: 0;
@@ -7095,13 +7107,14 @@
 .release-modal [role="dialog"] {
   outline: none;
 }
-.release-modal > [data-slot],
-.release-modal > p {
-  padding: 12px 24px 0;
+.release-modal-body > [data-slot],
+.release-modal-body > p {
+  padding: 0 24px;
+  margin-top: 12px;
   font-size: 13px;
   line-height: 1.5;
 }
-.release-modal label {
+.release-modal-body label {
   display: grid;
   gap: 7px;
   padding: 0 24px;
@@ -7109,7 +7122,14 @@
   font-size: 13px;
   margin-top: 16px;
 }
-.release-modal input {
+.release-field-label {
+  display: block;
+}
+.release-field-label code {
+  font-family: var(--mono);
+  color: var(--txt);
+}
+.release-modal-body input {
   width: 100%;
   box-sizing: border-box;
   background: var(--input);
@@ -7119,20 +7139,21 @@
   padding: 9px;
   font: inherit;
 }
-.release-modal .release-tag-preview {
+.release-modal-body .release-tag-preview {
   padding: 0 24px;
   margin-top: 16px;
   color: var(--txt-dim);
   font-size: 13px;
 }
 .release-modal .release-actions {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 24px;
-  margin-top: 8px;
+  padding: 20px 24px 24px;
+  border-top: 1px solid var(--border);
 }
-.release-modal .release-progress {
+.release-modal-body .release-progress {
   margin: 16px 24px 0;
   padding: 12px;
   display: grid;
@@ -7143,9 +7164,51 @@
   color: var(--txt);
   font-size: 13px;
 }
-.release-modal .release-progress span,
-.release-modal .release-progress small {
+.release-modal-body .release-progress span,
+.release-modal-body .release-progress small {
   color: var(--txt-dim);
+}
+.release-modal-body .release-modal-error {
+  margin: 16px 24px 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.release-modal-body .release-modal-error > strong {
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.release-modal-body .release-output {
+  max-width: 100%;
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--txt-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
+  overscroll-behavior: contain;
+}
+.release-modal-body .release-debugger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.release-debugger-err {
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.btn-ico {
+  width: 14px;
+  height: 14px;
 }
 
 /* Spec edit modal - centred overlay mirroring cc-modal, sized for a markdown editor */
