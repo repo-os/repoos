@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
+import { copyToClipboard } from "../lib/clipboard";
 import type {
   Agent,
   DetectedAgent,
@@ -366,7 +367,7 @@ async function checkAgents(): Promise<void> {
 }
 
 function copyHint(hint: string): void {
-  void navigator.clipboard?.writeText(hint).catch(() => undefined);
+  void copyToClipboard(hint);
   detectHintCopied.value = hint;
   setTimeout(() => {
     if (detectHintCopied.value === hint) detectHintCopied.value = "";

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { Check, Clipboard, ExternalLink, X } from "lucide-vue-next";
 import { api } from "../api";
+import { copyToClipboard } from "../lib/clipboard";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
@@ -51,7 +52,7 @@ const fallbackToLocal = computed({
 });
 
 async function copy(text: string): Promise<void> {
-  await navigator.clipboard.writeText(text);
+  if (!(await copyToClipboard(text))) return;
   copied.value = text;
   window.clearTimeout(copiedTimer);
   copiedTimer = window.setTimeout(() => (copied.value = ""), 1800);

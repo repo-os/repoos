@@ -119,8 +119,12 @@ end up with a publicly reachable app through the normal flow). To actually
 skip Access and rely on native auth alone, pass `--no-access` explicitly:
 
 ```bash
-repoos tunnel create dev --port 7171 --domain dev.example.com --no-access
+repoos tunnel create dev --port <serve-port> --domain dev.example.com --no-access
 ```
+
+`<serve-port>` is the port `repoos serve` uses for the repo — an explicit
+`servePort` in `repoos.toml`, or the stable per-repo derived port it prints on
+startup (the Cloudflare publishing assistant pre-fills this for you).
 
 This refuses to run unless `auth.enabled = true` is already set — otherwise
 the app would have no login at all, from either layer.

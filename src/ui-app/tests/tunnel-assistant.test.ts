@@ -71,6 +71,10 @@ describe("Cloudflare publishing assistant", () => {
       configured: { tunnelName: "repoos-local", tunnelId: "tunnel-123", baseDomain: "repoos.org" },
       localOrigin: { port: 7171 },
     });
+    // The drawer pre-fills its port field from this — the port `repoos serve`
+    // actually uses for the repo, not a hardcoded 7171.
+    expect(typeof body.serveDefaultPort).toBe("number");
+    expect(body.serveDefaultPort).toBeGreaterThan(0);
     expect(body).toHaveProperty("cloudflared.installed");
     expect(body).toHaveProperty("originCertificate.usable");
     expect(body).toHaveProperty("apiTokenStored");

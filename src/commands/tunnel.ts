@@ -14,7 +14,7 @@
  */
 import { execFileSync, spawn } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, hostname } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { c } from "../cli/colors.js";
@@ -111,6 +111,24 @@ function runInteractive(bin: string, args: string[]): Promise<number> {
 // ── cloudflared discovery ────────────────────────────────────────────────────
 function cloudflaredHomeDir(): string {
   return join(homedir(), ".cloudflared");
+}
+
+/**
+ * Default tunnel name for a fresh setup: `repoos-<machine hostname>`. A tunnel
+ * is per-machine (one connector per box), so a machine-derived name is both
+ * legible in the Cloudflare dashboard and makes every repo on the same machine
+ * converge on one shared tunnel. Falls back to the legacy `repoos-local` when
+ * the hostname sanitizes to nothing usable.
+ */
+function defaultTunnelName(): string {
+  const host = hostname()
+    .split(".")[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
+  return host ? `repoos-${host}` : DEFAULT_TUNNEL_NAME;
 }
 
 function repoosConfigDir(): string {
@@ -518,6 +536,17 @@ async function cmdTunnelSetup(_args: string[]): Promise<void> {
   // 3. Create or reuse one tunnel per machine.
   const tunnel = readTunnelConfig(cfg.root);
   const tunnels = cloudflaredList(bin);
+  // Brand-new setup (no tunnel recorded in this repo yet): default to a
+  // machine-identifiable name — `repoos-<hostname>` — instead of the legacy
+  // generic `repoos-local`, so it's recognizable in the Cloudflare dashboard
+  // and every repo on this machine converges on the same shared tunnel. If a
+  // `repoos-local` tunnel already exists on the account, keep using it rather
+  // than stranding it beside a new name. An existing setup (tunnelId already
+  // recorded) always keeps whatever name it has.
+  if (!tunnel.tunnelId && (!tunnel.name || tunnel.name === DEFAULT_TUNNEL_NAME)) {
+    const hasLegacy = tunnels.some((t) => t.name === DEFAULT_TUNNEL_NAME);
+    tunnel.name = hasLegacy ? DEFAULT_TUNNEL_NAME : defaultTunnelName();
+  }
   let tunnelId = tunnel.tunnelId;
   const byName = tunnels.find((t) => t.name === tunnel.name);
   const byId = tunnelId ? tunnels.some((t) => t.id === tunnelId) : false;
@@ -788,6 +817,74 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
   );
   console.log(
     c.dim("  Restart `repoos tunnel start`/reinstall the service to pick up the ingress change."),
+  );
+}
+
+/**
+ * Rename the machine's tunnel (e.g. the legacy `repoos-local` → `repoos-bee`).
+ * Renames it in Cloudflare by UUID, updates `[tunnel].name` in repoos.toml,
+ * and re-runs DNS routing for every published hostname so the dashboard's
+ * "Tunnel" record labels follow the new name. The running connector routes by
+ * UUID, which never changes — so no restart is needed and traffic is not
+ * interrupted.
+ */
+async function cmdTunnelRename(args: string[]): Promise<void> {
+  const [newName] = args;
+  if (!newName) fail("Usage: repoos tunnel rename <new-name>");
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(newName)) {
+    fail(
+      `Invalid tunnel name "${newName}" — start with a letter or digit; letters, digits, dots, hyphens and underscores only.`,
+    );
+  }
+
+  const cfg = loadConfig();
+  const tunnel = readTunnelConfig(cfg.root);
+  if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
+  if (tunnel.name === newName) {
+    console.log(c.dim(`  Tunnel is already named "${newName}" — nothing to do.`));
+    return;
+  }
+
+  const bin = cloudflaredBin();
+  const oldName = tunnel.name || "(unnamed)";
+
+  try {
+    execFileSync(bin, ["tunnel", "rename", tunnel.tunnelId, newName], {
+      stdio: "inherit",
+      timeout: 30_000,
+    });
+  } catch (e) {
+    fail(`\`cloudflared tunnel rename\` failed: ${(e as Error).message}`);
+  }
+
+  tunnel.name = newName;
+  writeTunnelConfig(cfg.root, tunnel);
+  console.log(c.green("  ✔ renamed ") + c.cyan(oldName) + c.dim(" → ") + c.cyan(newName));
+
+  const hostnames = Object.values(tunnel.apps).map((a) => a.hostname);
+  for (const hostname of hostnames) {
+    try {
+      console.log(c.dim("  · re-pointing DNS ") + hostname + c.dim(" …"));
+      execFileSync(bin, ["tunnel", "route", "dns", "--overwrite-dns", newName, hostname], {
+        stdio: "inherit",
+        timeout: 60_000,
+      });
+    } catch {
+      console.log(
+        c.yellow(`  ⚠ couldn't re-point DNS for ${hostname} — run it yourself:`) +
+          "\n    " +
+          c.cyan(`cloudflared tunnel route dns --overwrite-dns ${newName} ${hostname}`),
+      );
+    }
+  }
+
+  writeDerivedConfig(tunnel);
+  console.log(
+    "\n  " +
+      c.green("✔ Tunnel renamed.") +
+      c.dim(
+        " The running connector routes by UUID (unchanged), so no restart is needed; Cloudflare refreshes the DNS record labels shortly.",
+      ),
   );
 }
 
@@ -1103,6 +1200,7 @@ function tunnelHelp(): void {
     ${c.cyan("setup")}                 One-time machine setup: install/check cloudflared, log in, create the tunnel, store the API token
     ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y" | --no-access (requires auth.enabled)')}
     ${c.cyan("destroy")} <name>        Remove a published app (deletes its Access policy, drops it from repoos.toml)
+    ${c.cyan("rename")} <new-name>     Rename this machine's tunnel (e.g. repoos-local → repoos-bee) + re-point its DNS
     ${c.cyan("allow")} <name> <email>  Add an email to an app's allowlist
     ${c.cyan("deny")} <name> <email>   Remove an email from an app's allowlist
     ${c.cyan("start")}                 Run cloudflared in the foreground (dev)
@@ -1126,6 +1224,7 @@ export async function cmdTunnel(args: string[]): Promise<void> {
     setup: cmdTunnelSetup,
     create: cmdTunnelCreate,
     destroy: cmdTunnelDestroy,
+    rename: cmdTunnelRename,
     allow: cmdTunnelAllow,
     deny: cmdTunnelDeny,
     start: cmdTunnelStart,

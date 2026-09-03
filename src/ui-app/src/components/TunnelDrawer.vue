@@ -7,6 +7,7 @@ import {
   validateTunnelPublishInput,
   type TunnelPublishPlan,
 } from "../../../core/tunnel-assistant.js";
+import { copyToClipboard } from "../lib/clipboard";
 import { useUiStore } from "../stores/ui";
 import Button from "./ui/button.vue";
 import Dialog from "./ui/dialog/root.vue";
@@ -19,13 +20,15 @@ import Input from "./ui/input.vue";
 
 const ui = useUiStore();
 const copied = ref("");
+const copyFailed = ref("");
 const plan = ref<TunnelPublishPlan | null>(null);
 const errors = ref<string[]>([]);
 const readiness = ref<Record<string, any> | null>(null);
+const portTouched = ref(false);
 const form = reactive({
   zone: "repoos.org",
   app: "dev",
-  port: "7171",
+  port: "",
   emails: "you@example.com",
   runMode: "foreground" as "foreground" | "background",
   noAccess: false,
@@ -40,10 +43,20 @@ const status = computed(() => {
 
 async function refreshReadiness(): Promise<void> {
   try {
-    readiness.value = await api(`/api/tunnel/readiness?port=${encodeURIComponent(form.port)}`);
+    const query = form.port ? `?port=${encodeURIComponent(form.port)}` : "";
+    readiness.value = await api(`/api/tunnel/readiness${query}`);
+    // Pre-fill the port with the one `repoos serve` actually uses for this
+    // repo (an explicit `servePort`, or the derived per-repo port) as long as
+    // the user hasn't typed their own.
+    if (!portTouched.value && readiness.value?.serveDefaultPort) {
+      form.port = String(readiness.value.serveDefaultPort);
+    }
   } catch {
     readiness.value = null;
   }
+  // Readiness unavailable (offline / not configured) — still give the form a
+  // sane default so the preview works.
+  if (!portTouched.value && !form.port) form.port = "7171";
 }
 
 function preview(): void {
@@ -53,9 +66,16 @@ function preview(): void {
 }
 
 async function copyCommand(command: string): Promise<void> {
-  await navigator.clipboard.writeText(command);
-  copied.value = command;
+  const ok = await copyToClipboard(command);
   window.clearTimeout(copiedTimer);
+  if (!ok) {
+    copyFailed.value = command;
+    copied.value = "";
+    copiedTimer = window.setTimeout(() => (copyFailed.value = ""), 2600);
+    return;
+  }
+  copyFailed.value = "";
+  copied.value = command;
   copiedTimer = window.setTimeout(() => (copied.value = ""), 1800);
 }
 
@@ -106,6 +126,7 @@ onMounted(() => {
               min="1"
               max="65535"
               placeholder="7171"
+              @input="portTouched = true"
           /></label>
           <label v-if="!form.noAccess"
             >Allowed email address(es)<Input
@@ -129,7 +150,11 @@ onMounted(() => {
           above.
         </p>
         <p class="tunnel-help">
-          Port 7171 is RepoOS. Use 3000 only when the intended local app actually listens on 3000.
+          Pre-filled with the port <code>repoos serve</code> uses for this repo{{
+            readiness?.serveDefaultPort ? ` (${readiness.serveDefaultPort})` : ""
+          }}
+          — an explicit <code>servePort</code> in <code>repoos.toml</code>, otherwise a stable
+          per-repo derived port. Change it only if the app you're publishing listens elsewhere.
         </p>
         <Button @click="preview">Validate and preview commands</Button>
         <div v-if="errors.length" class="tunnel-errors">
@@ -155,7 +180,9 @@ onMounted(() => {
                 ><Check v-if="copied === command" class="size-[14px]" /><Clipboard
                   v-else
                   class="size-[14px]"
-                />{{ copied === command ? "Copied" : "Copy" }}</Button
+                />{{
+                  copied === command ? "Copied" : copyFailed === command ? "Copy failed" : "Copy"
+                }}</Button
               >
             </div>
           </div>

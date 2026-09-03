@@ -405,6 +405,7 @@ async function tunnelReadiness(root: string, port?: number) {
       baseDomain: tunnel.domain || null,
     },
     localOrigin: { port: port ?? null, listening: originListening },
+    serveDefaultPort: resolveServePort(root, loadConfig(root)),
     running: tunnelProcessRunning() || serviceRunning(),
     publishedHostnames: Object.values(tunnel.apps)
       .map((app) => app.hostname)
