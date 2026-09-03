@@ -1848,6 +1848,16 @@ function missionFor(
   // procedures, but an agent sees only the skills enabled for its role. Resolve
   // names through the discovered list rather than constructing paths from
   // config input, so a stale or malicious name can never escape skillsDir.
+  //
+  // CACHING: `enabledSkills` is now chosen per-run by keyword scoring
+  // (selectSkillsForRun), so this block's content VARIES from one task to the
+  // next. Today the whole mission is one `-p` string and the downstream CLI
+  // caches on its own conversation prefix, so a turn-1 cost is all this adds
+  // (resume turns never re-send it). But if this is ever split into a cached
+  // system prefix + a variable user turn, per-task-varying content sitting
+  // HERE — before the stable fail-safe checklist below — would bust the cache
+  // for everything after it. Move skills last (or into their own turn) before
+  // introducing any such prefix cache.
   if (enabledSkills.length) {
     parts.push("## Enabled repository skills", "");
     for (const skill of enabledSkills) {
