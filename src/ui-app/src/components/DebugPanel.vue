@@ -123,7 +123,10 @@ const events = computed<DebugEvent[]>(() => {
       kind: "check",
       level: c.running ? "info" : c.passed ? "info" : "error",
       title,
-      failureSummary: !c.running && c.passed === false ? summarizeCheckFailure(c.output) ?? undefined : undefined,
+      failureSummary:
+        !c.running && c.passed === false
+          ? (summarizeCheckFailure(c.output) ?? undefined)
+          : undefined,
       checkRun: c,
     });
   }

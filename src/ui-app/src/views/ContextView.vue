@@ -31,13 +31,30 @@ const {
 type ContextTab = "docs" | "skills" | "discover";
 const tab = ref<ContextTab>("docs");
 const skillQuery = ref("");
-interface RegistrySkill { id: string; slug: string; name: string; source: string; installs: number; url: string; isDuplicate?: boolean; }
-interface RegistryDetail { id: string; slug: string; source: string; installs: number; hash: string | null; files: Array<{ path: string; contents: string }> | null; }
+interface RegistrySkill {
+  id: string;
+  slug: string;
+  name: string;
+  source: string;
+  installs: number;
+  url: string;
+  isDuplicate?: boolean;
+}
+interface RegistryDetail {
+  id: string;
+  slug: string;
+  source: string;
+  installs: number;
+  hash: string | null;
+  files: Array<{ path: string; contents: string }> | null;
+}
 const registrySkills = ref<RegistrySkill[]>([]);
 const registryLoading = ref(false);
 const registryError = ref("");
 const selectedCatalogSkill = ref<RegistryDetail | null>(null);
-const selectedAudit = ref<{ audits: Array<{ provider: string; status: string; summary: string }> } | null>(null);
+const selectedAudit = ref<{
+  audits: Array<{ provider: string; status: string; summary: string }>;
+} | null>(null);
 const filesReviewed = ref(false);
 const installing = ref(false);
 const installedNames = computed(() => new Set(skills.value.map((skill) => skill.name)));
@@ -46,19 +63,29 @@ async function loadRegistry(): Promise<void> {
   registryLoading.value = true;
   registryError.value = "";
   try {
-    const path = skillQuery.value.trim().length >= 2 ? `/api/skill-registry/search?q=${encodeURIComponent(skillQuery.value.trim())}` : "/api/skill-registry/curated";
+    const path =
+      skillQuery.value.trim().length >= 2
+        ? `/api/skill-registry/search?q=${encodeURIComponent(skillQuery.value.trim())}`
+        : "/api/skill-registry/curated";
     registrySkills.value = (await api<{ skills: RegistrySkill[] }>(path)).skills;
-  } catch (error) { registryError.value = error instanceof Error ? error.message : "Skills.sh is unavailable"; }
-  finally { registryLoading.value = false; }
+  } catch (error) {
+    registryError.value = error instanceof Error ? error.message : "Skills.sh is unavailable";
+  } finally {
+    registryLoading.value = false;
+  }
 }
 
 async function selectCatalogSkill(skill: RegistrySkill): Promise<void> {
   try {
-    const data = await api<{ detail: RegistryDetail; audit: typeof selectedAudit.value }>(`/api/skill-registry/detail?id=${encodeURIComponent(skill.id)}`);
+    const data = await api<{ detail: RegistryDetail; audit: typeof selectedAudit.value }>(
+      `/api/skill-registry/detail?id=${encodeURIComponent(skill.id)}`,
+    );
     selectedCatalogSkill.value = data.detail;
     selectedAudit.value = data.audit;
     filesReviewed.value = false;
-  } catch (error) { registryError.value = error instanceof Error ? error.message : "Could not load skill details"; }
+  } catch (error) {
+    registryError.value = error instanceof Error ? error.message : "Could not load skill details";
+  }
 }
 
 async function installSelectedSkill(): Promise<void> {
@@ -66,10 +93,16 @@ async function installSelectedSkill(): Promise<void> {
   installing.value = true;
   registryError.value = "";
   try {
-    await api("/api/skill-registry/install", JSON_OPTS("POST", { id: selectedCatalogSkill.value.id }));
+    await api(
+      "/api/skill-registry/install",
+      JSON_OPTS("POST", { id: selectedCatalogSkill.value.id }),
+    );
     await docs.loadSkills();
-  } catch (error) { registryError.value = error instanceof Error ? error.message : "Could not install skill"; }
-  finally { installing.value = false; }
+  } catch (error) {
+    registryError.value = error instanceof Error ? error.message : "Could not install skill";
+  } finally {
+    installing.value = false;
+  }
 }
 
 function openInstalledSkill(name: string): void {
@@ -96,9 +129,14 @@ async function renderCurrentDiagrams(): Promise<void> {
 
 watch([docContent, skillContent, tab], () => void renderCurrentDiagrams(), { flush: "post" });
 onMounted(() => void renderCurrentDiagrams());
-watch(tab, (next) => { if (next === "discover" && !registrySkills.value.length) void loadRegistry(); });
+watch(tab, (next) => {
+  if (next === "discover" && !registrySkills.value.length) void loadRegistry();
+});
 let registrySearchTimer: ReturnType<typeof setTimeout> | undefined;
-watch(skillQuery, () => { clearTimeout(registrySearchTimer); registrySearchTimer = setTimeout(() => void loadRegistry(), 250); });
+watch(skillQuery, () => {
+  clearTimeout(registrySearchTimer);
+  registrySearchTimer = setTimeout(() => void loadRegistry(), 250);
+});
 
 /** The doc list shaped as a tree, then flattened to the rows to render. */
 const flatDocTree = computed(() =>
@@ -279,7 +317,9 @@ watch(
             @click="selectCatalogSkill(skill)"
           >
             <span class="skill-name">{{ skill.name }}</span>
-            <span class="ctx-skill-meta">{{ skill.source }} · {{ skill.installs.toLocaleString() }} installs</span>
+            <span class="ctx-skill-meta"
+              >{{ skill.source }} · {{ skill.installs.toLocaleString() }} installs</span
+            >
             <span v-if="installedNames.has(skill.slug)" class="ctx-installed">Installed</span>
           </button>
         </template>
@@ -319,10 +359,30 @@ watch(
         <template v-else>
           <template v-if="selectedCatalogSkill">
             <div class="doc-title">{{ selectedCatalogSkill.slug }}</div>
-            <div class="ctx-detail-meta">{{ selectedCatalogSkill.source }} · {{ selectedCatalogSkill.installs.toLocaleString() }} installs · {{ selectedCatalogSkill.hash ?? "unhashed" }}</div>
-            <div class="ctx-detail-copy">{{ selectedCatalogSkill.files?.length ?? 0 }} files will be copied into <code>skills/{{ selectedCatalogSkill.slug }}/</code> and locked in <code>skills.lock.json</code>.</div>
-            <div v-if="selectedAudit?.audits?.length" class="ctx-detail-copy"><strong>Security audits</strong><br /><span v-for="audit in selectedAudit.audits" :key="audit.provider">{{ audit.provider }}: {{ audit.status }} — {{ audit.summary }}<br /></span></div>
-            <details class="ctx-detail-copy"><summary>Review files before installing</summary><pre v-for="file in selectedCatalogSkill.files" :key="file.path"><strong>{{ file.path }}</strong>\n{{ file.contents }}</pre></details>
+            <div class="ctx-detail-meta">
+              {{ selectedCatalogSkill.source }} ·
+              {{ selectedCatalogSkill.installs.toLocaleString() }} installs ·
+              {{ selectedCatalogSkill.hash ?? "unhashed" }}
+            </div>
+            <div class="ctx-detail-copy">
+              {{ selectedCatalogSkill.files?.length ?? 0 }} files will be copied into
+              <code>skills/{{ selectedCatalogSkill.slug }}/</code> and locked in
+              <code>skills.lock.json</code>.
+            </div>
+            <div v-if="selectedAudit?.audits?.length" class="ctx-detail-copy">
+              <strong>Security audits</strong><br /><span
+                v-for="audit in selectedAudit.audits"
+                :key="audit.provider"
+                >{{ audit.provider }}: {{ audit.status }} — {{ audit.summary }}<br
+              /></span>
+            </div>
+            <details class="ctx-detail-copy">
+              <summary>Review files before installing</summary>
+              <pre
+                v-for="file in selectedCatalogSkill.files"
+                :key="file.path"
+              ><strong>{{ file.path }}</strong>\n{{ file.contents }}</pre>
+            </details>
             <label v-if="!installedNames.has(selectedCatalogSkill.slug)" class="ctx-review-check">
               <input v-model="filesReviewed" type="checkbox" />
               I reviewed these files and want to add this skill to the project.
@@ -332,13 +392,23 @@ watch(
                 v-if="installedNames.has(selectedCatalogSkill.slug)"
                 variant="accent"
                 @click="openInstalledSkill(selectedCatalogSkill.slug)"
-              >Open installed skill</Button>
-              <Button v-else variant="accent" :disabled="installing || !filesReviewed" @click="installSelectedSkill">{{ installing ? "Installing…" : "Install to project" }}</Button>
+                >Open installed skill</Button
+              >
+              <Button
+                v-else
+                variant="accent"
+                :disabled="installing || !filesReviewed"
+                @click="installSelectedSkill"
+                >{{ installing ? "Installing…" : "Install to project" }}</Button
+              >
             </div>
           </template>
           <template v-else>
             <div class="doc-title">Discover skills</div>
-            <div class="skill-desc-line">Select a skill to inspect its exact files, content hash, publisher, and security audit before installing it.</div>
+            <div class="skill-desc-line">
+              Select a skill to inspect its exact files, content hash, publisher, and security audit
+              before installing it.
+            </div>
           </template>
         </template>
       </Card>
@@ -354,15 +424,59 @@ watch(
   margin-left: auto;
 }
 
-.ctx-discover-head { display: grid; gap: 5px; padding: 12px; color: var(--txt-muted); font-size: 12px; }
-.ctx-discover-head strong { color: var(--txt); font-size: 13px; }
-.ctx-skill-search { width: 100%; margin-top: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--txt); }
-.ctx-skill-meta { color: var(--txt-faint); font-size: 11px; }
-.ctx-installed { color: var(--green); font-size: 11px; font-weight: 700; }
-.ctx-catalog-skill { width: 100%; text-align: left; border: 0; background: transparent; color: inherit; font: inherit; }
-.ctx-detail-meta { color: var(--txt-muted); font-size: 12px; margin-top: 10px; }
-.ctx-detail-copy { color: var(--txt-muted); line-height: 1.55; margin-top: 18px; max-width: 54ch; }
-.ctx-detail-actions { display: flex; gap: 8px; margin-top: 20px; }
+.ctx-discover-head {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  color: var(--txt-muted);
+  font-size: 12px;
+}
+.ctx-discover-head strong {
+  color: var(--txt);
+  font-size: 13px;
+}
+.ctx-skill-search {
+  width: 100%;
+  margin-top: 5px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--txt);
+}
+.ctx-skill-meta {
+  color: var(--txt-faint);
+  font-size: 11px;
+}
+.ctx-installed {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+}
+.ctx-catalog-skill {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.ctx-detail-meta {
+  color: var(--txt-muted);
+  font-size: 12px;
+  margin-top: 10px;
+}
+.ctx-detail-copy {
+  color: var(--txt-muted);
+  line-height: 1.55;
+  margin-top: 18px;
+  max-width: 54ch;
+}
+.ctx-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
 
 .ctx-refresh-btn :deep(svg) {
   transition: transform 200ms ease;

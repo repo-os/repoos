@@ -304,12 +304,20 @@ describe("PATCH /api/config agents validation", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agents: [
-            { name: "engineer", cli: "opencode", model: "default", enabled: true, skills: ["frontend-design"] },
+            {
+              name: "engineer",
+              cli: "opencode",
+              model: "default",
+              enabled: true,
+              skills: ["frontend-design"],
+            },
           ],
         }),
       });
       expect(saved.status).toBe(200);
-      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain('skills = ["frontend-design"]');
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain(
+        'skills = ["frontend-design"]',
+      );
     } finally {
       await server.close();
     }
@@ -323,7 +331,9 @@ describe("PATCH /api/config agents validation", () => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agents: [{ name: "engineer", cli: "opencode", model: "default", enabled: true, skills: [42] }],
+          agents: [
+            { name: "engineer", cli: "opencode", model: "default", enabled: true, skills: [42] },
+          ],
         }),
       });
       expect(res.status).toBe(400);

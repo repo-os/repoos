@@ -1789,7 +1789,19 @@ ${request}`;
 
 /** The mission handed to the coding agent: instructions + task pointer. */
 const SKILL_ROUTING_HINTS: Record<string, string[]> = {
-  "frontend-design": ["frontend", "ui", "ux", "vue", "css", "html", "component", "layout", "page", "style", "accessibility"],
+  "frontend-design": [
+    "frontend",
+    "ui",
+    "ux",
+    "vue",
+    "css",
+    "html",
+    "component",
+    "layout",
+    "page",
+    "style",
+    "accessibility",
+  ],
   "code-review": ["review", "reviewer", "sign-off", "signoff", "diff", "regression"],
 };
 
@@ -1802,9 +1814,14 @@ function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfig): Ski
     .map((skill) => {
       const hints = SKILL_ROUTING_HINTS[skill.name] ?? [];
       const descriptionWords = skill.description.toLowerCase().match(/[a-z][a-z0-9-]{3,}/g) ?? [];
-      const score = hints.filter((hint) => taskText.includes(hint)).length * 2
-        + descriptionWords.filter((word) => words.has(word)).length
-        + (preferred.has(skill.name) && (hints.some((hint) => taskText.includes(hint)) || descriptionWords.some((word) => words.has(word))) ? 1 : 0);
+      const score =
+        hints.filter((hint) => taskText.includes(hint)).length * 2 +
+        descriptionWords.filter((word) => words.has(word)).length +
+        (preferred.has(skill.name) &&
+        (hints.some((hint) => taskText.includes(hint)) ||
+          descriptionWords.some((word) => words.has(word)))
+          ? 1
+          : 0);
       return { skill, score };
     })
     .filter(({ score }) => score >= 2)
@@ -1839,10 +1856,7 @@ function missionFor(
     parts.push("");
   }
 
-  parts.push(
-    agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.",
-    "",
-  );
+  parts.push(agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.", "");
 
   // Skills are intentionally explicit: a repository may contain many
   // procedures, but an agent sees only the skills enabled for its role. Resolve

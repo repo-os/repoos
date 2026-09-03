@@ -330,7 +330,13 @@ onBeforeUnmount(() => {
               @click="sendToDebugger"
             >
               <Bug class="btn-ico" aria-hidden="true" />
-              {{ debuggerSent ? "Sent to Debugger" : debuggerSending ? "Sending…" : "Send to Debugger" }}
+              {{
+                debuggerSent
+                  ? "Sent to Debugger"
+                  : debuggerSending
+                    ? "Sending…"
+                    : "Send to Debugger"
+              }}
             </Button>
             <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
           </div>

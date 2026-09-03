@@ -502,9 +502,19 @@ onUnmounted(() => {
                 ></textarea>
               </div>
               <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header"><label>Enabled skills</label><Button variant="outline" size="sm" @click="openSkillsModal(a)">Add skills to agent</Button></div>
-                <div class="agent-skills-help">ⓘ Skills are selected dynamically for each task/run from repository skills; these are this agent's preferred candidates.</div>
-                <div class="agent-skills-summary">{{ (a.skills ?? []).join(", ") || "No default candidates" }}</div>
+                <div class="instr-header">
+                  <label>Enabled skills</label
+                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
+                    >Add skills to agent</Button
+                  >
+                </div>
+                <div class="agent-skills-help">
+                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
+                  are this agent's preferred candidates.
+                </div>
+                <div class="agent-skills-summary">
+                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
+                </div>
               </div>
             </div>
           </div>
@@ -604,9 +614,19 @@ onUnmounted(() => {
                 ></textarea>
               </div>
               <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header"><label>Enabled skills</label><Button variant="outline" size="sm" @click="openSkillsModal(a)">Add skills to agent</Button></div>
-                <div class="agent-skills-help">ⓘ Skills are selected dynamically for each task/run from repository skills; these are this agent's preferred candidates.</div>
-                <div class="agent-skills-summary">{{ (a.skills ?? []).join(", ") || "No default candidates" }}</div>
+                <div class="instr-header">
+                  <label>Enabled skills</label
+                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
+                    >Add skills to agent</Button
+                  >
+                </div>
+                <div class="agent-skills-help">
+                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
+                  are this agent's preferred candidates.
+                </div>
+                <div class="agent-skills-summary">
+                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
+                </div>
               </div>
             </div>
           </div>
@@ -681,9 +701,19 @@ onUnmounted(() => {
                 ></textarea>
               </div>
               <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header"><label>Enabled skills</label><Button variant="outline" size="sm" @click="openSkillsModal(a)">Add skills to agent</Button></div>
-                <div class="agent-skills-help">ⓘ Skills are selected dynamically for each task/run from repository skills; these are this agent's preferred candidates.</div>
-                <div class="agent-skills-summary">{{ (a.skills ?? []).join(", ") || "No default candidates" }}</div>
+                <div class="instr-header">
+                  <label>Enabled skills</label
+                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
+                    >Add skills to agent</Button
+                  >
+                </div>
+                <div class="agent-skills-help">
+                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
+                  are this agent's preferred candidates.
+                </div>
+                <div class="agent-skills-summary">
+                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
+                </div>
               </div>
             </div>
           </div>
@@ -768,15 +798,45 @@ onUnmounted(() => {
         <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
       </div>
     </template>
-    <Dialog :open="!!skillsModalAgent" @update:open="(open) => { if (!open) skillsModalAgent = null; }">
+    <Dialog
+      :open="!!skillsModalAgent"
+      @update:open="
+        (open) => {
+          if (!open) skillsModalAgent = null;
+        }
+      "
+    >
       <DialogOverlay />
       <DialogContent class="am-modal">
-        <div class="am-modal-head"><DialogTitle>Skills for {{ skillsModalAgent?.name }}</DialogTitle><DialogClose class="close-x">×</DialogClose></div>
-        <DialogDescription class="am-modal-desc">Choose preferred candidates for this agent. RepoOS still selects only task-relevant skills on each run.</DialogDescription>
+        <div class="am-modal-head">
+          <DialogTitle>Skills for {{ skillsModalAgent?.name }}</DialogTitle
+          ><DialogClose class="close-x">×</DialogClose>
+        </div>
+        <DialogDescription class="am-modal-desc"
+          >Choose preferred candidates for this agent. RepoOS still selects only task-relevant
+          skills on each run.</DialogDescription
+        >
         <div v-if="skillsModalAgent" class="agent-skill-modal-list">
-          <label v-for="skill in config.agentsMeta.skills" :key="skill.path" class="agent-skill-option">
-            <input type="checkbox" :checked="(skillsModalAgent.skills ?? []).includes(skill.name)" @change="toggleSkill(skillsModalAgent!, skill.name, ($event.target as HTMLInputElement).checked)" />
-            <span><strong>{{ skill.name }}</strong><small v-if="skill.description">{{ skill.description }}</small></span>
+          <label
+            v-for="skill in config.agentsMeta.skills"
+            :key="skill.path"
+            class="agent-skill-option"
+          >
+            <input
+              type="checkbox"
+              :checked="(skillsModalAgent.skills ?? []).includes(skill.name)"
+              @change="
+                toggleSkill(
+                  skillsModalAgent!,
+                  skill.name,
+                  ($event.target as HTMLInputElement).checked,
+                )
+              "
+            />
+            <span
+              ><strong>{{ skill.name }}</strong
+              ><small v-if="skill.description">{{ skill.description }}</small></span
+            >
           </label>
         </div>
       </DialogContent>
