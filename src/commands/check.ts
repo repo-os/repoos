@@ -142,6 +142,25 @@ function bareRequireOffenders(): string[] {
 }
 
 /**
+ * Binary attachments (screenshots, PDFs) under `work/` or `inputs/` must never
+ * enter git history: they are uploaded through the UI, written to
+ * `<dir>/.attachments/`, and served back by the running server from disk — the
+ * committed record is the task/input `.md`, not the pixels. Binaries in
+ * history bloat the repo irreversibly (this repo once carried ~250 MiB of
+ * stale screenshot churn). Product image assets — UI, icons, logos, docs —
+ * live outside `work/`/`inputs/` and stay tracked.
+ *
+ * Pure (takes the tracked-file list) so it is unit-testable; the check block
+ * feeds it `git ls-files`.
+ */
+export function taskAssetOffenders(trackedPaths: string[]): string[] {
+  const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|pdf)$/i;
+  return trackedPaths.filter(
+    (p) => (p.startsWith("work/") || p.startsWith("inputs/")) && IMG.test(p),
+  );
+}
+
+/**
  * Scan a stylesheet for UNLAYERED universal/bare-element selectors.
  * With Tailwind v4 everything lives in cascade layers; an unlayered `*`
  * or tag rule silently beats every utility (unlayered > @layer), which
@@ -623,6 +642,38 @@ export async function cmdCheck(): Promise<void> {
     } else {
       console.log(c.green("  ✔ No bare require() calls in ESM source"));
       results.push(pass("bare-require"));
+    }
+  }
+
+  // ── 2d′. Task / input asset guard ───────────────────────────────────
+  heading("Task asset guard");
+  {
+    let tracked: string[] = [];
+    try {
+      tracked = execSync("git ls-files -- work inputs", {
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+      })
+        .split("\n")
+        .filter(Boolean);
+    } catch {
+      /* not a git repo / git unavailable — nothing to guard */
+    }
+    const offenders = taskAssetOffenders(tracked);
+    if (offenders.length > 0) {
+      const msg =
+        "Binary attachments committed under work/ or inputs/ — these are served by the " +
+        "running server from disk and must never enter git history (it bloats the repo " +
+        "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
+        "`.gitignore` keep them out:\n    " +
+        offenders.slice(0, 15).join("\n    ") +
+        (offenders.length > 15 ? `\n    …and ${offenders.length - 15} more` : "");
+      console.log(c.red("  ✗ " + msg.split("\n")[0]));
+      results.push(fail("task-assets", msg));
+      exitCode = 1;
+    } else {
+      console.log(c.green("  ✔ No committed binaries under work/ or inputs/"));
+      results.push(pass("task-assets"));
     }
   }
 

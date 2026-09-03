@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import {
@@ -7,10 +8,22 @@ import {
   readInputAttachment,
   saveInputAttachment,
   updateInput,
+  type Input,
   type InputStatus,
 } from "../../core/input.js";
+import { commitTaskFile } from "../../core/git.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
 import { getCurrentUser } from "./auth.js";
+
+/**
+ * Commit an input's markdown file to `main`, the same fail-soft way task
+ * files are committed (`commitTaskFile` just commits one path). Only the
+ * `.md` — attachments under `inputs/.attachments/` are gitignored and served
+ * from disk, never committed.
+ */
+function commitInput(root: string, input: Input, verb: string): void {
+  commitTaskFile(root, join(root, input.path), `inputs(${input.id}): ${verb}`);
+}
 
 function inputPrompt(body: string): string {
   return [
@@ -52,12 +65,16 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
     try {
       const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
       recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
-      if (result.ok && result.output)
-        return json(res, 201, enrichInput(ctx.config, input.id, parseEnrichment(result.output)));
+      if (result.ok && result.output) {
+        const enriched = enrichInput(ctx.config, input.id, parseEnrichment(result.output));
+        commitInput(ctx.config.root, enriched, "capture");
+        return json(res, 201, enriched);
+      }
     } catch {
       /* raw input remains safe if enrichment fails */
     }
   }
+  commitInput(ctx.config.root, input, "capture");
   return json(res, 201, input);
 };
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
@@ -65,7 +82,9 @@ export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   if (!["new", "reviewing", "processed"].includes(String(b.status)))
     return json(res, 400, { error: "invalid status" });
   try {
-    return json(res, 200, updateInput(ctx.config, p.param1, b.status as InputStatus));
+    const updated = updateInput(ctx.config, p.param1, b.status as InputStatus);
+    commitInput(ctx.config.root, updated, updated.status);
+    return json(res, 200, updated);
   } catch (e) {
     return json(res, 404, { error: (e as Error).message });
   }

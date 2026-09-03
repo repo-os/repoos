@@ -132,6 +132,12 @@ cannot tell from the code alone:
   metadata, and status changes; it must never edit task Markdown directly.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
+- **Never `git add` binaries under `work/` or `inputs/`.** Task and input
+  screenshot uploads land in `work/.attachments/` / `inputs/.attachments/`,
+  which are gitignored and served by the running server from disk — the
+  committed record is the `.md`, never the pixels. `repoos check`'s task-asset
+  guard fails the gate on any tracked image/PDF under those two trees. Product
+  image assets (UI, icons, logos, `docs/`) live elsewhere and stay tracked.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.
