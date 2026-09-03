@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-03T18:23:44Z"
-review_passes: 1
 id: "0324"
 title: Add `repoos status` — one-screen health/orientation snapshot for the repo-as-OS
 type: feature
-status: review
+status: active
 priority: p2
 area: cli
 assigned_to: ai
@@ -12,6 +10,9 @@ created_by: ""
 branch: feat/add-repoos-status-one-screen-health-orie
 review_model_override: openrouter/google/gemini-3.8-flash
 created_at: "2026-09-03T17:38:24Z"
+updated_at: "2026-09-03T18:23:44Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -101,4 +102,4 @@ than requiring `/api/health`. When the server IS up, enrich from
 - 2026-09-03T17:41:55Z · status ready→active, branch
 - 2026-09-03T17:51:15Z · review_model_override
 - 2026-09-03T18:17:06Z · status active→review
-
+- 2026-09-03T18:23:44Z · status review→active
