@@ -77,7 +77,6 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
-
 [[agents]]
 name = "engineer"
 cli = "opencode"
@@ -100,7 +99,7 @@ instructions = "Owns the roadmap: moves tasks between statuses, writes activity 
 [[agents]]
 name = "Ross"
 cli = "opencode"
-model = "deepinfra/openai/gpt-oss-120b"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
