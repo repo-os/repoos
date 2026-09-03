@@ -2,14 +2,14 @@
 id: "0323"
 title: Machine-level tunnel app registry (stop repos clobbering each other's cloudflared ingress)
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-03T17:21:26Z"
-updated_at: "2026-09-03T17:21:26Z"
+updated_at: "2026-09-03T17:51:59Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ composes from, instead of overwriting from one repo:
 ## Activity
 
 - 2026-09-03T17:21:26Z · created · unknown
+- 2026-09-03T17:51:59Z · status inbox→ready
