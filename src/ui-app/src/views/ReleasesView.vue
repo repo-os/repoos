@@ -764,11 +764,14 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 560px) {
+  .rel-lineage {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
   .rel-arrow {
     transform: rotate(90deg);
-  }
-  .rel-node--next {
-    align-self: stretch;
+    align-self: center;
   }
 }
 </style>
