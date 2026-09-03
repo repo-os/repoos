@@ -80,6 +80,38 @@ function configured(config: RepoOSConfig): ReleaseConfig | null {
   return config.release?.enabled === true ? config.release : null;
 }
 
+/**
+ * Commit routine, server-written churn that landed on the release branch while
+ * the multi-minute build+check was running, so it can't abort an otherwise
+ * ready release. This mirrors the close-out publish guard's auto-checkpoint
+ * (`integration-orchestrator.ts`): `repoos.toml` is always written whole by the
+ * settings API (an agent's model changed, `maxActiveTasks`, …) and task files
+ * under the work dir are bookkeeping stamps — a dirty moment in either is
+ * expected traffic on a busy board, not a signal a human is mid-edit.
+ *
+ * Scoped narrowly: if ANY dirty path is outside that safe set (source, other
+ * config, a stray artifact) nothing is committed and the caller fails closed
+ * exactly as before. Returns true when a checkpoint commit was made.
+ */
+async function checkpointSafeChurn(config: RepoOSConfig, exec: Run): Promise<boolean> {
+  const res = await exec("git", ["status", "--porcelain"], config.root);
+  if (res.code !== 0) return false;
+  const entries = res.stdout.split("\n").filter((l) => l.trim());
+  if (entries.length === 0) return false;
+  const workPrefix = `${config.workDir}/`;
+  const paths = entries.map((l) => l.slice(3).replace(/^"|"$/g, "").split(" -> ").pop()!.trim());
+  const isSafeChurn = (p: string): boolean => p === "repoos.toml" || p.startsWith(workPrefix);
+  if (!paths.every(isSafeChurn)) return false;
+  const added = await exec("git", ["add", "--", ...paths], config.root);
+  if (added.code !== 0) return false;
+  const committed = await exec(
+    "git",
+    ["commit", "-m", "chore: checkpoint bookkeeping/config before release"],
+    config.root,
+  );
+  return committed.code === 0;
+}
+
 function safeVersionFile(root: string, filename: string): string | null {
   const absolute = resolve(root, filename);
   return relative(root, absolute).startsWith("..") ? null : absolute;
@@ -198,6 +230,9 @@ export async function cutNewRelease(
 ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
   onProgress?.("preparing", "Validating the configured branch and release version…");
   let status = await getReleaseStatus(config, exec);
+  if (!status.clean && (await checkpointSafeChurn(config, exec))) {
+    status = await getReleaseStatus(config, exec);
+  }
   const release = configured(config);
   const tag = `${release?.tagPrefix ?? "v"}${version}`;
   if (
@@ -282,6 +317,12 @@ export async function cutNewRelease(
       output: captureOutput(check.stdout, check.stderr) || "repoos check failed.",
     };
   status = await getReleaseStatus(config, exec);
+  if ((!status.ready || status.tag !== tag) && !status.clean) {
+    // A routine settings save or task-file bookkeeping write can land during
+    // the multi-minute build+check window and flip `clean` false. Checkpoint
+    // that safe churn rather than aborting a release that's ready to push.
+    if (await checkpointSafeChurn(config, exec)) status = await getReleaseStatus(config, exec);
+  }
   if (!status.ready || status.tag !== tag)
     return { ok: false, status, output: "Repository state changed while release checks ran." };
   onProgress?.("pushing_main", `Pushing ${status.branch}…`);

@@ -102,6 +102,60 @@ describe("git-tag release status", () => {
     expect(calls.indexOf("bun run build")).toBeLessThan(calls.indexOf("git push origin main"));
   });
 
+  it("checkpoints a routine repoos.toml save that lands during the check window", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    // Clean at the pre-flight gate; the settings API writes repoos.toml whole
+    // while `repoos check` runs, so it shows dirty afterwards — until the
+    // release's own checkpoint commit clears it.
+    let phase: "before" | "dirty" | "committed" = "before";
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      const key = args.join(" ");
+      if (command !== "git") {
+        if (key.includes("dist") && key.includes("check")) phase = "dirty";
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
+      if (key === "commit -m chore: checkpoint bookkeeping/config before release") {
+        phase = "committed";
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      const dirty = phase === "dirty" ? " M repoos.toml\n" : "";
+      return git({ dirty })("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
+    expect(result.ok).toBe(true);
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        "git add -- repoos.toml",
+        "git commit -m chore: checkpoint bookkeeping/config before release",
+        "git push origin main",
+      ]),
+    );
+  });
+
+  it("still aborts when an unrelated source file is dirty after the check", async () => {
+    const cfg = config();
+    let dirtyAfterCheck = "";
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      const key = args.join(" ");
+      if (command !== "git") {
+        if (key.includes("dist") && key.includes("check")) dirtyAfterCheck = " M src/a.ts\n";
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git({ dirty: dirtyAfterCheck })("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("Repository state changed");
+  });
+
   it("aborts before pushing anything when the pre-check rebuild fails", async () => {
     const cfg = config();
     const calls: string[] = [];

@@ -56,6 +56,9 @@ const message = ref("");
 const error = ref("");
 /** Full command output from a failed release phase (repoos check log, build errors). */
 const runLog = ref("");
+const debuggerSending = ref(false);
+const debuggerSent = ref(false);
+const debuggerErr = ref("");
 const run = ref<ReleaseRun | null>(null);
 const now = ref(Date.now());
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -129,6 +132,8 @@ async function release(): Promise<void> {
   running.value = true;
   error.value = "";
   runLog.value = "";
+  debuggerSent.value = false;
+  debuggerErr.value = "";
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
@@ -167,6 +172,44 @@ async function pollRun(): Promise<void> {
     }
   } catch {
     // Keep the existing stage visible through a short server reload.
+  }
+}
+
+/**
+ * Hand the failed release run to the Debugger agent with enough context to
+ * investigate without re-deriving it (phase, target tag, current commit, and
+ * the full check/build output), then open the Debugger chat. Mirrors the
+ * move-to-done "Fix" handoff in DoneErrorCard.vue.
+ */
+async function sendToDebugger(): Promise<void> {
+  if (debuggerSending.value) return;
+  debuggerSending.value = true;
+  debuggerErr.value = "";
+  try {
+    const detail = runLog.value || run.value?.message || error.value;
+    await api(
+      "/api/debugger/message",
+      JSON_OPTS("POST", {
+        text: [
+          `The "Cut new release" flow failed for version ${newVersion.value || status.value?.version || "?"} (tag ${suggestedTag.value ?? "?"}).`,
+          `Phase: ${run.value?.phase ?? "unknown"}.`,
+          `Current commit: ${status.value?.head ?? "unknown"} on ${status.value?.branch ?? "main"}.`,
+          `Output:\n${detail}`,
+          "Identify the concrete cause and the smallest safe repair so the release can be retried.",
+        ].join("\n"),
+      }),
+    );
+    debuggerSent.value = true;
+    window.dispatchEvent(new CustomEvent("repoos:open-debugger"));
+  } catch (err) {
+    debuggerErr.value =
+      err instanceof Error && /disabled/i.test(err.message)
+        ? "Enable the Debugger on the Agents page to send it this failure."
+        : err instanceof Error
+          ? err.message
+          : String(err);
+  } finally {
+    debuggerSending.value = false;
   }
 }
 
@@ -261,6 +304,17 @@ onBeforeUnmount(() => {
         <template v-if="error && !confirmOpen">
           <p class="release-error">{{ error }}</p>
           <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
+          <div class="release-debugger">
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="debuggerSending || debuggerSent"
+              @click="sendToDebugger"
+            >
+              {{ debuggerSent ? "Sent to Debugger ✓" : "Send to Debugger" }}
+            </Button>
+            <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
+          </div>
         </template>
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
@@ -288,6 +342,17 @@ onBeforeUnmount(() => {
             <div v-if="error && !running" class="release-modal-error" role="alert">
               <strong>{{ error }}</strong>
               <pre v-if="runLog" class="release-output">{{ runLog }}</pre>
+              <div class="release-debugger">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  :disabled="debuggerSending || debuggerSent"
+                  @click="sendToDebugger"
+                >
+                  {{ debuggerSent ? "Sent to Debugger ✓" : "Send to Debugger" }}
+                </Button>
+                <span v-if="debuggerErr" class="release-debugger-err">{{ debuggerErr }}</span>
+              </div>
             </div>
             <label
               >Next version
@@ -413,6 +478,17 @@ onBeforeUnmount(() => {
 .release-modal-error > strong {
   color: var(--red);
   font-size: 13px;
+}
+.release-debugger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.release-debugger-err {
+  color: var(--txt-dim);
+  font-size: 12px;
 }
 .release-output {
   max-height: 260px;
