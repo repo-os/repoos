@@ -1806,7 +1806,7 @@ const SKILL_ROUTING_HINTS: Record<string, string[]> = {
 };
 
 /** Pick a small relevant subset; role defaults are preferences, never an unconditional prompt append. */
-function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfig): SkillMeta[] {
+export function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfig): SkillMeta[] {
   const taskText = `${task.title} ${task.area} ${task.body}`.toLowerCase();
   const words = new Set(taskText.match(/[a-z][a-z0-9-]{2,}/g) ?? []);
   const preferred = new Set(agent.skills ?? []);
@@ -2924,10 +2924,15 @@ export class AgentRunner {
     session.model = agent.model;
     this.sessions.set(task.id, session);
     const selectedSkills = selectSkillsForRun(task, agent, this.config);
-    this.recordEntry(task.id, session, "sys", {
-      s: "sys",
-      d: `Skill routing: ${selectedSkills.length ? selectedSkills.map((skill) => skill.name).join(", ") : "no skills selected"}`,
-    });
+    // Only note it in the transcript when a skill was actually injected — a
+    // "no skills selected" line on every single run is pure noise, and nothing
+    // downstream keys off its presence.
+    if (selectedSkills.length) {
+      this.recordEntry(task.id, session, "sys", {
+        s: "sys",
+        d: `Skill routing: ${selectedSkills.map((skill) => skill.name).join(", ")}`,
+      });
+    }
     const mission = missionFor(
       task,
       branch,

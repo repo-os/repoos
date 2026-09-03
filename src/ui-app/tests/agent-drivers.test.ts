@@ -201,9 +201,9 @@ describe("qwen code driver", () => {
       const start = runner.start(TASK, "feat/x", agent("qwen code"), { cwd });
       expect(start.ok).toBe(true);
 
-      // >= 3, not === 3: a turn now also emits a leading "Skill routing: …"
-      // sys line (ead7245f), and more preamble lines may be added later. The
-      // content assertions below are what actually pin the streamed output.
+      // >= 3, not === 3: a run may prepend preamble sys lines (e.g. a
+      // "Skill routing: …" line when selectSkillsForRun picks a skill —
+      // ead7245f). The content assertions below pin the actual streamed output.
       await waitFor(
         () => (runner.output("0001")?.lines.length ?? 0) >= 3,
         "qwen first-turn output",
