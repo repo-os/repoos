@@ -521,6 +521,9 @@ onBeforeUnmount(() => {
   white-space: pre;
   tab-size: 2;
 }
+.release-output::-webkit-scrollbar-corner {
+  background: transparent;
+}
 .release-debugger {
   display: flex;
   align-items: center;

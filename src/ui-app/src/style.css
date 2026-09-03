@@ -7196,6 +7196,9 @@
   tab-size: 2;
   overscroll-behavior: contain;
 }
+.release-modal-body .release-output::-webkit-scrollbar-corner {
+  background: transparent;
+}
 .release-modal-body .release-debugger {
   display: flex;
   align-items: center;
