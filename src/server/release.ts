@@ -19,6 +19,10 @@ export interface ReleaseStatus {
   version: string | null;
   tag: string | null;
   latestTag: string | null;
+  /** ISO date the latest tag was created (taggerdate, else commit date). */
+  latestTagAt: string | null;
+  /** Short SHA the latest tag points at. */
+  latestTagSha: string | null;
   head: string | null;
   clean: boolean;
   onReleaseBranch: boolean;
@@ -160,6 +164,8 @@ export async function getReleaseStatus(
     version: null,
     tag: null,
     latestTag: null,
+    latestTagAt: null,
+    latestTagSha: null,
     head: null,
     clean: false,
     onReleaseBranch: false,
@@ -187,6 +193,23 @@ export async function getReleaseStatus(
       : Promise.resolve({ code: 1, stdout: "", stderr: "" }),
   ]);
   const currentBranch = branchResult.code === 0 ? branchResult.stdout.trim() : null;
+  const latestTag = latestResult.code === 0 ? latestResult.stdout.trim() : null;
+  // One extra cheap call: when the tag was cut and where it points, so the UI
+  // can say "shipped 2h ago from 684b1d5" instead of just naming the tag.
+  let latestTagAt: string | null = null;
+  let latestTagSha: string | null = null;
+  if (latestTag) {
+    const meta = await exec(
+      "git",
+      ["log", "-1", "--format=%cI%n%h", `${latestTag}^{commit}`],
+      config.root,
+    );
+    if (meta.code === 0) {
+      const [at, sha] = meta.stdout.trim().split("\n");
+      latestTagAt = at?.trim() || null;
+      latestTagSha = sha?.trim() || null;
+    }
+  }
   const clean = dirtyResult.code === 0 && dirtyResult.stdout.trim() === "";
   const onReleaseBranch = currentBranch === branch;
   const tagExists = !!tag && tagResult.code === 0 && tagResult.stdout.trim() === tag;
@@ -204,7 +227,9 @@ export async function getReleaseStatus(
     branch,
     version,
     tag,
-    latestTag: latestResult.code === 0 ? latestResult.stdout.trim() : null,
+    latestTag,
+    latestTagAt,
+    latestTagSha,
     head: headResult.code === 0 ? headResult.stdout.trim() : null,
     clean,
     onReleaseBranch,
@@ -363,6 +388,6 @@ export async function cutNewRelease(
   return {
     ok: true,
     status: await getReleaseStatus(config, exec),
-    output: `Pushed ${tag}. Your release workflow can now publish it.`,
+    output: `${tag} pushed. CI is now building the release — it becomes downloadable once that finishes.`,
   };
 }
