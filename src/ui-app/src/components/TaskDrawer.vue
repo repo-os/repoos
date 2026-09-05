@@ -709,6 +709,15 @@ function openSpecModal(): void {
   specModalOpen.value = true;
 }
 
+/** Opens the spec edit modal on a real click, but not when the mouseup that
+ *  ends a text-selection drag also fires as a click on the card — otherwise
+ *  highlighting a line of the spec to copy it immediately yanks you into the
+ *  editor instead. */
+function handleSpecCardClick(): void {
+  if (window.getSelection()?.toString()) return;
+  openSpecModal();
+}
+
 function applySpec(markdown: string): void {
   draft.body = markdown;
   specModalOpen.value = false;
@@ -2822,7 +2831,7 @@ watch(
               class="md-card"
               role="button"
               tabindex="0"
-              @click="openSpecModal"
+              @click="handleSpecCardClick"
               @keydown.enter="openSpecModal"
               @keydown.space.prevent="openSpecModal"
             >

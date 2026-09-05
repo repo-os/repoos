@@ -7291,7 +7291,7 @@
   right: auto;
   bottom: auto;
   width: min(680px, 92vw);
-  height: auto;
+  height: 80vh;
   max-height: 86vh;
   transform: translate(-50%, -50%);
   border-radius: 16px;

@@ -22,22 +22,12 @@ const emit = defineEmits<{
 const text = ref(props.body);
 const editEl = ref<HTMLTextAreaElement | null>(null);
 
-function autoGrow(): void {
-  const el = editEl.value;
-  if (!el) return;
-  el.style.height = "auto";
-  el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
-}
-
 watch(
   () => props.open,
   (open) => {
     if (!open) return;
     text.value = props.body;
-    nextTick(() => {
-      autoGrow();
-      editEl.value?.focus();
-    });
+    nextTick(() => editEl.value?.focus());
   },
 );
 
@@ -81,7 +71,6 @@ function save(): void {
             v-model="text"
             rows="12"
             placeholder="Markdown body"
-            @input="autoGrow"
           ></textarea>
         </div>
       </div>
