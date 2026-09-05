@@ -3,13 +3,16 @@ id: "0327"
 title: "Add \"Model providers\" tab to Agents page"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/add-model-providers-tab-to-agents-page
 created_at: "2026-09-05T04:02:45Z"
-updated_at: "2026-09-05T04:11:43Z"
+updated_at: "2026-09-05T04:19:11Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -77,3 +80,4 @@ collection, no live number, no polling.
 - 2026-09-05T04:02:45Z · created · unknown
 - 2026-09-05T04:10:58Z · status inbox→ready
 - 2026-09-05T04:11:43Z · status ready→active, branch
+- 2026-09-05T04:19:11Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
