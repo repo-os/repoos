@@ -2,14 +2,14 @@
 id: "0328"
 title: "Work Queue: collapse-empty-columns toggle + auto-open collapsed columns when tasks arrive"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/work-queue-collapse-empty-columns-toggle
 created_at: "2026-09-05T04:06:49Z"
-updated_at: "2026-09-05T08:19:04Z"
+updated_at: "2026-09-05T08:30:10Z"
 ---
 ## Problem
 
@@ -94,3 +94,4 @@ Let's add a button to the left of the sort order on the work queue that toggles 
 - 2026-09-05T08:16:17Z · title, body
 - 2026-09-05T08:18:47Z · status inbox→ready
 - 2026-09-05T08:19:04Z · status ready→active, branch
+- 2026-09-05T08:30:10Z · status active→review
