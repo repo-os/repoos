@@ -45,10 +45,41 @@ interface ReleaseAsset {
 interface Release {
   tag_name: string;
   assets: ReleaseAsset[];
+  prerelease?: boolean;
 }
 
-export async function cmdUpgrade(_args: string[]): Promise<void> {
+/** `--channel beta|canary|rc` from argv, or null for the default stable channel. */
+function parseChannel(args: string[]): string | null {
+  const flag = args.indexOf("--channel");
+  const value = flag !== -1 ? args[flag + 1] : undefined;
+  return value && !value.startsWith("--") ? value : null;
+}
+
+/**
+ * `GET /releases/latest` always excludes prereleases (GitHub's own rule, not
+ * configurable) — release.yml marks any tag with a "-" (v0.6.0-beta.1,
+ * -canary.N, -rc.N) as a prerelease, exactly so stable users never get handed
+ * one from this endpoint. A channel opt-in has to use the list endpoint
+ * instead and find its own match.
+ */
+async function fetchLatestRelease(channel: string | null): Promise<Release> {
+  if (!channel) {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+    if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+    return (await res.json()) as Release;
+  }
+  // Newest first by default; the first tag matching "-<channel>." wins.
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`);
+  if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+  const releases = (await res.json()) as Release[];
+  const match = releases.find((r) => r.tag_name.includes(`-${channel}.`));
+  if (!match) throw new Error(`No "${channel}" release found in the last 30 releases.`);
+  return match;
+}
+
+export async function cmdUpgrade(args: string[]): Promise<void> {
   const root = installRoot();
+  const channel = parseChannel(args);
 
   if (root.includes("node_modules")) {
     console.log(c.yellow("  repoos was installed via a package manager."));
@@ -67,13 +98,13 @@ export async function cmdUpgrade(_args: string[]): Promise<void> {
   }
 
   console.log(c.dim(`  Current version: v${current}`));
-  console.log(c.dim("  Checking latest release…"));
+  console.log(
+    c.dim(channel ? `  Checking latest "${channel}" release…` : "  Checking latest release…"),
+  );
 
   let release: Release;
   try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
-    if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
-    release = (await res.json()) as Release;
+    release = await fetchLatestRelease(channel);
   } catch (e) {
     console.error(c.red("  Failed to check for updates: " + (e as Error).message));
     process.exitCode = 1;

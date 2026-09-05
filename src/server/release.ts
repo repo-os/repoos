@@ -23,6 +23,12 @@ export interface ReleaseStatus {
   latestTagAt: string | null;
   /** Short SHA the latest tag points at. */
   latestTagSha: string | null;
+  /**
+   * Newest tag reachable from HEAD whose version has no prerelease suffix
+   * (no "-"). Tracked separately from `latestTag` so cutting a beta/canary/rc
+   * doesn't bury the last real stable release in the UI.
+   */
+  latestStableTag: string | null;
   head: string | null;
   clean: boolean;
   onReleaseBranch: boolean;
@@ -166,6 +172,7 @@ export async function getReleaseStatus(
     latestTag: null,
     latestTagAt: null,
     latestTagSha: null,
+    latestStableTag: null,
     head: null,
     clean: false,
     onReleaseBranch: false,
@@ -210,6 +217,23 @@ export async function getReleaseStatus(
       latestTagSha = sha?.trim() || null;
     }
   }
+  // `git describe --tags --abbrev=0` above walks commit ancestry, so a beta
+  // cut off HEAD reports as "the" latest tag even with stable releases in the
+  // same history. Find the newest one that isn't a prerelease (no "-")
+  // separately, so a channel cut never hides the last real stable release.
+  let latestStableTag: string | null = null;
+  const stableList = await exec(
+    "git",
+    ["tag", "--list", "--merged", "HEAD", "--sort=-creatordate"],
+    config.root,
+  );
+  if (stableList.code === 0) {
+    latestStableTag =
+      stableList.stdout
+        .split("\n")
+        .map((t) => t.trim())
+        .find((t) => t && !t.includes("-")) ?? null;
+  }
   const clean = dirtyResult.code === 0 && dirtyResult.stdout.trim() === "";
   const onReleaseBranch = currentBranch === branch;
   const tagExists = !!tag && tagResult.code === 0 && tagResult.stdout.trim() === tag;
@@ -230,6 +254,7 @@ export async function getReleaseStatus(
     latestTag,
     latestTagAt,
     latestTagSha,
+    latestStableTag,
     head: headResult.code === 0 ? headResult.stdout.trim() : null,
     clean,
     onReleaseBranch,

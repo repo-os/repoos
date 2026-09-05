@@ -22,6 +22,7 @@ interface ReleaseStatus {
   latestTag: string | null;
   latestTagAt: string | null;
   latestTagSha: string | null;
+  latestStableTag: string | null;
   head: string | null;
   clean: boolean;
   onReleaseBranch: boolean;
@@ -97,6 +98,14 @@ const publishedTag = computed(() =>
   publishedVersion.value
     ? `${tagPrefix.value}${publishedVersion.value}`
     : (status.value?.latestTag ?? null),
+);
+/** A semver "-" introduces a prerelease identifier (beta/canary/rc/...). */
+const isPrerelease = computed(() => !!publishedTag.value?.includes("-"));
+/** Only worth a separate line when the shown tag IS a prerelease and there's a different stable one to point at. */
+const lastStableTag = computed(() =>
+  isPrerelease.value && status.value?.latestStableTag !== publishedTag.value
+    ? (status.value?.latestStableTag ?? null)
+    : null,
 );
 
 /** A manifest version bumped but not yet tagged — ready to cut as-is. */
@@ -348,7 +357,10 @@ onBeforeUnmount(() => {
                sequence, so a left-to-right progression is honest structure. -->
           <div class="rel-lineage">
             <div class="rel-node rel-node--past">
-              <span class="rel-ver">{{ publishedTag ?? "no releases yet" }}</span>
+              <span class="rel-ver"
+                >{{ publishedTag ?? "no releases yet" }}
+                <span v-if="isPrerelease" class="rel-badge">prerelease</span></span
+              >
               <span v-if="status.released" class="rel-node-meta">
                 shipped {{ relativeTime(status.latestTagAt) || "—" }}
                 <template v-if="status.latestTagSha">
@@ -357,6 +369,9 @@ onBeforeUnmount(() => {
               </span>
               <span v-else-if="status.latestTag" class="rel-node-meta">
                 last tag · {{ relativeTime(status.latestTagAt) || "—" }}
+              </span>
+              <span v-if="lastStableTag" class="rel-node-meta">
+                last stable · <code>{{ lastStableTag }}</code>
               </span>
             </div>
 
@@ -630,6 +645,20 @@ onBeforeUnmount(() => {
 .rel-node--past .rel-ver {
   font-size: 20px;
   color: var(--txt-dim);
+}
+.rel-badge {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--amber);
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-border-tint);
+  border-radius: 999px;
+  padding: 2px 7px;
+  vertical-align: middle;
+  margin-left: 4px;
 }
 .rel-node--next {
   padding: 10px 16px;

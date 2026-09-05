@@ -24,8 +24,24 @@ jobs:
       - name: Package dist
         run: tar -czf repoos-dist.tar.gz -C dist .
 
+      # A tag with a "-" (v0.6.0-beta.1, v0.6.0-canary.3, v0.6.0-rc.1) is a
+      # prerelease channel, not the stable line. Flag it on GitHub so
+      # `GET /releases/latest` (what `repoos upgrade` calls by default) never
+      # hands a prerelease to a stable user, and so it doesn't steal the
+      # "Latest" badge on the releases page.
+      - name: Determine channel
+        id: meta
+        run: |
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: repoos-dist.tar.gz
           generate_release_notes: true
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          make_latest: ${{ steps.meta.outputs.prerelease == 'false' }}
