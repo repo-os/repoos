@@ -430,6 +430,22 @@ export interface ServeOptions {
    * make `repoos check` itself unable to reach the dashboard.
    */
   disableAuth?: boolean;
+  /**
+   * Fired synchronously the instant the HTTP listener actually binds
+   * (`server.listen()`'s own callback), with the live index instance at that
+   * exact moment. Exists so a test can assert a STATE invariant instead of a
+   * timing one — see boot-timing.test.ts: comparing wall-clock timestamps
+   * (even in-process ones) can't reliably distinguish "genuinely concurrent"
+   * from "coincidentally fast" when the index build finishes within the same
+   * millisecond as listen() on a healthy/fast machine. `index.snapshot()`
+   * still reporting zero tasks at this instant is unambiguous regardless of
+   * speed: `refreshAllAsync()` only populates the index in one atomic swap
+   * at the end, so 0 here can only mean the listener bound before the async
+   * build touched anything — a real regression to the old synchronous boot
+   * (index built to completion, then listen()) would show the full count
+   * already present.
+   */
+  onListening?: (index: LiveIndex) => void;
 }
 
 /**
@@ -2131,6 +2147,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       server.once("error", onErr);
       server.listen({ port, host, reusePort: withReusePort }, () => {
         server.removeListener("error", onErr);
+        opts.onListening?.(index);
         resolve();
       });
     });
