@@ -2,14 +2,14 @@
 id: "0327"
 title: "Add \"Model providers\" tab to Agents page"
 type: feature
-status: ready
+status: active
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-model-providers-tab-to-agents-page
 created_at: "2026-09-05T04:02:45Z"
-updated_at: "2026-09-05T04:10:58Z"
+updated_at: "2026-09-05T04:11:43Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ collection, no live number, no polling.
 
 - 2026-09-05T04:02:45Z · created · unknown
 - 2026-09-05T04:10:58Z · status inbox→ready
+- 2026-09-05T04:11:43Z · status ready→active, branch
