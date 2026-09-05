@@ -62,6 +62,96 @@ export function toggleColumnCollapsed(colId: string): void {
   persist();
 }
 
+/** Signature of the repo store's per-status task lookup, passed in by callers
+ *  so this module stays store-agnostic (same pattern as applyCollapseDefaults). */
+export type StatusCount = (statusId: string) => unknown[];
+
+/**
+ * True when at least one board column with no tasks is currently expanded —
+ * i.e. the bulk toggle's next action is "collapse the empty columns" (#0328).
+ * When every empty column is already collapsed (or none exists) the next
+ * action is "expand all columns".
+ */
+export function hasExpandedEmptyColumn(
+  byStatus: StatusCount,
+  columnIds: readonly string[],
+): boolean {
+  return columnIds.some((id) => byStatus(id).length === 0 && !collapsedIds.value.has(id));
+}
+
+/**
+ * Collapse every column whose live task count is zero (#0328). Columns holding
+ * tasks are never touched, and columns already collapsed stay collapsed.
+ * Persists like a manual collapse. Returns true when the collapsed set changed.
+ */
+export function collapseAllEmpty(byStatus: StatusCount, columnIds: readonly string[]): boolean {
+  const next = new Set(collapsedIds.value);
+  let changed = false;
+  for (const id of columnIds) {
+    if (byStatus(id).length === 0 && !next.has(id)) {
+      next.add(id);
+      changed = true;
+    }
+  }
+  if (changed) {
+    collapsedIds.value = next;
+    persist();
+  }
+  return changed;
+}
+
+/**
+ * Expand every board column — empty and non-empty — including columns the
+ * user had collapsed individually (#0328). Persists. Returns true when the
+ * collapsed set changed.
+ */
+export function expandAll(columnIds: readonly string[]): boolean {
+  const next = new Set(collapsedIds.value);
+  let changed = false;
+  for (const id of columnIds) {
+    if (next.delete(id)) changed = true;
+  }
+  if (changed) {
+    collapsedIds.value = next;
+    persist();
+  }
+  return changed;
+}
+
+/**
+ * Auto-open one collapsed column (#0328): called by the board when a status's
+ * live task count transitions 0 → ≥1, so a task arriving in a collapsed
+ * column is visible no matter what moved it there (drag-and-drop, a
+ * task-panel action, or an SSE update from another client). One-directional
+ * by design — a column that becomes empty is never auto-collapsed; only the
+ * user and the bulk toggle ever close columns. Returns true when the column
+ * was expanded.
+ */
+export function revealOnArrival(colId: string): boolean {
+  if (!collapsedIds.value.has(colId)) return false;
+  const next = new Set(collapsedIds.value);
+  next.delete(colId);
+  collapsedIds.value = next;
+  persist();
+  return true;
+}
+
+/**
+ * Expand every collapsed column whose status just went from no tasks to at
+ * least one (#0328). Callers pass the previous and current per-status count
+ * snapshots so only genuine 0 → ≥1 arrivals fire — identical snapshots (an
+ * unrelated re-render) and count decreases are no-ops, so an empty column is
+ * never auto-closed.
+ */
+export function revealArrivals(
+  prev: Readonly<Record<string, number>>,
+  now: Readonly<Record<string, number>>,
+): void {
+  for (const [id, count] of Object.entries(now)) {
+    if (count > 0 && (prev[id] ?? 0) === 0) revealOnArrival(id);
+  }
+}
+
 let defaultsApplied = false;
 
 /**
