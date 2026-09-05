@@ -31,8 +31,13 @@ test *args:
     bun run --bun test -- {{args}}
 
 # run the test suite under Node (the pre-Bun path) `just test-node`
+# REPOOS_RUNTIME=node is required, not optional: scripts/run-tests.mjs
+# re-execs itself onto Bun whenever it's resolvable, regardless of whether
+# the OUTER `bun run` invocation passed --bun — so a bare `bun run test`
+# no longer reliably means Node (see run-tests.mjs's header for why that
+# split runtime was a real bug, not just an inconsistency).
 test-node *args:
-    bun run test -- {{args}}
+    REPOOS_RUNTIME=node bun run test -- {{args}}
 
 # open the sqlite db, or run one query: `just db` / `just db "select * from sessions limit 5"`
 db *args:

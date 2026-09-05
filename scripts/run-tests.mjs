@@ -17,9 +17,63 @@
  * Extra args (e.g. `--changed <ref>` from `repoos check` re-verification) are
  * forwarded to BOTH passes; vitest's own change graph then decides whether the
  * isolated suites actually run.
+ *
+ * ── Runtime: always Bun when available, Node otherwise — never a mix ──────
+ * package.json's "test" script is literally `node scripts/run-tests.mjs`, so
+ * every subprocess this file spawns via `process.execPath` (vitest, and every
+ * `git` call inside a test body) ran under Node even when invoked as
+ * `bun run test` — Bun only actually took over if the caller remembered the
+ * `--bun` flag (`bun run --bun test`, what `repoos check` uses internally).
+ * That silent split produced two genuinely different runtimes for the exact
+ * same command depending on how it was typed, and cost real debugging time:
+ * boot-timing.test.ts's git-heavy fixture behaves differently enough between
+ * the two (Bun's much faster subprocess spawning can flip which of two
+ * concurrent async operations finishes first, see #0330) that a "fix"
+ * verified under one runtime silently failed under the other. The block
+ * below re-execs this whole script under Bun, once, whenever Bun is on PATH
+ * and not explicitly opted out (`REPOOS_RUNTIME=node`) — mirroring
+ * `reexecServeUnderBunIfRequested()` in src/core/runtime.ts, duplicated
+ * inline rather than imported because this file runs directly via
+ * `node scripts/run-tests.mjs` with no TypeScript loader available. So
+ * `bun run test`, `npm run test`, `node scripts/run-tests.mjs`, and
+ * `bun run --bun test` now all converge on the same runtime.
  */
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+if (
+  typeof process.versions.bun !== "string" &&
+  process.env.REPOOS_RUNTIME !== "node" &&
+  process.env.REPOOS_RUNTIME_REEXEC !== "1"
+) {
+  const bunPath = resolveBun();
+  if (bunPath) {
+    const r = spawnSync(bunPath, [fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
+      stdio: "inherit",
+      env: { ...process.env, REPOOS_RUNTIME_REEXEC: "1" },
+    });
+    process.exit(r.status ?? 1);
+  }
+}
+
+/** `REPOOS_BUN_PATH` if set, else `bun` resolved off PATH. Never throws. */
+function resolveBun() {
+  const explicit = process.env.REPOOS_BUN_PATH;
+  if (explicit) return existsSync(explicit) ? explicit : null;
+  const finder = process.platform === "win32" ? "where" : "which";
+  try {
+    const r = spawnSync(finder, ["bun"], { encoding: "utf8", timeout: 4000 });
+    if (r.status !== 0) return null;
+    const first = r.stdout
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .find(Boolean);
+    return first && existsSync(first) ? first : null;
+  } catch {
+    return null;
+  }
+}
 
 const VITEST = fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url));
 const CONFIG = "src/ui-app/vite.config.ts";

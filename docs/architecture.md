@@ -257,5 +257,25 @@ inherits the same runtime.
 `repoos check`'s vitest step also runs under Bun — `preferBunForDevTasks()`
 (→ `bun run --bun test`) is true when the repo is Bun-native (has `bun.lock`)
 and not pinned to Node, so RepoOS's own check is fast while a managed repo
-whose test script expects Node is left alone. `just test` / `just test-node`
-pick the runtime explicitly.
+whose test script expects Node is left alone.
+
+**`scripts/run-tests.mjs` (`bun run test`) self-re-execs onto Bun too, as of
+2026-09-05.** Before that fix, `package.json`'s `"test"` script was literally
+`node scripts/run-tests.mjs` — so a bare `bun run test` (what AGENTS.md
+documents, and what a human types) silently ran the ENTIRE suite under Node,
+and only `bun run --bun test` (what `repoos check` uses internally) actually
+got Bun. Same command text, two different runtimes, depending on a flag
+nothing but `check.ts` remembered to pass. That split surfaced as a real bug,
+not just an inconsistency: `boot-timing.test.ts`'s fixture behaves
+differently enough between the two runtimes (Bun's much faster subprocess
+spawning can flip which of two concurrent async operations finishes first —
+see that file's header and #0330) that a test fix verified under one runtime
+failed deterministically under the other. `run-tests.mjs` now re-execs itself
+onto Bun whenever it's resolvable and `REPOOS_RUNTIME` isn't `node`, mirroring
+`reexecServeUnderBunIfRequested()` above (duplicated inline, not imported —
+this file runs directly via `node`, with no TypeScript loader available). So
+`bun run test`, `npm run test`, `node scripts/run-tests.mjs`, and
+`bun run --bun test` all converge on the same runtime now. `just test` /
+`just test-node` still pick the runtime explicitly for local iteration;
+`just test-node` now sets `REPOOS_RUNTIME=node` explicitly rather than
+relying on the absence of `--bun`, since that's no longer sufficient.

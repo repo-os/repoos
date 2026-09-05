@@ -267,6 +267,24 @@ versions closed it immediately:
 100% deterministic, 668ms, on a completely idle machine. Not flaky at all. Fixed
 with a setup shim (`src/ui-app/tests/setup/web-storage.ts`).
 
+**Second worked example (2026-09-05).** `boot-timing.test.ts` (#0271) asserted
+that `server.listen()` fires before the async index build finishes. A fix for
+that test's HTTP-timing flake (comparing a network-polled timestamp against an
+in-process one) checked out fine locally, then failed deterministically the
+moment it ran through `bun run test` for real — not intermittently, every
+single time. The cause wasn't the fix: `package.json`'s `"test"` script is
+literally `node scripts/run-tests.mjs`, so a bare `bun run test` ran the whole
+suite under **Node** unless the caller remembered `bun run --bun test` (what
+`repoos check` uses internally, but nothing else did). Same command text, two
+different runtimes. Under Bun — ~10x faster at spawning the git subprocesses
+this fixture is full of — the async index build reliably finished before
+`listen()` was even reached, flipping the exact invariant the test existed to
+prove. Confirmed with a direct A/B on identical code: `bunx vitest run` 5/5
+pass, `bun run --bun vitest run` 2/2 fail. Fixed by making
+`scripts/run-tests.mjs` self-re-exec onto Bun whenever it's resolvable
+(mirroring `reexecServeUnderBunIfRequested()` in `src/core/runtime.ts`), so
+every invocation path now converges on one runtime — see `docs/architecture.md`.
+
 **The general lesson:** "it passes for me but fails in the pipeline" is a
 version/environment difference far more often than it is flakiness. Reproduce
 under the *exact* runtime the failing system uses before concluding anything —
