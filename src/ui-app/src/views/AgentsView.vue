@@ -20,6 +20,7 @@ import AgentModelControl from "../components/AgentModelControl.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
+import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -33,7 +34,7 @@ const router = useRouter();
 const route = useRoute();
 const docs = useDocsStore();
 
-type AgentTab = "default" | "custom" | "team" | "detected" | "playground";
+type AgentTab = "default" | "custom" | "team" | "detected" | "playground" | "providers";
 
 const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   default: "Default Agents",
@@ -41,17 +42,21 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   team: "Build Your Team",
   detected: "Detected Coding Agents",
   playground: "Model Playground",
+  providers: "Model providers",
 };
 
-const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected", "playground"];
+const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected", "playground", "providers"];
 
 const activeTab = ref<AgentTab>("default");
 // The playground fetches from external APIs on first view — lazy-mount it
 // only once the user actually opens the tab, but keep it mounted afterward
-// so switching tabs doesn't lose the in-progress chat.
+// so switching tabs doesn't lose the in-progress chat. Same for the model
+// providers tab (provider rows + per-row live usage fetch on first open).
 const playgroundActivated = ref(false);
+const providersActivated = ref(false);
 watch(activeTab, (tab) => {
   if (tab === "playground") playgroundActivated.value = true;
+  if (tab === "providers") providersActivated.value = true;
 });
 
 // Deep-linking: the active tab is reflected in the URL as ?tab=<id> so users
@@ -797,6 +802,7 @@ onUnmounted(() => {
         </Card>
 
         <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
+        <ModelProvidersPanel v-if="providersActivated" v-show="activeTab === 'providers'" />
       </div>
     </template>
     <Dialog

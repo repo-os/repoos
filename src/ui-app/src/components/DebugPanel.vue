@@ -97,6 +97,10 @@ const events = computed<DebugEvent[]>(() => {
       kind: "activity",
       level: /fail|error/i.test(a.text) ? "error" : "info",
       title: a.text,
+      // Title is truncated to one line by CSS; carry the same text as
+      // `detail` too so a long entry (e.g. a full dev-error line) is still
+      // reachable by expanding it, like check/log events already are.
+      detail: a.text,
     });
   }
 
