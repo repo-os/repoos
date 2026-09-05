@@ -1,12 +1,15 @@
 /**
  * `repoos check` — the definition-of-done gate.
  *
- * Runs, in sequence: build staleness check, full build (tsc + asset copy),
- * CSS layering guard, theme contrast guard (button-gradient validity + WCAG
- * contrast on every theme's fg/bg token pairs), formatting & lint guard
- * (fmt:check + lint, since nothing else enforces them), test suite (if
- * present), and a headless browser smoke test that verifies the UI mounts and
- * has zero console errors.
+ * Runs, in sequence: build staleness check, formatting & lint guard
+ * (fmt:check + lint, since nothing else enforces them — deliberately BEFORE
+ * the build: both are pure source-level checks with no build dependency, and
+ * running them first means a formatting fix never has to pay for a second
+ * full build in the same `repoos check` invocation — see the "Formatting &
+ * lint guard" comment below), full build (tsc + asset copy), CSS layering
+ * guard, theme contrast guard (button-gradient validity + WCAG contrast on
+ * every theme's fg/bg token pairs), test suite (if present), and a headless
+ * browser smoke test that verifies the UI mounts and has zero console errors.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -551,6 +554,60 @@ export async function cmdCheck(): Promise<void> {
     }
   }
 
+  const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
+
+  // ── 1c. Formatting & lint guard ──────────────────────────────────────
+  // Nothing else runs the formatter/linter — no git hook, no CI job — so
+  // without this step `dist/` builds fine while the source silently drifts out
+  // of the house style (that's how it accumulated ~10 unformatted files). Both
+  // are sub-second with oxfmt/oxlint. Gated on the scripts existing so a plain
+  // `repoos init` repo without them just skips.
+  // Runs BEFORE the build (not after, as it originally did): fmt/lint are
+  // pure source-level checks, no build dependency either way, but a fix
+  // (`bun run fmt`) rewrites files — if that happened after a build already
+  // ran, the next `repoos check` would see source newer than the build
+  // marker and pay for a second full rebuild of nothing but whitespace
+  // changes. Checking first means the build only ever runs once source is
+  // already clean.
+  heading("Formatting & lint guard");
+  // Gates the (expensive) Full build and UI smoke test below: a fix here
+  // (`bun run fmt`) rewrites source, so a build against the still-unformatted
+  // tree is immediately invalidated the moment that fix lands — building it
+  // anyway just burns a full tsc pass for nothing. This doesn't weaken the
+  // gate: it already fails this run (exitCode is set below) either way, so
+  // there is no scenario where skipping the build here lets a broken one
+  // slip through unnoticed — it only defers verifying the build to the
+  // rerun once source is actually clean.
+  let fmtLintFailed = false;
+  for (const [label, script, hint] of [
+    ["Formatting", "fmt:check", "run `bun run fmt` to fix"],
+    ["Lint", "lint", "fix the reported errors"],
+  ] as const) {
+    if (!pkg.scripts?.[script]) {
+      console.log(c.dim(`  · No \`${script}\` script — skipping ${label.toLowerCase()}`));
+      results.push(pass(`check-${script}`, `skipped — no ${script} script`));
+      continue;
+    }
+    try {
+      execSync(`${preferBunForDevTasks() ? "bun run" : "npm run"} ${script}`, {
+        stdio: "pipe",
+        timeout: 120_000,
+      });
+      console.log(c.green(`  ✔ ${label} clean`));
+      results.push(pass(`check-${script}`));
+    } catch (e) {
+      const out = [(e as { stdout?: Buffer }).stdout, (e as { stderr?: Buffer }).stderr]
+        .map((b) => b?.toString().trim())
+        .filter(Boolean)
+        .join("\n");
+      const msg = `${label} check failed — ${hint}:\n${out || (e as Error).message}`;
+      console.log(c.red(`  ✗ ${label} check failed — ${hint}`));
+      results.push(fail(`check-${script}`, msg));
+      exitCode = 1;
+      fmtLintFailed = true;
+    }
+  }
+
   // ── 2. Full build ───────────────────────────────────────────────────
   // Skippable via REPOOS_SKIP_BUILD (see skipBuildAction): the close-out
   // pipeline (`completeTask` in src/server/done.ts, and `validateCandidate` in
@@ -561,7 +618,15 @@ export async function cmdCheck(): Promise<void> {
   // the var and always builds.
   heading("Full build");
   const buildAction = skipBuildAction(process.env, buildFresh);
-  if (buildAction === "skip") {
+  if (fmtLintFailed) {
+    console.log(
+      c.dim(
+        "  · Skipped — formatting/lint failed above; fix that first, dist would be stale " +
+          "the moment you do, and this run already fails regardless",
+      ),
+    );
+    results.push(pass("build", "skipped — formatting/lint failed, fix and rerun"));
+  } else if (buildAction === "skip") {
     console.log(
       c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"),
     );
@@ -677,43 +742,6 @@ export async function cmdCheck(): Promise<void> {
     }
   }
 
-  const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
-
-  // ── 2e. Formatting & lint guard ─────────────────────────────────────
-  // Nothing else runs the formatter/linter — no git hook, no CI job — so
-  // without this step `dist/` builds fine while the source silently drifts out
-  // of the house style (that's how it accumulated ~10 unformatted files). Both
-  // are sub-second with oxfmt/oxlint. Gated on the scripts existing so a plain
-  // `repoos init` repo without them just skips.
-  heading("Formatting & lint guard");
-  for (const [label, script, hint] of [
-    ["Formatting", "fmt:check", "run `bun run fmt` to fix"],
-    ["Lint", "lint", "fix the reported errors"],
-  ] as const) {
-    if (!pkg.scripts?.[script]) {
-      console.log(c.dim(`  · No \`${script}\` script — skipping ${label.toLowerCase()}`));
-      results.push(pass(`check-${script}`, `skipped — no ${script} script`));
-      continue;
-    }
-    try {
-      execSync(`${preferBunForDevTasks() ? "bun run" : "npm run"} ${script}`, {
-        stdio: "pipe",
-        timeout: 120_000,
-      });
-      console.log(c.green(`  ✔ ${label} clean`));
-      results.push(pass(`check-${script}`));
-    } catch (e) {
-      const out = [(e as { stdout?: Buffer }).stdout, (e as { stderr?: Buffer }).stderr]
-        .map((b) => b?.toString().trim())
-        .filter(Boolean)
-        .join("\n");
-      const msg = `${label} check failed — ${hint}:\n${out || (e as Error).message}`;
-      console.log(c.red(`  ✗ ${label} check failed — ${hint}`));
-      results.push(fail(`check-${script}`, msg));
-      exitCode = 1;
-    }
-  }
-
   // ── 3. Tests (if any) ───────────────────────────────────────────────
   heading("Tests");
   const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
@@ -777,26 +805,35 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 4. UI smoke test ────────────────────────────────────────────────
   heading("UI smoke test");
-  try {
-    await runUISmokeTest();
-    results.push(pass("ui-smoke"));
-    console.log(c.green("  ✔ UI smoke test passed"));
-  } catch (e: unknown) {
-    const msg = (e as Error).message;
-    const notInstalled =
-      msg.includes("Cannot find module") ||
-      msg.includes("not installed") ||
-      msg.includes("Executable doesn't exist");
-    if (notInstalled) {
-      console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
-      console.log(
-        c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"),
-      );
-      results.push(pass("ui-smoke", "skipped — playwright/browser not available"));
-    } else {
-      console.log(c.red("  ✗ UI smoke test failed: " + msg.split("\n")[0]));
-      results.push(fail("ui-smoke", msg));
-      exitCode = 1;
+  if (fmtLintFailed) {
+    // Build was skipped above, so dist reflects whatever the last successful
+    // build was (possibly stale, possibly absent) — never a build of the
+    // current, still-unformatted source. Probing it here would be testing
+    // the wrong thing, same principle as the REPOOS_SKIP_BUILD guard above.
+    console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
+    results.push(pass("ui-smoke", "skipped — formatting/lint failed, fix and rerun"));
+  } else {
+    try {
+      await runUISmokeTest();
+      results.push(pass("ui-smoke"));
+      console.log(c.green("  ✔ UI smoke test passed"));
+    } catch (e: unknown) {
+      const msg = (e as Error).message;
+      const notInstalled =
+        msg.includes("Cannot find module") ||
+        msg.includes("not installed") ||
+        msg.includes("Executable doesn't exist");
+      if (notInstalled) {
+        console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
+        console.log(
+          c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"),
+        );
+        results.push(pass("ui-smoke", "skipped — playwright/browser not available"));
+      } else {
+        console.log(c.red("  ✗ UI smoke test failed: " + msg.split("\n")[0]));
+        results.push(fail("ui-smoke", msg));
+        exitCode = 1;
+      }
     }
   }
 

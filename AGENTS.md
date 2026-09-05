@@ -157,7 +157,10 @@ cannot tell from the code alone:
   `boot-timing.test.ts` **skips itself unless `REPOOS_STRICT_TIMING=1`**, so a
   raw `bun run test:vitest` (single-pass) or an ad-hoc `vitest boot-timing`
   won't run it and can't produce a spurious timing failure — run it directly
-  with `REPOOS_STRICT_TIMING=1 npx vitest boot-timing`. Extra args
+  with `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` —
+  this repo defaults to Bun everywhere; a bare `npx` on this machine resolves
+  to a Node-based npx binary, which is fine for most single-file runs but
+  defeats the point for a *latency*-sensitive suite like this one). Extra args
   (`--changed <ref>`) forward to both passes.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
