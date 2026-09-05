@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-05T08:39:25Z"
+review_passes: 1
 id: "0327"
 title: "Add \"Model providers\" tab to Agents page"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-model-providers-tab-to-agents-page
 created_at: "2026-09-05T04:02:45Z"
-updated_at: "2026-09-05T08:35:57Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -81,3 +82,4 @@ collection, no live number, no polling.
 - 2026-09-05T04:19:11Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-09-05T06:38:05Z · needs_input
 - 2026-09-05T08:35:57Z · status active→review
+
