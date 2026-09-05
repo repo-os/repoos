@@ -10,7 +10,7 @@
  *   - usage reads pass the stored key upstream as a bearer token and surface
  *     upstream failures as 502s with clean messages.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -26,6 +26,22 @@ import type { RepoOSConfig } from "../../core/types.js";
 
 const ENV_KEYS = ["REPOOS_OPENROUTER_API_KEY", "REPOOS_OPENCODE_GO_API_KEY"] as const;
 const tmpRoots: string[] = [];
+
+// The `afterEach` below cleans up what a test itself sets — it does nothing
+// for the very FIRST assertion in the file. If the process this test runs in
+// (e.g. `repoos serve`'s own process, spawning this suite as a child during
+// an MTD merge-gate check) already has one of these vars set — because a
+// real `REPOOS_OPENROUTER_API_KEY`/`REPOOS_OPENCODE_GO_API_KEY` line exists
+// in `.env` and `loadDotEnv()` set it on that parent process at boot — the
+// child test process inherits it, and "prefers process.env over the
+// boot-time config snapshot" fails deterministically expecting the
+// config-only fallback while a real ambient value is actually present.
+// Confirmed live: this reproduced identically on retry once real keys were
+// added to `.env` for #0327, well after this suite (from #0327 itself)
+// shipped with only the `afterEach` half of the isolation.
+beforeEach(() => {
+  for (const k of ENV_KEYS) delete process.env[k];
+});
 
 afterEach(() => {
   for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
