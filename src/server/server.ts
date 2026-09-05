@@ -226,6 +226,10 @@ import {
   // Model playground routes
   getPlaygroundModels,
   sendPlaygroundMessage,
+  // Model providers tab routes (0327)
+  getModelProviders,
+  getModelProviderUsage,
+  setModelProviderKey,
   // Agents routes
   runningAgents,
   queuedAgents,
@@ -1825,6 +1829,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/models/test", testModel);
   router.register("GET", "/api/playground/models", getPlaygroundModels);
   router.register("POST", "/api/playground/chat", sendPlaygroundMessage);
+
+  // Model providers tab routes (0327)
+  router.register("GET", "/api/model-providers", getModelProviders);
+  router.register("GET", /^\/api\/model-providers\/([^/]+)\/usage$/, getModelProviderUsage);
+  router.register("POST", /^\/api\/model-providers\/([^/]+)\/key$/, setModelProviderKey);
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);

@@ -18,6 +18,7 @@ import type {
   AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
+  ModelProviderKeysConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -256,6 +257,49 @@ export function loadDotEnv(root: string = findRepoRoot()): void {
     }
     process.env[key] = value;
   }
+}
+
+/**
+ * Persist a local secret to the gitignored `.env` at the repo root, keeping
+ * the same env-var-secret convention `loadDotEnv` reads back (dev backdoor
+ * code, auth provider keys, model-provider API keys). An empty `value`
+ * removes the line entirely so a cleared secret can't linger as `KEY=`.
+ * Also updates `process.env` directly: `loadDotEnv` skips keys already
+ * present in the environment, so a re-`loadConfig` alone would never refresh
+ * a value the booting process had already seen.
+ *
+ * Only ever called with the fixed secret names this codebase owns (the
+ * model-provider keys today) — callers validate that before calling. The
+ * value is written raw, one `KEY=value` line, exactly what `loadDotEnv`
+ * parses back.
+ */
+export function setDotEnvSecret(root: string, key: string, value: string): void {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+    throw new Error(`Invalid env var name: ${JSON.stringify(key)}`);
+  }
+  if (value.includes("\n") || value.includes("\r")) {
+    throw new Error("Secret value must not contain newlines");
+  }
+  const envPath = join(root, ".env");
+  const existing = existsSync(envPath) ? readFileSync(envPath, "utf8") : "";
+  const lines = existing.replace(/\r\n/g, "\n").split("\n");
+  const kept: string[] = [];
+  let found = false;
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    const eq = trimmed.indexOf("=");
+    const name = eq > 0 ? trimmed.slice(0, eq).trim() : "";
+    if (name === key) {
+      found = true;
+      continue;
+    }
+    kept.push(rawLine);
+  }
+  if (value) kept.push(`${key}=${value}`);
+  if (!found && lines.length && kept[kept.length - 1] === "") kept.pop();
+  writeFileSync(envPath, kept.join("\n") + "\n", "utf8");
+  if (value) process.env[key] = value;
+  else delete process.env[key];
 }
 
 /** Walk upward from `start` to find the repo root (nearest .git or repoos.toml). */
@@ -624,6 +668,19 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof rvFallback === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
     }
+  }
+
+  // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
+  // above — they must never land in the git-tracked repoos.toml. Read after
+  // the TOML block (env vars need no repoos.toml to exist), into the flat
+  // `modelProviders` config section the model-providers route consumes.
+  const modelProviders: ModelProviderKeysConfig = {};
+  const openrouterApiKey = process.env.REPOOS_OPENROUTER_API_KEY;
+  if (openrouterApiKey) modelProviders.openrouterApiKey = openrouterApiKey;
+  const opencodeGoApiKey = process.env.REPOOS_OPENCODE_GO_API_KEY;
+  if (opencodeGoApiKey) modelProviders.opencodeGoApiKey = opencodeGoApiKey;
+  if (modelProviders.openrouterApiKey || modelProviders.opencodeGoApiKey) {
+    cfg.modelProviders = modelProviders;
   }
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);

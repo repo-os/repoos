@@ -631,6 +631,74 @@ export interface PlaygroundChatResponse {
   costUsd?: number;
 }
 
+// ---- Model providers tab (0327) ----
+
+/** `live` rows poll a spend API behind a user-pasted key; `link` rows are dashboard link-outs. */
+export type ModelProviderKind = "live" | "link";
+
+/** One row of the Model providers tab (GET /api/model-providers). */
+export interface ModelProviderRow {
+  id: string;
+  label: string;
+  kind: ModelProviderKind;
+  dashboardUrl: string;
+  note: string;
+  /** Whether an API key is saved — never the key itself. */
+  hasKey: boolean;
+}
+
+export interface ModelProvidersResponse {
+  providers: ModelProviderRow[];
+  at: string;
+}
+
+export interface ModelProvidersKeyResponse {
+  ok: boolean;
+  hasKey: boolean;
+}
+
+/** One rolling usage window from the opencode Go usage API. */
+export interface ModelProviderUsageWindow {
+  id: string;
+  label: string;
+  /** 0–100, percent of the window consumed. */
+  usedPct: number | null;
+  usedUsd: number | null;
+  limitUsd: number | null;
+  resetsAt: string | null;
+}
+
+/** OpenRouter live spend (GET /api/model-providers/openrouter/usage). */
+export interface OpenRouterUsage {
+  kind: "openrouter";
+  credits: {
+    totalCredits: number | null;
+    totalUsage: number | null;
+    remaining: number | null;
+  } | null;
+  /** Per-endpoint error — e.g. a non-management key can't read /credits. */
+  creditsError: string | null;
+  key: {
+    label: string | null;
+    usageDaily: number | null;
+    usageWeekly: number | null;
+    usageMonthly: number | null;
+    limit: number | null;
+    limitRemaining: number | null;
+    rateLimit: { requests: number | null; interval: string | null } | null;
+  } | null;
+  keyError: string | null;
+}
+
+/** opencode Go live usage (GET /api/model-providers/opencode-go/usage). */
+export interface OpenCodeGoUsage {
+  kind: "opencode-go";
+  windows: ModelProviderUsageWindow[];
+  unrecognized: boolean;
+}
+
+export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage;
+
 export interface DocMeta {
   path: string;
   title: string;

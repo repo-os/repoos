@@ -288,6 +288,18 @@ export interface AuthConfig {
   devBackdoorCode?: string;
 }
 
+/**
+ * API keys for model providers with a spend/usage API (0327). Like the [auth]
+ * secrets these are env-only — sourced from the gitignored `.env` (via
+ * REPOOS_OPENROUTER_API_KEY / REPOOS_OPENCODE_GO_API_KEY) or the process
+ * environment, never from a git-tracked repoos.toml key. The Agents page's
+ * "Model providers" tab writes them through `setDotEnvSecret`.
+ */
+export interface ModelProviderKeysConfig {
+  openrouterApiKey?: string;
+  opencodeGoApiKey?: string;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
   /** Absolute path to the repo root. */
@@ -353,6 +365,8 @@ export interface RepoOSConfig {
   whisper?: WhisperConfig;
   /** Authentication configuration. */
   auth?: AuthConfig;
+  /** Model-provider API keys (0327) — env-only, never a repoos.toml key. */
+  modelProviders?: ModelProviderKeysConfig;
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
