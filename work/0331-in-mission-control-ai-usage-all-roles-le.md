@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-07T09:46:44Z"
+review_passes: 1
 id: "0331"
 title: "Mission Control AI usage: track every AI role (Ross, CTO, debugger, dispatch)"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/mission-control-ai-usage-track-every-ai-
 created_at: "2026-09-07T08:31:24Z"
-updated_at: "2026-09-07T09:38:37Z"
 ---
 Mission Control's "AI usage — all roles" panel only shows some roles. Playground sessions appear, but Ross (the repo guide), the CTO monitor, and other non-task AI invocations are missing or misclassified. Every AI agent that burns tokens should be visible there, not just task-scoped engineer/reviewer sessions.
 
@@ -59,3 +60,4 @@ In mission control AI usage all roles let's also show Ross, CTO, and others (eve
 - 2026-09-07T09:11:11Z · status inbox→ready
 - 2026-09-07T09:11:20Z · status ready→active, branch
 - 2026-09-07T09:38:37Z · status active→review
+
