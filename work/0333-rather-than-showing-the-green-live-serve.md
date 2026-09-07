@@ -2,14 +2,14 @@
 id: "0333"
 title: Hide the top-bar connection indicator unless the server is disconnected
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-07T18:45:52Z"
-updated_at: "2026-09-07T18:47:09Z"
+updated_at: "2026-09-07T18:47:49Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ Rather than showing the  green "live" server connected state in the upper right 
 
 - 2026-09-07T18:45:52Z · created · hello@repoos.org
 - 2026-09-07T18:47:09Z · status draft→inbox, title, area, body
+- 2026-09-07T18:47:49Z · status inbox→ready
