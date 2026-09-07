@@ -15,6 +15,14 @@ const FETCH_TIMEOUT_MS = 8000;
 const MAX_MODELS = 12;
 const MIN_CONTEXT_TOKENS = 32_000;
 
+/**
+ * Hygiene mirror of the server validator's runId model-segment charset
+ * (`RUN_ID_PATTERN` in src/server/routes/playground.ts): a catalog id using
+ * characters outside this set would be rejected at run time, so curate it
+ * out here rather than shipping a sidebar entry that 400s on click.
+ */
+const MODEL_ID_CHARSET = /^[\w.:/~-]+$/;
+
 interface OpenRouterModel {
   id: string;
   name?: string;
@@ -58,7 +66,7 @@ function positiveContextWindow(contextLength: number | undefined): number | null
 /** Curate + parse OpenRouter's models response into playground models. Exported for tests. */
 export function curateOpenRouterModels(models: OpenRouterModel[]): PlaygroundModel[] {
   const candidates = models.filter((m) => {
-    if (!m.id || m.id.endsWith(":free")) return false;
+    if (!m.id || m.id.endsWith(":free") || !MODEL_ID_CHARSET.test(m.id)) return false;
     if (!isTextModel(m)) return false;
     const promptPrice = Number(m.pricing?.prompt ?? "0");
     if (!(promptPrice > 0)) return false;
