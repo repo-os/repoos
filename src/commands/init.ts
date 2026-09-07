@@ -15,7 +15,7 @@ import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { findRepoRoot, loadConfig } from "../core/config.js";
+import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
 import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe, resolveServeHost } from "./serve.js";
@@ -353,19 +353,47 @@ async function nextFreePort(start: number): Promise<number> {
   return start;
 }
 
-async function askPort(): Promise<number> {
+/**
+ * Ask for a serve port, defaulting to this repo's stable derived port (the same
+ * one `repoos serve` would pick). `explicit` is true only when the user typed a
+ * concrete port — the caller then pins it in repoos.toml so future `serve`s
+ * reuse it.
+ */
+async function askPort(derived: number): Promise<{ port: number; explicit: boolean }> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const raw = await ask(
       "  Preferred port" +
-        c.dim(" [7171] — Enter for default, 0 = let the OS pick a free port") +
+        c.dim(
+          ` [${derived}] — Enter for this repo's default, 0 = let the OS pick a free port`,
+        ) +
         ": ",
     );
-    if (raw === "") return 7171;
+    if (raw === "") return { port: derived, explicit: false };
     const n = Number(raw);
-    if (Number.isInteger(n) && n >= 0 && n <= 65535) return n;
+    if (Number.isInteger(n) && n >= 0 && n <= 65535) {
+      return { port: n, explicit: n > 0 };
+    }
     console.log(c.yellow(`  "${raw}" isn't a valid port.`));
   }
-  return 7171;
+  return { port: derived, explicit: false };
+}
+
+/** Pin `servePort` in repoos.toml so future `repoos serve` runs reuse it. */
+function persistServePort(root: string, port: number): void {
+  const tomlPath = join(root, "repoos.toml");
+  try {
+    const text = readFileSync(tomlPath, "utf8");
+    if (/^\s*servePort\s*=/m.test(text)) return;
+    const line = `servePort = ${port}\n`;
+    const anchor = /^defaultAssignee\s*=.*$/m;
+    const next = anchor.test(text)
+      ? text.replace(anchor, (m) => `${m}\nservePort = ${port}`)
+      : text + (text.endsWith("\n") ? "" : "\n") + line;
+    writeFileSync(tomlPath, next);
+    console.log("  " + c.green("saved") + c.dim(` servePort = ${port} to repoos.toml`));
+  } catch {
+    /* fail-soft — the server still starts on the chosen port this run */
+  }
 }
 
 async function guidedNewRepo(args: string[]): Promise<void> {
@@ -490,7 +518,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   }
 
   if (await confirm("\n  Launch the RepoOS web console now to start building?", true)) {
-    const preferred = await askPort();
+    const { port: preferred, explicit } = await askPort(deriveServePort(target));
     let port = preferred;
     if (preferred > 0) {
       const free = await nextFreePort(preferred);
@@ -499,6 +527,9 @@ async function guidedNewRepo(args: string[]): Promise<void> {
         port = free;
       }
     }
+    // Only pin an explicitly chosen port. The derived default is already stable
+    // per checkout, so writing it would just add noise to repoos.toml.
+    if (explicit) persistServePort(target, preferred);
     const { host } = resolveServeHost();
     const dirHint = target === cwd ? null : `cd ${target}`;
     if (target !== cwd) process.chdir(target);
