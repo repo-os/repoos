@@ -2,14 +2,14 @@
 id: "0332"
 title: "Model playground rejects valid OpenRouter ids (~ aliases, : variants) — widen RUNIDPATTERN"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: api
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-07T18:40:25Z"
-updated_at: "2026-09-07T18:41:10Z"
+updated_at: "2026-09-07T18:41:50Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ Once filed, an engineer agent can pick it up — it's a one-line change plus tes
 
 - 2026-09-07T18:40:25Z · created · hello@repoos.org
 - 2026-09-07T18:41:10Z · status draft→inbox, title, area, type, body
+- 2026-09-07T18:41:50Z · status inbox→ready
