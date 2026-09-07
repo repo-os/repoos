@@ -7188,7 +7188,7 @@
   flex-wrap: wrap;
 }
 .rel-version-input input {
-  width: 140px;
+  width: 200px;
   box-sizing: border-box;
   background: var(--input);
   color: var(--txt);
@@ -7210,9 +7210,18 @@
 .rel-version-tag.dim {
   color: var(--txt-faint);
 }
+.rel-version-tag.pre {
+  color: var(--amber);
+}
 .rel-field-hint {
   color: var(--txt-faint);
   font-size: 11.5px;
+  line-height: 1.5;
+}
+.rel-field-hint code {
+  font-family: var(--mono);
+  color: var(--txt-dim);
+  white-space: nowrap;
 }
 
 .release-modal .release-actions {

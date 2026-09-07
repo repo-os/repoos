@@ -123,6 +123,8 @@ const suggestedTag = computed(() =>
 );
 
 const newTag = computed(() => (newVersion.value ? `${tagPrefix.value}${newVersion.value}` : ""));
+/** The version being typed carries a prerelease identifier (-beta.N / -canary.N / -rc.N / …). */
+const newIsPrerelease = computed(() => newVersion.value.includes("-"));
 const newVersionValid = computed(
   () =>
     SEMVER.test(newVersion.value) &&
@@ -521,15 +523,24 @@ onBeforeUnmount(() => {
                   <input
                     v-model.trim="newVersion"
                     :placeholder="suggestedVersion ?? '0.0.0'"
-                    inputmode="decimal"
+                    inputmode="text"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
                     autofocus
                     @keyup.enter="release"
                   />
-                  <span class="rel-version-tag" :class="{ dim: !newVersion }">
+                  <span class="rel-version-tag" :class="{ dim: !newVersion, pre: newIsPrerelease }">
                     → {{ newTag || `${tagPrefix}${suggestedVersion ?? "0.0.0"}` }}
+                    <template v-if="newIsPrerelease"> · prerelease</template>
                   </span>
                 </div>
-                <span class="rel-field-hint">Just the number — no “{{ tagPrefix }}”.</span>
+                <span class="rel-field-hint">
+                  Just the number — no “{{ tagPrefix }}”. Append <code>-beta.1</code> /
+                  <code>-canary.1</code> / <code>-rc.1</code> to cut a prerelease channel instead —
+                  CI marks it pre-release and users only get it with
+                  <code>repoos upgrade --channel &lt;name&gt;</code>.
+                </span>
               </label>
             </div>
             <div class="release-actions">
