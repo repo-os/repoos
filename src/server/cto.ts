@@ -239,6 +239,7 @@ export class CTOManager {
       // Persist the in-memory lines (including the interrupted marker appended
       // by `interrupt()`) so a user-initiated stop survives reload/restart.
       this.persistSession();
+      this.recordRun(agent, result, now(), false, "cancelled");
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -316,6 +317,7 @@ export class CTOManager {
       // Persist the in-memory lines (including the interrupted marker appended
       // by `interrupt()`) so a user-initiated stop survives reload/restart.
       this.persistSession();
+      this.recordRun(agent, result, now(), false, "cancelled");
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -554,13 +556,16 @@ ${body}
   /**
    * Record a CTO run to the database (0230). Persisted with the cto session
    * type, real wall-clock elapsed time, and any CLI-reported tokens/cost.
-   * Best-effort — never crashes the monitor.
+   * Best-effort — never crashes the monitor. Cancelled runs record too (0331):
+   * the process ran and may have burned tokens before the stop landed, and the
+   * board panel must show every role's real spend.
    */
   private recordRun(
     agent: Agent,
     result: PromptResult,
     completedAt: string,
     success: boolean,
+    statusOverride?: string,
   ): void {
     if (!this.db) return;
     try {
@@ -582,7 +587,7 @@ ${body}
         totalTokens: result.totalTokens ?? undefined,
         costUsd: result.costUsd ?? undefined,
         costSource,
-        status: success ? "finished" : "errored",
+        status: statusOverride ?? (success ? "finished" : "errored"),
         lastActivityAt: completedAt,
       });
     } catch {

@@ -363,9 +363,7 @@ async function askPort(derived: number): Promise<{ port: number; explicit: boole
   for (let attempt = 0; attempt < 3; attempt++) {
     const raw = await ask(
       "  Preferred port" +
-        c.dim(
-          ` [${derived}] — Enter for this repo's default, 0 = let the OS pick a free port`,
-        ) +
+        c.dim(` [${derived}] — Enter for this repo's default, 0 = let the OS pick a free port`) +
         ": ",
     );
     if (raw === "") return { port: derived, explicit: false };

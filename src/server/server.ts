@@ -300,8 +300,6 @@ function storedCloudflareToken(): boolean {
   return false;
 }
 
-const REPO_GUIDE_SESSION_ID = "repoos-guide";
-
 /** Compact live context for the guide; detailed answers can read the listed files. */
 function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   const counts = new Map<string, number>();

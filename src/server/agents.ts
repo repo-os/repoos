@@ -515,6 +515,9 @@ export function usageCostSource(agent: Agent, usage: { costUsd?: number }): stri
  */
 export function resolveSessionTaskId(taskKey: string | undefined): string | null {
   if (!taskKey) return null;
+  // Board-level chat keys belong to no task — attribute them to nothing so
+  // they surface on the board panel only, never a task drawer (0331).
+  if (NON_TASK_SESSION_KEYS.has(taskKey.toLowerCase())) return null;
   // Each alternative has a strict literal prefix so nothing else is captured;
   // covers the current `pm-task-v2:<id>` scheme (with or without a `::<email>`
   // per-user suffix) and the legacy `pm-task:<id>` / `pm:<id>` forms, without
@@ -528,6 +531,73 @@ export function resolveSessionTaskId(taskKey: string | undefined): string | null
   // prefix so any DB attribution lands on the real task.
   if (/^review:/i.test(taskKey)) return taskKey.replace(/^review:/i, "") || null;
   return taskKey;
+}
+
+/**
+ * Persistent session key for Ross's board-level chat. Must match the id the
+ * guide client subscribes to and persists under (RepoGuideChat.vue uses
+ * "repoos-guide"); a previous refactor drifted this to "__repoos-guide__",
+ * which hid the guide's running/stop state from the UI.
+ */
+export const REPO_GUIDE_SESSION_ID = "repoos-guide";
+
+/** Persistent session id for the Debugger's bug-paste conversation. */
+export const debuggerSessionId = "__repoos-debugger__";
+
+/**
+ * Runner session keys that are conversations with board-level roles rather
+ * than task-scoped work. `repoos-guide` is Ross's chat (REPO_GUIDE_SESSION_ID
+ * in routes/info.ts); `__repoos-guide__` is the key a previous refactor
+ * drifted to; `__repoos-debugger__` is the Debugger's chat (debuggerSessionId
+ * above).
+ */
+const NON_TASK_SESSION_KEYS = new Set([
+  REPO_GUIDE_SESSION_ID,
+  "__repoos-guide__",
+  debuggerSessionId,
+]);
+
+/** Exact agent-name → sessionType mappings for the built-in roles (0331). */
+const EXACT_ROLE_TYPES: Record<string, string> = {
+  ross: "guide",
+  guide: "guide",
+  "repoos guide": "guide",
+  "repoos-guide": "guide",
+  engineer: "engineer",
+  reviewer: "reviewer",
+  review: "reviewer",
+  pm: "pm",
+  cto: "cto",
+  debugger: "debugger",
+  "tech-debt": "tech-debt",
+  "tech debt": "tech-debt",
+};
+
+/**
+ * Classify a runner session into the role label the board's "AI usage — all
+ * roles" panel groups by (0331). Exact matches on the built-in role names win
+ * first: the legacy "RepoOS Guide" name used to be swallowed into "engineer"
+ * because an earlier `includes("repoos")` probe ran before the guide check —
+ * classify on what the agent IS, not on a substring an earlier rule grabbed.
+ * Unknown names fall through ordered substring probes (guide before the rest
+ * so "ross guide"-style hybrids still land right), then to "task" when the
+ * session is keyed to a task at all, "chat" when it is not.
+ */
+export function classifySessionType(
+  agentName: string | null | undefined,
+  taskKey?: string,
+): string {
+  const name = (agentName ?? "").trim().toLowerCase();
+  const exact = EXACT_ROLE_TYPES[name];
+  if (exact) return exact;
+  if (name.includes("guide") || name.includes("ross")) return "guide";
+  if (name.includes("debugger")) return "debugger";
+  if (name.includes("review")) return "reviewer";
+  if (name.includes("engineer")) return "engineer";
+  if (name.includes("pm")) return "pm";
+  if (name.includes("cto")) return "cto";
+  if (name.includes("tech")) return "tech-debt";
+  return taskKey ? "task" : "chat";
 }
 
 /** Input tokens from a `usage`-shaped JSON object, or undefined if absent. */
@@ -1723,9 +1793,6 @@ ${repositoryContext}
 User question:
 ${question}`;
 }
-
-/** Persistent session id for the Debugger's bug-paste conversation. */
-export const debuggerSessionId = "__repoos-debugger__";
 
 /** The Debugger agent's role name, used to route its chat prompt. */
 export const DEBUGGER_NAME = "debugger";
@@ -3909,16 +3976,10 @@ export class AgentRunner {
   ): void {
     if (!this.db || !session) return;
     try {
-      // Determine session type from agent name for better aggregations
-      let sessionType = "unknown";
-      const agentName = session.agent?.toLowerCase() ?? "";
-      if (agentName.includes("engineer") || agentName.includes("repoos")) sessionType = "engineer";
-      else if (agentName.includes("review")) sessionType = "reviewer";
-      else if (agentName.includes("pm")) sessionType = "pm";
-      else if (agentName.includes("ross") || agentName.includes("guide")) sessionType = "guide";
-      else if (agentName.includes("cto")) sessionType = "cto";
-      else if (agentName.includes("tech")) sessionType = "tech-debt";
-      else sessionType = taskKey ? "task" : "chat";
+      // Determine session type from agent name for better aggregations (0331):
+      // exact built-in role names first, ordered substring probes second — so
+      // a legacy "RepoOS Guide" is a "guide", never an "engineer".
+      const sessionType = classifySessionType(session.agent, taskKey);
 
       // Attribute the session to the REAL task ID. The runner key (`taskKey`) is
       // the task id for engineer/review sessions, but chat-style sessions (PM)
