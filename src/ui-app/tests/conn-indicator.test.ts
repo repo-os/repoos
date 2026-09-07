@@ -1,7 +1,7 @@
 /**
- * The top-bar connection pill (0205). Startup must read as "loading", never as
- * a premature "offline", and every state it can render needs a CSS rule that
- * actually matches — a state whose class is never applied looks unstyled.
+ * The top-bar connection indicator (0205 → 0333). Silence is healthy: while
+ * connected — or still loading — nothing renders at all; a red "disconnected"
+ * pill appears only once startup finished without a connection.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -21,7 +21,7 @@ async function connPill(state: { loading: boolean; connected: boolean }) {
   repo.connected = state.connected;
   const wrapper = mount(TopBar, { global: { stubs } });
   await nextTick();
-  return wrapper.find(".conn");
+  return wrapper;
 }
 
 beforeEach(() => {
@@ -32,41 +32,36 @@ beforeEach(() => {
   );
 });
 
-describe("top-bar connection indicator (0205)", () => {
-  it("shows loading — not offline — while the app is still starting up", async () => {
-    const conn = await connPill({ loading: true, connected: false });
+describe("top-bar connection indicator (0333)", () => {
+  it("renders nothing while connected", async () => {
+    const wrapper = await connPill({ loading: false, connected: true });
 
-    expect(conn.text()).toBe("loading");
-    expect(conn.classes()).toContain("loading");
-    expect(conn.classes()).not.toContain("offline");
-    expect(conn.attributes("aria-label")).toBe("Server connection: loading");
+    expect(wrapper.find(".conn").exists()).toBe(false);
   });
 
-  it("shows offline only once startup finished without a connection", async () => {
-    const conn = await connPill({ loading: false, connected: false });
+  it("renders nothing during initial loading", async () => {
+    const wrapper = await connPill({ loading: true, connected: false });
 
-    expect(conn.text()).toBe("offline");
+    expect(wrapper.find(".conn").exists()).toBe(false);
+  });
+
+  it("shows a red disconnected pill once startup finished without a connection", async () => {
+    const wrapper = await connPill({ loading: false, connected: false });
+    const conn = wrapper.find(".conn");
+
+    expect(conn.exists()).toBe(true);
     expect(conn.classes()).toContain("offline");
-    expect(conn.attributes("aria-label")).toBe("Server connection: offline");
+    expect(conn.text()).toBe("offline");
+    expect(conn.attributes("role")).toBe("status");
+    expect(conn.attributes("aria-label")).toBe("Server is disconnected");
+    expect(conn.attributes("title")).toBe("Server is disconnected");
   });
 
-  it("shows live once connected", async () => {
-    const conn = await connPill({ loading: false, connected: true });
-
-    expect(conn.text()).toBe("live");
-    expect(conn.classes()).toContain("live");
-  });
-
-  it("styles every state it can render", async () => {
+  it("styles the state it can render", async () => {
     const css = readFileSync(join(__dirname, "../src/style.css"), "utf8");
 
-    for (const state of ["loading", "live", "offline"] as const) {
-      const conn = await connPill({
-        loading: state === "loading",
-        connected: state === "live",
-      });
-      expect(conn.classes()).toContain(state);
-      expect(css).toMatch(new RegExp(`\\.conn\\.${state}\\s*\\{`));
-    }
+    const wrapper = await connPill({ loading: false, connected: false });
+    expect(wrapper.find(".conn").classes()).toContain("offline");
+    expect(css).toMatch(/\.conn\.offline\s*\{/);
   });
 });

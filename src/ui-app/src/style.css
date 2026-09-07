@@ -316,20 +316,10 @@
   font-weight: 600;
   font-family: "JetBrains Mono", monospace;
 }
-.conn.live {
-  color: var(--green);
-  background: var(--green-tint);
-  border: 1px solid var(--green-border-tint);
-}
 .conn.offline {
   color: var(--red);
   background: var(--red-tint);
   border: 1px solid var(--red-border-tint);
-}
-.conn.loading {
-  color: var(--amber);
-  background: var(--amber-tint);
-  border: 1px solid var(--amber-border-tint);
 }
 .conn .dot {
   width: 6px;
@@ -338,12 +328,6 @@
   background: currentColor;
   box-shadow: var(--dot-glow);
 }
-.conn.live .dot {
-  animation: pulse 2s infinite;
-}
-.conn.loading .dot {
-  animation: conn-loading 1.4s ease-in-out infinite;
-}
 @media (max-width: 760px) {
   .conn {
     padding: 0;
@@ -351,9 +335,7 @@
     border: none;
     gap: 0;
   }
-  .conn.live,
-  .conn.offline,
-  .conn.loading {
+  .conn.offline {
     background: none;
     border: none;
     color: inherit;
@@ -366,15 +348,6 @@
     height: 8px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .conn.live .dot,
-  .conn.loading .dot {
-    animation: none;
-  }
-  .conn.loading .dot {
-    opacity: 0.6;
-  }
-}
 @keyframes pulse {
   0%,
   100% {
@@ -382,17 +355,6 @@
   }
   50% {
     opacity: 0.35;
-  }
-}
-@keyframes conn-loading {
-  0%,
-  100% {
-    opacity: 0.9;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.35;
-    transform: scale(0.8);
   }
 }
 .version-notice {
