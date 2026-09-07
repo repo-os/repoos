@@ -2,14 +2,14 @@
 id: "0332"
 title: "Model playground rejects valid OpenRouter ids (~ aliases, : variants) — widen RUNIDPATTERN"
 type: bug
-status: review
+status: done
 priority: p2
 area: api
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/model-playground-rejects-valid-openroute
 created_at: "2026-09-07T18:40:25Z"
-updated_at: "2026-09-07T18:46:26Z"
+updated_at: "2026-09-07T18:51:10Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ Once filed, an engineer agent can pick it up — it's a one-line change plus tes
 - 2026-09-07T18:41:50Z · status inbox→ready
 - 2026-09-07T18:42:08Z · status ready→active, branch
 - 2026-09-07T18:46:26Z · status active→review
+- 2026-09-07T18:51:10Z · status review→done, release:success
