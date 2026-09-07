@@ -23,7 +23,7 @@ import type { Agent } from "../../core/types.js";
  * a provider we've actually registered, so a malformed client payload fails
  * fast with a clear 400 instead of reaching the CLI at all.
  */
-const RUN_ID_PATTERN = /^[a-zA-Z0-9][\w.-]*\/[\w./-]+$/;
+const RUN_ID_PATTERN = /^[a-zA-Z0-9][\w.-]*\/[\w.:/~-]+$/;
 
 /** Exported for tests. */
 export function isKnownRunId(runId: string): boolean {

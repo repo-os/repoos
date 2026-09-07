@@ -58,6 +58,9 @@ describe("isKnownRunId", () => {
   it("accepts provider/model ids from registered providers", () => {
     expect(isKnownRunId("deepinfra/zai-org/GLM-5.3-Flash")).toBe(true);
     expect(isKnownRunId("openrouter/Qwen/Qwen3.8-2.4T-A95B")).toBe(true);
+    // OpenRouter id shapes beyond [\w./-]: `~`-prefixed aliases and `:`-suffixed variants.
+    expect(isKnownRunId("openrouter/~z-ai/glm-flash-latest")).toBe(true);
+    expect(isKnownRunId("openrouter/openai/gpt-6-astra:batch")).toBe(true);
   });
 
   it("rejects an unregistered provider prefix", () => {
