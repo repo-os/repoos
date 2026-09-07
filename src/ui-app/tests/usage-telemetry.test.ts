@@ -71,8 +71,12 @@ describe("resolveSessionTaskId — role-to-task attribution (0230)", () => {
     expect(resolveSessionTaskId("0042")).toBe("0042");
   });
 
-  it("returns null for non-task chats (guide) and missing keys", () => {
-    expect(resolveSessionTaskId("repoos-guide")).toBe("repoos-guide");
+  it("returns null for non-task chats (guide, debugger) and missing keys", () => {
+    // Board-level chats key to no task — the old pass-through recorded the
+    // synthetic chat key itself as a taskId (0331).
+    expect(resolveSessionTaskId("repoos-guide")).toBeNull();
+    expect(resolveSessionTaskId("__repoos-guide__")).toBeNull();
+    expect(resolveSessionTaskId("__repoos-debugger__")).toBeNull();
     expect(resolveSessionTaskId(undefined)).toBeNull();
     expect(resolveSessionTaskId("")).toBeNull();
   });

@@ -3,13 +3,8 @@ import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { sampleSystem } from "../system.js";
-import { resolveRepoGuide } from "../agents.js";
+import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
 import { CANARY_COUNTER } from "../../core/canary.js";
-
-// Must match the id the guide client subscribes to and persists under
-// (RepoGuideChat.vue uses "repoos-guide"); a previous refactor drifted this to
-// "__repoos-guide__", which hid the guide's running/stop state from the UI.
-const REPO_GUIDE_SESSION_ID = "repoos-guide";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
