@@ -336,12 +336,13 @@ watch(repoName, () => {
       </div>
     </div>
     <div
-      class="conn"
-      :class="connState"
-      :aria-label="`Server connection: ${connState}`"
-      :title="`Server connection: ${connState}`"
+      v-if="connState === 'offline'"
+      class="conn offline"
+      role="status"
+      aria-label="Server is disconnected"
+      title="Server is disconnected"
     >
-      <span class="dot"></span><span class="conn-text">{{ connState }}</span>
+      <span class="dot"></span><span class="conn-text">offline</span>
     </div>
   </div>
 </template>
