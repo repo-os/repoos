@@ -2,14 +2,14 @@
 id: "0333"
 title: Hide the top-bar connection indicator unless the server is disconnected
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/hide-the-top-bar-connection-indicator-un
 created_at: "2026-09-07T18:45:52Z"
-updated_at: "2026-09-07T18:52:19Z"
+updated_at: "2026-09-07T18:56:21Z"
 ---
 ## Problem
 
@@ -90,3 +90,4 @@ Rather than showing the  green "live" server connected state in the upper right 
 - 2026-09-07T18:47:49Z · status inbox→ready
 - 2026-09-07T18:47:58Z · status ready→active, branch
 - 2026-09-07T18:52:19Z · status active→review
+- 2026-09-07T18:56:21Z · status review→done, release:success
