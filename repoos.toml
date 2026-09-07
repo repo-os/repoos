@@ -55,6 +55,7 @@ worktreeWarnThreshold = 20
 
 # Product releases are opt-in. Push an annotated v<package version> tag from
 # clean main after repoos check; GitHub Actions then creates the GitHub Release.
+# Prerelease channels (beta/canary/rc) and the full flow: docs/releases.md
 [release]
 enabled = true
 provider = "git-tag"

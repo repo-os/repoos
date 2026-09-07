@@ -139,18 +139,22 @@ const blockers = computed(() => {
   return status.value?.released ? raw.filter((b) => !/ already exists\.$/.test(b)) : raw;
 });
 
-type Phase = "releasing" | "blocked" | "published" | "ready";
+type Phase = "releasing" | "blocked" | "prerelease" | "published" | "ready";
 const phase = computed<Phase>(() => {
   if (running.value) return "releasing";
   if (blockers.value.length) return "blocked";
-  if (status.value?.released) return "published";
+  if (status.value?.released) return isPrerelease.value ? "prerelease" : "published";
   return "ready";
 });
 const phaseLabel = computed(
   () =>
-    ({ releasing: "Releasing…", blocked: "Blocked", published: "Published", ready: "Ready" })[
-      phase.value
-    ],
+    ({
+      releasing: "Releasing…",
+      blocked: "Blocked",
+      prerelease: "Prerelease",
+      published: "Published",
+      ready: "Ready",
+    })[phase.value],
 );
 
 const canOpen = computed(
@@ -359,10 +363,7 @@ onBeforeUnmount(() => {
                sequence, so a left-to-right progression is honest structure. -->
           <div class="rel-lineage">
             <div class="rel-node rel-node--past">
-              <span class="rel-ver"
-                >{{ publishedTag ?? "no releases yet" }}
-                <span v-if="isPrerelease" class="rel-badge">prerelease</span></span
-              >
+              <span class="rel-ver">{{ publishedTag ?? "no releases yet" }}</span>
               <span v-if="status.released" class="rel-node-meta">
                 shipped {{ relativeTime(status.latestTagAt) || "—" }}
                 <template v-if="status.latestTagSha">
@@ -619,6 +620,11 @@ onBeforeUnmount(() => {
   background: var(--green-tint);
   border-color: var(--green-border-tint);
 }
+.rel-pill[data-phase="prerelease"] {
+  color: var(--amber);
+  background: var(--amber-tint);
+  border-color: var(--amber-border-tint);
+}
 .rel-pill[data-phase="ready"] {
   color: var(--cyan);
   background: var(--cyan-dim);
@@ -656,20 +662,6 @@ onBeforeUnmount(() => {
 .rel-node--past .rel-ver {
   font-size: 20px;
   color: var(--txt-dim);
-}
-.rel-badge {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--amber);
-  background: var(--amber-tint);
-  border: 1px solid var(--amber-border-tint);
-  border-radius: 999px;
-  padding: 2px 7px;
-  vertical-align: middle;
-  margin-left: 4px;
 }
 .rel-node--next {
   padding: 10px 16px;
