@@ -97,6 +97,11 @@ watch(
 </script>
 
 <template>
+  <!-- Teleported to body: AgentsView renders this inside the content section,
+       whose route-transition transform becomes the containing block for the
+       otherwise position:fixed overlay/panel, clipping the modal to the section
+       instead of the viewport. -->
+  <Teleport to="body">
   <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
     <DialogOverlay />
     <DialogContent class="am-modal">
@@ -222,4 +227,5 @@ watch(
       </div>
     </DialogContent>
   </Dialog>
+  </Teleport>
 </template>
