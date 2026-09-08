@@ -8,8 +8,10 @@ area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: claude code
+model_override: default
 created_at: "2026-09-03T17:21:26Z"
-updated_at: "2026-09-03T17:51:59Z"
+updated_at: "2026-09-08T13:15:21Z"
 ---
 ## Problem
 
@@ -105,3 +107,4 @@ composes from, instead of overwriting from one repo:
 
 - 2026-09-03T17:21:26Z · created · unknown
 - 2026-09-03T17:51:59Z · status inbox→ready
+- 2026-09-08T13:15:21Z · cli_override, model_override
