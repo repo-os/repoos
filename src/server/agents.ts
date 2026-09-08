@@ -215,6 +215,25 @@ interface Session {
   /** Cumulative model round-trips ("turns") across every invocation of this session. */
   turns?: number;
   /**
+   * Snapshot of inputTokens/outputTokens/tokens/costUsd/cache* taken each time
+   * a new CLI process is spawned for this session (`start()` or `send()`; see
+   * `captureUsageBaseline`). A claude `result` (or a running-total line)
+   * reports a total scoped to THAT process only — starting back at zero — so
+   * folding it straight into the session would replace/cap prior processes'
+   * totals instead of adding to them (a task resumed after review, or a
+   * follow-up turn, would see its cost drop back down). `applyUsage` adds
+   * this baseline onto authoritative/running-total values; delta-style events
+   * (already summed onto `cur`) don't need it.
+   */
+  usageBaseline?: {
+    inputTokens: number;
+    outputTokens: number;
+    tokens: number;
+    costUsd: number;
+    cacheReadTokens: number;
+    cacheCreationTokens: number;
+  };
+  /**
    * claude stream only (0109): a `tool_use` whose `tool_result` has not
    * arrived yet. claude emits the call and its result as separate events, so
    * the tool card is held back until the result line arrives and the entry
@@ -3067,6 +3086,7 @@ export class AgentRunner {
     }
     const cwd = opts.cwd ?? this.config.root;
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
+    this.captureUsageBaseline(session);
     session.workdir = cwd;
     session.engine = engineForCli(agent.cli);
     session.task = task;
@@ -3228,6 +3248,7 @@ export class AgentRunner {
       };
     }
     this.sessions.set(taskId, session);
+    this.captureUsageBaseline(session);
     const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
@@ -3812,12 +3833,18 @@ export class AgentRunner {
    * `session_usage_events` — the lossless ground truth this rollup derives from.
    *
    * Three fold modes, matching `foldUsage`:
-   *  - authoritative (claude `result`): overwrite with the turn's real total.
+   *  - authoritative (claude `result`): the turn's real total FOR THIS PROCESS
+   *    — added onto `usageBaseline` (prior processes' totals for this same
+   *    session), not a bare overwrite, so a task resumed after review doesn't
+   *    see its cumulative cost/tokens drop back down.
    *  - deltas (opencode `step_finish`): SUM — each event is one round-trip, and
    *    `Math.max` would keep only the largest step (0109 undercounted a
-   *    17-step reviewer run's cache-reads ~15x).
-   *  - otherwise (codex/claude running totals): Math.max — count up, never
-   *    flicker down on a transient mid-stream figure.
+   *    17-step reviewer run's cache-reads ~15x). Deltas accumulate directly on
+   *    `cur`, so they're baseline-safe across process boundaries already.
+   *  - otherwise (codex/claude running totals): Math.max against this
+   *    process's own total plus baseline — count up, never flicker down on a
+   *    transient mid-stream figure, and never dip below a prior process's
+   *    total either.
    */
   private applyUsage(taskKey: string, session: Session, raw: string): boolean {
     const found = extractUsage(raw);
@@ -3825,45 +3852,54 @@ export class AgentRunner {
     // During a transcript replay the counters must not move — see `replayLog`.
     if (this.replayingUsage) return false;
     let changed = false;
-    const set = (cur: number | undefined, v: number): number =>
-      found.authoritative ? v : found.deltas ? (cur ?? 0) + v : Math.max(cur ?? 0, v);
+    const set = (cur: number | undefined, v: number, baseline = 0): number =>
+      found.authoritative
+        ? v + baseline
+        : found.deltas
+          ? (cur ?? 0) + v
+          : Math.max(cur ?? 0, v + baseline);
+    const baseline = session.usageBaseline;
     if (found.inputTokens !== undefined) {
-      const next = set(session.inputTokens, found.inputTokens);
+      const next = set(session.inputTokens, found.inputTokens, baseline?.inputTokens);
       if (next !== session.inputTokens) {
         session.inputTokens = next;
         changed = true;
       }
     }
     if (found.outputTokens !== undefined) {
-      const next = set(session.outputTokens, found.outputTokens);
+      const next = set(session.outputTokens, found.outputTokens, baseline?.outputTokens);
       if (next !== session.outputTokens) {
         session.outputTokens = next;
         changed = true;
       }
     }
     if (found.totalTokens !== undefined) {
-      const next = set(session.tokens, found.totalTokens);
+      const next = set(session.tokens, found.totalTokens, baseline?.tokens);
       if (next !== session.tokens) {
         session.tokens = next;
         changed = true;
       }
     }
     if (found.costUsd !== undefined) {
-      const next = set(session.costUsd, found.costUsd);
+      const next = set(session.costUsd, found.costUsd, baseline?.costUsd);
       if (next !== session.costUsd) {
         session.costUsd = next;
         changed = true;
       }
     }
     if (found.cacheReadTokens !== undefined) {
-      const next = set(session.cacheReadTokens, found.cacheReadTokens);
+      const next = set(session.cacheReadTokens, found.cacheReadTokens, baseline?.cacheReadTokens);
       if (next !== session.cacheReadTokens) {
         session.cacheReadTokens = next;
         changed = true;
       }
     }
     if (found.cacheCreationTokens !== undefined) {
-      const next = set(session.cacheCreationTokens, found.cacheCreationTokens);
+      const next = set(
+        session.cacheCreationTokens,
+        found.cacheCreationTokens,
+        baseline?.cacheCreationTokens,
+      );
       if (next !== session.cacheCreationTokens) {
         session.cacheCreationTokens = next;
         changed = true;
@@ -4365,6 +4401,24 @@ export class AgentRunner {
         resolve();
       });
     });
+  }
+
+  /**
+   * Snapshot a session's cumulative usage into `usageBaseline` right before a
+   * new CLI process is spawned for it (`start()` / `send()`), so an
+   * authoritative or running-total figure from THAT process — which starts
+   * counting at zero — is added onto prior processes' totals in `applyUsage`
+   * instead of replacing them.
+   */
+  private captureUsageBaseline(session: Session): void {
+    session.usageBaseline = {
+      inputTokens: session.inputTokens ?? 0,
+      outputTokens: session.outputTokens ?? 0,
+      tokens: session.tokens ?? 0,
+      costUsd: session.costUsd ?? 0,
+      cacheReadTokens: session.cacheReadTokens ?? 0,
+      cacheCreationTokens: session.cacheCreationTokens ?? 0,
+    };
   }
 
   private emptySession(): Session {

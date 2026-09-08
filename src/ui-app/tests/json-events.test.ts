@@ -647,6 +647,60 @@ describe("claude code driver (stream-json events, 0109)", () => {
     }
   });
 
+  it("accumulates cost/tokens across a review round-trip instead of dropping to the newer process's total (#0323)", async () => {
+    // Two separate `claude` process spawns for the SAME task (as happens when
+    // a task goes review -> active and the engineer is started again): each
+    // process's `result` event is authoritative for THAT process only, and
+    // its total_cost_usd starts back at zero. The session must add the two
+    // process totals together, not let the second process's smaller number
+    // overwrite the first's.
+    const root = mkdtempSync(join(tmpdir(), "repoos-claude-multi-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    const log = join(root, "spawns.log");
+    writeFileSync(
+      join(bin, "claude"),
+      `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + "\\n");
+const runCount = fs.readFileSync(process.env.REPOOS_FAKEBIN_LOG, "utf8").trim().split("\\n").length;
+const perRun = [
+  { in: 202, out: 72646, cost: 6.5419333 },
+  { in: 134, out: 66133, cost: 4.7399067 },
+];
+const { in: inputTokens, out: outputTokens, cost } = perRun[runCount - 1];
+const events = [
+  { type: "system", subtype: "init", session_id: "78dc4e6a-abcd" },
+  { type: "result", subtype: "success", is_error: false, num_turns: 1, total_cost_usd: cost, result: "done", usage: { input_tokens: inputTokens, output_tokens: outputTokens } },
+];
+for (const ev of events) process.stdout.write(JSON.stringify(ev) + "\\n");
+`,
+      { mode: 0o755 },
+    );
+    const oldPath = withFakePath({ bin });
+    process.env.REPOOS_FAKEBIN_LOG = log;
+    try {
+      const runner = new AgentRunner(config(bin), () => {});
+      const cwd = join(bin, "wt", "claude");
+      mkdirSync(cwd, { recursive: true });
+
+      runner.start(TASK, "feat/json-events", agent("claude code"), { cwd });
+      await waitFor(() => !runner.isRunning("0045"), "round 1 exit");
+      expect(runner.stats("0045").costUsd).toBeCloseTo(6.5419333);
+      expect(runner.stats("0045").tokens).toBe(202 + 72646);
+
+      // Task went review -> active: the engineer is started again as a new process.
+      runner.start(TASK, "feat/json-events", agent("claude code"), { cwd });
+      await waitFor(() => !runner.isRunning("0045"), "round 2 exit");
+      expect(runner.stats("0045").costUsd).toBeCloseTo(6.5419333 + 4.7399067);
+      expect(runner.stats("0045").tokens).toBe(202 + 72646 + 134 + 66133);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("flushes an unfulfilled tool_use card when the turn ends without its result", async () => {
     const fx = makeClaudeFixture();
     const oldPath = withFakePath(fx);
