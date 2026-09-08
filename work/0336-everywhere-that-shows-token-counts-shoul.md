@@ -2,14 +2,14 @@
 id: "0336"
 title: Show token counts in millions with time-only session timestamps
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-08T12:45:50Z"
-updated_at: "2026-09-08T12:47:24Z"
+updated_at: "2026-09-08T12:51:26Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ Everywhere that shows token counts should use M (millions) with 3 decimal places
 
 - 2026-09-08T12:45:50Z · created · hello@repoos.org
 - 2026-09-08T12:47:24Z · status draft→inbox, title, area, body
+- 2026-09-08T12:51:26Z · status inbox→ready
