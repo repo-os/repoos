@@ -457,6 +457,15 @@ export interface RemoteValidationConfig {
    * rather than dropping back onto the contended local machine.
    */
   fallbackToLocal?: boolean;
+  /**
+   * Opt a human-watched release cut into the remote runner. Default false.
+   * Close-out uses the runner whenever `enabled` is true (it runs unattended,
+   * so VM boot/provision latency is invisible); a release is something the
+   * operator watches in the Releases modal, where a ~1-2 min remote-provision
+   * delay can read as a regression even though it is more reliable, so it is
+   * an explicit opt-in rather than inheriting the close-out flag.
+   */
+  useForReleases?: boolean;
 }
 
 /** Whisper voice transcription configuration. */

@@ -44,8 +44,13 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
     startedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  void cutNewRelease(ctx.config, body.version, body.confirmTag, undefined, (phase, message) =>
-    updateRun(phase, message),
+  void cutNewRelease(
+    ctx.config,
+    body.version,
+    body.confirmTag,
+    undefined,
+    (phase, message) => updateRun(phase, message),
+    ctx.remoteValidator,
   )
     // Keep the phase that was in flight when it failed, so the UI can say
     // "failed during checking" rather than a bare "failed".

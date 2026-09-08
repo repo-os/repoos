@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
 import { captureOutput } from "./done.js";
+import type { RemoteValidator } from "./remote-validation.js";
 
 export interface ReleaseStatus {
   enabled: boolean;
@@ -61,15 +62,16 @@ export type ReleaseCommandRunner = (
   args: string[],
   cwd: string,
   timeout?: number,
+  env?: NodeJS.ProcessEnv,
 ) => Promise<CommandResult>;
 type Run = ReleaseCommandRunner;
 
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
-const run: Run = (command, args, cwd, timeout = 30_000) =>
+const run: Run = (command, args, cwd, timeout = 30_000, env) =>
   new Promise((resolveRun) => {
-    const child = spawn(command, args, { cwd });
+    const child = spawn(command, args, { cwd, env: env ?? process.env });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -277,6 +279,13 @@ export async function cutNewRelease(
   confirmTag: string,
   exec: Run = run,
   onProgress?: ReleaseProgress,
+  /**
+   * Runs the expensive half of the gate (build + test) on a cloud VM when
+   * `config.remoteValidation.enabled && remoteValidation.useForReleases` — see
+   * docs/remote-validation.md. Undefined disables remote validation regardless
+   * of config, so the release falls back to the full local `repoos check`.
+   */
+  remoteValidator?: RemoteValidator,
 ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
   onProgress?.("preparing", "Validating the configured branch and release version…");
   let status = await getReleaseStatus(config, exec);
@@ -352,13 +361,74 @@ export async function cutNewRelease(
           ? "Could not run `bun run build` — is bun on PATH?"
           : "`bun run build` failed."),
     };
+  // Remote Validation Runner (docs/remote-validation.md): hand the expensive
+  // half of the gate — `bun install` + `bun run build` + `bun run test` — to a
+  // disposable cloud VM, which is where `repoos check` flakes under local
+  // memory pressure. Only when the operator has opted releases in
+  // (`remoteValidation.useForReleases`), since close-out's runner is unattended
+  // but a release is watched live in the modal and a ~1-2 min remote-provision
+  // delay reads as a regression there. On a remote pass, the LOCAL `repoos
+  // check` below runs only the cheap static guards + UI smoke (REPOOS_SKIP_TESTS=1).
+  // A transient infra failure fails the release unless `remoteValidation.fallbackToLocal`
+  // is set (then we drop to the full local gate); a real remote test failure is
+  // non-retryable — fix it and cut again. Close-out's resume-from-check flow has
+  // no release analogue, so neither transient case auto-retries.
+  let skipTestsLocally = false;
+  const rv = config.remoteValidation;
+  if (remoteValidator && rv?.enabled && rv.useForReleases) {
+    const headRes = await exec("git", ["rev-parse", "HEAD"], config.root, 30_000);
+    if (headRes.code !== 0)
+      return { ok: false, status, output: "Could not resolve HEAD before remote validation." };
+    const candidateSha = headRes.stdout.trim();
+    onProgress?.("checking", "Running remote validation on the Hetzner runner…");
+    const remote = await remoteValidator.validate({
+      taskId: "release",
+      worktreePath: config.root,
+      candidateSha,
+      onChunk: (chunk) => onProgress?.("checking", chunk),
+    });
+    if (remote.ok) {
+      skipTestsLocally = true;
+    } else if (remote.transient && !rv.fallbackToLocal) {
+      return {
+        ok: false,
+        status,
+        output:
+          `Remote validation unavailable (infrastructure): ${remote.detail ?? "the runner could not be reached"} — ` +
+          `the release was not cut. Retry once the runner is available, or set ` +
+          `remoteValidation.fallbackToLocal to run the full gate locally.`,
+      };
+    } else if (!remote.transient) {
+      return {
+        ok: false,
+        status,
+        output:
+          `Remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
+          `fix the issue and cut the release again.`,
+      };
+    } else {
+      onProgress?.(
+        "checking",
+        "Remote validation unavailable — falling back to the full local gate…",
+      );
+    }
+  }
   // The same gate used for task close-out, before any remote ref is changed.
   onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
+  const checkEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    // The rebuild above already refreshed dist/ (and its build marker), so
+    // check's own "Full build" step is redundant — skip it (close-out does the
+    // same with REPOOS_SKIP_BUILD).
+    REPOOS_SKIP_BUILD: "1",
+    ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
+  };
   const check = await exec(
     process.execPath,
     [join(config.root, "dist", "cli", "index.js"), "check"],
     config.root,
     600_000,
+    checkEnv,
   );
   if (check.code !== 0)
     return {
