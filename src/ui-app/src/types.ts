@@ -363,6 +363,12 @@ export interface DailyUsage {
   costSource: string;
 }
 
+/**
+ * Usage time window for the Mission Control AI usage panel (0334): a trailing
+ * window on session start, or all time. Mirrors `UsageRange` in core/db.
+ */
+export type UsageRange = "1d" | "7d" | "30d" | "all";
+
 /** Board-level usage totals: overall + per-role + per-day (0230). */
 export interface BoardUsageStats {
   totalSessions: number;

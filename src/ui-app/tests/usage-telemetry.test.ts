@@ -505,6 +505,115 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     db.close();
   });
 
+  it("scopes board stats to a usage range on startedAt (0334)", () => {
+    const root = tempRoot();
+    const db = new RepoOSDb(root);
+    expect(db.isAvailable()).toBe(true);
+
+    const now = Date.now();
+    const HOUR = 3_600_000;
+    const DAY = 24 * HOUR;
+    const iso = (msAgo: number) => new Date(now - msAgo).toISOString();
+    const session = (
+      sessionId: string,
+      startedAt: string,
+      costUsd: number,
+      costSource: string,
+    ) => ({
+      sessionId,
+      sessionType: "engineer",
+      taskId: "0001",
+      agent: "engineer",
+      model: "default",
+      codingAgent: "opencode",
+      startedAt,
+      endedAt: startedAt,
+      elapsedMs: 1000,
+      totalTokens: 100,
+      costUsd,
+      costSource,
+      status: "finished",
+      lastActivityAt: startedAt,
+    });
+
+    db.upsertSession(session("recent", iso(HOUR), 0.2, "estimate"));
+    db.upsertSession(session("mid", iso(3 * DAY), 0.3, "extractUsage"));
+    db.upsertSession(session("old", iso(40 * DAY), 0.4, "kiro-credits"));
+
+    // "all" (the default) reproduces the unfiltered pre-range behavior exactly.
+    const all = db.getBoardStats();
+    expect(all.totalSessions).toBe(3);
+    expect(all.totalElapsedMs).toBe(3000);
+    expect(all.totalTokens).toBe(300);
+    expect(all.totalCostUsd).toBeCloseTo(0.9, 5);
+    expect(all.costSource).toBe("mixed");
+
+    // Trailing 24h: only "recent", and headline/roles/days all agree.
+    const d1 = db.getBoardStats("1d");
+    expect(d1.totalSessions).toBe(1);
+    expect(d1.totalElapsedMs).toBe(1000);
+    expect(d1.totalCostUsd).toBeCloseTo(0.2, 5);
+    expect(d1.costSource).toBe("estimate");
+    expect(d1.roles).toHaveLength(1);
+    expect(d1.roles[0].totalSessions).toBe(1);
+    expect(d1.roles[0].totalCostUsd).toBeCloseTo(0.2, 5);
+    expect(d1.roles[0].costSource).toBe("estimate");
+    expect(d1.days).toHaveLength(1);
+    expect(d1.days[0].totalSessions).toBe(1);
+    expect(d1.days[0].totalCostUsd).toBeCloseTo(0.2, 5);
+
+    // Trailing 7d/30d include "mid" but not "old"; 30d equals 7d here.
+    const d7 = db.getBoardStats("7d");
+    expect(d7.totalSessions).toBe(2);
+    expect(d7.totalCostUsd).toBeCloseTo(0.5, 5);
+    expect(d7.costSource).toBe("mixed");
+    expect(db.getBoardStats("30d").totalSessions).toBe(2);
+    expect(db.getDailyTotals("30d")).toHaveLength(2);
+
+    // The standalone breakdown queries accept the same range directly.
+    expect(db.getSessionTypeStats("1d")).toHaveLength(1);
+    expect(db.getSessionTypeStats("all")).toHaveLength(1);
+    expect(db.getDailyTotals("1d")).toHaveLength(1);
+
+    db.close();
+  });
+
+  it("returns a clean zero for a window with no sessions (0334)", () => {
+    const root = tempRoot();
+    const db = new RepoOSDb(root);
+    expect(db.isAvailable()).toBe(true);
+
+    const old = new Date(Date.now() - 40 * 24 * 3_600_000).toISOString();
+    db.upsertSession({
+      sessionId: "old",
+      sessionType: "engineer",
+      taskId: "0001",
+      agent: "engineer",
+      model: "default",
+      codingAgent: "opencode",
+      startedAt: old,
+      endedAt: old,
+      elapsedMs: 1000,
+      totalTokens: 100,
+      costUsd: 0.4,
+      costSource: "kiro-credits",
+      status: "finished",
+      lastActivityAt: old,
+    });
+
+    // Nothing started in the trailing day: a zeroed panel, not an error.
+    const d1 = db.getBoardStats("1d");
+    expect(d1.totalSessions).toBe(0);
+    expect(d1.totalElapsedMs).toBe(0);
+    expect(d1.totalTokens).toBeNull();
+    expect(d1.totalCostUsd).toBeNull();
+    expect(d1.costSource).toBe("none");
+    expect(d1.roles).toEqual([]);
+    expect(d1.days).toEqual([]);
+
+    db.close();
+  });
+
   it("classifies cost source honestly (mixed/estimate/kiro never shown as USD)", () => {
     const root = tempRoot();
     const db = new RepoOSDb(root);

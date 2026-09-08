@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-08T05:01:09Z"
-review_passes: 1
 id: "0334"
 title: Add date range selector to Mission Control AI usage panel
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-date-range-selector-to-mission-contr
 created_at: "2026-09-08T04:38:46Z"
+updated_at: "2026-09-08T04:59:26Z"
 ---
 ## Problem
 
@@ -64,4 +63,3 @@ On mission control  page in the AI usage section add a date range selector for t
 - 2026-09-08T04:44:23Z · status inbox→ready
 - 2026-09-08T04:44:35Z · status ready→active, branch
 - 2026-09-08T04:59:26Z · status active→review
-

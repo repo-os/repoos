@@ -44,6 +44,7 @@ import { generateContextPack, resumePreamble } from "../../core/context-pack.js"
 import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
+import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 
@@ -1327,9 +1328,20 @@ export const getSessionTypeStats: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { ok: true, stats });
 };
 
-export const getBoardStats: RouteHandler = (ctx, _req, res) => {
+export const getBoardStats: RouteHandler = (ctx, req, res) => {
   const { runner } = ctx;
-  const stats = runner.boardStats();
+  // ?range=1d|7d|30d|all (0334) — trailing window on sessions.startedAt;
+  // omitted or "all" means the unfiltered pre-range behavior.
+  const raw = new URL(req.url ?? "/", "http://localhost").searchParams.get("range");
+  let range: UsageRange = "all";
+  if (raw !== null) {
+    if (raw === "1d" || raw === "7d" || raw === "30d" || raw === "all") {
+      range = raw;
+    } else {
+      return json(res, 400, { error: `Invalid range '${raw}' — expected 1d, 7d, 30d, or all` });
+    }
+  }
+  const stats = runner.boardStats(range);
   return json(res, 200, { ok: true, stats });
 };
 
