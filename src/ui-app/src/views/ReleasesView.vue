@@ -536,12 +536,17 @@ onBeforeUnmount(() => {
                     <template v-if="newIsPrerelease"> · prerelease</template>
                   </span>
                 </div>
-                <span class="rel-field-hint">
-                  Just the number — no “{{ tagPrefix }}”. Append <code>-beta.1</code> /
-                  <code>-canary.1</code> / <code>-rc.1</code> to cut a prerelease channel instead —
-                  CI marks it pre-release and users only get it with
-                  <code>repoos upgrade --channel &lt;name&gt;</code>.
-                </span>
+                <div class="rel-field-hint">
+                  <span>Just the number — no “{{ tagPrefix }}”.</span>
+                  <span>
+                    <b>Prerelease channel:</b> append <code>-beta.1</code> /
+                    <code>-canary.1</code> / <code>-rc.1</code>.
+                  </span>
+                  <span>
+                    CI flags it pre-release — users opt in with
+                    <code>repoos upgrade --channel &lt;name&gt;</code>.
+                  </span>
+                </div>
               </label>
             </div>
             <div class="release-actions">

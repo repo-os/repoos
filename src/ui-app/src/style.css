@@ -7176,9 +7176,16 @@
   color: var(--amber);
 }
 .rel-field-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   color: var(--txt-faint);
   font-size: 11.5px;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+.rel-field-hint b {
+  color: var(--txt-dim);
+  font-weight: 600;
 }
 .rel-field-hint code {
   font-family: var(--mono);
