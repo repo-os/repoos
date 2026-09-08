@@ -1170,7 +1170,7 @@
   justify-content: flex-start;
   gap: 9px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   flex: 1;
   position: relative;
   overflow: hidden;
@@ -1187,6 +1187,18 @@
     ),
     var(--panel);
   transition: background 0.35s ease;
+}
+/* Hairline outline that fades out downward with the band, instead of a hard
+   1px box all the way round. */
+.board-col.collapsed .col-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 82%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 22%, transparent 82%);
 }
 .board-col.collapsed .col-cap {
   width: 100%;
@@ -1305,7 +1317,12 @@
     flex: none;
     overflow: visible;
     border-radius: 12px;
+    border: 1px solid var(--border);
     background: var(--panel);
+  }
+  /* No downward fade on a horizontal row. */
+  .board-col.collapsed .col-head::after {
+    display: none;
   }
   .board-col.collapsed .col-cap {
     width: 22px;
