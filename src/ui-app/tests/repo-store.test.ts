@@ -1372,6 +1372,114 @@ describe("AI-created card acknowledgement (0320)", () => {
   });
 });
 
+describe("PM working indicator (0335)", () => {
+  function stubFetchWith(boardTasks: Task[] = []): void {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            taskCount: boardTasks.length,
+            workDir: "work",
+          });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({ tasks: boardTasks, counts: EMPTY_COUNTS, taskCount: boardTasks.length });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/api/tasks/freeform"))
+          return json({
+            ok: true,
+            fallback: false,
+            task: makeTask({ id: "0043", status: "draft", pmWorking: true }),
+          });
+        if (url.includes("/api/tasks/")) return json({ ...makeTask(), ok: true });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+  }
+
+  it("flags a draft while the PM works and clears it when the run finishes", async () => {
+    stubFetchWith();
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.pmWorkingFor("0043")).toBe(false);
+
+    const es = FakeEventSource.instances[0];
+    es.emit("task.pmWorking", { type: "task.pmWorking", id: "0043", at: "2026-09-08T06:00:00Z" });
+    expect(repo.pmWorkingFor("0043")).toBe(true);
+    expect(repo.feed.some((f) => f.kind === "task.pmWorking")).toBe(true);
+
+    // Every exit path emits pmFinished — success or failure — so the
+    // indicator can never get stuck.
+    es.emit("task.pmFinished", { type: "task.pmFinished", id: "0043", at: "2026-09-08T06:01:00Z" });
+    expect(repo.pmWorkingFor("0043")).toBe(false);
+
+    // A failed run also emits pmFinished (alongside aiCreateFailed): same
+    // clearing, no special case.
+    es.emit("task.pmWorking", { type: "task.pmWorking", id: "0043", at: "2026-09-08T06:02:00Z" });
+    es.emit("task.aiCreateFailed", {
+      type: "task.aiCreateFailed",
+      id: "0043",
+      reason: "the PM agent returned no usable output",
+      at: "2026-09-08T06:03:00Z",
+    });
+    es.emit("task.pmFinished", { type: "task.pmFinished", id: "0043", at: "2026-09-08T06:03:01Z" });
+    expect(repo.pmWorkingFor("0043")).toBe(false);
+  });
+
+  it("sets the flag optimistically from the freeform response", async () => {
+    stubFetchWith();
+    const repo = useRepoStore();
+    await repo.init();
+    // The server marks the run in flight before responding, so the response
+    // task carries pmWorking — the store trusts it without waiting for SSE.
+    const res = await repo.createFreeformTask("a fresh idea", "run-1");
+    expect(res.task.pmWorking).toBe(true);
+    expect(repo.pmWorkingFor("0043")).toBe(true);
+
+    FakeEventSource.instances[0].emit("task.pmFinished", {
+      type: "task.pmFinished",
+      id: "0043",
+      at: "2026-09-08T06:01:00Z",
+    });
+    expect(repo.pmWorkingFor("0043")).toBe(false);
+  });
+
+  it("reconciles the flag from the board payload on load and drops stale ids", async () => {
+    // The tab was closed while the PM agent ran: #0050 is still being
+    // fleshed out (survives reload), #0051's run finished while away, and
+    // #0052's id lingers from a task that no longer exists.
+    stubFetchWith([
+      makeTask({ id: "0050", status: "draft", pmWorking: true }),
+      makeTask({ id: "0051", status: "draft", pmWorking: false }),
+    ]);
+    const repo = useRepoStore();
+    await repo.init();
+
+    expect(repo.pmWorkingFor("0050")).toBe(true);
+    expect(repo.pmWorkingFor("0051")).toBe(false);
+    expect(repo.pmWorkingFor("0052")).toBe(false);
+
+    // A later refresh where the run has finished clears the flag.
+    stubFetchWith([makeTask({ id: "0050", status: "inbox" })]);
+    await repo.refresh();
+    expect(repo.pmWorkingFor("0050")).toBe(false);
+  });
+
+  it("clears the flag when the task is deleted mid-run", async () => {
+    stubFetchWith();
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.pmWorking", { type: "task.pmWorking", id: "0043", at: "2026-09-08T06:00:00Z" });
+    expect(repo.pmWorkingFor("0043")).toBe(true);
+    es.emit("task.deleted", { type: "task.deleted", id: "0043" });
+    expect(repo.pmWorkingFor("0043")).toBe(false);
+  });
+});
+
 describe("sync task branch with main (rebase-onto-main button)", () => {
   it("posts to /sync, reloads diff data, and toasts success", async () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });

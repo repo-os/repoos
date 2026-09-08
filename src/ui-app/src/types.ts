@@ -77,6 +77,9 @@ export interface Task {
   preview: PreviewInfo | null;
   /** Server-authoritative automatic-review activity, refreshed with the index. */
   automaticReview?: AutomaticReview;
+  /** True while the freeform-create PM agent is fleshing this draft out
+   *  (0335) — live server state, refreshed with the index and via SSE. */
+  pmWorking?: boolean;
   /** Automatic check-failure retries used on this task's most recent handoff
    *  (capped at 2) — distinguishes a post-handoff check-fix loop from
    *  ordinary coding once a review-status task shows a running agent. */
@@ -182,6 +185,8 @@ export interface BoardTask {
   /** Always null from server — populated from SSE events on the client. */
   preview: PreviewInfo | null;
   automaticReview?: AutomaticReview;
+  /** True while the PM agent is fleshing this draft out (0335). */
+  pmWorking?: boolean;
   /** See Task.checkRetryCount. */
   checkRetryCount: number;
   /** See Task.mergeConflictRetryCount. */
@@ -390,6 +395,12 @@ export type RepoEvent =
    *  (0320): drop the "AI creation in flight" marker so a later manual move
    *  of the stale draft cannot flag the card as newly created. */
   | { type: "task.aiCreateFailed"; id: string; reason: string; at: string }
+  /** The freeform-create PM flesh-out started working on a draft (0335):
+   *  drives the live "PM is working" indicator on the card + task panel. */
+  | { type: "task.pmWorking"; id: string; at: string }
+  /** The freeform-create PM flesh-out finished — success or failure (0335).
+   *  Emitted on every exit path so the indicator can never get stuck. */
+  | { type: "task.pmFinished"; id: string; at: string }
   | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }

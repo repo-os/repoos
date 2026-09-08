@@ -4,6 +4,7 @@ import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { sampleSystem } from "../system.js";
 import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
+import { withPmWorking } from "../pm-runs.js";
 import { CANARY_COUNTER } from "../../core/canary.js";
 
 // These will be passed via context in server.ts during integration
@@ -71,7 +72,7 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
   await indexReady;
   const snapshot = index.snapshot();
   const withReviewStatus = (t: any) => ({
-    ...t,
+    ...withPmWorking(t),
     automaticReview: {
       running: reviews.isRunning(t.id),
       enabled: reviews.enabled(),
@@ -93,7 +94,7 @@ export const getBoard: RouteHandler = async (ctx, _req, res) => {
   await indexReady;
   const snapshot = index.boardSnapshot();
   const withReviewStatus = (t: any) => ({
-    ...t,
+    ...withPmWorking(t),
     automaticReview: {
       running: reviews.isRunning(t.id),
       enabled: reviews.enabled(),

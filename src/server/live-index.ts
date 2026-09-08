@@ -65,8 +65,14 @@ export type RepoEvent =
   | { type: "agent.stats"; id: string; stats: AgentSessionStats; at: string }
   /** The freeform-create PM flesh-out failed and the draft is kept as-is
    *  (0320): lets clients drop their "AI creation in flight" marker so a
-   *  later manual move of the stale draft cannot flag it as newly created. */
+   *  later manual move of the stale draft cannot flag the card as newly created. */
   | { type: "task.aiCreateFailed"; id: string; reason: string; at: string }
+  /** The freeform-create PM flesh-out started working on a draft (0335):
+   *  drives the live "PM is working" indicator on the card + task panel. */
+  | { type: "task.pmWorking"; id: string; at: string }
+  /** The freeform-create PM flesh-out finished — success or failure (0335).
+   *  Emitted on every exit path so the indicator can never get stuck. */
+  | { type: "task.pmFinished"; id: string; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
   | {

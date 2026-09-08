@@ -17,7 +17,11 @@ import {
   deriveBranch,
   isModelOverridePinned,
   recordOneShotSession,
+  pmCommand,
+  parseOneShotLine,
+  extractOneShotReportText,
 } from "../agents.js";
+import { markPmWorking, clearPmWorking, withPmWorking } from "../pm-runs.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
@@ -69,7 +73,9 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
   if (status && !(STATUSES as readonly string[]).includes(status)) {
     return json(res, 400, { error: `Invalid status "${status}"` });
   }
-  const tasks = index.getTasks(status ?? undefined).map((t) => withReviewStatus(t, reviews));
+  const tasks = index
+    .getTasks(status ?? undefined)
+    .map((t) => withPmWorking(withReviewStatus(t, reviews)));
   return json(res, 200, tasks);
 };
 
@@ -171,23 +177,39 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       ok: true,
       fallback: true,
       fallbackReason: "no-pm-agent",
-      task: index.getTask(created.id),
+      task: withPmWorking(index.getTask(created.id)),
     });
   }
+
+  // 0335: flag the draft as being fleshed out RIGHT NOW — the server-side
+  // source of truth for the live "PM is working" indicator on the card and in
+  // the task panel. Cleared on every exit path below so a failed run can
+  // never leave the task looking like it is still being worked.
+  markPmWorking(created.id);
+  emitEvent({ type: "task.pmWorking", id: created.id, at: new Date().toISOString() });
 
   // Spawn the PM agent asynchronously to replace the draft body with the
   // structured version, keeping the `## Original prompt` section intact. The
   // response is returned immediately so the user gets their draft right away.
   void (async () => {
+    const prompt = pmPrompt(explanation);
     try {
-      const result = await runPrompt(pm!, pmPrompt(explanation), {
+      const result = await runPrompt(pm!, prompt, {
         cwd: config.root,
+        // Structured output flags (0335): `promptCommand`'s plain stdout
+        // carries no usage figures, which is why the initial PM run used to
+        // land in the usage tab as a blank row. `pmCommand` keeps the same
+        // authoring-only blast radius while letting runPrompt's foldUsage see
+        // real tokens/cost — the treatment the reviewer got in 0273.
+        command: pmCommand(pm!, prompt, config.root),
         onLine: runId
           ? (line) => {
+              // Forward the parsed structured event so the freeform progress
+              // view renders clean text, not raw JSONL.
               emitEvent({
                 type: "agent.output",
                 id: runId,
-                entry: { s: "out", d: line },
+                entry: parseOneShotLine(pm!.cli, line) ?? { s: "out", d: line },
                 stream: "out",
                 at: new Date().toISOString(),
               });
@@ -196,12 +218,17 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       });
       // Book the PM authoring pass under the task (0311) — it aggregates into
       // the drawer's "by role" breakdown like per-task PM chats already do.
+      // With pmCommand's structured output, `result` now carries the real
+      // tokens/cost the CLI reported, so this session shows figures.
       recordOneShotSession(config.root, pm!, result, {
         sessionType: "pm",
         taskId: created.id,
         sessionId: `pm-freeform:${created.id}:${new Date().toISOString()}`,
       });
-      if (!result.ok || !result.output) {
+      // Structured engines interleave step-by-step narration with the final
+      // answer — isolate the last text event before parsing the task fields.
+      const output = extractOneShotReportText(pm!.cli, result.output ?? "");
+      if (!result.ok || !output) {
         const reason = result.error ?? "the PM agent returned no usable output";
         logger.task(created.id, "warn", "PM agent failed; keeping draft with original prompt", {
           reason,
@@ -217,7 +244,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         });
         return;
       }
-      const fields = parseGeneratedTask(result.output);
+      const fields = parseGeneratedTask(output);
       if (!fields.title || !fields.body) {
         logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {});
         emitEvent({
@@ -266,13 +293,20 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         reason,
         at: new Date().toISOString(),
       });
+    } finally {
+      // 0335: cleared on EVERY exit path — success (the promotion's own
+      // task.updated event lands first, so the card swaps its indicator for
+      // its new column), failure, or a thrown error — so the indicator can
+      // never get stuck showing "working".
+      clearPmWorking(created.id);
+      emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
     }
   })();
 
   return json(res, 201, {
     ok: true,
     fallback: false,
-    task: index.getTask(created.id),
+    task: withPmWorking(index.getTask(created.id)),
   });
 };
 
@@ -282,7 +316,7 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
   const t = index.getTask(id);
   return t
     ? json(res, 200, {
-        ...withReviewStatus(t, reviews),
+        ...withPmWorking(withReviewStatus(t, reviews)),
         preview: previews.get(t.id) ?? null,
       })
     : json(res, 404, { error: `Task #${id} not found` });
