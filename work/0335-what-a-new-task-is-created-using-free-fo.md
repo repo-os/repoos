@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-pm-is-working-indicator-on-draft-ca
 created_at: "2026-09-08T04:44:05Z"
-updated_at: "2026-09-08T07:45:04Z"
+updated_at: "2026-09-08T07:45:17Z"
 ---
 ## Problem
 
