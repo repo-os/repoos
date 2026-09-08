@@ -2,7 +2,7 @@
 id: "0329"
 title: "Cut-a-release: optionally run repoos check on the Hetzner remote validator"
 type: feature
-status: review
+status: done
 priority: p3
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cut-a-release-optionally-run-repoos-chec
 model_override: opencode-go/hy3
 created_at: "2026-09-05T04:33:51Z"
-updated_at: "2026-09-08T14:49:58Z"
+updated_at: "2026-09-08T15:06:13Z"
 ---
 `cutNewRelease` (`src/server/release.ts`) shells straight out to the built CLI's
 `check` subcommand — it never goes through `integration-orchestrator.ts`'s
@@ -75,3 +75,4 @@ option. See memory `repoos-check-flakes-under-memory-pressure` for the pattern.
 - 2026-09-08T14:38:20Z · status inbox→ready
 - 2026-09-08T14:39:43Z · status ready→active, branch
 - 2026-09-08T14:49:58Z · status active→review
+- 2026-09-08T15:06:13Z · status review→done, release:success
