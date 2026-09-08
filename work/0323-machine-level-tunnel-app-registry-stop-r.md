@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-08T13:58:40Z"
+review_passes: 1
 id: "0323"
 title: Machine-level tunnel app registry (stop repos clobbering each other's cloudflared ingress)
 type: feature
@@ -11,7 +13,6 @@ branch: feat/machine-level-tunnel-app-registry-stop-r
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-09-03T17:21:26Z"
-updated_at: "2026-09-08T13:54:18Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -114,3 +115,4 @@ composes from, instead of overwriting from one repo:
 - 2026-09-08T13:16:55Z · agent exited with an error (claude) · Skill routing: frontend-design, frontend-testing
 - 2026-09-08T13:37:43Z · needs_input
 - 2026-09-08T13:54:18Z · status active→review
+
