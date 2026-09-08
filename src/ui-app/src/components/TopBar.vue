@@ -250,8 +250,9 @@ watch(repoName, () => {
         />
       </svg>
     </div>
-    <div class="brand hidden sm:inline">RepoOS
-        <!-- <small>repo is the os</small> -->
+    <div class="brand hidden sm:inline">
+      RepoOS
+      <!-- <small>repo is the os</small> -->
     </div>
     <div v-if="health" class="repo-pill-wrapper">
       <button
