@@ -1187,16 +1187,22 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
     const run = (argv: string[]): Promise<number> =>
       isRoot ? runInteractive(argv[0], argv.slice(1)) : runInteractive("sudo", argv);
 
-    // `cloudflared service install` aborts when it sees a config at both
-    // ~/.cloudflared/config.yml and /etc/cloudflared/config.yml — and its own
-    // Linux installer copies the config into /etc/cloudflared on the first
-    // install, so a second `repoos tunnel install` always tripped over the copy
-    // the first one left behind ("possible conflicting configuration"). Tear
-    // down any prior install first so re-running is idempotent.
-    if (existsSync("/etc/cloudflared/config.yml")) {
+    // `cloudflared service install` aborts on any prior install — a leftover
+    // /etc/systemd/system/cloudflared.service unit ("service is already
+    // installed"), or, because its own Linux installer copies the config into
+    // /etc/cloudflared, a stale /etc/cloudflared/config.yml alongside
+    // ~/.cloudflared/config.yml ("possible conflicting configuration"). So the
+    // first `repoos tunnel install` worked and every re-run failed on what the
+    // first one left behind. Tear down any prior install first — best-effort,
+    // a missing one is fine — so re-running is idempotent.
+    if (
+      existsSync("/etc/systemd/system/cloudflared.service") ||
+      existsSync("/etc/cloudflared/config.yml")
+    ) {
       console.log(c.dim("  · clearing a previous cloudflared service install…"));
       await run([bin, "service", "uninstall"]).catch(() => 0);
-      await run(["rm", "-f", "/etc/cloudflared/config.yml"]).catch(() => 0);
+      await run(["rm", "-rf", "/etc/cloudflared"]).catch(() => 0);
+      await run(["systemctl", "daemon-reload"]).catch(() => 0);
     }
 
     console.log(
