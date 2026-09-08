@@ -2,7 +2,7 @@
 id: "0323"
 title: Machine-level tunnel app registry (stop repos clobbering each other's cloudflared ingress)
 type: feature
-status: review
+status: done
 priority: p2
 area: cli
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/machine-level-tunnel-app-registry-stop-r
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-09-03T17:21:26Z"
-updated_at: "2026-09-08T13:54:18Z"
+updated_at: "2026-09-08T14:18:09Z"
 ---
 ## Problem
 
@@ -111,3 +111,4 @@ composes from, instead of overwriting from one repo:
 - 2026-09-08T13:16:45Z · model_override
 - 2026-09-08T13:16:52Z · status ready→active, branch
 - 2026-09-08T13:54:18Z · status active→review
+- 2026-09-08T14:18:09Z · status review→done, release:success
