@@ -537,6 +537,10 @@ export function resolveSessionTaskId(taskKey: string | undefined): string | null
   // Board-level chat keys belong to no task — attribute them to nothing so
   // they surface on the board panel only, never a task drawer (0331).
   if (NON_TASK_SESSION_KEYS.has(taskKey.toLowerCase())) return null;
+  // Per-task Debugger chats (`debugger:<taskId>`, #0337) are a separate role,
+  // not a task's engineering work — never attribute their cost/tokens to a task
+  // named "debugger:<id>" (which would otherwise surface as a phantom board task).
+  if (taskKey.startsWith("debugger:")) return null;
   // Each alternative has a strict literal prefix so nothing else is captured;
   // covers the current `pm-task-v2:<id>` scheme (with or without a `::<email>`
   // per-user suffix) and the legacy `pm-task:<id>` / `pm:<id>` forms, without

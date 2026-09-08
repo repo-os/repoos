@@ -176,6 +176,11 @@ import {
   sendDebuggerMessage,
   interruptDebugger,
   repairWithDebugger,
+  getTaskDebugger,
+  sendTaskDebuggerMessage,
+  interruptTaskDebugger,
+  sendTaskDebuggerToEngineer,
+  sendTaskDebuggerToPm,
   // Docs routes
   createDoc,
   createFreeformDoc,
@@ -1688,6 +1693,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/debugger/message", sendDebuggerMessage);
   router.register("POST", "/api/debugger/interrupt", interruptDebugger);
   router.register("POST", "/api/debugger/repair", repairWithDebugger);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/debugger$/, getTaskDebugger);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/debugger\/message$/, sendTaskDebuggerMessage);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/debugger\/interrupt$/, interruptTaskDebugger);
+  router.register(
+    "POST",
+    /^\/api\/tasks\/([^/]+)\/debugger\/send-to-engineer$/,
+    sendTaskDebuggerToEngineer,
+  );
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/debugger\/send-to-pm$/, sendTaskDebuggerToPm);
 
   // Session stats routes
   router.register("GET", "/api/stats/board", getBoardStats);

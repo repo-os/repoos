@@ -7,9 +7,15 @@ import { relTime } from "../lib/time";
 import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
 import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
+import TaskDebuggerChat from "./TaskDebuggerChat.vue";
 
 const props = defineProps<{ task: Task }>();
 const repo = useRepoStore();
+
+/** The Debug tab shows two views: the existing task logs, and a task-scoped
+ *  Debugger chat. Both stay reachable (the chat is additive, never a
+ *  replacement for the logs — see task #0337). */
+const view = ref<"logs" | "debugger">("logs");
 
 /**
  * Only tasks that actually have a git worktree cut from main can be synced.
@@ -196,100 +202,123 @@ function toggleExpanded(key: string): void {
 </script>
 
 <template>
-  <div class="debug-panel">
-    <Card v-if="hasWorktree" class="debug-sync">
-      <div class="debug-sync-head">
-        <RefreshCw class="debug-sync-icon" :class="{ spinning: syncBusy }" />
-        <div class="debug-sync-text">
-          <span class="debug-sync-title">Sync with main</span>
-          <span class="debug-sync-sub">
-            Merge main into this task's branch to pick up fixes landed since it was cut.
-          </span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          class="debug-sync-btn"
-          :disabled="syncBusy"
-          @click="syncWithMain"
-        >
-          {{ syncBusy ? "Syncing…" : "Sync now" }}
-        </Button>
-      </div>
-      <p v-if="worktreeDirty" class="debug-sync-warn">
-        This worktree has uncommitted changes — merging main may refuse or merge around your
-        in-progress edits. Commit or stash first if you want a clean reconcile.
-      </p>
-    </Card>
-
-    <Card v-if="runningCheck" class="debug-live">
-      <div class="debug-live-head">
-        <span class="debug-live-dot" />
-        <span class="debug-live-title">{{ checkLabel(runningCheck.kind) }} running…</span>
-        <span class="debug-live-elapsed">{{ runningElapsed }}</span>
-      </div>
-      <pre ref="logEl" class="debug-log" @scroll="onLogScroll">{{
-        runningCheck.output || "…"
-      }}</pre>
-    </Card>
-
-    <div class="debug-filters">
-      <select v-model="kindFilter" class="debug-select">
-        <option value="all">All events</option>
-        <option value="activity">State changes</option>
-        <option value="log">Logs</option>
-        <option value="check">Checks</option>
-      </select>
+  <div class="debug-panel" :class="{ 'debug-panel-chat': view === 'debugger' }">
+    <div class="debug-tabs">
       <button
         type="button"
-        class="debug-filter-btn"
-        :class="{ active: filter === 'errors' }"
-        @click="filter = filter === 'errors' ? 'all' : 'errors'"
+        class="debug-tab"
+        :class="{ active: view === 'logs' }"
+        @click="view = 'logs'"
       >
-        <AlertTriangle class="debug-filter-icon" />
-        Errors &amp; warnings only
+        Logs
+      </button>
+      <button
+        type="button"
+        class="debug-tab"
+        :class="{ active: view === 'debugger' }"
+        @click="view = 'debugger'"
+      >
+        Debugger
+        <span class="debug-tab-dot" />
       </button>
     </div>
 
-    <div v-if="filteredEvents.length === 0" class="agent-empty">
-      <p>No debug events yet.</p>
-    </div>
-    <div v-else class="debug-events">
-      <div
-        v-for="e in filteredEvents"
-        :key="e.key"
-        class="debug-event"
-        :class="[
-          `debug-level-${e.level}`,
-          { 'debug-event-expandable': e.kind === 'check' || e.detail },
-        ]"
-        @click="e.kind === 'check' || e.detail ? toggleExpanded(e.key) : undefined"
-      >
-        <div class="debug-event-row">
-          <component
-            :is="
-              e.kind === 'check' || e.detail
-                ? expanded.has(e.key)
-                  ? ChevronDown
-                  : ChevronRight
-                : 'span'
-            "
-            class="debug-event-chevron"
-          />
-          <span class="debug-event-kind">{{ e.kind }}</span>
-          <span class="debug-event-title">{{ e.title }}</span>
-          <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
+    <template v-if="view === 'logs'">
+      <Card v-if="hasWorktree" class="debug-sync">
+        <div class="debug-sync-head">
+          <RefreshCw class="debug-sync-icon" :class="{ spinning: syncBusy }" />
+          <div class="debug-sync-text">
+            <span class="debug-sync-title">Sync with main</span>
+            <span class="debug-sync-sub">
+              Merge main into this task's branch to pick up fixes landed since it was cut.
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            class="debug-sync-btn"
+            :disabled="syncBusy"
+            @click="syncWithMain"
+          >
+            {{ syncBusy ? "Syncing…" : "Sync now" }}
+          </Button>
         </div>
-        <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
-        <pre
-          v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
-          class="debug-log debug-log-inline"
-          >{{ e.checkRun.output || "(no output captured)" }}</pre>
-        <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{
-          e.detail
+        <p v-if="worktreeDirty" class="debug-sync-warn">
+          This worktree has uncommitted changes — merging main may refuse or merge around your
+          in-progress edits. Commit or stash first if you want a clean reconcile.
+        </p>
+      </Card>
+
+      <Card v-if="runningCheck" class="debug-live">
+        <div class="debug-live-head">
+          <span class="debug-live-dot" />
+          <span class="debug-live-title">{{ checkLabel(runningCheck.kind) }} running…</span>
+          <span class="debug-live-elapsed">{{ runningElapsed }}</span>
+        </div>
+        <pre ref="logEl" class="debug-log" @scroll="onLogScroll">{{
+          runningCheck.output || "…"
         }}</pre>
+      </Card>
+
+      <div class="debug-filters">
+        <select v-model="kindFilter" class="debug-select">
+          <option value="all">All events</option>
+          <option value="activity">State changes</option>
+          <option value="log">Logs</option>
+          <option value="check">Checks</option>
+        </select>
+        <button
+          type="button"
+          class="debug-filter-btn"
+          :class="{ active: filter === 'errors' }"
+          @click="filter = filter === 'errors' ? 'all' : 'errors'"
+        >
+          <AlertTriangle class="debug-filter-icon" />
+          Errors &amp; warnings only
+        </button>
       </div>
-    </div>
+
+      <div v-if="filteredEvents.length === 0" class="agent-empty">
+        <p>No debug events yet.</p>
+      </div>
+      <div v-else class="debug-events">
+        <div
+          v-for="e in filteredEvents"
+          :key="e.key"
+          class="debug-event"
+          :class="[
+            `debug-level-${e.level}`,
+            { 'debug-event-expandable': e.kind === 'check' || e.detail },
+          ]"
+          @click="e.kind === 'check' || e.detail ? toggleExpanded(e.key) : undefined"
+        >
+          <div class="debug-event-row">
+            <component
+              :is="
+                e.kind === 'check' || e.detail
+                  ? expanded.has(e.key)
+                    ? ChevronDown
+                    : ChevronRight
+                  : 'span'
+              "
+              class="debug-event-chevron"
+            />
+            <span class="debug-event-kind">{{ e.kind }}</span>
+            <span class="debug-event-title">{{ e.title }}</span>
+            <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
+          </div>
+          <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
+          <pre
+            v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
+            class="debug-log debug-log-inline"
+            >{{ e.checkRun.output || "(no output captured)" }}</pre>
+          <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{
+            e.detail
+          }}</pre>
+        </div>
+      </div>
+    </template>
+    <TaskDebuggerChat v-else :task="task" />
   </div>
 </template>
 
@@ -298,6 +327,46 @@ function toggleExpanded(key: string): void {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* In chat mode the panel fills the (fixed-height, scroll-clipped) drawer body so
+   only the conversation scrolls and the compose bar stays pinned — the logs view
+   keeps the default auto-height scroll of the whole panel. */
+.debug-panel-chat {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 10px;
+}
+
+.debug-tabs {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.debug-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--txt-dim);
+  font: 600 11.5px var(--font-sans);
+  cursor: pointer;
+}
+.debug-tab.active {
+  border-color: var(--cyan-dim);
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+.debug-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
 }
 
 .debug-sync {
