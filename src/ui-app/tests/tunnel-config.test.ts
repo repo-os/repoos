@@ -185,10 +185,23 @@ describe("derived cloudflared config", () => {
     );
     expect(yaml).toContain("ingress:");
     expect(yaml).toContain("  - hostname: dashboard.repoos.org");
-    expect(yaml).toContain("    service: http://localhost:3000");
+    // `localhost` is normalized to the IPv4 loopback at render time so a
+    // 0.0.0.0-bound origin isn't missed via ::1 on a dual-stack host.
+    expect(yaml).toContain("    service: http://127.0.0.1:3000");
     // the catch-all is last, with no hostname
     const lines = yaml.trimEnd().split("\n");
     expect(lines[lines.length - 1]).toBe("  - service: http_status:404");
+  });
+
+  it("leaves a non-localhost origin host untouched", () => {
+    const yaml = renderCloudflaredConfig(
+      {
+        ...cfg,
+        apps: { a: { hostname: "a.repoos.org", service: "http://192.168.0.5:8080", access: [] } },
+      },
+      "/x.json",
+    );
+    expect(yaml).toContain("    service: http://192.168.0.5:8080");
   });
 
   it("emits only the catch-all when no apps are configured", () => {

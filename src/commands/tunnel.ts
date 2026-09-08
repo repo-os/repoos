@@ -791,7 +791,12 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
 
   tunnel.apps[name] = {
     hostname,
-    service: `http://localhost:${portNum}`,
+    // 127.0.0.1, not "localhost": when `repoos serve` binds 0.0.0.0 (which it
+    // does whenever Tailscale is detected) it listens on IPv4 only, but
+    // "localhost" resolves to ::1 first on a dual-stack host — cloudflared then
+    // dials [::1]:<port> and gets connection-refused even though the origin is
+    // up. An explicit IPv4 loopback always reaches a 0.0.0.0/127.0.0.1 bind.
+    service: `http://127.0.0.1:${portNum}`,
     access: emails,
     noAccess,
   };

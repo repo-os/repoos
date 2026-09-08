@@ -298,6 +298,20 @@ export function removeEmail(access: string[], email: string): string[] {
  * configured app plus a trailing `http_status:404` catch-all. cloudflared
  * requires the catch-all as the final rule.
  */
+/**
+ * Rewrite a `http://localhost:<port>` origin service to `http://127.0.0.1:<port>`.
+ *
+ * `repoos serve` binds `0.0.0.0` whenever Tailscale is detected, which on Linux
+ * means IPv4 only. On a dual-stack host `localhost` resolves to `::1` first, so
+ * cloudflared dials `[::1]:<port>` and gets connection-refused while the origin
+ * is up and reachable on `127.0.0.1`. Apps stored before this normalization
+ * (their `service` still literal `localhost`) are fixed here at render time, so
+ * no stored file has to be rewritten. Any other host is left untouched.
+ */
+export function ipv4LoopbackService(service: string): string {
+  return service.replace(/^(https?:\/\/)localhost(:|\/|$)/i, "$1127.0.0.1$2");
+}
+
 export function renderCloudflaredConfig(cfg: TunnelConfig, credentialsFile: string): string {
   const lines: string[] = [];
   lines.push(
@@ -312,7 +326,7 @@ export function renderCloudflaredConfig(cfg: TunnelConfig, credentialsFile: stri
   const apps = Object.values(cfg.apps).sort((a, b) => a.hostname.localeCompare(b.hostname));
   for (const app of apps) {
     lines.push(`  - hostname: ${app.hostname}`);
-    lines.push(`    service: ${app.service}`);
+    lines.push(`    service: ${ipv4LoopbackService(app.service)}`);
   }
   lines.push("  - service: http_status:404");
   return lines.join("\n") + "\n";
