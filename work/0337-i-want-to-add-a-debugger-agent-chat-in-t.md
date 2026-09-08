@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-08T14:52:03Z"
+review_passes: 1
 id: "0337"
 title: Add debugger agent chat to task debug tab
 type: feature
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/add-debugger-agent-chat-to-task-debug-ta
 model_override: opencode-go/hy3
 created_at: "2026-09-08T13:25:03Z"
-updated_at: "2026-09-08T14:44:16Z"
 ---
 ## Problem
 When an agent run fails (for example an engineer agent hitting an auth error on Claude Code at startup), there is no in-product place that aggregates the full task context — PM/developer/reviewer chats, logs, and status — and turns it into actionable guidance. The user is left to read raw logs and guess the fix and next step. The task side panel already has a Debug tab showing the task's logs, but there is no agent there that can reason over the whole task and tell the user what went wrong and what to do.
@@ -60,3 +61,4 @@ I want to add a debugger agent chat in the debug tab of tasks panel, this debugg
 - 2026-09-08T14:28:19Z · status inbox→ready
 - 2026-09-08T14:28:41Z · status ready→active, branch
 - 2026-09-08T14:44:16Z · status active→review
+
