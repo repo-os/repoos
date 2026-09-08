@@ -96,7 +96,7 @@ describe("ModelPlaygroundPanel — model list rendering", () => {
     expect(cards[0].find(".playground-model-name").text()).toBe("zai-org/GLM-5.3-Flash");
     expect(cards[0].find(".playground-model-reason").text()).toContain("native multimodal model");
     expect(cards[0].text()).toContain("$0.150");
-    expect(cards[0].text()).toContain("1M ctx");
+    expect(cards[0].text()).toContain("1.049M ctx");
   });
 
   it("auto-selects the first model and shows it as active in the chat header", async () => {

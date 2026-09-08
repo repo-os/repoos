@@ -4814,6 +4814,13 @@
 .task-usage-session-agent:hover {
   color: var(--txt);
 }
+.task-usage-session-time {
+  cursor: pointer;
+  user-select: none;
+}
+.task-usage-session-time:hover {
+  color: var(--txt);
+}
 .task-usage-session-model {
   font-size: 9.5px;
   color: var(--txt-faint);

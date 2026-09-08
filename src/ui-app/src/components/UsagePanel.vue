@@ -2,6 +2,7 @@
 import { computed, onMounted } from "vue";
 import { useRepoStore } from "../stores/repo";
 import type { UsageRange } from "../types";
+import { fmtTokens } from "../lib/format";
 
 const repo = useRepoStore();
 
@@ -32,13 +33,6 @@ function fmtElapsed(ms: number | null | undefined): string {
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
-}
-
-function fmtTokens(n: number | null | undefined): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
-  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
 }
 
 function fmtCost(usd: number | null | undefined, source?: string): string {
