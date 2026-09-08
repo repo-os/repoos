@@ -250,7 +250,9 @@ watch(repoName, () => {
         />
       </svg>
     </div>
-    <div class="brand hidden sm:inline">RepoOS<small>repo is the os</small></div>
+    <div class="brand hidden sm:inline">RepoOS
+        <!-- <small>repo is the os</small> -->
+    </div>
     <div v-if="health" class="repo-pill-wrapper">
       <button
         class="repo-pill"
@@ -286,8 +288,8 @@ watch(repoName, () => {
         <button type="button" class="repo-color-default" @click="clearColor">Default</button>
       </div>
     </div>
-    <div class="spacer"></div>
     <SearchBar />
+    <div class="spacer"></div>
     <button
       v-if="newVersion"
       type="button"
@@ -299,7 +301,6 @@ watch(repoName, () => {
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
     </button>
-    <div class="spacer"></div>
     <button
       class="theme-toggle"
       type="button"
