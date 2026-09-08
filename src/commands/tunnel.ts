@@ -52,13 +52,14 @@ import {
 } from "../core/tunnel.js";
 import {
   annotateStale,
-  migrateFromRepo,
   readRegistry,
   reconcileIdentity,
   registryPath,
   removeApp,
+  syncFromRepo,
   unionApps,
   upsertApp,
+  withRegistryLock,
   writeRegistry,
   type TunnelRegistry,
 } from "../core/tunnel-registry.js";
@@ -262,32 +263,45 @@ function writeUserCloudflaredConfig(tunnel: TunnelConfig, apps: Record<string, T
 }
 
 /**
- * Load the machine registry for a MUTATING command: reconciles this repo's
- * tunnel identity against it (failing loudly on a conflicting `tunnelId`
- * rather than silently picking one), seeds in any of this repo's own apps
- * the registry doesn't know about yet, and persists the result. Every
- * mutating tunnel subcommand (`create`, `destroy`, `install`, `start`,
- * `rename`) goes through this so the registry never drifts from repoos.toml.
+ * Run `mutate` against the machine registry inside an exclusive lock: reads
+ * it fresh, reconciles this repo's tunnel identity against it (failing
+ * loudly on a conflicting `tunnelId` rather than silently picking one),
+ * syncs this repo's own apps in from repoos.toml (seed new / update changed
+ * / drop ones this repo no longer declares — see `syncFromRepo`), lets
+ * `mutate` make its own change against the same in-memory registry, then
+ * persists the result. Every mutating tunnel subcommand (`create`,
+ * `destroy`, `install`, `start`, `rename`, `allow`, `deny`) goes through this
+ * so the registry never drifts from repoos.toml, and the whole
+ * read-reconcile-write cycle is serialized against any other `repoos tunnel`
+ * process on the machine racing the same file.
  */
-function loadRegistryForWrite(root: string, tunnel: TunnelConfig): TunnelRegistry {
-  const registry = readRegistry();
-  const conflict = reconcileIdentity(registry, tunnel);
-  if (conflict) fail(conflict);
-  const seeded = migrateFromRepo(registry, tunnel, root);
-  if (seeded.length) {
-    console.log(
-      c.dim(`  · seeded machine tunnel registry with ${seeded.join(", ")} → ${registryPath()}`),
-    );
-  }
-  writeRegistry(registry);
-  return registry;
+function mutateRegistry(
+  root: string,
+  tunnel: TunnelConfig,
+  mutate: (registry: TunnelRegistry) => void = () => {},
+): TunnelRegistry {
+  return withRegistryLock(registryPath(), () => {
+    const registry = readRegistry();
+    const conflict = reconcileIdentity(registry, tunnel);
+    if (conflict) fail(conflict);
+    const seeded = syncFromRepo(registry, tunnel, root);
+    if (seeded.length) {
+      console.log(
+        c.dim(`  · seeded machine tunnel registry with ${seeded.join(", ")} → ${registryPath()}`),
+      );
+    }
+    mutate(registry);
+    writeRegistry(registry);
+    return registry;
+  });
 }
 
 /**
  * Read-only merged view of the registry for DISPLAY commands (`list`,
- * `status`): same reconcile + seed as {@link loadRegistryForWrite}, but never
- * persists and never fails on an identity conflict — it reports the conflict
- * instead so the command can show it.
+ * `status`): same reconcile + sync as {@link mutateRegistry}, but never
+ * persists, never locks (nothing is written), and never fails on an
+ * identity conflict — it reports the conflict instead so the command can
+ * show it.
  */
 function readRegistryForDisplay(
   root: string,
@@ -295,7 +309,7 @@ function readRegistryForDisplay(
 ): { registry: TunnelRegistry; conflict: string | null } {
   const registry = readRegistry();
   const conflict = reconcileIdentity(registry, tunnel);
-  migrateFromRepo(registry, tunnel, root);
+  syncFromRepo(registry, tunnel, root);
   return { registry, conflict };
 }
 
@@ -690,16 +704,33 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
+
+  // Peek the registry (read-only — the real seed/sync/write happens later,
+  // right before this app is actually persisted) so both a plain name clash
+  // and a pre-existing cross-repo collision fail fast, before any DNS/Access
+  // API calls, with a message that tells the truth about which one it is.
+  const registryPeek = readRegistry();
+  const earlyConflict = reconcileIdentity(registryPeek, tunnel);
+  if (earlyConflict) fail(earlyConflict);
+  const elsewhere = registryPeek.apps[name];
+  const collision = !!elsewhere && !!elsewhere.ownerRoot && elsewhere.ownerRoot !== cfg.root;
+
   if (tunnel.apps[name]) {
+    if (collision) {
+      fail(
+        `App "${name}" exists in this repo's repoos.toml AND is already published by a ` +
+          `different repo on this machine (${elsewhere!.ownerRoot}) — app names are shared ` +
+          `machine-wide. This looks like a naming collision from before the machine registry ` +
+          `existed; rename one of them (destroy and re-create it under a new name, here or there).`,
+      );
+    }
     fail(
       `App "${name}" already exists — use \`repoos tunnel allow/deny\` to manage its allowlist.`,
     );
   }
-  const registry = loadRegistryForWrite(cfg.root, tunnel);
-  const existingElsewhere = registry.apps[name];
-  if (existingElsewhere && existingElsewhere.ownerRoot !== cfg.root) {
+  if (collision) {
     fail(
-      `App "${name}" is already published by another repo on this machine (${existingElsewhere.ownerRoot}) — app names are shared machine-wide. Pick a different name.`,
+      `App "${name}" is already published by another repo on this machine (${elsewhere!.ownerRoot}) — app names are shared machine-wide. Pick a different name.`,
     );
   }
 
@@ -765,8 +796,9 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
     noAccess,
   };
   writeTunnelConfig(cfg.root, tunnel);
-  upsertApp(registry, name, tunnel.apps[name], cfg.root);
-  writeRegistry(registry);
+  const registry = mutateRegistry(cfg.root, tunnel, (registry) => {
+    upsertApp(registry, name, tunnel.apps[name], cfg.root);
+  });
   console.log(
     c.green("  ✔ configured ") +
       c.cyan(name) +
@@ -829,6 +861,96 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
   );
 }
 
+/** Delete an app's Cloudflare Access app + policy, if it has one. Shared by both `destroy` paths. */
+async function deleteAccessAppFor(app: TunnelApp): Promise<void> {
+  if (app.noAccess) return;
+  try {
+    const { token, accountId } = await accessClient();
+    const existing = await findAccessApp(token, accountId, app.hostname);
+    if (existing?.id) {
+      await cfFetch(token, `/accounts/${accountId}/access/apps/${existing.id}`, "DELETE");
+      console.log(c.green("  ✔ deleted Cloudflare Access app for ") + c.cyan(app.hostname));
+    } else {
+      console.log(
+        c.dim("  · no Cloudflare Access app found for ") +
+          app.hostname +
+          c.dim(" — nothing to delete there."),
+      );
+    }
+  } catch (e) {
+    console.log(c.yellow(`  ⚠ Failed to delete the Access app: ${(e as Error).message}`));
+    console.log(
+      c.dim(
+        "    Continuing to remove it from repoos.toml anyway — clean up the stale Access app in the Cloudflare dashboard if needed.",
+      ),
+    );
+  }
+}
+
+/**
+ * `destroy` for a name that isn't in THIS repo's own repoos.toml at all: the
+ * only legitimate reason to reach here is a registry entry whose owning
+ * checkout has been deleted (stale) — the normal path needs that repo's own
+ * toml to remove the app from, which no longer exists. Without this, a
+ * stale entry could only ever be cleared by hand-editing the registry file,
+ * despite its own header saying not to. A checkout that's still on disk is
+ * never touched from here — that repo is the only place its app can be
+ * destroyed from.
+ */
+async function destroyStaleRegistryApp(root: string, name: string): Promise<void> {
+  const registry = readRegistry();
+  const entry = registry.apps[name];
+  if (!entry) fail(`No app named "${name}" — see \`repoos tunnel list\`.`);
+  if (existsSync(entry.ownerRoot)) {
+    fail(
+      `"${name}" isn't in this repo's repoos.toml — it's owned by another repo checkout still ` +
+        `on disk (${entry.ownerRoot}). Run \`repoos tunnel destroy ${name}\` from there.`,
+    );
+  }
+  const localTunnel = readTunnelConfig(root);
+  const tunnelId = localTunnel.tunnelId || registry.tunnelId;
+  if (!tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
+
+  if (
+    !(await confirm(
+      `  Destroy stale registry entry "${name}" (${entry.hostname})? Its owning repo checkout ` +
+        `(${entry.ownerRoot}) no longer exists on disk, so this only removes it from the ` +
+        `machine registry — there is no repoos.toml left to remove it from.`,
+      false,
+    ))
+  ) {
+    console.log(c.dim("  cancelled."));
+    return;
+  }
+
+  await deleteAccessAppFor(entry);
+
+  const registryAfter = withRegistryLock(registryPath(), () => {
+    const reg = readRegistry();
+    removeApp(reg, name);
+    writeRegistry(reg);
+    return reg;
+  });
+  const renderTunnel: TunnelConfig = {
+    ...localTunnel,
+    tunnelId,
+    name: localTunnel.name || registryAfter.tunnelName || DEFAULT_TUNNEL_NAME,
+    domain: localTunnel.domain || registryAfter.domain,
+  };
+  const derived = writeDerivedConfig(renderTunnel, unionApps(registryAfter));
+  console.log(
+    c.green(`  ✔ removed stale "${name}" from the machine tunnel registry`) +
+      c.dim(" · ingress config rewritten → " + derived),
+  );
+  console.log(
+    c.dim("  DNS record for ") +
+      entry.hostname +
+      c.dim(
+        " was left as-is — delete it in the Cloudflare dashboard if you don't plan to recreate this app.",
+      ),
+  );
+}
+
 /**
  * Remove a published app: deletes its Cloudflare Access app + policy (if it
  * has one), drops it from repoos.toml, and rewrites the ingress config. The
@@ -844,7 +966,10 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   const app = tunnel.apps[name];
-  if (!app) fail(`No app named "${name}" — see \`repoos tunnel list\`.`);
+  if (!app) {
+    await destroyStaleRegistryApp(cfg.root, name);
+    return;
+  }
 
   if (
     !(await confirm(
@@ -856,35 +981,11 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
     return;
   }
 
-  if (!app.noAccess) {
-    try {
-      const { token, accountId } = await accessClient();
-      const existing = await findAccessApp(token, accountId, app.hostname);
-      if (existing?.id) {
-        await cfFetch(token, `/accounts/${accountId}/access/apps/${existing.id}`, "DELETE");
-        console.log(c.green("  ✔ deleted Cloudflare Access app for ") + c.cyan(app.hostname));
-      } else {
-        console.log(
-          c.dim("  · no Cloudflare Access app found for ") +
-            app.hostname +
-            c.dim(" — nothing to delete there."),
-        );
-      }
-    } catch (e) {
-      console.log(c.yellow(`  ⚠ Failed to delete the Access app: ${(e as Error).message}`));
-      console.log(
-        c.dim(
-          "    Continuing to remove it from repoos.toml anyway — clean up the stale Access app in the Cloudflare dashboard if needed.",
-        ),
-      );
-    }
-  }
+  await deleteAccessAppFor(app);
 
-  const registry = loadRegistryForWrite(cfg.root, tunnel);
   delete tunnel.apps[name];
   writeTunnelConfig(cfg.root, tunnel);
-  removeApp(registry, name);
-  writeRegistry(registry);
+  const registry = mutateRegistry(cfg.root, tunnel, (registry) => removeApp(registry, name));
   const derived = writeDerivedConfig(tunnel, unionApps(registry));
   console.log(
     c.green(`  ✔ removed "${name}" from repoos.toml and the machine tunnel registry`) +
@@ -926,7 +1027,11 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
     console.log(c.dim(`  Tunnel is already named "${newName}" — nothing to do.`));
     return;
   }
-  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  // Early conflict check only (fails fast, before invoking `cloudflared
+  // tunnel rename` at all) — the persisted registry update happens after
+  // repoos.toml is rewritten, below, in one locked read-modify-write.
+  const earlyConflict = reconcileIdentity(readRegistry(), tunnel);
+  if (earlyConflict) fail(earlyConflict);
 
   const bin = cloudflaredBin();
   const oldName = tunnel.name || "(unnamed)";
@@ -942,8 +1047,9 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
 
   tunnel.name = newName;
   writeTunnelConfig(cfg.root, tunnel);
-  registry.tunnelName = newName;
-  writeRegistry(registry);
+  const registry = mutateRegistry(cfg.root, tunnel, (registry) => {
+    registry.tunnelName = newName;
+  });
   console.log(c.green("  ✔ renamed ") + c.cyan(oldName) + c.dim(" → ") + c.cyan(newName));
 
   // Re-point DNS for every app on the machine (all repos), not just this
@@ -1011,14 +1117,10 @@ async function mutateAllowlist(op: "allow" | "deny", args: string[]): Promise<vo
 
   app.access = next;
   writeTunnelConfig(cfg.root, tunnel);
-  // Keep the machine registry's copy of the allowlist (shown by `tunnel
-  // list`/`status` from any repo) from drifting out of sync with repoos.toml.
-  const registry = readRegistry();
-  reconcileIdentity(registry, tunnel);
-  if (registry.apps[name]) {
-    upsertApp(registry, name, app, registry.apps[name].ownerRoot || cfg.root);
-    writeRegistry(registry);
-  }
+  // Same conflict gate + seed/sync as every other mutating subcommand — this
+  // used to bypass the conflict check entirely and silently drop the change
+  // on an unseeded registry instead of keeping it in sync with repoos.toml.
+  mutateRegistry(cfg.root, tunnel);
   console.log(
     c.green(`  ✔ ${op === "allow" ? "allowed" : "denied"} `) +
       c.cyan(email) +
@@ -1034,7 +1136,7 @@ async function cmdTunnelStart(_args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
-  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  const registry = mutateRegistry(cfg.root, tunnel);
   const apps = unionApps(registry);
   if (Object.keys(apps).length === 0) {
     console.log(
@@ -1059,7 +1161,7 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
-  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  const registry = mutateRegistry(cfg.root, tunnel);
   const apps = unionApps(registry);
   if (Object.keys(apps).length === 0) {
     console.log(
@@ -1276,22 +1378,29 @@ async function cmdTunnelStatus(_args: string[]): Promise<void> {
     const appRows = annotateStale(registry);
     if (appRows.length) {
       console.log(c.dim("  per-app health (machine-wide)"));
-      for (const { name, app, stale } of appRows) {
-        const port = originPort(app.service);
-        const originUp = port !== null ? await portListening(port) : null;
-        const originTag =
-          originUp === null ? "" : originUp ? c.green(" · origin up") : c.red(" · origin down");
-        const ownerTag = app.ownerRoot === cfg.root ? "this repo" : app.ownerRoot || "unknown repo";
-        const staleTag = stale ? c.yellow(" · stale, checkout missing") : "";
-        rows.push([
-          "  " + name,
-          `${app.hostname} → ` +
-            (await probeApp(app.hostname)) +
-            originTag +
-            staleTag +
-            c.dim(` [${ownerTag}]`),
-        ]);
-      }
+      // Each app needs an origin-port probe (up to 800ms) and a hostname
+      // fetch (up to 8s) — for several apps, doing those serially one app at
+      // a time can take tens of seconds. Run every app's pair of probes
+      // concurrently instead; `Promise.all` preserves `appRows`' order.
+      const healthRows = await Promise.all(
+        appRows.map(async ({ name, app, stale }) => {
+          const port = originPort(app.service);
+          const [originUp, status] = await Promise.all([
+            port !== null ? portListening(port) : Promise.resolve(null),
+            probeApp(app.hostname),
+          ]);
+          const originTag =
+            originUp === null ? "" : originUp ? c.green(" · origin up") : c.red(" · origin down");
+          const ownerTag =
+            app.ownerRoot === cfg.root ? "this repo" : app.ownerRoot || "unknown repo";
+          const staleTag = stale ? c.yellow(" · stale, checkout missing") : "";
+          return [
+            "  " + name,
+            `${app.hostname} → ` + status + originTag + staleTag + c.dim(` [${ownerTag}]`),
+          ] as [string, string];
+        }),
+      );
+      rows.push(...healthRows);
     }
   }
 

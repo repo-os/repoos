@@ -15,7 +15,16 @@
  * `cloudflared` ingress from, so bringing up the service from ANY repo on the
  * machine serves every app published by any repo.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { parseToml, tomlQuote, type TunnelApp, type TunnelConfig } from "./tunnel.js";
@@ -52,9 +61,16 @@ export function parseRegistry(text: string): TunnelRegistry {
   const rawApps = (root.apps ?? {}) as Record<string, Record<string, unknown>>;
   for (const [name, a] of Object.entries(rawApps)) {
     if (typeof a !== "object" || a === null) continue;
+    const hostname = String(a.hostname ?? "");
+    const service = String(a.service ?? "");
+    // A corrupt/partial entry (hand-edited despite the "do not" header, or
+    // written by some future bug) must never reach `renderCloudflaredConfig`
+    // — an empty hostname/service would render a blank ingress rule into
+    // cloudflared's config. Drop it rather than pass it through silently.
+    if (!hostname || !service) continue;
     reg.apps[name] = {
-      hostname: String(a.hostname ?? ""),
-      service: String(a.service ?? ""),
+      hostname,
+      service,
       access: Array.isArray(a.access) ? (a.access as unknown[]).map(String) : [],
       ...(a.noAccess === true ? { noAccess: true } : {}),
       ownerRoot: String(a.ownerRoot ?? ""),
@@ -91,10 +107,67 @@ export function readRegistry(path: string = registryPath()): TunnelRegistry {
   return parseRegistry(text);
 }
 
-/** Persist the machine registry (0600 — same treatment as the derived ingress config). */
+/**
+ * Persist the machine registry (0600 — same treatment as the derived ingress
+ * config). Writes to a sibling temp file and renames it over the real path
+ * (atomic on POSIX) so a concurrent reader (another repo's `tunnel list`, or
+ * this same read done mid-write) never observes a truncated/partial file.
+ */
 export function writeRegistry(reg: TunnelRegistry, path: string = registryPath()): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, serializeRegistry(reg), { encoding: "utf8", mode: 0o600 });
+  const tmp = `${path}.tmp-${process.pid}-${Date.now()}`;
+  writeFileSync(tmp, serializeRegistry(reg), { encoding: "utf8", mode: 0o600 });
+  renameSync(tmp, path);
+}
+
+const LOCK_RETRY_MS = 25;
+const LOCK_STALE_MS = 5_000;
+
+/** Block the calling thread for `ms` without busy-spinning (a real syscall wait). */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Hold an exclusive lock on the registry while running `fn`. Two `repoos
+ * tunnel` processes on the same machine — the exact scenario this registry
+ * exists for — can otherwise race a read-modify-write and silently drop one
+ * another's change (last write wins). A sibling `<path>.lock` file created
+ * with the atomic create-if-absent (`wx`) flag serves as a simple
+ * cross-process mutex: a lock older than {@link LOCK_STALE_MS} is assumed to
+ * be left behind by a crashed process and is stolen rather than waited on
+ * forever.
+ */
+export function withRegistryLock<T>(path: string, fn: () => T): T {
+  const lockPath = `${path}.lock`;
+  mkdirSync(dirname(path), { recursive: true });
+  const start = Date.now();
+  for (;;) {
+    try {
+      closeSync(openSync(lockPath, "wx"));
+      break;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      if (Date.now() - start > LOCK_STALE_MS) {
+        try {
+          unlinkSync(lockPath);
+        } catch {
+          // another waiter already stole/removed it — just retry the create
+        }
+        continue;
+      }
+      sleepSync(LOCK_RETRY_MS);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    try {
+      unlinkSync(lockPath);
+    } catch {
+      // already gone (shouldn't happen — we're the holder)
+    }
+  }
 }
 
 /**
@@ -116,8 +189,11 @@ export function reconcileIdentity(reg: TunnelRegistry, tunnel: TunnelConfig): st
     return (
       `This repo's tunnel (${tunnel.name || "unnamed"}, ${tunnel.tunnelId}) does not match ` +
       `the machine's registered tunnel (${reg.tunnelName || "unnamed"}, ${reg.tunnelId}). ` +
-      `A machine runs ONE Cloudflare Tunnel — run \`repoos tunnel setup\` here to join the ` +
-      `existing tunnel, or resolve the conflict by hand in ${registryPath()}.`
+      `A machine runs ONE Cloudflare Tunnel — \`repoos tunnel setup\` reuses a tunnel by NAME, ` +
+      `so it won't join this one unless the names happen to match. To join it, edit this repo's ` +
+      `repoos.toml [tunnel] block by hand: set tunnel_id = ${tomlQuote(reg.tunnelId)}` +
+      (reg.tunnelName ? ` and name = ${tomlQuote(reg.tunnelName)}` : "") +
+      `, or resolve the conflict the other way in ${registryPath()}.`
     );
   }
   return null;
@@ -153,28 +229,58 @@ export function unionApps(reg: TunnelRegistry): Record<string, TunnelApp> {
 }
 
 /**
- * Migration / self-healing seed: for every app in this repo's own
- * `repoos.toml`, add it to the registry under this repo's ownership UNLESS
- * the registry already has an entry with that name (from this repo or any
- * other — an existing entry is never overwritten here). Mutates `reg` in
- * place and returns the names that were newly seeded.
+ * Reconcile the registry against THIS repo's own `repoos.toml [tunnel.apps]`
+ * — still the git-tracked, hand-edited source of truth for the apps this
+ * repo publishes. Mutates `reg` in place and returns the names that were
+ * newly seeded (for the same one-time log line callers have always printed).
+ * Three cases, keyed entirely on `ownerRoot` so another repo's entries are
+ * never touched:
  *
- * Deliberately per-app rather than gated on "registry is totally empty":
- * on a machine with multiple PRE-EXISTING repos (each already publishing
- * its own apps before this registry existed), each repo seeds its own apps
- * into the registry the first time IT runs `create`/`install`/`start`,
- * regardless of whether another repo got there first and seeded its own —
- * that's exactly the scenario (celleris + dev on one tunnel) this registry
- * exists to fix. For the common single-repo case this still behaves like a
+ *  - in `tunnel.apps`, missing from the registry → seed it (first run after
+ *    upgrade, or a brand-new `create` on an otherwise-synced registry).
+ *  - in `tunnel.apps` AND already registered under THIS repo's `ownerRoot`,
+ *    but with different fields (hostname/port/access edited by hand in
+ *    repoos.toml rather than through `repoos tunnel`) → overwrite the
+ *    registry entry so it can't drift from the file that's supposed to be
+ *    authoritative for it.
+ *  - registered under THIS repo's `ownerRoot` but no longer in `tunnel.apps`
+ *    (deleted by hand rather than via `repoos tunnel destroy`) → drop it,
+ *    since this repo no longer declares it.
+ *
+ * An entry owned by a DIFFERENT repo is left alone in every case, even when
+ * this repo's own `tunnel.apps` happens to declare the same name (a
+ * pre-existing collision — surfaced to the user elsewhere, not silently
+ * resolved here).
+ *
+ * Deliberately per-app rather than gated on "registry is totally empty": on
+ * a machine with multiple PRE-EXISTING repos (each already publishing its
+ * own apps before this registry existed), each repo seeds its own apps into
+ * the registry the first time IT runs `create`/`install`/`start`, regardless
+ * of whether another repo got there first and seeded its own — that's
+ * exactly the scenario (celleris + dev on one tunnel) this registry exists
+ * to fix. For the common single-repo case this still behaves like a
  * one-time full migration, since every app is missing on the first run and
- * none are ever touched again afterward.
+ * every run after that is a no-op unless repoos.toml itself changed.
  */
-export function migrateFromRepo(reg: TunnelRegistry, tunnel: TunnelConfig, root: string): string[] {
+export function syncFromRepo(reg: TunnelRegistry, tunnel: TunnelConfig, root: string): string[] {
   const seeded: string[] = [];
   for (const [name, app] of Object.entries(tunnel.apps)) {
-    if (reg.apps[name]) continue;
-    reg.apps[name] = { ...app, ownerRoot: root };
-    seeded.push(name);
+    const existing = reg.apps[name];
+    if (!existing) {
+      reg.apps[name] = { ...app, ownerRoot: root };
+      seeded.push(name);
+      continue;
+    }
+    if (existing.ownerRoot !== root) continue; // another repo's entry — never touched here
+    const { ownerRoot: _ownerRoot, ...current } = existing;
+    if (JSON.stringify(current) !== JSON.stringify(app)) {
+      reg.apps[name] = { ...app, ownerRoot: root };
+    }
+  }
+  for (const [name, existing] of Object.entries(reg.apps)) {
+    if (existing.ownerRoot === root && !tunnel.apps[name]) {
+      delete reg.apps[name];
+    }
   }
   return seeded;
 }

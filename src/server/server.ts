@@ -368,9 +368,13 @@ async function tunnelReadiness(root: string, port?: number) {
   const tunnel = readTunnelConfig(root);
   // Machine-wide view: apps published by ANY repo on this box (from the
   // registry), plus this repo's own apps in case the registry hasn't been
-  // seeded yet (first run before any `repoos tunnel install`/`create`).
+  // seeded yet (first run before any `repoos tunnel install`/`create`). This
+  // repo's own `tunnel.apps` wins over its same-named registry copy — the
+  // registry is only re-synced from repoos.toml when a `repoos tunnel`
+  // command runs, so a hand-edit (or an `allow`/`deny` not yet re-installed)
+  // could otherwise show this repo a stale port/hostname for its own app.
   const registryApps = unionApps(readRegistry());
-  const allApps = { ...tunnel.apps, ...registryApps };
+  const allApps = { ...registryApps, ...tunnel.apps };
   const bin = findCloudflared();
   let version: string | null = null;
   if (bin) {

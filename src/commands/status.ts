@@ -21,9 +21,9 @@ import { buildIndex } from "../core/indexer.js";
 import { checkBuildForRoot, readBuildStamp } from "../core/build.js";
 import { readTunnelConfig } from "../core/tunnel.js";
 import {
-  migrateFromRepo,
   readRegistry,
   reconcileIdentity,
+  syncFromRepo,
   unionApps,
 } from "../core/tunnel-registry.js";
 import { currentBranch, runGit } from "../core/git.js";
@@ -407,7 +407,7 @@ export async function collectStatus(
   // the registry hasn't been seeded yet.
   const registry = readRegistry();
   reconcileIdentity(registry, tunnelCfg);
-  migrateFromRepo(registry, tunnelCfg, root);
+  syncFromRepo(registry, tunnelCfg, root);
   let hostnames = Object.values({ ...tunnelCfg.apps, ...unionApps(registry) })
     .map((a) => a.hostname)
     .sort();
