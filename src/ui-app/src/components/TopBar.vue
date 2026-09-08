@@ -10,7 +10,7 @@ import SearchBar from "./SearchBar.vue";
 const repo = useRepoStore();
 const config = useConfigStore();
 const auth = useAuthStore();
-const { health, connected, loading, newVersion, restarting } = storeToRefs(repo);
+const { health, streamDown, loading, newVersion, restarting } = storeToRefs(repo);
 const { repoName } = storeToRefs(repo);
 
 const isDark = computed(() => config.effectiveTheme === "dark");
@@ -18,7 +18,10 @@ const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
 
 const connState = computed<"loading" | "live" | "offline">(() => {
   if (loading.value) return "loading";
-  return connected.value ? "live" : "offline";
+  // `streamDown` is the debounced signal (see repo store): the initial
+  // connect window and sub-3s auto-reconnects don't count as offline, so the
+  // red dot no longer flashes on every page load.
+  return streamDown.value ? "offline" : "live";
 });
 
 function toggleTheme(): void {

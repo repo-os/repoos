@@ -306,6 +306,38 @@ export const useRepoStore = defineStore("repo", () => {
   const origin = window.location.origin;
   const loading = ref(true);
   const connected = ref(false);
+  /**
+   * Debounced "the event stream is genuinely down" signal for the header
+   * indicator. `connected` flips false the instant EventSource fires `onerror`,
+   * but two of those aren't real outages worth alarming about:
+   *   - the page-load window before the first `onopen` — the stream is
+   *     *connecting*, not down (and init()'s /api/health already succeeded);
+   *   - a transient drop the browser auto-retries within ~3s, after which
+   *     every reconnect runs a full refresh() so nothing is missed.
+   * So this only goes true after a REAL stream error (`onerror` actually
+   * fired — not merely "hasn't opened yet") that then persists past the grace
+   * window. The red dot in TopBar reads this, not `connected`.
+   */
+  const streamDown = ref(false);
+  let sseErrored = false;
+  let streamDownTimer: ReturnType<typeof setTimeout> | null = null;
+  const STREAM_DOWN_GRACE_MS = 3000;
+  function markStreamHealthy(): void {
+    sseErrored = false;
+    if (streamDownTimer) {
+      clearTimeout(streamDownTimer);
+      streamDownTimer = null;
+    }
+    streamDown.value = false;
+  }
+  function markStreamError(): void {
+    sseErrored = true;
+    if (streamDownTimer || streamDown.value) return;
+    streamDownTimer = setTimeout(() => {
+      streamDownTimer = null;
+      if (sseErrored) streamDown.value = true; // still errored, still not reconnected
+    }, STREAM_DOWN_GRACE_MS);
+  }
   const health = ref<Health | null>(null);
   const tasks = ref<Task[]>([]);
   const counts = reactive<Counts>({ draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 });
@@ -1161,6 +1193,7 @@ export const useRepoStore = defineStore("repo", () => {
     es = new EventSource(origin + "/api/events");
     es.onopen = () => {
       connected.value = true;
+      markStreamHealthy();
       // Events emitted while EventSource reconnects are not replayed. Refresh
       // the server-authoritative index on every open so a reviewer that
       // started, finished, or failed during that gap cannot leave a stale card
@@ -1197,6 +1230,7 @@ export const useRepoStore = defineStore("repo", () => {
     };
     es.onerror = () => {
       connected.value = false;
+      markStreamError();
     };
     for (const t of [
       "hello",
@@ -1224,6 +1258,7 @@ export const useRepoStore = defineStore("repo", () => {
     ]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
+        markStreamHealthy(); // a frame arrived — the stream is demonstrably up
         try {
           applyEvent(JSON.parse(ev.data) as RepoEvent);
         } catch {
@@ -2046,6 +2081,7 @@ export const useRepoStore = defineStore("repo", () => {
     origin,
     loading,
     connected,
+    streamDown,
     health,
     tasks,
     counts,
