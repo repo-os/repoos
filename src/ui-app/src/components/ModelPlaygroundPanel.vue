@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { fmtContext } from "../lib/format";
 import type {
   PlaygroundChatMessage,
   PlaygroundChatResponse,
@@ -82,13 +83,6 @@ function clearFilters(): void {
 function fmtPrice(v: number | null): string {
   if (v == null) return "—";
   return v < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`;
-}
-
-function fmtContext(n: number | null): string {
-  if (n == null) return "—";
-  if (n >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`;
-  if (n >= 1000) return `${Math.round(n / 1000)}K`;
-  return String(n);
 }
 
 async function loadModels(refresh = false): Promise<void> {

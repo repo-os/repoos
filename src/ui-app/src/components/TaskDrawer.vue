@@ -29,6 +29,7 @@ import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
+import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
@@ -1644,13 +1645,7 @@ function fmtElapsed(ms: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
-/** "842" / "12.3k" — "—" when the CLI hasn't reported a token count. */
-function fmtTokens(n: number | null | undefined): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
-  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
+/** "@shared fmtTokens" — "1.842M" / "0.013M" / "842", "—" when unreported. */
 
 /** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. Estimates,
  *  Kiro credits, and mixed sources are labeled so they are never read as firm
@@ -1691,17 +1686,20 @@ function cacheCellTitle(s: SessionUsage): string {
   return `${parts.join(" · ")} — cumulative over the turn's model calls`;
 }
 
-/** "Aug 20, 3:14 PM" — local time, for a session's start/end timestamp. */
-function fmtSessionTime(iso: string | null): string {
+/**
+ * Local-time label for a session's start/end timestamp. `withDate` is false by
+ * default so the columns show only the time ("3:14 PM"); passing true adds the
+ * month/day ("Aug 20, 3:14 PM"). Local time, never UTC — `toLocale*` with
+ * explicit options, no manual math.
+ */
+function fmtSessionTime(iso: string | null, withDate = false): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const opts: Intl.DateTimeFormatOptions = withDate
+    ? { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }
+    : { hour: "numeric", minute: "2-digit" };
+  return d.toLocaleString(undefined, opts);
 }
 
 /** Human-readable text for why `needsInput` was set — see core/types.ts's NeedsInputReason. */
@@ -1807,6 +1805,16 @@ const sessionAgentsExpanded = ref(false);
 
 function toggleSessionAgentExpand(): void {
   sessionAgentsExpanded.value = !sessionAgentsExpanded.value;
+}
+
+/** Whether the started/ended columns show the date along with the time
+ *  (collapsed by default, so they show time-only — local, not UTC). Clicking
+ *  either column header toggles both columns together (same affordance as the
+ *  agent/model column above). */
+const sessionTimesExpanded = ref(false);
+
+function toggleSessionTimeExpand(): void {
+  sessionTimesExpanded.value = !sessionTimesExpanded.value;
 }
 
 /** Load the task's durable usage totals when the drawer opens or the task changes. */
@@ -3559,8 +3567,28 @@ watch(
                     <tr class="task-usage-session-head">
                       <th class="ta-left">type</th>
                       <th class="ta-left">agent / model</th>
-                      <th class="ta-left">started</th>
-                      <th class="ta-left">ended</th>
+                      <th
+                        class="ta-left task-usage-session-time"
+                        :title="
+                          sessionTimesExpanded
+                            ? 'Click to show time only'
+                            : 'Click to show date and time'
+                        "
+                        @click="toggleSessionTimeExpand()"
+                      >
+                        started
+                      </th>
+                      <th
+                        class="ta-left task-usage-session-time"
+                        :title="
+                          sessionTimesExpanded
+                            ? 'Click to show time only'
+                            : 'Click to show date and time'
+                        "
+                        @click="toggleSessionTimeExpand()"
+                      >
+                        ended
+                      </th>
                       <th class="ta-right">time</th>
                       <th class="ta-right">tokens</th>
                       <th
@@ -3596,11 +3624,13 @@ watch(
                           {{ s.model }}
                         </div>
                       </td>
-                      <td class="ta-left">{{ fmtSessionTime(s.startedAt) }}</td>
+                      <td class="ta-left">
+                        {{ fmtSessionTime(s.startedAt, sessionTimesExpanded) }}
+                      </td>
                       <td class="ta-left">
                         {{
                           s.endedAt
-                            ? fmtSessionTime(s.endedAt)
+                            ? fmtSessionTime(s.endedAt, sessionTimesExpanded)
                             : s.status === "active"
                               ? "running…"
                               : "—"
