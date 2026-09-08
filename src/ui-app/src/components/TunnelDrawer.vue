@@ -217,7 +217,7 @@ onMounted(() => {
             >
             <span>tunnel: {{ readiness.running ? "running" : "stopped" }}</span>
             <span
-              >published:
+              >published (this machine):
               {{
                 readiness.publishedHostnames.length
                   ? readiness.publishedHostnames.join(", ")
@@ -226,8 +226,11 @@ onMounted(() => {
             >
           </div>
           <p class="tunnel-help">
-            If the certificate is unauthorized, re-run <code>cloudflared tunnel login</code>. Wait
-            for <code>cloudflared tunnel list</code> to succeed before creating a route.
+            A machine runs one Cloudflare Tunnel shared by every RepoOS repo on it —
+            <code>repoos tunnel</code> commands and the list above cover apps published by any repo,
+            not just this one. If the certificate is unauthorized, re-run
+            <code>cloudflared tunnel login</code>. Wait for <code>cloudflared tunnel list</code> to
+            succeed before creating a route.
           </p>
         </div>
 

@@ -97,6 +97,10 @@ after `sessionMaxAge` seconds (default 7 days, configurable, minimum 300).
 
 ## Cloudflare Tunnel vs. Cloudflare Access
 
+A machine runs one Cloudflare Tunnel shared by every RepoOS repo on it —
+`repoos tunnel` commands are machine-global, not scoped to the repo you run
+them from; see docs/tunnel-registry.md.
+
 Native auth and Cloudflare Access solve overlapping problems from different
 layers:
 
