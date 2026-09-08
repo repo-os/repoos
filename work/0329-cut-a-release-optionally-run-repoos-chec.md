@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/hy3
 created_at: "2026-09-05T04:33:51Z"
-updated_at: "2026-09-05T04:33:51Z"
+updated_at: "2026-09-08T14:38:19Z"
 ---
 `cutNewRelease` (`src/server/release.ts`) shells straight out to the built CLI's
 `check` subcommand — it never goes through `integration-orchestrator.ts`'s
@@ -70,3 +71,4 @@ option. See memory `repoos-check-flakes-under-memory-pressure` for the pattern.
 ## Activity
 
 - 2026-09-05T04:33:51Z · created · unknown
+- 2026-09-08T14:38:19Z · model_override
