@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-08T14:14:29Z"
+review_passes: 2
 id: "0323"
 title: Machine-level tunnel app registry (stop repos clobbering each other's cloudflared ingress)
 type: feature
@@ -12,9 +14,7 @@ cli_override: claude code
 model_override: sonnet
 review_model_override: opencode-go/hy3
 created_at: "2026-09-03T17:21:26Z"
-updated_at: "2026-09-08T14:12:35Z"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -120,3 +120,4 @@ composes from, instead of overwriting from one repo:
 - 2026-09-08T13:58:40Z · status review→active
 - 2026-09-08T14:09:04Z · review_model_override
 - 2026-09-08T14:12:35Z · status active→review
+
