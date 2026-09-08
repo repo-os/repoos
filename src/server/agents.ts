@@ -2049,6 +2049,90 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
 }
 
 /**
+ * Map an agent `cli` to a one-shot PM authoring invocation (0335). Same
+ * print-mode shape as `promptCommand`, with one difference that matters for
+ * the usage tab: structured output flags wherever the driver offers them, so
+ * `runPrompt`'s extractUsage/foldUsage sees real tokens/cost and the initial
+ * PM flesh-out lands in the ledger with figures instead of a blank row —
+ * exactly the treatment the reviewer got in 0273. Unlike `reviewCommand`,
+ * no permission-bypass flags: the PM only authors text (its output is applied
+ * via `patchTaskFile`), so it must not be able to write files or run tools.
+ *
+ * The JSONL/JSON stdout this produces is parsed back to the final answer with
+ * `extractOneShotReportText` and rendered live with `parseOneShotLine` — the
+ * same pairing the reviewer/CTO one-shots use.
+ */
+export function pmCommand(
+  agent: Agent,
+  prompt: string,
+  cwd: string,
+): { cmd: string; args: string[] } {
+  const extra = modelArgs(agent.cli, agent.model);
+  if (agent.cli === "claude code") {
+    // stream-json — the terminal `result` event carries authoritative tokens
+    // and total_cost_usd for the whole turn (0273).
+    return {
+      cmd: "claude",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+        "--verbose",
+      ],
+    };
+  }
+  if (agent.cli === "qwen code") {
+    // Mirrors the claude-compatible stream-json so usage is captured.
+    return {
+      cmd: "qwen",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+      ],
+    };
+  }
+  if (agent.cli === "codex") {
+    // `--json` streams usage events; the default (read-only) sandbox is the
+    // right blast radius for an authoring pass.
+    return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
+  }
+  if (agent.cli === "github copilot") {
+    // copilotArgs already emits `--output-format json`, so usage is captured;
+    // write:false keeps the authoring pass read-only.
+    return {
+      cmd: "copilot",
+      args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+    };
+  }
+  if (agent.cli === "kiro") {
+    // No structured one-shot mode is verified for kiro — plain chat, matching
+    // `promptCommand` (usage stays unreported for this driver).
+    return {
+      cmd: "kiro-cli",
+      args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
+    };
+  }
+  // opencode: `--format json` separates the final answer from step-by-step
+  // narration (0264 vs 0253) and its `step_finish` events carry per-call
+  // usage deltas; `--dir` pins the repo root. Deliberately NO `--auto`: that
+  // flag auto-approves gated tool calls, and the PM must not be able to write
+  // files or run tools. A stray gated call blocks until the run's timeout —
+  // the acceptable failure mode (the draft is kept with its original prompt),
+  // and the same behavior the plain `promptCommand` path had.
+  return {
+    cmd: "opencode",
+    args: ["run", "--format", "json", "--dir", cwd, ...extra, prompt],
+  };
+}
+
+/**
  * Map an agent `cli` to a one-shot REVIEW invocation: the agent inspects a
  * worktree it must not modify and prints its report to stdout.
  *

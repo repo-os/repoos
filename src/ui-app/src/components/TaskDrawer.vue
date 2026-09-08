@@ -2598,6 +2598,13 @@ watch(
           >
             <ActivityIndicator /> agent coding
           </span>
+          <span
+            v-if="ui.active.status === 'draft' && repo.pmWorkingFor(ui.active.id)"
+            class="drawer-run"
+            role="status"
+          >
+            <ActivityIndicator /> PM is working on this draft…
+          </span>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
             class="drawer-done-error"

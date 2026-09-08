@@ -367,6 +367,17 @@ const reviewVerdict = computed(() =>
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
+  // The freeform-create PM agent is fleshing this draft out right now
+  // (0335) — a draft otherwise looks identical to an idle one. Guarded on
+  // `draft` so the indicator disappears the moment the promotion lands,
+  // even in the sub-second window before the server's pmFinished event.
+  if (t.status === "draft" && repo.pmWorkingFor(t.id)) {
+    return {
+      label: "PM is working",
+      title: "the PM agent is fleshing out this draft — it moves to inbox when done",
+      cls: "tc-pm-working",
+    };
+  }
   if (t.status === "review") {
     if (inPipeline.value) {
       return {
@@ -622,6 +633,7 @@ async function openPanelFromError(): Promise<void> {
       'kb-highlight': highlighted,
       'transition-success': repo.transitionState?.id === task.id,
       coding: repo.isRunning(task.id),
+      'pm-working': task.status === 'draft' && repo.pmWorkingFor(task.id),
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human':
@@ -713,6 +725,7 @@ async function openPanelFromError(): Promise<void> {
           "
         >
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-pm-working'" />
           <ActivityIndicator
             v-else-if="hint.cls === 'tc-reviewing'"
             variant="reviewing"

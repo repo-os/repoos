@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-08T12:52:44Z"
-review_passes: 2
 id: "0335"
 title: "Show \"PM is working\" indicator on draft cards and track the initial PM run in the usage tab"
 type: feature
@@ -10,9 +8,8 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-pm-is-working-indicator-on-draft-ca
-review_model_override: opencode-go/hy3
 created_at: "2026-09-08T04:44:05Z"
-review_rounds: 1
+updated_at: "2026-09-08T10:23:57Z"
 ---
 ## Problem
 
@@ -57,9 +54,3 @@ What a new task is created using free form it gets created first in drafts then 
 - 2026-09-08T05:27:44Z · status inbox→ready
 - 2026-09-08T05:28:16Z · status ready→active, branch
 - 2026-09-08T10:23:57Z · status active→review
-- 2026-09-08T10:39:11Z · needs_input
-- 2026-09-08T12:41:12Z · review_model_override
-- 2026-09-08T12:43:17Z · needs_input
-- 2026-09-08T12:43:17Z · status review→active
-- 2026-09-08T12:50:43Z · status active→review
-

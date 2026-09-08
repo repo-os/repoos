@@ -439,6 +439,11 @@ export const useRepoStore = defineStore("repo", () => {
   const doneAcked = ref<Set<string>>(readDoneAcked());
   /** Freeform-create ids whose PM flesh-out is still in flight (0320). Persisted. */
   const aiCreatePending = ref<Set<string>>(readIdSet(AI_CREATE_PENDING_KEY));
+  /** Draft task ids the freeform PM flesh-out is actively working on (0335).
+   *  Deliberately in-memory only — the server's registry dies with it, so a
+   *  page reload reconciles from the index/`/api/board` payload instead of a
+   *  persisted set that could outlive the actual run. */
+  const pmWorkingIds = ref<Set<string>>(new Set());
   /** AI-created card ids awaiting the human's acknowledgement (0320). Persisted;
    *  an id here keeps the violet "newly created" highlight across reloads. */
   const aiCreateUnacked = ref<Set<string>>(readIdSet(AI_CREATE_UNACKED_KEY));
@@ -874,6 +879,7 @@ export const useRepoStore = defineStore("repo", () => {
       const ui = useUiStore();
       if (ui.active && ui.active.id === e.id) ui.close();
       setDoneError(e.id, null);
+      clearPmWorkingLocal(e.id);
       recount();
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
     } else if (e.type === "task.aiCreateFailed") {
@@ -890,6 +896,15 @@ export const useRepoStore = defineStore("repo", () => {
           "task.aiCreateFailed",
         );
       }
+    } else if (e.type === "task.pmWorking") {
+      // The PM agent started fleshing this draft out (0335) — show the live
+      // "PM is working" indicator on the card and in the task panel.
+      markPmWorkingLocal(e.id);
+      pushFeed(`<b>PM is working</b> on #${e.id}`, "#9d7bff", "task.pmWorking");
+    } else if (e.type === "task.pmFinished") {
+      // The PM flesh-out ended — success or failure (0335). The server emits
+      // this on every exit path, so the indicator can never get stuck.
+      clearPmWorkingLocal(e.id);
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
@@ -1243,6 +1258,8 @@ export const useRepoStore = defineStore("repo", () => {
       "task.updated",
       "task.deleted",
       "task.aiCreateFailed",
+      "task.pmWorking",
+      "task.pmFinished",
       "task.progress",
       "task.corrected",
       "preview",
@@ -1331,6 +1348,11 @@ export const useRepoStore = defineStore("repo", () => {
     // AI-created cards (0320): promote pending ids whose creation completed
     // while this tab couldn't see the SSE stream (see reconcileAiCreatePending).
     reconcileAiCreatePending();
+    // PM-working indicator (0335): the board payload carries the live flag,
+    // so a page load / reconnect reconciles the in-memory set with the
+    // server's registry — an in-flight run survives the reload, a stale id
+    // (run finished or task deleted while disconnected) is dropped.
+    pmWorkingIds.value = new Set(idx.tasks.filter((t) => t.pmWorking).map((t) => t.id));
     Object.assign(counts, idx.counts);
   }
 
@@ -1468,9 +1490,28 @@ export const useRepoStore = defineStore("repo", () => {
       throw err;
     }
   }
-
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
+
   const isQueued = (id: string): boolean => queuedIds.value.includes(id);
+
+  /** True while the freeform PM flesh-out is working on this draft (0335). */
+  const pmWorkingFor = (id: string): boolean => pmWorkingIds.value.has(id);
+
+  /** Flag a draft as being fleshed out by the PM agent right now (0335). */
+  function markPmWorkingLocal(id: string): void {
+    if (pmWorkingIds.value.has(id)) return;
+    const next = new Set(pmWorkingIds.value);
+    next.add(id);
+    pmWorkingIds.value = next;
+  }
+
+  /** Clear the PM flesh-out flag — every run exit path (0335). */
+  function clearPmWorkingLocal(id: string): void {
+    if (!pmWorkingIds.value.has(id)) return;
+    const next = new Set(pmWorkingIds.value);
+    next.delete(id);
+    pmWorkingIds.value = next;
+  }
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
   async function startWork(
@@ -1941,7 +1982,13 @@ export const useRepoStore = defineStore("repo", () => {
     // no-pm-agent / agent-failed fallback, where nothing further will happen),
     // remember the draft so the store can flag the card when the flesh-out
     // lands. Fallback drafts were effectively created without AI and never flag.
-    if (!r.fallback) markAiCreatePending(r.task.id);
+    if (!r.fallback) {
+      markAiCreatePending(r.task.id);
+      // 0335: the server marks the run in flight before responding, so the
+      // response task already carries pmWorking — set the local flag here in
+      // case the SSE event races this HTTP response.
+      if (r.task.pmWorking) markPmWorkingLocal(r.task.id);
+    }
     return r;
   }
 
@@ -2178,6 +2225,7 @@ export const useRepoStore = defineStore("repo", () => {
     createFreeformSkill,
     isRunning,
     isQueued,
+    pmWorkingFor,
     startWork,
     pauseWork,
     abandonWork,

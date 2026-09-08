@@ -1644,6 +1644,11 @@
 .task-card.coding {
   border-color: var(--violet-border-tint);
 }
+/* PM flesh-out in flight (0335): same violet "AI at work" language as the
+   coding border, but for a draft the PM agent is authoring. */
+.task-card.pm-working {
+  border-color: var(--violet-border-tint);
+}
 .task-card.reviewing {
   border-color: var(--amber-tint);
 }
@@ -1779,6 +1784,9 @@
   gap: 6px;
 }
 .tc-coding {
+  color: var(--violet);
+}
+.tc-pm-working {
   color: var(--violet);
 }
 .tc-reviewing {
