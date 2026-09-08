@@ -38,7 +38,7 @@ import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
-import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
+import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
@@ -2954,9 +2954,9 @@ export class AgentRunner {
     return this.db?.getDailyTotals() ?? [];
   }
 
-  /** Query board-level summary stats from the database. */
-  boardStats() {
-    return this.db?.getBoardStats() ?? null;
+  /** Query board-level summary stats from the database, optionally scoped to a usage range (0334). */
+  boardStats(range: UsageRange = "all") {
+    return this.db?.getBoardStats(range) ?? null;
   }
 
   /**

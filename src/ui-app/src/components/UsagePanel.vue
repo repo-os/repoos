@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRepoStore } from "../stores/repo";
+import type { UsageRange } from "../types";
 
 const repo = useRepoStore();
 
@@ -11,6 +12,19 @@ onMounted(() => {
 const stats = computed(() => repo.boardUsage);
 const loading = computed(() => repo.boardUsageLoading);
 const error = computed(() => repo.boardUsageError);
+const range = computed(() => repo.boardUsageRange);
+
+/** The four windows the panel can show (0334), in selector order. */
+const RANGE_OPTIONS: Array<{ value: UsageRange; label: string }> = [
+  { value: "1d", label: "1 day" },
+  { value: "7d", label: "1 week" },
+  { value: "30d", label: "1 month" },
+  { value: "all", label: "all time" },
+];
+
+function selectRange(next: UsageRange): void {
+  if (next !== range.value) void repo.loadBoardUsage(next);
+}
 
 function fmtElapsed(ms: number | null | undefined): string {
   const totalSec = Math.max(0, Math.floor((ms ?? 0) / 1000));
@@ -52,7 +66,22 @@ const days = computed(() => stats.value?.days ?? []);
   <div class="usage-panel" aria-live="polite">
     <div class="usage-head">
       <span class="usage-title">AI usage — all roles</span>
-      <span v-if="hasUsage" class="usage-sessions">{{ stats?.totalSessions }} sessions</span>
+      <div class="usage-head-right">
+        <span v-if="hasUsage" class="usage-sessions">{{ stats?.totalSessions }} sessions</span>
+        <div class="usage-range" role="group" aria-label="AI usage date range">
+          <button
+            v-for="opt in RANGE_OPTIONS"
+            :key="opt.value"
+            type="button"
+            class="usage-range-btn"
+            :class="{ 'is-active': range === opt.value }"
+            :aria-pressed="range === opt.value"
+            @click="selectRange(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
     </div>
     <div v-if="loading" class="usage-empty">Loading AI usage…</div>
     <div v-else-if="error" class="usage-error">
@@ -145,6 +174,8 @@ const days = computed(() => stats.value?.days ?? []);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 .usage-title {
@@ -153,9 +184,48 @@ const days = computed(() => stats.value?.days ?? []);
   letter-spacing: 0.08em;
   color: var(--txt-faint);
 }
+.usage-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .usage-sessions {
   font-size: 10.5px;
   color: var(--cyan);
+}
+.usage-range {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.usage-range-btn {
+  border: none;
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+.usage-range-btn + .usage-range-btn {
+  border-left: 1px solid var(--border);
+}
+.usage-range-btn:hover {
+  color: var(--txt-dim);
+}
+.usage-range-btn.is-active {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.usage-range-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
 }
 .usage-grid {
   display: flex;

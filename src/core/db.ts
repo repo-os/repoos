@@ -321,6 +321,20 @@ export interface BoardStats {
   days: DailyTotals[];
 }
 
+/**
+ * Usage time window for board stats (0334): a trailing window anchored at
+ * "now", measured on `sessions.startedAt`. "all" is unfiltered and reproduces
+ * the pre-range behavior exactly — it is the default everywhere.
+ */
+export type UsageRange = "1d" | "7d" | "30d" | "all";
+
+/** Trailing-window duration in ms for each finite usage range. */
+const USAGE_RANGE_MS: Record<Exclude<UsageRange, "all">, number> = {
+  "1d": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+  "30d": 30 * 24 * 60 * 60 * 1000,
+};
+
 /** Database wrapper providing high-level operations. */
 export class RepoOSDb {
   private db: any;
@@ -582,17 +596,37 @@ export class RepoOSDb {
   }
 
   /**
+   * Cutoff ISO timestamp for a usage range's trailing window, or null for
+   * "all". `startedAt` is NOT NULL ISO text, so a lexicographic `>= ?`
+   * comparison against an ISO cutoff is correct — and `idx_sessions_startedAt`
+   * covers it.
+   */
+  private usageRangeSince(range: UsageRange): string | null {
+    if (range === "all") return null;
+    return new Date(Date.now() - USAGE_RANGE_MS[range]).toISOString();
+  }
+
+  /**
    * Aggregate totals broken down by day, using the server's LOCAL time zone
    * (the day a session's `endedAt` falls into on this machine). Done in JS so
    * the grouping genuinely reflects local wall-clock days rather than SQLite's
    * UTC `date()`.
+   *
+   * The optional range filters on `startedAt` (0334) — the same predicate the
+   * headline totals use — so the per-day table always agrees with the board
+   * summary for the selected window.
    */
-  getDailyTotals(): DailyTotals[] {
+  getDailyTotals(range: UsageRange = "all"): DailyTotals[] {
     if (!this.available || !this.db) return [];
     try {
-      const rows = this.db
-        .prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL")
-        .all() as SessionRecord[];
+      const since = this.usageRangeSince(range);
+      const rows = (
+        since
+          ? this.db
+              .prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL AND startedAt >= ?")
+              .all(since)
+          : this.db.prepare("SELECT * FROM sessions WHERE endedAt IS NOT NULL").all()
+      ) as SessionRecord[];
       const byDay = new Map<string, SessionRecord[]>();
       for (const r of rows) {
         const d = new Date(r.endedAt as string);
@@ -622,11 +656,16 @@ export class RepoOSDb {
     }
   }
 
-  /** Aggregate stats grouped by session type. */
-  getSessionTypeStats(): SessionTypeStats[] {
+  /** Aggregate stats grouped by session type, optionally scoped to a usage range (0334). */
+  getSessionTypeStats(range: UsageRange = "all"): SessionTypeStats[] {
     if (!this.available || !this.db) return [];
     try {
-      const rows = this.db.prepare("SELECT * FROM sessions").all() as SessionRecord[];
+      const since = this.usageRangeSince(range);
+      const rows = (
+        since
+          ? this.db.prepare("SELECT * FROM sessions WHERE startedAt >= ?").all(since)
+          : this.db.prepare("SELECT * FROM sessions").all()
+      ) as SessionRecord[];
       return this.groupRows(rows, (r) => r.sessionType)
         .map(([sessionType, group]) => {
           const agg = this.aggregateRows(group);
@@ -745,8 +784,14 @@ export class RepoOSDb {
     };
   }
 
-  /** Board-level summary: total spend, tokens, time, most expensive session/task. */
-  getBoardStats(): BoardStats {
+  /**
+   * Board-level summary: total spend, tokens, time, most expensive session/task.
+   * The optional range (0334) scopes every figure — headline totals, cost
+   * source, most-expensive lookups, roles, days — to sessions started within
+   * the trailing window, so all parts of the panel agree; "all" (the default)
+   * is the unfiltered pre-range behavior.
+   */
+  getBoardStats(range: UsageRange = "all"): BoardStats {
     if (!this.available || !this.db) {
       return {
         totalSessions: 0,
@@ -762,6 +807,11 @@ export class RepoOSDb {
     }
 
     try {
+      const since = this.usageRangeSince(range);
+      const startedFilter = since ? "WHERE startedAt >= ?" : "";
+      const startedFilterAnd = since ? "AND startedAt >= ?" : "";
+      const startedArgs = since ? [since] : [];
+
       const summary = this.db
         .prepare(`
         SELECT
@@ -770,17 +820,19 @@ export class RepoOSDb {
           SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
         FROM sessions
+        ${startedFilter}
       `)
-        .all()[0] as any;
+        .all(...startedArgs)[0] as any;
 
       const mostExpensive = this.db
         .prepare(`
         SELECT * FROM sessions
         WHERE costUsd IS NOT NULL
+        ${startedFilterAnd}
         ORDER BY costUsd DESC
         LIMIT 1
       `)
-        .all();
+        .all(...startedArgs);
       const mostExpensiveSession =
         mostExpensive.length > 0 ? (mostExpensive[0] as SessionRecord) : null;
 
@@ -791,11 +843,12 @@ export class RepoOSDb {
           SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as costUsd
         FROM sessions
         WHERE taskId IS NOT NULL
+        ${startedFilterAnd}
         GROUP BY taskId
         ORDER BY costUsd DESC
         LIMIT 1
       `)
-        .all();
+        .all(...startedArgs);
       const mostExpensiveTask =
         mostExpensiveTaskResult.length > 0
           ? {
@@ -804,14 +857,15 @@ export class RepoOSDb {
             }
           : null;
 
-      // Representative cost source across the whole board — mirrors the per-role
-      // / per-day classification in aggregateRows so estimates and Kiro credits
-      // are never silently shown as firm USD at the board level (0230).
+      // Representative cost source across the (range-scoped) sessions — mirrors
+      // the per-role / per-day classification in aggregateRows so estimates and
+      // Kiro credits are never silently shown as firm USD at the board level
+      // (0230).
       const sourceRows = this.db
         .prepare(
-          "SELECT DISTINCT COALESCE(costSource, 'extractUsage') as costSource FROM sessions WHERE costUsd IS NOT NULL",
+          `SELECT DISTINCT COALESCE(costSource, 'extractUsage') as costSource FROM sessions WHERE costUsd IS NOT NULL ${startedFilterAnd}`,
         )
-        .all() as { costSource: string }[];
+        .all(...startedArgs) as { costSource: string }[];
       const costSource =
         sourceRows.length > 1
           ? "mixed"
@@ -827,8 +881,8 @@ export class RepoOSDb {
         costSource,
         mostExpensiveSession,
         mostExpensiveTask,
-        roles: this.getSessionTypeStats(),
-        days: this.getDailyTotals(),
+        roles: this.getSessionTypeStats(range),
+        days: this.getDailyTotals(range),
       };
     } catch {
       return {

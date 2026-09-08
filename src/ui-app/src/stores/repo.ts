@@ -10,6 +10,7 @@ import type {
   AutoEngineeringState,
   BoardIndex,
   BoardUsageStats,
+  UsageRange,
   Counts,
   CtoState,
   Health,
@@ -408,6 +409,9 @@ export const useRepoStore = defineStore("repo", () => {
    * explicit so a failed optional request is not mistaken for invisible UI. */
   const boardUsageLoading = ref(false);
   const boardUsageError = ref<string | null>(null);
+  /** The usage window currently displayed (0334). "all" is the default and
+   * matches the pre-range behavior, so it doubles as the initial selection. */
+  const boardUsageRange = ref<UsageRange>("all");
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -1718,20 +1722,30 @@ export const useRepoStore = defineStore("repo", () => {
   const taskUsageFor = (id: string) => taskUsage.value[id];
 
   /**
-   * Load board-level usage totals (overall + per-role + per-day, 0230).
-   * Best-effort — surfaces empty when telemetry is unavailable.
+   * Load board-level usage totals (overall + per-role + per-day, 0230) for the
+   * selected usage window (0334). Passing a range both switches the selection
+   * and fetches it; omitting it refetches the current one (Retry). Best-effort
+   * — surfaces empty when telemetry is unavailable. A response for an abandoned
+   * range (the user switched again mid-flight) is discarded so the panel never
+   * renders numbers from a window it is no longer showing.
    */
-  async function loadBoardUsage(): Promise<void> {
+  async function loadBoardUsage(range?: UsageRange): Promise<void> {
+    const requested = range ?? boardUsageRange.value;
+    boardUsageRange.value = requested;
     boardUsageLoading.value = true;
     boardUsageError.value = null;
     try {
-      const r = await api<{ ok: boolean; stats: BoardUsageStats }>("/api/stats/board");
+      const r = await api<{ ok: boolean; stats: BoardUsageStats }>(
+        `/api/stats/board?range=${requested}`,
+      );
+      if (boardUsageRange.value !== requested) return;
       if (r.ok && r.stats) boardUsage.value = r.stats;
       else boardUsageError.value = "The server did not return usage data.";
     } catch (err) {
+      if (boardUsageRange.value !== requested) return;
       boardUsageError.value = err instanceof Error ? err.message : "Unable to load usage data.";
     } finally {
-      boardUsageLoading.value = false;
+      if (boardUsageRange.value === requested) boardUsageLoading.value = false;
     }
   }
 
@@ -2184,6 +2198,7 @@ export const useRepoStore = defineStore("repo", () => {
     boardUsage,
     boardUsageLoading,
     boardUsageError,
+    boardUsageRange,
     loadBoardUsage,
     loadDiff,
     diffFor,
