@@ -20,6 +20,12 @@ import { boardRoot, loadConfig, resolveServePort } from "../core/config.js";
 import { buildIndex } from "../core/indexer.js";
 import { checkBuildForRoot, readBuildStamp } from "../core/build.js";
 import { readTunnelConfig } from "../core/tunnel.js";
+import {
+  migrateFromRepo,
+  readRegistry,
+  reconcileIdentity,
+  unionApps,
+} from "../core/tunnel-registry.js";
 import { currentBranch, runGit } from "../core/git.js";
 import { countWorktrees, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
@@ -396,7 +402,13 @@ export async function collectStatus(
   const tunnelCfg = readTunnelConfig(root);
   const configured = !!tunnelCfg.tunnelId;
   let tunnelRunning = false;
-  let hostnames = Object.values(tunnelCfg.apps)
+  // Machine-wide view (any repo's apps, from the registry), same merge
+  // `/api/tunnel/readiness` does — falls back to this repo's own apps when
+  // the registry hasn't been seeded yet.
+  const registry = readRegistry();
+  reconcileIdentity(registry, tunnelCfg);
+  migrateFromRepo(registry, tunnelCfg, root);
+  let hostnames = Object.values({ ...tunnelCfg.apps, ...unionApps(registry) })
     .map((a) => a.hostname)
     .sort();
   if (configured) {

@@ -7,6 +7,17 @@
  * hostname → local service ingress routes; every published app is protected by
  * an Access policy restricted to its email allowlist.
  *
+ * `cloudflared` is one system service reading one config file per machine —
+ * it has no notion of "repo." So `repoos tunnel` commands are machine-global,
+ * not repo-local: `repoos.toml [tunnel.apps.*]` stays each repo's own,
+ * git-tracked source of truth for the apps IT publishes, but `install`/
+ * `start` always render the ingress from the UNION of every repo's apps on
+ * this box, tracked in the machine-level registry
+ * (`~/.config/repoos/tunnel-apps.toml`, see `../core/tunnel-registry.ts` and
+ * docs/tunnel-registry.md). Running `install` from any one repo therefore
+ * serves every app published by any repo, and never clobbers another repo's
+ * routes the way overwriting the ingress from a single repo's config used to.
+ *
  * No Cloudflare credentials or tunnel secrets are ever written to the repo —
  * the API token lives in the OS keychain / secret storage (or
  * `CLOUDFLARE_API_TOKEN`), and the tunnel credential file stays in
@@ -36,8 +47,22 @@ import {
   removeEmail,
   renderCloudflaredConfig,
   writeTunnelConfig,
+  type TunnelApp,
   type TunnelConfig,
 } from "../core/tunnel.js";
+import {
+  annotateStale,
+  migrateFromRepo,
+  readRegistry,
+  reconcileIdentity,
+  registryPath,
+  removeApp,
+  unionApps,
+  upsertApp,
+  writeRegistry,
+  type TunnelRegistry,
+} from "../core/tunnel-registry.js";
+import { originPort, portListening } from "../core/net-probe.js";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
@@ -193,25 +218,31 @@ function tunnelCredentialsPath(tunnelId: string): string {
 }
 
 /**
- * Regenerate cloudflared's ingress YAML from RepoOS state into a RepoOS-owned
- * location (`~/.config/repoos/cloudflared.yml`) used by `repoos tunnel start`.
+ * Regenerate cloudflared's ingress YAML from the machine-wide app set (the
+ * UNION of every repo's apps on this box, not just this repo's) into a
+ * RepoOS-owned location (`~/.config/repoos/cloudflared.yml`) used by
+ * `repoos tunnel start`.
  */
-function writeDerivedConfig(tunnel: TunnelConfig): string {
+function writeDerivedConfig(tunnel: TunnelConfig, apps: Record<string, TunnelApp>): string {
   const path = join(repoosConfigDir(), "cloudflared.yml");
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, renderCloudflaredConfig(tunnel, tunnelCredentialsPath(tunnel.tunnelId)), {
-    encoding: "utf8",
-    mode: 0o600,
-  });
+  writeFileSync(
+    path,
+    renderCloudflaredConfig({ ...tunnel, apps }, tunnelCredentialsPath(tunnel.tunnelId)),
+    { encoding: "utf8", mode: 0o600 },
+  );
   return path;
 }
 
 /**
  * Write the derived config to `~/.cloudflared/config.yml` — where
- * `cloudflared service install` expects it. An existing hand-maintained file
- * that isn't RepoOS-generated is backed up once before being replaced.
+ * `cloudflared service install` expects it. Rendered from the machine-wide
+ * app set (the union of every repo's apps on this box), so installing the
+ * service from any one repo serves every app published by any repo. An
+ * existing hand-maintained file that isn't RepoOS-generated is backed up
+ * once before being replaced.
  */
-function writeUserCloudflaredConfig(tunnel: TunnelConfig): string {
+function writeUserCloudflaredConfig(tunnel: TunnelConfig, apps: Record<string, TunnelApp>): string {
   const dir = cloudflaredHomeDir();
   mkdirSync(dir, { recursive: true });
   const path = join(dir, "config.yml");
@@ -222,11 +253,50 @@ function writeUserCloudflaredConfig(tunnel: TunnelConfig): string {
       if (!existsSync(backup)) renameSync(path, backup);
     }
   }
-  writeFileSync(path, renderCloudflaredConfig(tunnel, tunnelCredentialsPath(tunnel.tunnelId)), {
-    encoding: "utf8",
-    mode: 0o600,
-  });
+  writeFileSync(
+    path,
+    renderCloudflaredConfig({ ...tunnel, apps }, tunnelCredentialsPath(tunnel.tunnelId)),
+    { encoding: "utf8", mode: 0o600 },
+  );
   return path;
+}
+
+/**
+ * Load the machine registry for a MUTATING command: reconciles this repo's
+ * tunnel identity against it (failing loudly on a conflicting `tunnelId`
+ * rather than silently picking one), seeds in any of this repo's own apps
+ * the registry doesn't know about yet, and persists the result. Every
+ * mutating tunnel subcommand (`create`, `destroy`, `install`, `start`,
+ * `rename`) goes through this so the registry never drifts from repoos.toml.
+ */
+function loadRegistryForWrite(root: string, tunnel: TunnelConfig): TunnelRegistry {
+  const registry = readRegistry();
+  const conflict = reconcileIdentity(registry, tunnel);
+  if (conflict) fail(conflict);
+  const seeded = migrateFromRepo(registry, tunnel, root);
+  if (seeded.length) {
+    console.log(
+      c.dim(`  · seeded machine tunnel registry with ${seeded.join(", ")} → ${registryPath()}`),
+    );
+  }
+  writeRegistry(registry);
+  return registry;
+}
+
+/**
+ * Read-only merged view of the registry for DISPLAY commands (`list`,
+ * `status`): same reconcile + seed as {@link loadRegistryForWrite}, but never
+ * persists and never fails on an identity conflict — it reports the conflict
+ * instead so the command can show it.
+ */
+function readRegistryForDisplay(
+  root: string,
+  tunnel: TunnelConfig,
+): { registry: TunnelRegistry; conflict: string | null } {
+  const registry = readRegistry();
+  const conflict = reconcileIdentity(registry, tunnel);
+  migrateFromRepo(registry, tunnel, root);
+  return { registry, conflict };
 }
 
 async function installCloudflared(): Promise<boolean> {
@@ -625,6 +695,13 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
       `App "${name}" already exists — use \`repoos tunnel allow/deny\` to manage its allowlist.`,
     );
   }
+  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  const existingElsewhere = registry.apps[name];
+  if (existingElsewhere && existingElsewhere.ownerRoot !== cfg.root) {
+    fail(
+      `App "${name}" is already published by another repo on this machine (${existingElsewhere.ownerRoot}) — app names are shared machine-wide. Pick a different name.`,
+    );
+  }
 
   const port = flags.get("port");
   if (!port || !/^\d+$/.test(port)) fail("--port is required and must be a number.");
@@ -688,6 +765,8 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
     noAccess,
   };
   writeTunnelConfig(cfg.root, tunnel);
+  upsertApp(registry, name, tunnel.apps[name], cfg.root);
+  writeRegistry(registry);
   console.log(
     c.green("  ✔ configured ") +
       c.cyan(name) +
@@ -712,7 +791,7 @@ async function cmdTunnelCreate(args: string[]): Promise<void> {
     );
   }
 
-  const derived = writeDerivedConfig(tunnel);
+  const derived = writeDerivedConfig(tunnel, unionApps(registry));
   console.log(c.dim("  · wrote ingress config → ") + derived);
 
   if (accessCreds) {
@@ -801,11 +880,14 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
     }
   }
 
+  const registry = loadRegistryForWrite(cfg.root, tunnel);
   delete tunnel.apps[name];
   writeTunnelConfig(cfg.root, tunnel);
-  const derived = writeDerivedConfig(tunnel);
+  removeApp(registry, name);
+  writeRegistry(registry);
+  const derived = writeDerivedConfig(tunnel, unionApps(registry));
   console.log(
-    c.green(`  ✔ removed "${name}" from repoos.toml`) +
+    c.green(`  ✔ removed "${name}" from repoos.toml and the machine tunnel registry`) +
       c.dim(" · ingress config rewritten → " + derived),
   );
   console.log(
@@ -844,6 +926,7 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
     console.log(c.dim(`  Tunnel is already named "${newName}" — nothing to do.`));
     return;
   }
+  const registry = loadRegistryForWrite(cfg.root, tunnel);
 
   const bin = cloudflaredBin();
   const oldName = tunnel.name || "(unnamed)";
@@ -859,9 +942,14 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
 
   tunnel.name = newName;
   writeTunnelConfig(cfg.root, tunnel);
+  registry.tunnelName = newName;
+  writeRegistry(registry);
   console.log(c.green("  ✔ renamed ") + c.cyan(oldName) + c.dim(" → ") + c.cyan(newName));
 
-  const hostnames = Object.values(tunnel.apps).map((a) => a.hostname);
+  // Re-point DNS for every app on the machine (all repos), not just this
+  // repo's — the tunnel is machine-wide, so every published hostname needs
+  // to follow the new tunnel name.
+  const hostnames = Object.values(unionApps(registry)).map((a) => a.hostname);
   for (const hostname of hostnames) {
     try {
       console.log(c.dim("  · re-pointing DNS ") + hostname + c.dim(" …"));
@@ -878,7 +966,7 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
     }
   }
 
-  writeDerivedConfig(tunnel);
+  writeDerivedConfig(tunnel, unionApps(registry));
   console.log(
     "\n  " +
       c.green("✔ Tunnel renamed.") +
@@ -923,6 +1011,14 @@ async function mutateAllowlist(op: "allow" | "deny", args: string[]): Promise<vo
 
   app.access = next;
   writeTunnelConfig(cfg.root, tunnel);
+  // Keep the machine registry's copy of the allowlist (shown by `tunnel
+  // list`/`status` from any repo) from drifting out of sync with repoos.toml.
+  const registry = readRegistry();
+  reconcileIdentity(registry, tunnel);
+  if (registry.apps[name]) {
+    upsertApp(registry, name, app, registry.apps[name].ownerRoot || cfg.root);
+    writeRegistry(registry);
+  }
   console.log(
     c.green(`  ✔ ${op === "allow" ? "allowed" : "denied"} `) +
       c.cyan(email) +
@@ -938,15 +1034,17 @@ async function cmdTunnelStart(_args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
-  if (Object.keys(tunnel.apps).length === 0) {
+  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  const apps = unionApps(registry);
+  if (Object.keys(apps).length === 0) {
     console.log(
       c.yellow(
-        "  ⚠ no apps configured — the tunnel will serve 404s until you `repoos tunnel create` one.",
+        "  ⚠ no apps configured on this machine — the tunnel will serve 404s until you `repoos tunnel create` one.",
       ),
     );
   }
   const bin = cloudflaredBin();
-  const configPath = writeDerivedConfig(tunnel);
+  const configPath = writeDerivedConfig(tunnel, apps);
   console.log(c.dim("  · running cloudflared in the foreground (Ctrl-C to stop)…\n"));
   let code: number;
   try {
@@ -961,16 +1059,18 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
   if (!tunnel.tunnelId) fail("Tunnel not set up yet — run `repoos tunnel setup` first.");
-  if (Object.keys(tunnel.apps).length === 0) {
+  const registry = loadRegistryForWrite(cfg.root, tunnel);
+  const apps = unionApps(registry);
+  if (Object.keys(apps).length === 0) {
     console.log(
       c.yellow(
-        "  ⚠ no apps configured yet — the service will start but serve 404s. `repoos tunnel create` one first.",
+        "  ⚠ no apps configured yet on this machine — the service will start but serve 404s. `repoos tunnel create` one first.",
       ),
     );
   }
   const bin = cloudflaredBin();
-  writeDerivedConfig(tunnel);
-  const userConfig = writeUserCloudflaredConfig(tunnel);
+  writeDerivedConfig(tunnel, apps);
+  const userConfig = writeUserCloudflaredConfig(tunnel, apps);
 
   if (process.platform === "darwin") {
     let code: number;
@@ -1058,29 +1158,45 @@ async function cmdTunnelStop(_args: string[]): Promise<void> {
   );
 }
 
+/**
+ * `repoos tunnel list` is a MACHINE view, not a per-repo one: it shows every
+ * app any repo on this box has published (via the registry), each annotated
+ * with which repo owns it and whether that owner checkout is still on disk.
+ */
 function cmdTunnelList(_args: string[]): void {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
-  if (!tunnel.tunnelId) {
+  const { registry, conflict } = readRegistryForDisplay(cfg.root, tunnel);
+  const tunnelId = registry.tunnelId || tunnel.tunnelId;
+  if (!tunnelId) {
     console.log(c.dim("  No tunnel configured yet — run `repoos tunnel setup`."));
     return;
   }
-  console.log(c.bold("\n  " + c.cyan(tunnel.name)) + c.dim(`  (${tunnel.tunnelId})`));
-  if (tunnel.domain) console.log(c.dim("  base domain:  ") + tunnel.domain);
-  const names = Object.keys(tunnel.apps).sort();
-  if (!names.length) {
+  console.log(
+    c.bold("\n  " + c.cyan(registry.tunnelName || tunnel.name)) + c.dim(`  (${tunnelId})`),
+  );
+  const domain = registry.domain || tunnel.domain;
+  if (domain) console.log(c.dim("  base domain:  ") + domain);
+  if (conflict) console.log(c.yellow("  ⚠ " + conflict));
+  const rows = annotateStale(registry);
+  if (!rows.length) {
     console.log(
       c.dim(
-        "  No apps published yet — `repoos tunnel create <name> --port 3000 --allow alice@example.com`\n",
+        "  No apps published yet on this machine — `repoos tunnel create <name> --port 3000 --allow alice@example.com`\n",
       ),
     );
     return;
   }
-  for (const name of names) {
-    const app = tunnel.apps[name];
-    console.log("\n  " + c.cyan(name));
+  for (const { name, app, stale } of rows) {
+    console.log("\n  " + c.cyan(name) + (app.ownerRoot === cfg.root ? c.dim("  (this repo)") : ""));
     console.log("    " + c.dim("hostname: ") + app.hostname);
     console.log("    " + c.dim("service:  ") + app.service);
+    console.log(
+      "    " +
+        c.dim("owner:    ") +
+        (app.ownerRoot || c.dim("(unknown)")) +
+        (stale ? c.yellow("  [stale — checkout missing]") : ""),
+    );
     console.log(
       "    " +
         c.dim("allow:    ") +
@@ -1097,15 +1213,18 @@ function cmdTunnelList(_args: string[]): void {
 async function cmdTunnelStatus(_args: string[]): Promise<void> {
   const cfg = loadConfig();
   const tunnel = readTunnelConfig(cfg.root);
+  const { registry, conflict } = readRegistryForDisplay(cfg.root, tunnel);
   const bin = resolveBinary("cloudflared", process.env.PATH ?? "");
 
   const rows: [string, string][] = [];
   rows.push(["cloudflared", bin ? c.green("installed") : c.red("not installed")]);
 
-  if (!tunnel.tunnelId) {
+  const tunnelId = registry.tunnelId || tunnel.tunnelId;
+  if (!tunnelId) {
     rows.push(["tunnel", c.yellow("not configured — run `repoos tunnel setup`")]);
   } else {
-    rows.push(["tunnel", c.cyan(tunnel.name) + c.dim(` (${tunnel.tunnelId})`)]);
+    rows.push(["tunnel", c.cyan(registry.tunnelName || tunnel.name) + c.dim(` (${tunnelId})`)]);
+    if (conflict) rows.push(["tunnel conflict", c.red(conflict)]);
 
     let serviceInstalled = false;
     let serviceActive = false;
@@ -1154,12 +1273,24 @@ async function cmdTunnelStatus(_args: string[]): Promise<void> {
     ]);
     rows.push(["running", devRunning || serviceActive ? c.green("yes") : c.red("no")]);
 
-    const names = Object.keys(tunnel.apps).sort();
-    if (names.length) {
-      console.log(c.dim("  per-app health"));
-      for (const name of names) {
-        const app = tunnel.apps[name];
-        rows.push(["  " + name, `${app.hostname} → ` + (await probeApp(app.hostname))]);
+    const appRows = annotateStale(registry);
+    if (appRows.length) {
+      console.log(c.dim("  per-app health (machine-wide)"));
+      for (const { name, app, stale } of appRows) {
+        const port = originPort(app.service);
+        const originUp = port !== null ? await portListening(port) : null;
+        const originTag =
+          originUp === null ? "" : originUp ? c.green(" · origin up") : c.red(" · origin down");
+        const ownerTag = app.ownerRoot === cfg.root ? "this repo" : app.ownerRoot || "unknown repo";
+        const staleTag = stale ? c.yellow(" · stale, checkout missing") : "";
+        rows.push([
+          "  " + name,
+          `${app.hostname} → ` +
+            (await probeApp(app.hostname)) +
+            originTag +
+            staleTag +
+            c.dim(` [${ownerTag}]`),
+        ]);
       }
     }
   }
@@ -1193,21 +1324,26 @@ function tunnelHelp(): void {
   console.log(`
   ${c.bold(c.cyan("repoos tunnel"))} — publish local apps behind Cloudflare Tunnel + Zero Trust
 
+  A machine runs ONE tunnel shared by every RepoOS repo on it. ${c.cyan("create")}/${c.cyan("destroy")}
+  write to both this repo's repoos.toml and the machine-wide app registry
+  (${c.dim("~/.config/repoos/tunnel-apps.toml")}); ${c.cyan("install")}/${c.cyan("start")}, ${c.cyan("list")} and ${c.cyan("status")} always
+  reflect every app published by any repo, not just this one — see docs/tunnel-registry.md.
+
   ${c.bold("USAGE")}
     repoos tunnel <subcommand> [args]
 
   ${c.bold("SUBCOMMANDS")}
     ${c.cyan("setup")}                 One-time machine setup: install/check cloudflared, log in, create the tunnel, store the API token
     ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y" | --no-access (requires auth.enabled)')}
-    ${c.cyan("destroy")} <name>        Remove a published app (deletes its Access policy, drops it from repoos.toml)
-    ${c.cyan("rename")} <new-name>     Rename this machine's tunnel (e.g. repoos-local → repoos-bee) + re-point its DNS
+    ${c.cyan("destroy")} <name>        Remove a published app (deletes its Access policy, drops it from repoos.toml + the machine registry)
+    ${c.cyan("rename")} <new-name>     Rename this machine's tunnel (e.g. repoos-local → repoos-bee) + re-point DNS for every app on the machine
     ${c.cyan("allow")} <name> <email>  Add an email to an app's allowlist
     ${c.cyan("deny")} <name> <email>   Remove an email from an app's allowlist
-    ${c.cyan("start")}                 Run cloudflared in the foreground (dev)
-    ${c.cyan("install")}               Install cloudflared as a persistent service (launchd/systemd)
+    ${c.cyan("start")}                 Run cloudflared in the foreground (dev), serving every app on the machine
+    ${c.cyan("install")}               Install cloudflared as a persistent service (launchd/systemd), serving every app on the machine
     ${c.cyan("stop")}                  Stop the running tunnel (service or dev process)
-    ${c.cyan("list")}                  Show configured apps, hostnames, services and allowlists
-    ${c.cyan("status")}                Tunnel install/running state + per-app health
+    ${c.cyan("list")}                  Show every app published on this machine (any repo), hostnames, services, owners and allowlists
+    ${c.cyan("status")}                Tunnel install/running state + per-app health for every app on the machine
 
   ${c.bold("EXAMPLES")}
     ${c.dim("$")} repoos tunnel setup

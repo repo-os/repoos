@@ -84,7 +84,7 @@ function parseTomlValue(s: string): unknown {
   return s.replace(/^["']|["']$/g, "").replace(/\\"/g, '"');
 }
 
-function parseToml(text: string): Record<string, unknown> {
+export function parseToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section: string[] = [];
   for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
@@ -140,7 +140,7 @@ export function parseTunnelSection(text: string): TunnelConfig {
   return cfg;
 }
 
-function tomlQuote(s: string): string {
+export function tomlQuote(s: string): string {
   return JSON.stringify(s);
 }
 

@@ -58,7 +58,6 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
-import { connect } from "node:net";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
@@ -138,6 +137,8 @@ import {
   type SystemStats,
 } from "./system.js";
 import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
+import { readRegistry, unionApps } from "../core/tunnel-registry.js";
+import { portListening } from "../core/net-probe.js";
 import {
   notifyStatusChange,
   notifyTaskCreated,
@@ -363,21 +364,13 @@ function serviceRunning(): boolean {
   return false;
 }
 
-function portListening(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const socket = connect({ host: "127.0.0.1", port });
-    const finish = (value: boolean) => {
-      socket.destroy();
-      resolve(value);
-    };
-    socket.once("connect", () => finish(true));
-    socket.once("error", () => finish(false));
-    socket.setTimeout(800, () => finish(false));
-  });
-}
-
 async function tunnelReadiness(root: string, port?: number) {
   const tunnel = readTunnelConfig(root);
+  // Machine-wide view: apps published by ANY repo on this box (from the
+  // registry), plus this repo's own apps in case the registry hasn't been
+  // seeded yet (first run before any `repoos tunnel install`/`create`).
+  const registryApps = unionApps(readRegistry());
+  const allApps = { ...tunnel.apps, ...registryApps };
   const bin = findCloudflared();
   let version: string | null = null;
   if (bin) {
@@ -409,7 +402,7 @@ async function tunnelReadiness(root: string, port?: number) {
     localOrigin: { port: port ?? null, listening: originListening },
     serveDefaultPort: resolveServePort(root, loadConfig(root)),
     running: tunnelProcessRunning() || serviceRunning(),
-    publishedHostnames: Object.values(tunnel.apps)
+    publishedHostnames: Object.values(allApps)
       .map((app) => app.hostname)
       .sort(),
     checkedAt: new Date().toISOString(),

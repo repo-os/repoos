@@ -64,7 +64,8 @@ Pure logic, no transport. Everything else calls into this.
 Thin shells over the facade. `cli/index.ts` routes argv; each `commands/*.ts`
 calls a facade method and prints. `cli/colors.ts` is the terminal styling.
 Commands: init, new, new-doc, list, show, note, mv, update, index, gc, status,
-check, serve, stop, tunnel, upgrade.
+check, serve, stop, tunnel, upgrade. `tunnel` is machine-global, not
+repo-local — see docs/tunnel-registry.md.
 
 ### `repoos status` — the one-screen health snapshot
 
