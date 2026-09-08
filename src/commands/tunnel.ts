@@ -1184,16 +1184,27 @@ async function cmdTunnelInstall(_args: string[]): Promise<void> {
     console.log(c.green("  ✔ installed as a launch agent — the tunnel starts when you log in."));
   } else if (process.platform === "linux") {
     const isRoot = typeof process.getuid === "function" && process.getuid() === 0;
-    const cmd = isRoot ? bin : "sudo";
-    const args = isRoot
-      ? ["--config", userConfig, "service", "install"]
-      : [bin, "--config", userConfig, "service", "install"];
+    const run = (argv: string[]): Promise<number> =>
+      isRoot ? runInteractive(argv[0], argv.slice(1)) : runInteractive("sudo", argv);
+
+    // `cloudflared service install` aborts when it sees a config at both
+    // ~/.cloudflared/config.yml and /etc/cloudflared/config.yml — and its own
+    // Linux installer copies the config into /etc/cloudflared on the first
+    // install, so a second `repoos tunnel install` always tripped over the copy
+    // the first one left behind ("possible conflicting configuration"). Tear
+    // down any prior install first so re-running is idempotent.
+    if (existsSync("/etc/cloudflared/config.yml")) {
+      console.log(c.dim("  · clearing a previous cloudflared service install…"));
+      await run([bin, "service", "uninstall"]).catch(() => 0);
+      await run(["rm", "-f", "/etc/cloudflared/config.yml"]).catch(() => 0);
+    }
+
     console.log(
       c.dim("  · installing cloudflared as a systemd service (may prompt for your password)…"),
     );
     let code: number;
     try {
-      code = await runInteractive(cmd, args);
+      code = await run([bin, "--config", userConfig, "service", "install"]);
     } catch (e) {
       fail("failed to run cloudflared service install: " + (e as Error).message);
     }
