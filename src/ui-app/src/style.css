@@ -2703,6 +2703,19 @@
   line-height: 1.6;
   color: var(--txt-dim);
 }
+.tunnel-current {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel-solid);
+  font-size: 12px;
+}
+.tunnel-current > span:first-child {
+  color: var(--txt);
+}
 .tunnel-steps {
   list-style: none;
   padding: 0;

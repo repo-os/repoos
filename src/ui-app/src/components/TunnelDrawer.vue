@@ -114,6 +114,24 @@ onMounted(() => {
           <code>repoos tunnel setup</code> prompt.
         </div>
 
+        <div class="tunnel-notice">
+          One machine runs <strong>one</strong> Cloudflare Tunnel, shared by every RepoOS repo on
+          it. <code>repoos tunnel create</code> from any repo adds a hostname → local-service route
+          to that same tunnel — you don't set up a tunnel per repo.
+        </div>
+
+        <div v-if="readiness?.configured?.tunnelName" class="tunnel-current">
+          <span
+            >Current tunnel: <code>{{ readiness.configured.tunnelName }}</code></span
+          >
+          <span class="tunnel-help"
+            >Rename it (label only, no restart, no traffic interruption) with
+            <code>repoos tunnel rename &lt;new-name&gt;</code> — since it's one tunnel per machine,
+            a host name like <code>repoos-&lt;hostname&gt;</code> reads better than the legacy
+            <code>repoos-local</code>.</span
+          >
+        </div>
+
         <div class="tunnel-form-grid">
           <label
             >Cloudflare zone/base domain<Input v-model="form.zone" placeholder="repoos.org"

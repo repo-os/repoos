@@ -425,7 +425,7 @@ async function resolveApiToken(): Promise<string | null> {
 async function cfFetch(
   token: string,
   path: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET",
   body?: unknown,
 ): Promise<Record<string, unknown>> {
   let res: Response;
@@ -1005,11 +1005,16 @@ async function cmdTunnelDestroy(args: string[]): Promise<void> {
 
 /**
  * Rename the machine's tunnel (e.g. the legacy `repoos-local` → `repoos-bee`).
- * Renames it in Cloudflare by UUID, updates `[tunnel].name` in repoos.toml,
- * and re-runs DNS routing for every published hostname so the dashboard's
- * "Tunnel" record labels follow the new name. The running connector routes by
- * UUID, which never changes — so no restart is needed and traffic is not
- * interrupted.
+ *
+ * There is no `cloudflared tunnel rename` subcommand (never has been), so this
+ * goes straight to the Cloudflare API — `PATCH /accounts/:id/cfd_tunnel/:uuid`
+ * with the new name — then updates `[tunnel].name` in repoos.toml and the
+ * machine registry.
+ *
+ * Nothing else needs to move: the running connector routes by UUID, the
+ * `<uuid>.cfargotunnel.com` DNS targets are UUID-based, and Access policies key
+ * off hostname. So the rename is a pure label change — no restart, no DNS
+ * re-pointing, no traffic interruption.
  */
 async function cmdTunnelRename(args: string[]): Promise<void> {
   const [newName] = args;
@@ -1027,22 +1032,23 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
     console.log(c.dim(`  Tunnel is already named "${newName}" — nothing to do.`));
     return;
   }
-  // Early conflict check only (fails fast, before invoking `cloudflared
-  // tunnel rename` at all) — the persisted registry update happens after
-  // repoos.toml is rewritten, below, in one locked read-modify-write.
+  // Fail fast before touching Cloudflare — the persisted repoos.toml + registry
+  // update happens after the API call, below, in one locked read-modify-write.
   const earlyConflict = reconcileIdentity(readRegistry(), tunnel);
   if (earlyConflict) fail(earlyConflict);
 
-  const bin = cloudflaredBin();
   const oldName = tunnel.name || "(unnamed)";
+  const { token, accountId } = await accessClient();
 
   try {
-    execFileSync(bin, ["tunnel", "rename", tunnel.tunnelId, newName], {
-      stdio: "inherit",
-      timeout: 30_000,
+    await cfFetch(token, `/accounts/${accountId}/cfd_tunnel/${tunnel.tunnelId}`, "PATCH", {
+      name: newName,
     });
   } catch (e) {
-    fail(`\`cloudflared tunnel rename\` failed: ${(e as Error).message}`);
+    fail(
+      `Cloudflare rejected the rename: ${(e as Error).message}\n` +
+        `  The API token needs Account / Cloudflare Tunnel / Edit.`,
+    );
   }
 
   tunnel.name = newName;
@@ -1050,34 +1056,14 @@ async function cmdTunnelRename(args: string[]): Promise<void> {
   const registry = mutateRegistry(cfg.root, tunnel, (registry) => {
     registry.tunnelName = newName;
   });
-  console.log(c.green("  ✔ renamed ") + c.cyan(oldName) + c.dim(" → ") + c.cyan(newName));
-
-  // Re-point DNS for every app on the machine (all repos), not just this
-  // repo's — the tunnel is machine-wide, so every published hostname needs
-  // to follow the new tunnel name.
-  const hostnames = Object.values(unionApps(registry)).map((a) => a.hostname);
-  for (const hostname of hostnames) {
-    try {
-      console.log(c.dim("  · re-pointing DNS ") + hostname + c.dim(" …"));
-      execFileSync(bin, ["tunnel", "route", "dns", "--overwrite-dns", newName, hostname], {
-        stdio: "inherit",
-        timeout: 60_000,
-      });
-    } catch {
-      console.log(
-        c.yellow(`  ⚠ couldn't re-point DNS for ${hostname} — run it yourself:`) +
-          "\n    " +
-          c.cyan(`cloudflared tunnel route dns --overwrite-dns ${newName} ${hostname}`),
-      );
-    }
-  }
-
   writeDerivedConfig(tunnel, unionApps(registry));
+
+  console.log(c.green("  ✔ renamed ") + c.cyan(oldName) + c.dim(" → ") + c.cyan(newName));
   console.log(
-    "\n  " +
+    "  " +
       c.green("✔ Tunnel renamed.") +
       c.dim(
-        " The running connector routes by UUID (unchanged), so no restart is needed; Cloudflare refreshes the DNS record labels shortly.",
+        " The connector routes by UUID (unchanged), so no restart is needed and traffic is not interrupted.",
       ),
   );
 }
@@ -1445,7 +1431,7 @@ function tunnelHelp(): void {
     ${c.cyan("setup")}                 One-time machine setup: install/check cloudflared, log in, create the tunnel, store the API token
     ${c.cyan("create")} <name>         Publish a local app  ${c.dim('flags: --port N --domain H --allow "a@x,b@y" | --no-access (requires auth.enabled)')}
     ${c.cyan("destroy")} <name>        Remove a published app (deletes its Access policy, drops it from repoos.toml + the machine registry)
-    ${c.cyan("rename")} <new-name>     Rename this machine's tunnel (e.g. repoos-local → repoos-bee) + re-point DNS for every app on the machine
+    ${c.cyan("rename")} <new-name>     Rename this machine's tunnel in Cloudflare (e.g. repoos-local → repoos-bee) — label only, no restart
     ${c.cyan("allow")} <name> <email>  Add an email to an app's allowlist
     ${c.cyan("deny")} <name> <email>   Remove an email from an app's allowlist
     ${c.cyan("start")}                 Run cloudflared in the foreground (dev), serving every app on the machine
