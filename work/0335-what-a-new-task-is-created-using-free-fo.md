@@ -2,14 +2,14 @@
 id: "0335"
 title: "Show \"PM is working\" indicator on draft cards and track the initial PM run in the usage tab"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-pm-is-working-indicator-on-draft-ca
 created_at: "2026-09-08T04:44:05Z"
-updated_at: "2026-09-08T05:28:16Z"
+updated_at: "2026-09-08T10:23:57Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ What a new task is created using free form it gets created first in drafts then 
 - 2026-09-08T04:45:16Z · status draft→inbox, title, area, body
 - 2026-09-08T05:27:44Z · status inbox→ready
 - 2026-09-08T05:28:16Z · status ready→active, branch
+- 2026-09-08T10:23:57Z · status active→review
