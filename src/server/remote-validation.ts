@@ -39,6 +39,8 @@ import type { RepoOSConfig } from "../core/types.js";
 import type { Logger } from "../core/logger.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
+
+export type { CheckSummary } from "./done.js";
 import { createHetznerClient, type HetznerClient, type HetznerServer } from "./hetzner.js";
 
 /** Label every runner VM carries, so leaked ones are always findable. */

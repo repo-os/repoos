@@ -668,6 +668,10 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof rvFallback === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
     }
+    const rvReleases = parsed["remoteValidation.useForReleases"];
+    if (typeof rvReleases === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, useForReleases: rvReleases };
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -951,6 +955,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: false,
       description:
         "When the remote runner is unreachable, run the full gate locally instead of keeping the task in review for retry.",
+    },
+    {
+      key: "remoteValidation.useForReleases",
+      label: "Remote validation: also validate releases",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description:
+        "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
   ];
 }

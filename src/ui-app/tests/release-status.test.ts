@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
+import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
 import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
 
 const roots: string[] = [];
@@ -33,7 +34,8 @@ function git({
     const key = args.join(" ");
     if (key === "branch --show-current") return { code: 0, stdout: "main\n", stderr: "" };
     if (key === "status --porcelain") return { code: 0, stdout: dirty, stderr: "" };
-    if (key === "rev-parse --short HEAD") return { code: 0, stdout: "abc123\n", stderr: "" };
+    if (key === "rev-parse --short HEAD" || key === "rev-parse HEAD")
+      return { code: 0, stdout: "abc123\n", stderr: "" };
     if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.2.2\n", stderr: "" };
     if (key === "tag --list v1.2.3") return { code: 0, stdout: tag, stderr: "" };
     return { code: 1, stdout: "", stderr: "" };
@@ -173,5 +175,123 @@ describe("git-tag release status", () => {
     expect(result.output).toContain("Type error");
     expect(calls).not.toContain("git push origin main");
     expect(calls).not.toContain("git tag -a v1.2.4 -m Release v1.2.4");
+  });
+
+  it("offloads the test suite to the remote runner and skips local tests on green", async () => {
+    const cfg: RepoOSConfig = {
+      ...config(),
+      remoteValidation: { enabled: true, useForReleases: true },
+    };
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") {
+        if (command === process.execPath && args.some((a) => a.endsWith("check")))
+          expect(env?.["REPOOS_SKIP_TESTS"]).toBe("1");
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const remoteValidator: RemoteValidator = {
+      validate: async (): Promise<CheckSummary> => ({ ok: true, stage: "check" }),
+      reconcile: async () => {},
+      dispose: async () => {},
+      logPath: () => "/tmp/none.log",
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
+    expect(result.ok).toBe(true);
+    expect(calls.some((c) => c === "git rev-parse HEAD")).toBe(true);
+  });
+
+  it("does not call the remote runner when useForReleases is unset", async () => {
+    const cfg: RepoOSConfig = {
+      ...config(),
+      remoteValidation: { enabled: true, useForReleases: false },
+    };
+    let called = false;
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const remoteValidator: RemoteValidator = {
+      validate: async () => {
+        called = true;
+        return { ok: true, stage: "check" };
+      },
+      reconcile: async () => {},
+      dispose: async () => {},
+      logPath: () => "/tmp/none.log",
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
+    expect(result.ok).toBe(true);
+    expect(called).toBe(false);
+  });
+
+  it("fails the release on a real remote gate failure (non-transient)", async () => {
+    const cfg: RepoOSConfig = {
+      ...config(),
+      remoteValidation: { enabled: true, useForReleases: true },
+    };
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const remoteValidator: RemoteValidator = {
+      validate: async (): Promise<CheckSummary> => ({
+        ok: false,
+        stage: "check",
+        transient: false,
+        detail: "remote validation failed (exit 1) — 1 failed",
+      }),
+      reconcile: async () => {},
+      dispose: async () => {},
+      logPath: () => "/tmp/none.log",
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("Remote validation failed");
+  });
+
+  it("falls back to the full local gate on transient infra failure when fallbackToLocal is set", async () => {
+    const cfg: RepoOSConfig = {
+      ...config(),
+      remoteValidation: { enabled: true, useForReleases: true, fallbackToLocal: true },
+    };
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") {
+        if (command === process.execPath && args.some((a) => a.endsWith("check")))
+          expect(env?.["REPOOS_SKIP_TESTS"]).toBeUndefined();
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const remoteValidator: RemoteValidator = {
+      validate: async (): Promise<CheckSummary> => ({
+        ok: false,
+        stage: "check",
+        transient: true,
+        detail: "ssh connection dropped",
+      }),
+      reconcile: async () => {},
+      dispose: async () => {},
+      logPath: () => "/tmp/none.log",
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
+    expect(result.ok).toBe(true);
+    expect(calls.some((c) => c === "git rev-parse HEAD")).toBe(true);
   });
 });

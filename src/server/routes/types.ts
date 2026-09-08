@@ -12,6 +12,7 @@ import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
 import type { Logger } from "../../core/logger.js";
 import type { DoneStep } from "../done.js";
+import type { RemoteValidator } from "../remote-validation.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -41,6 +42,8 @@ export interface RouteContext {
   closeOutLock: CloseOutLock;
   rootLock: RootLock;
   jobCoordinator: JobCoordinator;
+  /** Remote Validation Runner (docs/remote-validation.md). Undefined when not configured. */
+  remoteValidator?: RemoteValidator;
   /**
    * Live progress step last reported by the close-out orchestrator for each
    * in-flight task (the same map `emitIntegration`'s SSE push uses) — keyed
