@@ -2121,11 +2121,14 @@ export function pmCommand(
   }
   // opencode: `--format json` separates the final answer from step-by-step
   // narration (0264 vs 0253) and its `step_finish` events carry per-call
-  // usage deltas; `--dir` pins the repo root, `--auto` so a stray gated tool
-  // call resolves instead of blocking the run to the timeout.
+  // usage deltas; `--dir` pins the repo root. Deliberately NO `--auto`: that
+  // flag auto-approves gated tool calls, and the PM must not be able to write
+  // files or run tools. A stray gated call blocks until the run's timeout —
+  // the acceptable failure mode (the draft is kept with its original prompt),
+  // and the same behavior the plain `promptCommand` path had.
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt],
+    args: ["run", "--format", "json", "--dir", cwd, ...extra, prompt],
   };
 }
 

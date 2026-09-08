@@ -42,6 +42,10 @@ describe("pmCommand usage flags (0335)", () => {
       expect(args).not.toContain("--sandbox");
       expect(args).not.toContain("--auto-full-access");
       expect(args).not.toContain("--yolo");
+      // opencode's auto-approval flag — every gated tool call would be
+      // approved without asking. The reviewer/runner paths use it on purpose;
+      // the PM authoring pass must not.
+      expect(args).not.toContain("--auto");
     }
   });
 });
