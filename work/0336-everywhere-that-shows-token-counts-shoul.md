@@ -2,7 +2,7 @@
 id: "0336"
 title: Show token counts in millions with time-only session timestamps
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-token-counts-in-millions-with-time-
 model_override: opencode-go/hy3
 created_at: "2026-09-08T12:45:50Z"
-updated_at: "2026-09-08T12:57:38Z"
+updated_at: "2026-09-08T13:04:19Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ Everywhere that shows token counts should use M (millions) with 3 decimal places
 - 2026-09-08T12:51:26Z · status inbox→ready
 - 2026-09-08T12:57:33Z · model_override
 - 2026-09-08T12:57:38Z · status ready→active, branch
+- 2026-09-08T13:04:19Z · status active→review
