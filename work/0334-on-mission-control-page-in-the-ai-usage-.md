@@ -2,14 +2,14 @@
 id: "0334"
 title: Add date range selector to Mission Control AI usage panel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-08T04:38:46Z"
-updated_at: "2026-09-08T04:41:00Z"
+updated_at: "2026-09-08T04:44:23Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ On mission control  page in the AI usage section add a date range selector for t
 
 - 2026-09-08T04:38:46Z · created · hello@repoos.org
 - 2026-09-08T04:41:00Z · status draft→inbox, title, area, body
+- 2026-09-08T04:44:23Z · status inbox→ready
