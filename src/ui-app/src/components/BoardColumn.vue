@@ -83,6 +83,27 @@ watch(collapsed, () => nextTick(checkScroll));
 
 const collapsedColor = computed(() => props.barColor || props.col.color);
 
+const taskCount = computed(() => repo.byStatus(props.col.id).length);
+
+/**
+ * 0..1 — how far the collapsed column's colour band reaches before it fades
+ * into the panel. A log curve, not linear: the Done column routinely holds
+ * hundreds of tasks while the others hold a handful, so linear would peg
+ * every column at full. ~1 task ≈ 28%, ~5 ≈ 45%, ~20 ≈ 70%, 100+ ≈ full.
+ */
+const fillFraction = computed(() => {
+  const n = taskCount.value;
+  if (n <= 0) return 0;
+  return Math.min(1, 0.15 + Math.log10(n + 1) * 0.42);
+});
+
+/** CSS vars for the collapsed capsule: its colour and how full it looks. */
+const capStyle = computed(() =>
+  collapsed.value
+    ? { "--cap-color": collapsedColor.value, "--cap-fill": String(fillFraction.value) }
+    : undefined,
+);
+
 /** Task that just left this column (for ghost animation). */
 const leavingTaskName = computed(() => {
   const ts = repo.transitionState;
@@ -261,16 +282,13 @@ const unackedBadge = computed(() =>
       role="button"
       tabindex="0"
       :aria-expanded="!collapsed"
+      :style="capStyle"
       @click="toggle"
       @keydown.enter="toggle"
       @keydown.space.prevent="toggle"
     >
-      <div
-        v-if="collapsed"
-        class="col-cap"
-        :style="{ background: collapsedColor, color: barTextColor }"
-      >
-        <span class="col-cap-count">{{ repo.byStatus(col.id).length }}</span>
+      <div v-if="collapsed" class="col-cap">
+        <span class="col-cap-count" :style="{ color: barTextColor }">{{ taskCount }}</span>
         <span
           v-if="unackedBadge"
           class="col-cap-ack"
@@ -284,7 +302,7 @@ const unackedBadge = computed(() =>
         :style="{ background: col.color, boxShadow: '0 0 6px ' + col.color }"
       ></span>
       <span class="col-label">{{ col.label }}</span>
-      <span v-if="!collapsed" class="col-count">{{ repo.byStatus(col.id).length }}</span>
+      <span v-if="!collapsed" class="col-count">{{ taskCount }}</span>
       <svg class="col-chev" viewBox="0 0 24 24" fill="none">
         <path
           d="m6 9 6 6 6-6"

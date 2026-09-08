@@ -1153,59 +1153,80 @@
   color: var(--red);
 }
 
-/* collapsed: slim neutral vertical bar, colored cap with count, bottom fades out */
+/* collapsed: a vertical capsule whose colour band grows with the task count
+   and fades into the panel — the count reads at a glance from across the board. */
 .board-col.collapsed {
-  flex: 0 0 38px;
-  width: 38px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  flex: 0 0 44px;
+  width: 44px;
 }
 .board-col.collapsed .col-body {
   display: none;
 }
 .board-col.collapsed .col-head {
+  --cap-color: var(--txt-faint);
+  --cap-fill: 0;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 9px;
   padding: 0;
   border: 1px solid var(--border);
   flex: 1;
-  background: var(--panel);
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  /* Colour band: opaque at the top, thinning as it descends, gone by the
+     point set by --cap-fill (0 → sliver, 1 → nearly the whole capsule). */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cap-color) 92%, transparent) 0%,
+      color-mix(in srgb, var(--cap-color) 48%, transparent) calc(var(--cap-fill) * 45%),
+      color-mix(in srgb, var(--cap-color) 12%, transparent) calc(var(--cap-fill) * 78%),
+      transparent calc(var(--cap-fill) * 88% + 12%)
+    ),
+    var(--panel);
+  transition: background 0.35s ease;
 }
 .board-col.collapsed .col-cap {
   width: 100%;
-  height: 32px;
-  border-radius: 10px 10px 0 0;
+  height: 30px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  background: transparent;
 }
 .board-col.collapsed .col-cap-count {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: "JetBrains Mono", monospace;
 }
-/* 0278: unacked fresh-done badge pinned to the collapsed Done cap. */
+/* Nudge the count clear of the ack badge (Done column only) so a 3-digit
+   count and the badge don't collide in the narrow capsule. */
+.board-col.collapsed .col-cap:has(.col-cap-ack) .col-cap-count {
+  transform: translateX(-8px);
+}
+/* 0278: unacked fresh-done badge — dark chip so it reads against the green
+   band, kept fully inside the capsule so `overflow: hidden` never clips it. */
 .board-col.collapsed .col-cap-ack {
   position: absolute;
-  top: -7px;
-  right: -7px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: 4px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
   border-radius: 999px;
-  background: var(--green);
-  color: #06130d;
-  font-size: 10px;
+  background: var(--panel-solid);
+  color: var(--green);
+  border: 1px solid color-mix(in srgb, var(--green) 55%, transparent);
+  font-size: 9.5px;
   font-weight: 700;
   font-family: "JetBrains Mono", monospace;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 8px var(--green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--green) 45%, transparent);
   animation: done-needs-ack-pulse 2.6s ease-in-out infinite;
 }
 .board-col.collapsed .cdot {
@@ -1217,9 +1238,12 @@
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  color: var(--txt-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--txt);
+  padding-bottom: 12px;
 }
 .board-col.collapsed .col-chev {
   display: none;
@@ -1235,8 +1259,8 @@
     flex: 1 1 calc(100%/3);
   }
   .board-col.collapsed {
-    flex: 0 0 38px;
-    width: 38px;
+    flex: 0 0 44px;
+    width: 44px;
   }
 }
 @media (max-width: 760px) {
@@ -1263,8 +1287,6 @@
   .board-col.collapsed {
     flex: 0 0 auto;
     width: 100%;
-    -webkit-mask-image: none;
-    mask-image: none;
   }
   .col-body {
     overflow: visible;
@@ -1273,25 +1295,37 @@
   .board-col.scrollable::after {
     display: none;
   }
+  /* Horizontal row on mobile — the vertical colour-band rail doesn't apply,
+     so drop the gradient and use a small square whose fill tracks the count. */
   .board-col.collapsed .col-head {
     flex-direction: row;
     align-items: center;
     gap: 8px;
     padding: 9px 12px;
     flex: none;
+    overflow: visible;
+    border-radius: 12px;
+    background: var(--panel);
   }
   .board-col.collapsed .col-cap {
     width: 22px;
     height: 22px;
     border-radius: 6px;
+    background: color-mix(in srgb, var(--cap-color) calc(28% + var(--cap-fill) * 60%), transparent);
   }
   .board-col.collapsed .col-cap-count {
     font-size: 10.5px;
+    color: var(--txt) !important;
+  }
+  .board-col.collapsed .col-cap-ack {
+    top: 3px;
+    right: 3px;
   }
   .board-col.collapsed .col-label {
     writing-mode: horizontal-tb;
     transform: none;
     margin-top: 0;
+    padding-bottom: 0;
     font-size: 12px;
     flex: 1;
     overflow: hidden;
