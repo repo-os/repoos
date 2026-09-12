@@ -33,9 +33,12 @@ function inline(s: string): string {
   });
   // bold then italic (order matters so ** doesn't become nested em)
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  s = s.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  // underscore emphasis only fires at a word boundary — CommonMark never lets
+  // `_`/`__` open or close inside a word, so `my_variable_name` stays literal
+  // instead of becoming `my<em>variable</em>name`.
+  s = s.replace(/(?<![\w_])__([^_\n]+?)__(?![\w_])/g, "<strong>$1</strong>");
   s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
-  s = s.replace(/(?<!_)_([^_\n]+)_(?!_)/g, "<em>$1</em>");
+  s = s.replace(/(?<![\w_])_([^_\n]+?)_(?![\w_])/g, "<em>$1</em>");
   // strikethrough
   s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
   return s;
@@ -248,7 +251,7 @@ function renderBlock(b: Block): string {
       const trs = body
         .map((r) => `<tr>${r.map((c) => `<td>${inline(escapeHtml(c))}</td>`).join("")}</tr>`)
         .join("");
-      return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+      return `<div class="md-table-wrap"><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
     }
     case "p": {
       return `<p>${renderSoftLines(b.lines)}</p>`;

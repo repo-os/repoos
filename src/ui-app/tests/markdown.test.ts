@@ -84,13 +84,28 @@ describe("renderMarkdown", () => {
       "| `opencode/deepseek-v4-flash` | 🟢 Budget | **Cheap** coder |\n" +
       "| `opencode/claude-opus-5` | 🔴 Premium | reviewer |\n";
     const html = renderMarkdown(src);
-    expect(html).toContain("<table><thead><tr>");
+    expect(html).toContain('<div class="md-table-wrap"><table><thead><tr>');
     expect(html).toContain("<th>Model</th><th>Tier</th><th>Best for</th>");
     expect(html).toContain("<tbody>");
     expect(html).toContain("<code>opencode/deepseek-v4-flash</code>");
     expect(html).toContain("<strong>Cheap</strong>");
     expect(html).toContain("</tbody></table>");
     expect(html).toContain("<td>🟢 Budget</td>");
+    expect(html).toContain("</tbody></table></div>");
+  });
+
+  it("leaves intraword underscores alone instead of italicizing them", () => {
+    const html = renderMarkdown("Set my_variable_name and __private__field here.");
+    expect(html).not.toContain("<em>");
+    expect(html).not.toContain("<strong>");
+    expect(html).toContain("my_variable_name");
+    expect(html).toContain("__private__field");
+  });
+
+  it("still renders underscore emphasis at word boundaries", () => {
+    const html = renderMarkdown("this is _emphasized_ and __strong__ text");
+    expect(html).toContain("<em>emphasized</em>");
+    expect(html).toContain("<strong>strong</strong>");
   });
 
   it("renders images from repo-relative paths", () => {

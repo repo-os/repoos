@@ -3822,15 +3822,20 @@
 .md-rendered .md-task-checked {
   color: var(--txt-faint);
 }
+.md-rendered .md-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 12px;
+}
+.md-rendered .md-table-wrap:last-child {
+  margin-bottom: 0;
+}
 .md-rendered table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
-}
-.md-rendered table:last-child {
-  margin-bottom: 0;
 }
 .md-rendered th,
 .md-rendered td {
@@ -3838,6 +3843,8 @@
   padding: 6px 9px;
   text-align: left;
   vertical-align: top;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .md-rendered th {
   font-family: "JetBrains Mono", monospace;
