@@ -8,6 +8,10 @@ ADRs record a decision that shaped RepoOS, why it was made, and what it rules
 out. They are immutable once accepted — if a decision changes, it gets a new
 ADR, not an edit. (Process: the "Principles" section of the [Vision](/vision).)
 
+This table is hand-maintained — adding a new ADR means adding a row here too,
+and adding it to `themeConfig.sidebar` in `.vitepress/config.mts` (see
+`docs/README.md`), or it won't show up in either place.
+
 | ADR | Decision | Status | Date |
 | --- | --- | --- | --- |
 | [0001](/adr/0001-repo-native-tasks) | Tasks are repo-native markdown files | accepted | 2026-05-29 |
