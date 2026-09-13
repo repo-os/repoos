@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T15:12:47Z"
+updated_at: "2026-09-13T18:15:16Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -76,3 +76,4 @@ Caveat to note in the UI copy: this reflects the last PUSH, not confirmed build 
 Deliberately deferred to v2, not v1: genuine build-success/deploy-status would need Cloudflare's Pages API (GET .../pages/projects/:name/deployments), which needs a real (if narrow, read-only) API token. That token would live in .env and be read server-side only -- same pattern as REPOOS_AUTH_DEV_BACKDOOR_CODE already uses -- and would never be exposed to a coding agent. Don't bundle this into v1; it's a real secret + live external call for "nice to have" (accurate status) vs. "good enough" (last-pushed timestamp) that costs nothing.
 - 2026-09-13T09:40:07Z · note: Correction to the freshness-signal note above: scope it to the site's own subdirectory, not the whole branch -- `git log -1 -- <subdir> <branch>` (e.g. `git log -1 -- landing main`), not `git log -1 <branch>`. Same blind spot as the Cloudflare Build Watch Paths issue: a branch-wide signal doesn't know an unrelated push (e.g. a src/ fix) touched nothing under landing/ or docs/, and would misleadingly show that environment as freshly updated.
 - 2026-09-13T15:12:47Z · note: Directory rename (2026-09-13): the VitePress docs site moved from docs/ to user-docs/ — docs/ is reserved for RepoOS-convention build context (see docs/README.md vs user-docs/README.md). So the [[deployments]] example config and the per-row freshness lookup in this task refer to `user-docs`, not `docs`: e.g. `git log -1 -- user-docs main`. The published URLs (docs.repoos.org / docs-dev.repoos.org) are unchanged.
+- 2026-09-13T18:15:16Z · note: Correction (2026-09-14): Cloudflare's dashboard now creates git-connected static sites as Workers (wrangler deploy + wrangler.jsonc), not the classic 'Pages project' flow assumed in earlier notes here — no root-directory/output-directory pair, no separate 'Build watch paths' field confirmed to exist (may be folded into the 'Path' Advanced setting, or may not exist at all — check the dashboard). landing/wrangler.jsonc and user-docs/wrangler.jsonc now exist and are the actual source of truth for what gets deployed. Whatever data source #0340 ends up using for 'last deployed', it should read the deploy config from these wrangler.jsonc files (project name, assets directory) rather than assuming Pages-specific fields.
