@@ -2,7 +2,7 @@
 id: "0339"
 title: Build docs.repoos.org VitePress site (Cloudflare Pages)
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/build-docs-repoos-org-vitepress-site-clo
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:36Z"
-updated_at: "2026-09-13T07:37:19Z"
+updated_at: "2026-09-13T07:44:31Z"
 ---
 Build a VitePress documentation site for docs.repoos.org, deployed on Cloudflare Pages.
 
@@ -75,3 +75,4 @@ future "Deployments" page task on RepoOS's own board.
 - 2026-09-13T07:13:28Z · status inbox→ready
 - 2026-09-13T07:13:30Z · status ready→active, branch
 - 2026-09-13T07:37:19Z · note: Same note as #0338: repoos check does not cover docs/ at all (see src/commands/check.ts -- it's hardcoded to root package.json + src/ui-app's own bespoke smoke test, no sibling-project discovery). Verify the VitePress build and rendering yourself; a green repoos check says nothing about this site.
+- 2026-09-13T07:44:31Z · status active→review
