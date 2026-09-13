@@ -3,8 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#070a12" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
+    <!--
+      Resolve the theme before first paint: a stored choice wins, otherwise the
+      OS preference. Inline and synchronous on purpose — deferring this to the
+      Vue app would flash the wrong theme on every load.
+    -->
+    <script>
+      (function () {
+        var t = "dark";
+        try {
+          var saved = localStorage.getItem("repoos-theme");
+          t =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+        } catch (e) {
+          /* blocked storage: fall through to dark */
+        }
+        document.documentElement.setAttribute("data-theme", t);
+        var meta = document.createElement("meta");
+        meta.name = "theme-color";
+        meta.content = t === "light" ? "#f6f8fc" : "#070a12";
+        document.head.appendChild(meta);
+      })();
+    </script>
     <title>RepoOS — the repo is the operating system</title>
     <meta
       name="description"

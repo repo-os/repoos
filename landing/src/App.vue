@@ -1,8 +1,33 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const INSTALL_CMD =
   "curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash";
+
+type Theme = "dark" | "light";
+const THEME_KEY = "repoos-theme";
+const theme = ref<Theme>("dark");
+
+function applyTheme(next: Theme): void {
+  theme.value = next;
+  document.documentElement.setAttribute("data-theme", next);
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch {
+    // Private mode / blocked storage: the toggle still works for this visit.
+  }
+}
+
+function toggleTheme(): void {
+  applyTheme(theme.value === "dark" ? "light" : "dark");
+}
+
+onMounted(() => {
+  // index.html resolves the theme (stored choice, else prefers-color-scheme)
+  // and applies it before first paint to avoid a flash. Read it back so the
+  // toggle's initial state matches what's actually on screen.
+  theme.value = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+});
 
 const copied = ref(false);
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -45,6 +70,42 @@ const year = new Date().getFullYear();
         <a href="#team" class="nav-link hidden sm:block">The team</a>
         <a href="#principles" class="nav-link hidden sm:block">Principles</a>
         <a href="https://docs.repoos.org" class="nav-link hidden sm:block">Docs</a>
+        <button
+          type="button"
+          class="theme-toggle"
+          :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          :title="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          @click="toggleTheme"
+        >
+          <svg
+            v-if="theme === 'dark'"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+            />
+          </svg>
+          <svg
+            v-else
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+          </svg>
+        </button>
         <a
           href="https://github.com/repo-os/repoos"
           class="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] text-[var(--txt-dim)] transition-colors hover:border-[rgba(57,224,255,0.4)] hover:text-[var(--txt)]"
@@ -153,7 +214,7 @@ const year = new Date().getFullYear();
           <span class="term-dot" style="background: #ff6b7d"></span>
           <span class="term-dot" style="background: #ffb454"></span>
           <span class="term-dot" style="background: #4ef0a8"></span>
-          <span class="term-title">~/code/nick/repoos</span>
+          <span class="term-title">~/code/repoos</span>
         </div>
         <div class="term-body">
           <div><span class="prompt">$</span> <span class="cmd">repoos status</span></div>
@@ -323,8 +384,9 @@ const year = new Date().getFullYear();
         <article class="panel p-7">
           <h3 class="text-[17px] font-semibold">Zero runtime dependencies</h3>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            A hard constraint, not a preference. Dev dependencies are fine; the built product is
-            plain Node &mdash; install, run, done. The supply chain you ship is the one you read.
+            A hard constraint, not a preference. Dev dependencies are fine; what ships is plain
+            JavaScript that runs on the Bun or Node you already have &mdash; install, run, done. The
+            supply chain you ship is the one you read.
           </p>
           <p class="mt-4 font-mono text-[12px] text-[var(--txt-faint)]">$ ls package.json</p>
         </article>
