@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-13T04:13:36Z"
-updated_at: "2026-09-13T06:30:03Z"
+updated_at: "2026-09-13T06:47:16Z"
 ---
 Stand up a VitePress-based documentation site at docs.repoos.org, deployed on
 Cloudflare Pages, following the same branch convention as the landing page
@@ -35,3 +35,4 @@ future "Deployments" page task on RepoOS's own board.
 - 2026-09-13T04:13:36Z · created · unknown
 - 2026-09-13T06:24:01Z · note: Repo layout: give this its own package.json (docs/package.json), not root package.json. Same reasoning as the note on #0338 — follow the mobile/ precedent of a standalone sibling project, no bun workspaces needed.
 - 2026-09-13T06:30:03Z · note: URL convention: docs.repoos.org (prod), docs-dev.repoos.org (dev).
+- 2026-09-13T06:47:16Z · note: Scope narrowed: build and verify locally only (dev server + browser preview). Don't set up Cloudflare Pages/DNS/custom domains as part of this task — that's manual Cloudflare-dashboard work only a human can do, tracked outside the task system, and doesn't block this task's own definition of done.
