@@ -38,15 +38,12 @@ const year = new Date().getFullYear();
       <a href="#top" class="flex items-center gap-2.5">
         <img src="./assets/logo.svg" alt="" class="h-7 w-7" width="28" height="28" />
         <span class="text-[15px] font-bold tracking-tight">RepoOS</span>
-        <span
-          class="ml-1 rounded-md border border-[var(--border)] bg-[rgba(120,140,200,0.08)] px-1.5 py-0.5 font-mono text-[10.5px] text-[var(--txt-dim)]"
-          >v0.5.41</span
-        >
       </a>
       <nav class="flex items-center gap-6">
+        <a href="#why" class="nav-link hidden sm:block">Why</a>
         <a href="#how" class="nav-link hidden sm:block">How it works</a>
+        <a href="#team" class="nav-link hidden sm:block">The team</a>
         <a href="#principles" class="nav-link hidden sm:block">Principles</a>
-        <a href="#agents" class="nav-link hidden sm:block">Agents</a>
         <a href="https://docs.repoos.org" class="nav-link hidden sm:block">Docs</a>
         <a
           href="https://github.com/repo-os/repoos"
@@ -68,17 +65,16 @@ const year = new Date().getFullYear();
     <section class="wrap pt-16 pb-14 sm:pt-24 sm:pb-20">
       <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <div>
-          <p class="eyebrow mb-5">work/*.md &middot; git worktrees &middot; agents</p>
+          <p class="eyebrow mb-5">for CTOs and founding engineers</p>
           <h1 class="text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[54px]">
             The repo is the<br />
             operating system.
           </h1>
-          <p class="mt-6 max-w-[46ch] text-[16.5px] leading-relaxed text-[var(--txt-dim)]">
-            RepoOS runs software work like an OS runs processes. Tasks are Markdown files under
-            <code class="font-mono text-[14.5px] text-[var(--cyan)]">work/</code>, an AI coding
-            agent works them in a git worktree, and
-            <code class="font-mono text-[14.5px] text-[var(--cyan)]">repoos check</code> is the only
-            bar for done.
+          <p class="mt-6 max-w-[48ch] text-[16.5px] leading-relaxed text-[var(--txt-dim)]">
+            AI coding agents aren't limited by skill any more. They're limited by everything a human
+            engineering team has and they don't:
+            <span class="text-[var(--txt)]">structure, process, and context</span>. RepoOS builds
+            all three &mdash; AI-first, in the repo, where the agents already live.
           </p>
 
           <div class="install-box mt-8">
@@ -119,7 +115,7 @@ const year = new Date().getFullYear();
           </div>
 
           <p class="mt-4 font-mono text-[12px] text-[var(--txt-faint)]">
-            // requires Node &ge; 20.6.0 &middot; no account, no telemetry
+            // runs on Bun or Node &ge; 20 &middot; no account, no telemetry
           </p>
         </div>
 
@@ -177,6 +173,59 @@ const year = new Date().getFullYear();
         Not testimonials. This is RepoOS managing its own development &mdash; board numbers from
         <span class="font-mono">repoos status</span>, as of v0.5.41.
       </p>
+    </section>
+
+    <!-- ============ WHY ============ -->
+    <section id="why" class="wrap pb-20 sm:pb-24">
+      <p class="eyebrow mb-3">The actual bottleneck</p>
+      <h2 class="max-w-[26ch] text-[30px] font-bold leading-tight tracking-tight sm:text-[38px]">
+        The models got good. The scaffolding didn't.
+      </h2>
+      <div class="mt-5 grid gap-x-12 gap-y-4 lg:grid-cols-2">
+        <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+          What makes a human engineering team effective isn't raw ability. It's the scaffolding
+          around it &mdash; the spec that says what to build, the review that catches what's wrong,
+          the standards everyone works to, and the accumulated memory of every decision already made
+          and every mistake already paid for.
+        </p>
+        <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+          All of that was built for humans, and it's scattered across a dozen SaaS tools an agent
+          can't meaningfully use. So every agent starts from zero: re-deriving context,
+          re-litigating settled decisions, re-breaking things that were fixed months ago. That
+          ceiling isn't a model problem, and a better model won't lift it.
+        </p>
+      </div>
+
+      <div class="mt-10 grid gap-5 lg:grid-cols-3">
+        <article class="panel p-7">
+          <p class="eyebrow mb-3">Structure</p>
+          <h3 class="text-[17px] font-semibold">Work that has a shape</h3>
+          <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            Every task is a file with a status, an owner and a branch. One task, one worktree. A
+            dozen agents can work at once without ever sharing a checkout &mdash; or colliding on
+            <span class="font-mono text-[13px] text-[var(--txt)]">main</span>.
+          </p>
+        </article>
+        <article class="panel p-7">
+          <p class="eyebrow mb-3">Process</p>
+          <h3 class="text-[17px] font-semibold">A bar that can't be talked around</h3>
+          <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            Spec, implement, check, review, sign off &mdash; enforced by the tooling rather than by
+            convention. An agent can't merge, can't skip the gate, and can't declare itself done.
+          </p>
+        </article>
+        <article class="panel p-7">
+          <p class="eyebrow mb-3">Context</p>
+          <h3 class="text-[17px] font-semibold">A project that remembers</h3>
+          <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            Decisions, rationale and hard-won lessons live in
+            <span class="font-mono text-[13px] text-[var(--txt)]">docs/</span> and
+            <span class="font-mono text-[13px] text-[var(--txt)]">AGENTS.md</span>, committed beside
+            the code. Every agent reads them &mdash; and writes back to them. Learned once, not
+            re-derived every session.
+          </p>
+        </article>
+      </div>
     </section>
 
     <!-- ============ HOW IT WORKS ============ -->
@@ -283,7 +332,7 @@ const year = new Date().getFullYear();
     </section>
 
     <!-- ============ AGENTS ============ -->
-    <section id="agents" class="wrap pb-20 sm:pb-24">
+    <section id="team" class="wrap pb-20 sm:pb-24">
       <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         <div class="order-2 lg:order-1">
           <div class="file-card">
@@ -311,16 +360,24 @@ const year = new Date().getFullYear();
         </div>
 
         <div class="order-1 lg:order-2">
-          <p class="eyebrow mb-3">Agents</p>
+          <p class="eyebrow mb-3">The team</p>
           <h2
             class="max-w-[22ch] text-[30px] font-bold leading-tight tracking-tight sm:text-[38px]"
           >
-            Bring your own coding agent
+            Not an agent. An engineering org.
           </h2>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-            RepoOS orchestrates the CLIs you already have &mdash; opencode, codex, Claude Code,
-            GitHub Copilot CLI, kiro &mdash; per task. Model catalogs are read from the agents
-            themselves, not hardcoded into a wrapper.
+            A <span class="text-[var(--txt)]">PM</span> turns an idea into a real spec.
+            <span class="text-[var(--txt)]">Engineers</span> implement it, each in their own
+            worktree. A <span class="text-[var(--txt)]">reviewer</span> reads the diff and reports
+            before you ever look at it. A <span class="text-[var(--txt)]">CTO</span> watches the
+            board, and a <span class="text-[var(--txt)]">debugger</span> takes the failures. Roles,
+            working a board &mdash; not a chat window with a model behind it.
+          </p>
+          <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+            Underneath, each role runs on whatever you choose: opencode, Claude Code, codex, GitHub
+            Copilot CLI, kiro &mdash; per task, per role. Model catalogs are read from the agents
+            themselves, so you're never waiting on a wrapper to support the model you want.
           </p>
           <ul class="mt-6 space-y-2.5">
             <li
@@ -355,6 +412,68 @@ const year = new Date().getFullYear();
             </li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ TASTE ============ -->
+    <section class="wrap pb-20 sm:pb-24">
+      <div class="panel card-glow p-8 text-center sm:p-12">
+        <p class="eyebrow mb-4">Where humans fit</p>
+        <h2
+          class="mx-auto max-w-[20ch] text-[28px] font-bold leading-tight tracking-tight sm:text-[36px]"
+        >
+          Taste is the scarce input.
+        </h2>
+        <p class="mx-auto mt-5 max-w-[62ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+          Agents supply capability; that stopped being the constraint. You supply judgment &mdash;
+          what's worth building, what's good enough, what ships. RepoOS is built to put your
+          attention on exactly those decisions and take the rest off your desk.
+        </p>
+        <p class="mx-auto mt-4 max-w-[62ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+          And it's a guarantee of construction, not a policy anyone can decide to skip: the agent
+          <span class="text-[var(--txt)]">cannot merge</span>. Moving a task to done is the only
+          path to <span class="font-mono text-[14px] text-[var(--txt)]">main</span>, and that move
+          is yours.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ WHAT IT ISN'T ============ -->
+    <section class="wrap pb-20 sm:pb-24">
+      <p class="eyebrow mb-3">Scope</p>
+      <h2 class="max-w-[26ch] text-[30px] font-bold leading-tight tracking-tight sm:text-[38px]">
+        What RepoOS isn't
+      </h2>
+
+      <div class="mt-8 grid gap-5 lg:grid-cols-2">
+        <article class="panel p-6">
+          <h3 class="text-[15.5px] font-semibold">Not a hosted dashboard over your repo</h3>
+          <p class="mt-2.5 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            The repo <em>is</em> the system; the UI is a view of it. Nothing lives in a service you
+            could lose access to, and no vendor sits between you and your own work.
+          </p>
+        </article>
+        <article class="panel p-6">
+          <h3 class="text-[15.5px] font-semibold">Not Jira with AI bolted on</h3>
+          <p class="mt-2.5 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            The process is branches, worktrees, gates and sign-off, because that's how software
+            actually ships &mdash; not a ticket workflow from 2010 with a model wired into it.
+          </p>
+        </article>
+        <article class="panel p-6">
+          <h3 class="text-[15.5px] font-semibold">Not an agent playground</h3>
+          <p class="mt-2.5 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            It's for building real products and real businesses &mdash; which is why the gate, the
+            review step and the audit trail exist at all.
+          </p>
+        </article>
+        <article class="panel p-6">
+          <h3 class="text-[15.5px] font-semibold">Not a wrapper around one vendor</h3>
+          <p class="mt-2.5 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            Bring your own agents and model providers, and change them per task. Run it on your
+            laptop or in the cloud. Those stay your decisions.
+          </p>
+        </article>
       </div>
     </section>
 
@@ -410,8 +529,39 @@ const year = new Date().getFullYear();
             <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Is it stable?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            It's v0.5.x and it runs its own development &mdash; 300+ tasks and counting. Early,
-            moving fast, and the dogfooding is not a metaphor.
+            It has run its own development for 300+ tasks &mdash; every feature, fix and review on
+            this page's board went through the same gate you'd be using. The dogfooding is not a
+            metaphor.
+          </p>
+        </details>
+        <details class="panel group p-6">
+          <summary
+            class="cursor-pointer list-none text-[15.5px] font-semibold marker:hidden [&::-webkit-details-marker]:hidden"
+          >
+            <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Do I have to start a
+            new project?
+          </summary>
+          <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            No. <span class="font-mono text-[13px]">repoos init</span> drops into a repo you already
+            have and adds four things &mdash; <span class="font-mono text-[13px]">work/</span>,
+            <span class="font-mono text-[13px]">docs/</span>,
+            <span class="font-mono text-[13px]">AGENTS.md</span>,
+            <span class="font-mono text-[13px]">repoos.toml</span> &mdash; touching nothing else. It
+            works on a new repo just as well.
+          </p>
+        </details>
+        <details class="panel group p-6">
+          <summary
+            class="cursor-pointer list-none text-[15.5px] font-semibold marker:hidden [&::-webkit-details-marker]:hidden"
+          >
+            <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Does it need
+            configuring for my project?
+          </summary>
+          <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
+            Less than you'd expect, and increasingly less over time. The conventions are yours to
+            shape &mdash; and as the agents learn what you're building, they write that back into
+            <span class="font-mono text-[13px]">docs/</span> and
+            <span class="font-mono text-[13px]">AGENTS.md</span> themselves.
           </p>
         </details>
       </div>
@@ -419,6 +569,11 @@ const year = new Date().getFullYear();
       <!-- closing CTA -->
       <div class="panel card-glow mt-12 p-8 text-center sm:p-10">
         <h2 class="text-[24px] font-bold tracking-tight sm:text-[28px]">Run your repo like one.</h2>
+        <p class="mx-auto mt-4 max-w-[54ch] text-[14.5px] leading-relaxed text-[var(--txt-dim)]">
+          Drop it into a repo you already have, or start a new one. Bring your own agents and model
+          providers, run it locally or in the cloud, and put a team to work on the first task
+          tonight.
+        </p>
         <div class="install-box mx-auto mt-6">
           <span class="dollar font-mono text-[13.5px]">$</span>
           <code>{{ INSTALL_CMD }}</code>
