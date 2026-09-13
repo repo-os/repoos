@@ -45,6 +45,7 @@ export default defineConfig({
       { text: "Docs", link: "/vision" },
       { text: "ADRs", link: "/adr/" },
       { text: "Roadmap", link: "/roadmap" },
+      { text: "repoos.org", link: "https://repoos.org" },
     ],
     sidebar: [
       {

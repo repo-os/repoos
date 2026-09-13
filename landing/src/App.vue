@@ -47,6 +47,7 @@ const year = new Date().getFullYear();
         <a href="#how" class="nav-link hidden sm:block">How it works</a>
         <a href="#principles" class="nav-link hidden sm:block">Principles</a>
         <a href="#agents" class="nav-link hidden sm:block">Agents</a>
+        <a href="https://docs.repoos.org" class="nav-link hidden sm:block">Docs</a>
         <a
           href="https://github.com/repo-os/repoos"
           class="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] text-[var(--txt-dim)] transition-colors hover:border-[rgba(57,224,255,0.4)] hover:text-[var(--txt)]"
@@ -459,6 +460,11 @@ const year = new Date().getFullYear();
           <span class="text-[var(--txt-dim)]">repoos new</span> &middot;
           <span class="text-[var(--txt-dim)]">repoos check</span>
         </p>
+        <a
+          href="https://docs.repoos.org"
+          class="mt-4 inline-block text-[13px] text-[var(--cyan)] hover:underline"
+          >Read the docs &rarr;</a
+        >
       </div>
     </section>
   </main>
