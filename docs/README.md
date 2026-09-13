@@ -1,72 +1,44 @@
-# docs.repoos.org
+# docs — build context for RepoOS itself
 
-RepoOS's documentation site — this directory **is** the site. It republishes
-the repo's own `docs/*.md` (architecture, concepts, ADRs, audits) as a
-VitePress site. The markdown stays in `docs/` as the single source of truth:
-edit a file here, and the site picks it up on the next build.
+Architecture, decisions, incident history and rationale for **building** RepoOS:
+the context an agent or contributor needs before working on this codebase.
+`AGENTS.md` points here, and agents are expected to read the relevant parts
+before starting a task.
 
-Standalone sibling project (own `package.json`, no bun workspaces — same
-pattern as `mobile/`). Independent of `src/ui-app` and the repoos.org landing
-page; VitePress brings its own Vue-based theme.
+## This is a RepoOS convention, not just a folder
 
-## Local development
+`repoos init` creates `docs/` (`config.docsDir`) in **every** repo RepoOS
+manages, and scaffolds an `AGENTS.md` telling agents to read it. In a repo
+running RepoOS, `docs/` holds *that* project's build context. This repo is
+self-hosted, so here it holds RepoOS's own.
 
-```bash
-just docs-dev    # from repo root — dev server at http://localhost:5175
-just docs-build  # from repo root — static build to .vitepress/dist
-```
+Write things down here when they would otherwise be re-derived, re-litigated or
+re-broken on a future task: why a design went the way it did, what an incident
+actually turned out to be, a constraint that isn't obvious from the code.
 
-Or run it directly:
+## Not to be confused with `../user-docs/`
 
-```bash
-cd docs
-bun install
-bun run dev      # dev server at http://localhost:5173 (repoos-ui-dev already
-                  # uses 5173 and repoos-mobile-dev uses 5174 — pass
-                  # `-- --port 5175` to avoid colliding, which is what
-                  # `just docs-dev` does for you)
-bun run build    # static build to .vitepress/dist
-bun run preview  # serve the built site
-```
-
-## Deploy (Cloudflare Pages)
-
-Not set up as part of building the site — Cloudflare Pages project, DNS, and
-custom domains are manual dashboard work. The convention, matching
-repoos.org (#0338):
-
-| Branch | Environment | Domain |
+| | Audience | Contents |
 | --- | --- | --- |
-| `main` | dev/staging | `docs-dev.repoos.org` |
-| `prod` | production | `docs.repoos.org` |
+| `docs/` (here) | People and agents **building** RepoOS | Architecture, ADRs, incident write-ups, rationale |
+| `../user-docs/` | People **using** RepoOS | Install, task lifecycle, CLI, configuration — published to docs.repoos.org |
 
-`prod` advances only as an infrequent, deliberate fast-forward merge of `main`.
+**Nothing in this directory is published to docs.repoos.org.** The two overlap
+in subject matter but not in purpose, and they're expected to diverge. A note
+here can assume deep familiarity with this codebase; a page in `user-docs/`
+can't assume any.
 
-Cloudflare Pages settings (when a human wires this up):
+## What's here
 
-- **Build command:** `bun install && bun run build` (working directory: `docs`)
-- **Output directory:** `docs/.vitepress/dist`
-- Clean URLs are enabled (`cleanUrls: true`); Cloudflare Pages serves
-  `foo.html` at `/foo` natively, so no extra `_headers`/`_redirects` file is
-  needed.
-
-## How the site is organized
-
-- **Content** — every existing `docs/*.md` is a page at its existing path
-  (`/architecture`, `/concepts`, `/adr/0001-…`). Nothing was moved, so links
-  from `AGENTS.md` and other in-repo docs still resolve. New pages: `index.md`
-  (home) and `adr/index.md` (ADR overview).
-- **Config** — `.vitepress/config.mts`: nav, sidebar, local search, dark-only
-  identity (`appearance: 'force-dark'`). The sidebar (and the ADR overview
-  table in `adr/index.md`) is **hand-curated, not auto-generated from the
-  file tree** — VitePress doesn't do that out of the box. Adding a new doc or
-  ADR means adding it to `themeConfig.sidebar` in `config.mts` yourself, or it
-  won't appear in navigation even though the page still builds and is
-  reachable by direct URL.
-- **Theme** — `.vitepress/theme/custom.css` carries over the ui-app dark
-  identity (palette, Sora + JetBrains Mono) onto the VitePress-default theme.
-  Docs stay content-first; no marketing structure.
-- **Excluded** — `docs/agents/**` (raw agent reports) is excluded from the
-  build. Links reaching outside the site (`../src/…`, `../work/…`) are allowed
-  to be dead via `ignoreDeadLinks`; they resolve on a repo checkout, not on
-  the published site.
+- `vision.md`, `concepts.md`, `roadmap.md` — what RepoOS is and where it's going.
+- `architecture.md`, `close-out-pipeline.md` — how the system is built.
+- `adr/` — Architecture Decision Records. Immutable once accepted: a changed
+  decision gets a new ADR, not an edit.
+- `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —
+  subsystem guides.
+- `agent-model-recommendations.md`, `opencode-models.md`, `token-optimization.md`,
+  `prompt-caching-audit.md` — agent and model operations.
+- `dogfooding-vs-general.md` — which problems are artifacts of RepoOS running on
+  itself versus real for every repo. Read this before generalizing from a
+  dogfooding incident.
+- `audits/`, `agents/` — point-in-time audits and raw agent reports.

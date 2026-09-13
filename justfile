@@ -88,13 +88,13 @@ landing-dev:
     bun install
     bun run dev -- --port 5176
 
-# run the docs.repoos.org VitePress site locally (standalone sibling project — own package.json) `just docs-dev`
+# run the docs.repoos.org user-docs site locally (standalone sibling project — own package.json) `just user-docs-dev`
 # port 5175: repoos-ui-dev uses 5173, repoos-mobile-dev uses 5174 (see .claude/launch.json)
 [group('dev')]
-docs-dev:
+user-docs-dev:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd docs
+    cd user-docs
     bun install
     bun run dev -- --port 5175
 
@@ -114,12 +114,12 @@ landing-build:
     bun install
     bun run build
 
-# build the docs site (output: docs/.vitepress/dist) `just docs-build`
+# build the user-docs site (output: user-docs/.vitepress/dist) `just user-docs-build`
 [group('build')]
-docs-build:
+user-docs-build:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd docs
+    cd user-docs
     bun install
     bun run build
 
