@@ -2,6 +2,9 @@
 .repoos/
 node_modules/
 
+# docs site (docs.repoos.org) build cache — .vitepress/dist is covered by dist/
+docs/.vitepress/cache/
+
 # macOS
 .DS_Store
 

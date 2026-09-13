@@ -1,0 +1,15 @@
+{
+  "name": "repoos-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "docs.repoos.org — RepoOS documentation site (VitePress). Standalone sibling project; deployed on Cloudflare Pages.",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}
