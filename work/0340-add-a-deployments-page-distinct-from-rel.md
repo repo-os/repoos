@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T09:24:28Z"
+updated_at: "2026-09-13T09:33:41Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -69,3 +69,8 @@ Once the landing/docs sites exist (#0338, #0339), use this repo's own `repoos.to
 - 2026-09-13T08:36:10Z · review_model_override
 - 2026-09-13T09:24:24Z · body
 - 2026-09-13T09:24:28Z · note: No longer blocked: #0338 and #0339 are not done but are on main, and per prior note the blocking condition only needed the landing/ and docs/ directories to exist with known branch names. Spec reformatted for readability and the [[deployments]] example config updated to the corrected URL convention (repoos.org / landing-dev.repoos.org / docs.repoos.org / docs-dev.repoos.org).
+- 2026-09-13T09:33:41Z · note: v1 scope refinement (2026-09-13): "no live polling" doesn't mean no freshness signal at all. Show, per (service, branch) row: the configured name/branch/url (as already planned) PLUS the last commit pushed to that branch -- timestamp + short SHA via `git log -1 <branch>` -- as a free, zero-credential proxy for "when was this environment last updated." Every Cloudflare Pages deploy is triggered by a push to a watched branch, so this is a genuine (if imperfect) signal with zero new dependencies or secrets.
+
+Caveat to note in the UI copy: this reflects the last PUSH, not confirmed build success -- a broken Cloudflare build would still show a recent timestamp while the live site serves an older version.
+
+Deliberately deferred to v2, not v1: genuine build-success/deploy-status would need Cloudflare's Pages API (GET .../pages/projects/:name/deployments), which needs a real (if narrow, read-only) API token. That token would live in .env and be read server-side only -- same pattern as REPOOS_AUTH_DEV_BACKDOOR_CODE already uses -- and would never be exposed to a coding agent. Don't bundle this into v1; it's a real secret + live external call for "nice to have" (accurate status) vs. "good enough" (last-pushed timestamp) that costs nothing.
