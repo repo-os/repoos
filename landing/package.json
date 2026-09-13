@@ -1,0 +1,21 @@
+{
+  "name": "repoos-landing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "repoos.org landing page. A standalone static site, decoupled from the RepoOS app itself — own install, own lockfile, own deploy pipeline.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.5.0",
+    "vite": "^8.2.0",
+    "vue": "^3.5.40",
+    "vue-tsc": "^3.3.9"
+  }
+}

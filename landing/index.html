@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070a12" />
+    <meta name="color-scheme" content="dark" />
+    <title>RepoOS — the repo is the operating system</title>
+    <meta
+      name="description"
+      content="RepoOS runs software work like an OS runs processes. Tasks are Markdown files in work/, an AI agent works them in a git worktree, and repoos check is the only bar for done."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RepoOS" />
+    <meta property="og:title" content="RepoOS — the repo is the operating system" />
+    <meta
+      property="og:description"
+      content="Tasks as Markdown files. An AI agent in a git worktree. repoos check as the only gate. Install: curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash"
+    />
+    <meta property="og:image" content="./board.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
