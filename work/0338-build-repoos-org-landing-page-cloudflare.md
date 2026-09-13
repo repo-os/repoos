@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 pm_model_override: opencode-go/deepseek-v4-pro
-review_model_override: openrouter/deepseek/deepseek-v4-pro-0813
+review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T07:05:53Z"
+updated_at: "2026-09-13T07:06:03Z"
 ---
 Stand up a new static marketing site for repoos.org, deployed on Cloudflare
 Pages, following the branch convention agreed for RepoOS/Celleris:
@@ -70,3 +70,4 @@ copy verbatim -- these are patterns to apply in RepoOS's own voice, not a
 template to clone.
 - 2026-09-13T07:05:09Z · review_model_override
 - 2026-09-13T07:05:53Z · pm_model_override
+- 2026-09-13T07:06:03Z · review_model_override
