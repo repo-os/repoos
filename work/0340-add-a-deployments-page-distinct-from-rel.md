@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T09:24:24Z"
+updated_at: "2026-09-13T09:24:28Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -68,3 +68,4 @@ Once the landing/docs sites exist (#0338, #0339), use this repo's own `repoos.to
 - 2026-09-13T08:36:03Z · pm_model_override
 - 2026-09-13T08:36:10Z · review_model_override
 - 2026-09-13T09:24:24Z · body
+- 2026-09-13T09:24:28Z · note: No longer blocked: #0338 and #0339 are not done but are on main, and per prior note the blocking condition only needed the landing/ and docs/ directories to exist with known branch names. Spec reformatted for readability and the [[deployments]] example config updated to the corrected URL convention (repoos.org / landing-dev.repoos.org / docs.repoos.org / docs-dev.repoos.org).
