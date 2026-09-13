@@ -28,6 +28,41 @@ Two kinds of agent read this file, and some rules apply to only one:
   `.claude/launch.json`) and get past the login screen with the **Dev login**
   below.
 
+## Where project knowledge goes: the repo, not your harness
+
+**If you learn something durable about this project, write it into the repo.**
+Not into a harness-local memory store, a per-tool scratchpad, or a private
+notes file that only your agent framework can read.
+
+That is the entire premise of RepoOS: a project's decisions, context and hard-
+won lessons live in `docs/`, `work/` and `AGENTS.md`, versioned alongside the
+code, legible to **every** agent, harness and human who touches the repo —
+including the next model, the next tool, and you six months from now with no
+session history.
+
+Knowledge kept in a harness-only memory is invisible to everyone else, and the
+same mistake gets made again by the next agent. This has already happened here:
+several real incidents (dropped merges, check-gate misdiagnosis, task-file
+drift) sat in one assistant's private memory for weeks while other agents
+rediscovered them the hard way. Those are now in `docs/` where they belong.
+
+Where to put what:
+
+| What you learned | Where it goes |
+| --- | --- |
+| A rule agents must follow, or the mistake repeats | This file (`AGENTS.md`) |
+| Why a design went the way it did; what an incident turned out to be | `docs/` |
+| A decision that shaped the architecture and rules things out | `docs/adr/` |
+| Work that still needs doing | A task, via `repoos new` — never a note-to-self |
+| How a *user* of RepoOS does something | `user-docs/` (this repo only) |
+
+This applies in any repo running RepoOS, not just this one. If your harness has
+its own memory feature, treat it as a cache of what's already in the repo, not
+as the system of record — and prefer writing to the repo first.
+
+`docs/` holds build context for the project it lives in. In this repo that is
+RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
+
 ## Operating loop
 
 1. Read this file first and any relevant docs under `docs/`. Then run `repoos list` to see current tasks.
@@ -141,6 +176,27 @@ cannot tell from the code alone:
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.
+- **Every LLM call site must record its usage.** All AI spend belongs in the
+  `sessions` table, including work not tied to a task (board-level doc
+  authoring, the auto-engineering dispatch pass, CTO) — those record with
+  `taskId: null` and still roll into the board summary. The `AgentRunner` path
+  self-records; any **one-shot** call (anything using `runPrompt`) must call
+  `recordOneShotSession(repoRoot, agent, result, { sessionType, taskId })`
+  from `src/server/agents.ts` immediately after the await. Several callers
+  silently discarded their `PromptResult` before this rule existed, making the
+  Tokens tab under-report — a task would show its Engineer and Reviewer but not
+  the PM that authored it. Pick a `sessionType` that keeps the by-role
+  breakdown legible (`dispatch` for auto-engineering, not `pm`).
+- **Don't widen the formatter's scope.** `.oxfmtrc.json`'s `ignorePatterns` are
+  deliberate, not an oversight: `**/*.md` keeps the formatter away from
+  `work/*.md` task files (which must never be rewritten outside the RepoOS
+  API), and `**/*.json` stops it reordering `package.json` keys and rewriting
+  Xcode asset catalogs. `bun run fmt` is otherwise safe to run on a change.
+- **Hand-landing a stale branch?** Check for other tasks' files first —
+  `git diff main...HEAD --name-only | grep '^work/'` — and
+  `git checkout main -- <them>` before merging. Anything but the task's own
+  file is drift that will pollute another task's record. Background:
+  `docs/close-out-pipeline.md`.
 
 ## Conventions
 
@@ -294,6 +350,27 @@ under the *exact* runtime the failing system uses before concluding anything —
 here that meant `/opt/homebrew/bin/node`, not whatever `node` resolves to in
 your shell. And be suspicious of any diagnosis that requires the failure to be
 random when it reproduces identically twice.
+
+### Is a `repoos check` failure a flake or a real bug?
+
+**If it reproduces in isolation on an idle machine, it is a real bug.** Genuine
+resource-pressure flakes do not reproduce on a quiet box. Two corollaries, each
+of which has cost days here:
+
+- **Run the whole suite, not just the first failing file** — one root cause
+  routinely breaks several suites, and the first failure is rarely the most
+  informative.
+- **Distrust exact-count assertions against streamed agent output**
+  (`lines.length === 3`, `toEqual([...])`). A change to what a driver emits per
+  turn breaks these, and it presents as a *timeout*, not an assertion error —
+  which is exactly why one such regression was misdiagnosed as a flake for days
+  while it broke every check.
+
+There IS a real memory-pressure flake (subprocess-heavy tests timing out when
+the machine is swapping), so this is a judgement call, not a dismissal. The
+full triage order, the incidents behind it, and the remote-validation fix are
+in `docs/debugging-check-failures.md` — read that before spending an afternoon
+on a check failure you can't explain.
 
 ## Git setup: don't let a failed command skip branch creation
 

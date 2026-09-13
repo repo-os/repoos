@@ -31,7 +31,10 @@ can't assume any.
 ## What's here
 
 - `vision.md`, `concepts.md`, `roadmap.md` — what RepoOS is and where it's going.
-- `architecture.md`, `close-out-pipeline.md` — how the system is built.
+- `architecture.md`, `close-out-pipeline.md` — how the system is built, and the
+  known close-out failure classes with the guards that exist for them.
+- `debugging-check-failures.md` — triage order for a `repoos check` failure you
+  can't explain. Read before assuming "flake".
 - `adr/` — Architecture Decision Records. Immutable once accepted: a changed
   decision gets a new ADR, not an edit.
 - `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —

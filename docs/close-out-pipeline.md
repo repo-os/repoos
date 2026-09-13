@@ -252,9 +252,15 @@ to actually worry about now.
   been hardened through several specific past incidents (`#0096`, `#0143`, now
   `#0271`); read it in full before touching it further.
 
-## The `.repoos/serve.lock` trap (confirmed live during this session)
+## The serve lockfile trap (confirmed live during this session)
 
-`src/server/serve-reaper.ts` maintains a lockfile (`.repoos/serve.lock`) recording the
+> **Updated 2026-09-13.** The lockfile is now **per-port**:
+> `.repoos/serve-<port>.lock` (`serve-reaper.ts`, `serve-${port}.lock`). It was a
+> single global `.repoos/serve.lock` when this section was written, and that was
+> itself the bug — one repo's reaper would kill another repo's server. Read the
+> paths below as `serve-<port>.lock`. See "Per-repo serve identity" further down.
+
+`src/server/serve-reaper.ts` maintains a lockfile recording the
 PID of the currently-serving process, specifically so a NEW `repoos serve` refuses to
 silently coexist with a live one. It correctly detects a stale lock (dead PID) and
 self-clears — **but only when a repoos-managed code path checks it**. If you manually
@@ -300,6 +306,113 @@ the whole job before the `autoResolve` fix above, and even now just means "the b
 version wins," silently discarding whatever you hand-edited on main. **Don't hand-edit
 task frontmatter. Use the API** (`PATCH /api/tasks/:id`, the `message`/`review/message`
 routes, or the CLI) **so the change is tracked, logged, and synced correctly.**
+
+## Known failure classes and their guards
+
+Written 2026-09-13. Four classes of close-out bug have bitten this repo hard
+enough to leave permanent guards in the code. If you are changing
+`integration-orchestrator.ts`, `review-guard.ts` or `core/git.ts`, know what
+these guards are for before you weaken one.
+
+### 1. The merge that silently drops the branch's work
+
+**The worst one.** A task publishes as `done`, `release:success`, and none of
+its code is on `main`. Discovered 2026-08-27 on tasks 0306/0309/0312; the
+`salvage/*` tags in this repo show it recurred well beyond those three — there
+are ten (`0193`, `0207-early`, `0243`, `0275`, `0302`, `0306`, `0307`, `0309`,
+`0312`, `0316`), each pointing at a branch tip preserved so the work would
+survive branch GC.
+
+Mechanism: on a badly stale branch (0306 was ~80 commits behind, its `work/`
+snapshot missing dozens of newer task files) *every* conflict is
+auto-resolvable, so `mergeBranch`'s `autoResolveOurs: ["work/"]` resolves them
+all and commits — yielding a tree identical to `main`. The gate then runs
+against what is effectively bare `main` (trivially green), and publish
+fast-forwards `main` to itself. `saveDiffSnapshot` records an empty diff, so the
+Changes tab reads "No saved code changes are available for this completed task."
+
+**Signature:** `candidateSha == baseMainSha` in
+`.repoos/integration-jobs/<id>.json`.
+
+**Guard:** `detectDroppedMerge()` — fails the job when the merge produced no
+change to `main` *and* the branch still carries commits `main` lacks. It runs
+after the validate-phase merge and (since `a7f1d98c`) after the publish-phase
+merge too, because that path gained conflict auto-resolution at the same time
+and would otherwise have reintroduced the same failure mode one step later.
+
+### 2. Foreign `work/*.md` drift published to main
+
+Distinct from #1: this is *extra* stale content rather than dropped content. A
+feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files
+(concurrent board writes, a `repoos` CLI call inside the worktree, a partial
+merge). `autoResolveOurs: ["work/"]` only forces main's copy **on a conflict** —
+a clean merge (main untouched since the merge-base) folds the stale copy
+straight to `main`.
+
+Observed live: #0319's close-out (`0967dd37`) landed frontmatter drift on
+`work/0202` and `work/0275` — bumped `updated_at`/`review_passes`, reordered
+keys. Nothing was lost and it self-healed on the next board write, but it is
+real pollution of another task's record.
+
+**Guards** (both added `be3acd3f`, 2026-08-29):
+- `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
+  isn't the task's own after `git add -A`, so drift never reaches the branch.
+- `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
+  every foreign work file the candidate changed, `git rm`s ones the branch newly
+  added, and commits — catching drift already committed in an earlier round.
+
+**If you are hand-landing a stale branch,** do this check yourself; the guards
+only run inside the pipeline:
+
+```bash
+git diff main...HEAD --name-only | grep '^work/'   # anything but the task's own file
+git checkout main -- <those files>                  # before merging
+```
+
+### 3. Leaked worktrees and branches
+
+`git worktree list` had grown to 40 on a one-active board (28 `feat/*` for
+`done` tasks, 11 `repoos/integrate/*` candidates), inflating every cold boot's
+per-worktree `git status` fan-out. Causes: the orchestrator's `cleanup()` only
+ran on a **successful** publish, so every `failOrReconcile` abandoned its
+candidate; `removeWorktree` couldn't heal a half-deleted worktree and every
+caller ignored its return value; `deleteBranch` was `git branch -d` only, which
+refuses squash/rebase-merged branches.
+
+Note that `done.ts`'s `completeTask`/`completeTaskLocked` worktree cleanup is
+**dead code** — tests only. The live review→done path is `CloseOutOrchestrator`.
+
+**Guard and policy:** `sweepStaleWorktrees` (`core/worktree-gc.ts`), with a
+deliberately conservative default:
+
+- The **boot sweep is `integrate-only`** — candidates plus `git worktree prune`,
+  never `feat/*`. `REPOOS_NO_WORKTREE_GC=1` opts out.
+- `repoos gc --yes` does a full sweep but still only removes worktrees that are
+  **merged into main AND clean** (`dist/` and `screenshots/` excluded from
+  "clean"); anything with real uncommitted or unmerged work is kept and
+  reported.
+- Scope boundary is paths inside `worktreesDir(root)` only, so another coding
+  agent's worktrees (e.g. `.claude/worktrees/*`) are never touched — there is no
+  agent-name matching anywhere, by design.
+
+The conservatism is deliberate: it is what keeps a `salvage/*` situation (class
+#1) recoverable rather than garbage-collected.
+
+### 4. Per-repo serve identity
+
+Two `repoos serve` instances on one machine used to kill each other — four
+separate mechanisms did it. Fixed `5ca3f0fb` / `b6c365c5`:
+
+- The lockfile is **per-port** (`.repoos/serve-<port>.lock`), so a reaper only
+  reaps a stale predecessor on its own port.
+- `repoos stop [--port N]` SIGTERMs only this repo's server, by the PID in its
+  own lockfile — replacing a machine-wide `pkill` that killed every RepoOS
+  repo's server (they share one linked CLI).
+- Port resolution is `--port` → `repoos.toml` `servePort` → a djb2 hash of the
+  repo root into 7200–7999, so unconfigured repos get stable, non-colliding
+  ports. This repo pins `servePort = 7171`.
+- The 30s stray-process sweep now classifies a detached serve belonging to a
+  **different live root** as `foreign` — censused, never reaped.
 
 ## Quick reference: symptom → cause → fix
 
