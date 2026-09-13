@@ -119,6 +119,23 @@ api-log-task id:
 dev:
     bunx vite --config src/ui-app/vite.config.ts
 
+# run the repoos.org landing page locally (standalone sibling project — own package.json) `just landing-dev`
+# port 5176: repoos-ui-dev uses 5173, repoos-mobile-dev uses 5174, docs uses 5175
+landing-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd landing
+    bun install
+    bun run dev -- --port 5176
+
+# build the landing page (output: landing/dist) `just landing-build`
+landing-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd landing
+    bun install
+    bun run build
+
 # run the docs.repoos.org VitePress site locally (standalone sibling project — own package.json) `just docs-dev`
 # port 5175: repoos-ui-dev uses 5173, repoos-mobile-dev uses 5174 (see .claude/launch.json)
 docs-dev:
