@@ -30,7 +30,7 @@ features:
     link: /concepts
     linkText: The task lifecycle
   - title: Local-first, zero lock-in
-    details: Runs on your machine. MIT licensed, zero runtime dependencies. Your tasks are markdown in your repo — leaving means deleting one directory.
+    details: Runs on your machine. Source-available, zero runtime dependencies. Your tasks are markdown in your repo — leaving means deleting one directory.
     link: /configuration
     linkText: Configure it
 ---

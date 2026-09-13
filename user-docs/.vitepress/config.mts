@@ -80,7 +80,8 @@ export default defineConfig({
       text: "Edit this page on GitHub",
     },
     footer: {
-      message: "MIT licensed. The repo is the operating system.",
+      message:
+        "FSL-1.1-MIT — free to use, self-host and modify; converts to MIT two years after release.",
       copyright: "Copyright © 2026 RepoOS contributors",
     },
   },
