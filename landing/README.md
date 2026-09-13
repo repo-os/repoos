@@ -36,9 +36,9 @@ bun run build    # typecheck (vue-tsc) + static build to dist/
 bun run preview  # serve the built site
 ```
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare)
 
-Not set up as part of building the site — Cloudflare Pages project, DNS, and
+Not set up as part of building the site — the Cloudflare project, DNS and
 custom domains are manual dashboard work. The convention, matching the docs
 site (#0339):
 
@@ -49,10 +49,24 @@ site (#0339):
 
 `prod` advances only as an infrequent, deliberate fast-forward merge of `main`.
 
-Cloudflare Pages settings (when a human wires this up):
+Cloudflare's dashboard now creates git-connected static sites as **Workers**
+(`wrangler deploy`), not the older "Pages project" flow — there's no
+root-directory/output-directory pair to fill in; deployment is driven by
+`wrangler.jsonc` in this directory instead. In the "Create an app" wizard:
 
-- **Build command:** `bun install && bun run build` (working directory: `landing`)
-- **Output directory:** `landing/dist`
+- **Build command:** `bun install && bun run build`
+- **Deploy command:** leave the default (`npx wrangler deploy`)
+- **Path** (under Advanced settings): `landing` — this repo is a monorepo, so
+  Cloudflare needs to know which subdirectory to build/deploy from
+- **Builds for non-production branches:** on
+- **Production branch:** `prod` (set wherever the wizard's repo-selection step
+  asks for it)
+- **API token:** let it auto-create one; no manual token or secret needed
+- **Protect with Cloudflare Access:** off — it's a public marketing site
+
+`wrangler.jsonc` here is a pure static-assets config (no Worker script) — see
+that file's comments. Verify locally before deploying:
+`cd landing && npx wrangler deploy --dry-run`.
 
 ## Notes for future edits
 

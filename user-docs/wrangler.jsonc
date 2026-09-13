@@ -1,0 +1,14 @@
+{
+  // Pure static site — no Worker script, just asset serving. `wrangler deploy`
+  // needs this file to know what to upload; without it, Cloudflare's
+  // git-connected "Create and deploy" flow has nothing to deploy.
+  //
+  // VitePress builds cleanUrls (foo.html for /foo) — default html_handling
+  // ("auto-trailing-slash") already serves foo.html at /foo, matching that.
+  "name": "repoos-docs",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./.vitepress/dist",
+    "not_found_handling": "404-page"
+  }
+}

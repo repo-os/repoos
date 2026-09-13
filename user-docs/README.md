@@ -50,10 +50,10 @@ generate it from the file tree. A new page must be added to
 `themeConfig.sidebar` or it won't appear in navigation, even though it still
 builds and is reachable by direct URL.
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare)
 
-Cloudflare Pages project, DNS and custom domains are manual dashboard work.
-The convention, matching repoos.org (`landing/`):
+Cloudflare's project, DNS and custom domains are manual dashboard work. The
+convention, matching repoos.org (`landing/`):
 
 | Branch | Environment | Domain |
 | --- | --- | --- |
@@ -62,13 +62,26 @@ The convention, matching repoos.org (`landing/`):
 
 `prod` advances only as an infrequent, deliberate fast-forward merge of `main`.
 
-Cloudflare Pages settings:
+Cloudflare's dashboard now creates git-connected static sites as **Workers**
+(`wrangler deploy`), not the older "Pages project" flow — deployment is driven
+by `wrangler.jsonc` in this directory. In the "Create an app" wizard:
 
-- **Root directory:** `user-docs`
 - **Build command:** `bun install && bun run build`
-- **Output directory:** `.vitepress/dist` (relative to the root directory above)
-- **Build watch paths:** `user-docs/**` — without this, Cloudflare rebuilds this
-  site on *every* push to a watched branch, including pushes that touch nothing
-  here.
-- Clean URLs are enabled (`cleanUrls: true`); Cloudflare Pages serves `foo.html`
-  at `/foo` natively, so no `_headers`/`_redirects` file is needed.
+- **Deploy command:** leave the default (`npx wrangler deploy`)
+- **Path** (under Advanced settings): `user-docs`
+- **Builds for non-production branches:** on
+- **Production branch:** `prod` (set wherever the wizard's repo-selection step
+  asks for it)
+- **API token:** let it auto-create one
+
+Whether the "Path" field also scopes *which pushes* trigger a build (replacing
+what used to be a separate "Build watch paths" field on classic Pages), or
+whether that's a distinct Advanced setting, wasn't confirmed as of this
+writing — check the dashboard directly. Without some form of path scoping,
+Cloudflare rebuilds this site on every push to a watched branch, including
+ones that touch nothing here.
+
+VitePress builds with `cleanUrls: true` (`foo.html` served at `/foo`);
+`wrangler.jsonc`'s default `html_handling` already matches that, so no
+`_headers`/`_redirects` file is needed. Verify locally before deploying:
+`cd user-docs && npx wrangler deploy --dry-run`.
