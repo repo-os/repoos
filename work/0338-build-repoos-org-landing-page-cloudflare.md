@@ -2,16 +2,16 @@
 id: "0338"
 title: Build repoos.org landing page (Cloudflare Pages)
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-repoos-org-landing-page-cloudflare
 pm_model_override: opencode-go/deepseek-v4-pro
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T07:08:06Z"
+updated_at: "2026-09-13T07:08:39Z"
 ---
 Build a static marketing site for repoos.org, deployed on Cloudflare Pages.
 
@@ -119,3 +119,4 @@ template to clone.
 - 2026-09-13T07:06:03Z · review_model_override
 - 2026-09-13T07:06:04Z · status inbox→ready
 - 2026-09-13T07:08:06Z · body
+- 2026-09-13T07:08:39Z · status ready→active, branch
