@@ -2,7 +2,7 @@
 id: "0339"
 title: Build docs.repoos.org VitePress site (Cloudflare Pages)
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:36Z"
-updated_at: "2026-09-13T07:09:41Z"
+updated_at: "2026-09-13T07:13:28Z"
 ---
 Build a VitePress documentation site for docs.repoos.org, deployed on Cloudflare Pages.
 
@@ -72,3 +72,4 @@ future "Deployments" page task on RepoOS's own board.
 - 2026-09-13T07:08:02Z · pm_model_override
 - 2026-09-13T07:09:02Z · review_model_override
 - 2026-09-13T07:09:41Z · body
+- 2026-09-13T07:13:28Z · status inbox→ready
