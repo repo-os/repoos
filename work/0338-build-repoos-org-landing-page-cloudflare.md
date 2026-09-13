@@ -11,7 +11,7 @@ branch: feat/build-repoos-org-landing-page-cloudflare
 pm_model_override: opencode-go/deepseek-v4-pro
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T07:08:39Z"
+updated_at: "2026-09-13T07:37:18Z"
 ---
 Build a static marketing site for repoos.org, deployed on Cloudflare Pages.
 
@@ -120,3 +120,4 @@ template to clone.
 - 2026-09-13T07:06:04Z · status inbox→ready
 - 2026-09-13T07:08:06Z · body
 - 2026-09-13T07:08:39Z · status ready→active, branch
+- 2026-09-13T07:37:18Z · note: Heads up: repoos check does NOT cover this. It's hardcoded to the root package.json + src/ui-app (build script, and a bespoke Playwright smoke test asserting RepoOS-specific things: page title, .nav-item/.board DOM, brand text) -- see src/commands/check.ts. It never discovers sibling projects (same as mobile/ today, which it also ignores). A green repoos check proves nothing about this site. Define and run your own build/test inside landing/, and verify via the normal dev-server + browser-preview workflow before calling this done.
