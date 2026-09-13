@@ -136,6 +136,23 @@ landing-build:
     bun install
     bun run build
 
+# run the docs.repoos.org VitePress site locally (standalone sibling project — own package.json) `just docs-dev`
+# port 5175: repoos-ui-dev uses 5173, repoos-mobile-dev uses 5174 (see .claude/launch.json)
+docs-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd docs
+    bun install
+    bun run dev -- --port 5175
+
+# build the docs site (output: docs/.vitepress/dist) `just docs-build`
+docs-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd docs
+    bun install
+    bun run build
+
 # build the mobile app's Android debug APK for rapid local testing `just build-android`
 build-android:
     #!/usr/bin/env bash
