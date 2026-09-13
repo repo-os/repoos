@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: openrouter/deepseek/deepseek-v4-pro-0813
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T06:50:21Z"
+updated_at: "2026-09-13T07:05:09Z"
 ---
 Stand up a new static marketing site for repoos.org, deployed on Cloudflare
 Pages, following the branch convention agreed for RepoOS/Celleris:
@@ -66,3 +67,4 @@ for patterns, not to copy their designs/copy):
 Do not copy any of the four reference sites' actual designs, layouts, or
 copy verbatim -- these are patterns to apply in RepoOS's own voice, not a
 template to clone.
+- 2026-09-13T07:05:09Z · review_model_override
