@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T06:24:00Z"
+updated_at: "2026-09-13T06:30:02Z"
 ---
 Stand up a new static marketing site for repoos.org, deployed on Cloudflare
 Pages, following the branch convention agreed for RepoOS/Celleris:
@@ -39,3 +39,4 @@ task) for the future "Deployments" page task on RepoOS's own board.
 
 - 2026-09-13T04:13:05Z · created · unknown
 - 2026-09-13T06:24:00Z · note: Repo layout: give this its own package.json (landing/package.json), not root package.json. Follow the existing mobile/ precedent — a fully standalone sibling project with its own install/lockfile, decoupled from repoos's own package.json and check gate. No bun workspaces needed; ui-app shares root package.json only because its output ships inside dist/, which doesn't apply here.
+- 2026-09-13T06:30:02Z · note: URL convention: repoos.org (prod), landing-dev.repoos.org (dev) — see note on #0340 for why dev.repoos.org is off-limits (already the tunnel hostname for RepoOS's own live dev instance).
