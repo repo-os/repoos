@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T04:13:55Z"
+updated_at: "2026-09-13T06:30:01Z"
 ---
 Blocked on #0338 (repoos.org landing page) and #0339 (docs.repoos.org
 VitePress site) actually existing with real branch/deploy wiring -- don't
@@ -62,3 +62,4 @@ same dogfooding approach as everything else in this repo.
 ## Activity
 
 - 2026-09-13T04:13:55Z · created · unknown
+- 2026-09-13T06:30:01Z · note: URL correction: don't use dev.repoos.org for the landing page's dev env — it's already the Cloudflare Tunnel hostname for RepoOS's own live dev instance (repoos.toml:78, referenced by the mobile app as its canonical connect-URL example). Use this naming instead: repoos.org (landing prod), landing-dev.repoos.org (landing dev), docs.repoos.org (docs prod), docs-dev.repoos.org (docs dev). Update the [[deployments]] example config in this task's body to match when implementing.
