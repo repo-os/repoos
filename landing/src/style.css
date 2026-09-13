@@ -312,6 +312,10 @@ body {
 
 /* file card (frontmatter) */
 .file-card {
+  /* Grid/flex children default to min-width:auto and refuse to shrink below
+     their content, so the long branch name inside pushed the page wider than
+     the viewport on phones instead of scrolling within the card. */
+  min-width: 0;
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -371,9 +375,51 @@ body {
     color 0.15s ease,
     border-color 0.15s ease;
 }
-.theme-toggle:hover {
+.theme-toggle:hover,
+.nav-burger:hover {
   color: var(--cyan);
   border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+
+/*
+ * mobile menu (below 768px — see DESKTOP_NAV in App.vue)
+ *
+ * NOTE: no `display` here on purpose. This rule is unlayered, and unlayered
+ * CSS beats anything in @layer — so setting display would silently defeat the
+ * `md:hidden` utility and leave the burger visible on desktop. Display comes
+ * from Tailwind utilities in the template instead.
+ */
+.nav-burger {
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--txt-dim);
+  background: var(--chip-bg);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.nav-menu {
+  border-top: 1px solid var(--border);
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+}
+.nav-menu-link {
+  padding: 11px 0;
+  font-size: 15px;
+  color: var(--txt-dim);
+  border-bottom: 1px solid var(--border);
+  transition: color 0.15s ease;
+}
+.nav-menu-link:last-child {
+  border-bottom: none;
+}
+.nav-menu-link:hover {
+  color: var(--txt);
 }
 
 /* footer */

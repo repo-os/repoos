@@ -22,11 +22,32 @@ function toggleTheme(): void {
   applyTheme(theme.value === "dark" ? "light" : "dark");
 }
 
+// Mobile nav. The inline links need ~686px to fit beside the logo, so they're
+// hidden below Tailwind's md (768px) and reachable through this menu instead.
+const menuOpen = ref(false);
+const DESKTOP_NAV = "(min-width: 768px)";
+
+function closeMenu(): void {
+  menuOpen.value = false;
+}
+
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === "Escape") closeMenu();
+}
+
+let desktopQuery: MediaQueryList | undefined;
+
 onMounted(() => {
   // index.html resolves the theme (stored choice, else prefers-color-scheme)
   // and applies it before first paint to avoid a flash. Read it back so the
   // toggle's initial state matches what's actually on screen.
   theme.value = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+
+  // An open menu must not survive a resize past the breakpoint, or it lingers
+  // as a stray panel under a nav that already shows every link inline.
+  desktopQuery = window.matchMedia(DESKTOP_NAV);
+  desktopQuery.addEventListener("change", closeMenu);
+  window.addEventListener("keydown", onKeydown);
 });
 
 const copied = ref(false);
@@ -52,7 +73,11 @@ async function copyInstall(): Promise<void> {
   copyTimer = setTimeout(() => (copied.value = false), 1600);
 }
 
-onBeforeUnmount(() => clearTimeout(copyTimer));
+onBeforeUnmount(() => {
+  clearTimeout(copyTimer);
+  desktopQuery?.removeEventListener("change", closeMenu);
+  window.removeEventListener("keydown", onKeydown);
+});
 
 const year = new Date().getFullYear();
 </script>
@@ -65,11 +90,11 @@ const year = new Date().getFullYear();
         <span class="text-[15px] font-bold tracking-tight">RepoOS</span>
       </a>
       <nav class="flex items-center gap-6">
-        <a href="#why" class="nav-link hidden sm:block">Why</a>
-        <a href="#how" class="nav-link hidden sm:block">How it works</a>
-        <a href="#team" class="nav-link hidden sm:block">The team</a>
-        <a href="#principles" class="nav-link hidden sm:block">Principles</a>
-        <a href="https://docs.repoos.org" class="nav-link hidden sm:block">Docs</a>
+        <a href="#why" class="nav-link hidden md:block">Why</a>
+        <a href="#how" class="nav-link hidden md:block">How it works</a>
+        <a href="#principles" class="nav-link hidden md:block">Principles</a>
+        <a href="#team" class="nav-link hidden md:block">The team</a>
+        <a href="https://docs.repoos.org" class="nav-link hidden md:block">Docs</a>
         <button
           type="button"
           class="theme-toggle"
@@ -108,7 +133,7 @@ const year = new Date().getFullYear();
         </button>
         <a
           href="https://github.com/repo-os/repoos"
-          class="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] text-[var(--txt-dim)] transition-colors hover:border-[rgba(57,224,255,0.4)] hover:text-[var(--txt)]"
+          class="hidden items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] text-[var(--txt-dim)] transition-colors hover:border-[rgba(57,224,255,0.4)] hover:text-[var(--txt)] md:flex"
         >
           <svg viewBox="0 0 16 16" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true">
             <path
@@ -117,7 +142,45 @@ const year = new Date().getFullYear();
           </svg>
           GitHub
         </a>
+        <button
+          type="button"
+          class="nav-burger inline-flex md:hidden"
+          :aria-expanded="menuOpen"
+          aria-controls="mobile-menu"
+          :aria-label="menuOpen ? 'Close menu' : 'Open menu'"
+          @click="menuOpen = !menuOpen"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+          >
+            <template v-if="menuOpen">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </template>
+            <template v-else>
+              <path d="M3.5 7h17M3.5 12h17M3.5 17h17" />
+            </template>
+          </svg>
+        </button>
       </nav>
+    </div>
+
+    <div v-if="menuOpen" id="mobile-menu" class="nav-menu md:hidden">
+      <div class="wrap flex flex-col py-2">
+        <a href="#why" class="nav-menu-link" @click="closeMenu">Why</a>
+        <a href="#how" class="nav-menu-link" @click="closeMenu">How it works</a>
+        <a href="#principles" class="nav-menu-link" @click="closeMenu">Principles</a>
+        <a href="#team" class="nav-menu-link" @click="closeMenu">The team</a>
+        <a href="https://docs.repoos.org" class="nav-menu-link" @click="closeMenu">Docs</a>
+        <a href="https://github.com/repo-os/repoos" class="nav-menu-link" @click="closeMenu"
+          >GitHub</a
+        >
+      </div>
     </div>
   </header>
 
@@ -396,7 +459,7 @@ const year = new Date().getFullYear();
     <!-- ============ AGENTS ============ -->
     <section id="team" class="wrap pb-20 sm:pb-24">
       <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
-        <div class="order-2 lg:order-1">
+        <div class="order-2 min-w-0 lg:order-1">
           <div class="file-card">
             <div class="term-bar">
               <span class="term-dot" style="background: #ff6b7d"></span>
