@@ -174,7 +174,7 @@ const year = new Date().getFullYear();
       </div>
       <p class="mt-4 text-center text-[13px] text-[var(--txt-faint)]">
         Not testimonials. This is RepoOS managing its own development &mdash; board numbers from
-        <span class="font-mono">repoos status</span>, live since task #0001.
+        <span class="font-mono">repoos status</span>, as of v0.5.41.
       </p>
     </section>
 
@@ -409,7 +409,7 @@ const year = new Date().getFullYear();
             <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Is it stable?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            It's v0.5.x and it runs its own development &mdash; 306 tasks and counting. Early,
+            It's v0.5.x and it runs its own development &mdash; 300+ tasks and counting. Early,
             moving fast, and the dogfooding is not a metaphor.
           </p>
         </details>
