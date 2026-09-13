@@ -11,7 +11,7 @@ branch: feat/build-repoos-org-landing-page-cloudflare
 pm_model_override: opencode-go/deepseek-v4-pro
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:05Z"
-updated_at: "2026-09-13T07:37:18Z"
+updated_at: "2026-09-13T07:50:00Z"
 ---
 Build a static marketing site for repoos.org, deployed on Cloudflare Pages.
 
