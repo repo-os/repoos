@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 pm_model_override: opencode-go/hy3
+review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T08:36:03Z"
+updated_at: "2026-09-13T08:36:10Z"
 ---
 Blocked on #0338 (repoos.org landing page) and #0339 (docs.repoos.org
 VitePress site) actually existing with real branch/deploy wiring -- don't
@@ -67,3 +68,4 @@ same dogfooding approach as everything else in this repo.
 - 2026-09-13T06:47:17Z · note: Blocking condition loosened: this only needs landing/ and docs/ to exist as real directories with known branch names (from #0338/#0339) — it does NOT need live Cloudflare deploys to be wired up first. The config schema (name/branch/provider/url) and URL convention are already settled in prior notes, and v1 is deliberately config+links only (no live polling), so there's nothing left that depends on the sites actually being deployed yet.
 - 2026-09-13T08:35:56Z · status inbox→ready
 - 2026-09-13T08:36:03Z · pm_model_override
+- 2026-09-13T08:36:10Z · review_model_override
