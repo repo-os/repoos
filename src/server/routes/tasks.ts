@@ -245,8 +245,15 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         return;
       }
       const fields = parseGeneratedTask(output);
-      if (!fields.title || !fields.body) {
-        logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {});
+      // #0345: a response with no frontmatter is not the requested file
+      // content — it's typically the agent narrating what it (claims to
+      // have) done instead of emitting the file. Treat it as a failed
+      // generation and keep the draft untouched, rather than overwriting the
+      // user's original prompt and structure with the agent's stray prose.
+      if (!fields.title || !fields.body || !fields.hadFrontmatter) {
+        logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {
+          hadFrontmatter: fields.hadFrontmatter,
+        });
         emitEvent({
           type: "task.aiCreateFailed",
           id: created.id,

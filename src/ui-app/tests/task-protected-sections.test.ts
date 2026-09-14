@@ -163,6 +163,28 @@ The stop work confirm should be a proper modal.
     }
   });
 
+  it("lets a caller-supplied Original prompt section override the stale on-disk copy (#0345)", () => {
+    const { root, absPath, clean } = setupFile(WITH_SECTIONS);
+    try {
+      const restoreRewrite = `${PM_REWRITE}
+## Original prompt
+
+the real prompt, recovered by a hotfix
+`;
+      const updated = patchTaskFile(config(root), absPath, { body: restoreRewrite });
+
+      expect(updated.body).toContain("the real prompt, recovered by a hotfix");
+      expect(updated.body).not.toContain("not whatever this is in the screenshot");
+      // Exactly one Original prompt section, and screenshots/activity are
+      // still force-preserved from disk regardless.
+      expect(updated.body.split("## Original prompt").length - 1).toBe(1);
+      expect(updated.body).toContain("![shot](/api/tasks/0317/attachments/screenshot-1.png)");
+      expect(updated.body).toContain("- 2026-08-28T15:51:55Z · created · hello@repoos.org");
+    } finally {
+      clean();
+    }
+  });
+
   it("still replaces the body of a task with no protected sections", () => {
     const plain = `---
 id: "0317"

@@ -243,6 +243,28 @@ function doneFreeform(): void {
   ui.close();
 }
 
+// The user reported staying stuck on the "Creating your task" acknowledgment
+// panel even after the PM agent finished — it never opened the finished task,
+// so it looked like creation hadn't happened. `task.pmFinished` (fired on
+// every exit path server-side, see routes/tasks.ts) clears `pmWorkingFor`; if
+// the user is still sitting on this panel (hasn't clicked "Done"/"Create
+// another task", hasn't navigated the drawer away from "new") when that
+// happens, open the finished task instead of leaving them hanging.
+watch(
+  () => repo.pmWorkingFor(submittedTask.value?.id ?? ""),
+  (working, wasWorking) => {
+    if (!wasWorking || working) return;
+    if (!freeformSubmitted.value || !submittedTask.value || !ui.isNew) return;
+    const task = submittedTask.value;
+    freeformSubmitted.value = false;
+    submittedTask.value = null;
+    if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+    freeformRunId.value = null;
+    void ui.openTask(task);
+    router.push("/work");
+  },
+);
+
 function openDraft(): void {
   if (!draftSaved.value) return;
   ui.close();

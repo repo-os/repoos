@@ -46,6 +46,24 @@ describe("parseGeneratedTask", () => {
     const parsed = parseGeneratedTask(out);
     expect(parsed.body).toBe(out);
     expect(parsed.title).toBe("I keep losing my cursor in the editor.");
+    expect(parsed.hadFrontmatter).toBe(false);
+  });
+
+  it("flags hadFrontmatter false for a status-report reply instead of file content (#0345)", () => {
+    // The PM agent sometimes narrates what it (claims to have) done instead
+    // of emitting the requested file — this must never be mistaken for a
+    // real generated task.
+    const out = "Done. Wrote the structured task body into `work/0345-example.md`.";
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.hadFrontmatter).toBe(false);
+  });
+
+  it("sets hadFrontmatter true when a frontmatter block is present", () => {
+    const out = ["---", "title: Make issues editable in the UI", "---", "", "## Problem"].join(
+      "\n",
+    );
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.hadFrontmatter).toBe(true);
   });
 
   it("ignores invalid type/priority values", () => {

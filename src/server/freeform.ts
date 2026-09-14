@@ -16,6 +16,15 @@ export interface GeneratedTaskInput {
   area?: string;
   assignedTo?: string;
   body: string;
+  /**
+   * Whether the agent's output actually contained a `---` frontmatter block
+   * (#0345). False means the agent replied with something other than the
+   * requested file content — e.g. a status message like "Done, I wrote the
+   * file" instead of the file itself — and `title`/`body` are a best-effort
+   * fallback (the raw output verbatim), not real task content. Callers
+   * should treat `false` as a failed generation, not a usable result.
+   */
+  hadFrontmatter: boolean;
 }
 
 const TASK_TYPES = ["feature", "bug", "chore", "spec", "refactor"] as const;
@@ -141,11 +150,16 @@ export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
           ? data.assigned_to.trim()
           : undefined,
       body: body.trim(),
+      hadFrontmatter: true,
     };
   }
 
-  // No usable frontmatter: keep the raw output as the body.
-  return { title: explanationTitle(output), body: output.trim() };
+  // No usable frontmatter: the agent didn't return the file content it was
+  // asked for (e.g. a "Done, I wrote it" status reply instead — #0345). Keep
+  // the raw output as a best-effort title/body so nothing here throws, but
+  // `hadFrontmatter: false` tells the caller this is not real task content —
+  // it must not be allowed to overwrite the draft.
+  return { title: explanationTitle(output), body: output.trim(), hadFrontmatter: false };
 }
 
 /** The task-file conventions the PM agent must follow, inlined into its prompt. */

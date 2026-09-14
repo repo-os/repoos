@@ -36,8 +36,8 @@ import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js"
  * but must survive a wholesale body replacement. The freeform PM "flesh it out"
  * flow runs `repoos update --body`, which otherwise silently drops the user's
  * screenshots, their original prompt, and the entire activity history (#0317).
- * When a patch supplies a new body, these are carried over verbatim from the
- * current on-disk copy and any caller-supplied version is discarded. Order is
+ * When a patch supplies a new body that is silent about one of these sections,
+ * it's carried over verbatim from the current on-disk copy. Order is
  * canonical — they always sit at the end of the body in this order.
  */
 const PROTECTED_SECTIONS = [
@@ -45,6 +45,21 @@ const PROTECTED_SECTIONS = [
   SCREENSHOTS_HEADING,
   ACTIVITY_HEADING,
 ] as const;
+
+/**
+ * Sections in PROTECTED_SECTIONS where the caller's own copy, if the patch
+ * body explicitly includes one, wins over the on-disk version instead of
+ * being silently discarded. Screenshots and Activity are system-managed
+ * (via `addScreenshot` / `recordChange`) and must never be settable by a
+ * plain body replacement, so they stay force-preserved-from-disk regardless
+ * of what a caller's body happens to contain. Original Prompt is the one
+ * exception: it's the durable record of what the user actually asked for
+ * (#0345 — a malformed PM response wiped it with no way to restore it short
+ * of hand-editing the file, which AGENTS.md forbids), so a caller that
+ * deliberately includes an updated one — e.g. a hotfix restoring lost
+ * content via `repoos update --body` — must be able to set it.
+ */
+const CALLER_OVERRIDABLE_SECTIONS: readonly string[] = [ORIGINAL_PROMPT_HEADING];
 
 export interface TaskPatch {
   status?: Status;
@@ -195,12 +210,22 @@ export function patchTaskFile(
   if (patch.body !== undefined) {
     // Carry user-owned / append-only sections over from the on-disk copy so a
     // caller that replaced the whole body (freeform PM rewrites do) can't drop
-    // them. Any copy the caller sent is stripped first, so nothing duplicates.
-    const preserved = PROTECTED_SECTIONS.map((h) => extractSection(current.body, h)).filter(
-      (s): s is string => s !== null,
-    );
+    // them — UNLESS the caller's own body already includes that section and
+    // it's caller-overridable, in which case the caller's version wins (see
+    // CALLER_OVERRIDABLE_SECTIONS). Anything not kept from the caller's own
+    // body is stripped first, so nothing duplicates.
+    const preserved = PROTECTED_SECTIONS.map((h) => {
+      const fromCaller = extractSection(patch.body!, h);
+      if (fromCaller !== null && CALLER_OVERRIDABLE_SECTIONS.includes(h)) return null;
+      return extractSection(current.body, h);
+    }).filter((s): s is string => s !== null);
     let nextBody = patch.body;
-    for (const h of PROTECTED_SECTIONS) nextBody = removeSection(nextBody, h);
+    for (const h of PROTECTED_SECTIONS) {
+      if (CALLER_OVERRIDABLE_SECTIONS.includes(h) && extractSection(patch.body, h) !== null) {
+        continue; // caller's version is kept in place below, not stripped.
+      }
+      nextBody = removeSection(nextBody, h);
+    }
     nextBody = [nextBody.replace(/\s+$/, ""), ...preserved].filter(Boolean).join("\n\n");
     if (nextBody !== current.body) changes.push("body");
     current.body = nextBody;
