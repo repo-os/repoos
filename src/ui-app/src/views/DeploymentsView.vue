@@ -128,9 +128,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
 });
-onBeforeUnmount(() => {
-  if (tick) clearInterval(tick);
-});
 </script>
 
 <template>

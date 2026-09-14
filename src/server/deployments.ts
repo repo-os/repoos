@@ -261,9 +261,11 @@ export async function getDeploymentsStatus(
 /**
  * Deploy one branch: a plain `git push origin <branch>`, or — when the branch
  * is strictly behind another configured branch (prod behind main) — a
- * fast-forward of the local ref first (`git fetch . <src>:<branch>`, which
- * git itself refuses on non-fast-forward), then the push. There is no code
- * path that pushes with --force: every non-fast-forward case fails loudly with
+ * fast-forward of the local ref first, then the push. The fast-forward uses
+ * `git merge --ff-only <src>` when the checkout is ON that branch (git refuses
+ * to fetch into a checked-out branch) and `git fetch . <src>:<branch>` — which
+ * git itself refuses on non-fast-forward — otherwise. There is no code path
+ * that pushes with --force: every non-fast-forward case fails loudly with
  * git's own refusal in the output.
  */
 export async function deployBranch(
@@ -287,11 +289,26 @@ export async function deployBranch(
         "The checkout has uncommitted changes — commit or stash them before deploying. " +
         "This is the same dirty-tree guard `just release` uses.",
     };
+  const local = await cmd(exec, ["rev-parse", "--verify", "--quiet", branch], cwd);
+  if (local.code !== 0)
+    return {
+      ok: false,
+      output:
+        `No local branch "${branch}" exists in this checkout — fetch or create it before deploying ` +
+        `(e.g. git fetch origin "${branch}:" then git checkout "${branch}").`,
+    };
 
   const branches = deploymentBranches(rows);
   const src = await fastForwardSource(exec, branch, branches, cwd);
   if (src) {
-    const ff = await cmd(exec, ["fetch", ".", `${src}:${branch}`], cwd);
+    // On the target branch, `fetch . src:branch` refuses ("refusing to fetch
+    // into branch … checked out"); merge --ff-only is the equivalent ref move
+    // there, and equally refuses a non-fast-forward.
+    const current = await cmd(exec, ["branch", "--show-current"], cwd);
+    const onBranch = current.code === 0 && current.stdout.trim() === branch;
+    const ff = onBranch
+      ? await cmd(exec, ["merge", "--ff-only", src], cwd)
+      : await cmd(exec, ["fetch", ".", `${src}:${branch}`], cwd);
     if (ff.code !== 0) {
       return {
         ok: false,
@@ -307,7 +324,8 @@ export async function deployBranch(
         ok: false,
         output:
           `Fast-forwarded ${branch} to ${src}, but the push to origin failed — the remote may have moved. ` +
-          `Nothing was force-pushed.\n` +
+          `Nothing was force-pushed; origin still has the old ${branch}. ` +
+          `The local ${branch} is now at ${src}, so the NEXT deploy will be a plain push.\n` +
           (captureOutput(pushed.stdout, pushed.stderr) || pushed.error?.message || ""),
       };
     }

@@ -5,12 +5,14 @@
  * action's safety guards (dirty refusal, fast-forward-only, never force-push).
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import { loadConfig } from "../../core/config";
 import { DEPLOYMENTS_NAV, NAV, RELEASE_NAV, navFor } from "../src/nav";
+import { startServer, type ServerHandle } from "../../server/server";
 import {
   deployBranch,
   deployRoot,
@@ -56,7 +58,10 @@ interface MockSpec {
   ancestors?: string[];
   /** "branch|subdir" (subdir may be empty) -> "%cI%n%h" output. */
   logs?: Record<string, string>;
+  /** What `branch --show-current` reports (default "main"). */
+  current?: string;
   fetch?: { code: number; stderr?: string };
+  merge?: { code: number; stderr?: string };
   push?: { code: number; stderr?: string };
 }
 
@@ -68,7 +73,7 @@ function mockGit(spec: MockSpec = {}): { exec: DeployCommandRunner; calls: strin
   const exec: DeployCommandRunner = async (_command, args) => {
     calls.push(args.join(" "));
     if (args[0] === "status") return { code: 0, stdout: spec.dirty ?? "", stderr: "" };
-    if (args[0] === "branch") return { code: 0, stdout: "main\n", stderr: "" };
+    if (args[0] === "branch") return { code: 0, stdout: `${spec.current ?? "main"}\n`, stderr: "" };
     if (args[0] === "rev-parse") {
       const sha = shaOf(args[args.length - 1]);
       return sha
@@ -77,6 +82,10 @@ function mockGit(spec: MockSpec = {}): { exec: DeployCommandRunner; calls: strin
     }
     if (args[0] === "rev-list")
       return { code: 0, stdout: `${spec.counts?.[args[args.length - 1]] ?? 1}\n`, stderr: "" };
+    if (args[0] === "merge") {
+      const m = spec.merge ?? { code: 0 };
+      return { code: m.code, stdout: "", stderr: m.stderr ?? "" };
+    }
     if (args[0] === "merge-base") {
       const pair = `${args[2]}->${args[3]}`;
       return (spec.ancestors ?? []).includes(pair)
@@ -291,6 +300,47 @@ describe("deployBranch", () => {
     expect(calls.filter((c) => c.startsWith("push"))).toHaveLength(0);
   });
 
+  it("refuses a configured branch with no local ref, with a clean message", async () => {
+    // A direct API call for a branch the checkout has never created must not
+    // surface git's opaque "src refspec … does not match any".
+    const cfg = config(tmpDir(), TWO_BRANCH_ROWS);
+    const { exec, calls } = mockGit({
+      ...BASE_SPEC,
+      local: { main: "a".repeat(8) }, // no local prod
+    });
+    const result = await deployBranch(cfg, "prod", exec);
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain('No local branch "prod"');
+    expect(result.output).toContain("git fetch origin");
+    expect(calls.filter((c) => c.startsWith("push"))).toHaveLength(0);
+  });
+
+  it("uses merge --ff-only when the checkout is ON the branch being fast-forwarded", async () => {
+    // `fetch . main:prod` refuses when prod is checked out; merge --ff-only is
+    // the equivalent ref move there.
+    const cfg = config(tmpDir(), TWO_BRANCH_ROWS);
+    const { exec, calls } = mockGit({ ...BASE_SPEC, current: "prod" });
+    const result = await deployBranch(cfg, "prod", exec);
+    expect(result.ok).toBe(true);
+    expect(calls).toContain("merge --ff-only main");
+    expect(calls.filter((c) => c.startsWith("fetch"))).toHaveLength(0);
+    expect(calls.indexOf("merge --ff-only main")).toBeLessThan(calls.indexOf("push origin prod"));
+  });
+
+  it("states the resulting local state when the push fails after a fast-forward", async () => {
+    const cfg = config(tmpDir(), TWO_BRANCH_ROWS);
+    const { exec } = mockGit({
+      ...BASE_SPEC,
+      push: { code: 1, stderr: "! [rejected] prod -> prod (fetch first)" },
+    });
+    const result = await deployBranch(cfg, "prod", exec);
+    expect(result.ok).toBe(false);
+    // The local ref HAS moved even though the push failed — the message must
+    // say so, so the next deploy's plain-push shape isn't a surprise.
+    expect(result.output).toContain("origin still has the old prod");
+    expect(result.output).toContain("NEXT deploy will be a plain push");
+  });
+
   it("deploys a leading branch with a plain push and never a force flag", async () => {
     const cfg = config(tmpDir(), TWO_BRANCH_ROWS);
     const { exec, calls } = mockGit(BASE_SPEC);
@@ -418,5 +468,150 @@ describe("navFor deployments gating", () => {
     expect(onlyDeployments.map((n) => n.id)).toContain("deployments");
     expect(onlyDeployments.map((n) => n.id)).not.toContain("releases");
     expect(DEPLOYMENTS_NAV.path).toBe("/deployments");
+  });
+});
+
+/**
+ * Contract tests against a REAL server + REAL git: a temp repo with a local
+ * bare remote, so deploy pushes run for real (no network). These pin the
+ * HTTP shapes the browser depends on — in particular that a 409 refusal
+ * carries its full text in `error`, which is the only field the client's
+ * api() wrapper reads on a non-2xx response.
+ */
+function git(root: string, args: string): void {
+  execSync(`git ${args}`, { cwd: root, stdio: "pipe" });
+}
+
+/**
+ * A temp repo shaped like a deployments target: main strictly ahead of prod
+ * (so "deploy prod" is a fast-forward), a local bare origin both branches are
+ * pushed to, and a repoos.toml the server actually loads — the server's
+ * config comes from disk, not from any in-memory fixture.
+ */
+function makeSiteRepo(opts: { dirty?: boolean; extraRow?: string[] } = {}): {
+  root: string;
+  origin: string;
+} {
+  const root = tmpDir();
+  const origin = tmpDir();
+  execSync(`git init -q --bare "${origin}"`);
+  git(root, "init -q -b main");
+  git(root, "config user.email t@t");
+  git(root, "config user.name t");
+  mkdirSync(join(root, "site"), { recursive: true });
+  // RepoOS's own runtime cache (`.repoos/`) is untracked in a fresh repo and
+  // the server creates it at boot — ignore it exactly like a real repo would,
+  // so the dirty-tree guard only sees genuine human changes.
+  writeFileSync(join(root, ".gitignore"), ".repoos/\n");
+  // The config is committed, so it never dirties the tree mid-test.
+  writeFileSync(
+    join(root, "repoos.toml"),
+    [
+      "[[deployments]]",
+      'name = "Site (prod)"',
+      'branch = "prod"',
+      'url = "https://example.com"',
+      'subdir = "site"',
+      "",
+      "[[deployments]]",
+      'name = "Site (dev)"',
+      'branch = "main"',
+      'url = "https://dev.example.com"',
+      'subdir = "site"',
+      ...(opts.extraRow ? ["", ...opts.extraRow] : []),
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  writeFileSync(join(root, "site", "index.html"), "v1\n");
+  git(root, "add -A");
+  git(root, 'commit -qm "base"');
+  git(root, `remote add origin "${origin}"`);
+  git(root, "push -q origin main");
+  git(root, "branch prod");
+  git(root, "push -q origin prod");
+  if (opts.dirty) {
+    writeFileSync(join(root, "uncommitted.txt"), "dirty\n");
+  } else {
+    // Leave main strictly ahead of prod so "deploy prod" is a fast-forward.
+    writeFileSync(join(root, "site", "index.html"), "v2\n");
+    git(root, "add -A");
+    git(root, 'commit -qm "next"');
+  }
+  return { root, origin };
+}
+
+async function withServer(root: string, fn: (s: ServerHandle) => Promise<void>): Promise<void> {
+  const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+  try {
+    await fn(server);
+  } finally {
+    await server.close();
+  }
+}
+
+async function postDeploy(url: string, branch: string): Promise<Response> {
+  return fetch(`${url}/api/deployments/deploy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ branch }),
+  });
+}
+
+describe("deploy API contract (real server + real git)", () => {
+  it("serves the grid and carries refusal text in `error` on 409", async () => {
+    const { root } = makeSiteRepo({ dirty: true });
+    await withServer(root, async (s) => {
+      const grid = (await (await fetch(`${s.url}/api/deployments`)).json()) as {
+        enabled: boolean;
+        dirty: boolean;
+      };
+      expect(grid).toMatchObject({ enabled: true, dirty: true });
+
+      const res = await postDeploy(s.url, "main");
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as { ok: boolean; error?: string; output: string };
+      expect(body.ok).toBe(false);
+      // The refusal must arrive in BOTH fields: `output` is the canonical
+      // result text, `error` is what api() actually surfaces to the user.
+      expect(body.output).toContain("uncommitted changes");
+      expect(body.error).toBe(body.output);
+    });
+  });
+
+  it("fast-forwards and pushes prod to a real bare origin", async () => {
+    const { root, origin } = makeSiteRepo();
+    await withServer(root, async (s) => {
+      const res = await postDeploy(s.url, "prod");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { ok: boolean; output: string };
+      expect(body.ok).toBe(true);
+      expect(body.output).toContain("Fast-forwarded prod to main");
+      // The bare origin's prod ref now matches local main.
+      const originProd = execSync("git rev-parse prod", { cwd: origin }).toString().trim();
+      const localMain = execSync("git rev-parse main", { cwd: root }).toString().trim();
+      expect(originProd).toBe(localMain);
+    });
+  });
+
+  it("refuses a configured-but-unborn branch with 409 and a clean message", async () => {
+    // "staging" is in the config but the repo never created it — the refusal
+    // must be RepoOS's message, not git's "src refspec … does not match any".
+    const { root } = makeSiteRepo({
+      extraRow: [
+        "[[deployments]]",
+        'name = "Stage"',
+        'branch = "staging"',
+        'url = "https://st.example.com"',
+      ],
+    });
+    await withServer(root, async (s) => {
+      const res = await postDeploy(s.url, "staging");
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as { ok: boolean; error?: string; output: string };
+      expect(body.ok).toBe(false);
+      expect(body.error).toContain('No local branch "staging"');
+      expect(body.error).not.toContain("refspec");
+    });
   });
 });

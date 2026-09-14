@@ -106,4 +106,6 @@ branch health belong to the checkout the user manages.
 
 - `GET /api/deployments` — rows with freshness + per-branch ahead/behind.
 - `POST /api/deployments/deploy` `{ branch }` — runs the deploy; refuses with
-  HTTP 409 and a human-readable `output` when the repo state doesn't allow it.
+  HTTP 409 and a human-readable refusal in **both** `output` and `error` (the
+  browser's `api()` wrapper only surfaces `body.error` on a non-2xx, so the
+  full git refusal would otherwise reach the user as the bare word "Conflict").
