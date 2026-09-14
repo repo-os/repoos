@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T02:33:57Z"
+updated_at: "2026-09-14T02:47:18Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -114,3 +114,29 @@ Corrected config:
     url      = "https://main-repoos-docs.njachowski.workers.dev"
 
 Explicit product requirement (Nick, 2026-09-14): the whole point of this page is that Nick should never need to remember or type any of these URLs. Every row must render its url as a clickable link that opens the live site directly -- that's the primary interaction the page exists for, not a nice-to-have. Don't ship a version that just displays the URL as inert text.
+- 2026-09-14T02:47:18Z · note: New requirement (Nick, 2026-09-14): for a repo like this one where deploying IS pushing to GitHub (Cloudflare rebuilds on push), the page should show git push status and offer to do the push, not just link to the result.
+
+## Per-branch status + deploy actions
+
+Add a section showing, per branch this repo's deployments key off (main, prod):
+
+- Ahead/behind count vs the branch's own origin ref (`git rev-list --count origin/<branch>..<branch>` and the reverse) -- this is exactly the "local main is 66 commits ahead of origin/main" situation from today, which is the NORMAL state for this repo (local main advances all session, gets pushed in a batch), not an edge case to handle poorly.
+- "Deploy main" button -> `git push origin main`.
+- "Deploy prod" button -> fast-forward prod to main, then push (`git merge --ff-only main` on a prod checkout/worktree, then `git push origin prod`) -- i.e. automate exactly the two commands run by hand today.
+
+## This is shared branch state, not per-row -- don't duplicate it
+
+Landing (dev) and Docs (dev) both key off `main`; landing (prod) and docs (prod) both key off `prod`. The ahead/behind numbers and the deploy buttons are IDENTICAL for every row sharing a branch and clicking one affects every service on that branch, not just one row. Show this as a per-branch summary (e.g. above or beside the grid), not duplicated per service row -- a naive per-row implementation would show 2 identical "Deploy main" buttons that do the same thing, which is confusing about blast radius.
+
+## Safety -- these are real pushes to a shared GitHub repo, treat them accordingly
+
+- Explicit confirm before either action fires, "Deploy prod" especially since that's a production push.
+- Refuse and surface an error (never force-push) if the push isn't a clean fast-forward -- e.g. `prod` genuinely diverged, or `origin/main` moved since the page loaded. Same principle as the mergeBranch/detectDroppedMerge guards in the close-out pipeline: fail loudly, never silently overwrite or discard commits.
+- Refuse if the local checkout is dirty (uncommitted changes) with a clear message, same as `just release`'s dirty-tree guard.
+- No new credentials needed -- this is plain git against the already-configured `origin` remote, nothing Cloudflare-specific.
+
+## Cloudflare dashboard links
+
+Nick wants a one-click link to watch a deploy happening, e.g.
+`https://dash.cloudflare.com/<account-id>/workers/services/view/<worker-name>/production/deployments`.
+The account ID is account-specific and there's no Cloudflare API call in this feature (deliberately, see the "no live polling" notes above), so this can't be derived automatically -- add an optional `dashboard_url` field per `[[deployments]]` entry that the user fills in by hand once (copied from their own browser address bar), rendered as a link alongside the site URL. Don't guess the URL shape for non-production branches (unconfirmed whether Cloudflare exposes a separate deployments view per branch) -- let the config carry whatever URL the user actually finds.
