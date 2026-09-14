@@ -16,8 +16,10 @@ export default defineConfig({
   description:
     "The repo is the operating system. Repo-native tasks and specs as markdown files, agents as a first-class workforce, humans at the sign-off gate.",
   cleanUrls: true,
-  // Dark-only identity (matches ui-app). No light theme.
-  appearance: "force-dark",
+  // "dark" = default dark but togglable (VitePress's built-in appearance
+  // switcher renders in the navbar). Identity stays dark-first to match
+  // ui-app and the landing page's own default.
+  appearance: "dark",
   lastUpdated: true,
   // README.md here is the build/deploy runbook for this directory, not a page.
   srcExclude: ["README.md"],
@@ -25,9 +27,10 @@ export default defineConfig({
   // design; they resolve on a checkout, not on the published site.
   ignoreDeadLinks: [/^\.{1,2}\//],
   head: [
-    // force-dark only adds the class at hydration; set it before first paint
-    // so prerendered pages (and crawlers) get the dark theme immediately.
-    ["script", {}, 'document.documentElement.classList.add("dark")'],
+    // (VitePress injects its own pre-paint `check-dark-mode` script when
+    // appearance is enabled — it resolves the stored preference (defaulting
+    // to dark, see appearance above) before first paint. No manual class
+    // script here: it would fight the toggle and flash on light mode.)
     ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
     ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
     ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
@@ -40,6 +43,9 @@ export default defineConfig({
     ],
   ],
   markdown: {
+    // github-dark in BOTH themes on purpose — code blocks stay dark in light
+    // mode, same deliberate choice as the landing page's terminal surfaces
+    // (.term/.file-card/.install-box). github-dark + a dark --vp-code-block-bg.
     theme: { light: "github-dark", dark: "github-dark" },
     lineNumbers: false,
   },
