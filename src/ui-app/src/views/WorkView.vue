@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
+import { api } from "../api";
 import { COLUMNS, SORT_ORDER_OPTIONS, useRepoStore } from "../stores/repo";
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
@@ -44,6 +45,58 @@ const filterCol = computed<Column | null>(() => {
   if (statusFilter.value === "draft") return DRAFT_COL;
   return COLUMNS.find((c) => c.id === statusFilter.value) ?? null;
 });
+
+// ── #0345 Deep-linking: /work?task=<id> opens that task's drawer and
+// ?task=new opens the new-task panel. The param is cleared once the panel
+// opens (the same router.replace clear pattern as the settings ?focus=
+// handler) so a refresh doesn't re-open it, and any other query keys (e.g.
+// ?status=) are preserved. A link that arrives through the login round-trip
+// survives end-to-end: the router guard redirects with redirect=to.fullPath
+// and LoginView restores the full path after sign-in.
+const router = useRouter();
+watch(
+  () => route.query.task,
+  (v) => {
+    if (typeof v !== "string" || !v) return;
+    void openFromTaskParam(v);
+  },
+  { immediate: true },
+);
+
+async function clearTaskParam(): Promise<void> {
+  const query = { ...route.query };
+  delete query.task;
+  await router.replace({ query });
+}
+
+async function openFromTaskParam(raw: string): Promise<void> {
+  if (raw === "new") {
+    ui.openNewTask();
+    await clearTaskParam();
+    return;
+  }
+  const id = raw.replace(/^#/, "");
+  // The board index is loaded before this view mounts (App.vue gates the
+  // router on repo.init()), so the task is normally already local. A local
+  // miss means the id is off-board (deleted, or an index that drifted) —
+  // settle it with one direct fetch before giving up on an unknown id.
+  const local = repo.tasks.find((t) => t.id === id);
+  if (local) {
+    // Open from the board copy now; openTask's background refresh must not
+    // delay clearing the URL (a refresh while the param lingers would
+    // re-open the panel).
+    void ui.openTask(local);
+  } else {
+    try {
+      ui.open(await api<Task>(`/api/tasks/${encodeURIComponent(id)}`));
+    } catch {
+      // Unknown id — leave the param in place so the broken link stays
+      // inspectable, matching the settings ?focus= handler's give-up behavior.
+      return;
+    }
+  }
+  await clearTaskParam();
+}
 
 // ── #0290 Keyboard navigation over the board ─────────────────────────────
 // The board is the primary task list. Reconstruct the flat, DOM-ordered list

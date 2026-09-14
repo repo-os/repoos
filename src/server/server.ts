@@ -2006,7 +2006,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               }
             }
             if (isNavigation) {
-              res.writeHead(302, { Location: `/login?redirect=${encodeURIComponent(path)}` });
+              // Carry the full original URL (query string included) so
+              // deep-link params like /work?task=0340 survive the login
+              // round-trip; LoginView redirects back to it verbatim.
+              res.writeHead(302, {
+                Location: `/login?redirect=${encodeURIComponent(path + url.search)}`,
+              });
               return res.end();
             }
             return json(res, 401, { error: "Authentication required" });
