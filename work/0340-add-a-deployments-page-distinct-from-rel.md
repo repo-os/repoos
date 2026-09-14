@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-13T18:15:16Z"
+updated_at: "2026-09-14T02:33:57Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -77,3 +77,40 @@ Deliberately deferred to v2, not v1: genuine build-success/deploy-status would n
 - 2026-09-13T09:40:07Z · note: Correction to the freshness-signal note above: scope it to the site's own subdirectory, not the whole branch -- `git log -1 -- <subdir> <branch>` (e.g. `git log -1 -- landing main`), not `git log -1 <branch>`. Same blind spot as the Cloudflare Build Watch Paths issue: a branch-wide signal doesn't know an unrelated push (e.g. a src/ fix) touched nothing under landing/ or docs/, and would misleadingly show that environment as freshly updated.
 - 2026-09-13T15:12:47Z · note: Directory rename (2026-09-13): the VitePress docs site moved from docs/ to user-docs/ — docs/ is reserved for RepoOS-convention build context (see docs/README.md vs user-docs/README.md). So the [[deployments]] example config and the per-row freshness lookup in this task refer to `user-docs`, not `docs`: e.g. `git log -1 -- user-docs main`. The published URLs (docs.repoos.org / docs-dev.repoos.org) are unchanged.
 - 2026-09-13T18:15:16Z · note: Correction (2026-09-14): Cloudflare's dashboard now creates git-connected static sites as Workers (wrangler deploy + wrangler.jsonc), not the classic 'Pages project' flow assumed in earlier notes here — no root-directory/output-directory pair, no separate 'Build watch paths' field confirmed to exist (may be folded into the 'Path' Advanced setting, or may not exist at all — check the dashboard). landing/wrangler.jsonc and user-docs/wrangler.jsonc now exist and are the actual source of truth for what gets deployed. Whatever data source #0340 ends up using for 'last deployed', it should read the deploy config from these wrangler.jsonc files (project name, assets directory) rather than assuming Pages-specific fields.
+- 2026-09-14T02:33:57Z · note: Major correction to the [[deployments]] example in this task's body (2026-09-14) -- superseding it, don't use it as written:
+
+1. It had branch/label INVERTED: "Landing page (prod)" was given branch="main" and "Landing page (dev)" was given branch="prod" -- backwards from the actual convention (main=dev/staging, prod=production) established for this repo.
+
+2. provider="cloudflare-pages" is stale. Cloudflare's dashboard now creates git-connected static sites as Workers (wrangler deploy + wrangler.jsonc), not Pages -- see the correction note above this one. Use provider="cloudflare-workers".
+
+3. URL scheme changed: custom domains (repoos.org, docs.repoos.org) can ONLY be attached to a Worker's PRODUCTION branch deployment -- Cloudflare does not support custom domains on non-production branch previews (confirmed 2026-09-14, open feature request upstream). So:
+   - prod branch -> custom domain (https://repoos.org, https://docs.repoos.org)
+   - main branch -> the auto-generated, per-branch-stable Workers preview URL (pattern: https://<branch>-<worker-name>.<account-subdomain>.workers.dev, e.g. https://main-repoos-landing.njachowski.workers.dev) -- NOT landing-dev.repoos.org / docs-dev.repoos.org, which are no longer used. Decided against a Cloudflare Redirect Rule to alias those subdomains to the workers.dev URL (extra zone-level setup for no real benefit) -- ship with the workers.dev links directly.
+
+Corrected config:
+
+    [[deployments]]
+    name     = "Landing page (prod)"
+    branch   = "prod"
+    provider = "cloudflare-workers"
+    url      = "https://repoos.org"
+
+    [[deployments]]
+    name     = "Landing page (dev)"
+    branch   = "main"
+    provider = "cloudflare-workers"
+    url      = "https://main-repoos-landing.njachowski.workers.dev"
+
+    [[deployments]]
+    name     = "Docs (prod)"
+    branch   = "prod"
+    provider = "cloudflare-workers"
+    url      = "https://docs.repoos.org"
+
+    [[deployments]]
+    name     = "Docs (dev)"
+    branch   = "main"
+    provider = "cloudflare-workers"
+    url      = "https://main-repoos-docs.njachowski.workers.dev"
+
+Explicit product requirement (Nick, 2026-09-14): the whole point of this page is that Nick should never need to remember or type any of these URLs. Every row must render its url as a clickable link that opens the live site directly -- that's the primary interaction the page exists for, not a nice-to-have. Don't ship a version that just displays the URL as inert text.
