@@ -11,53 +11,92 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T02:47:18Z"
+updated_at: "2026-09-14T05:30:42Z"
 ---
 ## Why a new page, not an extension of Releases
 
 Releases (`docs/releases.md`, `src/server/release.ts`) models a single-branch, single-artifact, version-tagged release (git tag → GitHub Release). That's the right shape for shipping RepoOS itself as a CLI/binary, but it's the wrong shape for tracking "what's deployed where":
 
-- **N services** × **M environments** × **branches**, each on a provider (Cloudflare Pages, Railway, etc.)
+- **N services** × **M environments** × **branches**, each on a provider.
 - No version number or tag involved — CI just deploys whatever lands on the branch.
-- RepoOS's own UI is not deployed anywhere, but `repoos.org` and `docs.repoos.org` will be.
+- RepoOS's own UI is not deployed anywhere, but `repoos.org` and `docs.repoos.org` are (both live as of 2026-09-14).
 
 Deployments needs a **grid**, not a single current-version card.
 
-## Shape
+## Config shape
 
 Config-driven and opt-in, same pattern as `[release]` in `repoos.toml` gating the Releases nav item (`nav.ts`): add a `[[deployments]]` array that gates a new "Deployments" nav item only when present, so a repo with no deployments (most projects) sees nothing new.
 
+This repo's real config, verified against the actual live setup (2026-09-14) — use this, not an invented example:
+
 ```toml
 [[deployments]]
-name     = "Landing page (prod)"
-branch   = "main"
-provider = "cloudflare-pages"
-url      = "https://repoos.org"
+name          = "Landing page (prod)"
+branch        = "prod"
+provider      = "cloudflare-workers"
+url           = "https://repoos.org"
+dashboard_url = ""  # fill in from the Cloudflare dashboard's address bar
 
 [[deployments]]
-name     = "Landing page (dev)"
-branch   = "prod"
-provider = "cloudflare-pages"
-url      = "https://landing-dev.repoos.org"
+name          = "Landing page (dev)"
+branch        = "main"
+provider      = "cloudflare-workers"
+url           = "https://main-repoos-landing.njachowski.workers.dev"
+dashboard_url = ""
 
 [[deployments]]
-name     = "Docs (prod)"
-branch   = "main"
-provider = "cloudflare-pages"
-url      = "https://docs.repoos.org"
+name          = "Docs (prod)"
+branch        = "prod"
+provider      = "cloudflare-workers"
+url           = "https://docs.repoos.org"
+dashboard_url = ""
 
 [[deployments]]
-name     = "Docs (dev)"
-branch   = "prod"
-provider = "cloudflare-pages"
-url      = "https://docs-dev.repoos.org"
+name          = "Docs (dev)"
+branch        = "main"
+provider      = "cloudflare-workers"
+url           = "https://main-repoos-docs.njachowski.workers.dev"
+dashboard_url = ""
 ```
 
-One row per (service, branch) pair — so a service's dev and prod deploys are two rows, not two features.
+Notes on why this is the correct shape (don't relitigate these, they're settled):
 
-v1: pure config + links, no polling — zero new runtime dependencies, consistent with RepoOS's zero-dependency core. A later pass could add live status via a plain `fetch()` against each provider's API or the URL itself for a health check, still no new dependency either way.
+- **`main` = dev/staging, `prod` = production.** Not the other way round.
+- **`provider = "cloudflare-workers"`, not `"cloudflare-pages"`.** Cloudflare's dashboard now creates git-connected static sites as Workers (`wrangler deploy` + a `wrangler.jsonc` in each of `landing/` and `user-docs/`), not the classic Pages project flow. There's no root-directory/output-directory pair to configure — `wrangler.jsonc` (`name`, `assets.directory`) is the actual source of truth for what gets deployed, and is what any future richer integration should read from.
+- **Custom domains only attach to a Worker's PRODUCTION branch deployment.** Cloudflare doesn't support custom domains on non-production branch previews (confirmed 2026-09-14, open upstream feature request). So `prod` gets the real custom domain; `main` gets the auto-generated, per-branch-stable Workers preview URL (pattern: `https://<branch>-<worker-name>.<account-subdomain>.workers.dev`). That preview URL is a stable alias tied to the branch name, not a one-off per-deploy link — safe to hardcode in config. `landing-dev.repoos.org` / `docs-dev.repoos.org` are NOT used — deliberately decided against a Cloudflare Redirect Rule to alias them, since the workers.dev links cost nothing extra to use directly.
+- **One row per (service, branch) pair** — a service's dev and prod deploys are two rows, not two features.
+- **`dashboard_url` is optional and manual.** It's account-specific (e.g. `https://dash.cloudflare.com/<account-id>/workers/services/view/<worker-name>/production/deployments`) and there's no Cloudflare API call in this feature, so it can't be derived — the user pastes it in once. Don't guess the URL shape for non-production branches; whatever the user finds is what goes in config.
 
-Once the landing/docs sites exist (#0338, #0339), use this repo's own `repoos.toml` as the first real config to validate the schema against — same dogfooding approach as everything else in this repo.
+**Explicit product requirement:** the entire point of this page is that the user never has to remember or type any of these URLs. Every row's `url` must render as a clickable link that opens the live site directly. Same for `dashboard_url` when present. Do not ship a version that displays either as inert text.
+
+## Freshness signal (still v1 — no live polling, no new credentials)
+
+Per (service, branch) row, show the last commit pushed to that branch, **scoped to the service's own subdirectory**: `git log -1 -- <subdir> <branch>` (e.g. `git log -1 -- landing main`, `git log -1 -- user-docs main`) — timestamp + short SHA. Not `git log -1 <branch>` alone: an unrelated push to the branch that touches neither `landing/` nor `user-docs/` would otherwise show a misleadingly recent timestamp for a service that didn't actually change (the exact same blind spot as Cloudflare's per-project Build Watch Paths / Path setting).
+
+State plainly in the UI copy that this reflects the last **push**, not confirmed build success — a broken Cloudflare build would still show a recent timestamp while the live site serves an older version. Getting genuine build-success status would need Cloudflare's Workers/Pages deployments API and a real (if narrow, read-only) API token — deliberately deferred to v2. If ever built, that token belongs in `.env`, read server-side only, same pattern as `REPOOS_AUTH_DEV_BACKDOOR_CODE` — never exposed to a coding agent.
+
+## Per-branch status + deploy actions
+
+This repo's actual deploy mechanism *is* pushing to GitHub (Cloudflare rebuilds automatically on push to a watched branch), so the page should offer to do that push, not just link to the result.
+
+Add a section — **per branch** (`main`, `prod`), not per row, see below — showing:
+
+- Ahead/behind count vs the branch's own origin ref: `git rev-list --count origin/<branch>..<branch>` and the reverse. Local `main` running significantly ahead of `origin/main` (tens of commits) is the **normal** state for this repo — work accumulates locally across a session and gets pushed in a batch — not an edge case to handle awkwardly.
+- **"Deploy main" button** → `git push origin main`.
+- **"Deploy prod" button** → fast-forward `prod` to `main`, then push: `git merge --ff-only main` (on a `prod` checkout/worktree), then `git push origin prod`. This automates exactly the two commands run by hand today.
+
+**This is shared branch state — don't duplicate it per row.** Landing (dev) and Docs (dev) both key off `main`; landing (prod) and docs (prod) both key off `prod`. The ahead/behind numbers and the deploy buttons are identical for every row sharing a branch, and clicking one affects every service on that branch, not just one row. Show this as a per-branch summary (above or beside the grid) — a naive per-row implementation would show duplicate buttons that do the same thing, which misrepresents the actual blast radius.
+
+**Safety — these are real pushes to a shared GitHub repo:**
+
+- Explicit confirmation before either action fires; "Deploy prod" especially, since that's a production push.
+- Refuse and surface a clear error — never force-push — if the push isn't a clean fast-forward (e.g. `prod` genuinely diverged, or `origin/main` moved since the page loaded). Same fail-loudly-never-silently-discard principle as the close-out pipeline's merge guards (`docs/close-out-pipeline.md`).
+- Refuse if the local checkout is dirty (uncommitted changes), with a clear message — same as `just release`'s dirty-tree guard.
+- No new credentials needed — this is plain git against the already-configured `origin` remote, nothing Cloudflare-specific.
+
+## Verification
+
+Once `landing/` and `user-docs/` exist with real branches (true as of 2026-09-14), use this repo's own `repoos.toml` as the first real config to validate the schema against — same dogfooding approach as everything else here. `repoos check` does not exercise this page's actual Cloudflare-facing behavior (it has no way to verify a real push landed or a real site is live) — verify by hand: trigger "Deploy main" against a real (or throwaway) branch state and confirm the push actually happened and the buttons' safety guards actually refuse a non-fast-forward case.
 
 ## Activity
 
@@ -115,28 +154,4 @@ Corrected config:
 
 Explicit product requirement (Nick, 2026-09-14): the whole point of this page is that Nick should never need to remember or type any of these URLs. Every row must render its url as a clickable link that opens the live site directly -- that's the primary interaction the page exists for, not a nice-to-have. Don't ship a version that just displays the URL as inert text.
 - 2026-09-14T02:47:18Z · note: New requirement (Nick, 2026-09-14): for a repo like this one where deploying IS pushing to GitHub (Cloudflare rebuilds on push), the page should show git push status and offer to do the push, not just link to the result.
-
-## Per-branch status + deploy actions
-
-Add a section showing, per branch this repo's deployments key off (main, prod):
-
-- Ahead/behind count vs the branch's own origin ref (`git rev-list --count origin/<branch>..<branch>` and the reverse) -- this is exactly the "local main is 66 commits ahead of origin/main" situation from today, which is the NORMAL state for this repo (local main advances all session, gets pushed in a batch), not an edge case to handle poorly.
-- "Deploy main" button -> `git push origin main`.
-- "Deploy prod" button -> fast-forward prod to main, then push (`git merge --ff-only main` on a prod checkout/worktree, then `git push origin prod`) -- i.e. automate exactly the two commands run by hand today.
-
-## This is shared branch state, not per-row -- don't duplicate it
-
-Landing (dev) and Docs (dev) both key off `main`; landing (prod) and docs (prod) both key off `prod`. The ahead/behind numbers and the deploy buttons are IDENTICAL for every row sharing a branch and clicking one affects every service on that branch, not just one row. Show this as a per-branch summary (e.g. above or beside the grid), not duplicated per service row -- a naive per-row implementation would show 2 identical "Deploy main" buttons that do the same thing, which is confusing about blast radius.
-
-## Safety -- these are real pushes to a shared GitHub repo, treat them accordingly
-
-- Explicit confirm before either action fires, "Deploy prod" especially since that's a production push.
-- Refuse and surface an error (never force-push) if the push isn't a clean fast-forward -- e.g. `prod` genuinely diverged, or `origin/main` moved since the page loaded. Same principle as the mergeBranch/detectDroppedMerge guards in the close-out pipeline: fail loudly, never silently overwrite or discard commits.
-- Refuse if the local checkout is dirty (uncommitted changes) with a clear message, same as `just release`'s dirty-tree guard.
-- No new credentials needed -- this is plain git against the already-configured `origin` remote, nothing Cloudflare-specific.
-
-## Cloudflare dashboard links
-
-Nick wants a one-click link to watch a deploy happening, e.g.
-`https://dash.cloudflare.com/<account-id>/workers/services/view/<worker-name>/production/deployments`.
-The account ID is account-specific and there's no Cloudflare API call in this feature (deliberately, see the "no live polling" notes above), so this can't be derived automatically -- add an optional `dashboard_url` field per `[[deployments]]` entry that the user fills in by hand once (copied from their own browser address bar), rendered as a link alongside the site URL. Don't guess the URL shape for non-production branches (unconfirmed whether Cloudflare exposes a separate deployments view per branch) -- let the config carry whatever URL the user actually finds.
+- 2026-09-14T05:30:42Z · body
