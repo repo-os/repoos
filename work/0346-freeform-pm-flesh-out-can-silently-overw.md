@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: fix/0346-freeform-draft-corruption
 created_at: "2026-09-14T06:53:49Z"
-updated_at: "2026-09-14T06:54:08Z"
+updated_at: "2026-09-14T06:55:53Z"
 ---
 ## Problem
 
@@ -111,3 +111,6 @@ chat transcript).
 - 2026-09-14T06:53:54Z · status inbox→active
 - 2026-09-14T06:53:54Z · note: Implementing directly in an interactive session; code changes already made in the working tree, moving them onto this task's branch now.
 - 2026-09-14T06:54:08Z · branch
+- 2026-09-14T06:55:52Z · status active→review
+- 2026-09-14T06:55:52Z · note: repoos check passes (build, tests 1507/1507, UI smoke test). Ready for review — see task body for the fix summary. Worktree left open on branch fix/0346-freeform-draft-corruption; not merged.
+- 2026-09-14T06:55:53Z · status review→active
