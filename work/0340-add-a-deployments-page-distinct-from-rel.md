@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-14T06:40:48Z"
+review_passes: 2
 id: "0340"
 title: Add a Deployments page (distinct from Releases)
 type: feature
@@ -11,9 +13,7 @@ branch: feat/add-a-deployments-page-distinct-from-rel
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T06:36:15Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Why a new page, not an extension of Releases
 
@@ -165,3 +165,4 @@ One real fix to the spec: the per-branch summary section's wording ("per branch 
 - 2026-09-14T06:25:13Z · status active→review
 - 2026-09-14T06:28:05Z · status review→active
 - 2026-09-14T06:36:15Z · status active→review
+
