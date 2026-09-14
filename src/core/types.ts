@@ -372,6 +372,11 @@ export interface RepoOSConfig {
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
+   * Deployment targets (task #0340) — one row per (service, branch). Absent or
+   * empty means the Deployments nav item and API stay hidden for this repo.
+   */
+  deployments?: DeploymentConfig[];
+  /**
    * Advisory ceiling on registered git worktrees (including the main checkout).
    * Above it, the Control page's Codebase card turns amber and the server logs
    * a "run `repoos gc`" warning — never enforced, never blocks a task start.
@@ -385,6 +390,34 @@ export interface RepoOSConfig {
    * whose port other tooling hardcodes (e.g. this dogfood repo → 7171).
    */
   servePort?: number;
+}
+
+/**
+ * A single configured deployment target: one (service, branch) pair shipped to
+ * a provider (task #0340). Unlike [release] — a single versioned artifact — a
+ * repo can have N services × M environments, each a row on the Deployments
+ * page. Entirely declarative: no live provider API in v1, `provider` is a
+ * plain label and every URL is user-supplied. Omitted entirely in most repos,
+ * which keeps the Deployments nav item and API dormant.
+ */
+export interface DeploymentConfig {
+  /** Human label, e.g. "Landing page (prod)". */
+  name: string;
+  /** Branch whose pushes deploy this target (e.g. prod / main). */
+  branch: string;
+  /** Provider label, e.g. "cloudflare-workers". Informational only. */
+  provider?: string;
+  /** The live URL for this target — rendered as the row's primary link. */
+  url?: string;
+  /** Optional provider-dashboard URL (account-specific, pasted in by hand). */
+  dashboardUrl?: string;
+  /**
+   * Repo subdirectory this service lives in, scoping the per-row freshness
+   * lookup to `git log -1 <branch> -- <subdir>` so an unrelated push to the
+   * branch doesn't read as a deploy of this service. Omit for a branch-wide
+   * signal.
+   */
+  subdir?: string;
 }
 
 /**

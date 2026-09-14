@@ -5,7 +5,10 @@ import { useConfigStore } from "../stores/config";
 
 const config = useConfigStore();
 const nav = computed(() =>
-  navFor((config.data?.release as { enabled?: unknown } | undefined)?.enabled === true),
+  navFor(
+    (config.data?.release as { enabled?: unknown } | undefined)?.enabled === true,
+    Array.isArray(config.data?.deployments) && (config.data?.deployments as unknown[]).length > 0,
+  ),
 );
 </script>
 
