@@ -7,9 +7,9 @@ priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: fix/0346-freeform-draft-corruption
 created_at: "2026-09-14T06:53:49Z"
-updated_at: "2026-09-14T06:53:54Z"
+updated_at: "2026-09-14T06:54:08Z"
 ---
 ## Problem
 
@@ -110,3 +110,4 @@ chat transcript).
 - 2026-09-14T06:53:49Z · created · unknown
 - 2026-09-14T06:53:54Z · status inbox→active
 - 2026-09-14T06:53:54Z · note: Implementing directly in an interactive session; code changes already made in the working tree, moving them onto this task's branch now.
+- 2026-09-14T06:54:08Z · branch
