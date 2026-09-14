@@ -8,7 +8,8 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
-updated_at: "2026-09-14T06:53:00Z"
+review_model_override: opencode-go/deepseek-v4-pro
+updated_at: "2026-09-14T07:27:40Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ Let's add some additional url params to this web app, like for a given task /wor
 
 - 2026-09-14T05:39:57Z · title, body
 - 2026-09-14T06:53:00Z · title, body
+- 2026-09-14T07:27:40Z · review_model_override
