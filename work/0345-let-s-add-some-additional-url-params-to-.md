@@ -2,14 +2,14 @@
 id: "0345"
 title: "Add URL params for deep-linking tasks, inputs, and settings"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-url-params-for-deep-linking-tasks-in
 review_model_override: opencode-go/deepseek-v4-pro
-updated_at: "2026-09-14T07:27:41Z"
+updated_at: "2026-09-14T07:28:49Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Let's add some additional url params to this web app, like for a given task /wor
 - 2026-09-14T06:53:00Z · title, body
 - 2026-09-14T07:27:40Z · review_model_override
 - 2026-09-14T07:27:41Z · status inbox→ready
+- 2026-09-14T07:28:49Z · status ready→active, branch
