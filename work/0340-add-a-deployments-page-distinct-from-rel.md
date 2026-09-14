@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T05:30:42Z"
+updated_at: "2026-09-14T05:32:04Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -155,3 +155,6 @@ Corrected config:
 Explicit product requirement (Nick, 2026-09-14): the whole point of this page is that Nick should never need to remember or type any of these URLs. Every row must render its url as a clickable link that opens the live site directly -- that's the primary interaction the page exists for, not a nice-to-have. Don't ship a version that just displays the URL as inert text.
 - 2026-09-14T02:47:18Z · note: New requirement (Nick, 2026-09-14): for a repo like this one where deploying IS pushing to GitHub (Cloudflare rebuilds on push), the page should show git push status and offer to do the push, not just link to the result.
 - 2026-09-14T05:30:42Z · body
+- 2026-09-14T05:32:04Z · note: Cross-repo generality check (Nick, 2026-09-14): this needs to work for other repos running RepoOS with different git hosts (e.g. Celleris on GitLab, also deploying to Cloudflare Pages/Workers) and potentially different branch names. Confirmed the mechanism is already host-agnostic -- everything is plain git against the configured 'origin' remote (push, rev-list, log), no GitHub API calls anywhere, so GitLab works identically. provider is a plain label with zero special-casing in v1 (no live API calls to any provider), so it's already generic too.
+
+One real fix to the spec: the per-branch summary section's wording ("per branch (main, prod)") reads as if those two branch names are hardcoded. They must NOT be -- derive the distinct set of branches from whatever's actually present across the configured [[deployments]] rows' branch fields, so a repo using different branch names (or more than two environments) gets a correct summary without any code change. main/prod is this repo's OWN config value, not a constant to bake into the implementation.
