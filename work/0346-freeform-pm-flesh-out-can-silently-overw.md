@@ -2,14 +2,14 @@
 id: "0346"
 title: Freeform PM flesh-out can silently overwrite/lose a task's original prompt
 type: bug
-status: active
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: fix/0346-freeform-draft-corruption
 created_at: "2026-09-14T06:53:49Z"
-updated_at: "2026-09-14T06:55:53Z"
+updated_at: "2026-09-14T07:13:42Z"
 ---
 ## Problem
 
@@ -114,3 +114,5 @@ chat transcript).
 - 2026-09-14T06:55:52Z · status active→review
 - 2026-09-14T06:55:52Z · note: repoos check passes (build, tests 1507/1507, UI smoke test). Ready for review — see task body for the fix summary. Worktree left open on branch fix/0346-freeform-draft-corruption; not merged.
 - 2026-09-14T06:55:53Z · status review→active
+- 2026-09-14T07:13:42Z · status active→done
+- 2026-09-14T07:13:42Z · note: Merged to main.
