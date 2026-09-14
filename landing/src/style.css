@@ -98,6 +98,7 @@
   --amber: #ffb454;
   --red: #ff6b7d;
   --border: rgba(120, 140, 200, 0.16);
+  --border-bright: rgba(120, 160, 255, 0.35);
   --chip-bg: rgba(120, 140, 200, 0.1);
 }
 
