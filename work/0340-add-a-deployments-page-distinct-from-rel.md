@@ -2,16 +2,16 @@
 id: "0340"
 title: Add a Deployments page (distinct from Releases)
 type: feature
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-a-deployments-page-distinct-from-rel
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T05:32:45Z"
+updated_at: "2026-09-14T05:35:15Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -159,3 +159,4 @@ Explicit product requirement (Nick, 2026-09-14): the whole point of this page is
 
 One real fix to the spec: the per-branch summary section's wording ("per branch (main, prod)") reads as if those two branch names are hardcoded. They must NOT be -- derive the distinct set of branches from whatever's actually present across the configured [[deployments]] rows' branch fields, so a repo using different branch names (or more than two environments) gets a correct summary without any code change. main/prod is this repo's OWN config value, not a constant to bake into the implementation.
 - 2026-09-14T05:32:45Z · body
+- 2026-09-14T05:35:15Z · status ready→active, branch
