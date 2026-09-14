@@ -2,14 +2,14 @@
 id: "0341"
 title: Write out the remaining user-docs pages for docs.repoos.org
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-13T15:12:36Z"
-updated_at: "2026-09-13T15:12:36Z"
+updated_at: "2026-09-14T08:25:25Z"
 ---
 `user-docs/` (docs.repoos.org) was split out of `docs/` and seeded with four
 pages: `getting-started`, `concepts`, `cli`, `configuration`. This task fills
@@ -58,3 +58,4 @@ they are different documents written for different readers.
 ## Activity
 
 - 2026-09-13T15:12:36Z · created · unknown
+- 2026-09-14T08:25:25Z · status inbox→ready
