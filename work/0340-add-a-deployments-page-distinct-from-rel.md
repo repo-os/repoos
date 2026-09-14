@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T05:32:04Z"
+updated_at: "2026-09-14T05:32:45Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -79,7 +79,7 @@ State plainly in the UI copy that this reflects the last **push**, not confirmed
 
 This repo's actual deploy mechanism *is* pushing to GitHub (Cloudflare rebuilds automatically on push to a watched branch), so the page should offer to do that push, not just link to the result.
 
-Add a section — **per branch** (`main`, `prod`), not per row, see below — showing:
+Add a section — one summary per distinct branch actually present across the configured `[[deployments]]` rows (this repo currently has two, `main` and `prod`, but that is this repo's config, not a constant to hardcode) — not per row, see below — showing:
 
 - Ahead/behind count vs the branch's own origin ref: `git rev-list --count origin/<branch>..<branch>` and the reverse. Local `main` running significantly ahead of `origin/main` (tens of commits) is the **normal** state for this repo — work accumulates locally across a session and gets pushed in a batch — not an edge case to handle awkwardly.
 - **"Deploy main" button** → `git push origin main`.
@@ -158,3 +158,4 @@ Explicit product requirement (Nick, 2026-09-14): the whole point of this page is
 - 2026-09-14T05:32:04Z · note: Cross-repo generality check (Nick, 2026-09-14): this needs to work for other repos running RepoOS with different git hosts (e.g. Celleris on GitLab, also deploying to Cloudflare Pages/Workers) and potentially different branch names. Confirmed the mechanism is already host-agnostic -- everything is plain git against the configured 'origin' remote (push, rev-list, log), no GitHub API calls anywhere, so GitLab works identically. provider is a plain label with zero special-casing in v1 (no live API calls to any provider), so it's already generic too.
 
 One real fix to the spec: the per-branch summary section's wording ("per branch (main, prod)") reads as if those two branch names are hardcoded. They must NOT be -- derive the distinct set of branches from whatever's actually present across the configured [[deployments]] rows' branch fields, so a repo using different branch names (or more than two environments) gets a correct summary without any code change. main/prod is this repo's OWN config value, not a constant to bake into the implementation.
+- 2026-09-14T05:32:45Z · body
