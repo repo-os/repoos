@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
-import Dialog from "../components/ui/dialog/root.vue";
-import DialogClose from "../components/ui/dialog/close.vue";
-import DialogContent from "../components/ui/dialog/content.vue";
-import DialogDescription from "../components/ui/dialog/description.vue";
-import DialogOverlay from "../components/ui/dialog/overlay.vue";
-import DialogTitle from "../components/ui/dialog/title.vue";
 import { api, JSON_OPTS } from "../api";
 
 interface DeploymentRow {
@@ -87,6 +81,15 @@ function openConfirm(branch: string): void {
   confirmBranch.value = branch;
 }
 
+function closeConfirm(): void {
+  if (deploying.value !== null) return;
+  confirmBranch.value = null;
+}
+
+function onConfirmKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape" && confirmOpen.value) closeConfirm();
+}
+
 async function deploy(): Promise<void> {
   const branch = confirmBranch.value;
   if (!branch || deploying.value) return;
@@ -124,9 +127,11 @@ function relativeTime(iso: string | null): string {
 onMounted(() => {
   void load();
   tick = setInterval(() => (now.value = Date.now()), 60_000);
+  window.addEventListener("keydown", onConfirmKeydown);
 });
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
+  window.removeEventListener("keydown", onConfirmKeydown);
 });
 </script>
 
@@ -271,63 +276,77 @@ onBeforeUnmount(() => {
       </template>
     </template>
 
-    <Dialog :open="confirmOpen" @update:open="confirmBranch = $event ? confirmBranch : null">
-      <DialogOverlay />
-      <DialogContent class="dep-modal">
-        <div class="dep-modal-head">
-          <DialogTitle>Deploy {{ confirmBranch }}</DialogTitle>
-          <DialogClose class="close-x" aria-label="Close" :disabled="deploying !== null"
-            >×</DialogClose
-          >
-        </div>
-        <div class="dep-modal-body">
-          <DialogDescription>
-            <template v-if="confirmTarget?.ffFrom">
-              Fast-forwards <code>{{ confirmBranch }}</code> to
-              <code>{{ confirmTarget.ffFrom }}</code
-              >, then pushes to origin — your provider builds and deploys from the push.
-            </template>
-            <template v-else>
-              Runs <code>git push origin {{ confirmBranch }}</code> — your provider builds and
-              deploys from the push.
-            </template>
-            This is a real push to the shared remote. Non-fast-forward cases are refused; nothing is
-            ever force-pushed.
-          </DialogDescription>
+    <Teleport to="body">
+      <div
+        v-if="confirmOpen"
+        class="dep-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dep-confirm-title"
+        @click.self="closeConfirm"
+      >
+        <div class="dep-card">
+          <div class="dep-modal-head">
+            <h3 id="dep-confirm-title" class="dep-modal-title">Deploy {{ confirmBranch }}</h3>
+            <button
+              type="button"
+              class="close-x"
+              aria-label="Close"
+              :disabled="deploying !== null"
+              @click="closeConfirm"
+            >
+              ×
+            </button>
+          </div>
+          <div class="dep-modal-body">
+            <p class="dep-modal-desc">
+              <template v-if="confirmTarget?.ffFrom">
+                Fast-forwards <code>{{ confirmBranch }}</code> to
+                <code>{{ confirmTarget.ffFrom }}</code
+                >, then pushes to origin — your provider builds and deploys from the push.
+              </template>
+              <template v-else>
+                Runs <code>git push origin {{ confirmBranch }}</code> — your provider builds and
+                deploys from the push.
+              </template>
+              This is a real push to the shared remote. Non-fast-forward cases are refused; nothing
+              is ever force-pushed.
+            </p>
 
-          <dl class="dep-facts">
-            <div>
-              <dt>Deploys</dt>
-              <dd>{{ confirmServices.join(", ") || "—" }}</dd>
+            <dl class="dep-facts">
+              <div>
+                <dt>Deploys</dt>
+                <dd>{{ confirmServices.join(", ") || "—" }}</dd>
+              </div>
+              <div v-if="confirmTarget?.hasOrigin">
+                <dt>Unpushed</dt>
+                <dd>{{ confirmTarget.ahead ?? "—" }} commit(s) on {{ confirmBranch }}</dd>
+              </div>
+            </dl>
+
+            <ul class="dep-cmds">
+              <li v-for="c in confirmCmds" :key="c">
+                <code>{{ c }}</code>
+              </li>
+            </ul>
+
+            <p v-if="confirmBehind" class="dep-modal-warn">{{ confirmBehind }}</p>
+
+            <div v-if="deployError" class="dep-modal-error" role="alert">
+              <strong>{{ deployError }}</strong>
             </div>
-            <div v-if="confirmTarget?.hasOrigin">
-              <dt>Unpushed</dt>
-              <dd>{{ confirmTarget.ahead ?? "—" }} commit(s) on {{ confirmBranch }}</dd>
-            </div>
-          </dl>
-
-          <ul class="dep-cmds">
-            <li v-for="c in confirmCmds" :key="c">
-              <code>{{ c }}</code>
-            </li>
-          </ul>
-
-          <p v-if="confirmBehind" class="dep-modal-warn">{{ confirmBehind }}</p>
-
-          <div v-if="deployError" class="dep-modal-error" role="alert">
-            <strong>{{ deployError }}</strong>
+          </div>
+          <div class="dep-modal-actions">
+            <Button variant="accent" :disabled="deploying !== null" @click="deploy">
+              {{ deploying ? "Deploying…" : `Deploy ${confirmBranch}` }}
+            </Button>
+            <Button variant="ghost" :disabled="deploying !== null" @click="closeConfirm"
+              >Cancel</Button
+            >
           </div>
         </div>
-        <div class="dep-modal-actions">
-          <Button variant="accent" :disabled="deploying !== null" @click="deploy">
-            {{ deploying ? "Deploying…" : `Deploy ${confirmBranch}` }}
-          </Button>
-          <DialogClose as-child>
-            <Button variant="ghost" :disabled="deploying !== null">Cancel</Button>
-          </DialogClose>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -550,71 +569,6 @@ onBeforeUnmount(() => {
   border-color: var(--red-border-tint);
   background: var(--red-tint);
   color: var(--red);
-}
-
-.dep-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.dep-modal-body {
-  display: grid;
-  gap: 14px;
-  margin-top: 8px;
-}
-.dep-facts {
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-.dep-facts div {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-}
-.dep-facts dt {
-  color: var(--txt-faint);
-  font-size: 12px;
-  min-width: 72px;
-}
-.dep-facts dd {
-  margin: 0;
-  font-size: 13px;
-  color: var(--txt-dim);
-}
-.dep-cmds {
-  list-style: none;
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  display: grid;
-  gap: 4px;
-}
-.dep-cmds code {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  color: var(--txt-dim);
-}
-.dep-modal-warn {
-  color: var(--amber);
-  font-size: 12.5px;
-  margin: 0;
-}
-.dep-modal-error {
-  border-left: 2px solid var(--red);
-  padding-left: 10px;
-  color: var(--red);
-  font-size: 13px;
-  white-space: pre-wrap;
-}
-.dep-modal-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 18px;
 }
 
 @media (max-width: 640px) {

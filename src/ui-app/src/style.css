@@ -2335,6 +2335,117 @@
   margin-top: 18px;
 }
 
+/*
+ * Deployments page confirm modal. Same overlay+card pattern as
+ * .hotfix-overlay/.hotfix-card, deliberately hand-rolled with a plain
+ * Teleport rather than the Dialog/DialogContent primitive: that primitive's
+ * base classes (drawer-wrap/drawer) are the app's full-height, right-edge
+ * slide-in Task Drawer, not a centered confirm dialog, and this content is
+ * teleported to <body> regardless — CSS for it must live here, not in a
+ * view's <style scoped> block, or it silently never applies.
+ */
+.dep-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  isolation: isolate;
+  pointer-events: auto;
+  background: rgba(4, 6, 12, 0.62);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.dep-card {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  width: min(560px, 100%);
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--drawer-shadow);
+  animation: restartIn 0.18s ease-out;
+}
+.dep-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt);
+}
+.dep-modal-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--txt-dim);
+}
+.dep-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dep-modal-body {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+.dep-facts {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.dep-facts div {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.dep-facts dt {
+  color: var(--txt-faint);
+  font-size: 12px;
+  min-width: 72px;
+}
+.dep-facts dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+.dep-cmds {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+}
+.dep-cmds code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--txt-dim);
+}
+.dep-modal-warn {
+  color: var(--amber);
+  font-size: 12.5px;
+  margin: 0;
+}
+.dep-modal-error {
+  border-left: 2px solid var(--red);
+  padding-left: 10px;
+  color: var(--red);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.dep-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 /* docs */
 .ctx-page {
   display: flex;
