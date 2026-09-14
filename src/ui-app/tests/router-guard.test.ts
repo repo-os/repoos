@@ -79,4 +79,14 @@ describe("router auth guard", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("preserves deep-link query params through the login redirect (#0345)", async () => {
+    mockAuthMe({ authEnabled: true, authenticated: false });
+    await router.push("/work?task=0340");
+    await router.isReady();
+    expect(router.currentRoute.value.path).toBe("/login");
+    // LoginView restores this full path verbatim after sign-in, so the
+    // deep-link param survives the auth round-trip and opens the panel.
+    expect(router.currentRoute.value.query.redirect).toBe("/work?task=0340");
+  });
 });

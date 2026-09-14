@@ -170,8 +170,13 @@ function toggleThemeFavorite(id: string): void {
   config.toggleThemeFavorite(id);
 }
 
+// ── #0345 ?setting= is an alias of the existing ?focus= deep-link — both
+// scroll to and focus a specific setting row. ?setting= wins when both are
+// present. The original ?focus= behavior (SearchBar navigates here with
+// focus=<key>) is unchanged.
+const focusKey = computed(() => (route.query.setting ?? route.query.focus) as string | undefined);
 watch(
-  () => route.query.focus as string | undefined,
+  focusKey,
   (key) => {
     if (!key) return;
     const tryFocus = (attempt = 0): void => {

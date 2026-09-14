@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ArrowRight, X } from "lucide-vue-next";
+import { useRoute, useRouter } from "vue-router";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import Button from "../components/ui/button.vue";
@@ -79,6 +80,48 @@ onMounted(() => {
   window.addEventListener("repoos:inputs-updated", onInputsUpdated);
 });
 onBeforeUnmount(() => window.removeEventListener("repoos:inputs-updated", onInputsUpdated));
+
+// ── #0345 Deep-linking: /inputs?input=<id> opens that input's drawer and
+// ?input=new opens the new-input panel. The param is cleared once the panel
+// opens (the same router.replace clear pattern as the settings ?focus=
+// handler) so a refresh doesn't re-open it. A link that arrives through the
+// login round-trip survives end-to-end: the router guard redirects with
+// redirect=to.fullPath and LoginView restores the full path after sign-in.
+const route = useRoute();
+const router = useRouter();
+watch(
+  () => route.query.input,
+  (v) => {
+    if (typeof v !== "string" || !v) return;
+    if (v === "new") {
+      ui.openNewInput();
+      void clearInputParam();
+      return;
+    }
+    tryOpenInput(v, 0);
+  },
+  { immediate: true },
+);
+
+async function clearInputParam(): Promise<void> {
+  const query = { ...route.query };
+  delete query.input;
+  await router.replace({ query });
+}
+
+// Inputs load asynchronously after mount (load()), so retry briefly until the
+// list contains the id — the same retry-until-ready shape the settings
+// ?focus= handler uses for its config-dependent scroll target. A deep-linked
+// input opens even when its status is filtered out of the visible list.
+function tryOpenInput(id: string, attempt: number): void {
+  const found = inputs.value.find((i) => i.id === id);
+  if (found) {
+    openInput(found);
+    void clearInputParam();
+  } else if (attempt < 20) {
+    window.setTimeout(() => tryOpenInput(id, attempt + 1), 100);
+  }
+}
 </script>
 <template>
   <div class="inputs-page">
