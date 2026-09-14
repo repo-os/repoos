@@ -2,7 +2,7 @@
 id: "0343"
 title: "Verify the \"zero runtime dependencies\" claim — mermaid is in dependencies"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T16:47:49Z"
-updated_at: "2026-09-14T08:00:50Z"
+updated_at: "2026-09-14T08:00:52Z"
 ---
 "Zero runtime dependencies" is stated as a hard design constraint in AGENTS.md
 and claimed publicly on the repoos.org landing page ("the supply chain you ship
@@ -56,3 +56,4 @@ disagreeing. Note the lockfile will change either way; commit it.
 
 - 2026-09-13T16:47:49Z · created · unknown
 - 2026-09-14T08:00:50Z · review_model_override
+- 2026-09-14T08:00:52Z · status inbox→ready
