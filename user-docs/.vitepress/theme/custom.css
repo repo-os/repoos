@@ -1,12 +1,117 @@
 /*
- * RepoOS dark identity for the VitePress default theme.
- * Carried over from src/ui-app/src/style.css: bg #070a12/#0b1020, text
- * #e7ecf7, cyan #39e0ff + violet #9d7bff accents, Sora + JetBrains Mono.
- * The site is force-dark (config.mts), so only dark values are defined.
+ * RepoOS identity for the VitePress default theme — light AND dark, matching
+ * repoos.org. Dark values carried over from src/ui-app/src/style.css: bg
+ * #070a12/#0b1020, text #e7ecf7, cyan #39e0ff + violet #9d7bff accents, Sora
+ * + JetBrains Mono. Light values are ported 1:1 from landing/src/style.css's
+ * [data-theme="light"] block, including its contrast-safe accent overrides
+ * (cyan #0a7f9c, violet #6244cf, green #0a7d53, amber #8a5a00, red #c23146
+ * on white) — same product, not two themes that share a name.
+ *
+ * Selector strategy is the mirror image of landing's: VitePress toggles a
+ * `dark` class on <html> instead of a data-theme attribute, so :root holds
+ * the light defaults and .dark overrides them (landing is dark-first with
+ * light as the override).
+ *
+ * Deliberate exceptions, mirroring the landing page:
+ *   - code blocks stay dark in BOTH themes (config.mts pins github-dark for
+ *     both), like landing's .term/.file-card/.install-box surfaces
+ *   - the brand button keeps its cyan fill in both (a surface, not text —
+ *     the #061020-on-#39e0ff contrast is identical in either theme)
+ *   - inline code and custom containers sit on the page background, so they
+ *     DO follow the theme
  * Structure, spacing, and components stay VitePress-default on purpose.
  */
 
+/* ---------- light (default) — values ported from landing [data-theme="light"] ---------- */
 :root {
+  --vp-c-bg: #f6f8fc;
+  --vp-c-bg-alt: #eaeff8;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: #e9edf4;
+
+  --vp-c-border: rgba(28, 48, 96, 0.14);
+  --vp-c-divider: rgba(28, 48, 96, 0.14);
+  --vp-c-gutter: rgba(28, 48, 96, 0.1);
+
+  --vp-c-text-1: #0c1424;
+  --vp-c-text-2: #4b5877;
+  --vp-c-text-3: #74829f;
+
+  /* landing's light accents; brand-2 (hover) darkens on white */
+  --vp-c-brand-1: #0a7f9c;
+  --vp-c-brand-2: #086e88;
+  --vp-c-brand-3: #6244cf;
+  --vp-c-brand-soft: rgba(10, 127, 156, 0.1);
+
+  --vp-font-family-base:
+    "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --vp-font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* primary button: cyan fill, near-black text — same in both themes */
+  --vp-button-brand-bg: #39e0ff;
+  --vp-button-brand-text: #061020;
+  --vp-button-brand-border: #39e0ff;
+  --vp-button-brand-hover-bg: #6fe7ff;
+  --vp-button-brand-hover-text: #061020;
+  --vp-button-brand-hover-border: #6fe7ff;
+  --vp-button-brand-active-bg: #39e0ff;
+  --vp-button-brand-active-text: #061020;
+  --vp-button-brand-active-border: #39e0ff;
+
+  /* code blocks stay dark in BOTH themes (see file header) */
+  --vp-code-block-bg: #0b1020;
+  --vp-code-copy-code-border-color: rgba(120, 140, 200, 0.2);
+  --vp-code-copy-code-bg: #0e1426;
+  --vp-code-copy-code-hover-bg: #111a30;
+  --vp-code-copy-code-active-text: #e7ecf7;
+  --vp-code-lang-color: #8a96b4;
+  --vp-code-tab-divider: rgba(120, 140, 200, 0.14);
+  --vp-code-tab-text-color: #8a96b4;
+  --vp-code-tab-active-text-color: #e7ecf7;
+  --vp-code-tab-active-bar-color: #39e0ff;
+
+  /* inline code sits on the page background, so it follows the theme */
+  --vp-code-color: #0a7f9c;
+  --vp-code-bg: rgba(10, 127, 156, 0.1);
+
+  /* custom containers as light tints — landing's light accent hues */
+  --vp-custom-block-tip-bg: rgba(10, 125, 83, 0.08);
+  --vp-custom-block-tip-border: rgba(10, 125, 83, 0.3);
+  --vp-custom-block-tip-text: #0c1424;
+  --vp-custom-block-tip-code-bg: rgba(10, 125, 83, 0.12);
+  --vp-custom-block-info-bg: rgba(10, 127, 156, 0.06);
+  --vp-custom-block-info-border: rgba(28, 90, 200, 0.25);
+  --vp-custom-block-info-text: #0c1424;
+  --vp-custom-block-info-code-bg: rgba(10, 127, 156, 0.12);
+  --vp-custom-block-warning-bg: rgba(138, 90, 0, 0.08);
+  --vp-custom-block-warning-border: rgba(138, 90, 0, 0.3);
+  --vp-custom-block-warning-text: #0c1424;
+  --vp-custom-block-warning-code-bg: rgba(138, 90, 0, 0.12);
+  --vp-custom-block-danger-bg: rgba(194, 49, 70, 0.08);
+  --vp-custom-block-danger-border: rgba(194, 49, 70, 0.3);
+  --vp-custom-block-danger-text: #0c1424;
+  --vp-custom-block-danger-code-bg: rgba(194, 49, 70, 0.12);
+
+  /* chrome */
+  --vp-nav-bg-color: rgba(255, 255, 255, 0.85);
+  --vp-sidebar-bg-color: #eaeff8;
+  --vp-footer-bg-color: transparent;
+  --vp-local-search-bg: #eaeff8;
+  --vp-c-scrollbar-thumb: rgba(28, 48, 96, 0.2);
+
+  /* selection tint, matching landing's light theme */
+  --vp-selection-bg: rgba(10, 127, 156, 0.2);
+  --vp-selection-text: #06121f;
+
+  /* signature: the logo's cyan→violet gradient, used only for the hero name
+     (light-safe accent values) */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(315deg, #0a7f9c 15%, #6244cf 65%);
+  --vp-home-hero-image-filter: drop-shadow(0 0 24px rgba(10, 127, 156, 0.12));
+}
+
+/* ---------- dark — carried over from src/ui-app/src/style.css ---------- */
+.dark {
   --vp-c-bg: #070a12;
   --vp-c-bg-alt: #0b1020;
   --vp-c-bg-elv: #0e1426;
@@ -25,37 +130,10 @@
   --vp-c-brand-3: #9d7bff;
   --vp-c-brand-soft: rgba(57, 224, 255, 0.12);
 
-  --vp-font-family-base:
-    "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --vp-font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* primary button: cyan fill, near-black text */
-  --vp-button-brand-bg: #39e0ff;
-  --vp-button-brand-text: #061020;
-  --vp-button-brand-border: #39e0ff;
-  --vp-button-brand-hover-bg: #6fe7ff;
-  --vp-button-brand-hover-text: #061020;
-  --vp-button-brand-hover-border: #6fe7ff;
-  --vp-button-brand-active-bg: #39e0ff;
-  --vp-button-brand-active-text: #061020;
-  --vp-button-brand-active-border: #39e0ff;
-
-  /* code blocks */
-  --vp-code-block-bg: #0b1020;
   --vp-code-color: #39e0ff;
   --vp-code-bg: rgba(57, 224, 255, 0.1);
-  --vp-code-copy-button-bg: #0e1426;
-  --vp-code-copy-button-border-color: rgba(120, 140, 200, 0.2);
-  --vp-code-copy-code-bg: #0e1426;
-  --vp-code-copy-code-hover-bg: #111a30;
-  --vp-code-copy-code-hover-text-color: #e7ecf7;
-  --vp-code-lang-color: #8a96b4;
-  --vp-code-tab-divider: rgba(120, 140, 200, 0.14);
-  --vp-code-tab-text-color: #8a96b4;
-  --vp-code-tab-active-text-color: #e7ecf7;
-  --vp-code-tab-active-bar-color: #39e0ff;
 
-  /* custom containers (tip/info/warning/danger) as dark tints */
+  /* custom containers as dark tints */
   --vp-custom-block-tip-bg: rgba(78, 240, 168, 0.08);
   --vp-custom-block-tip-border: rgba(78, 240, 168, 0.3);
   --vp-custom-block-tip-text: #e7ecf7;
@@ -76,23 +154,33 @@
   /* chrome */
   --vp-nav-bg-color: rgba(7, 10, 18, 0.85);
   --vp-sidebar-bg-color: #0b1020;
-  --vp-footer-bg-color: transparent;
   --vp-local-search-bg: #0b1020;
   --vp-c-scrollbar-thumb: rgba(120, 140, 200, 0.2);
-}
 
-/* signature: the logo's cyan→violet gradient, used only for the hero name */
-:root {
-  --vp-home-hero-name-color: transparent;
+  /* selection tint, matching landing's dark theme */
+  --vp-selection-bg: rgba(57, 224, 255, 0.25);
+  --vp-selection-text: #ffffff;
+
+  /* signature: the logo's cyan→violet gradient, used only for the hero name */
   --vp-home-hero-name-background: linear-gradient(315deg, #39e0ff 15%, #9d7bff 65%);
   --vp-home-hero-image-filter: drop-shadow(0 0 24px rgba(57, 224, 255, 0.12));
 }
 
+::selection {
+  background: var(--vp-selection-bg);
+  color: var(--vp-selection-text);
+}
+
 /* keep Sora's wide glyphs in check for long-form prose */
 .vp-doc {
-  --vp-c-text-1: #dfe6f4;
   font-size: 16px;
   line-height: 1.75;
+}
+
+/* the softened prose color is a dark-mode readability choice; light prose
+   keeps :root's #0c1424 */
+.dark .vp-doc {
+  --vp-c-text-1: #dfe6f4;
 }
 
 .vp-doc h1,

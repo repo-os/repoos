@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-14T08:12:45Z"
-review_passes: 1
 id: "0344"
 title: "Add light/dark theme toggle to user-docs, matching landing page's palette"
 type: feature
@@ -12,6 +10,7 @@ created_by: ""
 branch: feat/add-light-dark-theme-toggle-to-user-docs
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-14T02:47:42Z"
+updated_at: "2026-09-14T08:09:15Z"
 ---
 docs.repoos.org (user-docs/) is dark-only right now — `appearance: "force-dark"`
 in `.vitepress/config.mts` disables VitePress's own built-in light/dark toggle
@@ -66,5 +65,4 @@ looking at both themes in a browser, not just a clean build.
 - 2026-09-14T06:35:08Z · status inbox→ready
 - 2026-09-14T08:00:23Z · review_model_override
 - 2026-09-14T08:00:31Z · status ready→active, branch
-- 2026-09-14T08:09:16Z · status active→review
-
+- 2026-09-14T08:09:15Z · status active→review
