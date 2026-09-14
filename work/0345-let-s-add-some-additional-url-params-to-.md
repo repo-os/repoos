@@ -1,22 +1,23 @@
 ---
 id: "0345"
-title: "Let's add some additional url params to this web app, lik…"
+title: Done. Wrote the structured task body into `work/0345-let-…
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
-assigned_to: ""
-created_by: hello@repoos.org
+area: web
+assigned_to: ai
+created_by: ""
 branch: ""
-created_at: "2026-09-14T05:38:25Z"
-updated_at: "2026-09-14T05:38:25Z"
+updated_at: "2026-09-14T05:39:57Z"
 ---
-Let's add some additional url params to this web app, like for a given task /work?task=0340 should open that task, and /work?task=new opens new task panel etc. (do the same for inputs and anywhere else you think it's appropriate and useful, e.g. could even have /settings?setting=abc which scroll to the relevant setting)
+Done. Wrote the structured task body into `work/0345-let-s-add-some-additional-url-params-to-.md`.
 
-## Original prompt
-
-Let's add some additional url params to this web app, like for a given task /work?task=0340 should open that task, and /work?task=new opens new task panel etc. (do the same for inputs and anywhere else you think it's appropriate and useful, e.g. could even have /settings?setting=abc which scroll to the relevant setting)
+Key decisions captured in Notes for AI:
+- Query param names: `?task=`, `?input=`, `?setting=` (with `new` as the reserved sentinel).
+- Settings already deep-links via `?focus=` — noted that `?setting=` should be added/aliased without dropping the existing behavior.
+- No new routes needed; params ride on existing paths and already survive the login redirect.
+- Mirror the existing `status`/`focus` parsing, retry-until-loaded, and `router.replace` clear patterns.
 
 ## Activity
 
-- 2026-09-14T05:38:25Z · created · hello@repoos.org
+- 2026-09-14T05:39:57Z · title, body
