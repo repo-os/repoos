@@ -14,6 +14,13 @@ export const RELEASE_NAV: NavItem = {
   icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="6" r="2" stroke="currentColor" stroke-width="1.8"/></svg>',
 };
 
+export const DEPLOYMENTS_NAV: NavItem = {
+  id: "deployments",
+  path: "/deployments",
+  label: "Deployments",
+  icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z" stroke="currentColor" stroke-width="1.8"/></svg>',
+};
+
 export const NAV: NavItem[] = [
   {
     id: "dashboard",
@@ -53,6 +60,19 @@ export const NAV: NavItem[] = [
   },
 ];
 
-export function navFor(releasesEnabled: boolean): NavItem[] {
-  return releasesEnabled ? [...NAV.slice(0, 3), RELEASE_NAV, ...NAV.slice(3)] : NAV;
+/**
+ * The nav for a repo's enabled surfaces. Releases and Deployments are both
+ * opt-in (a `[release]` block / a non-empty `[[deployments]]` array in
+ * repoos.toml) and slot in after Work, ahead of the everyday pages.
+ */
+export function navFor(releasesEnabled: boolean, deploymentsEnabled = false): NavItem[] {
+  const items = [...NAV];
+  let at = 3; // after Work
+  if (releasesEnabled) {
+    items.splice(at++, 0, RELEASE_NAV);
+  }
+  if (deploymentsEnabled) {
+    items.splice(at, 0, DEPLOYMENTS_NAV);
+  }
+  return items;
 }

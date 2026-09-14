@@ -67,6 +67,45 @@ remote = "origin"
 repository = "repo-os/repoos"
 workflow = ".github/workflows/release.yml"
 
+# Deployments (#0340): services this repo ships to a git-connected provider,
+# one row per (service, branch). Unlike [release] there's no version number —
+# CI deploys whatever lands on the branch. main = dev/staging, prod =
+# production; custom domains only attach to a Worker's PRODUCTION branch
+# deployment, so main rows use the stable per-branch workers.dev preview URLs.
+# dashboard_url is optional and manual (paste it from the provider dashboard's
+# address bar); subdir scopes each row's freshness lookup to its own tree.
+[[deployments]]
+name = "Landing page (prod)"
+branch = "prod"
+provider = "cloudflare-workers"
+url = "https://repoos.org"
+dashboard_url = ""
+subdir = "landing"
+
+[[deployments]]
+name = "Landing page (dev)"
+branch = "main"
+provider = "cloudflare-workers"
+url = "https://main-repoos-landing.njachowski.workers.dev"
+dashboard_url = ""
+subdir = "landing"
+
+[[deployments]]
+name = "Docs (prod)"
+branch = "prod"
+provider = "cloudflare-workers"
+url = "https://docs.repoos.org"
+dashboard_url = ""
+subdir = "user-docs"
+
+[[deployments]]
+name = "Docs (dev)"
+branch = "main"
+provider = "cloudflare-workers"
+url = "https://main-repoos-docs.njachowski.workers.dev"
+dashboard_url = ""
+subdir = "user-docs"
+
 [tunnel]
 provider = "cloudflare"
 enabled = true

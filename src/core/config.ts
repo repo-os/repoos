@@ -18,6 +18,7 @@ import type {
   AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
+  DeploymentConfig,
   ModelProviderKeysConfig,
   RepoOSConfig,
   Status,
@@ -477,6 +478,29 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         const value = parsed[`release.${key}`];
         if (typeof value === "string") cfg.release[key] = value as never;
       }
+    }
+    // Optional deployments surface (#0340). A [[deployments]] array of tables —
+    // one per (service, branch) — is what turns the Deployments nav item and
+    // API on; no block at all means the feature is entirely dormant for this
+    // repository, exactly like [release] above. Rows with no name/branch are
+    // dropped rather than poisoning the page.
+    if (Array.isArray(parsed.deployments)) {
+      const rows: DeploymentConfig[] = [];
+      for (const raw of parsed.deployments) {
+        if (typeof raw !== "object" || raw === null) continue;
+        const r = raw as Record<string, unknown>;
+        if (typeof r.name !== "string" || !r.name.trim()) continue;
+        if (typeof r.branch !== "string" || !r.branch.trim()) continue;
+        const row: DeploymentConfig = { name: r.name.trim(), branch: r.branch.trim() };
+        if (typeof r.provider === "string" && r.provider.trim()) row.provider = r.provider.trim();
+        if (typeof r.url === "string" && r.url.trim()) row.url = r.url.trim();
+        // TOML spelling is `dashboard_url`; normalized to camelCase here.
+        if (typeof r.dashboard_url === "string" && r.dashboard_url.trim())
+          row.dashboardUrl = r.dashboard_url.trim();
+        if (typeof r.subdir === "string" && r.subdir.trim()) row.subdir = r.subdir.trim();
+        rows.push(row);
+      }
+      if (rows.length) cfg.deployments = rows;
     }
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
