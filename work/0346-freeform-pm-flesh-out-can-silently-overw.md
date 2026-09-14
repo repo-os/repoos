@@ -2,14 +2,14 @@
 id: "0346"
 title: Freeform PM flesh-out can silently overwrite/lose a task's original prompt
 type: bug
-status: inbox
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-14T06:53:49Z"
-updated_at: "2026-09-14T06:53:49Z"
+updated_at: "2026-09-14T06:53:54Z"
 ---
 ## Problem
 
@@ -108,3 +108,5 @@ chat transcript).
 ## Activity
 
 - 2026-09-14T06:53:49Z · created · unknown
+- 2026-09-14T06:53:54Z · status inbox→active
+- 2026-09-14T06:53:54Z · note: Implementing directly in an interactive session; code changes already made in the working tree, moving them onto this task's branch now.
