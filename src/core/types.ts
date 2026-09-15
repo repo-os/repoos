@@ -372,9 +372,10 @@ export interface RepoOSConfig {
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
-   * Per-project opt-in config for `repoos check` steps (task #0348). Omitted
-   * means every pluggable step (currently `ui-smoke`) skips unless the project
-   * declares it through a well-known `package.json` script.
+   * Per-project opt-in config for `repoos check` steps (tasks #0348, #0351).
+   * Omitted means every pluggable step (`ui-smoke`, CSS layering, theme
+   * contrast) skips unless the project declares it here or through a
+   * well-known `package.json` script.
    */
   check?: CheckConfig;
   /**
@@ -523,6 +524,59 @@ export interface CheckConfig {
    * Absent and no `smoke` script means the step skips.
    */
   uiSmoke?: string;
+  /**
+   * Repo-relative path to the stylesheet the CSS-layering and theme-contrast
+   * guards read (#0351). Both guards carry no RepoOS-shaped default path, so
+   * absent means both skip cleanly.
+   */
+  uiStylesheet?: string;
+  /**
+   * Theme blocks inside `uiStylesheet`, each mapped to a variant name and the
+   * earlier scopes it inherits declarations from — the token vocabulary that
+   * used to be hardcoded for RepoOS (#0351). Absent means the theme-contrast
+   * guard skips even when `uiStylesheet` is set.
+   */
+  themeScopes?: CheckThemeScope[];
+  /** Foreground/background token pairs checked for ≥3:1 WCAG contrast (#0351). */
+  contrastPairs?: CheckContrastPair[];
+  /**
+   * Token to composite semi-transparent colors over before measuring their
+   * luminance — normally the page background (RepoOS uses `--bg`). Optional:
+   * without it the pair's own background token is used, falling back to white.
+   * A missing backdrop never skips a pair, it only approximates an alpha
+   * channel (#0351).
+   */
+  backdropToken?: string;
+  /**
+   * Tokens consumed as `background-image` (so they must resolve to a gradient,
+   * not a solid color — a solid value renders a transparent button) (#0351).
+   */
+  gradientTokens?: string[];
+}
+
+/**
+ * One theme block `repoos check`'s contrast guard evaluates (#0351): the
+ * selector that opens it, a variant name for failure messages, and the earlier
+ * scopes whose declarations it inherits (cascade order, later wins). RepoOS's
+ * own `:root`/`[data-theme]`/`[data-ui-theme]` blocks are declared this way in
+ * its `repoos.toml`; the guard itself knows none of those selector names.
+ */
+export interface CheckThemeScope {
+  /** CSS selector opening the block, e.g. `:root[data-ui-theme="clear"]`. */
+  selector: string;
+  /** Variant name used in failure messages, e.g. `clear-dark`. */
+  name: string;
+  /**
+   * Names of earlier scopes whose declarations this scope inherits, in order
+   * (later wins). Defaults to `[name]` — the block stands alone.
+   */
+  inherits?: string[];
+}
+
+/** A (foreground token, background token) pair checked for contrast (#0351). */
+export interface CheckContrastPair {
+  fg: string;
+  bg: string;
 }
 
 /** Whisper voice transcription configuration. */
