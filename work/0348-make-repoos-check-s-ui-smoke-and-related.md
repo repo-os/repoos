@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T07:46:52Z"
-updated_at: "2026-09-15T07:46:52Z"
+updated_at: "2026-09-15T08:13:26Z"
 ---
 ## Problem
 
@@ -120,3 +121,4 @@ follow-up task per finding rather than growing this one unboundedly:
 ## Activity
 
 - 2026-09-15T07:46:52Z · created · unknown
+- 2026-09-15T08:13:26Z · model_override
