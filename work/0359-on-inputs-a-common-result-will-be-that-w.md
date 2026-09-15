@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T18:49:13Z"
+review_passes: 1
 id: "0359"
 title: Add resolve actions to the inputs side panel
 type: feature
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/add-resolve-actions-to-the-inputs-side-p
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T18:30:36Z"
-updated_at: "2026-09-15T18:45:25Z"
 ---
 ## Problem
 
@@ -98,3 +99,4 @@ On Inputs a common result will be that we'll want to create a task from it (mayb
 - 2026-09-15T18:32:43Z · status inbox→ready
 - 2026-09-15T18:32:45Z · status ready→active, branch
 - 2026-09-15T18:45:25Z · status active→review
+
