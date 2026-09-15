@@ -332,7 +332,13 @@ export async function cutNewRelease(
     const staged = await exec("git", ["add", "--", relVersionPath], config.root);
     const committed =
       staged.code === 0
-        ? await exec("git", ["commit", "-m", `release: ${tag}`], config.root)
+        ? await exec(
+            "git",
+            // `--only` commits just the version bump; a plain commit would take
+            // the whole index and sweep in whatever else was staged (#0353).
+            ["commit", "-o", "-m", `release: ${tag}`, "--", relVersionPath],
+            config.root,
+          )
         : staged;
     if (committed.code !== 0) {
       return {

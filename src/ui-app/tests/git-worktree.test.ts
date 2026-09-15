@@ -22,6 +22,7 @@ import {
   commitDirtyFiles,
   mergeBranch,
   GitDirtyCheckError,
+  commitTaskFile,
 } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
@@ -393,6 +394,51 @@ describe("dirtyFiles / commitDirtyFiles (0204)", () => {
     const { root, clean } = makeRepo();
     try {
       expect(await commitDirtyFiles(root, "checkpoint")).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("commitTaskFile commits only the task file (#0353)", () => {
+  it("leaves an unrelated staged file staged and commits just the task file", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "unrelated.txt"), "keep me staged\n");
+      git(root, ["add", "unrelated.txt"]);
+
+      const taskPath = join(root, "work", "0353-task.md");
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(taskPath, "---\nid: 0353\n---\nbody\n");
+
+      const ok = commitTaskFile(root, taskPath, "docs(0353): update task");
+      expect(ok).toBe(true);
+
+      // The commit contains only the task file.
+      expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toBe("work/0353-task.md");
+      // The unrelated file is still staged, not committed.
+      expect(git(root, ["diff", "--cached", "--name-only"])).toBe("unrelated.txt");
+    } finally {
+      clean();
+    }
+  });
+
+  it("commits a tracked task-file modification without touching staged work", () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0353-task.md");
+      writeFileSync(taskPath, "v1\n");
+      git(root, ["add", "work/0353-task.md"]);
+      git(root, ["commit", "-m", "add task"]);
+
+      writeFileSync(join(root, "other.txt"), "staged\n");
+      git(root, ["add", "other.txt"]);
+      writeFileSync(taskPath, "v2\n");
+
+      expect(commitTaskFile(root, taskPath, "docs(0353): update task")).toBe(true);
+      expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toBe("work/0353-task.md");
+      expect(git(root, ["diff", "--cached", "--name-only"])).toBe("other.txt");
     } finally {
       clean();
     }
