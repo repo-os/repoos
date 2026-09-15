@@ -16,7 +16,7 @@ import {
 import { cmdNewDoc } from "../commands/docs.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdCheck } from "../commands/check.js";
-import { cmdServe } from "../commands/serve.js";
+import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/serve.js";
 import { cmdStop } from "../commands/stop.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
@@ -112,6 +112,13 @@ function main(): void {
   if ((cmd === "serve" || cmd === "server") && reexecServeUnderBunIfRequested()) {
     return;
   }
+
+  // Name the managed project in `ps`/Activity Monitor for the long-lived serve
+  // process (#0347). Done here — before the staleness check — so the one-time
+  // Bun re-exec inside setServeProcessTitle can't re-print that warning, and
+  // only for the real `serve` command (cmdServe is also called mid-`init`,
+  // where a re-exec would restart the whole guided flow). Display-only.
+  if (cmd === "serve" || cmd === "server") setServeProcessTitle(serveProcessTitle());
 
   // Staleness check — skip for version/help since those read no source, and
   // for `status`/`check` which report staleness themselves as first-class
