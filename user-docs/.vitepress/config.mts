@@ -54,6 +54,7 @@ export default defineConfig({
     logo: "/favicon.svg",
     nav: [
       { text: "Get started", link: "/getting-started" },
+      { text: "Agents", link: "/agents" },
       { text: "CLI", link: "/cli" },
       { text: "Configuration", link: "/configuration" },
       { text: "repoos.org", link: "https://repoos.org" },
@@ -67,6 +68,16 @@ export default defineConfig({
         items: [
           { text: "Install and first task", link: "/getting-started" },
           { text: "Concepts", link: "/concepts" },
+          { text: "Adding RepoOS to an existing repo", link: "/existing-repo" },
+        ],
+      },
+      {
+        text: "Using RepoOS",
+        items: [
+          { text: "Agents", link: "/agents" },
+          { text: "Review and close-out", link: "/review-and-close-out" },
+          { text: "The check gate", link: "/check" },
+          { text: "Tunnels", link: "/tunnels" },
         ],
       },
       {
@@ -75,6 +86,10 @@ export default defineConfig({
           { text: "CLI", link: "/cli" },
           { text: "Configuration", link: "/configuration" },
         ],
+      },
+      {
+        text: "Help",
+        items: [{ text: "Troubleshooting", link: "/troubleshooting" }],
       },
     ],
     socialLinks: [{ icon: "github", link: "https://github.com/repo-os/repoos" }],
