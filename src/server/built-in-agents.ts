@@ -3,11 +3,20 @@
  * These agents are triggered on-demand or on a schedule.
  */
 
-import { readdirSync, readFileSync, statSync, accessSync, mkdirSync } from "node:fs";
+import {
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  statSync,
+  accessSync,
+  existsSync,
+  mkdirSync,
+} from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { join, extname, basename } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
+import { commitTaskFile } from "../core/git.js";
 import type { Logger } from "../core/logger.js";
 
 export type TechDebtIssueType =
@@ -181,6 +190,45 @@ const SLOW_FUNCTION_LINES = 300;
 const NESTED_LOOP_DEPTH = 3;
 const MAX_PERF_SCAN_FILES = 500;
 const MAX_PERF_ISSUES = 30;
+
+/** Docs Debt Agent bounds (#0354): a periodic sweep, never an unbounded crawl. */
+const DOC_ROOTS = ["AGENTS.md", "docs", "user-docs"];
+const MAX_DOCS = 120;
+const MAX_DOC_BYTES = 300_000;
+const MAX_REPO_INDEX_FILES = 2_000;
+/** At most this many mechanical doc fixes land per run; the rest become a task. */
+export const MAX_TRIVIAL_FIXES_PER_RUN = 5;
+/** Phrases that assert a hard constraint we can verify against package.json. */
+const ZERO_RUNTIME_DEPS_RE = /\b(?:zero|no)\s+runtime\s+dependenc/i;
+/** Backtick-quoted commands whose `<script>` must exist in package.json. */
+const SCRIPT_CLAIM_RE = /^(?:bun|npm|pnpm|yarn)\s+run\s+([A-Za-z0-9:_-]+)$/;
+const TEST_CLAIM_RE = /^(?:bun|npm|pnpm|yarn)\s+test$/;
+/** Root-relative prefixes and files a doc may cite as a concrete path claim. */
+const KNOWN_PATH_PREFIXES = [
+  "src/",
+  "docs/",
+  "user-docs/",
+  "work/",
+  "scripts/",
+  "tests/",
+  "inputs/",
+  "bin/",
+  ".github/",
+];
+const KNOWN_ROOT_FILES = new Set([
+  "package.json",
+  "repoos.toml",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "README.md",
+  "bunfig.toml",
+  ".env.example",
+  ".oxfmtrc.json",
+  "tsconfig.json",
+  "LICENSE.md",
+]);
+/** Platform globals that look like camelCase but are not repo symbols. */
+const NON_REPO_SYMBOLS = new Set(["localStorage", "sessionStorage", "indexedDB"]);
 
 /** Walk the repo for scannable source files, bounded in count and size. */
 function collectSourceFiles(root: string): string[] {
@@ -1485,12 +1533,599 @@ export async function runDesignAgent(config: RepoOSConfig): Promise<DesignRunRes
   };
 }
 
+export type DocsDebtFindingKind =
+  | "missing-path"
+  | "missing-symbol"
+  | "false-constraint"
+  | "missing-script";
+
+export interface DocsDebtFinding {
+  kind: DocsDebtFindingKind;
+  /** Repo-relative path of the doc carrying the claim. */
+  doc: string;
+  line: number;
+  /** The exact claim text (usually the backtick span, or the sentence). */
+  claim: string;
+  /** What was checked and what was found — the evidence a human needs. */
+  evidence: string;
+  severity: "high" | "medium" | "low";
+  /** A concrete, actionable suggestion for the human. */
+  recommendation?: string;
+}
+
+/**
+ * A single, mechanical, high-confidence correction the agent may apply to a doc
+ * directly — the one place a built-in agent edits files. `src/` is never a
+ * candidate: the fix list only ever contains docs under AGENTS.md/docs/user-docs.
+ */
+export interface DocsDebtTrivialFix {
+  kind: "renamed-path";
+  doc: string;
+  line: number;
+  /** The exact text to replace, including any `:line` suffix. */
+  from: string;
+  /** The unambiguous replacement. */
+  to: string;
+  evidence: string;
+}
+
+export interface DocsDebtScanResult {
+  trivialFixes: DocsDebtTrivialFix[];
+  needsHuman: DocsDebtFinding[];
+  /** Number of doc files actually read (bounded by the scan cap). */
+  scannedDocs: number;
+  /** Number of backtick-quoted claims checked against the repo. */
+  claimsChecked: number;
+}
+
+export interface DocsDebtApplyResult {
+  /** Fixes whose doc edit landed (and whose commit, if any, succeeded). */
+  applied: number;
+  /** Fixes beyond the per-run cap, downgraded to a task by the caller. */
+  skipped: number;
+  /** Fixes that were applied AND committed to git. */
+  committed: number;
+  errors: string[];
+}
+
+export interface DocsDebtRunResult {
+  scannedDocs: number;
+  /** Alias for scannedDocs, matching the generic built-in agent response shape. */
+  scannedFiles: number;
+  claimsChecked: number;
+  trivialFixesApplied: number;
+  /** All needs-human findings, including cap-downgraded fixes. */
+  findingsFound: number;
+  /** 0 or 1 — a run never files more than one task. */
+  taskCreated: number;
+  /** Alias kept so the server's generic `taskCount` field stays accurate. */
+  created: number;
+  failed: number;
+  errors: string[];
+}
+
+/** Raised when the Docs Debt Agent cannot do its job at all (e.g. missing work dir). */
+export class DocsDebtError extends Error {}
+
+interface RepoFileEntry {
+  rel: string;
+  base: string;
+}
+
+/** Collect the docs this agent may read (and, for trivial fixes, edit). */
+function collectDocFiles(root: string): string[] {
+  const out: string[] = [];
+  const addFile = (abs: string): void => {
+    if (out.length >= MAX_DOCS) return;
+    let st;
+    try {
+      st = statSync(abs);
+    } catch {
+      return;
+    }
+    if (st.isFile() && st.size <= MAX_DOC_BYTES) out.push(abs);
+  };
+  addFile(join(root, "AGENTS.md"));
+  const walk = (dir: string): void => {
+    if (out.length >= MAX_DOCS) return;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      if (out.length >= MAX_DOCS) return;
+      const abs = join(dir, name);
+      let st;
+      try {
+        st = statSync(abs);
+      } catch {
+        continue;
+      }
+      if (st.isDirectory()) {
+        if (IGNORED_DIRS.has(name) || name.startsWith(".")) continue;
+        walk(abs);
+      } else if (st.isFile() && name.endsWith(".md") && st.size <= MAX_DOC_BYTES) {
+        out.push(abs);
+      }
+    }
+  };
+  for (const dir of ["docs", "user-docs"]) walk(join(root, dir));
+  return out;
+}
+
+/** Bounded index of every repo file, used to find a unique replacement path. */
+function collectRepoFileIndex(root: string): RepoFileEntry[] {
+  const out: RepoFileEntry[] = [];
+  const walk = (dir: string, relPrefix: string): void => {
+    if (out.length >= MAX_REPO_INDEX_FILES) return;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      if (out.length >= MAX_REPO_INDEX_FILES) return;
+      if (name === ".github") {
+        walk(join(dir, name), relPrefix ? `${relPrefix}/${name}` : name);
+        continue;
+      }
+      if (IGNORED_DIRS.has(name) || name.startsWith(".")) continue;
+      const abs = join(dir, name);
+      let st;
+      try {
+        st = statSync(abs);
+      } catch {
+        continue;
+      }
+      const rel = relPrefix ? `${relPrefix}/${name}` : name;
+      if (st.isDirectory()) walk(abs, rel);
+      else if (st.isFile()) out.push({ rel, base: name });
+    }
+  };
+  walk(root, "");
+  return out;
+}
+
+/**
+ * Every identifier appearing in real `src/` code (comments and string literals
+ * are stripped first). A doc claim naming a symbol absent from this set points
+ * at something the code no longer has — the #0343 class of drift, one level up.
+ */
+function collectSourceWords(root: string): Set<string> {
+  const words = new Set<string>();
+  let files: string[] = [];
+  try {
+    files = collectSourceFiles(join(root, "src"));
+  } catch {
+    files = [];
+  }
+  const scanned = readScannedFiles(join(root, "src"), files);
+  const WORD_RE = /[A-Za-z_$][\w$]*/g;
+  for (const file of scanned) {
+    const cleaned = stripCommentsAndStrings(file.content);
+    let m: RegExpExecArray | null;
+    while ((m = WORD_RE.exec(cleaned)) !== null) words.add(m[0]);
+  }
+  return words;
+}
+
+function readPackageScripts(root: string): Set<string> {
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const scripts = pkg.scripts;
+    if (typeof scripts === "object" && scripts !== null) {
+      return new Set(Object.keys(scripts as Record<string, unknown>));
+    }
+  } catch {
+    /* no package.json — no script claims to verify */
+  }
+  return new Set();
+}
+
+function readRuntimeDependencies(root: string): string[] {
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const deps = pkg.dependencies;
+    if (typeof deps === "object" && deps !== null) {
+      return Object.keys(deps as Record<string, unknown>);
+    }
+  } catch {
+    /* no package.json — no dependency constraint to verify */
+  }
+  return [];
+}
+
+function looksLikeRepoPath(value: string): boolean {
+  if (value.startsWith("dist/") || value.startsWith(".repoos/")) return false;
+  if (value.endsWith("/")) {
+    return KNOWN_PATH_PREFIXES.some((prefix) => value === prefix);
+  }
+  if (KNOWN_ROOT_FILES.has(value)) return true;
+  return KNOWN_PATH_PREFIXES.some((prefix) => value.startsWith(prefix));
+}
+
+/** Camel-case identifiers read as function/const references, not prose words. */
+function isSymbolClaim(value: string): boolean {
+  return /^[a-z][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*$/.test(value) && !NON_REPO_SYMBOLS.has(value);
+}
+
+interface ClassifiedSpan {
+  script?: string;
+  path?: { path: string; suffix: string };
+  symbol?: string;
+}
+
+/**
+ * Decide what kind of concrete claim a backtick span makes. Returns null for
+ * prose, globs, URLs, function calls with arguments, and anything not worth
+ * verifying — the scan prefers signal over breadth.
+ */
+function classifyBacktickSpan(span: string): ClassifiedSpan | null {
+  const raw = span.trim();
+  if (!raw || raw.includes("://")) return null;
+  // Script claims are distinctive and deliberately contain a space.
+  const script = raw.match(SCRIPT_CLAIM_RE)?.[1] ?? (TEST_CLAIM_RE.test(raw) ? "test" : undefined);
+  if (script) return { script };
+  if (/[\s<>{}#|="'[\],;]/.test(raw)) return null;
+  const core = raw.endsWith("()") ? raw.slice(0, -2) : raw;
+  if (/[()*]/.test(core)) return null;
+  const lineMatch = core.match(/^(.*?):(\d+)(?:-\d+)?$/);
+  const pathPart = lineMatch ? lineMatch[1] : core;
+  if (looksLikeRepoPath(pathPart)) {
+    return { path: { path: pathPart, suffix: lineMatch ? core.slice(pathPart.length) : "" } };
+  }
+  if (isSymbolClaim(pathPart)) return { symbol: pathPart };
+  return null;
+}
+
+/**
+ * Scan `AGENTS.md`/`docs/`/`user-docs/` for concrete, checkable claims and
+ * verify each against the real repo: file paths are tested for existence,
+ * symbols against identifiers present in `src/`, `bun run <script>` against
+ * package.json, and "zero runtime dependencies" against `dependencies`.
+ * Bounded in doc count and size so a periodic sweep can never stall the server.
+ */
+export async function scanForDocsDebt(config: RepoOSConfig): Promise<DocsDebtScanResult> {
+  const trivialFixes: DocsDebtTrivialFix[] = [];
+  const needsHuman: DocsDebtFinding[] = [];
+  let claimsChecked = 0;
+
+  const docs = collectDocFiles(config.root);
+  const sourceWords = collectSourceWords(config.root);
+  const scripts = readPackageScripts(config.root);
+  const runtimeDeps = readRuntimeDependencies(config.root);
+
+  let repoIndex: RepoFileEntry[] | null = null;
+  const fileIndex = (): RepoFileEntry[] => (repoIndex ??= collectRepoFileIndex(config.root));
+  const seen = new Set<string>();
+
+  for (const abs of docs) {
+    const doc = abs.slice(config.root.length).replace(/^[/\\]/, "") || abs;
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf8");
+    } catch {
+      continue;
+    }
+    const lines = content.split("\n");
+    let zeroDepsLine: number | null = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (zeroDepsLine === null && ZERO_RUNTIME_DEPS_RE.test(line)) zeroDepsLine = i + 1;
+
+      const BACKTICK_RE = /`([^`\n]+)`/g;
+      let m: RegExpExecArray | null;
+      while ((m = BACKTICK_RE.exec(line)) !== null) {
+        const span = m[1];
+        const classified = classifyBacktickSpan(span);
+        if (!classified) continue;
+        claimsChecked++;
+
+        if (classified.script !== undefined) {
+          const key = `${doc}\u0000script:${classified.script}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          if (!scripts.has(classified.script)) {
+            needsHuman.push({
+              kind: "missing-script",
+              doc,
+              line: i + 1,
+              claim: span.trim(),
+              evidence: `package.json has no \`${classified.script}\` script`,
+              severity: "medium",
+              recommendation: `Update the command or add the \`${classified.script}\` script.`,
+            });
+          }
+          continue;
+        }
+
+        if (classified.path) {
+          const { path: pathPart, suffix } = classified.path;
+          const key = `${doc}\u0000path:${pathPart}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          if (existsSync(join(config.root, pathPart))) continue;
+
+          const base = basename(pathPart);
+          const candidates = pathPart.endsWith("/")
+            ? []
+            : fileIndex().filter((f) => f.base === base);
+          if (candidates.length === 1 && candidates[0].rel !== pathPart) {
+            trivialFixes.push({
+              kind: "renamed-path",
+              doc,
+              line: i + 1,
+              from: span.trim(),
+              to: `${candidates[0].rel}${suffix}`,
+              evidence: `\`${pathPart}\` does not exist; the only file named \`${base}\` is \`${candidates[0].rel}\``,
+            });
+          } else {
+            needsHuman.push({
+              kind: "missing-path",
+              doc,
+              line: i + 1,
+              claim: span.trim(),
+              evidence: `\`${pathPart}\` is referenced but does not exist in the repo`,
+              severity: "medium",
+              recommendation: "Update the reference or restore the path.",
+            });
+          }
+          continue;
+        }
+
+        if (classified.symbol && !sourceWords.has(classified.symbol)) {
+          const key = `${doc}\u0000symbol:${classified.symbol}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          needsHuman.push({
+            kind: "missing-symbol",
+            doc,
+            line: i + 1,
+            claim: span.trim(),
+            evidence: `\`${classified.symbol}\` does not appear anywhere under \`src/\``,
+            severity: "medium",
+            recommendation: "Confirm the symbol was renamed or removed, then update the doc.",
+          });
+        }
+      }
+    }
+
+    if (zeroDepsLine !== null && runtimeDeps.length > 0) {
+      const key = `${doc}\u0000deps`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const shown = runtimeDeps.slice(0, 5).join(", ");
+        needsHuman.push({
+          kind: "false-constraint",
+          doc,
+          line: zeroDepsLine,
+          claim: "zero runtime dependencies",
+          evidence: `This doc claims zero runtime dependencies, but package.json declares ${runtimeDeps.length}: ${shown}${runtimeDeps.length > 5 ? ", …" : ""}`,
+          severity: "high",
+          recommendation:
+            "Either remove the runtime dependency (zero-deps is a hard constraint) or correct the doc.",
+        });
+      }
+    }
+  }
+
+  return { trivialFixes, needsHuman, scannedDocs: docs.length, claimsChecked };
+}
+
+/**
+ * Apply the mechanical doc fixes, capped per run, committing each with its
+ * evidence. Fail-soft: a missing git identity or non-git checkout never throws;
+ * the doc edit still lands and the caller can see it was not committed. Never
+ * touches `src/` — the fix list only names doc paths by construction.
+ */
+export async function applyDocsDebtFixes(
+  config: RepoOSConfig,
+  fixes: DocsDebtTrivialFix[],
+): Promise<DocsDebtApplyResult> {
+  const result: DocsDebtApplyResult = { applied: 0, skipped: 0, committed: 0, errors: [] };
+  const toApply = fixes.slice(0, MAX_TRIVIAL_FIXES_PER_RUN);
+  result.skipped = fixes.length - toApply.length;
+
+  for (const fix of toApply) {
+    const abs = join(config.root, fix.doc);
+    try {
+      const content = readFileSync(abs, "utf8");
+      const updated = content.split(`\`${fix.from}\``).join(`\`${fix.to}\``);
+      if (updated === content) {
+        result.errors.push(`${fix.doc}: nothing to replace for \`${fix.from}\``);
+        result.skipped++;
+        continue;
+      }
+      writeFileSync(abs, updated, "utf8");
+      const message = [
+        `docs: fix stale reference in ${fix.doc}`,
+        "",
+        fix.evidence,
+        "Verified by the Docs Debt Agent.",
+      ].join("\n");
+      if (commitTaskFile(config.root, abs, message)) result.committed++;
+      result.applied++;
+    } catch (err) {
+      result.skipped++;
+      result.errors.push(`${fix.doc}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  return result;
+}
+
+/** Cap-downgraded fixes become needs-human findings so nothing is dropped. */
+function fixesToFindings(fixes: DocsDebtTrivialFix[]): DocsDebtFinding[] {
+  return fixes.map((fix) => ({
+    kind: "missing-path",
+    doc: fix.doc,
+    line: fix.line,
+    claim: fix.from,
+    evidence: `${fix.evidence} (not auto-fixed: the per-run cap of ${MAX_TRIVIAL_FIXES_PER_RUN} was reached)`,
+    severity: "low",
+    recommendation: `Update \`${fix.from}\` to \`${fix.to}\`.`,
+  }));
+}
+
+/**
+ * Create at most ONE task bundling every needs-human finding from a run. This
+ * is the deliberate departure from the other built-ins: a per-finding task
+ * would flood the inbox. Zero findings means zero tasks — never an empty task.
+ */
+export async function createDocsDebtTask(
+  config: RepoOSConfig,
+  findings: DocsDebtFinding[],
+): Promise<CreateTechDebtResult> {
+  const workDir = join(config.root, config.workDir);
+  let workDirStats;
+  try {
+    workDirStats = statSync(workDir);
+  } catch {
+    throw new DocsDebtError(
+      `Task directory "${config.workDir}" does not exist — create it (or fix workDir) before running the Docs Debt Agent`,
+    );
+  }
+  if (!workDirStats.isDirectory()) {
+    throw new DocsDebtError(`Task directory "${config.workDir}" is not a directory`);
+  }
+  try {
+    accessSync(workDir, 0o2 /* W_OK */);
+  } catch {
+    throw new DocsDebtError(`Task directory "${config.workDir}" is not writable`);
+  }
+
+  const result: CreateTechDebtResult = { created: 0, failed: 0, errors: [] };
+  if (findings.length === 0) return result;
+
+  const title = "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/";
+  const now = new Date().toISOString();
+  const taskId = findNextTaskId(workDir);
+  const taskPath = join(workDir, `${taskId}-${slugify(title)}.md`);
+
+  let body = `## Docs Debt Findings\n\n`;
+  body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\`/\`docs/\`/\`user-docs/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
+  findings.forEach((finding, index) => {
+    body += `### ${index + 1}. ${finding.claim}\n`;
+    body += `- **Doc**: \`${finding.doc}\`:${finding.line}\n`;
+    body += `- **Kind**: ${finding.kind}\n`;
+    body += `- **Severity**: ${finding.severity}\n`;
+    body += `- **Evidence**: ${finding.evidence}\n`;
+    if (finding.recommendation) body += `- **Suggested fix**: ${finding.recommendation}\n`;
+    body += `\n`;
+  });
+  body += `## Next Steps\n\n`;
+  body += `1. Confirm each finding is real drift and not a deliberate, documented difference.\n`;
+  body += `2. Update the doc(s) or the code so the two agree.\n`;
+  body += `3. Move this task to done when complete.\n`;
+
+  const frontmatter = `---
+id: "${taskId}"
+title: ${JSON.stringify(title)}
+type: chore
+status: inbox
+priority: p2
+area: docs-debt
+assigned_to: unassigned
+created_by: docs-debt-agent
+created_at: "${now}"
+updated_at: "${now}"
+---`;
+
+  try {
+    await writeFile(taskPath, `${frontmatter}\n${body}`, "utf8");
+    result.created++;
+  } catch (err) {
+    result.failed++;
+    result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  return result;
+}
+
+/**
+ * Run the Docs Debt Agent end to end: scan, apply capped trivial fixes, file
+ * one bundled task for whatever needs a human, and record lastRunAt. The
+ * caller owns overlap protection (a single in-flight guard in server.ts).
+ */
+export async function runDocsDebtAgent(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<DocsDebtRunResult> {
+  logger?.agent("docs-debt", "info", "Docs Debt Agent scan started");
+  const scan = await scanForDocsDebt(config);
+  logger?.agent("docs-debt", "info", "Docs Debt scan completed", {
+    scannedDocs: scan.scannedDocs,
+    claimsChecked: scan.claimsChecked,
+    trivialFixes: scan.trivialFixes.length,
+    needsHuman: scan.needsHuman.length,
+  });
+
+  const apply = await applyDocsDebtFixes(config, scan.trivialFixes);
+  if (apply.applied > 0) {
+    logger?.agent("docs-debt", "info", `Applied ${apply.applied} trivial doc fix(es)`, {
+      committed: apply.committed,
+    });
+  }
+  const cappedFixes = fixesToFindings(scan.trivialFixes.slice(MAX_TRIVIAL_FIXES_PER_RUN));
+  const findings = [...scan.needsHuman, ...cappedFixes];
+
+  const task = await createDocsDebtTask(config, findings);
+  if (task.failed > 0) {
+    logger?.agent("docs-debt", "error", `Failed to create docs debt task`, {
+      errors: task.errors,
+    });
+  }
+  if (task.created > 0) {
+    logger?.agent("docs-debt", "info", `Created ${task.created} docs debt task`);
+  }
+
+  const agents = { ...(config.builtInAgents ?? {}) };
+  agents["docs-debt"] = { ...(agents["docs-debt"] ?? {}), lastRunAt: new Date().toISOString() };
+  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
+  config.builtInAgents = agents;
+
+  logger?.agent("docs-debt", "info", "Docs Debt Agent run completed", {
+    trivialFixesApplied: apply.applied,
+    findingsFound: findings.length,
+    taskCreated: task.created,
+  });
+
+  return {
+    scannedDocs: scan.scannedDocs,
+    scannedFiles: scan.scannedDocs,
+    claimsChecked: scan.claimsChecked,
+    trivialFixesApplied: apply.applied,
+    findingsFound: findings.length,
+    taskCreated: task.created,
+    created: task.created,
+    failed: task.failed,
+    errors: [...apply.errors, ...task.errors],
+  };
+}
+
 /** Dispatch to the appropriate built-in agent by name. */
 export async function runBuiltInAgent(
   name: string,
   config: RepoOSConfig,
   logger?: Logger,
-): Promise<TechDebtRunResult | PerformanceRunResult | ArchitectRunResult | DesignRunResult | null> {
+): Promise<
+  | TechDebtRunResult
+  | PerformanceRunResult
+  | ArchitectRunResult
+  | DesignRunResult
+  | DocsDebtRunResult
+  | null
+> {
   if (name === "tech-debt") {
     return runTechDebtAgent(config, {}, logger);
   }
@@ -1502,6 +2137,9 @@ export async function runBuiltInAgent(
   }
   if (name === "design") {
     return runDesignAgent(config);
+  }
+  if (name === "docs-debt") {
+    return runDocsDebtAgent(config, logger);
   }
   return null;
 }

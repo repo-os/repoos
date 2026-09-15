@@ -1905,6 +1905,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           errors: result.errors,
           issuesFound: "issuesFound" in result ? result.issuesFound : 0,
           findingsFound: "findingsFound" in result ? result.findingsFound : 0,
+          trivialFixesApplied: "trivialFixesApplied" in result ? result.trivialFixesApplied : 0,
           scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
         });
       } catch (err) {
