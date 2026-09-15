@@ -3,14 +3,17 @@ id: "0342"
 title: Agents page silently wipes a pinned model when the CLI dropdown is touched
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/agents-page-silently-wipes-a-pinned-mode
-model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:13:23Z"
-updated_at: "2026-09-15T18:24:33Z"
+updated_at: "2026-09-15T18:24:52Z"
+dev_error_count: 1
 ---
 Changing an agent's CLI in the Agents page immediately resets that agent's
 model to "default" and auto-saves it to repoos.toml — no confirmation, no
@@ -54,3 +57,5 @@ never be silent and instantly persisted.
 - 2026-09-15T18:24:27Z · model_override
 - 2026-09-15T18:24:31Z · status inbox→ready
 - 2026-09-15T18:24:33Z · status ready→active, branch
+- 2026-09-15T18:24:38Z · agent exited with an error (opencode) · error: inference prohibited, please enter a payment method in https://deepinfra.com/dash/billing
+- 2026-09-15T18:24:52Z · model_override
