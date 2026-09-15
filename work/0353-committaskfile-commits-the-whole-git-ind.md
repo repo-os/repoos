@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T15:21:04Z"
+review_passes: 1
 id: "0353"
 title: "commitTaskFile commits the whole git index, not just the task file"
 type: bug
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/committaskfile-commits-the-whole-git-ind
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T10:45:58Z"
-updated_at: "2026-09-15T15:17:10Z"
 ---
 ## Problem
 
@@ -59,3 +60,4 @@ before merge").
 - 2026-09-15T15:00:26Z · model_override
 - 2026-09-15T15:00:29Z · status ready→active, branch
 - 2026-09-15T15:17:10Z · status active→review
+
