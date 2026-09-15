@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-15T16:34:12Z"
-review_passes: 2
 id: "0341"
 title: Write out the remaining user-docs pages for docs.repoos.org
 type: feature
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/write-out-the-remaining-user-docs-pages-
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:12:36Z"
+updated_at: "2026-09-15T16:42:24Z"
+review_passes: 2
 review_rounds: 1
 ---
 `user-docs/` (docs.repoos.org) was split out of `docs/` and seeded with four
@@ -133,4 +133,4 @@ lower-priority than the 10 pages above for a first-time adopter.
 - 2026-09-15T16:23:27Z · status active→review
 - 2026-09-15T16:29:18Z · status review→active
 - 2026-09-15T16:31:58Z · status active→review
-
+- 2026-09-15T16:42:24Z · note: Addressed both reviewer suggestions: added trailing newline to user-docs/check.md, and added rename/destroy to the tunnel subcommand list in src/cli/index.ts help text so it matches user-docs/tunnels.md. repoos check passed clean. Committed 2f5bcc5a on the task branch; leaving status as-is for RepoOS's auto re-review to pick up the new commit.
