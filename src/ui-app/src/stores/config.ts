@@ -138,6 +138,19 @@ export const useConfigStore = defineStore("config", () => {
     if (saved) push(saved);
     return out;
   }
+
+  /**
+   * Whether `model` is still a real option for `cli`. Unlike `modelsFor` this
+   * deliberately ignores the `saved` fallback — it answers "can this CLI still
+   * run this model?", used to decide if a remembered pin is safe to reapply
+   * (#0342). A probed CLI whose live list hasn't landed yet can't be judged, so
+   * it reports true rather than risk destroying a deliberate pin over a
+   * transient model-probe failure.
+   */
+  function isKnownModelForCli(cli: string, model: string): boolean {
+    if (!modelsLoaded.value) return true;
+    return modelsFor(cli).some((m) => m.value === model);
+  }
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
   const visibleFields = computed(() =>
@@ -457,5 +470,6 @@ export const useConfigStore = defineStore("config", () => {
     modelsLoading,
     loadModels,
     modelsFor,
+    isKnownModelForCli,
   };
 });

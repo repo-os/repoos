@@ -6,11 +6,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import AgentModelModal from "../src/components/AgentModelModal.vue";
 import { useModelMemory } from "../src/composables/useModelMemory";
+import { useConfigStore } from "../src/stores/config";
 
 const PIN = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731";
-const CLAUDE_PIN = "claude-sonnet-4-5-20250929";
+const CLAUDE_PIN = "sonnet";
 
 const MODEL_OPTIONS = [
   { value: "default", label: "Default", disabled: false },
@@ -62,6 +64,12 @@ function lastModel(wrapper: VueWrapper): unknown {
 
 beforeEach(() => {
   localStorage.clear();
+  setActivePinia(createPinia());
+  // The modal validates a recalled pin against the CLI's real option list
+  // (`config.modelsFor`), so give opencode a live list containing the pin.
+  const config = useConfigStore();
+  config.liveModelsByCli = { opencode: [PIN] };
+  config.modelsLoaded = true;
 });
 
 afterEach(() => {
@@ -86,6 +94,20 @@ describe("useModelMemory", () => {
     localStorage.setItem("agent-model-last-by-cli", "not json");
     expect(() => recall("opencode")).not.toThrow();
     expect(recall("opencode")).toBeUndefined();
+  });
+});
+
+describe("isKnownModelForCli", () => {
+  it("rejects a model the CLI no longer lists", () => {
+    const config = useConfigStore();
+    expect(config.isKnownModelForCli("claude code", "ghost")).toBe(false);
+    expect(config.isKnownModelForCli("claude code", "sonnet")).toBe(true);
+  });
+
+  it("trusts a pin when the live list hasn't loaded", () => {
+    const config = useConfigStore();
+    config.modelsLoaded = false;
+    expect(config.isKnownModelForCli("opencode", "ghost")).toBe(true);
   });
 });
 
@@ -130,6 +152,28 @@ describe("AgentModelModal CLI switching", () => {
     await cliButton(wrapper, "claude code").trigger("click");
 
     expect(lastModel(wrapper)).toBe(CLAUDE_PIN);
+  });
+
+  it("falls back to default when the remembered model is no longer offered", async () => {
+    // A CLI's live model list can shift between sessions; a stale pin must not
+    // be re-persisted silently (the failure class this task targets).
+    useModelMemory().remember("claude code", "ghost-model-that-no-longer-exists");
+    const wrapper = mountModal("opencode", PIN);
+
+    await cliButton(wrapper, "claude code").trigger("click");
+
+    expect(lastModel(wrapper)).toBe("default");
+  });
+
+  it("recalls a pin across modal instances (browser-local memory)", async () => {
+    const first = mountModal("opencode", PIN);
+    await cliButton(first, "claude code").trigger("click");
+    first.unmount();
+
+    const second = mountModal("claude code", "default");
+    await cliButton(second, "opencode").trigger("click");
+
+    expect(lastModel(second)).toBe(PIN);
   });
 
   it("does nothing when re-selecting the active CLI", async () => {
