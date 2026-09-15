@@ -227,6 +227,14 @@ function openConfirm(): void {
  */
 async function generateNotes(): Promise<void> {
   if (generatingNotes.value || running.value) return;
+  // Generation replaces the field, so confirm first when that would discard
+  // something the operator typed.
+  if (
+    notes.value.trim() &&
+    !confirm("Replace the release notes you've typed with an AI-generated draft?")
+  ) {
+    return;
+  }
   generatingNotes.value = true;
   notesError.value = "";
   try {

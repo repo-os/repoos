@@ -40,11 +40,15 @@ jobs:
 
       # Release notes authored in the "Cut a release" modal travel in the
       # annotated tag's body (the git-native release record RepoOS writes).
-      # Surface them as the GitHub release body when present; when the operator
-      # left notes empty the file is empty and GitHub's auto-generated notes are
-      # used unchanged, exactly as before.
+      # `actions/checkout` fetches the tag's COMMIT into a lightweight local
+      # tag (`--no-tags` plus a SHA refspec), so the annotated tag object — and
+      # with it the notes — is not present. Force-fetch the real tag object
+      # before reading the body back. Surface it as the GitHub release body
+      # when present; when notes were left empty the file is empty and GitHub's
+      # auto-generated notes are used unchanged, exactly as before.
       - name: Read release notes from the tag
         run: |
+          git fetch --depth=1 --force origin "+refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
           git tag -l --format='%(contents:body)' "${{ github.ref_name }}" > release-notes.md
 
       - name: Create GitHub Release

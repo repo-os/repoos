@@ -126,9 +126,15 @@ exactly as before.
 PM agent (falling back to the engineer), collects commit subjects since the last
 reachable tag, and runs one `runPrompt` turn. The request never cuts anything:
 it returns the draft for the modal to place in the text area, where it stays
-editable. On failure the modal shows the error and whatever you already typed is
-preserved. The one-shot call is recorded in the `sessions` table
-(`sessionType: "release-notes"`, `taskId: null`) like every other LLM call site.
+editable. Clicking Generate when the field already has text asks for
+confirmation before replacing it. On failure the modal shows the error and
+whatever you already typed is preserved. The one-shot call is recorded in the
+`sessions` table (`sessionType: "release-notes"`, `taskId: null`) like every
+other LLM call site.
+
+Notes are committed into the tag, so keep them reasonable in size — GitHub caps
+a release body at ~125,000 characters. The commit list fed to the model is
+capped at 300 subjects, so a long history can't run away with the prompt.
 
 ## Prerelease channels: beta / canary / rc
 
@@ -244,9 +250,11 @@ malformed request cutting the wrong tag.
 Triggered by `push` of a tag matching `v*.*.*` (which also matches
 `v1.2.3-beta.1`). Steps: checkout → `bun install --frozen-lockfile` →
 `bun run build` → `tar -czf repoos-dist.tar.gz -C dist .` → determine channel
-from the tag → read the release notes out of the tag's annotation → 
-`softprops/action-gh-release@v2` with `body_path` (the notes), 
-`generate_release_notes`, `prerelease`, and `make_latest` set per channel.
+from the tag → force-fetch the annotated tag object (checkout leaves a
+lightweight tag at the commit, so the annotation isn't present without this) and
+read the release notes out of it → `softprops/action-gh-release@v2` with
+`body_path` (the notes), `generate_release_notes`, `prerelease`, and
+`make_latest` set per channel.
 
 RepoOS's `repoos check` already ran (locally, during `cutNewRelease`) before
 the tag was pushed, so CI does not re-run the test gate — it only packages and
