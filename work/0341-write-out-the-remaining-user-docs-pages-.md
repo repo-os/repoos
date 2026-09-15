@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-15T16:29:18Z"
-review_passes: 1
 id: "0341"
 title: Write out the remaining user-docs pages for docs.repoos.org
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +10,9 @@ created_by: ""
 branch: feat/write-out-the-remaining-user-docs-pages-
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:12:36Z"
+updated_at: "2026-09-15T16:29:18Z"
+review_rounds: 1
+review_passes: 1
 ---
 `user-docs/` (docs.repoos.org) was split out of `docs/` and seeded with four
 pages: `getting-started`, `concepts`, `cli`, `configuration`. This task fills
@@ -130,4 +131,4 @@ lower-priority than the 10 pages above for a first-time adopter.
 - 2026-09-15T15:59:05Z · model_override
 - 2026-09-15T15:59:11Z · status ready→active, branch
 - 2026-09-15T16:23:27Z · status active→review
-
+- 2026-09-15T16:29:18Z · status review→active
