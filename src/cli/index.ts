@@ -81,7 +81,7 @@ function help(): void {
     ${c.cyan("gc")} [--yes|--dry-run] Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)
     ${c.cyan("serve")} [--port N]     Start the local server (live API + SSE stream)
     ${c.cyan("stop")} [--port N]      Stop this repo's serve process (by its own lockfile)
-    ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|start|install|stop|list|status)")}
+    ${c.cyan("tunnel")} <sub>         Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|rename|destroy|start|install|stop|list|status)")}
     ${c.cyan("upgrade")} [--channel beta|canary|rc]
                           Self-update a standalone (curl-installed) repoos to the latest release
                           (stable by default; --channel tracks a prerelease line instead)
