@@ -2,14 +2,14 @@
 id: "0352"
 title: Make repoos check's bare-require guard scan configurable source roots
 type: feature
-status: active
+status: review
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-check-s-bare-require-guard-s
 created_at: "2026-09-15T09:22:38Z"
-updated_at: "2026-09-15T22:35:33Z"
+updated_at: "2026-09-15T22:52:36Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ that's the only case it's about.
 - 2026-09-15T09:22:38Z · created · unknown
 - 2026-09-15T19:14:40Z · status inbox→ready
 - 2026-09-15T22:35:33Z · status ready→active, branch
+- 2026-09-15T22:52:36Z · status active→review
