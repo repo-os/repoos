@@ -2,12 +2,69 @@
  * `repoos serve` — start the local RepoOS server: in-memory live index, file
  * watcher, JSON API, and SSE event stream. Stays running until interrupted.
  */
+import { basename } from "node:path";
 import { startServer } from "../server/server.js";
 import { PREVIEW_REQUEST_SIGNAL } from "../server/agents.js";
 import { isBun } from "../core/runtime.js";
+import { findRepoRoot } from "../core/config.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
 import { detectTailscaleIPv4 } from "../core/tailscale.js";
+
+/**
+ * The OS-visible process title for a `repoos serve` instance:
+ * `repoos-<project>`, where `<project>` is the managed root's directory name.
+ * This is the same display name the rest of RepoOS uses (`basename(root)` — the
+ * PWA manifest, login emails, the instance icon), so `ps`/Activity Monitor can
+ * tell which project an instance belongs to without `lsof`/`/api/config`.
+ */
+export function serveProcessTitle(root: string = findRepoRoot()): string {
+  return `repoos-${basename(root) || "repoos"}`;
+}
+
+type ExecveFn = (file: string, args: readonly string[], env: NodeJS.ProcessEnv) => never;
+
+/** One-shot marker so the Bun re-exec below can never loop. */
+const TITLE_GUARD = "REPOOS_PROCESS_TITLE";
+
+/**
+ * Set the OS-visible process title so `ps`/Activity Monitor name the project.
+ *
+ * Node's `process.title` writes through to the OS directly, but Bun's does NOT
+ * (verified on 1.3.x/macOS: the JS property sticks but the kernel argv is
+ * untouched, so `ps` still shows `bun … serve`). The mechanism that does work
+ * under Bun is `process.execve` — a true exec (same PID, same cwd, same stdio)
+ * with a custom argv[0] — so we re-exec once, guarded by {@link TITLE_GUARD}.
+ * On the relabeled second pass the marker is deleted immediately, before any
+ * child is spawned, so reload replacements and preview children start clean and
+ * relabel themselves instead of inheriting a stale "already titled" flag.
+ *
+ * `execve` is injectable purely so tests can observe the call without replacing
+ * the test runner's own process image.
+ */
+export function setServeProcessTitle(
+  title: string,
+  execve: ExecveFn | undefined = (process as { execve?: ExecveFn }).execve,
+): void {
+  process.title = title;
+  if (process.env[TITLE_GUARD] === "1") {
+    delete process.env[TITLE_GUARD];
+    return;
+  }
+  if (!isBun() || typeof execve !== "function") return; // Node's process.title already reached the OS
+  const script = process.argv[1];
+  if (!script) return; // no entry path to hand to the re-exec — stay put
+  try {
+    execve(process.execPath, [title, script, ...process.argv.slice(2)], {
+      ...process.env,
+      [TITLE_GUARD]: "1",
+    });
+  } catch {
+    // execve failed (platform/permission) — the process is intact and
+    // process.title above still stands. Never let a display-only nicety stop
+    // the server from starting.
+  }
+}
 
 /**
  * Picks the bind host: an explicit `--host` always wins; otherwise, if
