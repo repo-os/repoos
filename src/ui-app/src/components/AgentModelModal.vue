@@ -9,6 +9,7 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import { useFavorites } from "../composables/useFavorites";
+import { useModelMemory } from "../composables/useModelMemory";
 
 const props = defineProps<{
   open: boolean;
@@ -37,6 +38,8 @@ const {
   hasFavorites: hasAnyFavorites,
 } = useFavorites();
 
+const { remember, recall } = useModelMemory();
+
 const currentModelLabel = computed(() => {
   return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
 });
@@ -59,15 +62,20 @@ const favoriteItems = computed(() => {
 });
 
 function selectCli(cli: string): void {
-  if (cli === props.cli) return;
+  const previousCli = props.cli;
+  if (cli === previousCli) return;
+  // Remember the model that belonged to the CLI we're leaving, so returning to
+  // it restores the pin instead of silently collapsing it to "default".
+  remember(previousCli, props.model);
   emit("update:cli", cli);
-  // The old model is very unlikely to be valid for the new CLI (and would
-  // otherwise linger in the list via modelsFor's "saved" fallback) — reset
-  // to default rather than carry over a value that doesn't belong to it.
-  emit("update:model", "default");
+  // A model is only reset when this CLI has no remembered pin of its own — the
+  // old model very unlikely belongs to the new CLI (and would otherwise linger
+  // in the list via modelsFor's "saved" fallback).
+  emit("update:model", recall(cli) ?? "default");
 }
 
 function selectModel(model: string): void {
+  remember(props.cli, model);
   emit("update:model", model);
   emit("update:open", false);
 }
