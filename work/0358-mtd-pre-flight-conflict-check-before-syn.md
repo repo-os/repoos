@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-15T18:49:20Z"
-review_passes: 1
 id: "0358"
 title: "MTD: pre-flight conflict check before syncing a candidate worktree, not after"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/mtd-pre-flight-conflict-check-before-syn
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T16:00:08Z"
+updated_at: "2026-09-15T19:17:50Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -125,4 +125,4 @@ optimization.
 - 2026-09-15T18:25:19Z · model_override
 - 2026-09-15T18:25:22Z · status ready→active, branch
 - 2026-09-15T18:43:18Z · status active→review
-
+- 2026-09-15T19:17:50Z · status review→done, release:success
