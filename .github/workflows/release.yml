@@ -38,10 +38,20 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Release notes authored in the "Cut a release" modal travel in the
+      # annotated tag's body (the git-native release record RepoOS writes).
+      # Surface them as the GitHub release body when present; when the operator
+      # left notes empty the file is empty and GitHub's auto-generated notes are
+      # used unchanged, exactly as before.
+      - name: Read release notes from the tag
+        run: |
+          git tag -l --format='%(contents:body)' "${{ github.ref_name }}" > release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: repoos-dist.tar.gz
+          body_path: release-notes.md
           generate_release_notes: true
           prerelease: ${{ steps.meta.outputs.prerelease }}
           make_latest: ${{ steps.meta.outputs.prerelease == 'false' }}

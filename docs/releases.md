@@ -44,6 +44,13 @@ currently-published version and the suggested next one (a patch bump, or the
 stable graduation of a prerelease), you type the new version — **just the
 number, no `v`** — and hit **Publish v\<x\>**.
 
+The modal also has an **optional release-notes text area**. Type notes by hand,
+or click **Generate with AI** to draft them from the commits since the last
+release tag (or the full history when there is no previous release) and fill
+the text area; the draft is editable before you confirm. Notes are optional end
+to end — leaving the field empty cuts the release exactly as before. See
+"Release notes" below.
+
 `POST /api/release` kicks off `cutNewRelease` in the background and returns
 immediately; the page polls `GET /api/release/run` for progress. The run
 moves through these phases:
@@ -55,7 +62,7 @@ moves through these phases:
 | `building`     | `bun run build` — so the staleness gate can't trip, and to confirm the tree compiles before any ref moves |
 | `checking`     | `repoos check` — the same definition-of-done gate as task close-out (build staleness, full build, tests, UI smoke, fmt/lint) |
 | `pushing_main` | `git push <remote> <branch>` |
-| `tagging`      | `git tag -a v<x> -m "Release v<x>"` |
+| `tagging`      | `git tag -a v<x> -m "Release v<x>"` — plus a second `-m` carrying the release notes when any were supplied |
 | `pushing_tag`  | `git push <remote> v<x>` — this is what triggers CI |
 
 If any phase fails, the run stops with `state: "failed"`, the phase it failed
@@ -92,6 +99,36 @@ failure, TypeScript error, stale build) above the raw log, plus a **Send to
 Debugger** button that hands the phase, target tag, commit, and full output to
 the Debugger agent and opens its chat. Requires the Debugger agent enabled on
 the Agents page.
+
+## Release notes
+
+The cut modal's notes field is optional. Anything typed or generated is sent
+with the cut and stored in the **annotated tag's body** — the git-native
+release record this provider creates:
+
+```
+git tag -a v1.2.3 --cleanup=verbatim -m "Release v1.2.3" -m "<the notes>"
+```
+
+RepoOS passes notes as a second `-m` and adds `--cleanup=verbatim` so Markdown
+headings survive (git's default message cleanup strips `#`-prefixed lines as
+comments). With the field empty, the annotation is the unchanged single
+`Release v<x>` line.
+
+`.github/workflows/release.yml` reads the tag's annotation body back with
+`git tag -l --format='%(contents:body)' <tag>` and passes it to
+`softprops/action-gh-release` as `body_path`, so the notes become the GitHub
+release body (prepended to GitHub's auto-generated notes). When no notes were
+supplied the extracted body is empty and GitHub's auto-generated notes are used
+exactly as before.
+
+**Generate with AI** calls `POST /api/release/notes`, which resolves the enabled
+PM agent (falling back to the engineer), collects commit subjects since the last
+reachable tag, and runs one `runPrompt` turn. The request never cuts anything:
+it returns the draft for the modal to place in the text area, where it stays
+editable. On failure the modal shows the error and whatever you already typed is
+preserved. The one-shot call is recorded in the `sessions` table
+(`sessionType: "release-notes"`, `taskId: null`) like every other LLM call site.
 
 ## Prerelease channels: beta / canary / rc
 
@@ -196,7 +233,8 @@ survives a server restart (the in-memory run state does not).
 | ------------------------ | ------- |
 | `GET /api/release`       | `ReleaseStatus` — version, tags, blockers, links |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
-| `POST /api/release`      | `{ version, confirmTag }` → starts a run; `409` if one is already running |
+| `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
+| `POST /api/release/notes`| `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated }`; never cuts a release |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
@@ -206,8 +244,9 @@ malformed request cutting the wrong tag.
 Triggered by `push` of a tag matching `v*.*.*` (which also matches
 `v1.2.3-beta.1`). Steps: checkout → `bun install --frozen-lockfile` →
 `bun run build` → `tar -czf repoos-dist.tar.gz -C dist .` → determine channel
-from the tag → `softprops/action-gh-release@v2` with `generate_release_notes`,
-`prerelease`, and `make_latest` set per channel.
+from the tag → read the release notes out of the tag's annotation → 
+`softprops/action-gh-release@v2` with `body_path` (the notes), 
+`generate_release_notes`, `prerelease`, and `make_latest` set per channel.
 
 RepoOS's `repoos check` already ran (locally, during `cutNewRelease`) before
 the tag was pushed, so CI does not re-run the test gate — it only packages and

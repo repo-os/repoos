@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
 import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
+import { collectReleaseCommits, releaseNotesPrompt } from "../../server/release";
 
 const roots: string[] = [];
 afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
@@ -293,5 +294,112 @@ describe("git-tag release status", () => {
     const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
     expect(result.ok).toBe(true);
     expect(calls.some((c) => c === "git rev-parse HEAD")).toBe(true);
+  });
+});
+
+describe("AI-draftable release notes (#0361)", () => {
+  it("collects commit subjects since the last reachable tag", async () => {
+    const cfg = config();
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.2.2\n", stderr: "" };
+      if (key.startsWith("log v1.2.2..HEAD"))
+        return { code: 0, stdout: "abc123 fix a thing\ndef456 add a feature\n", stderr: "" };
+      return { code: 1, stdout: "", stderr: "" };
+    };
+    const result = await collectReleaseCommits(cfg, runner);
+    expect(result.sinceTag).toBe("v1.2.2");
+    expect(result.commits).toEqual(["abc123 fix a thing", "def456 add a feature"]);
+    expect(result.truncated).toBe(false);
+  });
+
+  it("falls back to the full history when there is no previous release", async () => {
+    const cfg = config();
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0")
+        return { code: 128, stdout: "", stderr: "No names found" };
+      if (key.startsWith("log HEAD"))
+        return { code: 0, stdout: "aaa initial commit\n", stderr: "" };
+      return { code: 1, stdout: "", stderr: "" };
+    };
+    const result = await collectReleaseCommits(cfg, runner);
+    expect(result.sinceTag).toBeNull();
+    expect(result.commits).toEqual(["aaa initial commit"]);
+  });
+
+  it("caps the commit list and flags truncation", async () => {
+    const cfg = config();
+    const many = Array.from({ length: 5 }, (_, i) => `c${i} subject ${i}`).join("\n");
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.0.0\n", stderr: "" };
+      if (key.startsWith("log v1.0.0..HEAD")) return { code: 0, stdout: `${many}\n`, stderr: "" };
+      return { code: 1, stdout: "", stderr: "" };
+    };
+    const result = await collectReleaseCommits(cfg, runner, 3);
+    expect(result.commits).toHaveLength(3);
+    expect(result.truncated).toBe(true);
+  });
+
+  it("builds a prompt naming the version, the range, and the commits", () => {
+    const prompt = releaseNotesPrompt(["abc123 fix a thing"], {
+      sinceTag: "v1.2.2",
+      version: "1.2.3",
+    });
+    expect(prompt).toContain("1.2.3");
+    expect(prompt).toContain("v1.2.2");
+    expect(prompt).toContain("abc123 fix a thing");
+  });
+
+  it("writes supplied notes into the annotated tag body", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      runner,
+      undefined,
+      undefined,
+      "## Highlights\n- shiny",
+    );
+    expect(result.ok).toBe(true);
+    // `--cleanup=verbatim` keeps the Markdown heading; the second -m is the body.
+    expect(calls).toContain(
+      "git tag -a v1.2.4 --cleanup=verbatim -m Release v1.2.4 -m ## Highlights\n- shiny",
+    );
+  });
+
+  it("keeps the plain tag annotation when notes are empty or whitespace", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      runner,
+      undefined,
+      undefined,
+      "   \n  ",
+    );
+    expect(result.ok).toBe(true);
+    expect(calls).toContain("git tag -a v1.2.4 -m Release v1.2.4");
   });
 });
