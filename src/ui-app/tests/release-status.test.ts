@@ -89,7 +89,7 @@ describe("git-tag release status", () => {
     expect(calls).toEqual(
       expect.arrayContaining([
         "git add -- package.json",
-        "git commit -m release: v1.2.4",
+        "git commit -o -m release: v1.2.4 -- package.json",
         "bun run build",
         "git push origin main",
         "git tag -a v1.2.4 -m Release v1.2.4",

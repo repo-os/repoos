@@ -1104,7 +1104,10 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
   if (status === null) return false;
   if (status.trim() === "") return true;
   if (git(root, ["add", "--", rel]) === null) return false;
-  return git(root, ["commit", "-m", message]) !== null;
+  // `--only` with a pathspec commits just this file and leaves everything else
+  // already in the index staged (#0353): a plain `git commit` would sweep in
+  // whatever a human or agent had staged in the checkout under our message.
+  return git(root, ["commit", "-o", "-m", message, "--", rel]) !== null;
 }
 
 /**

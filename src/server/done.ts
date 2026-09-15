@@ -355,7 +355,10 @@ const BUILD_STEPS: string[][] = [
  */
 async function commitGenerated(root: string): Promise<void> {
   await runProcess("git", ["add", "-A", "--", "dist"], { cwd: root, timeout: 4000 });
-  await runProcess("git", ["commit", "-m", "chore: regenerate dist"], {
+  // `--only` scopes the commit to dist: a plain commit would take the whole
+  // index and sweep in any unrelated work staged in main (#0353). When dist is
+  // gitignored (as here) nothing is staged and git fails the commit harmlessly.
+  await runProcess("git", ["commit", "-o", "-m", "chore: regenerate dist", "--", "dist"], {
     cwd: root,
     timeout: 4000,
   });
