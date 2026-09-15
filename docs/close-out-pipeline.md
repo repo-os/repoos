@@ -106,6 +106,18 @@ on branch `repoos/integrate/<id>`, hard-reset to current `main`. Symlinks
 if this symlink is missing, every build in the next phase fails with module-not-found
 errors that look unrelated).
 
+**Pre-flight conflict check (#0358):** before the candidate is created, `syncing`
+runs a non-destructive dry-run of the same merge against the feature branch's own
+worktree (`mergeBranch(..., { dryRun: true })` — `git merge --no-commit --no-ff`,
+then always abort). If it reports a real, non-auto-resolvable conflict, no candidate
+worktree is ever created: the job goes straight to the same `onMergeConflict` repair
+handoff a conflict found during `validating` would, recorded against the `validating`
+phase so the reason format and non-retryable classification are identical. The dry
+run reuses `mergeBranch`'s own classification, so there is exactly one definition of
+"a real conflict". Any failure of the check itself — missing feature worktree, a dirty
+checkout, an already-in-progress merge/rebase, a git error — fails open: the job
+proceeds into the normal sync/validate flow unchanged.
+
 **Known-fixed bug (commit `d66c7877`):** the candidate branch prefix was
 `.repoos/integrate/` — a leading dot is not a valid git refname, so *every* job failed
 here, silently, for the pipeline's entire lifetime until 2026-08-14. If you ever see
