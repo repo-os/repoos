@@ -2,7 +2,7 @@
 id: "0342"
 title: Agents page silently wipes a pinned model when the CLI dropdown is touched
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/agents-page-silently-wipes-a-pinned-mode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-09-13T15:13:23Z"
-updated_at: "2026-09-15T18:24:33Z"
+updated_at: "2026-09-15T18:29:34Z"
 ---
 Changing an agent's CLI in the Agents page immediately resets that agent's
 model to "default" and auto-saves it to repoos.toml — no confirmation, no
@@ -54,3 +54,4 @@ never be silent and instantly persisted.
 - 2026-09-15T18:24:27Z · model_override
 - 2026-09-15T18:24:31Z · status inbox→ready
 - 2026-09-15T18:24:33Z · status ready→active, branch
+- 2026-09-15T18:29:34Z · status active→review
