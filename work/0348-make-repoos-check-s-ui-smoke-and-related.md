@@ -2,7 +2,7 @@
 id: "0348"
 title: Make repoos check's ui-smoke (and related steps) per-project opt-in instead of RepoOS-only
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/make-repoos-check-s-ui-smoke-and-related
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-15T07:46:52Z"
-updated_at: "2026-09-15T08:16:35Z"
+updated_at: "2026-09-15T08:45:36Z"
 ---
 ## Problem
 
@@ -111,6 +111,29 @@ follow-up task per finding rather than growing this one unboundedly:
       tasks), even if no code changes result from some of them.
 - [ ] `repoos check` passes.
 
+## Audit findings (#0348)
+
+Full write-up: `docs/audits/2026-09-check-step-genericity-audit.md`.
+
+- **`ui-smoke`** — fixed by this task: opt-in via `package.json` `scripts.smoke`
+  (zero-config default) or `[check] uiSmoke` in `repoos.toml` (config wins);
+  clean skip otherwise; RepoOS's own dashboard assertions remain as the
+  fallback only for `name === "repoos"`.
+- **`css-layers` / `theme-contrast`** — hidden RepoOS-shape: hardcoded
+  `src/ui-app/src/style.css` path and RepoOS-only token vocabulary, so they
+  silently no-op for other projects. Follow-up: make path + tokens configurable
+  under `[check]`.
+- **`bare-require`** — hidden RepoOS-shape: scans fixed `src/{core,server,commands,cli}`
+  dirs; passes vacuously off-repo. Follow-up: configurable source roots.
+- **`task-assets`** — hidden RepoOS-shape: hardcoded `work`/`inputs` pathspec
+  ignores configurable `workDir`/`inputsDir`. Follow-up: honor config.
+- **`lockfile-sync`** — generic, but bun-only (skips when no `bun.lock`). Fine
+  for now; could recognize npm/pnpm/yarn lockfiles later.
+- **`dist/.build-info.json` staleness** — CLI-shaped and the one real risk: a
+  project with a `src/` dir but a non-RepoOS build pipeline (no `dist/`, or no
+  marker) hard-fails. Follow-up: make this step opt-in / degrade to skip. Not
+  changed here.
+
 ## Related
 
 - #0345 — the squishy MTD failure that surfaced both this and the sibling
@@ -126,3 +149,4 @@ follow-up task per finding rather than growing this one unboundedly:
 - 2026-09-15T08:16:26Z · review_model_override
 - 2026-09-15T08:16:33Z · status inbox→ready
 - 2026-09-15T08:16:35Z · status ready→active, branch
+- 2026-09-15T08:45:36Z · status active→review
