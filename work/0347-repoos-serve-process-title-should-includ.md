@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T06:42:59Z"
-updated_at: "2026-09-15T06:42:59Z"
+updated_at: "2026-09-15T06:44:32Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ running instances legible, not a process-management feature.
 ## Activity
 
 - 2026-09-15T06:42:59Z · created · unknown
+- 2026-09-15T06:44:32Z · model_override
