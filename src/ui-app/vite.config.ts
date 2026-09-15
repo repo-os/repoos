@@ -3,19 +3,21 @@ import { createHash } from "node:crypto";
 import { defineConfig, type Plugin } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
+import { shellPrecache } from "./src/lib/sw-precache";
 
 /**
- * Emits a service worker that precaches the built app shell for offline use.
- * Cache name is hashed from the asset list so stale caches never survive a
- * deploy. API requests are never intercepted (the live server owns them).
+ * Emits a service worker that precaches the built app shell (see
+ * `shellPrecache` for what counts) and caches everything else, including the
+ * lazily loaded Mermaid chunks, the first time it's fetched. Cache name is
+ * hashed from the precache list so stale caches never survive a deploy. API
+ * requests are never intercepted (the live server owns them).
  */
 function repoosSw(): Plugin {
   return {
     name: "repoos:sw",
     apply: "build",
     generateBundle(_opts, bundle) {
-      const assets = Object.keys(bundle).filter((n) => !n.endsWith(".map"));
-      const precache = ["/", ...assets.map((a) => "/" + a)];
+      const precache = shellPrecache(bundle);
       const tag = createHash("sha256").update(precache.join("|")).digest("hex").slice(0, 10);
       const sw = `const CACHE = "repoos-shell-${tag}";
 const PRECACHE = ${JSON.stringify(precache)};
