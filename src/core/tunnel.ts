@@ -12,6 +12,7 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** A single published app: hostname → local service, guarded by an email allowlist. */
 export interface TunnelApp {
@@ -70,25 +71,20 @@ function parseTomlValue(s: string): unknown {
     return s
       .slice(1, -1)
       .split(",")
-      .map((x) =>
-        x
-          .trim()
-          .replace(/^["']|["']$/g, "")
-          .replace(/\\"/g, '"'),
-      )
+      .map((x) => unquoteTomlString(x.trim()))
       .filter(Boolean);
   }
   if (/^-?\d+$/.test(s)) return Number(s);
   if (s === "true") return true;
   if (s === "false") return false;
-  return s.replace(/^["']|["']$/g, "").replace(/\\"/g, '"');
+  return unquoteTomlString(s);
 }
 
 export function parseToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section: string[] = [];
   for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
-    const line = rawLine.replace(/#.*$/, "").trim();
+    const line = stripTomlComment(rawLine).trim();
     if (!line) continue;
     const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
     if (arrSec) {
@@ -179,11 +175,11 @@ export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
   let i = 0;
   let replaced = false;
   while (i < lines.length) {
-    const stripped = lines[i].replace(/#.*$/, "").trim();
+    const stripped = stripTomlComment(lines[i]).trim();
     if (!replaced && isTunnelHeader(stripped)) {
       i++;
       while (i < lines.length) {
-        const s = lines[i].replace(/#.*$/, "").trim();
+        const s = stripTomlComment(lines[i]).trim();
         const isHeader = /^\[\[?[^\]]+\]\]?$/.test(s);
         if (isHeader && !isTunnelHeader(s)) break;
         i++;

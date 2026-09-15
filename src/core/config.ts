@@ -28,6 +28,7 @@ import type {
   WhisperConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
+import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Coding agents an Agent can run under. */
 export const AGENT_CLIS = [
@@ -388,7 +389,7 @@ function parseFlatToml(text: string): Record<string, unknown> {
   let arrayTable: Record<string, unknown> | null = null;
   let arrayTableKey = "";
   for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
-    const line = rawLine.replace(/#.*$/, "").trim();
+    const line = stripTomlComment(rawLine).trim();
     if (!line) continue;
     const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
     if (arrSec) {
@@ -415,14 +416,14 @@ function parseFlatToml(text: string): Record<string, unknown> {
       val = s
         .slice(1, -1)
         .split(",")
-        .map((x) => x.trim().replace(/^["']|["']$/g, ""))
+        .map((x) => unquoteTomlString(x.trim()))
         .filter(Boolean);
     } else if (/^-?\d+$/.test(s)) {
       val = Number(s);
     } else if (s === "true" || s === "false") {
       val = s === "true";
     } else {
-      val = s.replace(/^["']|["']$/g, "");
+      val = unquoteTomlString(s);
     }
     if (arrayTable && arrayTableKey) {
       arrayTable[kv[1]] = val;
@@ -1045,10 +1046,10 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     const kept: string[] = [];
     let i = 0;
     while (i < result.length) {
-      if (result[i].replace(/#.*$/, "").trim() === `[[${key}]]`) {
+      if (stripTomlComment(result[i]).trim() === `[[${key}]]`) {
         i++;
         while (i < result.length) {
-          const s = result[i].replace(/#.*$/, "").trim();
+          const s = stripTomlComment(result[i]).trim();
           if (s.startsWith("[")) break;
           i++;
         }
@@ -1070,7 +1071,7 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     let found = false;
 
     for (let i = 0; i < result.length; i++) {
-      const stripped = result[i].replace(/#.*$/, "").trim();
+      const stripped = stripTomlComment(result[i]).trim();
       if (!stripped || stripped.startsWith("[")) continue;
 
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
@@ -1091,9 +1092,7 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       // way to know the table "ended" without a following header). Insert
       // before the first header line instead, so newly-saved keys are always
       // unambiguously root-level regardless of what tables follow.
-      const firstHeaderIndex = result.findIndex((l) =>
-        l.replace(/#.*$/, "").trim().startsWith("["),
-      );
+      const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
       if (firstHeaderIndex === -1) {
         result.push(`${key} = ${serialized}`);
       } else {
