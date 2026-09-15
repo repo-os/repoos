@@ -53,6 +53,94 @@ remoteValidation.fallbackToLocal = false
 
 worktreeWarnThreshold = 20
 
+# `repoos check` stylesheet guards (#0351). The CSS-layering and WCAG
+# theme-contrast steps run only for a repo that declares its stylesheet and
+# token vocabulary here — there is no RepoOS-shaped default path, so a managed
+# project's own file/tokens are checked, never this repo's by accident.
+[check]
+uiStylesheet = "src/ui-app/src/style.css"
+gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
+
+# Each theme block in the stylesheet: the selectors it owns, a variant name for
+# failure messages, and the earlier scopes whose declarations it inherits
+# (cascade order, later wins). Order is the order the guard evaluates them in.
+[[check.themeScopes]]
+selector = ":root"
+name = "classic-dark"
+inherits = ["classic-dark"]
+
+[[check.themeScopes]]
+selector = '[data-theme="light"]'
+name = "classic-light"
+inherits = ["classic-dark", "classic-light"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="clear"]'
+name = "clear-dark"
+inherits = ["classic-dark", "clear-dark"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="clear"][data-theme="light"]'
+name = "clear-light"
+inherits = ["classic-dark", "clear-dark", "clear-light"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="gen z"]'
+name = "gen-z-dark"
+inherits = ["classic-dark", "gen-z-dark"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="gen z"][data-theme="light"]'
+name = "gen-z-light"
+inherits = ["classic-dark", "gen-z-dark", "gen-z-light"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="jelly"]'
+name = "jelly-dark"
+inherits = ["classic-dark", "jelly-dark"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="jelly"][data-theme="light"]'
+name = "jelly-light"
+inherits = ["classic-dark", "jelly-dark", "jelly-light"]
+
+# (fg token, bg token) pairs checked for ≥3:1 WCAG contrast in every scope.
+[[check.contrastPairs]]
+fg = "--txt"
+bg = "--bg"
+
+[[check.contrastPairs]]
+fg = "--txt-dim"
+bg = "--bg"
+
+[[check.contrastPairs]]
+fg = "--btn-primary-color"
+bg = "--btn-primary-bg"
+
+[[check.contrastPairs]]
+fg = "--btn-new-color"
+bg = "--btn-new-bg"
+
+[[check.contrastPairs]]
+fg = "--status-on-color"
+bg = "--status-on-bg"
+
+[[check.contrastPairs]]
+fg = "--tag-stream-color"
+bg = "--tag-stream-bg"
+
+[[check.contrastPairs]]
+fg = "--tag-reconnect-color"
+bg = "--tag-reconnect-bg"
+
+[[check.contrastPairs]]
+fg = "--doc-row-sel-color"
+bg = "--doc-row-sel-bg"
+
+[[check.contrastPairs]]
+fg = "--nav-active-color"
+bg = "--nav-active-bg"
+
 # Product releases are opt-in. Push an annotated v<package version> tag from
 # clean main after repoos check; GitHub Actions then creates the GitHub Release.
 # Prerelease channels (beta/canary/rc) and the full flow: docs/releases.md

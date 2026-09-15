@@ -18,6 +18,8 @@ import type {
   AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
+  CheckContrastPair,
+  CheckThemeScope,
   DeploymentConfig,
   ModelProviderKeysConfig,
   RepoOSConfig,
@@ -549,6 +551,53 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     const checkUiSmoke = parsed["check.uiSmoke"] ?? parsed["checks.uiSmoke"];
     if (typeof checkUiSmoke === "string" && checkUiSmoke.trim()) {
       cfg.check = { ...cfg.check, uiSmoke: checkUiSmoke.trim() };
+    }
+
+    // [check] stylesheet guards (#0351) — the CSS-layering and theme-contrast
+    // steps read a project-declared stylesheet and token vocabulary instead of
+    // a RepoOS-hardcoded path and token names. A row missing its required keys
+    // is dropped rather than poisoning the guard.
+    const checkUiStylesheet = parsed["check.uiStylesheet"] ?? parsed["checks.uiStylesheet"];
+    if (typeof checkUiStylesheet === "string" && checkUiStylesheet.trim()) {
+      cfg.check = { ...cfg.check, uiStylesheet: checkUiStylesheet.trim() };
+    }
+    const checkThemeScopes = parsed["check.themeScopes"] ?? parsed["checks.themeScopes"];
+    if (Array.isArray(checkThemeScopes)) {
+      const scopes: CheckThemeScope[] = [];
+      for (const raw of checkThemeScopes) {
+        if (typeof raw !== "object" || raw === null || Array.isArray(raw)) continue;
+        const r = raw as Record<string, unknown>;
+        if (typeof r.selector !== "string" || !r.selector.trim()) continue;
+        if (typeof r.name !== "string" || !r.name.trim()) continue;
+        const scope: CheckThemeScope = { selector: r.selector.trim(), name: r.name.trim() };
+        if (Array.isArray(r.inherits)) {
+          const inherits = r.inherits
+            .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+            .map((v) => v.trim());
+          if (inherits.length) scope.inherits = inherits;
+        }
+        scopes.push(scope);
+      }
+      if (scopes.length) cfg.check = { ...cfg.check, themeScopes: scopes };
+    }
+    const checkContrastPairs = parsed["check.contrastPairs"] ?? parsed["checks.contrastPairs"];
+    if (Array.isArray(checkContrastPairs)) {
+      const pairs: CheckContrastPair[] = [];
+      for (const raw of checkContrastPairs) {
+        if (typeof raw !== "object" || raw === null || Array.isArray(raw)) continue;
+        const r = raw as Record<string, unknown>;
+        if (typeof r.fg !== "string" || !r.fg.trim()) continue;
+        if (typeof r.bg !== "string" || !r.bg.trim()) continue;
+        pairs.push({ fg: r.fg.trim(), bg: r.bg.trim() });
+      }
+      if (pairs.length) cfg.check = { ...cfg.check, contrastPairs: pairs };
+    }
+    const checkGradientTokens = parsed["check.gradientTokens"] ?? parsed["checks.gradientTokens"];
+    if (Array.isArray(checkGradientTokens)) {
+      const tokens = checkGradientTokens
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (tokens.length) cfg.check = { ...cfg.check, gradientTokens: tokens };
     }
 
     // [whisper] section — voice transcription for vibe-coding.

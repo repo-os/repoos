@@ -13,6 +13,9 @@
  * project declares a command via a `smoke` package.json script or `[check]
  * uiSmoke` in repoos.toml, and skips cleanly when it declares neither. RepoOS
  * itself opts in the same way (its `smoke` script runs src/commands/ui-smoke.ts).
+ * The stylesheet guards are likewise opt-in (#0351): `[check] uiStylesheet`
+ * plus a `themeScopes`/`contrastPairs`/`gradientTokens` vocabulary, so neither
+ * guard carries a RepoOS-only path or token name.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -23,6 +26,7 @@ import { isAbsolute, join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
+import type { CheckContrastPair, CheckThemeScope } from "../core/types.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
 
@@ -191,7 +195,7 @@ export function taskAssetOffenders(
  * already collapsed all shadcn padding once. Scoped class/ID/attribute
  * rules are intentional legacy overrides and stay allowed.
  */
-function cssLayeringOffenders(css: string): string[] {
+export function cssLayeringOffenders(css: string): string[] {
   const out: string[] = [];
   const src = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const scopes: string[] = [];
@@ -234,60 +238,30 @@ function heading(label: string): void {
 }
 
 // ── Theme contrast guard ────────────────────────────────────────────────
-// Every theme (classic/clear/gen-z × dark/light) defines text/button tokens
-// as CSS custom properties in style.css. Buttons in components/ui/button.vue
-// consume `--btn-primary-bg` / `--btn-new-bg` via `background-image`, so a
-// solid-color value silently renders a transparent button (the clear-dark
-// "Save changes" bug). And hand-picked fg/bg pairs can drift into invisible
-// text. This gate parses each theme block and enforces both rules.
+// Every theme block a project declares defines text/button tokens as CSS
+// custom properties in its stylesheet. Buttons may consume a bg token via
+// `background-image` (a solid-color value then silently renders a transparent
+// button), and hand-picked fg/bg pairs can drift into invisible text. The
+// stylesheet path and the full token vocabulary — which blocks exist, how they
+// inherit, which pairs to compare, which tokens must be gradients — come from
+// `[check]` in repoos.toml (#0351). This module carries no RepoOS-specific
+// selector or token names.
 
 interface ThemeBlock {
   variant: string;
   decls: Record<string, string>;
 }
 
-const THEME_VARIANTS: Record<string, string> = {
-  ":root": "classic-dark",
-  '[data-theme="light"]': "classic-light",
-  ':root[data-ui-theme="clear"]': "clear-dark",
-  ':root[data-ui-theme="clear"][data-theme="light"]': "clear-light",
-  ':root[data-ui-theme="gen z"]': "gen-z-dark",
-  ':root[data-ui-theme="gen z"][data-theme="light"]': "gen-z-light",
-  ':root[data-ui-theme="jelly"]': "jelly-dark",
-  ':root[data-ui-theme="jelly"][data-theme="light"]': "jelly-light",
-};
-
-/** Which blocks each variant inherits from, in order (later wins). */
-const THEME_INHERIT: Record<string, string[]> = {
-  "classic-dark": ["classic-dark"],
-  "classic-light": ["classic-dark", "classic-light"],
-  "clear-dark": ["classic-dark", "clear-dark"],
-  "clear-light": ["classic-dark", "clear-dark", "clear-light"],
-  "gen-z-dark": ["classic-dark", "gen-z-dark"],
-  "gen-z-light": ["classic-dark", "gen-z-dark", "gen-z-light"],
-  "jelly-dark": ["classic-dark", "jelly-dark"],
-  "jelly-light": ["classic-dark", "jelly-dark", "jelly-light"],
-};
-
-/** (foreground token, background token) pairs checked for contrast. */
-const CONTRAST_PAIRS: [string, string][] = [
-  ["--txt", "--bg"],
-  ["--txt-dim", "--bg"],
-  ["--btn-primary-color", "--btn-primary-bg"],
-  ["--btn-new-color", "--btn-new-bg"],
-  ["--status-on-color", "--status-on-bg"],
-  ["--tag-stream-color", "--tag-stream-bg"],
-  ["--tag-reconnect-color", "--tag-reconnect-bg"],
-  ["--doc-row-sel-color", "--doc-row-sel-bg"],
-  ["--nav-active-color", "--nav-active-bg"],
-];
-
-/** Tokens consumed as `background-image` by components — must be gradients. */
-const GRADIENT_TOKENS = ["--btn-primary-bg", "--btn-new-bg"];
-
 const MIN_CONTRAST = 3.0;
 
-function parseThemeBlocks(css: string): ThemeBlock[] {
+/** The `[check]` token vocabulary the theme-contrast guard evaluates. */
+export interface ThemeContrastConfig {
+  scopes: CheckThemeScope[];
+  pairs: CheckContrastPair[];
+  gradientTokens: string[];
+}
+
+function parseThemeBlocks(css: string, scopeNames: Map<string, string>): ThemeBlock[] {
   const blocks: ThemeBlock[] = [];
   let cur: string | null = null;
   let buf = "";
@@ -296,7 +270,7 @@ function parseThemeBlocks(css: string): ThemeBlock[] {
     if (cur === null) {
       if (t.endsWith("{") && !t.startsWith("@")) {
         const sel = t.slice(0, -1).trim();
-        cur = THEME_VARIANTS[sel] ?? "";
+        cur = scopeNames.get(sel) ?? "";
         buf = "";
       }
     } else if (t === "}") {
@@ -415,32 +389,33 @@ function colorCandidates(
   return out;
 }
 
-function themeContrastOffenders(css: string): string[] {
-  const blocks = parseThemeBlocks(css);
+export function themeContrastOffenders(css: string, config: ThemeContrastConfig): string[] {
+  const { scopes, pairs, gradientTokens } = config;
+  const blocks = parseThemeBlocks(css, new Map(scopes.map((s) => [s.selector, s.name])));
   if (!blocks.length) return [];
   const byVariant: Record<string, ThemeBlock> = {};
   for (const b of blocks) byVariant[b.variant] = b;
   const out: string[] = [];
 
-  for (const variant of Object.keys(THEME_INHERIT)) {
+  for (const scope of scopes) {
     const map: Record<string, string> = {};
-    for (const base of THEME_INHERIT[variant]) Object.assign(map, byVariant[base]?.decls ?? {});
+    for (const base of scope.inherits?.length ? scope.inherits : [scope.name]) {
+      Object.assign(map, byVariant[base]?.decls ?? {});
+    }
 
-    for (const tk of GRADIENT_TOKENS) {
+    for (const tk of gradientTokens) {
       const raw = map[tk];
       if (raw !== undefined && !resolveVar(raw, map).includes("gradient(")) {
-        out.push(
-          `${variant} · ${tk} must be a gradient — button.vue consumes it via background-image`,
-        );
+        out.push(`${scope.name} · ${tk} must be a gradient — it is consumed via background-image`);
       }
     }
 
     const bgColor = parseColor(resolveVar(map["--bg"] ?? "", map));
     if (!bgColor) continue;
     const bg = composite(bgColor, bgColor);
-    for (const [fgK, bgK] of CONTRAST_PAIRS) {
-      if (map[fgK] === undefined || map[bgK] === undefined) continue;
-      const fgs = colorCandidates(map[fgK], map, bg);
+    for (const { fg, bg: bgK } of pairs) {
+      if (map[fg] === undefined || map[bgK] === undefined) continue;
+      const fgs = colorCandidates(map[fg], map, bg);
       const bgs = colorCandidates(map[bgK], map, bg);
       if (!fgs.length || !bgs.length) continue;
       let worst = Infinity;
@@ -450,7 +425,7 @@ function themeContrastOffenders(css: string): string[] {
           if (c < worst) worst = c;
         }
       if (worst < MIN_CONTRAST) {
-        out.push(`${variant} · ${fgK} on ${bgK} → ${worst.toFixed(2)} (need ≥${MIN_CONTRAST})`);
+        out.push(`${scope.name} · ${fg} on ${bgK} → ${worst.toFixed(2)} (need ≥${MIN_CONTRAST})`);
       }
     }
   }
@@ -739,12 +714,18 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 2b. CSS layering guard ──────────────────────────────────────────
+  // Both stylesheet guards below read `[check] uiStylesheet` (#0351): there is
+  // no RepoOS-shaped default path, so a project that declares neither a
+  // stylesheet nor a token vocabulary skips both cleanly. Read once here.
   heading("CSS layering guard");
-  const cssPath = "src/ui-app/src/style.css";
-  const cssSrc = existsSync(cssPath) ? readFileSync(cssPath, "utf8") : "";
-  if (!cssSrc.includes('@import "tailwindcss"')) {
-    console.log(c.dim("  · No Tailwind v4 stylesheet — skipping"));
-    results.push(pass("css-layers", "skipped — no Tailwind v4 style.css"));
+  const cssPath = cfg.check?.uiStylesheet;
+  const cssSrc = cssPath && existsSync(cssPath) ? readFileSync(cssPath, "utf8") : "";
+  if (!cssPath) {
+    console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
+    results.push(pass("css-layers", "skipped — no [check] uiStylesheet configured"));
+  } else if (!cssSrc.includes('@import "tailwindcss"')) {
+    console.log(c.dim(`  · ${cssPath} is not a Tailwind v4 stylesheet — skipping`));
+    results.push(pass("css-layers", `skipped — ${cssPath} has no Tailwind v4 import`));
   } else {
     const offenders = cssLayeringOffenders(cssSrc);
     if (offenders.length > 0) {
@@ -763,11 +744,22 @@ export async function cmdCheck(): Promise<void> {
 
   // ── 2c. Theme contrast guard ────────────────────────────────────────
   heading("Theme contrast guard");
-  if (!cssSrc.includes(":root{")) {
-    console.log(c.dim("  · No theme token blocks — skipping"));
-    results.push(pass("theme-contrast", "skipped — no theme tokens"));
+  const themeScopes = cfg.check?.themeScopes ?? [];
+  if (!cssPath) {
+    console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
+    results.push(pass("theme-contrast", "skipped — no [check] uiStylesheet configured"));
+  } else if (!themeScopes.length) {
+    console.log(c.dim("  · No [check] themeScopes configured — skipping"));
+    results.push(pass("theme-contrast", "skipped — no [check] themeScopes configured"));
+  } else if (!cssSrc.includes(":root")) {
+    console.log(c.dim(`  · ${cssPath} has no theme token blocks — skipping`));
+    results.push(pass("theme-contrast", `skipped — ${cssPath} has no theme tokens`));
   } else {
-    const offenders = themeContrastOffenders(cssSrc);
+    const offenders = themeContrastOffenders(cssSrc, {
+      scopes: themeScopes,
+      pairs: cfg.check?.contrastPairs ?? [],
+      gradientTokens: cfg.check?.gradientTokens ?? [],
+    });
     if (offenders.length > 0) {
       const msg =
         "Low-contrast or invalid theme tokens (invisible text risk):\n    " +
