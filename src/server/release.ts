@@ -538,9 +538,14 @@ export async function cutNewRelease(
   }
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
   const trimmedNotes = notes?.trim();
-  // `--cleanup=verbatim` keeps Markdown headings: git's default cleanup strips
-  // lines starting with "#" as comments, which would silently eat the notes'
-  // headings. The first `-m` is the subject; the second is the body CI reads.
+  // `--cleanup=verbatim` keeps Markdown headings ("# " lines) verbatim.
+  // Strictly a belt-and-braces move here: with `-m` supplied (never an
+  // editor), git's default cleanup mode is already "whitespace", not
+  // "strip" — it would not eat "#" lines on its own. `--cleanup=verbatim`
+  // additionally skips the trailing-whitespace/blank-line trimming that
+  // "whitespace" mode does, so it's the more literal, more future-proof
+  // choice regardless. The first `-m` is the subject; the second is the
+  // body CI reads.
   const createdTag = await exec(
     "git",
     trimmedNotes

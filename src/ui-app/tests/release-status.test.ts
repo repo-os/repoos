@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,6 +7,17 @@ import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
 import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
 import { collectReleaseCommits, releaseNotesPrompt } from "../../server/release";
+import { generateReleaseNotes } from "../../server/routes/release.js";
+import { runPrompt } from "../../server/agents.js";
+import { RepoOSDb, resetDbInstance } from "../../core/db.js";
+
+// Mock only runPrompt so the route's agent-resolution/DB-recording logic runs
+// for real (#0361's route-level coverage) without spawning a CLI.
+vi.mock("../../server/agents.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("../../server/agents.js")>("../../server/agents.js");
+  return { ...actual, runPrompt: vi.fn() };
+});
 
 const roots: string[] = [];
 afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
@@ -401,5 +413,111 @@ describe("AI-draftable release notes (#0361)", () => {
     );
     expect(result.ok).toBe(true);
     expect(calls).toContain("git tag -a v1.2.4 -m Release v1.2.4");
+  });
+});
+
+// ── POST /api/release/notes, exercised directly against the route handler
+// (#0361 review: acceptance criterion #8 — usage recording — was previously
+// only verified by the reviewer's manual read, not pinned by a test).
+describe("POST /api/release/notes (route, #0361)", () => {
+  function realGit(root: string, args: string[]): void {
+    execFileSync("git", args, { cwd: root, stdio: "ignore" });
+  }
+  function makeRes(): { capture: { statusCode: number; body: any }; res: unknown } {
+    const capture = { statusCode: 0, body: undefined as any };
+    const res = {
+      writeHead: (status: number) => {
+        capture.statusCode = status;
+      },
+      end: (data?: string) => {
+        if (data) capture.body = JSON.parse(data);
+      },
+    };
+    return { capture, res };
+  }
+  const makeReq = (body: unknown = {}) =>
+    ({
+      [Symbol.asyncIterator]: async function* () {
+        yield Buffer.from(JSON.stringify(body), "utf8");
+      },
+    }) as unknown as never;
+
+  afterEach(() => {
+    vi.mocked(runPrompt).mockReset();
+    // recordOneShotSession uses the process-global DB singleton (keyed by
+    // whichever root first initialized it, ignoring the root on later
+    // calls) — reset it so each test's fresh tmp root gets its own instance.
+    resetDbInstance();
+  });
+
+  it("responds 400 without calling the agent when none is enabled", async () => {
+    const disabled = { name: "pm", cli: "opencode", model: "default", enabled: false };
+    const disabledEngineer = {
+      name: "engineer",
+      cli: "opencode",
+      model: "default",
+      enabled: false,
+    };
+    const cfg = { ...config(), agents: [disabled, disabledEngineer] } as RepoOSConfig;
+    const { capture, res } = makeRes();
+    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    expect(capture.statusCode).toBe(400);
+    expect(capture.body.error).toContain("No agent is enabled");
+    expect(runPrompt).not.toHaveBeenCalled();
+  });
+
+  it("responds 200 with empty notes without calling the agent when there are no commits", async () => {
+    const cfg = config(); // fresh temp dir, no .git — git commands fail, commits: []
+    const { capture, res } = makeRes();
+    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toEqual({ notes: "", sinceTag: null, commitCount: 0, truncated: false });
+    expect(runPrompt).not.toHaveBeenCalled();
+  });
+
+  it("records the one-shot session usage under sessionType release-notes with a null taskId", async () => {
+    const cfg = config();
+    realGit(cfg.root, ["init", "-q"]);
+    realGit(cfg.root, ["config", "user.email", "t@example.com"]);
+    realGit(cfg.root, ["config", "user.name", "Test"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix a thing"]);
+    vi.mocked(runPrompt).mockResolvedValue({
+      ok: true,
+      output: "- Fixed a thing",
+      elapsedMs: 500,
+      totalTokens: 400,
+      costUsd: 0.001,
+    });
+
+    const { capture, res } = makeRes();
+    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body.notes).toBe("- Fixed a thing");
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+
+    const db = new RepoOSDb(cfg.root);
+    const row = db.getSessionTypeStats().find((r) => r.sessionType === "release-notes");
+    expect(row).toBeDefined();
+    expect(row!.totalTokens).toBe(400);
+    db.close();
+  });
+
+  it("still records the session (as errored) and responds 502 when the agent run fails", async () => {
+    const cfg = config();
+    realGit(cfg.root, ["init", "-q"]);
+    realGit(cfg.root, ["config", "user.email", "t@example.com"]);
+    realGit(cfg.root, ["config", "user.name", "Test"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix a thing"]);
+    vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
+
+    const { capture, res } = makeRes();
+    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+
+    expect(capture.statusCode).toBe(502);
+    const db = new RepoOSDb(cfg.root);
+    const row = db.getSessionTypeStats().find((r) => r.sessionType === "release-notes");
+    expect(row).toBeDefined();
+    db.close();
   });
 });

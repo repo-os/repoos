@@ -240,7 +240,7 @@ survives a server restart (the in-memory run state does not).
 | `GET /api/release`       | `ReleaseStatus` — version, tags, blockers, links |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
 | `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
-| `POST /api/release/notes`| `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated }`; never cuts a release |
+| `POST /api/release/notes` | `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated }`; never cuts a release |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
