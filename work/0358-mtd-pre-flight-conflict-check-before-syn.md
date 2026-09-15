@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-15T18:49:20Z"
-review_passes: 1
 id: "0358"
 title: "MTD: pre-flight conflict check before syncing a candidate worktree, not after"
 type: feature
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/mtd-pre-flight-conflict-check-before-syn
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T16:00:08Z"
+updated_at: "2026-09-15T19:12:39Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -125,4 +125,4 @@ optimization.
 - 2026-09-15T18:25:19Z · model_override
 - 2026-09-15T18:25:22Z · status ready→active, branch
 - 2026-09-15T18:43:18Z · status active→review
-
+- 2026-09-15T19:12:39Z · note: Addressed the reviewer's merge --abort suggestion: both dryRunMergeBranch abort call sites now check exit status and fail open (no conflict verdict) rather than trusting an unknown mid-merge state; guarded the success-path abort to only run when a merge is actually in progress (fixes a false failure when the branch is already an ancestor of main - no MERGE_HEAD is set in that case). Added the dirty-checkout fail-open test the reviewer suggested. repoos check passed clean. Committed d391e068 + 3705634a (task-file resync) on the branch.
