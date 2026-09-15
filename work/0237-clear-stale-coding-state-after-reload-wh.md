@@ -2,7 +2,7 @@
 id: "0237"
 title: Clear stale coding state after reload when task is in review
 type: bug
-status: inbox
+status: done
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-16T15:04:16Z"
-updated_at: "2026-08-16T19:00:58Z"
+updated_at: "2026-09-15T16:35:25Z"
 ---
 ## Activity
 
@@ -36,3 +36,5 @@ _Constraints, files to touch, things NOT to do._
 ## Activity
 
 - 2026-08-16T19:00:58Z · model_override
+- 2026-09-15T16:35:25Z · status inbox→done
+- 2026-09-15T16:35:25Z · note: Closed: task body is an unfilled template with no concrete problem description; not investigable and not recalled by the user. Reopen with real content if this is still needed.
