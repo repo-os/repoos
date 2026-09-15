@@ -16,10 +16,10 @@
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
-import { execSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync, execSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
-import { join, sep } from "node:path";
+import { isAbsolute, join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
@@ -138,22 +138,50 @@ function bareRequireOffenders(): string[] {
 }
 
 /**
- * Binary attachments (screenshots, PDFs) under `work/` or `inputs/` must never
- * enter git history: they are uploaded through the UI, written to
+ * Binary attachments (screenshots, PDFs) under the task/input folders must
+ * never enter git history: they are uploaded through the UI, written to
  * `<dir>/.attachments/`, and served back by the running server from disk — the
  * committed record is the task/input `.md`, not the pixels. Binaries in
  * history bloat the repo irreversibly (this repo once carried ~250 MiB of
  * stale screenshot churn). Product image assets — UI, icons, logos, docs —
- * live outside `work/`/`inputs/` and stay tracked.
+ * live outside those folders and stay tracked.
+ *
+ * The folder names come from `repoos.toml` (`workDir`/`inputsDir`) so a managed
+ * repo that renames them still gets the guard; they default to `work`/`inputs`.
  *
  * Pure (takes the tracked-file list) so it is unit-testable; the check block
  * feeds it `git ls-files`.
  */
-export function taskAssetOffenders(trackedPaths: string[]): string[] {
+/**
+ * Normalize a configured guard directory (`workDir`/`inputsDir`) for prefix
+ * matching against `git ls-files` output, which is always repo-root-relative:
+ * strip any leading `./` and trailing slashes. Returns empty for anything that
+ * can't be a repo-relative directory — an explicit `""`, `"."`/`"./"`, an
+ * absolute path, a home-relative `~/…`, or a path containing a `..` segment.
+ * Those would all silently match nothing (or, for `""`, fatal git's pathspec),
+ * so callers must treat empty as unusable rather than as "match everything".
+ */
+export function normalizeGuardDir(d: string): string {
+  let trimmed = d;
+  while (trimmed.startsWith("./")) trimmed = trimmed.slice(2);
+  trimmed = trimmed.replace(/\/+$/, "");
+  if (trimmed === "" || trimmed === ".") return "";
+  if (isAbsolute(trimmed) || trimmed.startsWith("~") || trimmed.split("/").includes("..")) {
+    return "";
+  }
+  return trimmed;
+}
+
+export function taskAssetOffenders(
+  trackedPaths: string[],
+  dirs: { workDir?: string; inputsDir?: string } = {},
+): string[] {
   const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|pdf)$/i;
-  return trackedPaths.filter(
-    (p) => (p.startsWith("work/") || p.startsWith("inputs/")) && IMG.test(p),
-  );
+  const prefixes = [dirs.workDir ?? "work", dirs.inputsDir ?? "inputs"]
+    .map(normalizeGuardDir)
+    .filter(Boolean)
+    .map((d) => `${d}/`);
+  return trackedPaths.filter((p) => prefixes.some((pre) => p.startsWith(pre)) && IMG.test(p));
 }
 
 /**
@@ -776,32 +804,72 @@ export async function cmdCheck(): Promise<void> {
   // ── 2d′. Task / input asset guard ───────────────────────────────────
   heading("Task asset guard");
   {
-    let tracked: string[] = [];
-    try {
-      tracked = execSync("git ls-files -- work inputs", {
-        encoding: "utf8",
-        maxBuffer: 16 * 1024 * 1024,
-      })
-        .split("\n")
-        .filter(Boolean);
-    } catch {
-      /* not a git repo / git unavailable — nothing to guard */
+    // Folder names are configurable (`workDir`/`inputsDir` in repoos.toml); a
+    // managed repo that renames them must still be guarded, so read them rather
+    // than assuming the default `work`/`inputs`.
+    const config = loadConfig();
+    const inputsDirRaw = config.inputsDir ?? "inputs";
+    const guardDirs = [
+      { label: "workDir", raw: config.workDir, norm: normalizeGuardDir(config.workDir) },
+      { label: "inputsDir", raw: inputsDirRaw, norm: normalizeGuardDir(inputsDirRaw) },
+    ];
+    for (const { label, raw, norm } of guardDirs) {
+      if (!norm) {
+        console.log(
+          c.yellow(
+            `  ⚠ repoos.toml's ${label} ("${raw}") doesn't resolve to a repo-relative ` +
+              "directory — the task-asset guard can't be scoped to it. Fix the config.",
+          ),
+        );
+      }
     }
-    const offenders = taskAssetOffenders(tracked);
-    if (offenders.length > 0) {
+    // Only usable, repo-relative dirs go into the pathspec. An empty one is
+    // dropped, not passed to git (`git ls-files -- ""` exits fatally, and the
+    // catch below would turn that into a silent green). If BOTH are unusable
+    // the guard can't run at all — fail loudly rather than pass with nothing
+    // to check.
+    const usableDirs = guardDirs.map((d) => d.norm).filter(Boolean);
+    if (usableDirs.length === 0) {
       const msg =
-        "Binary attachments committed under work/ or inputs/ — these are served by the " +
-        "running server from disk and must never enter git history (it bloats the repo " +
-        "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
-        "`.gitignore` keep them out:\n    " +
-        offenders.slice(0, 15).join("\n    ") +
-        (offenders.length > 15 ? `\n    …and ${offenders.length - 15} more` : "");
-      console.log(c.red("  ✗ " + msg.split("\n")[0]));
+        "task-asset guard is disabled — neither workDir nor inputsDir in repoos.toml resolves " +
+        "to a repo-relative directory, so no task/input folder can be checked. Fix the config.";
+      console.log(c.red("  ✗ " + msg));
       results.push(fail("task-assets", msg));
       exitCode = 1;
     } else {
-      console.log(c.green("  ✔ No committed binaries under work/ or inputs/"));
-      results.push(pass("task-assets"));
+      let tracked: string[] = [];
+      try {
+        // Pathspecs are pre-validated (non-empty, repo-relative) above, so a
+        // failure here means no git repo / git unavailable — not bad config.
+        tracked = execFileSync("git", ["ls-files", "--", ...usableDirs], {
+          encoding: "utf8",
+          maxBuffer: 16 * 1024 * 1024,
+        })
+          .split("\n")
+          .filter(Boolean);
+      } catch {
+        /* not a git repo / git unavailable — nothing to guard */
+      }
+      const offenders = taskAssetOffenders(tracked, {
+        workDir: config.workDir,
+        inputsDir: inputsDirRaw,
+      });
+      const labels = usableDirs.map((d) => `${d}/`).join(" or ");
+      if (offenders.length > 0) {
+        const msg =
+          `Binary attachments committed under ${labels} — these are served by ` +
+          "the running server from disk and must never enter git history (it bloats the repo " +
+          "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
+          "`.gitignore` keep them out:\n    " +
+          offenders.slice(0, 15).join("\n    ") +
+          (offenders.length > 15 ? `\n    …and ${offenders.length - 15} more` : "");
+        console.log(c.red("  ✗ " + msg.split("\n")[0]));
+        results.push(fail("task-assets", msg));
+        exitCode = 1;
+      } else {
+        console.log(c.green(`  ✔ No committed binaries under ${labels}`));
+        results.push(pass("task-assets"));
+      }
     }
   }
 
