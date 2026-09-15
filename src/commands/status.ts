@@ -67,8 +67,17 @@ export interface StatusServer {
 
 export interface StatusBuild {
   /** Same codes as core/build.ts checkBuildForRoot. */
-  code: "fresh" | "stale" | "no-marker" | "no-build" | "dev-mode" | "published";
+  code: "fresh" | "stale" | "no-marker" | "no-build" | "corrupt" | "dev-mode" | "published";
   stale: boolean;
+  /**
+   * Whether RepoOS's build-staleness contract applies to this checkout (see
+   * BuildCheckResult.applicable in core/build.ts). `stale` stays true for a
+   * non-RepoOS-build checkout so build-triggering callers (e.g. the preview's
+   * ensureFreshBuild) still work — callers that want to know whether this is
+   * a real problem, not just a pipeline that doesn't use RepoOS's marker,
+   * should check `applicable` too rather than `stale` alone.
+   */
+  applicable: boolean;
   message: string | null;
   version: string | null;
   buildAt: string | null;
@@ -363,6 +372,7 @@ export async function collectStatus(
   const build: StatusBuild = {
     code: check.code,
     stale: check.stale,
+    applicable: check.applicable,
     message: check.message,
     version: readVersionFromMarker(root) ?? health.version,
     buildAt: readBuildStamp(root),
@@ -554,7 +564,11 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
 
   // Stale build FIRST and loud — per AGENTS.md it is the #1 time-waster in
   // this repo; it must never read as a quiet footnote.
-  if (s.build.stale && s.build.message) {
+  // Only when the RepoOS build contract applies: no dist/ or no marker means
+  // this checkout isn't using our build pipeline, so the "skip" message isn't a
+  // warning (#0349).
+  const buildCheckApplicable = s.build.code !== "no-build" && s.build.code !== "no-marker";
+  if (s.build.stale && buildCheckApplicable && s.build.message) {
     console.log("");
     for (const line of s.build.message.split("\n")) {
       console.log(c.bold(c.yellow("  ⚠ " + line.trim())));

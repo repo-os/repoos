@@ -534,7 +534,7 @@ export async function cmdCheck(): Promise<void> {
   // a global/dev-linked CLI may be running from the main checkout while cwd
   // is a task worktree with its own source and build marker.
   const stale: BuildCheckResult = checkBuildForRoot(findRepoRoot());
-  if (stale.stale) {
+  if (stale.stale && stale.applicable) {
     console.log(c.yellow(`  ⚠ ${stale.message}`));
     results.push(fail("staleness", stale.message ?? "build is stale"));
     exitCode = 1;
@@ -542,6 +542,9 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.green("  ✔ Build is fresh"));
     results.push(pass("staleness"));
   } else {
+    // Not a RepoOS-style build (no dist/ or no marker) — degrade to a skip
+    // rather than failing a project whose pipeline simply isn't ours. See
+    // checkBuildForRoot: `applicable` is false exactly when no marker exists.
     console.log(c.dim(`  · ${stale.message ?? stale.code}`));
     results.push(pass("staleness", stale.message ?? stale.code));
   }

@@ -11,8 +11,7 @@ branch: feat/make-repoos-check-s-build-info-staleness
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-15T09:22:33Z"
-updated_at: "2026-09-15T14:54:06Z"
-review_passes: 1
+updated_at: "2026-09-15T14:38:56Z"
 ---
 ## Problem
 
@@ -64,4 +63,3 @@ the same `[check]` section #0348 added for `uiSmoke`. Don't key it off
 - 2026-09-15T14:20:30Z · review_model_override
 - 2026-09-15T14:20:31Z · status ready→active, branch
 - 2026-09-15T14:38:56Z · status active→review
-- 2026-09-15T14:54:06Z · note: Addressed the review's applicable-exposure suggestion (commit f67ed2fa on this branch, repoos check green): StatusBuild now carries applicable alongside stale, so status --json/UI consumers can tell a skipped non-RepoOS-pipeline checkout apart from a genuinely stale build. Left the preview.ensureFreshBuild note as-is per the reviewer's own call — pre-existing, out of scope.

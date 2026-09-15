@@ -449,6 +449,7 @@ describe("status --json shape", () => {
       "uptimeSeconds",
     ]);
     expect(Object.keys(parsed.build as object).sort()).toEqual([
+      "applicable",
       "buildAt",
       "code",
       "message",
