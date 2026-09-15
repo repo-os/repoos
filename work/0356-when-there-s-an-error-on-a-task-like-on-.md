@@ -2,7 +2,7 @@
 id: "0356"
 title: "Route task error \"Fix\" action to that task's own debugger"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -60,3 +60,4 @@ when there's an error on a task, like on this MTD, if I click fix it should send
 - 2026-09-15T14:19:58Z · status draft→inbox, title, area, type, body
 - 2026-09-15T14:20:57Z · model_override
 - 2026-09-15T14:21:02Z · review_model_override
+- 2026-09-15T14:21:02Z · status inbox→ready
