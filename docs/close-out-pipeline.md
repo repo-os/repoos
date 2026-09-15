@@ -162,8 +162,8 @@ dominated by the test suite and machine load (~1min either way on a loaded box),
 the ~9s build-step saving is the honest, deterministic number to quote for a full
 move-to-done.
 
-**Browser/server dedup (#0213, scoped down):** the UI smoke test inside `repoos check`
-and the standalone `bun run screenshots` script previously hand-rolled two independent
+**Browser/server dedup (#0213, scoped down):** the UI smoke test `repoos check` runs
+(RepoOS's own `smoke` script since #0348) and the standalone `bun run screenshots` script previously hand-rolled two independent
 copies of "start an ephemeral server + launch headless WebKit". They now share one
 implementation — `src/commands/ui-harness.ts` (`startPreviewServer` + `launchWebkit`) —
 used by both call sites, so the launch logic can't drift. They do NOT literally share a
