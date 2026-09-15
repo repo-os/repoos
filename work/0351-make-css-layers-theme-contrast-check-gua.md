@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T19:33:41Z"
+review_passes: 1
 id: "0351"
 title: Make css-layers/theme-contrast check guards configurable per project
 type: feature
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/make-css-layers-theme-contrast-check-gua
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:36Z"
-updated_at: "2026-09-15T19:30:18Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 - 2026-09-15T19:14:49Z · model_override
 - 2026-09-15T19:15:04Z · status ready→active, branch
 - 2026-09-15T19:30:18Z · status active→review
+
