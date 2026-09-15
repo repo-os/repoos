@@ -8,8 +8,9 @@ area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:35Z"
-updated_at: "2026-09-15T09:22:35Z"
+updated_at: "2026-09-15T14:22:16Z"
 ---
 ## Problem
 
@@ -46,3 +47,4 @@ should be a small, self-contained change.
 ## Activity
 
 - 2026-09-15T09:22:35Z · created · unknown
+- 2026-09-15T14:22:16Z · model_override
