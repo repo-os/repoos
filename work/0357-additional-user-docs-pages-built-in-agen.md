@@ -2,15 +2,15 @@
 id: "0357"
 title: "Additional user-docs pages: built-in agents, authentication, deployments/releases"
 type: feature
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/additional-user-docs-pages-built-in-agen
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T15:50:48Z"
-updated_at: "2026-09-15T17:24:50Z"
+updated_at: "2026-09-15T18:10:26Z"
 ---
 ## Problem
 
@@ -95,3 +95,4 @@ check` does not cover this directory.
 - 2026-09-15T15:59:26Z · status inbox→ready
 - 2026-09-15T15:59:33Z · model_override
 - 2026-09-15T17:24:50Z · body
+- 2026-09-15T18:10:26Z · status ready→active, branch
