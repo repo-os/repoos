@@ -2,7 +2,7 @@
 id: "0261"
 title: Investigate scoping repoos check's test run for the integration pipeline
 type: perf
-status: inbox
+status: done
 priority: p3
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-19T18:56:34Z"
-updated_at: "2026-08-19T18:57:06Z"
+updated_at: "2026-09-15T16:35:19Z"
 ---
 ## Problem
 
@@ -84,3 +84,5 @@ merge-gate correctness.
 ## Activity
 
 - 2026-08-19T18:57:06Z · body
+- 2026-09-15T16:35:19Z · status inbox→done
+- 2026-09-15T16:35:19Z · note: Stale: already implemented. check.ts's changedTestRef()/--changed scoping does exactly what this task asked to investigate, restricted to per-branch pre-merge checks.
