@@ -31,11 +31,13 @@ timeout). Now opt-in:
   exist (`[checks]` accepted as an alias).
 - Neither, and the step skips: `✔ ui-smoke — skipped — no smoke command
   configured`.
-- RepoOS's own repo keeps the existing dashboard assertions as the fallback
-  when nothing is declared (special-cased on `pkg.name === "repoos"`, the same
-  way `zero-runtime-deps` already is). This preserves RepoOS's exact coverage,
-  including the "Playwright not installed → skip" path, without shipping a
-  RepoOS-specific smoke command into every managed repo.
+- RepoOS's own repo declares its existing dashboard assertions through the
+  same mechanism: a `smoke` script (`scripts/ui-smoke.mjs` →
+  `src/commands/ui-smoke.ts`). There is no `pkg.name === "repoos"` special
+  case, so RepoOS's own check exercises the declaration path on every run.
+  Coverage is unchanged, including the "Playwright not installed → skip" path.
+  A test in `check-smoke-command.test.ts` fails if the declaration goes
+  missing, which would otherwise turn RepoOS's smoke step into a silent skip.
 
 ## 2. `css-layers` / `theme-contrast` — hidden RepoOS-shape, benign skip
 
@@ -113,11 +115,11 @@ step is **not** changed by #0348; it predates it and is out of scope here.
 
 ---
 
-## Follow-ups to file
+## Follow-ups filed
 
-1. `[check]`-driven stylesheet path + token vocabulary for
+1. #0351: `[check]`-driven stylesheet path + token vocabulary for
    `css-layers`/`theme-contrast`.
-2. Configurable source roots for `bare-require`.
-3. Honor `workDir`/`inputsDir` in `task-assets`.
-4. Opt-in / graceful degradation for the `dist/.build-info.json` staleness step
-   when a project's `src/` doesn't use RepoOS's build pipeline.
+2. #0352: configurable source roots for `bare-require`.
+3. #0350: honor `workDir`/`inputsDir` in `task-assets`.
+4. #0349: opt-in / graceful degradation for the `dist/.build-info.json`
+   staleness step when a project's `src/` doesn't use RepoOS's build pipeline.

@@ -34,6 +34,7 @@
     "test": "node scripts/run-tests.mjs",
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
     "screenshots": "bun run build && node scripts/capture-screenshots.mjs",
+    "smoke": "node scripts/ui-smoke.mjs",
     "dev:preview": "bun run build && node scripts/dev-preview.mjs",
     "prepublishOnly": "npm run build"
   },
