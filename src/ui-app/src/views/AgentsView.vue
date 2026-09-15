@@ -729,6 +729,7 @@ onUnmounted(() => {
           <BuiltInAgentCard agent="performance" />
           <BuiltInAgentCard agent="architect" />
           <BuiltInAgentCard agent="design" />
+          <BuiltInAgentCard agent="docs-debt" />
         </Card>
 
         <Card

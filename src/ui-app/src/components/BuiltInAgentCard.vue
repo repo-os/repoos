@@ -119,6 +119,14 @@ const agentMeta = computed(() => {
       icon: "🎨",
     };
   }
+  if (props.agent === "docs-debt") {
+    return {
+      name: "Docs Debt Agent",
+      description:
+        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — verifying file paths, symbols, scripts, and stated constraints against the real repo. Applies small mechanical fixes directly and bundles anything needing a human decision into one task.",
+      icon: "📖",
+    };
+  }
   return null;
 });
 
@@ -206,6 +214,7 @@ async function runNow(): Promise<void> {
       errors?: string[];
       issuesFound?: number;
       findingsFound?: number;
+      trivialFixesApplied?: number;
       scannedFiles?: number;
     };
     if (response.ok) {
@@ -218,6 +227,13 @@ async function runNow(): Promise<void> {
         message.value = `Review complete — ${response.findingsFound ?? 0} design finding(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Design/.`;
       } else if (props.agent === "architect") {
         message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Architect/.`;
+      } else if (props.agent === "docs-debt") {
+        const fixes = response.trivialFixesApplied ?? 0;
+        const fixesText = fixes > 0 ? `applied ${fixes} small fix(es); ` : "";
+        message.value =
+          (response.findingsFound ?? 0) > 0
+            ? `Check complete — ${fixesText}${response.findingsFound ?? 0} claim(s) need a human decision, bundled into one task (${response.scannedFiles ?? 0} docs scanned).`
+            : `Check complete — ${fixesText}docs match the code (${response.scannedFiles ?? 0} docs scanned).`;
       } else if (response.taskCount > 0) {
         const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;

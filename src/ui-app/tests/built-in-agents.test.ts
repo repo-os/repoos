@@ -14,8 +14,15 @@ import {
   scanForDesignIssues,
   generateDesignReport,
   runDesignAgent,
+  scanForDocsDebt,
+  applyDocsDebtFixes,
+  createDocsDebtTask,
+  runDocsDebtAgent,
+  runBuiltInAgent,
+  MAX_TRIVIAL_FIXES_PER_RUN,
   TechDebtError,
   PerformanceError,
+  DocsDebtError,
   type TechDebtIssue,
   type PerformanceIssue,
 } from "../../server/built-in-agents.js";
@@ -657,5 +664,256 @@ describe("runDesignAgent", () => {
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["design"]?.lastRunAt).toBeTruthy();
     expect(config.builtInAgents?.["design"]?.lastRunAt).toBeTruthy();
+  });
+});
+
+describe("scanForDocsDebt", () => {
+  it("catches the #0343 failure mode: docs claiming zero runtime deps while package.json has one", async () => {
+    const root = makeRepo({
+      "package.json": JSON.stringify({ dependencies: { mermaid: "^11.17.2" } }),
+      "AGENTS.md": "# Repo\n\nZero runtime dependencies is a hard constraint.\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    const falseConstraint = result.needsHuman.filter((f) => f.kind === "false-constraint");
+    expect(falseConstraint).toHaveLength(1);
+    expect(falseConstraint[0].doc).toBe("AGENTS.md");
+    expect(falseConstraint[0].evidence).toContain("mermaid");
+  });
+
+  it("does not flag the constraint when package.json declares no runtime dependencies", async () => {
+    const root = makeRepo({
+      "package.json": JSON.stringify({ devDependencies: { vitest: "^4.1.10" } }),
+      "AGENTS.md": "Zero runtime dependencies is a hard constraint.\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    expect(result.needsHuman.filter((f) => f.kind === "false-constraint")).toHaveLength(0);
+  });
+
+  it("classifies a moved path with a unique basename as a trivial fix", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See `src/old/util.ts` for helpers.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    expect(result.trivialFixes).toHaveLength(1);
+    expect(result.trivialFixes[0]).toMatchObject({
+      kind: "renamed-path",
+      doc: "docs/guide.md",
+      from: "src/old/util.ts",
+      to: "src/new/util.ts",
+    });
+    expect(result.needsHuman.filter((f) => f.kind === "missing-path")).toHaveLength(0);
+  });
+
+  it("reports a missing path with no unique replacement as needs-human", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See `src/missing/thing.ts`.\n",
+      "src/other.ts": "export const other = 1;\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    expect(result.trivialFixes).toHaveLength(0);
+    const missing = result.needsHuman.filter((f) => f.kind === "missing-path");
+    expect(missing).toHaveLength(1);
+    expect(missing[0].claim).toBe("src/missing/thing.ts");
+  });
+
+  it("flags a symbol that does not appear anywhere under src/", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "Call `scanForGhost()` to start.\n",
+      "src/real.ts": "export function scanForReal(): void {}\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    const missing = result.needsHuman.filter((f) => f.kind === "missing-symbol");
+    expect(missing.map((f) => f.claim)).toContain("scanForGhost()");
+  });
+
+  it("accepts a symbol that does appear in src/", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "Call `scanForReal()` to start.\n",
+      "src/real.ts": "export function scanForReal(): void {}\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    expect(result.needsHuman.filter((f) => f.kind === "missing-symbol")).toHaveLength(0);
+  });
+
+  it("flags a `bun run <script>` claim whose script is absent, and accepts one that exists", async () => {
+    const root = makeRepo({
+      "package.json": JSON.stringify({ scripts: { build: "tsc" } }),
+      "docs/guide.md": "Run `bun run build` then `bun run never`.\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    const missing = result.needsHuman.filter((f) => f.kind === "missing-script");
+    expect(missing).toHaveLength(1);
+    expect(missing[0].claim).toBe("bun run never");
+  });
+
+  it("never treats markdown under src/ as a doc to verify or edit", async () => {
+    const root = makeRepo({
+      "src/notes.md": "See `src/ghost.ts`.\n",
+      "AGENTS.md": "# Repo\n",
+    });
+    const result = await scanForDocsDebt(configFor(root));
+    expect(result.scannedDocs).toBe(1);
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(0);
+  });
+});
+
+describe("createDocsDebtTask", () => {
+  it("bundles every needs-human finding into exactly one task", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    const result = await createDocsDebtTask(configFor(root), [
+      {
+        kind: "missing-symbol",
+        doc: "docs/a.md",
+        line: 4,
+        claim: "scanForGhost",
+        evidence: "not declared under src/",
+        severity: "medium",
+      },
+      {
+        kind: "false-constraint",
+        doc: "AGENTS.md",
+        line: 9,
+        claim: "zero runtime dependencies",
+        evidence: "package.json declares 1: mermaid",
+        severity: "high",
+      },
+      {
+        kind: "missing-path",
+        doc: "docs/b.md",
+        line: 2,
+        claim: "src/gone.ts",
+        evidence: "does not exist",
+        severity: "medium",
+      },
+    ]);
+    expect(result).toEqual({ created: 1, failed: 0, errors: [] });
+
+    const files = readdirSync(join(root, "work"));
+    expect(files).toHaveLength(1);
+    const content = readFileSync(join(root, "work", files[0]), "utf8");
+    expect(content).toContain("docs-debt");
+    expect(content).toContain("created_by: docs-debt-agent");
+    expect(content).toContain("scanForGhost");
+    expect(content).toContain("zero runtime dependencies");
+    expect(content).toContain("src/gone.ts");
+  });
+
+  it("creates no task for zero findings", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    const result = await createDocsDebtTask(configFor(root), []);
+    expect(result).toEqual({ created: 0, failed: 0, errors: [] });
+    expect(readdirSync(join(root, "work"))).toHaveLength(0);
+  });
+
+  it("throws a clear error when the work dir does not exist", async () => {
+    const root = makeRepo({});
+    await expect(
+      createDocsDebtTask(configFor(root), [
+        {
+          kind: "missing-path",
+          doc: "docs/a.md",
+          line: 1,
+          claim: "src/gone.ts",
+          evidence: "missing",
+          severity: "medium",
+        },
+      ]),
+    ).rejects.toThrow(DocsDebtError);
+    await expect(
+      createDocsDebtTask(configFor(root), [
+        {
+          kind: "missing-path",
+          doc: "docs/a.md",
+          line: 1,
+          claim: "src/gone.ts",
+          evidence: "missing",
+          severity: "medium",
+        },
+      ]),
+    ).rejects.toThrow(/does not exist/);
+  });
+});
+
+describe("applyDocsDebtFixes", () => {
+  it("applies a trivial fix directly to the doc file", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See `src/old/util.ts` for helpers.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
+    const scan = await scanForDocsDebt(configFor(root));
+    const result = await applyDocsDebtFixes(configFor(root), scan.trivialFixes);
+    expect(result.applied).toBe(1);
+    expect(result.skipped).toBe(0);
+    expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("`src/new/util.ts`");
+  });
+
+  it("caps how many trivial fixes land in one run and reports the rest as skipped", async () => {
+    const files: Record<string, string> = {};
+    const total = MAX_TRIVIAL_FIXES_PER_RUN + 2;
+    for (let i = 0; i < total; i++) {
+      files[`docs/d${i}.md`] = `See \`src/old/a${i}.ts\`.\n`;
+      files[`src/new/a${i}.ts`] = "export const x = 1;\n";
+    }
+    const root = makeRepo(files);
+    const scan = await scanForDocsDebt(configFor(root));
+    expect(scan.trivialFixes).toHaveLength(total);
+
+    const result = await applyDocsDebtFixes(configFor(root), scan.trivialFixes);
+    expect(result.applied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.skipped).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
+
+    const updated = Object.keys(files)
+      .filter((f) => f.startsWith("docs/"))
+      .filter((f) => readFileSync(join(root, f), "utf8").includes("src/new/"));
+    expect(updated).toHaveLength(MAX_TRIVIAL_FIXES_PER_RUN);
+  });
+});
+
+describe("runDocsDebtAgent", () => {
+  it("applies trivial fixes, files one task for the rest, and records lastRunAt", async () => {
+    const files: Record<string, string> = {};
+    const total = MAX_TRIVIAL_FIXES_PER_RUN + 2;
+    for (let i = 0; i < total; i++) {
+      files[`docs/d${i}.md`] = `See \`src/old/a${i}.ts\`.\n`;
+      files[`src/new/a${i}.ts`] = "export const x = 1;\n";
+    }
+    const root = makeRepo(files);
+    mkdirSync(join(root, "work"));
+    const config = configFor(root);
+
+    const result = await runDocsDebtAgent(config);
+    expect(result.trivialFixesApplied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.findingsFound).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.taskCreated).toBe(1);
+    expect(result.failed).toBe(0);
+
+    expect(readdirSync(join(root, "work"))).toHaveLength(1);
+    const persisted = loadBuiltInAgentsConfig(root);
+    expect(persisted?.["docs-debt"]?.lastRunAt).toBeTruthy();
+    expect(config.builtInAgents?.["docs-debt"]?.lastRunAt).toBeTruthy();
+  });
+
+  it("creates no task when the run finds nothing needing a human", async () => {
+    const root = makeRepo({
+      "package.json": "{}",
+      "AGENTS.md": "# Docs\n\nEverything here is true.\n",
+    });
+    mkdirSync(join(root, "work"));
+    const result = await runDocsDebtAgent(configFor(root));
+    expect(result.findingsFound).toBe(0);
+    expect(result.taskCreated).toBe(0);
+    expect(readdirSync(join(root, "work"))).toHaveLength(0);
+  });
+
+  it("is reachable through the runBuiltInAgent dispatcher", async () => {
+    const root = makeRepo({ "AGENTS.md": "# Docs\n" });
+    mkdirSync(join(root, "work"));
+    const result = await runBuiltInAgent("docs-debt", configFor(root));
+    expect(result).not.toBeNull();
+    expect(result && "scannedDocs" in result ? result.scannedDocs : -1).toBe(1);
   });
 });
