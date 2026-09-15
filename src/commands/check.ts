@@ -259,6 +259,8 @@ export interface ThemeContrastConfig {
   scopes: CheckThemeScope[];
   pairs: CheckContrastPair[];
   gradientTokens: string[];
+  /** Token to composite semi-transparent colors over; see CheckConfig. */
+  backdropToken?: string;
 }
 
 function parseThemeBlocks(css: string, scopeNames: Map<string, string>): ThemeBlock[] {
@@ -389,8 +391,65 @@ function colorCandidates(
   return out;
 }
 
+/**
+ * An opaque backdrop to composite semi-transparent colors over before their
+ * luminance is meaningful. Prefer the configured `backdropToken` (the page
+ * background); otherwise fall back to the pair's own background token when that
+ * resolves to a solid color; only then to white. A missing backdrop never skips
+ * a pair — at worst it approximates an alpha channel.
+ */
+function resolveBackdrop(
+  map: Record<string, string>,
+  bgToken: string,
+  backdropToken: string | undefined,
+): { r: number; g: number; b: number } {
+  const configured = backdropToken ? map[backdropToken] : undefined;
+  for (const raw of [configured, map[bgToken]]) {
+    if (raw === undefined) continue;
+    const solid = parseColor(resolveVar(raw, map));
+    if (solid) return composite(solid, solid);
+  }
+  return { r: 255, g: 255, b: 255 };
+}
+
+/**
+ * True when at least one configured scope selector opens a block in `css`.
+ * The theme-contrast step uses this to skip a stylesheet with no theme blocks
+ * rather than keying off a hardcoded RepoOS selector like `:root`.
+ */
+export function hasThemeBlocks(css: string, scopes: CheckThemeScope[]): boolean {
+  return parseThemeBlocks(css, new Map(scopes.map((s) => [s.selector, s.name]))).length > 0;
+}
+
+/**
+ * Advisory config-shape warnings for declared theme scopes: a typo'd
+ * `inherits` target or a duplicated selector/name otherwise collapses
+ * silently (empty declarations / last-wins). Returned rather than thrown so
+ * `repoos check` can surface them without failing the gate on a config typo.
+ */
+export function themeScopeConfigWarnings(scopes: CheckThemeScope[]): string[] {
+  const warnings: string[] = [];
+  const names = new Set(scopes.map((s) => s.name));
+  const seenNames = new Set<string>();
+  const seenSelectors = new Set<string>();
+  for (const s of scopes) {
+    if (seenNames.has(s.name)) warnings.push(`[check] themeScopes: duplicate name "${s.name}"`);
+    seenNames.add(s.name);
+    if (seenSelectors.has(s.selector)) {
+      warnings.push(`[check] themeScopes: duplicate selector "${s.selector}"`);
+    }
+    seenSelectors.add(s.selector);
+    for (const base of s.inherits ?? []) {
+      if (!names.has(base)) {
+        warnings.push(`[check] themeScopes: "${s.name}" inherits unknown scope "${base}"`);
+      }
+    }
+  }
+  return warnings;
+}
+
 export function themeContrastOffenders(css: string, config: ThemeContrastConfig): string[] {
-  const { scopes, pairs, gradientTokens } = config;
+  const { scopes, pairs, gradientTokens, backdropToken } = config;
   const blocks = parseThemeBlocks(css, new Map(scopes.map((s) => [s.selector, s.name])));
   if (!blocks.length) return [];
   const byVariant: Record<string, ThemeBlock> = {};
@@ -410,13 +469,11 @@ export function themeContrastOffenders(css: string, config: ThemeContrastConfig)
       }
     }
 
-    const bgColor = parseColor(resolveVar(map["--bg"] ?? "", map));
-    if (!bgColor) continue;
-    const bg = composite(bgColor, bgColor);
     for (const { fg, bg: bgK } of pairs) {
       if (map[fg] === undefined || map[bgK] === undefined) continue;
-      const fgs = colorCandidates(map[fg], map, bg);
-      const bgs = colorCandidates(map[bgK], map, bg);
+      const backdrop = resolveBackdrop(map, bgK, backdropToken);
+      const fgs = colorCandidates(map[fg], map, backdrop);
+      const bgs = colorCandidates(map[bgK], map, backdrop);
       if (!fgs.length || !bgs.length) continue;
       let worst = Infinity;
       for (const f of fgs)
@@ -716,13 +773,28 @@ export async function cmdCheck(): Promise<void> {
   // ── 2b. CSS layering guard ──────────────────────────────────────────
   // Both stylesheet guards below read `[check] uiStylesheet` (#0351): there is
   // no RepoOS-shaped default path, so a project that declares neither a
-  // stylesheet nor a token vocabulary skips both cleanly. Read once here.
+  // stylesheet nor a token vocabulary skips both cleanly. The path is resolved
+  // against the repo root (not cwd) and read once here; a configured path that
+  // doesn't exist is a misconfiguration worth a warning, not a silent skip.
   heading("CSS layering guard");
-  const cssPath = cfg.check?.uiStylesheet;
-  const cssSrc = cssPath && existsSync(cssPath) ? readFileSync(cssPath, "utf8") : "";
-  if (!cssPath) {
+  const cssRelPath = cfg.check?.uiStylesheet;
+  const repoRoot = findRepoRoot();
+  const cssPath = cssRelPath && !isAbsolute(cssRelPath) ? join(repoRoot, cssRelPath) : cssRelPath;
+  const cssExists = Boolean(cssPath && existsSync(cssPath));
+  if (cssRelPath && !cssExists) {
+    console.log(
+      c.yellow(
+        `  ⚠ [check] uiStylesheet "${cssRelPath}" does not exist in this repo — stylesheet guards will skip`,
+      ),
+    );
+  }
+  const cssSrc = cssPath && cssExists ? readFileSync(cssPath, "utf8") : "";
+  if (!cssRelPath) {
     console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
     results.push(pass("css-layers", "skipped — no [check] uiStylesheet configured"));
+  } else if (!cssExists) {
+    console.log(c.dim(`  · ${cssRelPath} does not exist — skipping`));
+    results.push(pass("css-layers", `skipped — ${cssRelPath} not found`));
   } else if (!cssSrc.includes('@import "tailwindcss"')) {
     console.log(c.dim(`  · ${cssPath} is not a Tailwind v4 stylesheet — skipping`));
     results.push(pass("css-layers", `skipped — ${cssPath} has no Tailwind v4 import`));
@@ -745,20 +817,25 @@ export async function cmdCheck(): Promise<void> {
   // ── 2c. Theme contrast guard ────────────────────────────────────────
   heading("Theme contrast guard");
   const themeScopes = cfg.check?.themeScopes ?? [];
-  if (!cssPath) {
+  for (const w of themeScopeConfigWarnings(themeScopes)) console.log(c.yellow(`  ⚠ ${w}`));
+  if (!cssRelPath) {
     console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
     results.push(pass("theme-contrast", "skipped — no [check] uiStylesheet configured"));
+  } else if (!cssExists) {
+    console.log(c.dim(`  · ${cssRelPath} does not exist — skipping`));
+    results.push(pass("theme-contrast", `skipped — ${cssRelPath} not found`));
   } else if (!themeScopes.length) {
     console.log(c.dim("  · No [check] themeScopes configured — skipping"));
     results.push(pass("theme-contrast", "skipped — no [check] themeScopes configured"));
-  } else if (!cssSrc.includes(":root")) {
-    console.log(c.dim(`  · ${cssPath} has no theme token blocks — skipping`));
-    results.push(pass("theme-contrast", `skipped — ${cssPath} has no theme tokens`));
+  } else if (!hasThemeBlocks(cssSrc, themeScopes)) {
+    console.log(c.dim(`  · No configured theme scope matched a block in ${cssRelPath} — skipping`));
+    results.push(pass("theme-contrast", "skipped — no configured theme block found"));
   } else {
     const offenders = themeContrastOffenders(cssSrc, {
       scopes: themeScopes,
       pairs: cfg.check?.contrastPairs ?? [],
       gradientTokens: cfg.check?.gradientTokens ?? [],
+      backdropToken: cfg.check?.backdropToken,
     });
     if (offenders.length > 0) {
       const msg =

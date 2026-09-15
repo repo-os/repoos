@@ -599,6 +599,10 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         .map((v) => v.trim());
       if (tokens.length) cfg.check = { ...cfg.check, gradientTokens: tokens };
     }
+    const checkBackdropToken = parsed["check.backdropToken"] ?? parsed["checks.backdropToken"];
+    if (typeof checkBackdropToken === "string" && checkBackdropToken.trim()) {
+      cfg.check = { ...cfg.check, backdropToken: checkBackdropToken.trim() };
+    }
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];

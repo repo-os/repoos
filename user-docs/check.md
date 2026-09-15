@@ -59,6 +59,7 @@ are project-specific:
 ```toml
 [check]
 uiStylesheet = "src/app.css"
+backdropToken = "--bg"                   # page background; semi-transparent tokens composite over it
 gradientTokens = ["--btn-primary-bg"]   # must resolve to a gradient, not a solid color
 
 [[check.themeScopes]]                    # one row per theme block
@@ -74,9 +75,10 @@ bg = "--bg"
 `themeScopes` are evaluated in order; each inherits the declarations of the
 scopes named in `inherits` (later wins), so a light variant can inherit a dark
 base and override only what differs. With no `uiStylesheet` — or no
-`themeScopes` — both steps skip with a clear message. RepoOS's own repo
-declares its stylesheet and full token vocabulary this way rather than relying
-on hardcoded defaults.
+`themeScopes` — both steps skip with a clear message; a `uiStylesheet` that
+doesn't exist is called out with a warning. RepoOS's own repo declares its
+stylesheet and full token vocabulary this way rather than relying on hardcoded
+defaults.
 
 **Two steps adapt to your layout rather than assuming RepoOS's:**
 

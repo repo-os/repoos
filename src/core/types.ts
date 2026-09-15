@@ -540,6 +540,14 @@ export interface CheckConfig {
   /** Foreground/background token pairs checked for ≥3:1 WCAG contrast (#0351). */
   contrastPairs?: CheckContrastPair[];
   /**
+   * Token to composite semi-transparent colors over before measuring their
+   * luminance — normally the page background (RepoOS uses `--bg`). Optional:
+   * without it the pair's own background token is used, falling back to white.
+   * A missing backdrop never skips a pair, it only approximates an alpha
+   * channel (#0351).
+   */
+  backdropToken?: string;
+  /**
    * Tokens consumed as `background-image` (so they must resolve to a gradient,
    * not a solid color — a solid value renders a transparent button) (#0351).
    */

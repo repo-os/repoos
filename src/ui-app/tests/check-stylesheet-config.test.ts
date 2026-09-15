@@ -13,7 +13,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   cssLayeringOffenders,
+  hasThemeBlocks,
   themeContrastOffenders,
+  themeScopeConfigWarnings,
   type ThemeContrastConfig,
 } from "../../commands/check.js";
 import { loadConfig } from "../../core/config.js";
@@ -94,6 +96,69 @@ describe("themeContrastOffenders — driven by configured scopes/tokens", () => 
     });
     expect(offenders.some((o) => o.includes("dark") && o.includes("--txt"))).toBe(true);
   });
+
+  it("still checks a scope that defines no `--bg` (no silent skip)", () => {
+    // The old guard keyed the whole scope's contrast check off `--bg`; a
+    // project whose tokens are named differently was silently skipped.
+    const css = `:root {\n  --panel: #000000;\n  --txt: #111111;\n}`;
+    const offenders = themeContrastOffenders(css, {
+      scopes: [{ selector: ":root", name: "dark" }],
+      pairs: [{ fg: "--txt", bg: "--panel" }],
+      gradientTokens: [],
+    });
+    expect(offenders.some((o) => o.includes("--txt"))).toBe(true);
+  });
+
+  it("uses the configured backdrop token when compositing", () => {
+    const css = `:root {\n  --bg: #ffffff;\n  --panel: transparent;\n  --txt: #ffffff;\n}`;
+    const scopes = [{ selector: ":root", name: "light" }];
+    const pairs = [{ fg: "--txt", bg: "--panel" }];
+    // The panel is transparent, so white text on it disappears only if the
+    // configured (white) page backdrop is honored — the pair's own token would
+    // composite to black and pass.
+    expect(
+      themeContrastOffenders(css, { scopes, pairs, gradientTokens: [], backdropToken: "--bg" }),
+    ).not.toEqual([]);
+    expect(themeContrastOffenders(css, { scopes, pairs, gradientTokens: [] })).toEqual([]);
+  });
+});
+
+describe("hasThemeBlocks — scope-aware skip gate", () => {
+  const scopes = [{ selector: '[data-theme="dark"]', name: "dark" }];
+
+  it("is false when no configured selector opens a block", () => {
+    expect(hasThemeBlocks(":root {\n  --x: 1;\n}", scopes)).toBe(false);
+  });
+
+  it("is true for a non-`:root` selector when it is configured", () => {
+    expect(hasThemeBlocks('[data-theme="dark"] {\n  --x: 1;\n}', scopes)).toBe(true);
+  });
+});
+
+describe("themeScopeConfigWarnings", () => {
+  it("is empty for a well-formed vocabulary", () => {
+    expect(
+      themeScopeConfigWarnings([
+        { selector: ":root", name: "dark", inherits: ["dark"] },
+        { selector: '[data-theme="light"]', name: "light", inherits: ["dark", "light"] },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("flags an unknown inherits target", () => {
+    expect(
+      themeScopeConfigWarnings([{ selector: ":root", name: "dark", inherits: ["bas"] }]),
+    ).toEqual(['[check] themeScopes: "dark" inherits unknown scope "bas"']);
+  });
+
+  it("flags duplicate names and selectors", () => {
+    const warnings = themeScopeConfigWarnings([
+      { selector: ":root", name: "dark" },
+      { selector: ":root", name: "dark" },
+    ]);
+    expect(warnings).toContain('[check] themeScopes: duplicate name "dark"');
+    expect(warnings).toContain('[check] themeScopes: duplicate selector ":root"');
+  });
 });
 
 describe("cssLayeringOffenders", () => {
@@ -113,6 +178,7 @@ describe("loadConfig [check] stylesheet vocabulary parsing", () => {
         [
           "[check]",
           'uiStylesheet = "src/app.css"',
+          'backdropToken = "--bg"',
           'gradientTokens = ["--g1", "--g2"]',
           "",
           "[[check.themeScopes]]",
@@ -128,6 +194,7 @@ describe("loadConfig [check] stylesheet vocabulary parsing", () => {
       ),
     ).check;
     expect(cfg?.uiStylesheet).toBe("src/app.css");
+    expect(cfg?.backdropToken).toBe("--bg");
     expect(cfg?.gradientTokens).toEqual(["--g1", "--g2"]);
     expect(cfg?.themeScopes).toEqual([
       { selector: ":root", name: "dark", inherits: ["dark", "base"] },
@@ -174,9 +241,11 @@ describe("RepoOS dogfoods the stylesheet-guard declaration", () => {
   it("declares its stylesheet and token vocabulary through the generic [check] section", () => {
     const cfg = loadConfig(root).check;
     expect(cfg?.uiStylesheet).toBe("src/ui-app/src/style.css");
+    expect(cfg?.backdropToken).toBe("--bg");
     expect(cfg?.themeScopes?.length).toBeGreaterThan(0);
     expect(cfg?.contrastPairs?.length).toBeGreaterThan(0);
     expect(cfg?.gradientTokens?.length).toBeGreaterThan(0);
+    expect(themeScopeConfigWarnings(cfg?.themeScopes ?? [])).toEqual([]);
   });
 
   it("keeps its current coverage: the real stylesheet still passes", () => {
@@ -197,6 +266,7 @@ describe("RepoOS dogfoods the stylesheet-guard declaration", () => {
         scopes,
         pairs: cfg?.contrastPairs ?? [],
         gradientTokens: cfg?.gradientTokens ?? [],
+        backdropToken: cfg?.backdropToken,
       }),
     ).toEqual([]);
   });

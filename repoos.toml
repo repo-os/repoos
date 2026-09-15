@@ -59,6 +59,7 @@ worktreeWarnThreshold = 20
 # project's own file/tokens are checked, never this repo's by accident.
 [check]
 uiStylesheet = "src/ui-app/src/style.css"
+backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
 
 # Each theme block in the stylesheet: the selectors it owns, a variant name for
