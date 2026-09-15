@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { taskAssetOffenders } from "../../commands/check";
+import { normalizeGuardDir, taskAssetOffenders } from "../../commands/check";
 
 describe("taskAssetOffenders", () => {
   it("flags images and PDFs committed under work/ or inputs/", () => {
@@ -63,5 +63,42 @@ describe("taskAssetOffenders", () => {
         inputsDir: "inbox",
       }),
     ).toEqual([]);
+  });
+
+  it("normalizes a leading ./ so a configured workDir still matches git's root-relative paths", () => {
+    expect(
+      taskAssetOffenders(["tasks/.attachments/1/a.png"], {
+        workDir: "./tasks",
+        inputsDir: "inbox",
+      }),
+    ).toEqual(["tasks/.attachments/1/a.png"]);
+  });
+
+  it("drops a dir that normalizes to empty instead of matching everything", () => {
+    // workDir = "" (or "." / "./") can't be scoped to a real directory — the
+    // guard must disable itself for that path, never fall back to matching
+    // every tracked file (a "" prefix would match unconditionally via
+    // startsWith("")).
+    expect(
+      taskAssetOffenders(["src/ui-app/public/logo.png", "inbox/spec.pdf"], {
+        workDir: "",
+        inputsDir: "inbox",
+      }),
+    ).toEqual(["inbox/spec.pdf"]);
+  });
+});
+
+describe("normalizeGuardDir", () => {
+  it("strips a leading ./ and trailing slashes", () => {
+    expect(normalizeGuardDir("./tasks")).toBe("tasks");
+    expect(normalizeGuardDir("tasks/")).toBe("tasks");
+    expect(normalizeGuardDir("./tasks/")).toBe("tasks");
+    expect(normalizeGuardDir("nested/dir")).toBe("nested/dir");
+  });
+
+  it("normalizes an unusable dir to empty", () => {
+    expect(normalizeGuardDir("")).toBe("");
+    expect(normalizeGuardDir(".")).toBe("");
+    expect(normalizeGuardDir("./")).toBe("");
   });
 });

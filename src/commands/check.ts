@@ -159,14 +159,29 @@ function bareRequireOffenders(): string[] {
  * Pure (takes the tracked-file list) so it is unit-testable; the check block
  * feeds it `git ls-files`.
  */
+/**
+ * Normalize a configured guard directory (`workDir`/`inputsDir`) for prefix
+ * matching: strip one leading `./` (git's `ls-files` output is always root-
+ * relative and never carries it, so a configured `./tasks` would otherwise
+ * never match anything) and any trailing slashes. Empty after normalizing —
+ * an explicit `workDir = ""`, or `"."`/`"./"` — means the guard can't be
+ * scoped to a real directory; callers must treat that as disabled-and-warn,
+ * not silently matching nothing.
+ */
+export function normalizeGuardDir(d: string): string {
+  const trimmed = d.replace(/^\.\/+/, "").replace(/\/+$/, "");
+  return trimmed === "." ? "" : trimmed;
+}
+
 export function taskAssetOffenders(
   trackedPaths: string[],
   dirs: { workDir?: string; inputsDir?: string } = {},
 ): string[] {
   const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|pdf)$/i;
-  const prefixes = [dirs.workDir ?? "work", dirs.inputsDir ?? "inputs"].map(
-    (d) => `${d.replace(/\/+$/, "")}/`,
-  );
+  const prefixes = [dirs.workDir ?? "work", dirs.inputsDir ?? "inputs"]
+    .map(normalizeGuardDir)
+    .filter(Boolean)
+    .map((d) => `${d}/`);
   return trackedPaths.filter((p) => prefixes.some((pre) => p.startsWith(pre)) && IMG.test(p));
 }
 
@@ -760,6 +775,20 @@ export async function cmdCheck(): Promise<void> {
     const config = loadConfig();
     const workDir = config.workDir;
     const inputsDir = config.inputsDir ?? "inputs";
+    for (const [label, dir] of [
+      ["workDir", workDir],
+      ["inputsDir", inputsDir],
+    ] as const) {
+      if (!normalizeGuardDir(dir)) {
+        console.log(
+          c.yellow(
+            `  ⚠ repoos.toml's ${label} ("${dir}") doesn't resolve to a real directory — the ` +
+              "task-asset guard can't be scoped to it and is effectively disabled for this path. " +
+              "Fix the config rather than relying on this warning.",
+          ),
+        );
+      }
+    }
     let tracked: string[] = [];
     try {
       tracked = execFileSync("git", ["ls-files", "--", workDir, inputsDir], {
