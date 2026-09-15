@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T15:34:11Z"
+review_passes: 2
 id: "0350"
 title: Honor workDir/inputsDir in repoos check's task-assets guard
 type: bug
@@ -10,8 +12,6 @@ created_by: ""
 branch: feat/honor-workdir-inputsdir-in-repoos-check-
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:35Z"
-updated_at: "2026-09-15T15:11:51Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ should be a small, self-contained change.
 - 2026-09-15T14:22:20Z · status ready→active, branch
 - 2026-09-15T14:28:59Z · status active→review
 - 2026-09-15T15:11:51Z · note: Addressed the review's normalize-leading-./-and-fail-loud suggestion (commit 508b3b27 on this branch, repoos check green): added normalizeGuardDir() (strips leading ./, treats '.' as empty) used in taskAssetOffenders' prefix building, plus a yellow warning at the check.ts call site when a configured workDir/inputsDir normalizes to nothing. Also found and fixed a related issue while implementing this: an empty-string workDir previously made git ls-files exit fatally, which the surrounding try/catch silently swallowed as 'not a git repo', turning a misconfiguration into a false pass — the new warning now catches this before that call even runs. Tests added for both normalizeGuardDir and the ./ / empty-dir cases in taskAssetOffenders.
+
