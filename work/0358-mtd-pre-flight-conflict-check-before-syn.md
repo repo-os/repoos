@@ -2,14 +2,14 @@
 id: "0358"
 title: "MTD: pre-flight conflict check before syncing a candidate worktree, not after"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-15T16:00:08Z"
-updated_at: "2026-09-15T16:00:08Z"
+updated_at: "2026-09-15T18:25:10Z"
 ---
 ## Problem
 
@@ -119,3 +119,4 @@ optimization.
 ## Activity
 
 - 2026-09-15T16:00:08Z · created · unknown
+- 2026-09-15T18:25:10Z · status inbox→ready
