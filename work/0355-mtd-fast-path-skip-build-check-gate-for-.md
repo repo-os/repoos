@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T15:23:24Z"
+review_passes: 1
 id: "0355"
 title: "MTD fast path: skip build/check gate for docs-only candidates"
 type: feature
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/mtd-fast-path-skip-build-check-gate-for-
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T13:11:13Z"
-updated_at: "2026-09-15T15:19:14Z"
 ---
 ## Problem
 
@@ -117,3 +118,4 @@ merge completes and BEFORE the "Full build" step (~line 826):
 - 2026-09-15T14:24:25Z · status inbox→ready
 - 2026-09-15T15:06:29Z · status ready→active, branch
 - 2026-09-15T15:19:14Z · status active→review
+
