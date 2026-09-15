@@ -2,14 +2,14 @@
 id: "0351"
 title: Make css-layers/theme-contrast check guards configurable per project
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-15T09:22:36Z"
-updated_at: "2026-09-15T09:22:36Z"
+updated_at: "2026-09-15T19:14:37Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 ## Activity
 
 - 2026-09-15T09:22:36Z · created · unknown
+- 2026-09-15T19:14:37Z · status inbox→ready
