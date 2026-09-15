@@ -2,14 +2,14 @@
 id: "0352"
 title: Make repoos check's bare-require guard scan configurable source roots
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-15T09:22:38Z"
-updated_at: "2026-09-15T09:22:38Z"
+updated_at: "2026-09-15T19:14:40Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ that's the only case it's about.
 ## Activity
 
 - 2026-09-15T09:22:38Z · created · unknown
+- 2026-09-15T19:14:40Z · status inbox→ready
