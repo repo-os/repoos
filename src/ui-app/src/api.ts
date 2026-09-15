@@ -12,7 +12,7 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
     // on an HTTP error status. Say that instead of the browser's opaque
     // "Failed to fetch" / "Load failed".
     throw new Error(
-      "Can't reach the RepoOS server — it may be down. Restart it (`just serve`), then reload.",
+      "Can't reach the RepoOS server — it may be down. Restart it (`repoos serve`), then reload.",
     );
   }
   if (!r.ok) {

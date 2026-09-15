@@ -102,7 +102,7 @@ export function directServeBlockedByAgent(env: NodeJS.ProcessEnv = process.env):
 
 export async function cmdServe(
   args: string[],
-  opts: { onShutdown?: () => void } = {},
+  opts: { onShutdown?: () => void; onReady?: (url: string) => void } = {},
 ): Promise<void> {
   // Defense in depth (#0096): a managed agent process must never start its own
   // `repoos serve`. An agent that ignores the mission and runs `repoos serve`
@@ -194,6 +194,12 @@ export async function cmdServe(
     );
   }
   console.log(c.dim("  press ^C to stop\n"));
+
+  // Fires only now that the server is actually listening (handle.url is a
+  // live, bound address) — a caller opening a browser tab any earlier races
+  // the server's own startup and shows connection errors until a manual
+  // reload.
+  opts.onReady?.(handle.url);
 
   // Live activity log in the terminal, mirroring the SSE stream.
   if (!quiet) {
