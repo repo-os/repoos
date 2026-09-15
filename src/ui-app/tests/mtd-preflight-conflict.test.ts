@@ -159,6 +159,31 @@ describe("mergeBranch dry-run pre-flight (#0358)", () => {
       clean();
     }
   });
+
+  it("fails open when an untracked file would be overwritten by the merge", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/t5").path!;
+      // A file main is about to introduce, but as an untracked file already
+      // sitting in the task worktree — git refuses the merge outright rather
+      // than reporting it as a normal conflict.
+      commitFile(root, "src/b.ts", "main\n", "main adds b.ts");
+      mkdirSync(join(wt, "src"), { recursive: true });
+      writeFileSync(join(wt, "src/b.ts"), "untracked\n");
+      const headBefore = git(wt, ["rev-parse", "HEAD"]);
+
+      const res = await mergeBranch(wt, "main", { dryRun: true });
+
+      expect(res.merged).toBe(false);
+      expect(res.conflicts).toEqual([]);
+      expect(res.reason).toContain("working tree not clean");
+      // Never committed the blocking file, never left mid-merge.
+      expect(git(wt, ["rev-parse", "HEAD"])).toBe(headBefore);
+      expect(() => git(wt, ["rev-parse", "-q", "--verify", "MERGE_HEAD"])).toThrow();
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("syncCandidate pre-flight conflict check (#0358)", () => {

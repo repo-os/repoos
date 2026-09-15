@@ -1294,7 +1294,25 @@ async function dryRunMergeBranch(
   }
   const run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
   if (run.status === 0) {
-    await runGit(root, ["merge", "--abort"], 4000);
+    // A merge that makes no changes (branch already an ancestor of the
+    // checkout) is reported as a clean, no-op success WITHOUT ever setting
+    // MERGE_HEAD — there is nothing to abort, and calling `merge --abort`
+    // anyway would itself fail ("MERGE_HEAD not found"). Only abort when
+    // there is actually a merge in progress to undo.
+    if (hasInProgressGitOperation(root)) {
+      const abort = await runGit(root, ["merge", "--abort"], 4000);
+      if (abort.status !== 0) {
+        // The merge itself succeeded, but the checkout is now mid-merge and
+        // we failed to undo it: the "clean merge" verdict is no longer
+        // trustworthy and the caller must not act on it. Fail open.
+        return {
+          merged: false,
+          ff: false,
+          conflicts: [],
+          reason: "pre-flight skipped: merge --abort failed, checkout left mid-merge",
+        };
+      }
+    }
     return { merged: true, ff: false, conflicts: [] };
   }
   if (/would be overwritten by merge/.test(run.stderr)) {
@@ -1311,7 +1329,19 @@ async function dryRunMergeBranch(
   const conflicts =
     git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
   const blocking = conflicts.filter((p) => !isResolvableConflict(p, opts));
-  await runGit(root, ["merge", "--abort"], 4000);
+  const abort = await runGit(root, ["merge", "--abort"], 4000);
+  if (abort.status !== 0) {
+    // Same reasoning as above: the checkout's merge state is no longer known,
+    // so a "conflict" verdict here would risk sending a repair engineer into
+    // a worktree that is not actually mid-merge on the branch it expects, or
+    // still mid-merge with conflicts unresolved.
+    return {
+      merged: false,
+      ff: false,
+      conflicts: [],
+      reason: "pre-flight skipped: merge --abort failed, checkout left mid-merge",
+    };
+  }
   if (blocking.length > 0) {
     return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
   }
