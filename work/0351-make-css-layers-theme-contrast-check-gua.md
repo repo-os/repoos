@@ -8,8 +8,9 @@ area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:36Z"
-updated_at: "2026-09-15T19:14:37Z"
+updated_at: "2026-09-15T19:14:49Z"
 ---
 ## Problem
 
@@ -57,3 +58,4 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 
 - 2026-09-15T09:22:36Z · created · unknown
 - 2026-09-15T19:14:37Z · status inbox→ready
+- 2026-09-15T19:14:49Z · model_override
