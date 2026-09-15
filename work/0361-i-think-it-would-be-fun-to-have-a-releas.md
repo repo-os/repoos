@@ -2,14 +2,14 @@
 id: "0361"
 title: Add optional AI-draftable release notes when cutting a release
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-optional-ai-draftable-release-notes-
 created_at: "2026-09-15T19:22:15Z"
-updated_at: "2026-09-15T19:24:14Z"
+updated_at: "2026-09-15T19:24:22Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ I think it would be fun to have a release notes option when cutting a new releas
 - 2026-09-15T19:22:15Z · created · hello@repoos.org
 - 2026-09-15T19:23:28Z · status draft→inbox, title, area, body
 - 2026-09-15T19:24:14Z · status inbox→ready
+- 2026-09-15T19:24:22Z · status ready→active, branch
