@@ -2,7 +2,7 @@
 id: "0354"
 title: "Docs Debt Agent: verify AGENTS.md/docs/user-docs claims against real code"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/docs-debt-agent-verify-agents-md-docs-us
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: openrouter/google/gemini-3.8-flash
 created_at: "2026-09-15T12:59:49Z"
-updated_at: "2026-09-15T15:41:49Z"
+updated_at: "2026-09-15T15:54:31Z"
 ---
 ## Problem
 
@@ -153,3 +153,4 @@ its conventions rather than reinventing them:
 - 2026-09-15T14:21:39Z · status inbox→ready
 - 2026-09-15T15:41:48Z · review_model_override
 - 2026-09-15T15:41:49Z · status ready→active, branch
+- 2026-09-15T15:54:31Z · status active→review
