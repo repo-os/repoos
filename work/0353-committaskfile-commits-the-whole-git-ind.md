@@ -2,14 +2,14 @@
 id: "0353"
 title: "commitTaskFile commits the whole git index, not just the task file"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-15T10:45:58Z"
-updated_at: "2026-09-15T10:45:58Z"
+updated_at: "2026-09-15T15:00:20Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ before merge").
 ## Activity
 
 - 2026-09-15T10:45:58Z · created · unknown
+- 2026-09-15T15:00:20Z · status inbox→ready
