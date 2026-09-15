@@ -14,8 +14,9 @@ const repo = useRepoStore();
 
 /** The Debug tab shows two views: the existing task logs, and a task-scoped
  *  Debugger chat. Both stay reachable (the chat is additive, never a
- *  replacement for the logs — see task #0337). */
-const view = ref<"logs" | "debugger">("logs");
+ *  replacement for the logs — see task #0337). v-model'd so a Fix handoff can
+ *  open the Debugger view directly. */
+const view = defineModel<"logs" | "debugger">("view", { default: "logs" });
 
 /**
  * Only tasks that actually have a git worktree cut from main can be synced.

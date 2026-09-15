@@ -621,6 +621,14 @@ async function openPanelFromError(): Promise<void> {
   await ui.openTask(props.task);
   ui.activeTab = "details";
 }
+
+/** Open the task's own debugger (its Debug tab, Debugger view) after a task
+ *  error's Fix is sent. */
+async function openDebuggerFromError(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "debug";
+  ui.debugView = "debugger";
+}
 </script>
 
 <template>
@@ -829,6 +837,7 @@ async function openPanelFromError(): Promise<void> {
       :task-id="task.id"
       :task-title="task.title"
       @open-panel="openPanelFromError"
+      @open-debugger="openDebuggerFromError"
       @click.stop
     />
   </article>

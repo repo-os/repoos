@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import DoneErrorCard from "../src/components/DoneErrorCard.vue";
@@ -26,6 +26,7 @@ async function flush(): Promise<void> {
 }
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   for (const key of ["scrollHeight", "clientHeight"] as const) {
     const desc = original[key];
     if (desc) Object.defineProperty(HTMLElement.prototype, key, desc);
@@ -82,6 +83,40 @@ describe("DoneErrorCard (card mode — the compact board surface)", () => {
     expect(fix.classes()).toContain("done-error-fix");
     // Card mode: the parent styles the fix button to span the full width.
     expect(wrapper.find(".done-error--card").exists()).toBe(true);
+  });
+
+  it("routes Fix to the failing task's own debugger, not the global one (#0356)", async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> | null }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({
+          url,
+          body: init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null,
+        });
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+
+    const wrapper = mount(DoneErrorCard, {
+      props: {
+        message: "merge conflict: src/a.ts",
+        step: "check",
+        taskId: "0356",
+        taskTitle: "Route it",
+      },
+    });
+    await flush();
+
+    await wrapper.find("button.done-error-fix").trigger("click");
+    await flush();
+
+    // Scoped to the task that raised the error — not the global `/api/debugger`.
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("/api/tasks/0356/debugger/message");
+    expect(String(calls[0].body?.text)).toContain("0356");
+    // The parent opens this task's Debug tab; the card just signals it.
+    expect(wrapper.emitted("open-debugger")).toHaveLength(1);
   });
 });
 
