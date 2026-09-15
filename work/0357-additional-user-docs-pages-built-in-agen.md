@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T15:50:48Z"
-updated_at: "2026-09-15T15:59:26Z"
+updated_at: "2026-09-15T15:59:33Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ check` does not cover this directory.
 
 - 2026-09-15T15:50:48Z · created · unknown
 - 2026-09-15T15:59:26Z · status inbox→ready
+- 2026-09-15T15:59:33Z · model_override
