@@ -2,7 +2,7 @@
 id: "0347"
 title: repoos serve process title should include the managed project name
 type: feature
-status: review
+status: done
 priority: p3
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/repoos-serve-process-title-should-includ
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T06:42:59Z"
-updated_at: "2026-09-15T07:10:31Z"
+updated_at: "2026-09-15T07:44:41Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ running instances legible, not a process-management feature.
 - 2026-09-15T06:44:34Z · status inbox→ready
 - 2026-09-15T06:44:59Z · status ready→active, branch
 - 2026-09-15T07:10:31Z · status active→review
+- 2026-09-15T07:44:41Z · status review→done, release:success
