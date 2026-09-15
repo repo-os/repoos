@@ -2,14 +2,14 @@
 id: "0357"
 title: "Additional user-docs pages: built-in agents, authentication, deployments/releases"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-15T15:50:48Z"
-updated_at: "2026-09-15T15:50:48Z"
+updated_at: "2026-09-15T15:59:26Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ check` does not cover this directory.
 ## Activity
 
 - 2026-09-15T15:50:48Z · created · unknown
+- 2026-09-15T15:59:26Z · status inbox→ready
