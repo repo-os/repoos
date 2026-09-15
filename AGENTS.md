@@ -122,6 +122,34 @@ Before a task moves to review, `repoos check` must pass. This runs:
 
 One command — `repoos check` — is the single bar for "did this break anything?"
 
+`repoos check` only catches code breakage — it says nothing about whether this
+task's diff just made a doc wrong. Before moving to review, also check: does
+this change contradict a line in `AGENTS.md`, `docs/`, or `user-docs/` — a
+path that moved, a behavior that changed, a constraint that no longer holds?
+If so, fix that line as part of this task. Scope it to what the diff actually
+touches; do not go looking for unrelated staleness elsewhere in the docs —
+that is a separate, periodic audit concern, not this task's job, and turning
+a scoped fix into a drive-by audit is scope creep the same as any other.
+
+## Docs and context can go stale — inline scope vs. periodic audit
+
+Two different mechanisms keep `AGENTS.md`/`docs/`/`user-docs/` honest, and
+they are not substitutes for each other:
+
+- **Inline, scoped, every task** — the Definition of done bullet above. An
+  implementing agent has the diff in hand and near-zero marginal cost to
+  check it against the docs it directly touches. This catches drift the
+  moment it's introduced.
+- **Periodic, broad, separate** — nothing in a single task's context is
+  positioned to notice a doc describing a feature nobody's touched in
+  months, or an `AGENTS.md` rule that quietly stopped being true. That needs
+  a sweep with the whole repo in view, on its own schedule, filing findings
+  as tasks rather than editing docs ad hoc mid-sweep (same task-creation path
+  as everything else — see "Never write directly to `work/*.md` files" under
+  Rules). This is intentionally a separate, narrowly-scoped agent concern
+  from general tech-debt/code-quality review — conflating the two produces a
+  vague mandate and noisy, low-signal findings.
+
 ## This repo is self-hosted — read this before running anything
 
 RepoOS manages its own roadmap. This means a few things are true that you
