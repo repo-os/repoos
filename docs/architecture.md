@@ -240,7 +240,8 @@ runtime. Bun boots ~2-3x faster, holds less memory, and runs the test suite
 ~5x faster with no swap-thrash flake — a clear win, so it's the **default when
 `bun` is on PATH**.
 
-`repoos serve` (only that command) re-execs under Bun on startup:
+Every `repoos` command re-execs under Bun on startup (as of 2026-09-15; before
+that, only `serve` did):
 
 | `REPOOS_RUNTIME` | behavior |
 | --- | --- |
@@ -251,9 +252,34 @@ runtime. Bun boots ~2-3x faster, holds less memory, and runs the test suite
 `REPOOS_BUN_PATH` overrides the PATH lookup. The switch is a true `execve`
 (same PID, no wrapper) on Node ≥ 22.15 / POSIX, and a signal-relaying child
 process elsewhere. `src/core/runtime.ts` guards against re-exec loops with
-`REPOOS_RUNTIME_REEXEC=1`. Everything the server then spawns via
-`process.execPath` (reload replacements, preview children, `repoos check`)
-inherits the same runtime.
+`REPOOS_RUNTIME_REEXEC=1`, which the Bun process deletes as soon as it starts,
+so a `repoos` command an agent runs from inside the server still makes its own
+switch instead of inheriting the flag and staying on Node. Everything the
+server spawns via `process.execPath` (reload replacements, preview children,
+`repoos check`) inherits the same runtime.
+
+The switch used to be `serve`-only, on the theory that short commands would
+pay for a second process start for no benefit. Measured on 2026-09-15 (Node
+24.21, Bun 1.3.14), that was backwards: `repoos list` takes ~656 ms on Node,
+~344 ms on Node-then-Bun, and ~253 ms launched directly on Bun, so even with
+the extra hop every command is roughly twice as fast. Launchers that can start
+Bun directly skip the hop: the `repoos` launcher that `install.sh` writes (and
+`repoos upgrade` regenerates) execs Bun when it's on PATH, the `justfile` uses
+`bun`, and `bunfig.toml`'s `[run] bun = true` makes `bun run <script>` run
+`node …` commands and Node-shebang tools (`tsc`, `vue-tsc`, `vite`, `vitest`)
+on Bun. `npm run <script>` still uses Node, the fallback for machines without
+Bun.
+
+What changes when the build runs on Bun (checked 2026-09-15): the compiled
+server and CLI in `dist/` are byte-identical, and each runtime's build is
+deterministic on its own. The UI bundle's chunk hashes do change, because
+Vite builds its lazy-load preload helper from `preload.toString()`, and Bun's
+`Function.prototype.toString()` returns Bun's re-transpiled source (helper
+functions become function expressions and move above the constants). The
+shipped helper was compared in full: same CSP-nonce handling, same
+existing-`<link>` check, same `import.meta.url` use, just reordered. If a
+future Vite or Bun upgrade makes that helper differ in substance, that is a
+reason to run `vite build` on Node, so re-check it when either is upgraded.
 
 `repoos check`'s vitest step also runs under Bun — `preferBunForDevTasks()`
 (→ `bun run --bun test`) is true when the repo is Bun-native (has `bun.lock`)
@@ -273,10 +299,11 @@ spawning can flip which of two concurrent async operations finishes first —
 see that file's header and #0330) that a test fix verified under one runtime
 failed deterministically under the other. `run-tests.mjs` now re-execs itself
 onto Bun whenever it's resolvable and `REPOOS_RUNTIME` isn't `node`, mirroring
-`reexecServeUnderBunIfRequested()` above (duplicated inline, not imported —
+`reexecUnderBunIfRequested()` above (duplicated inline, not imported —
 this file runs directly via `node`, with no TypeScript loader available). So
 `bun run test`, `npm run test`, `node scripts/run-tests.mjs`, and
 `bun run --bun test` all converge on the same runtime now. `just test` /
-`just test-node` still pick the runtime explicitly for local iteration;
-`just test-node` now sets `REPOOS_RUNTIME=node` explicitly rather than
-relying on the absence of `--bun`, since that's no longer sufficient.
+`just test-node` still pick the runtime explicitly for local iteration.
+`just test-node` runs `REPOOS_RUNTIME=node node scripts/run-tests.mjs`
+directly: `bunfig.toml` aliases `node` to Bun inside `bun run`, so going
+through `bun run test` can no longer reach Node at all.

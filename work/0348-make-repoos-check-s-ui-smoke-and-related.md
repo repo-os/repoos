@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T10:38:18Z"
+review_passes: 2
 id: "0348"
 title: Make repoos check's ui-smoke (and related steps) per-project opt-in instead of RepoOS-only
 type: feature
@@ -12,6 +14,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-15T07:46:52Z"
 updated_at: "2026-09-15T08:45:36Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -150,3 +153,5 @@ Full write-up: `docs/audits/2026-09-check-step-genericity-audit.md`.
 - 2026-09-15T08:16:33Z · status inbox→ready
 - 2026-09-15T08:16:35Z · status ready→active, branch
 - 2026-09-15T08:45:36Z · status active→review
+- 2026-09-15T09:29:53Z · note: Review suggestions addressed (commit 6e0f8185 on this branch, repoos check green): RepoOS's own UI smoke test now runs through the generic smoke declaration (package.json smoke script -> scripts/ui-smoke.mjs -> src/commands/ui-smoke.ts), and the pkg.name === "repoos" special case in check.ts is removed. A test fails if the declaration goes missing. Audit follow-ups filed: #0349 (build-info staleness skip, p1), #0350 (task-assets honors workDir/inputsDir), #0351 (css-layers/theme-contrast configurable), #0352 (bare-require source roots).
+- 2026-09-15T09:53:45Z · note: UI smoke script now prefers Bun (commit d381382e on this branch, repoos check green): scripts/ui-smoke.mjs re-execs under Bun when available, same as scripts/run-tests.mjs; REPOOS_RUNTIME=node keeps it on Node. Verified on Bun 1.3.14 and Node 24.21.0.

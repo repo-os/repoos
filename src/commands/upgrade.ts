@@ -165,9 +165,29 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
 }
 
 /**
+ * The `repoos` launcher script: Bun when it's installed, Node otherwise
+ * (`REPOOS_RUNTIME=node` pins Node). The runtime is picked each time `repoos`
+ * runs, so installing Bun later takes effect with no reinstall. Must match the
+ * heredoc in install.sh exactly; launcher.test.ts compares the two.
+ */
+export function launcherScript(entry: string): string {
+  return [
+    "#!/usr/bin/env bash",
+    "# repoos launcher: Bun when it's installed, Node otherwise (REPOOS_RUNTIME=node pins Node).",
+    `entry="${entry}"`,
+    'if [ "${REPOOS_RUNTIME:-}" != "node" ]; then',
+    '  bun="${REPOOS_BUN_PATH:-$(command -v bun 2>/dev/null || true)}"',
+    '  if [ -n "$bun" ] && [ -x "$bun" ]; then exec "$bun" "$entry" "$@"; fi',
+    "fi",
+    'exec node --no-warnings "$entry" "$@"',
+    "",
+  ].join("\n");
+}
+
+/**
  * Rewrite the `repoos` launcher script install.sh created, so an existing
- * curl install picks up launcher-level fixes (e.g. Node flags) without
- * needing to re-run install.sh. Matches install.sh's template exactly. Silent
+ * curl install picks up launcher-level fixes (e.g. the Bun-first runtime
+ * choice) without needing to re-run install.sh. Silent
  * no-op if the launcher isn't where install.sh puts it — e.g. a custom setup
  * that symlinks straight to cli/index.js instead.
  */
@@ -176,10 +196,7 @@ function regenerateLauncher(root: string): void {
   const launcherPath = join(binDir, "repoos");
   if (!existsSync(launcherPath)) return;
   try {
-    writeFileSync(
-      launcherPath,
-      `#!/usr/bin/env bash\nexec node --no-warnings "${join(root, "cli", "index.js")}" "$@"\n`,
-    );
+    writeFileSync(launcherPath, launcherScript(join(root, "cli", "index.js")));
     chmodSync(launcherPath, 0o755);
   } catch {
     // Best-effort — an upgrade that fails to touch the launcher isn't worth failing over.

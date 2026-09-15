@@ -67,12 +67,12 @@ dev:
 # serve on nohup `just serve` (port from repoos.toml `servePort`, else per-repo default; this repo pins 7171)
 [group('dev')]
 serve:
-    nohup node dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
+    nohup bun dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
 # stop THIS repo's background server (by its own .repoos/serve-<port>.lock — never a machine-wide pkill)
 [group('dev')]
 kill:
-    node dist/cli/index.js stop || true
+    bun dist/cli/index.js stop || true
 
 # restart: build then kill then serve
 [group('dev')]
@@ -145,15 +145,13 @@ fmt-check:
 test *args:
     bun run --bun test -- {{args}}
 
-# run the test suite under Node (the pre-Bun path) `just test-node`
-# REPOOS_RUNTIME=node is required, not optional: scripts/run-tests.mjs
-# re-execs itself onto Bun whenever it's resolvable, regardless of whether
-# the OUTER `bun run` invocation passed --bun — so a bare `bun run test`
-# no longer reliably means Node (see run-tests.mjs's header for why that
-# split runtime was a real bug, not just an inconsistency).
+# run the test suite under Node (the fallback path) `just test-node`
+# Calls node directly: bunfig.toml aliases `node` to Bun inside `bun run`, so
+# `bun run test` can't reach Node at all. REPOOS_RUNTIME=node is still required
+# so scripts/run-tests.mjs doesn't re-exec itself onto Bun.
 [group('quality')]
 test-node *args:
-    REPOOS_RUNTIME=node bun run test -- {{args}}
+    REPOOS_RUNTIME=node node scripts/run-tests.mjs {{args}}
 
 # ── db ───────────────────────────────────────────────────────────────────
 
@@ -291,7 +289,7 @@ build-mobile: build-android build-ios
 current-version:
     #!/usr/bin/env bash
     set -euo pipefail
-    pkg=$(node -p "require('./package.json').version")
+    pkg=$(bun -p "require('./package.json').version")
     tag=$(git tag --sort=-v:refname | head -1)
     echo "package.json: $pkg"
     echo "latest tag:   ${tag:-none}"
@@ -325,7 +323,7 @@ release version:
     fi
 
     echo "==> bumping package.json to $version"
-    node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.version='$version'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');"
+    bun -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.version='$version'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');"
 
     echo "==> running checks"
     bun run build

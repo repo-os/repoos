@@ -64,6 +64,10 @@ environment variables, not `repoos.toml`:
 | `REPOOS_RUNTIME=node` | Always Node. The opt-out. |
 | `REPOOS_BUN_PATH=/path/to/bun` | Use this binary explicitly, skipping the `PATH` lookup. |
 
+This applies to every `repoos` command, not just `repoos serve`. The `repoos`
+launcher the install script creates starts Bun directly when it's installed, so
+there's no Node step at all.
+
 `repoos serve` prints which runtime it picked at startup. Bun is substantially
 faster for the subprocess-heavy work RepoOS does — on this project's own test
 suite it's roughly a 5x difference — so the default is worth keeping unless you

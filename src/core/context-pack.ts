@@ -752,8 +752,8 @@ function renderPack(
   push("");
   push("```bash");
   push("repoos check         # full check: build, typecheck, tests, UI smoke test");
-  push("bun run build        # compile (or `npm run build`)");
-  push("bun run test         # test suite (or `npm test`)");
+  push("bun run build        # compile (`npm run build` only if the repo doesn't use Bun)");
+  push("bun run test         # test suite (`npm test` only if the repo doesn't use Bun)");
   push("bun run build:ui     # UI-only build");
   push("```");
   push("");

@@ -32,7 +32,7 @@
  * verified under one runtime silently failed under the other. The block
  * below re-execs this whole script under Bun, once, whenever Bun is on PATH
  * and not explicitly opted out (`REPOOS_RUNTIME=node`) — mirroring
- * `reexecServeUnderBunIfRequested()` in src/core/runtime.ts, duplicated
+ * `reexecUnderBunIfRequested()` in src/core/runtime.ts, duplicated
  * inline rather than imported because this file runs directly via
  * `node scripts/run-tests.mjs` with no TypeScript loader available. So
  * `bun run test`, `npm run test`, `node scripts/run-tests.mjs`, and

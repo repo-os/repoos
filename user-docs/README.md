@@ -84,4 +84,4 @@ ones that touch nothing here.
 VitePress builds with `cleanUrls: true` (`foo.html` served at `/foo`);
 `wrangler.jsonc`'s default `html_handling` already matches that, so no
 `_headers`/`_redirects` file is needed. Verify locally before deploying:
-`cd user-docs && npx wrangler deploy --dry-run`.
+`cd user-docs && bunx wrangler deploy --dry-run`.

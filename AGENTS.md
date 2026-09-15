@@ -122,6 +122,34 @@ Before a task moves to review, `repoos check` must pass. This runs:
 
 One command — `repoos check` — is the single bar for "did this break anything?"
 
+`repoos check` only catches code breakage — it says nothing about whether this
+task's diff just made a doc wrong. Before moving to review, also check: does
+this change contradict a line in `AGENTS.md`, `docs/`, or `user-docs/` — a
+path that moved, a behavior that changed, a constraint that no longer holds?
+If so, fix that line as part of this task. Scope it to what the diff actually
+touches; do not go looking for unrelated staleness elsewhere in the docs —
+that is a separate, periodic audit concern, not this task's job, and turning
+a scoped fix into a drive-by audit is scope creep the same as any other.
+
+## Docs and context can go stale — inline scope vs. periodic audit
+
+Two different mechanisms keep `AGENTS.md`/`docs/`/`user-docs/` honest, and
+they are not substitutes for each other:
+
+- **Inline, scoped, every task** — the Definition of done bullet above. An
+  implementing agent has the diff in hand and near-zero marginal cost to
+  check it against the docs it directly touches. This catches drift the
+  moment it's introduced.
+- **Periodic, broad, separate** — nothing in a single task's context is
+  positioned to notice a doc describing a feature nobody's touched in
+  months, or an `AGENTS.md` rule that quietly stopped being true. That needs
+  a sweep with the whole repo in view, on its own schedule, filing findings
+  as tasks rather than editing docs ad hoc mid-sweep (same task-creation path
+  as everything else — see "Never write directly to `work/*.md` files" under
+  Rules). This is intentionally a separate, narrowly-scoped agent concern
+  from general tech-debt/code-quality review — conflating the two produces a
+  vague mandate and noisy, low-signal findings.
+
 ## This repo is self-hosted — read this before running anything
 
 RepoOS manages its own roadmap. This means a few things are true that you
@@ -200,7 +228,28 @@ cannot tell from the code alone:
 
 ## Conventions
 
-- Runtime: Bun (the package also runs under Node ≥ 20 once built).
+- **Runtime: Bun. Node is only the fallback for machines without Bun.**
+  Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
+  (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools
+  they call on Bun, and the install launcher execs Bun directly. When you add
+  or change anything that runs code:
+  - `bun <file>`, `bun run <script>`, `bunx <tool>`, `bun -e` / `bun -p`.
+    Not `node <file>`, `npm run`, `npx`, `node -e`.
+  - New scripts get `#!/usr/bin/env bun`.
+  - Spawning a subprocess: `process.execPath` (inherits the current runtime)
+    or `bun`. Fall back to `npm`/`node` only when Bun can't be launched
+    (ENOENT/EACCES), never merely because a Bun run failed; a failed build
+    is the real result.
+  - Keep Node only where Bun genuinely may be absent, and say why in a
+    comment: the CLI entry shebang (npm installs), the launcher's fallback
+    branch, `scripts/run-tests.mjs` (runs under `npm test`, then re-execs onto
+    Bun), `REPOOS_RUNTIME=node` / `just test-node`, and test fakebins that
+    imitate third-party CLIs.
+  - If Bun ever produces different output from Node for a tool, measure it
+    and write the finding into `docs/architecture.md` before choosing Node.
+    Vite's UI bundle, for example, differs cosmetically and was verified
+    equivalent.
+  Background: `docs/architecture.md` (Runtime).
 - Tests: `bun run test` (vitest), never bare `bun test`. Bun's own test runner
   will pick up the same `*.test.ts` files and mostly work, but its `vi` shim is
   missing pieces like `vi.stubGlobal`/`vi.unstubAllGlobals` — those tests then
@@ -341,7 +390,7 @@ this fixture is full of — the async index build reliably finished before
 prove. Confirmed with a direct A/B on identical code: `bunx vitest run` 5/5
 pass, `bun run --bun vitest run` 2/2 fail. Fixed by making
 `scripts/run-tests.mjs` self-re-exec onto Bun whenever it's resolvable
-(mirroring `reexecServeUnderBunIfRequested()` in `src/core/runtime.ts`), so
+(mirroring `reexecUnderBunIfRequested()` in `src/core/runtime.ts`), so
 every invocation path now converges on one runtime — see `docs/architecture.md`.
 
 **The general lesson:** "it passes for me but fails in the pipeline" is a

@@ -7,7 +7,7 @@ import {
   isBun,
   resolveBun,
   preferBunForDevTasks,
-  reexecServeUnderBunIfRequested,
+  reexecUnderBunIfRequested,
 } from "../../core/runtime.js";
 
 function findRuntimeSrc(): string {
@@ -118,20 +118,28 @@ describe("preferBunForDevTasks", () => {
   });
 });
 
-describe("reexecServeUnderBunIfRequested — no-op cases", () => {
+describe("reexecUnderBunIfRequested — no-op cases", () => {
   it("does nothing when pinned to Node", () => {
     process.env.REPOOS_RUNTIME = "node";
-    expect(reexecServeUnderBunIfRequested()).toBe(false);
+    expect(reexecUnderBunIfRequested()).toBe(false);
   });
 
   it("does nothing when the re-exec guard is already set", () => {
     process.env.REPOOS_RUNTIME_REEXEC = "1";
-    expect(reexecServeUnderBunIfRequested()).toBe(false);
+    expect(reexecUnderBunIfRequested()).toBe(false);
+  });
+
+  it.runIf(isBun())("clears a leftover guard once running under Bun", () => {
+    // Left set, the guard would leak into every child this process spawns,
+    // pinning an agent's `repoos …` calls inside the server to Node.
+    process.env.REPOOS_RUNTIME_REEXEC = "1";
+    expect(reexecUnderBunIfRequested()).toBe(false);
+    expect(process.env.REPOOS_RUNTIME_REEXEC).toBeUndefined();
   });
 
   it("stays on the current runtime when bun is unresolvable (default mode)", () => {
     // REPOOS_RUNTIME unset -> prefer-bun, but the bogus BUN_PATH -> no bun.
-    expect(reexecServeUnderBunIfRequested()).toBe(false);
+    expect(reexecUnderBunIfRequested()).toBe(false);
   });
 
   it.runIf(!isBun())("warns only for REPOOS_RUNTIME=bun when bun is unresolvable", () => {
@@ -148,7 +156,7 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
     process.env.REPOOS_RUNTIME = "bun";
     let cap = capture();
     try {
-      reexecServeUnderBunIfRequested();
+      reexecUnderBunIfRequested();
     } finally {
       cap.restore();
     }
@@ -159,7 +167,7 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
       process.env.REPOOS_RUNTIME = mode;
       cap = capture();
       try {
-        reexecServeUnderBunIfRequested();
+        reexecUnderBunIfRequested();
       } finally {
         cap.restore();
       }
@@ -173,25 +181,25 @@ describe("reexecServeUnderBunIfRequested — no-op cases", () => {
 // itself runs under Bun; and it needs Node's native .ts type stripping
 // (>= 22.6 / always on 24) to run the fixture source directly.
 const canStripTypes = process.features.typescript !== undefined;
-describe.runIf(canStripTypes && !isBun())("reexecServeUnderBunIfRequested — real switch", () => {
+describe.runIf(canStripTypes && !isBun())("reexecUnderBunIfRequested — real switch", () => {
   function runFixture(env: Record<string, string>): { stdout: string; status: number } {
     const fixture = mkdtempSync(join(tmpdir(), "repoos-rt-fx-"));
     const file = join(fixture, "fx.ts");
     writeFileSync(
       file,
-      `import { reexecServeUnderBunIfRequested } from ${JSON.stringify(RUNTIME_SRC)};\n` +
-        `if (process.argv[2] === "serve" && reexecServeUnderBunIfRequested()) {\n` +
+      `import { reexecUnderBunIfRequested } from ${JSON.stringify(RUNTIME_SRC)};\n` +
+        `if (reexecUnderBunIfRequested()) {\n` +
         `  /* spawn-fallback parent */\n` +
         `} else {\n` +
         `  const rt = (process.versions as {bun?: string}).bun ? "bun" : "node";\n` +
         `  process.stdout.write(rt + " " + JSON.stringify(process.argv.slice(2)) + " guard=" + (process.env.REPOOS_RUNTIME_REEXEC || "unset"));\n` +
-        `  process.exit(process.argv[2] === "serve" ? 7 : 0);\n` +
+        `  process.exit(7);\n` +
         `}\n`,
     );
     try {
       const out = execFileSync(
         process.execPath,
-        ["--experimental-strip-types", "--no-warnings", file, "serve", "--port", "0"],
+        ["--experimental-strip-types", "--no-warnings", file, "list", "--json"],
         { encoding: "utf8", env: { ...process.env, REPOOS_BUN_PATH: "", ...env } },
       );
       return { stdout: out, status: 0 };
@@ -210,11 +218,14 @@ describe.runIf(canStripTypes && !isBun())("reexecServeUnderBunIfRequested — re
     expect(status).toBe(7);
   });
 
-  it.runIf(!!REAL_BUN)("re-execs under Bun by default and propagates exit code", () => {
-    // REPOOS_RUNTIME unset -> prefer-bun; bun is on PATH.
+  it.runIf(!!REAL_BUN)("re-execs any command under Bun by default and propagates exit code", () => {
+    // REPOOS_RUNTIME unset -> prefer-bun; bun is on PATH. The fixture runs
+    // `list`, not `serve`: every command switches now. The Bun process
+    // clears the guard so its own children aren't pinned to Node.
     const { stdout, status } = runFixture({ REPOOS_RUNTIME: "", REPOOS_RUNTIME_REEXEC: "" });
     expect(stdout).toContain("bun ");
-    expect(stdout).toContain("guard=1");
+    expect(stdout).toContain('["list","--json"]');
+    expect(stdout).toContain("guard=unset");
     expect(status).toBe(7);
   });
 });

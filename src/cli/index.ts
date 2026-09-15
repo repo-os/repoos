@@ -23,7 +23,7 @@ import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdStatus } from "../commands/status.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
-import { reexecServeUnderBunIfRequested } from "../core/runtime.js";
+import { reexecUnderBunIfRequested } from "../core/runtime.js";
 import { c } from "./colors.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -106,10 +106,11 @@ function help(): void {
 function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
 
-  // Run the long-lived server under Bun when it's available (opt out with
+  // Run every command under Bun when it's available (opt out with
   // REPOOS_RUNTIME=node). With `execve` this call replaces the process image;
-  // with the spawn fallback the Node parent stays only to relay signals.
-  if ((cmd === "serve" || cmd === "server") && reexecServeUnderBunIfRequested()) {
+  // with the spawn fallback the Node parent stays only to relay signals. Done
+  // first, so nothing (prompts, the staleness warning) runs twice.
+  if (reexecUnderBunIfRequested()) {
     return;
   }
 

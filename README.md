@@ -44,7 +44,7 @@ Install a standalone `repoos` command straight from GitHub Releases:
 curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
 ```
 
-Requires Node.js >= 20.6.0. Installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
+Runs on Bun when it's installed (recommended); otherwise requires Node.js >= 20.6.0. Installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
 
 Then in any repo:
 

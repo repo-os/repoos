@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Serve the BUILT app (dist/ui) against a throwaway COPY of
  * `scripts/screenshot-fixtures`, with auth forced off (see

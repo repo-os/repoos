@@ -3,61 +3,25 @@ import { createHash } from "node:crypto";
 import { defineConfig, type Plugin } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
+import { shellPrecache } from "./src/lib/sw-precache";
+import { serviceWorkerSource } from "./src/lib/sw-source";
 
 /**
- * Emits a service worker that precaches the built app shell for offline use.
- * Cache name is hashed from the asset list so stale caches never survive a
- * deploy. API requests are never intercepted (the live server owns them).
+ * Emits the service worker (source and caching rules: `serviceWorkerSource`),
+ * precaching the app shell (`shellPrecache`). Cache name is hashed from the
+ * generated source so stale caches never survive a deploy or a logic change.
  */
 function repoosSw(): Plugin {
   return {
     name: "repoos:sw",
     apply: "build",
     generateBundle(_opts, bundle) {
-      const assets = Object.keys(bundle).filter((n) => !n.endsWith(".map"));
-      const precache = ["/", ...assets.map((a) => "/" + a)];
-      const tag = createHash("sha256").update(precache.join("|")).digest("hex").slice(0, 10);
-      const sw = `const CACHE = "repoos-shell-${tag}";
-const PRECACHE = ${JSON.stringify(precache)};
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
-});
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
-});
-self.addEventListener("fetch", (e) => {
-  const req = e.request;
-  if (req.method !== "GET") return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
-  if (req.mode === "navigate") {
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("/", copy));
-          return res;
-        })
-        .catch(() => caches.match("/")),
-    );
-    return;
-  }
-  e.respondWith(
-    caches.match(req).then(
-      (hit) =>
-        hit ||
-        fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-          return res;
-        }).catch(() => caches.match("/")),
-    ),
-  );
-});`;
+      const precache = shellPrecache(bundle);
+      // Hash the whole worker source (precache list included), so a change to
+      // its logic rotates the cache too and stale entries get deleted.
+      const draft = serviceWorkerSource(precache, "repoos-shell-pending");
+      const tag = createHash("sha256").update(draft).digest("hex").slice(0, 10);
+      const sw = serviceWorkerSource(precache, `repoos-shell-${tag}`);
       this.emitFile({ type: "asset", fileName: "sw.js", source: sw });
     },
   };

@@ -3,7 +3,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
 #
 # Downloads the latest prebuilt release tarball from GitHub Releases and
-# installs a `repoos` launcher on PATH. Requires Node.js >= 20.6.0.
+# installs a `repoos` launcher on PATH. Runs on Bun when it's installed
+# (recommended); otherwise requires Node.js >= 20.6.0.
 #
 # POSIX-safe body: runs under `bash`, `sh`, or `dash`, so
 # `curl -fsSL ... | sh` works on Linux and macOS alike.
@@ -54,11 +55,17 @@ banner() {
 }
 
 # --- Preflight ---------------------------------------------------------------
-command -v node >/dev/null 2>&1 || \
-  err "Node.js is required but was not found on PATH. Install Node >= 20.6.0 and re-run."
-node_major=$(node -p 'process.versions.node.split(".")[0]')
-if [ "$node_major" -lt 20 ]; then
-  err "Node.js >= 20.6.0 is required (found $(node -v))."
+# RepoOS runs on Bun when it's installed (faster) and falls back to Node.
+if command -v bun >/dev/null 2>&1; then
+  runtime_note="Bun $(bun --version 2>/dev/null || echo '?')"
+elif command -v node >/dev/null 2>&1; then
+  node_major=$(node -p 'process.versions.node.split(".")[0]')
+  if [ "$node_major" -lt 20 ]; then
+    err "Node.js >= 20.6.0 is required when Bun isn't installed (found $(node -v)). Install Bun (https://bun.sh) or a newer Node."
+  fi
+  runtime_note="Node $(node -v)"
+else
+  err "RepoOS needs Bun (recommended, https://bun.sh) or Node.js >= 20.6.0 on PATH."
 fi
 command -v curl >/dev/null 2>&1 || err "curl is required but was not found on PATH."
 command -v tar  >/dev/null 2>&1 || err "tar is required but was not found on PATH."
@@ -81,6 +88,7 @@ esac
 
 banner
 step "detected ${CYAN}${os_label}/${arch_label}${RESET}"
+step "runtime ${CYAN}${runtime_note}${RESET}"
 
 # --- Resolve the latest release version (best-effort, non-fatal) --------------
 # The version is purely cosmetic. If the GitHub API is unreachable or rate
@@ -108,9 +116,17 @@ mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 tar -xzf "$tmpfile" -C "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/cli/index.js"
 
+# Keep in sync with launcherScript() in src/commands/upgrade.ts (a test compares
+# the two). The runtime is picked each time `repoos` runs, not at install time.
 cat > "$BIN_DIR/repoos" <<EOF
 #!/usr/bin/env bash
-exec node --no-warnings "$INSTALL_DIR/cli/index.js" "\$@"
+# repoos launcher: Bun when it's installed, Node otherwise (REPOOS_RUNTIME=node pins Node).
+entry="$INSTALL_DIR/cli/index.js"
+if [ "\${REPOOS_RUNTIME:-}" != "node" ]; then
+  bun="\${REPOOS_BUN_PATH:-\$(command -v bun 2>/dev/null || true)}"
+  if [ -n "\$bun" ] && [ -x "\$bun" ]; then exec "\$bun" "\$entry" "\$@"; fi
+fi
+exec node --no-warnings "\$entry" "\$@"
 EOF
 chmod +x "$BIN_DIR/repoos"
 

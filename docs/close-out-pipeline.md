@@ -189,9 +189,11 @@ FIRST line, which for the `bun run` fallback path is a useless shell preamble li
 reproduce it directly:
 ```bash
 cd repoos-worktrees/repoos/integrate/<id>
-node dist/cli/index.js check
+bun dist/cli/index.js check
 ```
-This is the exact command the orchestrator runs. If it passes here but the job still
+This is the command the orchestrator runs. It launches the candidate's CLI with the
+server's own runtime (`process.execPath`), which is Bun whenever Bun is installed; use
+`REPOOS_RUNTIME=node node dist/cli/index.js check` only if the server is pinned to Node. If it passes here but the job still
 reports `failed`, the job likely got interrupted mid-flight by a server reload (see
 "The reload-churn interaction" below) — retry `POST /api/tasks/<id>/done` rather than
 debugging the candidate further.

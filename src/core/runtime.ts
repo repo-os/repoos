@@ -1,5 +1,5 @@
 /**
- * Runtime selection for the long-lived `repoos serve` process.
+ * Runtime selection for every `repoos` command.
  *
  * RepoOS has zero runtime dependencies and its SQLite layer already targets
  * `bun:sqlite` OR `node:sqlite` (see db.ts), so the server runs unchanged
@@ -16,10 +16,13 @@
  *   REPOOS_RUNTIME=node    always Node
  *   REPOOS_BUN_PATH=/x     explicit bun binary instead of a PATH lookup
  *
- * Only `repoos serve` re-execs — short commands (`list`, `show`, …) would pay
- * a second process launch for no benefit. Everything the server then spawns
- * via `process.execPath` (reload replacements, preview children, `repoos
- * check`) inherits the same runtime automatically.
+ * Every command re-execs, not only `serve` (2026-09-15). The second process
+ * start was once assumed to cost short commands more than it saved; measured,
+ * `repoos list` is ~656 ms on Node, ~344 ms Node→Bun, ~253 ms direct on Bun.
+ * Launchers that can start Bun directly (install.sh's launcher, the justfile,
+ * bunfig.toml for package.json scripts) skip the hop. Everything the server
+ * spawns via `process.execPath` (reload replacements, preview children,
+ * `repoos check`) inherits the same runtime automatically.
  *
  * The switch uses `process.execve` (a true exec: same PID, no wrapper) when
  * available — Node ≥ 22.15 on POSIX — and falls back to a spawned child with
@@ -93,10 +96,17 @@ export function preferBunForDevTasks(cwd: string = process.cwd()): boolean {
  * `bun` unavailable, or a prior attempt already set the re-exec guard — the
  * caller then proceeds normally on the current runtime.
  *
- * Call this for `serve` only, before any server work begins.
+ * Call this first in `main()`, for every command, before any other work.
+ *
+ * Under Bun it also clears the loop guard. The guard only has to survive the
+ * one hop; left set, it leaks into every child this process spawns, so an
+ * agent running `repoos …` inside the server would stay on Node.
  */
-export function reexecServeUnderBunIfRequested(): boolean {
-  if (isBun()) return false;
+export function reexecUnderBunIfRequested(): boolean {
+  if (isBun()) {
+    delete process.env.REPOOS_RUNTIME_REEXEC;
+    return false;
+  }
   if (process.env.REPOOS_RUNTIME_REEXEC === "1") return false; // exactly one attempt
   const mode = runtimeMode();
   if (mode === "node") return false;
@@ -105,7 +115,7 @@ export function reexecServeUnderBunIfRequested(): boolean {
   if (!bun) {
     if (mode === "require-bun") {
       process.stderr.write(
-        "[repoos] REPOOS_RUNTIME=bun but `bun` is not on PATH — running `serve` on Node.\n",
+        "[repoos] REPOOS_RUNTIME=bun but `bun` is not on PATH — running on Node.\n",
       );
     }
     return false;

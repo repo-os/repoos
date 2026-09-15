@@ -285,6 +285,8 @@ interface ProcessRunResult {
   stdout: string;
   stderr: string;
   timedOut?: boolean;
+  /** Spawn error code, e.g. "ENOENT" when the command isn't installed. */
+  errorCode?: string;
 }
 
 function runProcess(
@@ -297,6 +299,7 @@ function runProcess(
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let errorCode: string | undefined;
     let settled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -304,7 +307,7 @@ function runProcess(
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      resolve({ status, stdout, stderr, timedOut });
+      resolve({ status, stdout, stderr, timedOut, errorCode });
     };
 
     child.stdout.on("data", (d: Buffer) => {
@@ -317,7 +320,10 @@ function runProcess(
       stderr += text;
       opts.onChunk?.(text);
     });
-    child.on("error", () => finish(null));
+    child.on("error", (err: NodeJS.ErrnoException) => {
+      errorCode = err.code;
+      finish(null);
+    });
     child.on("close", (code: number | null) => finish(code));
 
     timer = setTimeout(() => {
@@ -325,6 +331,15 @@ function runProcess(
       child.kill("SIGKILL");
     }, opts.timeout);
   });
+}
+
+/**
+ * True when the command couldn't be launched at all (not installed), as
+ * opposed to running and failing. Only then is falling back to another tool
+ * (npm instead of bun) useful; a build that ran and failed is the real result.
+ */
+function commandMissing(res: ProcessRunResult): boolean {
+  return res.errorCode === "ENOENT" || res.errorCode === "EACCES";
 }
 
 /** Candidate validation and publication orchestrator for one job. */
@@ -809,7 +824,7 @@ export class CloseOutOrchestrator {
     // Run the post-merge gate: build + check via bun/npm.
     this.onProgress?.("build");
     let buildRes = await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
-    if (buildRes.status !== 0) {
+    if (commandMissing(buildRes)) {
       buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
     }
     if (buildRes.status !== 0) {
@@ -1227,7 +1242,7 @@ export class CloseOutOrchestrator {
       let rebuildRes: ProcessRunResult | undefined;
       if (canBuild) {
         rebuildRes = await runProcess("bun", ["run", "build"], { cwd: root, timeout: 300_000 });
-        if (rebuildRes.status !== 0) {
+        if (commandMissing(rebuildRes)) {
           rebuildRes = await runProcess("npm", ["run", "build"], { cwd: root, timeout: 300_000 });
         }
       }

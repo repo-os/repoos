@@ -18,7 +18,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
 import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
-import { cmdServe, resolveServeHost } from "./serve.js";
+import { cmdServe } from "./serve.js";
 
 const SAMPLE_TASK = (description: string) => `---
 id: "0001"
@@ -528,25 +528,40 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     // Only pin an explicitly chosen port. The derived default is already stable
     // per checkout, so writing it would just add noise to repoos.toml.
     if (explicit) persistServePort(target, preferred);
-    const { host } = resolveServeHost();
     const dirHint = target === cwd ? null : `cd ${target}`;
     if (target !== cwd) process.chdir(target);
-    // "0.0.0.0" (the Tailscale-detected bind) isn't openable in a browser —
-    // localhost is always reachable regardless of what's actually bound.
-    if (port > 0) openBrowser(`http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
+    // A child process can change ITS OWN cwd (above) but never the parent
+    // shell's — the user's terminal is still sitting in `cwd`. Print the
+    // exact commands to run rather than just noting the mismatch, so there's
+    // nothing to figure out once this server is stopped.
     if (dirHint) {
       console.log(
         c.dim("\n  Your shell is still in ") +
           c.cyan(cwd) +
-          c.dim(" — this new project lives in ") +
-          c.cyan(target) +
-          c.dim("."),
+          c.dim(". When you come back to this project, run:\n\n") +
+          "    " +
+          c.cyan(dirHint) +
+          "\n    " +
+          c.cyan("repoos serve") +
+          "\n",
       );
     }
     console.log(c.dim("  Starting the RepoOS web console…"));
+    // Opening the browser is deferred to onReady — the server isn't actually
+    // listening until cmdServe's startServer() resolves, and opening a tab
+    // any earlier races that startup, showing connection errors until a
+    // manual reload.
     await cmdServe(["--port", String(port)], {
+      onReady: (url) => openBrowser(url),
       onShutdown: dirHint
-        ? () => console.log(c.dim("  cd into the project: ") + c.cyan(dirHint))
+        ? () =>
+            console.log(
+              c.dim("  Start it again with:\n\n    ") +
+                c.cyan(dirHint) +
+                "\n    " +
+                c.cyan("repoos serve") +
+                "\n",
+            )
         : undefined,
     });
     return;

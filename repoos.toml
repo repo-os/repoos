@@ -122,14 +122,14 @@ name = "engineer"
 cli = "opencode"
 model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
-instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Explains what they're doing in chat as they work — reasoning, choices, progress updates."
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 skills = ["frontend-design", "frontend-testing"]
 [[agents]]
 name = "reviewer"
 cli = "opencode"
 model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
-instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Output ONE short markdown report under 400 words with exactly `"
+instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Be fast and focused; a handful of git/read commands is enough. Read-only: never edit files, never change task status, never move the task to done."
 [[agents]]
 name = "pm"
 cli = "opencode"
