@@ -141,6 +141,17 @@ the conflict there, let the branch re-validate), not in the candidate.
 ### 3. `validating` (build + check)
 Runs `bun run build` then `repoos check` in the candidate worktree. Both must succeed.
 
+**Docs-only fast path (#0355):** when the merged diff touches nothing but documentation, both
+steps are skipped. The predicate is literal and mechanical — every changed path must live under
+`docs/` or `user-docs/`, or end in `.md` (the task's own `work/<id>-*.md` is the common `.md`
+case). Any other path (`src/`, `scripts/`, `.github/`, `repoos.toml`, `package.json`, …) runs the
+full gate unchanged; there is no "mostly docs" scoring, and a git error fails safe to the full
+gate. Rationale: build/typecheck/tests/ui-smoke cannot fail differently for a markdown-only diff
+than they already did on main, so they are pure cost. The gate logs the qualifying paths when it
+takes the fast path. The merge, conflict-marker scan, dropped-merge guard, and
+`resetForeignWorkFiles` still run unconditionally. This affects ONLY the close-out gate — standalone
+`repoos check` and human review are untouched.
+
 **Remote Validation Runner (2026-08-28):** when `[remoteValidation] enabled` (see
 `docs/remote-validation.md`), the expensive half — `bun install` + `bun run build` +
 `bun run test` — runs on a disposable Hetzner VM instead, and the local `repoos check`
