@@ -2,14 +2,14 @@
 id: "0249"
 title: Add additional instructions modal to send to dev action
 type: feature
-status: inbox
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-18T06:29:50Z"
-updated_at: "2026-08-18T06:29:50Z"
+updated_at: "2026-09-15T16:37:08Z"
 ---
 ## Problem
 
@@ -52,3 +52,7 @@ When reviewing a task and sending it back to development, there's currently no w
 
 ## Activity
 
+## Activity
+
+- 2026-09-15T16:37:08Z · status inbox→done
+- 2026-09-15T16:37:08Z · note: Closed: not a literal duplicate, but functionality already shipped as part of #0295 (Add a note/activity mechanism for task updates, done 2026-08-28), whose AC explicitly covered the send-to-engineer note modal (SendToEngineerDialog.vue). Only unmet item from this task's AC is the literal button rename 'Send engineer' -> 'Send to dev' (still TaskDrawer.vue:3201) -- not worth a task on its own; fold into any future copy-pass over that view.
