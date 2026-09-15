@@ -1224,6 +1224,112 @@ function blockingFiles(stderr: string): string[] {
 }
 
 /**
+ * Whether a path that conflicted between two sides is one the merge is allowed
+ * to resolve on its own: it matches an `autoResolve` entry (generated output,
+ * the closing task's own file) or an `autoResolveOurs` entry (unrelated task
+ * files, where main's copy wins). A conflicted path matching neither is a REAL
+ * conflict. This is the single definition of "a real conflict" shared by the
+ * real merge and `mergeBranch`'s dry-run pre-flight, so the two can never drift.
+ */
+function isResolvableConflict(
+  path: string,
+  opts: { autoResolve?: string[]; autoResolveOurs?: string[] },
+): boolean {
+  const matches = (rule: string, p: string): boolean =>
+    p === rule || p.startsWith(rule.endsWith("/") ? rule : rule + "/");
+  return [...(opts.autoResolve ?? []), ...(opts.autoResolveOurs ?? [])].some((r) =>
+    matches(r, path),
+  );
+}
+
+/**
+ * Whether `root`'s checkout is mid-operation (merge, rebase, cherry-pick,
+ * revert). Used by `dryRunMergeBranch` to refuse a merge it could not cleanly
+ * back out of. `git rev-parse --git-path` resolves the per-worktree location.
+ */
+function hasInProgressGitOperation(root: string): boolean {
+  for (const name of [
+    "MERGE_HEAD",
+    "CHERRY_PICK_HEAD",
+    "REVERT_HEAD",
+    "rebase-merge",
+    "rebase-apply",
+  ]) {
+    const path = git(root, ["rev-parse", "--git-path", name]);
+    if (!path) continue;
+    if (existsSync(isAbsolute(path) ? path : join(root, path))) return true;
+  }
+  return false;
+}
+
+/**
+ * The dry-run half of `mergeBranch` (#0358): answer "would this merge hit a
+ * real, non-auto-resolvable conflict?" without leaving any trace. Runs
+ * `git merge --no-commit --no-ff` in the given checkout (the task's own
+ * worktree for the close-out pre-flight) and ALWAYS aborts, so the working
+ * tree, index and branch ref are exactly as found. `--no-ff` is required:
+ * without it a fast-forward would move the branch ref and `--no-commit` would
+ * not stop it.
+ *
+ * Classification reuses `isResolvableConflict`, the same predicate the real
+ * merge uses. A merge that cannot run cleanly at all (a dirty checkout git
+ * refuses to touch, unrelated histories, git missing) is reported as a
+ * non-conflict failure so the caller can fail open into the normal flow.
+ */
+async function dryRunMergeBranch(
+  root: string,
+  branch: string,
+  opts: { autoResolve?: string[]; autoResolveOurs?: string[] },
+): Promise<MergeBranchResult> {
+  // A checkout already mid-merge/rebase is not a state this check may touch:
+  // its unmerged paths are not a property of the branch-vs-main merge, and
+  // `merge --abort` would destroy the user's in-progress operation. Fail open.
+  if (hasInProgressGitOperation(root)) {
+    return {
+      merged: false,
+      ff: false,
+      conflicts: [],
+      reason: "pre-flight skipped: a merge or rebase is already in progress",
+    };
+  }
+  const run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
+  if (run.status === 0) {
+    await runGit(root, ["merge", "--abort"], 4000);
+    return { merged: true, ff: false, conflicts: [] };
+  }
+  if (/would be overwritten by merge/.test(run.stderr)) {
+    // Do NOT commit the blocking files here the way the real merge does: this
+    // checkout belongs to the task's own worktree, so writing to its history
+    // would be a side effect the pre-flight must never have. Fail open.
+    return {
+      merged: false,
+      ff: false,
+      conflicts: [],
+      reason: "pre-flight skipped: working tree not clean",
+    };
+  }
+  const conflicts =
+    git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
+  const blocking = conflicts.filter((p) => !isResolvableConflict(p, opts));
+  await runGit(root, ["merge", "--abort"], 4000);
+  if (blocking.length > 0) {
+    return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
+  }
+  if (conflicts.length > 0) {
+    // Every conflicted path auto-resolves, so the real merge completes cleanly.
+    return { merged: true, ff: false, conflicts: [] };
+  }
+  return {
+    merged: false,
+    ff: false,
+    conflicts: [],
+    reason:
+      `${run.stderr}\n${run.stdout}`.trim().split("\n").filter(Boolean).slice(0, 4).join(" ") ||
+      "pre-flight merge failed",
+  };
+}
+
+/**
  * Merge `branch` into the CURRENT checkout — the main worktree, never the
  * task's worktree. Default merge semantics: fast-forward when main is an
  * ancestor of the branch, otherwise a merge commit (`--no-edit` so we never
@@ -1240,12 +1346,16 @@ function blockingFiles(stderr: string): string[] {
  * is completed — used for the task file, which always changes on both sides of
  * a close-out merge and whose branch version is authoritative for the task's
  * final state.
+ *
+ * `opts.dryRun` answers the same conflict question non-destructively (see
+ * `dryRunMergeBranch`) — no commit, no branch move, the checkout restored.
  */
 export async function mergeBranch(
   root: string,
   branch: string,
-  opts: { autoResolve?: string[]; autoResolveOurs?: string[] } = {},
+  opts: { autoResolve?: string[]; autoResolveOurs?: string[]; dryRun?: boolean } = {},
 ): Promise<MergeBranchResult> {
+  if (opts.dryRun) return dryRunMergeBranch(root, branch, opts);
   const head = currentBranch(root);
   let ff = head !== null && branch !== head && isAncestor(root, head, branch) === true;
   let run = await runGit(root, ["merge", "--no-edit", branch], 60_000);
@@ -1276,7 +1386,7 @@ export async function mergeBranch(
       (opts.autoResolveOurs ?? []).some(
         (r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"),
       );
-    const blocking = conflicts.filter((p) => !autoResolvable(p) && !keepOurs(p));
+    const blocking = conflicts.filter((p) => !isResolvableConflict(p, opts));
     if (conflicts.every((p) => autoResolvable(p) || keepOurs(p))) {
       // Task metadata may be updated concurrently. The closing task's branch
       // copy is authoritative, while unrelated task files must retain main's

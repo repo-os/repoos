@@ -32,6 +32,7 @@ import {
   getDiffStats,
   getChangedFilePaths,
   GitDirtyCheckError,
+  type MergeBranchResult,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
@@ -522,6 +523,16 @@ export class CloseOutOrchestrator {
         const syncRes = await this.syncCandidate(job);
         if (!syncRes.ok) {
           this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
+          if (syncRes.conflict) {
+            // A real conflict caught by the pre-flight (#0358): the candidate
+            // worktree was never created, but the outcome is identical to one
+            // found during `validating` — same reason format, same
+            // non-retryable handling, same repair handoff. Recorded against
+            // `validating` so nothing downstream can tell the timing moved.
+            return this.failOrReconcile(job, "validating", syncRes.reason, () =>
+              this.onMergeConflict?.(job.taskId, syncRes.reason!),
+            );
+          }
           return this.failOrReconcile(job, "syncing", syncRes.reason);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "validating" })!;
@@ -628,9 +639,68 @@ export class CloseOutOrchestrator {
     }
   }
 
+  /**
+   * Cheap, non-destructive pre-flight (#0358): would merging the task's feature
+   * branch into current main hit a REAL (non-auto-resolvable) conflict?
+   *
+   * Runs BEFORE any candidate worktree exists, in the feature branch's own
+   * worktree (`worktreePathForBranch`, already checked out and cheap to use)
+   * against the CURRENT main SHA, reusing `mergeBranch`'s dry-run mode so the
+   * classification is literally the real merge's — never a second, drifting
+   * definition of "a real conflict". Returns the conflict reason in the exact
+   * format `validateCandidate` uses, or `null` when there is no real conflict.
+   *
+   * Fail-open by construction: a missing feature worktree, any git error, or a
+   * dry-run that cannot run cleanly all return `null`, so the caller falls
+   * through to the existing sync/validate flow rather than blocking on a broken
+   * optimization.
+   */
+  private async preflightConflict(
+    job: IntegrationJob,
+    baseMainSha: string,
+  ): Promise<string | null> {
+    const root = this.config.root;
+    const featureBranch = job.branch ?? job.taskId;
+
+    // No worktree to run against: let the normal flow report the real failure
+    // ("feature branch … worktree not found") rather than guessing here.
+    const featureWtPath = worktreePathForBranch(root, featureBranch);
+    if (!featureWtPath) return null;
+
+    const task = this.getTask?.(job.taskId);
+    const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    // Same semantics as `validateCandidate`: unrelated task files keep main's
+    // side, everything else in `autoResolve` takes the branch's side. Only the
+    // real-conflict classification is needed here, so the direction is moot.
+    const autoResolveOurs = ["work/"];
+
+    let preflight: MergeBranchResult;
+    try {
+      preflight = await mergeBranch(featureWtPath, baseMainSha, {
+        autoResolve,
+        autoResolveOurs,
+        dryRun: true,
+      });
+    } catch (err) {
+      this.logger?.integration(
+        job.taskId,
+        "warn",
+        "pre-flight conflict check failed — falling through to the normal sync/validate flow",
+        { reason: err instanceof Error ? err.message : String(err) },
+      );
+      return null;
+    }
+
+    if (preflight.merged || preflight.conflicts.length === 0) return null;
+    return (
+      `merge conflict in ${preflight.conflicts.join(", ")} — resolve it in ` +
+      `the feature branch's own worktree (merge main into the branch), then retry`
+    );
+  }
+
   private async syncCandidate(
     job: IntegrationJob,
-  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string }> {
+  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string; conflict?: boolean }> {
     this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
@@ -646,6 +716,18 @@ export class CloseOutOrchestrator {
     const baseMainSha = mainShaRes.stdout.trim();
 
     this.coordinator.updateJob(job.taskId, { baseMainSha });
+
+    // Pre-flight (#0358): a real, non-auto-resolvable conflict against current
+    // main is fully knowable from cheap git plumbing, so detect it BEFORE the
+    // candidate worktree is created and route straight to the conflict-repair
+    // handoff the validating phase already uses. This job then never pays for
+    // a candidate worktree (or a doomed merge) just to rediscover a conflict
+    // that was predictable in advance. Any failure of the check itself is
+    // fail-open — fall through to the normal sync/validate flow unchanged.
+    const preflightReason = await this.preflightConflict(job, baseMainSha);
+    if (preflightReason) {
+      return { ok: false, conflict: true, reason: preflightReason };
+    }
 
     // Ensure candidate worktree exists and is on main.
     const wtRes = ensureWorktree(root, branch, `candidate-${job.taskId}`);
@@ -728,7 +810,13 @@ export class CloseOutOrchestrator {
         baseMainSha: null,
         candidateSha: null,
       });
-      return this.syncCandidate(job);
+      // The resync runs the same pre-flight; a conflict it finds must keep the
+      // non-retryable classification so the caller still routes it to repair.
+      const resync = await this.syncCandidate(job);
+      if (!resync.ok && resync.conflict) {
+        return { ok: false, retryable: false, reason: resync.reason };
+      }
+      return resync;
     }
 
     // Merge feature branch into candidate.

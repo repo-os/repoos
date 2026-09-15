@@ -56,8 +56,11 @@ worktree** (`repoos-worktrees/<repo>/integrate/<id>` on branch
 `repoos/integrate/<id>`), never on your main checkout, so a failed close-out
 can't leave your working tree dirty.
 
-1. **queued → syncing** — creates (or resets) the candidate worktree from
-   current `main` and symlinks `node_modules` from your main checkout.
+1. **queued → syncing** — first runs a cheap, non-destructive pre-check of
+   whether the branch really conflicts with `main`; a real source conflict skips
+   straight to the automatic repair below, without building a candidate. Otherwise
+   it creates (or resets) the candidate worktree from current `main` and symlinks
+   `node_modules` from your main checkout.
 2. **syncing → validating** — merges the task's feature branch into the
    candidate. Generated files that routinely differ — `dist/`, `screenshots/`,
    and the task's own `work/<id>-*.md` bookkeeping file — are auto-resolved.
