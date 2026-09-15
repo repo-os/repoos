@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-15T18:42:05Z"
-review_passes: 2
 id: "0342"
 title: Agents page silently wipes a pinned model when the CLI dropdown is touched
 type: bug
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/agents-page-silently-wipes-a-pinned-mode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:13:23Z"
+updated_at: "2026-09-15T19:06:32Z"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 1
 ---
@@ -63,4 +63,4 @@ never be silent and instantly persisted.
 - 2026-09-15T18:29:34Z · status active→review
 - 2026-09-15T18:32:07Z · status review→active
 - 2026-09-15T18:37:19Z · status active→review
-
+- 2026-09-15T19:06:32Z · status review→done, release:success
