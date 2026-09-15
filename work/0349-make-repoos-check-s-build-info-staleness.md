@@ -2,7 +2,7 @@
 id: "0349"
 title: Make repoos check's build-info staleness step degrade to a skip for projects not using RepoOS's build
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: cli
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:33Z"
-updated_at: "2026-09-15T09:52:19Z"
+updated_at: "2026-09-15T09:52:22Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ the same `[check]` section #0348 added for `uiSmoke`. Don't key it off
 
 - 2026-09-15T09:22:33Z · created · unknown
 - 2026-09-15T09:52:19Z · model_override
+- 2026-09-15T09:52:22Z · status inbox→ready
