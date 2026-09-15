@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: openrouter/deepseek/deepseek-v4.1-flash
+review_model_override: opencode-go/hy3
 created_at: "2026-09-15T14:19:42Z"
-updated_at: "2026-09-15T14:20:57Z"
+updated_at: "2026-09-15T14:21:02Z"
 ---
 ## Problem
 
@@ -58,3 +59,4 @@ when there's an error on a task, like on this MTD, if I click fix it should send
 - 2026-09-15T14:19:43Z · screenshots
 - 2026-09-15T14:19:58Z · status draft→inbox, title, area, type, body
 - 2026-09-15T14:20:57Z · model_override
+- 2026-09-15T14:21:02Z · review_model_override
