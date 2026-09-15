@@ -61,12 +61,16 @@ specific incidents will vary, but the triage order generalizes.
 
 ## Logging into a local preview
 
-A [task preview](/review-and-close-out#previewing-a-tasks-changes) runs with
-RepoOS's auth enabled, so you'll hit a login screen even though it's running on
-your own machine. You don't need a real inbox to get past it:
+[Auth](/configuration#authentication) is off by default, and most repos never
+turn it on — if that's you, a [task preview](/review-and-close-out#previewing-a-tasks-changes)
+opens straight to the app, no login screen.
 
-- **Email** — any address in your allowlist. If you enabled auth with a
-  `bootstrapAdmin`, use that address.
+If you *have* enabled auth, a preview runs behind it like the rest of the
+server, so you'll hit a login screen even though it's on your own machine. You
+don't need a real inbox to get past it:
+
+- **Email** — any address in your allowlist. If you set a `bootstrapAdmin`,
+  use that address.
 - **Code** — the value of `REPOOS_AUTH_DEV_BACKDOOR_CODE` in your repo's `.env`.
 
 The dev backdoor only replaces the email-OTP step — the session is otherwise

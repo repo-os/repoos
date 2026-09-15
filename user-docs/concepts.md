@@ -59,10 +59,10 @@ stepping on each other.
 repoos check
 ```
 
-This is the single bar for "did this break anything?": build staleness, format
-and lint, a full build, the test suite, and a headless browser smoke test. An
-agent must get it green before handing work back, and it runs again before
-anything merges.
+This is the single bar for "did this break anything?": build staleness, a full
+build, and the test suite always run; format/lint and a UI smoke test run too
+once your repo declares them (see [The check gate](/check)). An agent must get
+it green before handing work back, and it runs again before anything merges.
 
 Because it's one command with a non-zero exit code on failure, the same gate
 works locally, in CI, and inside RepoOS's own close-out pipeline.

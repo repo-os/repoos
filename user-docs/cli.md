@@ -87,9 +87,10 @@ tunnel, and git state.
 
 ### `repoos check`
 
-The definition-of-done gate: build staleness, formatting and lint, full build,
-test suite, and a headless browser smoke test. Exits non-zero on any failure,
-so it works as a CI gate as well as a local one.
+The definition-of-done gate: build staleness, full build, and tests always
+run; formatting/lint and a UI smoke test run once your repo declares them
+(see [The check gate](/check)). Exits non-zero on any failure, so it works as
+a CI gate as well as a local one.
 
 ### `repoos index [--json]`
 

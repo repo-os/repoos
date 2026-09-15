@@ -104,6 +104,8 @@ most **one preview runs at a time**. Requesting a new preview evicts whichever
 one was running (FIFO). A preview stops on its own when the task leaves
 `active`/`review`.
 
-Because the preview runs with RepoOS's auth enabled, you'll hit a login screen
-even locally. You don't need a real inbox — see the dev-login note in
-[Troubleshooting](/troubleshooting#logging-into-a-local-preview).
+If your repo has [auth](/configuration#authentication) enabled, the preview
+runs behind it like the rest of the server, so you'll hit a login screen even
+locally — you don't need a real inbox, see the dev-login note in
+[Troubleshooting](/troubleshooting#logging-into-a-local-preview). Auth is off
+by default, so most repos skip straight to the running app.

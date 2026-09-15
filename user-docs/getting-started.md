@@ -87,9 +87,10 @@ task to `done`, which is what actually merges the branch to your trunk.
 repoos check
 ```
 
-One command is the whole definition of done: build, typecheck, tests, and a
-headless browser smoke test. Agents must get this green before handing a task
-back to you, and it runs again before anything merges.
+One command is the whole definition of done: build, tests, and whatever else
+your repo declares (see [The check gate](/check) for the full list and what's
+opt-in). Agents must get this green before handing a task back to you, and it
+runs again before anything merges.
 
 ## Where to go next
 
