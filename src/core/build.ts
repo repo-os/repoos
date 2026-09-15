@@ -19,12 +19,23 @@ export interface BuildCheckResult {
    * Machine-readable code:
    *   'fresh'       — build is up to date
    *   'stale'       — src/ changed since last build
-   *   'no-marker'   — dist/.build-info.json missing (pre-feature build)
+   *   'no-marker'   — dist/.build-info.json missing (not a RepoOS build)
    *   'no-build'    — dist/ does not exist
+   *   'corrupt'     — dist/.build-info.json exists but is unreadable
    *   'dev-mode'    — running from src/, not dist/ (node --strip-types)
    *   'published'   — no src/ directory (npm/published install)
    */
-  code: "fresh" | "stale" | "no-marker" | "no-build" | "dev-mode" | "published";
+  code: "fresh" | "stale" | "no-marker" | "no-build" | "corrupt" | "dev-mode" | "published";
+  /**
+   * Whether RepoOS's build-staleness contract applies to this checkout. True
+   * only once a `dist/.build-info.json` marker exists: that marker is written
+   * by RepoOS's own `bun run build`, so its absence (or the absence of `dist/`
+   * entirely) means the project uses a different build pipeline and staleness
+   * cannot be assessed there. `repoos check` degrades those to a skip instead
+   * of a hard failure; `stale` stays true so callers that need a usable build
+   * (e.g. the preview's ensureFreshBuild) still trigger one.
+   */
+  applicable: boolean;
 }
 
 /**
@@ -84,18 +95,20 @@ function hashSrcDir(root: string): string | null {
  */
 export function checkBuildForRoot(root: string): BuildCheckResult {
   if (!root) {
-    return { stale: false, message: null, code: "published" };
+    return { stale: false, message: null, code: "published", applicable: false };
   }
   const distDir = join(root, "dist");
   const srcDir = join(root, "src");
   if (!existsSync(srcDir)) {
-    return { stale: false, message: null, code: "published" };
+    return { stale: false, message: null, code: "published", applicable: false };
   }
   if (!existsSync(distDir)) {
     return {
       stale: true,
-      message: "No build found — run `bun run build` before using `repoos`.",
+      message:
+        "No dist/ build — this checkout isn't using RepoOS's build pipeline; skipping staleness check.",
       code: "no-build",
+      applicable: false,
     };
   }
   const marker = join(distDir, ".build-info.json");
@@ -103,8 +116,9 @@ export function checkBuildForRoot(root: string): BuildCheckResult {
     return {
       stale: true,
       message:
-        "Cannot verify build freshness (no .build-info.json).\n  You may be running old compiled code. Run `bun run build` to be safe.",
+        "No .build-info.json marker — this checkout isn't using RepoOS's build pipeline; skipping staleness check.",
       code: "no-marker",
+      applicable: false,
     };
   }
   let recorded: { hash: string };
@@ -114,12 +128,13 @@ export function checkBuildForRoot(root: string): BuildCheckResult {
     return {
       stale: true,
       message: "Build marker is corrupt. Run `bun run build` to regenerate.",
-      code: "no-marker",
+      code: "corrupt",
+      applicable: true,
     };
   }
   const currentHash = hashSrcDir(root);
   if (!currentHash) {
-    return { stale: false, message: null, code: "published" };
+    return { stale: false, message: null, code: "published", applicable: false };
   }
   if (recorded.hash !== currentHash) {
     return {
@@ -129,15 +144,16 @@ export function checkBuildForRoot(root: string): BuildCheckResult {
         "  You are running OLD compiled code, and `repoos serve` serves the OLD UI.\n" +
         "  Run `bun run build` to update.",
       code: "stale",
+      applicable: true,
     };
   }
-  return { stale: false, message: null, code: "fresh" };
+  return { stale: false, message: null, code: "fresh", applicable: true };
 }
 
 export function checkBuild(): BuildCheckResult {
   const root = findPackageRoot();
   if (!root) {
-    return { stale: false, message: null, code: "published" };
+    return { stale: false, message: null, code: "published", applicable: false };
   }
 
   const distDir = join(root, "dist");
@@ -147,7 +163,7 @@ export function checkBuild(): BuildCheckResult {
   // Detect dev mode: running from src/, not from compiled dist/
   const binPath = fileURLToPath(import.meta.url);
   if (binPath.includes(`${pathSep}src${pathSep}`)) {
-    return { stale: false, message: null, code: "dev-mode" };
+    return { stale: false, message: null, code: "dev-mode", applicable: false };
   }
 
   return checkBuildForRoot(root);

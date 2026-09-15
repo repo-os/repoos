@@ -456,6 +456,12 @@ function cancelAbandonWork(): void {
   stopWorkTask.value = null;
 }
 
+/** After a task error's Fix is sent, land on this task's own Debugger view. */
+function openDebuggerFromError(): void {
+  ui.activeTab = "debug";
+  ui.debugView = "debugger";
+}
+
 async function reopenTask(): Promise<void> {
   if (!ui.active) return;
   if (
@@ -2646,6 +2652,7 @@ watch(
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
             :task-id="ui.active.id"
             :task-title="ui.active.title"
+            @open-debugger="openDebuggerFromError"
           />
           <div
             v-if="
@@ -3679,7 +3686,7 @@ watch(
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
-          <DebugPanel v-if="ui.active" :task="ui.active" />
+          <DebugPanel v-if="ui.active" :task="ui.active" v-model:view="ui.debugView" />
         </div>
         <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
           <div v-if="ui.active" class="agent-override-bar">

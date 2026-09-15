@@ -372,6 +372,12 @@ export interface RepoOSConfig {
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
+   * Per-project opt-in config for `repoos check` steps (task #0348). Omitted
+   * means every pluggable step (currently `ui-smoke`) skips unless the project
+   * declares it through a well-known `package.json` script.
+   */
+  check?: CheckConfig;
+  /**
    * Deployment targets (task #0340) — one row per (service, branch). Absent or
    * empty means the Deployments nav item and API stay hidden for this repo.
    */
@@ -499,6 +505,24 @@ export interface RemoteValidationConfig {
    * an explicit opt-in rather than inheriting the close-out flag.
    */
   useForReleases?: boolean;
+}
+
+/**
+ * Per-project `repoos check` step configuration (#0348), from `repoos.toml`'s
+ * `[check]` section. `check` is the generic definition-of-done gate every
+ * managed project runs, but some of its steps are only meaningful when the
+ * project opts into them — `ui-smoke` used to boot RepoOS's own dashboard for
+ * every repo, which is wrong for a project with no board UI. Each step is
+ * opt-in: absent means the step skips cleanly, exactly like the existing
+ * `fmt:check`/`lint`/`tests` steps do when the relevant script is absent.
+ */
+export interface CheckConfig {
+  /**
+   * Shell command `repoos check` runs for its UI smoke step. When set it
+   * overrides a `smoke` script in the project's `package.json` (config wins).
+   * Absent and no `smoke` script means the step skips.
+   */
+  uiSmoke?: string;
 }
 
 /** Whisper voice transcription configuration. */

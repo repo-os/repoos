@@ -919,6 +919,32 @@ export async function getDiff(worktree: string, baseBranch: string): Promise<Dif
   return { patch: truncated, truncated: true };
 }
 
+/**
+ * The paths changed between `baseBranch` and the current worktree HEAD
+ * (`git diff --name-only <baseBranch> HEAD`), used by the close-out gate's
+ * docs-only fast path (#0355) to decide whether the full build/check gate can
+ * be skipped.
+ *
+ * Unlike `getDiff`/`getDiffStats`, this deliberately does NOT go through
+ * `merge-base`: the caller wants the cumulative difference between the base
+ * branch tip and the candidate commit (which already contains the merge), not
+ * the branch's own commits. Returns `null` — never `[]` — when git errors or
+ * times out, so a caller can distinguish "no changes" from "could not tell"
+ * and fail safe by running the full gate.
+ */
+export async function getChangedFilePaths(
+  worktree: string,
+  baseBranch: string,
+  timeout = 10_000,
+): Promise<string[] | null> {
+  const run = await runGit(worktree, ["diff", "--name-only", baseBranch, "HEAD"], timeout);
+  if (run.status !== 0 || run.timedOut) return null;
+  return run.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;
@@ -1104,7 +1130,10 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
   if (status === null) return false;
   if (status.trim() === "") return true;
   if (git(root, ["add", "--", rel]) === null) return false;
-  return git(root, ["commit", "-m", message]) !== null;
+  // `--only` with a pathspec commits just this file and leaves everything else
+  // already in the index staged (#0353): a plain `git commit` would sweep in
+  // whatever a human or agent had staged in the checkout under our message.
+  return git(root, ["commit", "-o", "-m", message, "--", rel]) !== null;
 }
 
 /**

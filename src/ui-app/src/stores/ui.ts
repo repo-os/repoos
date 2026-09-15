@@ -47,6 +47,9 @@ export const useUiStore = defineStore("ui", () => {
   const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes" | "tokens" | "debug">(
     "details",
   );
+  /** Sub-view of the Debug tab: the task logs (default) or the task-scoped
+   *  Debugger chat. Shared so a "Fix" handoff can land directly on the chat. */
+  const debugView = ref<"logs" | "debugger">("logs");
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
   /** True when showing the new-skill panel instead of a task. */
@@ -231,6 +234,7 @@ export const useUiStore = defineStore("ui", () => {
     isNew.value = false;
     active.value = t;
     activeTab.value = defaultTabFor(t);
+    debugView.value = "logs";
   }
 
   /**
@@ -272,6 +276,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewSkill.value = false;
     isNewInput.value = false;
     activeTab.value = "details";
+    debugView.value = "logs";
   }
 
   function openTunnel(): void {
@@ -319,6 +324,7 @@ export const useUiStore = defineStore("ui", () => {
     drawerWidth,
     tunnelOpen,
     activeTab,
+    debugView,
     nt,
     nd,
     ns,
