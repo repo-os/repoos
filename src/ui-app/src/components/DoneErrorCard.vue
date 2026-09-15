@@ -22,7 +22,7 @@ const props = withDefaults(
   { mode: "card" },
 );
 
-const emit = defineEmits<{ (e: "open-panel"): void }>();
+const emit = defineEmits<{ (e: "open-panel"): void; (e: "open-debugger"): void }>();
 
 const fixing = ref(false);
 const fixSent = ref(false);
@@ -31,7 +31,7 @@ async function fix(): Promise<void> {
   fixing.value = true;
   try {
     await api(
-      "/api/debugger/message",
+      `/api/tasks/${props.taskId}/debugger/message`,
       JSON_OPTS("POST", {
         text: [
           `Please investigate this failed Move-to-done operation for task #${props.taskId}: ${props.taskTitle ?? "Untitled task"}.`,
@@ -45,7 +45,9 @@ async function fix(): Promise<void> {
       }),
     );
     fixSent.value = true;
-    window.dispatchEvent(new CustomEvent("repoos:open-debugger"));
+    // Hand off to the task's own debugger, not the global one — the parent
+    // opens the failing task's Debug tab so the context stays scoped.
+    emit("open-debugger");
   } finally {
     fixing.value = false;
   }

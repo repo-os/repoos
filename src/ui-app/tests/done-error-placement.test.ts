@@ -148,6 +148,54 @@ describe("move-to-done inline error placement", () => {
     expect(wrapper.find(".done-error").exists()).toBe(false);
   });
 
+  it("routes a failed task's Fix to that task's own Debugger view (#0356)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/debugger/message")) return json({ ok: true });
+        if (url.includes("/done"))
+          return jsonFail({ ok: false, error: "merge conflict: src/a.ts" });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: false, review: null });
+        if (url.includes("/output")) return json({ ok: true, lines: [] });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({
+            tasks: [],
+            counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 },
+            taskCount: 0,
+          });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (/\/api\/tasks\/0042$/.test(url)) return json(makeTask({ id: "0042" }));
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    await expect(repo.completeTask(makeTask({ id: "0042" }))).rejects.toThrow();
+
+    const wrapper = mount(TaskCard, {
+      props: { task: makeTask({ id: "0042" }) },
+      global: {
+        plugins: [pinia],
+        stubs: { RestartTaskDialog: true, ActivityIndicator: true },
+      },
+    });
+    await flush();
+
+    await wrapper.find("button.done-error-fix").trigger("click");
+    await vi.waitFor(() => expect(ui.activeTab).toBe("debug"));
+
+    // The failing task is open on its own Debug tab, showing its Debugger —
+    // not the global debugger.
+    expect(ui.active?.id).toBe("0042");
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugView).toBe("debugger");
+  });
+
   it("renders in the task panel below the Move to done button", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
