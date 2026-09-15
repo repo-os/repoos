@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T18:32:06Z"
+review_passes: 1
 id: "0342"
 title: Agents page silently wipes a pinned model when the CLI dropdown is touched
 type: bug
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/agents-page-silently-wipes-a-pinned-mode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:13:23Z"
-updated_at: "2026-09-15T18:29:34Z"
 dev_error_count: 1
 ---
 Changing an agent's CLI in the Agents page immediately resets that agent's
@@ -59,3 +60,4 @@ never be silent and instantly persisted.
 - 2026-09-15T18:24:52Z · model_override
 - 2026-09-15T18:24:55Z · needs_input
 - 2026-09-15T18:29:34Z · status active→review
+
