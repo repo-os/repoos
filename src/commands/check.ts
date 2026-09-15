@@ -556,7 +556,41 @@ export async function cmdCheck(): Promise<void> {
 
   const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
 
-  // ── 1c. Formatting & lint guard ──────────────────────────────────────
+  // ── 1c. Zero-runtime-dependencies guard ─────────────────────────────
+  // "Zero runtime dependencies" is a hard design constraint (AGENTS.md),
+  // publicly claimed on the landing page (landing/src/App.vue), and it has
+  // already silently drifted from `package.json` once (#0343: mermaid ended
+  // up in `dependencies` instead of `devDependencies`, discovered only by a
+  // manual audit). This makes the claim self-enforcing instead of
+  // convention-only.
+  //
+  // Scoped to RepoOS's own package.json (`name === "repoos"`) rather than
+  // running for every managed project: this constraint is specific to this
+  // repo, not a general rule `repoos check` should impose on projects it
+  // manages (a typical managed project has legitimate runtime deps). #0348
+  // tracks making check steps like this declarable per-project instead of
+  // hardcoded here; do not widen this scope without that mechanism.
+  heading("Zero runtime dependencies guard");
+  if (pkg.name !== "repoos") {
+    results.push(pass("zero-runtime-deps", "skipped — not RepoOS's own package.json"));
+  } else {
+    const deps = Object.keys(pkg.dependencies ?? {});
+    if (deps.length > 0) {
+      const msg =
+        `package.json "dependencies" must be empty (zero runtime dependencies is a hard ` +
+        `design constraint — AGENTS.md). Found: ${deps.join(", ")}. Move build-time-only ` +
+        `packages to devDependencies, or if the constraint no longer holds, update AGENTS.md ` +
+        `and landing/src/App.vue's "Zero runtime dependencies" claim instead (see #0343).`;
+      console.log(c.red("  ✗ " + msg));
+      results.push(fail("zero-runtime-deps", msg));
+      exitCode = 1;
+    } else {
+      console.log(c.green("  ✔ package.json has no runtime dependencies"));
+      results.push(pass("zero-runtime-deps"));
+    }
+  }
+
+  // ── 1d. Formatting & lint guard ──────────────────────────────────────
   // Nothing else runs the formatter/linter — no git hook, no CI job — so
   // without this step `dist/` builds fine while the source silently drifts out
   // of the house style (that's how it accumulated ~10 unformatted files). Both
