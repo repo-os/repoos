@@ -183,6 +183,14 @@ function ensureFreshBuild(root: string): { ok: boolean; error?: string } {
       timeout: BUILD_TIMEOUT_MS,
     });
     if (run.status === 0) return { ok: true };
+    // Fall back to the next tool only when this one isn't installed. A build
+    // that ran and failed is the answer: re-running it under npm/Node would
+    // repeat the failure, take as long again, and hide which runtime built it.
+    const code = (run.error as NodeJS.ErrnoException | undefined)?.code;
+    if (code === "ENOENT" || code === "EACCES") {
+      lastError = `${cmd[0]} is not available`;
+      continue;
+    }
     const out = [run.stdout, run.stderr]
       .filter((x): x is string => typeof x === "string" && x.trim() !== "")
       .join("\n")
@@ -192,7 +200,10 @@ function ensureFreshBuild(root: string): { ok: boolean; error?: string } {
       .filter(Boolean)
       .slice(0, 6)
       .join(" · ");
-    lastError = out || `${cmd[0]} ${cmd[1]} failed (exit ${run.status})`;
+    return {
+      ok: false,
+      error: `could not build the worktree before previewing: ${out || `${cmd[0]} ${cmd[1]} failed (exit ${run.status})`}`,
+    };
   }
   return { ok: false, error: `could not build the worktree before previewing: ${lastError}` };
 }

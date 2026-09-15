@@ -1,0 +1,6 @@
+# Run package.json scripts on Bun, not Node. With `bun = true`, `bun run <script>`
+# executes `node …` commands and Node-shebang tools (tsc, vue-tsc, vite, vitest)
+# under Bun. `npm run <script>` still uses Node, which is the fallback for
+# machines without Bun. Background: docs/architecture.md (Runtime).
+[run]
+bun = true

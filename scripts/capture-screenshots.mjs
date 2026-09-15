@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Regenerate `screenshots/` against a controlled fixture repo.
  *
@@ -47,7 +47,7 @@ try {
   browser = await launchWebkit();
 } catch {
   console.error("Cannot find module @playwright/test (not installed).");
-  console.error("Install: bun add -d @playwright/test && npx playwright install webkit");
+  console.error("Install: bun add -d @playwright/test && bunx playwright install webkit");
   server.close();
   rmSync(tmp, { recursive: true, force: true });
   process.exit(1);

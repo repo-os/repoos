@@ -24,7 +24,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && bun run build:ui",
+    "build": "tsc -p tsconfig.json && bun scripts/copy-assets.mjs && bun run build:ui",
     "build:ui": "vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts",
     "dev": "bun src/cli/index.ts",
     "repoos": "bun src/cli/index.ts",
@@ -33,9 +33,9 @@
     "fmt:check": "oxfmt --check",
     "test": "node scripts/run-tests.mjs",
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
-    "screenshots": "bun run build && node scripts/capture-screenshots.mjs",
-    "dev:preview": "bun run build && node scripts/dev-preview.mjs",
-    "prepublishOnly": "npm run build"
+    "screenshots": "bun run build && bun scripts/capture-screenshots.mjs",
+    "dev:preview": "bun run build && bun scripts/dev-preview.mjs",
+    "prepublishOnly": "bun run build"
   },
   "keywords": [
     "monorepo",

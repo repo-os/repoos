@@ -111,7 +111,7 @@ conflicted where main and a feature branch both edited `DoneStep` in ways that
 happened to touch a line `dist/`-adjacent churn had been masking.
 
 It was never needed for distribution — `files: ["dist"]` plus
-`prepublishOnly: npm run build` means npm builds the tarball at publish time
+`prepublishOnly` (then `npm run build`, now `bun run build`) means the tarball is built at publish time
 regardless of what git tracks. Before untracking it, three places were audited
 for a hidden assumption that a fresh worktree already has a `dist/`:
 

@@ -66,7 +66,7 @@ root-directory/output-directory pair to fill in; deployment is driven by
 
 `wrangler.jsonc` here is a pure static-assets config (no Worker script) — see
 that file's comments. Verify locally before deploying:
-`cd landing && npx wrangler deploy --dry-run`.
+`cd landing && bunx wrangler deploy --dry-run`.
 
 ## Notes for future edits
 
