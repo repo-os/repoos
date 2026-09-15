@@ -2,7 +2,7 @@
 id: "0350"
 title: Honor workDir/inputsDir in repoos check's task-assets guard
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: cli
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:35Z"
-updated_at: "2026-09-15T14:22:16Z"
+updated_at: "2026-09-15T14:22:19Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ should be a small, self-contained change.
 
 - 2026-09-15T09:22:35Z · created · unknown
 - 2026-09-15T14:22:16Z · model_override
+- 2026-09-15T14:22:19Z · status inbox→ready
