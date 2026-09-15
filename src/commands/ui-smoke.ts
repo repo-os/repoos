@@ -216,7 +216,7 @@ export async function cmdUISmoke(): Promise<number> {
     if (isPlaywrightUnavailable(msg)) {
       console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
       console.log(
-        c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"),
+        c.dim("    Install: bun add -d @playwright/test && bunx playwright install webkit"),
       );
       return 0;
     }

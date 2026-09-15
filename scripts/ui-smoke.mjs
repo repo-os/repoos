@@ -14,7 +14,7 @@
  * `bun run smoke` alone would still execute the `node` in the script body, so
  * this file re-execs itself under Bun, once, whenever Bun is on PATH and not
  * opted out with `REPOOS_RUNTIME=node`. Same block as scripts/run-tests.mjs
- * (mirroring `reexecServeUnderBunIfRequested()` in src/core/runtime.ts),
+ * (mirroring `reexecUnderBunIfRequested()` in src/core/runtime.ts),
  * duplicated inline because this file runs directly with no TS loader.
  */
 import { spawnSync } from "node:child_process";
