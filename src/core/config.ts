@@ -541,6 +541,16 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     )
       cfg.maxConcurrentAgents = maxConcurrentAgents as number;
 
+    // [check] section (#0348) — opt-in commands for `repoos check` steps that
+    // are only meaningful for projects that declare them. A project can instead
+    // declare a `smoke` package.json script for a zero-config default; this
+    // config value overrides it when both are present. Both the `[check]` and
+    // `[checks]` spellings are accepted (the task's prose used `checks.uiSmoke`).
+    const checkUiSmoke = parsed["check.uiSmoke"] ?? parsed["checks.uiSmoke"];
+    if (typeof checkUiSmoke === "string" && checkUiSmoke.trim()) {
+      cfg.check = { ...cfg.check, uiSmoke: checkUiSmoke.trim() };
+    }
+
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
     if (

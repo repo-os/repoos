@@ -9,29 +9,22 @@
  * lint guard" comment below), full build (tsc + asset copy), CSS layering
  * guard, theme contrast guard (button-gradient validity + WCAG contrast on
  * every theme's fg/bg token pairs), test suite (if present), and a headless
- * browser smoke test that verifies the UI mounts and has zero console errors.
+ * browser smoke test. The UI smoke step is per-project and opt-in (#0348): a
+ * project declares a command via a `smoke` package.json script or `[check]
+ * uiSmoke` in repoos.toml, and skips cleanly when it declares neither. RepoOS
+ * itself opts in the same way (its `smoke` script runs src/commands/ui-smoke.ts).
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
 import { execSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { cpus, tmpdir, totalmem } from "node:os";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { cpus, totalmem } from "node:os";
 import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
-import { findRepoRoot } from "../core/config.js";
+import { findRepoRoot, loadConfig } from "../core/config.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
-import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
 
 interface CheckResult {
   name: string;
@@ -474,6 +467,34 @@ export function changedTestRef(env: NodeJS.ProcessEnv): string | undefined {
 }
 
 /**
+ * The `package.json` script name a project uses to opt into `repoos check`'s
+ * UI smoke step with no configuration — the same zero-config convention
+ * `build`/`test`/`lint` already follow elsewhere in this gate.
+ */
+export const UI_SMOKE_SCRIPT = "smoke";
+
+export type SmokeCommand =
+  | { source: "config"; command: string }
+  | { source: "script"; script: string };
+
+/**
+ * Resolve which UI smoke command (if any) `repoos check` should run for the
+ * current project (#0348). Precedence: `repoos.toml` `[check] uiSmoke` wins,
+ * then a `smoke` package.json script, else null — the caller then skips the
+ * step cleanly. RepoOS's own repo resolves through this same path (its `smoke`
+ * script); there is no RepoOS-only fallback.
+ */
+export function resolveSmokeCommand(
+  configured: string | undefined,
+  pkgScripts: Record<string, string> | undefined,
+): SmokeCommand | null {
+  const fromConfig = configured?.trim();
+  if (fromConfig) return { source: "config", command: fromConfig };
+  if (pkgScripts?.[UI_SMOKE_SCRIPT]) return { source: "script", script: UI_SMOKE_SCRIPT };
+  return null;
+}
+
+/**
  * Vitest worker-pool size for the Tests step. `vite.config.ts` pins a
  * conservative floor (`maxWorkers: 2`) because several agent-driven check runs
  * routinely overlap across worktrees and each pool otherwise multiplies against
@@ -555,6 +576,11 @@ export async function cmdCheck(): Promise<void> {
   }
 
   const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
+
+  // Per-project step config (#0348) — `[check] uiSmoke` from repoos.toml. Read
+  // once here so the UI smoke step below can resolve its command without a
+  // second config load; loadConfig is cheap and repoos.toml is git-tracked.
+  const cfg = loadConfig(findRepoRoot());
 
   // ── 1c. Zero-runtime-dependencies guard ─────────────────────────────
   // "Zero runtime dependencies" is a hard design constraint (AGENTS.md),
@@ -838,7 +864,17 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 4. UI smoke test ────────────────────────────────────────────────
+  // Per-project and opt-in (#0348). `repoos check` is the generic gate every
+  // managed project runs, so it must not boot RepoOS's own dashboard for a
+  // project that never declared a smoke command — that either silently tested
+  // RepoOS's UI or failed on RepoOS-only infrastructure. A project opts in
+  // with a `smoke` package.json script (zero-config default) or `[check]
+  // uiSmoke` in repoos.toml (overrides the script). With neither, the step
+  // skips cleanly. RepoOS dogfoods this: its own dashboard assertions live in
+  // src/commands/ui-smoke.ts behind a `smoke` script (scripts/ui-smoke.mjs),
+  // so the declaration path is exercised on every RepoOS check.
   heading("UI smoke test");
+  const smokeCommand = resolveSmokeCommand(cfg.check?.uiSmoke, pkg.scripts);
   if (fmtLintFailed) {
     // Build was skipped above, so dist reflects whatever the last successful
     // build was (possibly stale, possibly absent) — never a build of the
@@ -846,29 +882,32 @@ export async function cmdCheck(): Promise<void> {
     // the wrong thing, same principle as the REPOOS_SKIP_BUILD guard above.
     console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
     results.push(pass("ui-smoke", "skipped — formatting/lint failed, fix and rerun"));
-  } else {
+  } else if (smokeCommand) {
+    const runner = preferBunForDevTasks() ? "bun run" : "npm run";
+    const cmd =
+      smokeCommand.source === "config" ? smokeCommand.command : `${runner} ${smokeCommand.script}`;
+    const origin =
+      smokeCommand.source === "config"
+        ? "repoos.toml [check] uiSmoke"
+        : "package.json smoke script";
+    console.log(c.dim(`  · Running ${origin}: ${cmd}`));
     try {
-      await runUISmokeTest();
-      results.push(pass("ui-smoke"));
-      console.log(c.green("  ✔ UI smoke test passed"));
-    } catch (e: unknown) {
-      const msg = (e as Error).message;
-      const notInstalled =
-        msg.includes("Cannot find module") ||
-        msg.includes("not installed") ||
-        msg.includes("Executable doesn't exist");
-      if (notInstalled) {
-        console.log(c.dim("  · Playwright not available — UI smoke test skipped"));
-        console.log(
-          c.dim("    Install: bun add -d @playwright/test && npx playwright install webkit"),
-        );
-        results.push(pass("ui-smoke", "skipped — playwright/browser not available"));
-      } else {
-        console.log(c.red("  ✗ UI smoke test failed: " + msg.split("\n")[0]));
-        results.push(fail("ui-smoke", msg));
-        exitCode = 1;
-      }
+      execSync(cmd, { stdio: "inherit", timeout: 300_000 });
+      console.log(c.green("  ✔ Smoke command passed"));
+      results.push(pass("ui-smoke", `ran ${origin}`));
+    } catch (e) {
+      console.log(c.red("  ✗ Smoke command failed"));
+      results.push(fail("ui-smoke", (e as Error).message));
+      exitCode = 1;
     }
+  } else {
+    console.log(c.dim("  · No smoke command configured — skipping"));
+    console.log(
+      c.dim(
+        '    Declare one with a `smoke` package.json script or [check] uiSmoke = "bun run smoke" in repoos.toml',
+      ),
+    );
+    results.push(pass("ui-smoke", "skipped — no smoke command configured"));
   }
 
   // ── Summary ─────────────────────────────────────────────────────────
@@ -885,180 +924,4 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.bold(c.red(`\n  ${failed.length} check(s) failed.\n`)));
   }
   process.exit(exitCode);
-}
-
-/**
- * Build a throwaway, empty fixture repo to serve the built SPA against.
- * The smoke test only cares that the built UI renders with zero console errors,
- * so booting it against the live checkout's real board drags in job recovery
- * and preview auto-launch reconciliation for every active/review task (0260).
- * A bare `work/` + minimal `repoos.toml` avoids all of that: no tasks, no
- * recovery, no auto-launch — constant cost regardless of board size.
- */
-function makeSmokeFixture(): string {
-  const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
-  mkdirSync(join(root, "work"), { recursive: true });
-  writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n\n');
-  return root;
-}
-
-/**
- * Start the dev server, run Playwright WebKit smoke tests, then stop.
- * Exports failures as thrown errors. Server startup + webkit launch share the
- * harness in ui-harness.ts with the screenshot script (#0213).
- */
-async function runUISmokeTest(): Promise<void> {
-  const fixture = makeSmokeFixture();
-  let server;
-  try {
-    server = await startPreviewServer(fixture);
-  } catch (err) {
-    rmSync(fixture, { recursive: true, force: true });
-    throw err;
-  }
-  let browser: SmokeBrowser | undefined;
-  try {
-    browser = await launchWebkit();
-  } catch (err) {
-    server.close();
-    rmSync(fixture, { recursive: true, force: true });
-    throw err;
-  }
-  try {
-    const page = await browser.newPage();
-    const consoleErrs: string[] = [];
-    const pageErrors: string[] = [];
-    page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrs.push(msg.text());
-    });
-    page.on("pageerror", (err) => {
-      pageErrors.push(err.message);
-    });
-
-    await page.goto(server.url, { waitUntil: "load", timeout: 20_000 });
-
-    // Check page title is correct
-    const title = await page.title();
-    if (title !== "RepoOS") throw new Error(`Unexpected title: "${title}"`);
-
-    // Verify we are testing the built Vite SPA, which references hashed
-    // assets in /assets/.
-    const hashedAsset = await page.evaluate(() => {
-      const scripts = Array.from(document.querySelectorAll("script[src]"));
-      return scripts.some((s) => (s.getAttribute("src") ?? "").startsWith("/assets/"));
-    });
-    if (!hashedAsset) {
-      throw new Error("Served page is not the built Vite app (no /assets/ bundle)");
-    }
-
-    // Check that the app MOUNTED — no unrendered mustache in the DOM
-    const bodyText = await page.evaluate(() => document.body.innerText);
-    if (bodyText.includes("{{") || bodyText.includes("}}")) {
-      throw new Error("Unrendered mustache found in DOM — Vue did not mount");
-    }
-
-    // Check that a known root element rendered with real content
-    const appEl = await page.$("#app");
-    if (!appEl) throw new Error("#app element not found");
-
-    const hasBrand = await page.evaluate(() => document.body.innerText.includes("RepoOS"));
-    if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
-
-    // Navigate to work page and click +New Task
-    await page.evaluate(() => {
-      const navItems = document.querySelectorAll(".nav-item");
-      for (const item of Array.from(navItems)) {
-        if (item.textContent?.includes("Work")) (item as HTMLElement).click();
-      }
-    });
-    await page.waitForTimeout(500);
-
-    // Verify work page rendered
-    const workEl = await page.$(".board");
-    if (!workEl) {
-      consoleErrs.push("Work page board not rendered — check page navigation");
-    }
-
-    // Check that the +New Task button exists
-    const newBtn = await page.$(".new-btn");
-    if (!newBtn) {
-      consoleErrs.push("+New Task button not found in DOM");
-    }
-
-    // ── CSS regression guard: utility spacing must actually apply ─────
-    // Tailwind v4 emits all its CSS inside cascade layers. If an
-    // UNLAYERED reset such as `*{padding:0;margin:0}` is ever added to
-    // style.css, it silently beats every spacing utility (unlayered rules
-    // take precedence over @layer rules), collapsing padding on shadcn
-    // controls while console stays clean. Flag any non-explicit-zero
-    // spacing utility whose computed value is 0.
-    const assertUtilitySpacing = async (where: string) => {
-      const offenders = await page.evaluate(() => {
-        const AXIS: Record<string, string[]> = {
-          p: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
-          px: ["paddingLeft", "paddingRight"],
-          py: ["paddingTop", "paddingBottom"],
-          pt: ["paddingTop"],
-          pr: ["paddingRight"],
-          pb: ["paddingBottom"],
-          pl: ["paddingLeft"],
-          m: ["marginTop", "marginRight", "marginBottom", "marginLeft"],
-          mx: ["marginLeft", "marginRight"],
-          my: ["marginTop", "marginBottom"],
-          mt: ["marginTop"],
-          mr: ["marginRight"],
-          mb: ["marginBottom"],
-          ml: ["marginLeft"],
-        };
-        const bad: string[] = [];
-        for (const el of Array.from(document.querySelectorAll("*"))) {
-          if (!(el instanceof HTMLElement)) continue;
-          const s = getComputedStyle(el) as unknown as Record<string, string>;
-          for (const cls of el.classList) {
-            if (cls.startsWith("-")) continue; // negative margins are intentional
-            const m = /^([pm])([trblxy]?)-(?:\[)?([1-9])/.exec(cls);
-            if (!m) continue;
-            for (const prop of AXIS[m[1] + m[2]] ?? []) {
-              if (parseFloat(s[prop] as string) <= 0) {
-                bad.push(`${cls} → ${prop} = ${s[prop]} on <${el.tagName.toLowerCase()}>`);
-                break;
-              }
-            }
-          }
-        }
-        return [...new Set(bad)];
-      });
-      if (offenders.length > 0) {
-        throw new Error(
-          "Utility spacing collapsed on " + where + ": " + offenders.slice(0, 6).join("; "),
-        );
-      }
-    };
-
-    await assertUtilitySpacing("dashboard");
-
-    // Re-run the guard on the settings page (covers shadcn Button + Select)
-    await page.evaluate(() => {
-      const navItems = document.querySelectorAll(".nav-item");
-      for (const item of Array.from(navItems)) {
-        if (item.textContent?.includes("Settings")) (item as HTMLElement).click();
-      }
-    });
-    await page.waitForTimeout(500);
-    await assertUtilitySpacing("settings");
-
-    // Check for zero console errors
-    if (consoleErrs.length > 0) {
-      let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");
-      if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
-      throw new Error(msg);
-    }
-    if (pageErrors.length > 0) {
-      throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
-    }
-  } finally {
-    if (browser) await browser.close();
-    server.close();
-    rmSync(fixture, { recursive: true, force: true });
-  }
 }
