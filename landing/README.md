@@ -70,7 +70,7 @@ that file's comments. Verify locally before deploying:
 
 ## Notes for future edits
 
-- The stat bar and version number in `src/App.vue` (and the `og:image`/
+- The board stats (task counts, version) in `src/App.vue` (and the `og:image`/
   `og:description` meta tags in `index.html`) are **hand-written snapshots**,
   not fetched live — there's no backend here to source them from. Copy is
   deliberately phrased as "as of vX.Y.Z" / "N+ tasks" rather than implying a
