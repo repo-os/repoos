@@ -2,14 +2,14 @@
 id: "0362"
 title: Make task previews pluggable per project instead of hardcoded to repoos serve
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-task-previews-pluggable-per-project
 created_at: "2026-09-15T19:33:40Z"
-updated_at: "2026-09-15T19:37:54Z"
+updated_at: "2026-09-15T19:40:22Z"
 ---
 ## Problem
 
@@ -100,3 +100,4 @@ assume, the following before writing code:
 
 - 2026-09-15T19:33:40Z · created · unknown
 - 2026-09-15T19:37:54Z · status inbox→ready
+- 2026-09-15T19:40:22Z · status ready→active, branch
