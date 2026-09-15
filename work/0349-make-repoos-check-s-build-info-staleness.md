@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: openrouter/deepseek/deepseek-v4.1-flash
+review_model_override: opencode-go/hy3
 created_at: "2026-09-15T09:22:33Z"
-updated_at: "2026-09-15T09:52:22Z"
+updated_at: "2026-09-15T14:20:30Z"
 ---
 ## Problem
 
@@ -59,3 +60,4 @@ the same `[check]` section #0348 added for `uiSmoke`. Don't key it off
 - 2026-09-15T09:22:33Z · created · unknown
 - 2026-09-15T09:52:19Z · model_override
 - 2026-09-15T09:52:22Z · status inbox→ready
+- 2026-09-15T14:20:30Z · review_model_override
