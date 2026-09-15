@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T16:34:09Z"
+review_passes: 1
 id: "0354"
 title: "Docs Debt Agent: verify AGENTS.md/docs/user-docs claims against real code"
 type: feature
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/docs-debt-agent-verify-agents-md-docs-us
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T12:59:49Z"
-updated_at: "2026-09-15T16:34:09Z"
 ---
 ## Problem
 
@@ -156,3 +157,4 @@ its conventions rather than reinventing them:
 - 2026-09-15T15:55:09Z · needs_input
 - 2026-09-15T16:26:32Z · review_model_override
 - 2026-09-15T16:34:09Z · needs_input
+
