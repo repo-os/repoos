@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T14:32:10Z"
+review_passes: 1
 id: "0350"
 title: Honor workDir/inputsDir in repoos check's task-assets guard
 type: bug
@@ -10,7 +12,6 @@ created_by: ""
 branch: feat/honor-workdir-inputsdir-in-repoos-check-
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:35Z"
-updated_at: "2026-09-15T14:28:59Z"
 ---
 ## Problem
 
@@ -51,3 +52,4 @@ should be a small, self-contained change.
 - 2026-09-15T14:22:19Z · status inbox→ready
 - 2026-09-15T14:22:20Z · status ready→active, branch
 - 2026-09-15T14:28:59Z · status active→review
+
