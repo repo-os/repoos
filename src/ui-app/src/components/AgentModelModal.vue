@@ -9,6 +9,8 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import { useFavorites } from "../composables/useFavorites";
+import { useModelMemory } from "../composables/useModelMemory";
+import { useConfigStore } from "../stores/config";
 
 const props = defineProps<{
   open: boolean;
@@ -37,6 +39,9 @@ const {
   hasFavorites: hasAnyFavorites,
 } = useFavorites();
 
+const { remember, recall } = useModelMemory();
+const config = useConfigStore();
+
 const currentModelLabel = computed(() => {
   return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
 });
@@ -58,16 +63,34 @@ const favoriteItems = computed(() => {
     .filter((m) => m !== undefined) as SelectSearchOption[];
 });
 
+/**
+ * The model to apply for `cli` when switching to it. A recalled pin is only
+ * reapplied when it is still a known option for that CLI: the memory is
+ * browser-local and shared across agents, so a live model list that shifted
+ * between sessions (or a legacy value remembered by another agent) can
+ * otherwise re-persist a model the CLI no longer offers — silently. When the
+ * pin can't be confirmed, fall back to "default".
+ */
+function resolveModelForCli(cli: string): string {
+  const remembered = recall(cli);
+  if (!remembered) return "default";
+  return config.isKnownModelForCli(cli, remembered) ? remembered : "default";
+}
+
 function selectCli(cli: string): void {
-  if (cli === props.cli) return;
+  const previousCli = props.cli;
+  if (cli === previousCli) return;
+  // Remember the model that belonged to the CLI we're leaving, so returning to
+  // it restores the pin instead of silently collapsing it to "default".
+  remember(previousCli, props.model);
   emit("update:cli", cli);
-  // The old model is very unlikely to be valid for the new CLI (and would
-  // otherwise linger in the list via modelsFor's "saved" fallback) — reset
-  // to default rather than carry over a value that doesn't belong to it.
-  emit("update:model", "default");
+  // A model is reset only when the new CLI has no remembered pin of its own,
+  // or when that pin is no longer a valid option for it.
+  emit("update:model", resolveModelForCli(cli));
 }
 
 function selectModel(model: string): void {
+  remember(props.cli, model);
   emit("update:model", model);
   emit("update:open", false);
 }
