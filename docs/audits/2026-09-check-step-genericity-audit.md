@@ -82,6 +82,13 @@ directory list is RepoOS-shaped.
 (e.g. a `[check] sourceDirs` list, or derive from the repo's `tsconfig`), or
 scope the guard to `"type": "module"` packages only.
 
+**Fixed in #0352.** The guard now runs only for a `"type": "module"` package and
+scans `[check] bareRequireDirs` when configured, else the repo's tsconfig
+`include`/`files` minus its `exclude`. `check.ts` no longer contains the
+`src/{core,server,commands,cli}` list; RepoOS declares its own roots through the
+same `[check]` config in its `repoos.toml`, and a non-module package (or one with
+no resolvable root) skips with a clear message rather than passing vacuously.
+
 ## 4. `task-assets` — hidden RepoOS-shape, benign
 
 `git ls-files -- work inputs` is hardcoded, and `taskAssetOffenders()` matches
@@ -127,7 +134,7 @@ step is **not** changed by #0348; it predates it and is out of scope here.
 
 1. #0351: `[check]`-driven stylesheet path + token vocabulary for
    `css-layers`/`theme-contrast`. **Done** — see section 2.
-2. #0352: configurable source roots for `bare-require`.
+2. #0352: configurable source roots for `bare-require`. **Done** — see section 3.
 3. #0350: honor `workDir`/`inputsDir` in `task-assets`.
 4. #0349: opt-in / graceful degradation for the `dist/.build-info.json`
    staleness step when a project's `src/` doesn't use RepoOS's build pipeline.

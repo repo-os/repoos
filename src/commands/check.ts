@@ -22,7 +22,7 @@
 import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
-import { isAbsolute, join, sep } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
@@ -117,12 +117,21 @@ function walkTsFiles(dir: string, acc: string[] = []): string[] {
  * legitimately-shadowed file's OTHER bare-require bugs (if any) go
  * uncaught, never that a broken bare require ships silently.
  */
-function bareRequireOffenders(): string[] {
+export function bareRequireOffenders(
+  roots: string[],
+  opts: { repoRoot?: string; excludes?: string[] } = {},
+): string[] {
   const offenders: string[] = [];
-  const srcRoot = "src";
-  for (const dir of ["core", "server", "commands", "cli"]) {
-    for (const absPath of walkTsFiles(join(srcRoot, dir))) {
-      if (absPath.endsWith(".test.ts")) continue; // vitest supplies its own require shim
+  const repoRoot = opts.repoRoot ?? ".";
+  const excludes = (opts.excludes ?? []).map(normalizeGuardDir).filter(Boolean);
+  for (const root of roots) {
+    const rootRel = root === "." ? "." : normalizeGuardDir(root);
+    if (!rootRel) continue;
+    const absRoot = rootRel === "." ? repoRoot : join(repoRoot, rootRel);
+    for (const absPath of walkTsFiles(absRoot)) {
+      const relPath = relative(repoRoot, absPath).split(sep).join("/");
+      if (relPath.endsWith(".test.ts")) continue; // vitest supplies its own require shim
+      if (excludes.some((ex) => relPath === ex || relPath.startsWith(`${ex}/`))) continue;
       let content: string;
       try {
         content = readFileSync(absPath, "utf8");
@@ -130,7 +139,6 @@ function bareRequireOffenders(): string[] {
         continue;
       }
       if (content.includes("createRequire")) continue; // legitimately shadowed file-wide
-      const relPath = absPath.split(sep).join("/");
       content.split("\n").forEach((line, i) => {
         const trimmed = line.trim();
         if (trimmed.startsWith("*") || trimmed.startsWith("//")) return;
@@ -139,6 +147,127 @@ function bareRequireOffenders(): string[] {
     }
   }
   return offenders;
+}
+
+/**
+ * Strip `//` and `/* *​/` comments and trailing commas from a tsconfig so it
+ * parses as JSON (tsconfig.json is JSONC, which `JSON.parse` rejects). A `//`
+ * inside a double-quoted string is left alone. Deliberately minimal — it only
+ * ever sees a `tsconfig.json`, so a pathological string edge case degrades to
+ * a parse failure the caller already handles as "no tsconfig".
+ */
+function stripJsonComments(text: string): string {
+  let out = "";
+  let i = 0;
+  let inStr = false;
+  while (i < text.length) {
+    const ch = text[i];
+    if (inStr) {
+      out += ch;
+      if (ch === "\\") {
+        out += text[i + 1] ?? "";
+        i += 2;
+        continue;
+      }
+      if (ch === '"') inStr = false;
+      i++;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = true;
+      out += ch;
+      i++;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out.replace(/,(\s*[}\]])/g, "$1");
+}
+
+/** Parse a `tsconfig.json` (JSONC) and read the fields the guard needs, or null. */
+export function readTsconfig(
+  repoRoot: string,
+): { include?: unknown; files?: unknown; exclude?: unknown } | null {
+  const path = join(repoRoot, "tsconfig.json");
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(stripJsonComments(readFileSync(path, "utf8")));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Turn one tsconfig glob (`src/**​/*.ts`, `packages/app/src`, `lib/index.ts`)
+ * into a repo-relative directory to walk. Returns `"."` for a whole-repo glob
+ * (`**​/*.ts`), "" for anything absolute, home-relative, or negated.
+ */
+function globToScanRoot(glob: string): string {
+  let g = glob.replace(/\\/g, "/");
+  while (g.startsWith("./")) g = g.slice(2);
+  if (g.startsWith("!") || g.startsWith("/") || g.startsWith("~")) return "";
+  const globAt = g.search(/[*?[{]/);
+  let base = globAt === -1 ? g : g.slice(0, globAt);
+  if (/\.(ts|tsx|mts|cts)$/.test(base)) base = base.replace(/\/[^/]*$/, "");
+  if (base === "" || base === ".") return ".";
+  return normalizeGuardDir(base);
+}
+
+export interface ResolvedBareRequireRoots {
+  /** Repo-relative source roots to scan; empty when nothing could be resolved. */
+  roots: string[];
+  /** Repo-relative directories to skip (from tsconfig `exclude`). */
+  excludes: string[];
+  /** Where the roots came from, for the check's status message. */
+  source: "config" | "tsconfig" | "none";
+}
+
+/**
+ * Decide which source roots the bare-`require()` guard scans (#0352). Explicit
+ * `[check] bareRequireDirs` wins; otherwise the repo's tsconfig `include` (plus
+ * `files`) is mapped to directories, minus its `exclude` list. Pure so the
+ * resolution is unit-testable; if neither yields a root the guard skips rather
+ * than passing vacuously.
+ */
+export function resolveBareRequireRoots(
+  configured: string[] | undefined,
+  tsconfig: { include?: unknown; files?: unknown; exclude?: unknown } | null,
+): ResolvedBareRequireRoots {
+  const configRoots = dedupeRoots(
+    (configured ?? []).map((d) => (d === "." ? "." : normalizeGuardDir(d))).filter(Boolean),
+  );
+  if (configRoots.length) return { roots: configRoots, excludes: [], source: "config" };
+
+  const patterns = [
+    ...(Array.isArray(tsconfig?.include) ? tsconfig.include : []),
+    ...(Array.isArray(tsconfig?.files) ? tsconfig.files : []),
+  ].filter((v): v is string => typeof v === "string" && v.trim() !== "");
+  const roots = dedupeRoots(patterns.map(globToScanRoot).filter(Boolean));
+  const excludes = dedupeRoots(
+    (Array.isArray(tsconfig?.exclude) ? tsconfig.exclude : [])
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      .map(globToScanRoot)
+      .filter((d) => d && d !== "."),
+  );
+  return { roots, excludes, source: roots.length ? "tsconfig" : "none" };
+}
+
+/** Drop any root that is a descendant of another, and collapse to `["."]` if present. */
+function dedupeRoots(roots: string[]): string[] {
+  const set = [...new Set(roots)];
+  if (set.includes(".")) return ["."];
+  return set.filter((r) => !set.some((o) => o !== r && r.startsWith(`${o}/`)));
 }
 
 /**
@@ -851,22 +980,46 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 2d. Bare require() guard ─────────────────────────────────────────
+  // The bug this guards is specific to `"type": "module"` packages (a bare
+  // `require` is valid in CJS), and the directories to scan are per-project
+  // (#0352): `[check] bareRequireDirs`, else the tsconfig include list.
   heading("Bare require() guard");
   {
-    const offenders = bareRequireOffenders();
-    if (offenders.length > 0) {
-      const msg =
-        'Bare require() in ESM source (this package is "type": "module" — a bare require throws ' +
-        "ReferenceError at runtime in dist/, silently if caught):\n    " +
-        offenders.slice(0, 10).join("\n    ") +
-        '\n    Import from "node:..." normally, or use createRequire(import.meta.url) if you ' +
-        "genuinely need CJS interop (see ui-harness.ts).";
-      console.log(c.red("  ✗ " + msg.split("\n")[0]));
-      results.push(fail("bare-require", msg));
-      exitCode = 1;
+    const resolved = resolveBareRequireRoots(cfg.check?.bareRequireDirs, readTsconfig(repoRoot));
+    if (pkg.type !== "module") {
+      console.log(
+        c.dim(
+          '  · package.json is not "type": "module" — skipping (bare require() is valid in CJS)',
+        ),
+      );
+      results.push(pass("bare-require", 'skipped — package.json is not "type": "module"'));
+    } else if (resolved.roots.length === 0) {
+      console.log(
+        c.dim(
+          "  · No source roots to scan — set [check] bareRequireDirs or a tsconfig include — skipping",
+        ),
+      );
+      results.push(pass("bare-require", "skipped — no source roots configured"));
     } else {
-      console.log(c.green("  ✔ No bare require() calls in ESM source"));
-      results.push(pass("bare-require"));
+      const offenders = bareRequireOffenders(resolved.roots, {
+        repoRoot,
+        excludes: resolved.excludes,
+      });
+      if (offenders.length > 0) {
+        const msg =
+          'Bare require() in ESM source (this package is "type": "module" — a bare require throws ' +
+          "ReferenceError at runtime in dist/, silently if caught):\n    " +
+          offenders.slice(0, 10).join("\n    ") +
+          '\n    Import from "node:..." normally, or use createRequire(import.meta.url) if you ' +
+          "genuinely need CJS interop (see ui-harness.ts).";
+        console.log(c.red("  ✗ " + msg.split("\n")[0]));
+        results.push(fail("bare-require", msg));
+        exitCode = 1;
+      } else {
+        const from = resolved.source === "config" ? "[check] bareRequireDirs" : "tsconfig include";
+        console.log(c.green(`  ✔ No bare require() calls in ESM source (${from})`));
+        results.push(pass("bare-require"));
+      }
     }
   }
 

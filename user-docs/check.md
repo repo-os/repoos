@@ -22,14 +22,14 @@ Steps run in order, and several are conditional on what your repo declares:
 | Full build | Runs your `build` script | Always |
 | CSS layering | No unlayered universal/bare-element selectors | `[check] uiStylesheet` imports Tailwind v4 |
 | Theme contrast | Button gradients valid; token pairs meet ≥3:1 | `[check] uiStylesheet` and `themeScopes` are configured |
-| Bare `require()` | No bare `require` in ESM source | Scans `src/{core,server,commands,cli}` |
+| Bare `require()` | No bare `require` in ESM source | The package is `"type": "module"` and a source root is declared (`[check] bareRequireDirs` or a tsconfig `include`) |
 | Task assets | No committed binaries under your task/input dirs | Always |
 | Tests | Runs your `test` script | A `test` script or a test directory exists |
 | UI smoke | Boots the app and checks whatever your declared smoke command asserts (RepoOS's own default: the app mounts with no console errors) | You opt in (see below) |
 
-The steps that are RepoOS-specific — zero-runtime-deps and the bare-require
-scan roots — **skip cleanly** in a repo they don't apply to. They exist to
-enforce RepoOS's own invariants; you don't have to satisfy them.
+The one step that is RepoOS-specific — zero-runtime-deps — **skips cleanly**
+in a repo it doesn't apply to. It exists to enforce RepoOS's own zero-dependency
+invariant; you don't have to satisfy it.
 
 ## Making it meaningful in your repo
 
@@ -80,7 +80,7 @@ doesn't exist is called out with a warning. RepoOS's own repo declares its
 stylesheet and full token vocabulary this way rather than relying on hardcoded
 defaults.
 
-**Two steps adapt to your layout rather than assuming RepoOS's:**
+**Several steps adapt to your layout rather than assuming RepoOS's:**
 
 - The **build-staleness** step degrades to a skip — not a failure — for a
   project whose `src/` uses a different build pipeline. It only applies once a
@@ -89,6 +89,11 @@ defaults.
 - The **task-asset guard** reads `workDir` and `inputsDir` from `repoos.toml`,
   so a repo that calls those folders `tasks/` and `attachments/` is still
   guarded.
+- The **bare-require guard** carries no RepoOS source layout: it runs only for a
+  `"type": "module"` package, and scans the roots you declare in `[check]
+  bareRequireDirs` — or, absent that, your tsconfig `include` list minus its
+  `exclude` list. With neither a configured root nor a usable tsconfig include
+  it skips with a clear message, rather than passing vacuously.
 
 ## Using it in CI
 
