@@ -378,6 +378,14 @@ export interface RepoOSConfig {
    */
   check?: CheckConfig;
   /**
+   * Per-project config for task previews (task #0362). Omitted means the
+   * backward-compatible default: preview a task by booting RepoOS's own board
+   * UI (`repoos serve`) rooted at the task's worktree. When a repo declares a
+   * command or named targets here, those run instead — and a task whose `area`
+   * matches no configured target gets a clean "no preview configured" result.
+   */
+  preview?: PreviewConfig;
+  /**
    * Deployment targets (task #0340) — one row per (service, branch). Absent or
    * empty means the Deployments nav item and API stay hidden for this repo.
    */
@@ -523,6 +531,58 @@ export interface CheckConfig {
    * Absent and no `smoke` script means the step skips.
    */
   uiSmoke?: string;
+}
+
+/**
+ * A named preview target (#0362): one previewable thing in a repo, selected by
+ * matching the task's `area:` frontmatter (case-insensitive). A monorepo can
+ * hold a landing page, a docs site, several web apps, etc.; each gets a target
+ * whose `areas` list names the task areas it serves.
+ */
+export interface PreviewTargetConfig {
+  /** Human label for diagnostics, e.g. "Landing page". */
+  name: string;
+  /** Task `area:` values this target serves, matched case-insensitively. */
+  areas: string[];
+  /**
+   * Shell command that boots the preview. `{port}` and `{host}` are replaced
+   * with the OS-assigned values; `PORT`/`HOST` are also exported into the
+   * child's environment. Runs with the worktree root as cwd unless `cwd` is set.
+   */
+  command: string;
+  /** Optional subdirectory of the worktree to run the command in. */
+  cwd?: string;
+  /**
+   * Optional path polled for readiness (relative to the preview URL). Defaults
+   * to `/`. Must not be `/api/health` — that path is RepoOS's own health
+   * contract, only assumed for the implicit `repoos serve` fallback.
+   */
+  readyPath?: string;
+}
+
+/**
+ * Per-project task-preview configuration (#0362), from `repoos.toml`'s
+ * `[preview]` section plus any `[[preview.targets]]` tables. The whole point is
+ * that "preview a task" is not hardcoded to RepoOS's own web UI: an adopting
+ * repo declares how to boot its own previewable thing.
+ *
+ * Resolution order for a given task:
+ *   1. a `[[preview.targets]]` whose `areas` include the task's `area` wins;
+ *   2. else the top-level `command` (a default target for any area);
+ *   3. else — the section is present but nothing matches — "no preview
+ *      configured", returned cleanly rather than attempted;
+ *   4. when the section is entirely absent, RepoOS's own `repoos serve`-on-
+ *      worktree behavior is preserved for backward compatibility.
+ */
+export interface PreviewConfig {
+  /** Default preview command, used when no target matches the task's area. */
+  command?: string;
+  /** Default subdirectory to run `command` in, relative to the worktree root. */
+  cwd?: string;
+  /** Default readiness path for `command` (default `/`). */
+  readyPath?: string;
+  /** Named targets, selected by the task's `area:` frontmatter. */
+  targets?: PreviewTargetConfig[];
 }
 
 /** Whisper voice transcription configuration. */

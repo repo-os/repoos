@@ -1,9 +1,14 @@
 /**
  * Read-only preview servers for review/active tasks.
  *
- * Each preview is a separate `repoos serve` process rooted at the task's own
- * git worktree, bound to an OS-assigned ephemeral port (never a hardcoded
- * range). The main server keeps a registry — in memory plus persisted to
+ * How a task is previewed is pluggable per project (#0362): a repo declares a
+ * command and/or named targets in `repoos.toml`'s `[preview]` section, selected
+ * by the task's `area`. With no config, RepoOS's own backward-compatible
+ * fallback runs `repoos serve` rooted at the task's worktree.
+ *
+ * Each preview is a separate process rooted at the task's own git worktree,
+ * bound to an OS-assigned ephemeral port (never a hardcoded range). The main
+ * server keeps a registry — in memory plus persisted to
  * `<cacheDir>/previews.json` — so previews can be stopped on demand, reaped
  * when a task leaves active/review, torn down on shutdown, and cleaned up at
  * boot when a crashed main server left orphans behind.
@@ -13,7 +18,7 @@
 import { spawn, spawnSync, execFileSync, type ChildProcess } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { worktreePathForBranch } from "../core/git.js";
@@ -25,12 +30,31 @@ export interface PreviewInfo {
   url: string;
   startedAt: string;
   pid: number;
+  /**
+   * Path polled on the preview URL for readiness (#0362). `/api/health` for the
+   * implicit `repoos serve` target, `/` (or the target's override) otherwise.
+   */
+  readyPath?: string;
+  /**
+   * Resolved custom command the preview child was started with (#0362), used to
+   * identify the process during boot-time orphan cleanup. Absent for the
+   * `repoos serve` fallback, which is identified structurally instead.
+   */
+  command?: string;
+  /**
+   * True when the preview child leads its own process group (POSIX custom
+   * commands), so stop/reap signals must target the group (`-pid`) to take the
+   * shell's whole tree down with it.
+   */
+  processGroup?: boolean;
 }
 
 export interface PreviewResult {
   ok: boolean;
   port?: number;
   url?: string;
+  /** Readiness path for the started preview, so callers probe the right endpoint. */
+  readyPath?: string;
   error?: string;
 }
 
@@ -66,6 +90,94 @@ const now = (): string => new Date().toISOString();
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Readiness path for RepoOS's own `repoos serve` fallback. */
+const REPOOS_READY_PATH = "/api/health";
+/** Default readiness path for a project-declared preview command. */
+const DEFAULT_READY_PATH = "/";
+
+/**
+ * The preview target resolved for one task (#0362). `repoos` is the backward-
+ * compatible fallback (no `[preview]` config): boot RepoOS's board UI rooted at
+ * the worktree. `command` is a project-declared shell command.
+ */
+export type PreviewTarget =
+  | { kind: "repoos"; readyPath: string }
+  | {
+      kind: "command";
+      /** Human label for diagnostics: the target name, or "default". */
+      label: string;
+      command: string;
+      cwd?: string;
+      readyPath: string;
+    };
+
+/** Resolution result: a runnable target, or a clean "nothing configured". */
+export type PreviewTargetResolution = PreviewTarget | { kind: "none"; reason: string };
+
+/**
+ * Decide how to preview `task` from the repo's `[preview]` config (#0362).
+ *
+ * Precedence: a named target whose `areas` include the task's `area` wins; then
+ * a default `[preview] command`; then, when the section is present but neither
+ * matches, a `none` result with an actionable message (never a spawn failure);
+ * and when the section is absent entirely, the RepoOS `repoos serve` fallback
+ * that self-hosted repos have always had. Exported for tests.
+ */
+export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewTargetResolution {
+  const preview = config.preview;
+  const hasTargets = Boolean(preview?.targets?.length);
+  const defaultCommand = preview?.command?.trim();
+  if (!hasTargets && !defaultCommand) return { kind: "repoos", readyPath: REPOOS_READY_PATH };
+
+  const area = (task.area ?? "").trim();
+  if (hasTargets) {
+    const match = preview?.targets?.find((t) =>
+      t.areas.some((a) => a.trim().toLowerCase() === area.toLowerCase()),
+    );
+    if (match) {
+      return {
+        kind: "command",
+        label: match.name,
+        command: match.command,
+        cwd: match.cwd,
+        readyPath: match.readyPath ?? DEFAULT_READY_PATH,
+      };
+    }
+  }
+  if (defaultCommand) {
+    return {
+      kind: "command",
+      label: "default",
+      command: defaultCommand,
+      cwd: preview?.cwd,
+      readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
+    };
+  }
+  const label = area || "(none)";
+  return {
+    kind: "none",
+    reason:
+      `No preview configured for area "${label}" (#${task.id}). Add a [[preview.targets]] ` +
+      `entry whose areas include "${label}", or a default [preview] command, to repoos.toml.`,
+  };
+}
+
+/**
+ * Resolve a target's `cwd` to an absolute path inside the worktree, or null
+ * when it escapes it (absolute, `..`, or otherwise outside `root`). Config is
+ * git-tracked and trusted, but a preview must never be spawned outside the
+ * task's own worktree.
+ */
+function resolvePreviewCwd(root: string, sub: string | undefined): string | null {
+  if (!sub || !sub.trim()) return root;
+  const rel = sub.trim();
+  if (isAbsolute(rel)) return null;
+  const resolved = resolve(root, rel);
+  if (resolved === root) return root;
+  const prefix = root.endsWith(sep) ? root : root + sep;
+  return resolved.startsWith(prefix) ? resolved : null;
+}
+
 /** A fresh OS-assigned port, released just before the preview child binds. */
 function reservePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -78,13 +190,17 @@ function reservePort(): Promise<number> {
   });
 }
 
-/** Whether the child responds to /api/health within the window. */
-async function waitForHealth(url: string, timeoutMs: number): Promise<boolean> {
+/**
+ * Whether the child responds at `readyPath` within the window. A 2xx/3xx there
+ * means it has bound and is serving; for the `repoos serve` fallback this is
+ * `/api/health`, for a project command it is `/` by default (#0362).
+ */
+async function waitForReady(url: string, readyPath: string, timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const r = await fetch(`${url}/api/health`);
-      if (r.ok) return true;
+      const r = await fetch(`${url}${readyPath}`);
+      if (r.status >= 200 && r.status < 400) return true;
     } catch {
       /* not up yet */
     }
@@ -94,30 +210,41 @@ async function waitForHealth(url: string, timeoutMs: number): Promise<boolean> {
 }
 
 /**
- * Probe a live preview URL from the trusted server side (#0121): the health
- * endpoint first, then the root page. A healthy health endpoint is enough for
- * a pass — the static-page check is informational so the transcript can state
- * exactly what was verified. Used when a sandboxed agent cannot open the
- * returned URL itself.
+ * Probe a live preview URL from the trusted server side (#0121): the readiness
+ * endpoint first (RepoOS's `/api/health` by default, or a project target's
+ * configured path — #0362), then the root page. A healthy readiness endpoint is
+ * enough for a pass — the static-page check is informational so the transcript
+ * can state exactly what was verified. Used when a sandboxed agent cannot open
+ * the returned URL itself.
  */
-export async function probePreview(url: string): Promise<PreviewProbe> {
+export async function probePreview(
+  url: string,
+  readyPath: string = REPOOS_READY_PATH,
+): Promise<PreviewProbe> {
   const deadline = Date.now() + HEALTH_TIMEOUT_MS;
   let lastError = "preview did not respond";
+  const isRepoosHealth = readyPath === REPOOS_READY_PATH;
   while (Date.now() < deadline) {
-    let healthStatus = 0;
+    let readyStatus = 0;
     try {
-      const r = await fetch(`${url}/api/health`);
-      healthStatus = r.status;
+      const r = await fetch(`${url}${readyPath}`);
+      readyStatus = r.status;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
-    if (healthStatus === 200) {
+    if (readyStatus >= 200 && readyStatus < 400) {
       let pageStatus = 0;
       try {
         const page = await fetch(url);
         pageStatus = page.status;
       } catch {
         /* static-page check is best-effort */
+      }
+      if (!isRepoosHealth) {
+        return {
+          ok: true,
+          detail: `readiness endpoint ${readyPath} responds (HTTP ${readyStatus})`,
+        };
       }
       return {
         ok: true,
@@ -127,8 +254,11 @@ export async function probePreview(url: string): Promise<PreviewProbe> {
             : `health endpoint responds (root page: HTTP ${pageStatus || "unreachable"})`,
       };
     }
-    if (healthStatus > 0) {
-      return { ok: false, error: `preview health endpoint returned HTTP ${healthStatus}` };
+    if (readyStatus > 0) {
+      return {
+        ok: false,
+        error: `preview readiness endpoint ${readyPath} returned HTTP ${readyStatus}`,
+      };
     }
     await sleep(150);
   }
@@ -209,12 +339,16 @@ function ensureFreshBuild(root: string): { ok: boolean; error?: string } {
 }
 
 /**
- * True when `pid` is a live process that is serving on `port`. The command
- * line is matched structurally — the repoos CLI entry + the exact `--port`
- * value the preview was spawned with — so it never depends on the repo path
- * happening to contain "repoos", and can't match an unrelated `node serve`.
+ * True when `info.pid` is a live process that is serving this preview. For the
+ * `repoos serve` fallback the command line is matched structurally — the repoos
+ * CLI entry + the exact `--port` value the preview was spawned with — so it
+ * never depends on the repo path happening to contain "repoos". For a
+ * project-declared command (#0362) the recorded resolved command is matched by
+ * its binary token and port binding instead, since there is no fixed shape to
+ * key on.
  */
-function isPreviewProcess(pid: number, port: number): boolean {
+function isPreviewProcess(info: PreviewInfo): boolean {
+  const { pid, port } = info;
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
@@ -227,6 +361,17 @@ function isPreviewProcess(pid: number, port: number): boolean {
       encoding: "utf8",
       timeout: 4000,
     });
+    if (info.command) {
+      // The shell may quote the binary, and `ps` may report an absolute path —
+      // match on the executable's basename plus the exact port binding.
+      const first =
+        info.command
+          .trim()
+          .split(/\s+/)[0]
+          ?.replace(/^['"]|['"]$/g, "") ?? "";
+      const binary = basename(first);
+      return cmd.includes(`--port ${port}`) || (Boolean(binary) && cmd.includes(binary));
+    }
     return (
       /cli[/\\]index\.(js|ts)/.test(cmd) && cmd.includes("serve") && cmd.includes(`--port ${port}`)
     );
@@ -264,9 +409,11 @@ export class PreviewManager {
   }
 
   /**
-   * Start a preview for a task: rebuild the worktree if stale, allocate an
-   * ephemeral port, spawn a `repoos serve` rooted at the worktree, and wait
-   * for it to come up. Returns `{ ok, port, url }` or a human-readable error.
+   * Start a preview for a task: resolve its preview target from `[preview]`
+   * config (#0362), allocate an ephemeral port, spawn the target (a project
+   * command, or `repoos serve` for the no-config fallback) rooted at the
+   * worktree, and wait for it to come up. Returns `{ ok, port, url }` or a
+   * human-readable error.
    *
    * Every check happens BEFORE anything starts: the task id must resolve, the
    * task must be in an allowed state (active/review), it must carry a
@@ -297,7 +444,9 @@ export class PreviewManager {
       };
     }
     const existing = this.registry.get(task.id);
-    if (existing) return { ok: true, port: existing.port, url: existing.url };
+    if (existing) {
+      return { ok: true, port: existing.port, url: existing.url, readyPath: existing.readyPath };
+    }
     // Concurrent starts for the same task (e.g. duplicate transition events)
     // must share one spawn — never double-spawn a process and leak one.
     const inflight = this.inflight.get(task.id);
@@ -322,10 +471,25 @@ export class PreviewManager {
       return { ok: false, error: `No git worktree exists for branch "${task.branch}"` };
     }
 
-    const build = ensureFreshBuild(root);
-    if (!build.ok) {
-      this.logLifecycle("start-failed", task.id, build.error);
-      return { ok: false, error: build.error };
+    // Decide how to preview this task (#0362): a project-declared command
+    // selected by area, or the backward-compatible `repoos serve` fallback. A
+    // task whose area matches no configured target returns a clear "nothing
+    // configured" result instead of spawning (and failing) something.
+    const target = resolvePreviewTarget(this.config, task);
+    if (target.kind === "none") {
+      this.logLifecycle("start-skipped", task.id, target.reason);
+      return { ok: false, error: target.reason };
+    }
+
+    // The RepoOS build-staleness step only applies to the repoos fallback: a
+    // project-declared command owns its own build (and a foreign repo's `src/`
+    // has nothing to do with RepoOS's dist/.build-info.json contract).
+    if (target.kind === "repoos") {
+      const build = ensureFreshBuild(root);
+      if (!build.ok) {
+        this.logLifecycle("start-failed", task.id, build.error);
+        return { ok: false, error: build.error };
+      }
     }
 
     // Enforce the concurrent-preview cap (#0198): before launching a new
@@ -345,15 +509,16 @@ export class PreviewManager {
       return { ok: false, error: "could not allocate an ephemeral port for the preview" };
     }
 
-    const spawned = this.spawnPreview(root, port, task.id);
+    const spawned = this.spawnPreview(root, port, task.id, target);
     if (!spawned.ok) {
       this.logLifecycle("start-failed", task.id, spawned.error);
       return { ok: false, error: spawned.error };
     }
     const { pid } = spawned;
 
-    if (!(await waitForHealth(`http://${HOST}:${port}`, HEALTH_TIMEOUT_MS))) {
-      void this.kill(pid);
+    const url = `http://${HOST}:${port}`;
+    if (!(await waitForReady(url, target.readyPath, HEALTH_TIMEOUT_MS))) {
+      void this.kill(pid, spawned.processGroup);
       const diag = this.bootErrors.get(task.id);
       this.bootErrors.delete(task.id);
       const error = `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`;
@@ -363,9 +528,12 @@ export class PreviewManager {
 
     const info: PreviewInfo = {
       port,
-      url: `http://${HOST}:${port}`,
+      url,
       startedAt: now(),
       pid,
+      readyPath: target.readyPath,
+      ...(spawned.command ? { command: spawned.command } : {}),
+      ...(spawned.processGroup ? { processGroup: true } : {}),
     };
     this.registry.set(task.id, info);
     this.persist();
@@ -376,7 +544,7 @@ export class PreviewManager {
       preview: { port: info.port, url: info.url, startedAt: info.startedAt },
       at: now(),
     });
-    return { ok: true, port: info.port, url: info.url };
+    return { ok: true, port: info.port, url: info.url, readyPath: target.readyPath };
   }
 
   /** Stop a task's preview. Idempotent: stopping nothing is a no-op success. */
@@ -387,7 +555,7 @@ export class PreviewManager {
     this.persist();
     this.logLifecycle("stopped", taskId, `url=${info.url} pid=${info.pid}`);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
-    await this.kill(info.pid);
+    await this.kill(info.pid, info.processGroup);
   }
 
   /** Stop every preview — used on main-server shutdown. */
@@ -399,7 +567,7 @@ export class PreviewManager {
     } catch {
       /* nothing persisted */
     }
-    for (const [, info] of entries) await this.kill(info.pid);
+    for (const [, info] of entries) await this.kill(info.pid, info.processGroup);
   }
 
   /**
@@ -418,7 +586,7 @@ export class PreviewManager {
     }
     if (payload) {
       for (const info of Object.values(payload.previews ?? {})) {
-        if (isPreviewProcess(info.pid, info.port)) void this.kill(info.pid);
+        if (isPreviewProcess(info)) void this.kill(info.pid, info.processGroup);
       }
     }
     try {
@@ -468,20 +636,52 @@ export class PreviewManager {
     root: string,
     port: number,
     taskId: string,
-  ): { ok: true; pid: number } | { ok: false; error: string } {
-    const entry = resolveServeEntry(root);
-    if (!entry) {
-      return { ok: false, error: "could not locate the repoos CLI to serve the worktree" };
-    }
+    target: PreviewTarget,
+  ):
+    | { ok: true; pid: number; command?: string; processGroup?: boolean }
+    | { ok: false; error: string } {
     let child: ChildProcess;
-    try {
-      child = spawn(process.execPath, [entry, "serve", "--port", String(port), "--host", HOST], {
-        cwd: root,
-        stdio: ["ignore", "ignore", "pipe"],
-        env: { ...process.env, [CHILD_ENV]: "1" },
-      });
-    } catch (err) {
-      return { ok: false, error: `could not launch preview server: ${(err as Error).message}` };
+    let resolvedCommand: string | undefined;
+    let processGroup = false;
+    if (target.kind === "repoos") {
+      const entry = resolveServeEntry(root);
+      if (!entry) {
+        return { ok: false, error: "could not locate the repoos CLI to serve the worktree" };
+      }
+      try {
+        child = spawn(process.execPath, [entry, "serve", "--port", String(port), "--host", HOST], {
+          cwd: root,
+          stdio: ["ignore", "ignore", "pipe"],
+          env: { ...process.env, [CHILD_ENV]: "1" },
+        });
+      } catch (err) {
+        return { ok: false, error: `could not launch preview server: ${(err as Error).message}` };
+      }
+    } else {
+      const cwd = resolvePreviewCwd(root, target.cwd);
+      if (!cwd) {
+        return {
+          ok: false,
+          error: `preview target cwd "${target.cwd}" is not inside the task's worktree`,
+        };
+      }
+      resolvedCommand = target.command
+        .replaceAll("{port}", String(port))
+        .replaceAll("{host}", HOST);
+      // Own process group (POSIX) so a shell command's whole tree — the shell
+      // plus whatever it spawns — can be torn down with one signal.
+      processGroup = process.platform !== "win32";
+      try {
+        child = spawn(resolvedCommand, {
+          cwd,
+          shell: true,
+          detached: processGroup,
+          stdio: ["ignore", "ignore", "pipe"],
+          env: { ...process.env, [CHILD_ENV]: "1", PORT: String(port), HOST },
+        });
+      } catch (err) {
+        return { ok: false, error: `could not launch preview command: ${(err as Error).message}` };
+      }
     }
     const pid = child.pid;
     if (!pid) return { ok: false, error: "could not launch preview server (no pid)" };
@@ -507,27 +707,27 @@ export class PreviewManager {
         this.emit({ type: "preview", id: taskId, preview: null, at: now() });
       }
     });
-    return { ok: true, pid };
+    return { ok: true, pid, command: resolvedCommand, processGroup };
   }
 
   /** Graceful SIGTERM, then SIGKILL after a short grace period. */
-  private async kill(pid: number): Promise<void> {
-    try {
-      process.kill(pid, "SIGTERM");
-    } catch {
-      return; // already gone
-    }
+  private async kill(pid: number, processGroup = false): Promise<void> {
+    const signal = (sig: NodeJS.Signals): boolean => {
+      try {
+        process.kill(processGroup ? -pid : pid, sig);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (!signal("SIGTERM")) return; // already gone
     await sleep(400);
     try {
-      process.kill(pid, 0);
+      process.kill(processGroup ? -pid : pid, 0);
     } catch {
       return; // exited on SIGTERM
     }
-    try {
-      process.kill(pid, "SIGKILL");
-    } catch {
-      /* ignore */
-    }
+    signal("SIGKILL");
   }
 
   /** Persist the registry so a crashed main server's previews can be reaped. */

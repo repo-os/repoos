@@ -40,6 +40,38 @@ launchd/systemd unit, a bookmarked URL).
 `repoos stop` finds the right process through a per-port lockfile, so stopping
 one repo's server never kills another's.
 
+## Task previews
+
+A preview is a read-only server RepoOS starts from a task's worktree so you can
+look at the change in a browser while the task is `active` or `review`. By
+default RepoOS previews its own board UI. Point `[preview]` at your own app to
+preview *your* project instead:
+
+```toml
+[preview]
+command   = "bun run dev --port {port}"   # optional default for every area
+readyPath = "/"                           # optional, default "/"
+
+[[preview.targets]]
+name    = "Landing page"
+areas   = ["landing", "web"]              # matched against a task's `area:`
+command = "bun run dev --port {port}"
+cwd     = "landing"                       # relative to the task's worktree
+```
+
+- `{port}` and `{host}` are replaced with the values RepoOS chose; `PORT` and
+  `HOST` are also set in the command's environment. RepoOS owns the port and
+  the process lifecycle — never hardcode one.
+- A task is matched to the target whose `areas` includes its `area:`. If none
+  matches, the default `[preview] command` runs; if there is none, the preview
+  request tells you no preview is configured for that area (instead of failing).
+- `readyPath` is the path RepoOS polls until the app is up; it defaults to `/`.
+- With no `[preview]` section at all, RepoOS keeps its original behavior and
+  previews its own board UI.
+
+Previews are on demand and one runs at a time — starting another evicts the
+previous one.
+
 ## Agents
 
 ```toml
