@@ -91,9 +91,12 @@ defaults.
   guarded.
 - The **bare-require guard** carries no RepoOS source layout: it runs only for a
   `"type": "module"` package, and scans the roots you declare in `[check]
-  bareRequireDirs` — or, absent that, your tsconfig `include` list minus its
-  `exclude` list. With neither a configured root nor a usable tsconfig include
-  it skips with a clear message, rather than passing vacuously.
+  bareRequireDirs` (carving out subtrees with `bareRequireExcludes` if you need
+  to) — or, absent that, your tsconfig `include` list minus its `exclude` list.
+  With neither a configured root nor a usable tsconfig include it skips with a
+  clear message, rather than passing vacuously. Only the repo-root
+  `tsconfig.json` is read; a config that gets its `include`/`exclude` from an
+  `extends` base won't be followed, so declare `bareRequireDirs` there instead.
 
 ## Using it in CI
 

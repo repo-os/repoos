@@ -561,6 +561,13 @@ export interface CheckConfig {
    * neither yields a root it skips with a clear message.
    */
   bareRequireDirs?: string[];
+  /**
+   * Repo-relative paths or tsconfig-style globs the bare-`require()` guard
+   * skips when scanning `bareRequireDirs` (#0352) — e.g. a generated subtree.
+   * Only consulted alongside `bareRequireDirs`; when the roots come from the
+   * tsconfig instead, the tsconfig's own `exclude` list is used.
+   */
+  bareRequireExcludes?: string[];
 }
 
 /**

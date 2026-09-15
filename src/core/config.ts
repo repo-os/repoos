@@ -614,6 +614,14 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         .map((v) => v.trim());
       if (dirs.length) cfg.check = { ...cfg.check, bareRequireDirs: dirs };
     }
+    const checkBareRequireExcludes =
+      parsed["check.bareRequireExcludes"] ?? parsed["checks.bareRequireExcludes"];
+    if (Array.isArray(checkBareRequireExcludes)) {
+      const excludes = checkBareRequireExcludes
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
+    }
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];

@@ -131,7 +131,7 @@ export function bareRequireOffenders(
     for (const absPath of walkTsFiles(absRoot)) {
       const relPath = relative(repoRoot, absPath).split(sep).join("/");
       if (relPath.endsWith(".test.ts")) continue; // vitest supplies its own require shim
-      if (excludes.some((ex) => relPath === ex || relPath.startsWith(`${ex}/`))) continue;
+      if (isExcludedPath(relPath, excludes)) continue;
       let content: string;
       try {
         content = readFileSync(absPath, "utf8");
@@ -151,10 +151,10 @@ export function bareRequireOffenders(
 
 /**
  * Strip `//` and `/* *​/` comments and trailing commas from a tsconfig so it
- * parses as JSON (tsconfig.json is JSONC, which `JSON.parse` rejects). A `//`
- * inside a double-quoted string is left alone. Deliberately minimal — it only
- * ever sees a `tsconfig.json`, so a pathological string edge case degrades to
- * a parse failure the caller already handles as "no tsconfig".
+ * parses as JSON (tsconfig.json is JSONC, which `JSON.parse` rejects). Both
+ * transformations are string-aware: a `//` or `,]` inside a double-quoted
+ * string value is left untouched, and only a comma whose next significant
+ * token is `}` or `]` is dropped.
  */
 function stripJsonComments(text: string): string {
   let out = "";
@@ -189,10 +189,41 @@ function stripJsonComments(text: string): string {
       i += 2;
       continue;
     }
+    if (ch === ",") {
+      const next = nextSignificantChar(text, i + 1);
+      if (next === "}" || next === "]") {
+        i++; // trailing comma
+        continue;
+      }
+    }
     out += ch;
     i++;
   }
-  return out.replace(/,(\s*[}\]])/g, "$1");
+  return out;
+}
+
+/** The next non-whitespace, non-comment character at or after `from`, or null. */
+function nextSignificantChar(text: string, from: number): string | null {
+  let i = from;
+  while (i < text.length) {
+    const ch = text[i];
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    return ch;
+  }
+  return null;
 }
 
 /** Parse a `tsconfig.json` (JSONC) and read the fields the guard needs, or null. */
@@ -224,10 +255,73 @@ function globToScanRoot(glob: string): string {
   return normalizeGuardDir(base);
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Compile a tsconfig-style glob (`src/**​/*.ts`, `**​/*.spec.ts`) to a regex. */
+function globToRegExp(pattern: string): RegExp {
+  let re = "";
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        if (pattern[i + 2] === "/") {
+          re += "(?:.*/)?"; // `**​/` — any number of leading directories
+          i += 2;
+        } else {
+          re += ".*";
+          i += 1;
+        }
+      } else {
+        re += "[^/]*";
+      }
+    } else if (ch === "?") {
+      re += "[^/]";
+    } else if (ch === "{") {
+      const end = pattern.indexOf("}", i);
+      if (end === -1) {
+        re += "\\{";
+      } else {
+        const alts = pattern
+          .slice(i + 1, end)
+          .split(",")
+          .map(escapeRegExp);
+        re += `(?:${alts.join("|")})`;
+        i = end;
+      }
+    } else {
+      re += escapeRegExp(ch);
+    }
+  }
+  return new RegExp(`^${re}$`);
+}
+
+/**
+ * Whether a repo-relative path is excluded. A literal path excludes that file
+ * exactly, or — for a directory — everything beneath it. A pattern containing
+ * glob metacharacters is compiled and matched against the whole path. Keeping
+ * these distinct matters: `globToScanRoot("src/legacy.ts")` would collapse a
+ * single-file exclude to `src` and wipe out the whole tree (#0352 review).
+ */
+function isExcludedPath(relPath: string, patterns: string[]): boolean {
+  for (const p of patterns) {
+    if (!/[*?[{]/.test(p)) {
+      if (relPath === p || relPath.startsWith(`${p}/`)) return true;
+    } else if (globToRegExp(p).test(relPath)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export interface ResolvedBareRequireRoots {
   /** Repo-relative source roots to scan; empty when nothing could be resolved. */
   roots: string[];
-  /** Repo-relative directories to skip (from tsconfig `exclude`). */
+  /**
+   * Repo-relative globs/paths to skip — from `[check] bareRequireExcludes`, or
+   * the tsconfig's own `exclude` when the roots came from there.
+   */
   excludes: string[];
   /** Where the roots came from, for the check's status message. */
   source: "config" | "tsconfig" | "none";
@@ -243,22 +337,32 @@ export interface ResolvedBareRequireRoots {
 export function resolveBareRequireRoots(
   configured: string[] | undefined,
   tsconfig: { include?: unknown; files?: unknown; exclude?: unknown } | null,
+  configuredExcludes?: string[],
 ): ResolvedBareRequireRoots {
+  const normalizePatterns = (v: string[] | undefined): string[] => [
+    ...new Set((v ?? []).map(normalizeGuardDir).filter(Boolean)),
+  ];
+
   const configRoots = dedupeRoots(
     (configured ?? []).map((d) => (d === "." ? "." : normalizeGuardDir(d))).filter(Boolean),
   );
-  if (configRoots.length) return { roots: configRoots, excludes: [], source: "config" };
+  if (configRoots.length) {
+    return {
+      roots: configRoots,
+      excludes: normalizePatterns(configuredExcludes),
+      source: "config",
+    };
+  }
 
   const patterns = [
     ...(Array.isArray(tsconfig?.include) ? tsconfig.include : []),
     ...(Array.isArray(tsconfig?.files) ? tsconfig.files : []),
   ].filter((v): v is string => typeof v === "string" && v.trim() !== "");
   const roots = dedupeRoots(patterns.map(globToScanRoot).filter(Boolean));
-  const excludes = dedupeRoots(
-    (Array.isArray(tsconfig?.exclude) ? tsconfig.exclude : [])
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
-      .map(globToScanRoot)
-      .filter((d) => d && d !== "."),
+  const excludes = normalizePatterns(
+    (Array.isArray(tsconfig?.exclude) ? tsconfig.exclude : []).filter(
+      (v): v is string => typeof v === "string" && v.trim() !== "",
+    ),
   );
   return { roots, excludes, source: roots.length ? "tsconfig" : "none" };
 }
@@ -985,7 +1089,11 @@ export async function cmdCheck(): Promise<void> {
   // (#0352): `[check] bareRequireDirs`, else the tsconfig include list.
   heading("Bare require() guard");
   {
-    const resolved = resolveBareRequireRoots(cfg.check?.bareRequireDirs, readTsconfig(repoRoot));
+    const resolved = resolveBareRequireRoots(
+      cfg.check?.bareRequireDirs,
+      readTsconfig(repoRoot),
+      cfg.check?.bareRequireExcludes,
+    );
     if (pkg.type !== "module") {
       console.log(
         c.dim(

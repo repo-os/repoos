@@ -53,6 +53,22 @@ describe("resolveBareRequireRoots", () => {
     expect(resolved.excludes).toContain("src/ui-app");
   });
 
+  it("keeps a file-level exclude as a file, not its parent directory", () => {
+    // Collapsing src/legacy.ts to `src` used to make the guard skip the whole
+    // tree and pass vacuously (#0352 review).
+    const resolved = resolveBareRequireRoots(undefined, {
+      include: ["src/**/*.ts"],
+      exclude: ["src/legacy.ts"],
+    });
+    expect(resolved.excludes).toEqual(["src/legacy.ts"]);
+  });
+
+  it("carries [check] bareRequireExcludes when the roots are configured", () => {
+    const resolved = resolveBareRequireRoots(["src"], null, ["src/generated/**/*.ts"]);
+    expect(resolved.source).toBe("config");
+    expect(resolved.excludes).toEqual(["src/generated/**/*.ts"]);
+  });
+
   it("dedupes a root that is a descendant of another", () => {
     const resolved = resolveBareRequireRoots(undefined, {
       include: ["packages/**/*.ts", "packages/app/src/**/*.ts"],
@@ -92,6 +108,12 @@ describe("readTsconfig", () => {
   it("returns null when there is no tsconfig", () => {
     expect(readTsconfig(tmpRepo())).toBeNull();
   });
+
+  it("leaves a `,]` inside a string value untouched", () => {
+    const root = tmpRepo();
+    writeFileSync(join(root, "tsconfig.json"), '{ "files": ["odd,].ts"] }');
+    expect(readTsconfig(root)?.files).toEqual(["odd,].ts"]);
+  });
 });
 
 describe("bareRequireOffenders", () => {
@@ -117,10 +139,47 @@ describe("bareRequireOffenders", () => {
     ]);
   });
 
+  it("honors a file-level exclude without skipping its directory", () => {
+    const root = tmpRepo();
+    write(root, "app/kept.ts", 'require("fs");\n');
+    write(root, "app/legacy.ts", 'require("fs");\n');
+    expect(bareRequireOffenders(["app"], { repoRoot: root, excludes: ["app/legacy.ts"] })).toEqual([
+      "app/kept.ts:1",
+    ]);
+  });
+
+  it("honors a glob exclude", () => {
+    const root = tmpRepo();
+    write(root, "app/kept.ts", 'require("fs");\n');
+    write(root, "app/a.spec.ts", 'require("fs");\n');
+    write(root, "app/deep/b.spec.ts", 'require("fs");\n');
+    expect(bareRequireOffenders(["app"], { repoRoot: root, excludes: ["**/*.spec.ts"] })).toEqual([
+      "app/kept.ts:1",
+    ]);
+  });
+
   it("ignores commented-out require calls", () => {
     const root = tmpRepo();
     write(root, "app/a.ts", '// require("fs")\n * require("os")\n');
     expect(bareRequireOffenders(["app"], { repoRoot: root })).toEqual([]);
+  });
+});
+
+describe("loadConfig [check] bare-require parsing", () => {
+  it("reads bareRequireDirs and bareRequireExcludes (both [check] spellings)", () => {
+    const root = tmpRepo();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        "[checks]",
+        'bareRequireDirs = ["app/src", "lib"]',
+        'bareRequireExcludes = ["app/src/generated"]',
+        "",
+      ].join("\n"),
+    );
+    const cfg = loadConfig(root).check;
+    expect(cfg?.bareRequireDirs).toEqual(["app/src", "lib"]);
+    expect(cfg?.bareRequireExcludes).toEqual(["app/src/generated"]);
   });
 });
 
