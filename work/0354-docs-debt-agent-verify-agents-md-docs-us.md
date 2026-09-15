@@ -2,7 +2,7 @@
 id: "0354"
 title: "Docs Debt Agent: verify AGENTS.md/docs/user-docs claims against real code"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T12:59:49Z"
-updated_at: "2026-09-15T14:21:28Z"
+updated_at: "2026-09-15T14:21:39Z"
 ---
 ## Problem
 
@@ -149,3 +149,4 @@ its conventions rather than reinventing them:
 
 - 2026-09-15T12:59:49Z · created · unknown
 - 2026-09-15T14:21:28Z · model_override
+- 2026-09-15T14:21:39Z · status inbox→ready
