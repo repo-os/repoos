@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T14:19:42Z"
-updated_at: "2026-09-15T14:19:58Z"
+updated_at: "2026-09-15T14:20:57Z"
 ---
 ## Problem
 
@@ -56,3 +57,4 @@ when there's an error on a task, like on this MTD, if I click fix it should send
 - 2026-09-15T14:19:42Z · created · hello@repoos.org
 - 2026-09-15T14:19:43Z · screenshots
 - 2026-09-15T14:19:58Z · status draft→inbox, title, area, type, body
+- 2026-09-15T14:20:57Z · model_override
