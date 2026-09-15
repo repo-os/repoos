@@ -2,7 +2,7 @@
 id: "0203"
 title: "bug: watchdog false-positives on live agents and dumps uncommitted work back to ready"
 type: bug
-status: draft
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: default
 created_at: "2026-08-14T17:06:20Z"
-updated_at: "2026-08-26T05:51:29Z"
+updated_at: "2026-09-15T16:35:16Z"
 ---
 ## Problem
 
@@ -59,3 +59,5 @@ The remaining two unchecked acceptance criteria (needs_input escalation reason, 
 - 2026-08-15T11:59:08Z · body
 - 2026-08-15T16:16:06Z · status ready→draft
 - 2026-08-25T15:03:30Z · model_override
+- 2026-09-15T16:35:16Z · status draft→done
+- 2026-09-15T16:35:16Z · note: Stale: root cause fixed via hasRecentWorktreeActivity (task-watchdog.ts). needs_input escalation-with-reason (escalateToNeedsInput) and watchdog-vs-agent activity distinction also since landed via later watchdog work (#0286/#0288/#0307). Task was left in draft after the fix shipped.
