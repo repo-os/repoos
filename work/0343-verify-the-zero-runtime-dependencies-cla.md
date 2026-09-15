@@ -8,9 +8,10 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T16:47:49Z"
-updated_at: "2026-09-14T08:00:52Z"
+updated_at: "2026-09-15T07:41:22Z"
 ---
 "Zero runtime dependencies" is stated as a hard design constraint in AGENTS.md
 and claimed publicly on the repoos.org landing page ("the supply chain you ship
@@ -57,3 +58,4 @@ disagreeing. Note the lockfile will change either way; commit it.
 - 2026-09-13T16:47:49Z · created · unknown
 - 2026-09-14T08:00:50Z · review_model_override
 - 2026-09-14T08:00:52Z · status inbox→ready
+- 2026-09-15T07:41:22Z · model_override
