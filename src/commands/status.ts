@@ -69,6 +69,15 @@ export interface StatusBuild {
   /** Same codes as core/build.ts checkBuildForRoot. */
   code: "fresh" | "stale" | "no-marker" | "no-build" | "corrupt" | "dev-mode" | "published";
   stale: boolean;
+  /**
+   * Whether RepoOS's build-staleness contract applies to this checkout (see
+   * BuildCheckResult.applicable in core/build.ts). `stale` stays true for a
+   * non-RepoOS-build checkout so build-triggering callers (e.g. the preview's
+   * ensureFreshBuild) still work — callers that want to know whether this is
+   * a real problem, not just a pipeline that doesn't use RepoOS's marker,
+   * should check `applicable` too rather than `stale` alone.
+   */
+  applicable: boolean;
   message: string | null;
   version: string | null;
   buildAt: string | null;
@@ -363,6 +372,7 @@ export async function collectStatus(
   const build: StatusBuild = {
     code: check.code,
     stale: check.stale,
+    applicable: check.applicable,
     message: check.message,
     version: readVersionFromMarker(root) ?? health.version,
     buildAt: readBuildStamp(root),
