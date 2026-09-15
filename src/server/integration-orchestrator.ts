@@ -175,6 +175,27 @@ export async function resetForeignWorkFiles(opts: {
  * 3. currently checked-out branch
  * 4. fallback to "main"
  */
+/**
+ * Whether this project is expected to build its own `dist/cli/index.js` at
+ * all. True only for RepoOS itself (self-hosting) and any other managed
+ * project that happens to declare the same `bin` target — the vast majority
+ * of managed projects (a Vue app, a backend service, ...) never produce a
+ * CLI there, so a missing local CLI for them is normal, not a regression.
+ * Detected via `package.json`'s `bin` field rather than a name check so any
+ * project that legitimately ships a `dist/cli/index.js` binary is covered.
+ */
+function expectsOwnCli(wtPath: string): boolean {
+  try {
+    const pkg = JSON.parse(readFileSync(join(wtPath, "package.json"), "utf8")) as {
+      bin?: string | Record<string, string>;
+    };
+    const binPaths = typeof pkg.bin === "string" ? [pkg.bin] : Object.values(pkg.bin ?? {});
+    return binPaths.some((p) => p.replace(/^\.\//, "") === "dist/cli/index.js");
+  } catch {
+    return false;
+  }
+}
+
 async function resolveDefaultBranch(root: string): Promise<string> {
   // Try remote HEAD first (most reliable for cloned repos)
   const remoteHeadRes = await runGit(root, ["symbolic-ref", "refs/remotes/origin/HEAD"], 4000);
@@ -885,23 +906,36 @@ export class CloseOutOrchestrator {
     //                    re-check passed on the same tree (self-resolving)
     //   'fallback'     — local CLI failed for a genuine non-staleness reason;
     //                    fell through to the global CLI fallback
-    //   'local-missing'— candidate's own CLI was absent; only the global CLI
-    //                    fallback could run (Flavour A, not self-resolving)
-    let outcome: "local-ok" | "absorbed" | "fallback" | "local-missing";
+    //   'local-missing'— candidate's own CLI was absent AND this project is
+    //                    meant to build one — only the global CLI fallback
+    //                    could run (Flavour A, not self-resolving)
+    //   'no-cli-expected' — candidate's own CLI was absent, but this project
+    //                    never builds a dist/cli/index.js at all (the common
+    //                    case for a managed web/backend project) — the
+    //                    fallback is expected, not a regression signal
+    let outcome: "local-ok" | "absorbed" | "fallback" | "local-missing" | "no-cli-expected";
 
     if (!localCliPresent) {
-      // Flavour A (#0276): no candidate-owned CLI to run. The global CLI
-      // fallback compares the candidate's src hash against a DIFFERENT
-      // install's marker — a guaranteed mismatch that reports "stale" no matter
-      // how fresh the candidate really is. That is the #0213/3fbbd707
-      // CLI-selection regression, not a self-resolving gap: never absorb it.
+      // Only a project that is itself meant to build dist/cli/index.js
+      // (RepoOS self-hosting, or another project with the same bin target)
+      // can suffer the #0213/3fbbd707 CLI-selection regression, where the
+      // global CLI fallback compares this candidate's src hash against a
+      // DIFFERENT install's marker — a guaranteed "stale" mismatch regardless
+      // of how fresh the candidate really is. For every other managed
+      // project (the common case) there was never a local CLI to find, so a
+      // missing one is expected, not a regression; labelling it as one on
+      // every such MTD (#0345) buried the real failure reason behind a false
+      // lead.
+      const cliExpected = expectsOwnCli(wtPath);
       checkRes = await rawCheck("repoos", ["check"]);
-      outcome = "local-missing";
-      this.logger?.integration(
-        job.taskId,
-        "error",
-        "candidate dist/cli/index.js is missing — gate fell back to the globally linked repoos; any 'stale' result here is a CLI-selection regression (#0276 Flavour A), not self-resolving staleness",
-      );
+      outcome = cliExpected ? "local-missing" : "no-cli-expected";
+      if (cliExpected) {
+        this.logger?.integration(
+          job.taskId,
+          "error",
+          "candidate dist/cli/index.js is missing — gate fell back to the globally linked repoos; any 'stale' result here is a CLI-selection regression (#0276 Flavour A), not self-resolving staleness",
+        );
+      }
     } else {
       checkRes = await rawCheck(process.execPath, [localCli, "check"]);
       if (checkRes.status === 0) {
