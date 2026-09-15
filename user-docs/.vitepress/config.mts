@@ -75,6 +75,7 @@ export default defineConfig({
         text: "Using RepoOS",
         items: [
           { text: "Agents", link: "/agents" },
+          { text: "Built-in agents", link: "/built-in-agents" },
           { text: "Review and close-out", link: "/review-and-close-out" },
           { text: "The check gate", link: "/check" },
           { text: "Tunnels", link: "/tunnels" },
@@ -85,6 +86,8 @@ export default defineConfig({
         items: [
           { text: "CLI", link: "/cli" },
           { text: "Configuration", link: "/configuration" },
+          { text: "Authentication", link: "/authentication" },
+          { text: "Deployments and releases", link: "/deployments-and-releases" },
         ],
       },
       {

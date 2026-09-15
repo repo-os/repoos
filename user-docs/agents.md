@@ -69,8 +69,9 @@ core count — see [Configuration](/configuration#agents).
 ## Built-in agents are a different thing
 
 The **Build Your Team** tab also holds **built-in agents**: Tech Debt,
-Performance, Architect, Design, and a Debugger assistant. Don't confuse them
-with the lifecycle roles above — they are not roles a task moves through:
+Performance, Architect, Design, Docs Debt, and a Debugger assistant. Don't
+confuse them with the lifecycle roles above — they are not roles a task moves
+through:
 
 - They run **on demand or on a schedule** (daily, weekly, or manual only), not
   as part of a task's lifecycle.
@@ -78,8 +79,8 @@ with the lifecycle roles above — they are not roles a task moves through:
   lifecycle roles.
 - They **produce findings**, not implementation: Tech Debt and Performance
   create tasks in your inbox for each issue; Architect and Design write markdown
-  reports under `docs/agents/<Agent>/`.
+  reports under `docs/agents/<Agent>/`; Docs Debt fixes what it safely can and
+  bundles the rest into a single task.
 
-A Docs Debt built-in agent is planned. A full deep-dive on the built-in agents —
-one section each, with config and what "good" output looks like — is a separate
-page, not covered here.
+Each of them — what it scans for, how to schedule it, and what good output looks
+like — has its own section in [Built-in agents](/built-in-agents).
