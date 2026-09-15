@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-15T14:28:16Z"
+review_passes: 1
 id: "0356"
 title: "Route task error \"Fix\" action to that task's own debugger"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/route-task-error-fix-action-to-that-task
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-15T14:19:42Z"
-updated_at: "2026-09-15T14:27:36Z"
 ---
 ## Problem
 
@@ -63,3 +64,4 @@ when there's an error on a task, like on this MTD, if I click fix it should send
 - 2026-09-15T14:21:02Z · status inbox→ready
 - 2026-09-15T14:21:09Z · status ready→active, branch
 - 2026-09-15T14:27:36Z · status active→review
+
