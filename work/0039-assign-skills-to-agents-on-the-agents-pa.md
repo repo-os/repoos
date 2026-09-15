@@ -2,14 +2,14 @@
 id: "0039"
 title: Assign skills to agents on the Agents page
 type: feature
-status: inbox
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-06T10:05:00Z"
-updated_at: "2026-08-11T17:34:28Z"
+updated_at: "2026-09-15T16:35:28Z"
 ---
 ## Problem
 
@@ -105,3 +105,5 @@ multi-select: the repo's discovered skills, each toggleable on/off per agent.
 - 2026-08-11T17:34:02Z · status draft→inbox
 - 2026-08-11T17:34:24Z · status inbox→ready
 - 2026-08-11T17:34:28Z · status ready→inbox
+- 2026-09-15T16:35:28Z · status inbox→done
+- 2026-09-15T16:35:28Z · note: Closed per user confirmation: skills-on-agents is already implemented (Agent.skills type + Agents page UI).
