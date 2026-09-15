@@ -9,7 +9,10 @@
  * lint guard" comment below), full build (tsc + asset copy), CSS layering
  * guard, theme contrast guard (button-gradient validity + WCAG contrast on
  * every theme's fg/bg token pairs), test suite (if present), and a headless
- * browser smoke test that verifies the UI mounts and has zero console errors.
+ * browser smoke test. The UI smoke step is per-project and opt-in (#0348): a
+ * project declares a command via a `smoke` package.json script or `[check]
+ * uiSmoke` in repoos.toml, and skips cleanly when it declares neither — only
+ * RepoOS's own repo runs the built-in dashboard assertions by default.
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
@@ -28,7 +31,7 @@ import { cpus, tmpdir, totalmem } from "node:os";
 import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
-import { findRepoRoot } from "../core/config.js";
+import { findRepoRoot, loadConfig } from "../core/config.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
 import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
@@ -474,6 +477,34 @@ export function changedTestRef(env: NodeJS.ProcessEnv): string | undefined {
 }
 
 /**
+ * The `package.json` script name a project uses to opt into `repoos check`'s
+ * UI smoke step with no configuration — the same zero-config convention
+ * `build`/`test`/`lint` already follow elsewhere in this gate.
+ */
+export const UI_SMOKE_SCRIPT = "smoke";
+
+export type SmokeCommand =
+  | { source: "config"; command: string }
+  | { source: "script"; script: string };
+
+/**
+ * Resolve which UI smoke command (if any) `repoos check` should run for the
+ * current project (#0348). Precedence: `repoos.toml` `[check] uiSmoke` wins,
+ * then a `smoke` package.json script, else null — the caller then skips the
+ * step cleanly. RepoOS's own dashboard assertions are a separate fallback the
+ * caller applies only for this repo, never for a managed project.
+ */
+export function resolveSmokeCommand(
+  configured: string | undefined,
+  pkgScripts: Record<string, string> | undefined,
+): SmokeCommand | null {
+  const fromConfig = configured?.trim();
+  if (fromConfig) return { source: "config", command: fromConfig };
+  if (pkgScripts?.[UI_SMOKE_SCRIPT]) return { source: "script", script: UI_SMOKE_SCRIPT };
+  return null;
+}
+
+/**
  * Vitest worker-pool size for the Tests step. `vite.config.ts` pins a
  * conservative floor (`maxWorkers: 2`) because several agent-driven check runs
  * routinely overlap across worktrees and each pool otherwise multiplies against
@@ -555,6 +586,11 @@ export async function cmdCheck(): Promise<void> {
   }
 
   const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
+
+  // Per-project step config (#0348) — `[check] uiSmoke` from repoos.toml. Read
+  // once here so the UI smoke step below can resolve its command without a
+  // second config load; loadConfig is cheap and repoos.toml is git-tracked.
+  const cfg = loadConfig(findRepoRoot());
 
   // ── 1c. Zero-runtime-dependencies guard ─────────────────────────────
   // "Zero runtime dependencies" is a hard design constraint (AGENTS.md),
@@ -838,7 +874,17 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 4. UI smoke test ────────────────────────────────────────────────
+  // Per-project and opt-in (#0348). `repoos check` is the generic gate every
+  // managed project runs, so it must not boot RepoOS's own dashboard for a
+  // project that never declared a smoke command — that either silently tested
+  // RepoOS's UI or failed on RepoOS-only infrastructure. A project opts in
+  // with a `smoke` package.json script (zero-config default) or `[check]
+  // uiSmoke` in repoos.toml (overrides the script). With neither, the step
+  // skips cleanly. RepoOS's own repo keeps today's dashboard assertions as the
+  // fallback when nothing is declared (special-cased on package name, like the
+  // zero-runtime-deps guard above) so its exact coverage never regresses.
   heading("UI smoke test");
+  const smokeCommand = resolveSmokeCommand(cfg.check?.uiSmoke, pkg.scripts);
   if (fmtLintFailed) {
     // Build was skipped above, so dist reflects whatever the last successful
     // build was (possibly stale, possibly absent) — never a build of the
@@ -846,7 +892,25 @@ export async function cmdCheck(): Promise<void> {
     // the wrong thing, same principle as the REPOOS_SKIP_BUILD guard above.
     console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
     results.push(pass("ui-smoke", "skipped — formatting/lint failed, fix and rerun"));
-  } else {
+  } else if (smokeCommand) {
+    const runner = preferBunForDevTasks() ? "bun run" : "npm run";
+    const cmd =
+      smokeCommand.source === "config" ? smokeCommand.command : `${runner} ${smokeCommand.script}`;
+    const origin =
+      smokeCommand.source === "config"
+        ? "repoos.toml [check] uiSmoke"
+        : "package.json smoke script";
+    console.log(c.dim(`  · Running ${origin}: ${cmd}`));
+    try {
+      execSync(cmd, { stdio: "inherit", timeout: 300_000 });
+      console.log(c.green("  ✔ Smoke command passed"));
+      results.push(pass("ui-smoke", `ran ${origin}`));
+    } catch (e) {
+      console.log(c.red("  ✗ Smoke command failed"));
+      results.push(fail("ui-smoke", (e as Error).message));
+      exitCode = 1;
+    }
+  } else if (pkg.name === "repoos") {
     try {
       await runUISmokeTest();
       results.push(pass("ui-smoke"));
@@ -869,6 +933,14 @@ export async function cmdCheck(): Promise<void> {
         exitCode = 1;
       }
     }
+  } else {
+    console.log(c.dim("  · No smoke command configured — skipping"));
+    console.log(
+      c.dim(
+        '    Declare one with a `smoke` package.json script or [check] uiSmoke = "bun run smoke" in repoos.toml',
+      ),
+    );
+    results.push(pass("ui-smoke", "skipped — no smoke command configured"));
   }
 
   // ── Summary ─────────────────────────────────────────────────────────
