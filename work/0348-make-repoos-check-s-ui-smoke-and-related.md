@@ -2,16 +2,16 @@
 id: "0348"
 title: Make repoos check's ui-smoke (and related steps) per-project opt-in instead of RepoOS-only
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-repoos-check-s-ui-smoke-and-related
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-15T07:46:52Z"
-updated_at: "2026-09-15T08:16:33Z"
+updated_at: "2026-09-15T08:16:35Z"
 ---
 ## Problem
 
@@ -125,3 +125,4 @@ follow-up task per finding rather than growing this one unboundedly:
 - 2026-09-15T08:13:26Z · model_override
 - 2026-09-15T08:16:26Z · review_model_override
 - 2026-09-15T08:16:33Z · status inbox→ready
+- 2026-09-15T08:16:35Z · status ready→active, branch
