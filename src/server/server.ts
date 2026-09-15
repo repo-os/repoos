@@ -190,6 +190,7 @@ import {
   getInputs,
   postInput,
   patchInput,
+  postResolveInput,
   uploadInputAttachment,
   getInputAttachment,
   // Tasks routes
@@ -1672,6 +1673,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
   router.register("PATCH", /^\/api\/inputs\/([^/]+)$/, patchInput);
+  router.register("POST", /^\/api\/inputs\/([^/]+)\/resolve$/, postResolveInput);
   router.register("POST", /^\/api\/inputs\/([^/]+)\/attachments$/, uploadInputAttachment);
   router.register("GET", /^\/api\/inputs\/([^/]+)\/attachments\/([^/]+)$/, getInputAttachment);
   router.register("GET", "/api/skills", getSkills);

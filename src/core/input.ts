@@ -4,6 +4,13 @@ import type { RepoOSConfig } from "./types.js";
 import { parseDocument } from "./frontmatter.js";
 
 export type InputStatus = "new" | "reviewing" | "processed";
+/**
+ * How a `processed` input was resolved: `task` means it became a task (the id
+ * is in `resolvedTask`), `none` means the decision was to take no action. An
+ * empty string means no resolution was recorded (e.g. an input moved to
+ * `processed` by hand before this feature existed).
+ */
+export type InputResolution = "task" | "none";
 export interface InputAttachment {
   name: string;
   mime: string;
@@ -22,8 +29,20 @@ export interface Input {
   updatedAt: string;
   path: string;
   attachments: InputAttachment[];
+  resolution: InputResolution | "";
+  resolvedTask: string;
 }
 const q = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+/**
+ * Set a frontmatter key in a file's raw content, adding it to the block if it
+ * isn't there yet. Assumes the content's frontmatter is the first `---` block
+ * (true for every input file `createInput` writes).
+ */
+function setField(content: string, key: string, value: string): string {
+  const line = `${key}: ${q(value)}`;
+  const re = new RegExp(`^${key}:.*$`, "m");
+  return re.test(content) ? content.replace(re, line) : content.replace("---\n", `---\n${line}\n`);
+}
 const slug = (v: string) =>
   v
     .toLowerCase()
@@ -67,6 +86,10 @@ export function listInputs(c: RepoOSConfig): Input[] {
           path,
           body: parsed.body.trim(),
           attachments,
+          resolution: (d.resolution === "task" || d.resolution === "none" ? d.resolution : "") as
+            | InputResolution
+            | "",
+          resolvedTask: typeof d.resolved_task === "string" ? d.resolved_task : "",
         },
       ];
     })
@@ -100,10 +123,39 @@ export function createInput(c: RepoOSConfig, body: string, type = "other", creat
 export function updateInput(c: RepoOSConfig, id: string, status: InputStatus): Input {
   const item = listInputs(c).find((i) => i.id === id);
   if (!item) throw new Error("input not found");
-  const file = join(c.root, item.path),
-    content = readFileSync(file, "utf8")
-      .replace(/^status:.*$/m, `status: ${status}`)
-      .replace(/^updated_at:.*$/m, `updated_at: ${q(new Date().toISOString())}`);
+  const file = join(c.root, item.path);
+  let content = readFileSync(file, "utf8")
+    .replace(/^status:.*$/m, `status: ${status}`)
+    .replace(/^updated_at:.*$/m, `updated_at: ${q(new Date().toISOString())}`);
+  // A manual move out of `processed` invalidates any recorded resolution —
+  // leaving it behind would re-display a stale outcome if the input is later
+  // marked processed again without a real resolve action.
+  if (status !== "processed") {
+    content = setField(content, "resolution", "");
+    content = setField(content, "resolved_task", "");
+  }
+  writeFileSync(file, content);
+  return listInputs(c).find((i) => i.id === id)!;
+}
+/**
+ * Record how an input was resolved and move it to `processed`. `task` stores
+ * the created task's id in `resolved_task`; `none` clears it. Both keys are
+ * persisted in the input file so the outcome survives a reload.
+ */
+export function resolveInput(
+  c: RepoOSConfig,
+  id: string,
+  resolution: InputResolution,
+  taskId = "",
+): Input {
+  const item = listInputs(c).find((i) => i.id === id);
+  if (!item) throw new Error("input not found");
+  const file = join(c.root, item.path);
+  let content = readFileSync(file, "utf8");
+  content = setField(content, "status", "processed");
+  content = setField(content, "resolution", resolution);
+  content = setField(content, "resolved_task", resolution === "task" ? taskId : "");
+  content = content.replace(/^updated_at:.*$/m, `updated_at: ${q(new Date().toISOString())}`);
   writeFileSync(file, content);
   return listInputs(c).find((i) => i.id === id)!;
 }
@@ -118,12 +170,7 @@ export function enrichInput(
   let content = readFileSync(file, "utf8");
   for (const [key, value] of Object.entries(fields))
     if (typeof value === "string" && value.trim()) {
-      const fmKey = key === "title" ? "title" : key;
-      const line = `${fmKey}: ${q(value.trim())}`;
-      const re = new RegExp(`^${fmKey}:.*$`, "m");
-      content = re.test(content)
-        ? content.replace(re, line)
-        : content.replace("---\n", `---\n${line}\n`);
+      content = setField(content, key, value.trim());
     }
   content = content.replace(/^updated_at:.*$/m, `updated_at: ${q(new Date().toISOString())}`);
   writeFileSync(file, content);

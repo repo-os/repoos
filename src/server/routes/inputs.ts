@@ -6,9 +6,11 @@ import {
   enrichInput,
   listInputs,
   readInputAttachment,
+  resolveInput,
   saveInputAttachment,
   updateInput,
   type Input,
+  type InputResolution,
   type InputStatus,
 } from "../../core/input.js";
 import { commitTaskFile } from "../../core/git.js";
@@ -84,6 +86,31 @@ export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   try {
     const updated = updateInput(ctx.config, p.param1, b.status as InputStatus);
     commitInput(ctx.config.root, updated, updated.status);
+    return json(res, 200, updated);
+  } catch (e) {
+    return json(res, 404, { error: (e as Error).message });
+  }
+};
+export const postResolveInput: RouteHandler = async (ctx, req, res, p) => {
+  const b = (await readBody(req)) as Record<string, unknown>;
+  const resolution = b.resolution;
+  if (resolution !== "task" && resolution !== "none")
+    return json(res, 400, { error: "resolution must be 'task' or 'none'" });
+  const taskId = typeof b.taskId === "string" ? b.taskId.trim() : "";
+  if (resolution === "task" && !taskId)
+    return json(res, 400, { error: "taskId is required when resolving to a task" });
+  try {
+    const updated = resolveInput(
+      ctx.config,
+      p.param1,
+      resolution as InputResolution,
+      resolution === "task" ? taskId : "",
+    );
+    commitInput(
+      ctx.config.root,
+      updated,
+      resolution === "task" ? `resolved to task #${taskId}` : "resolved: no action",
+    );
     return json(res, 200, updated);
   } catch (e) {
     return json(res, 404, { error: (e as Error).message });

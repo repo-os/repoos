@@ -2012,6 +2012,24 @@ export const useRepoStore = defineStore("repo", () => {
   async function updateInput(id: string, status: string): Promise<Input> {
     return api<Input>(`/api/inputs/${id}`, JSON_OPTS("PATCH", { status }));
   }
+  /**
+   * Record how an input was resolved and move it to `processed`. `resolution`
+   * is `task` (with the created task's id) or `none` (no action taken). The
+   * server persists the outcome in the input file, so it survives a reload.
+   * Announces the refresh so any mounted Inputs view reloads its list.
+   */
+  async function resolveInput(
+    id: string,
+    resolution: "task" | "none",
+    taskId = "",
+  ): Promise<Input> {
+    const updated = await api<Input>(
+      `/api/inputs/${id}/resolve`,
+      JSON_OPTS("POST", { resolution, taskId }),
+    );
+    window.dispatchEvent(new Event("repoos:inputs-updated"));
+    return updated;
+  }
   async function uploadInputAttachment(id: string, s: PendingScreenshot): Promise<void> {
     await api(
       `/api/inputs/${id}/attachments`,
@@ -2218,6 +2236,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadInputs,
     createInput,
     updateInput,
+    resolveInput,
     uploadInputAttachment,
     submitInput,
     createFreeformDocument,

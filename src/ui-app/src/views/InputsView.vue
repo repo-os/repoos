@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ArrowRight, X } from "lucide-vue-next";
+import { ArrowRight, ExternalLink, X } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -70,6 +70,54 @@ function statusLabel(status: Input["status"]): string {
 }
 function openInput(input: Input): void {
   activeInput.value = input;
+}
+// ── Resolve actions (#0359): turn an input into a task via the freeform PM
+// flow, or close it as "no action". Both persist the outcome on the input so
+// the drawer can show how it was resolved after a reload.
+const resolving = ref(false);
+const resolveError = ref("");
+
+async function createTaskFromInput(): Promise<void> {
+  const input = activeInput.value;
+  if (!input || resolving.value) return;
+  resolving.value = true;
+  resolveError.value = "";
+  try {
+    // The input's text goes through the same freeform/PM path as manual
+    // new-task creation; the PM agent fleshes it out and records its usage.
+    const res = await repo.createFreeformTask(input.body);
+    if (res.fallback) {
+      // No PM agent (or it failed) — the input stays exactly as it was so the
+      // capture can be retried.
+      resolveError.value =
+        res.reason ?? "The PM agent could not create a task. Nothing was lost — try again.";
+      return;
+    }
+    activeInput.value = await repo.resolveInput(input.id, "task", res.task.id);
+  } catch (err) {
+    resolveError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    resolving.value = false;
+  }
+}
+
+async function doNothing(): Promise<void> {
+  const input = activeInput.value;
+  if (!input || resolving.value) return;
+  resolving.value = true;
+  resolveError.value = "";
+  try {
+    activeInput.value = await repo.resolveInput(input.id, "none");
+  } catch (err) {
+    resolveError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    resolving.value = false;
+  }
+}
+
+function goToTask(id: string): void {
+  activeInput.value = null;
+  void router.push({ path: "/work", query: { task: id } });
 }
 function onInputsUpdated(): void {
   void load();
@@ -235,6 +283,20 @@ function tryOpenInput(id: string, attempt: number): void {
               Move to {{ nextStatus(activeInput.status) }}</Button
             >
           </div>
+          <div v-if="activeInput.status === 'processed'" class="detail-resolution">
+            <template v-if="activeInput.resolution === 'task' && activeInput.resolvedTask">
+              Resolved by
+              <button
+                type="button"
+                class="resolution-link"
+                @click="goToTask(activeInput.resolvedTask)"
+              >
+                task #{{ activeInput.resolvedTask }}<ExternalLink class="size-3.5" />
+              </button>
+            </template>
+            <template v-else-if="activeInput.resolution === 'none'">No action taken.</template>
+            <template v-else>No resolution recorded.</template>
+          </div>
           <div class="detail-meta">
             <span>{{ activeInput.type || "other" }}</span
             ><span>{{ activeInput.area || "Unknown area" }}</span
@@ -242,6 +304,13 @@ function tryOpenInput(id: string, attempt: number): void {
             ><span v-if="activeInput.createdAt">Created {{ relTime(activeInput.createdAt) }}</span>
           </div>
           <div class="detail-body">{{ activeInput.body }}</div>
+          <div v-if="activeInput.status !== 'processed'" class="detail-actions">
+            <Button variant="accent" :disabled="resolving" @click="createTaskFromInput">{{
+              resolving ? "Creating task…" : "Create task"
+            }}</Button>
+            <Button variant="outline" :disabled="resolving" @click="doNothing">Do nothing</Button>
+          </div>
+          <div v-if="resolveError" class="resolve-error" role="alert">{{ resolveError }}</div>
           <div v-if="activeInput.attachments.length" class="detail-attachments">
             <strong>Attachments</strong>
             <div v-for="a in activeInput.attachments" :key="a.name" class="attachment-card">
@@ -451,6 +520,43 @@ function tryOpenInput(id: string, attempt: number): void {
   color: var(--txt);
   font-size: 14px;
   line-height: 1.65;
+}
+.detail-resolution {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: var(--txt-secondary);
+  font-size: 12px;
+}
+.resolution-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font: inherit;
+  cursor: pointer;
+}
+.resolution-link:hover {
+  text-decoration: underline;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding-top: 4px;
+}
+.resolve-error {
+  padding: 9px 11px;
+  border: 1px solid var(--red-border-tint);
+  border-radius: 8px;
+  background: var(--red-tint);
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.5;
 }
 .detail-attachments {
   display: flex;

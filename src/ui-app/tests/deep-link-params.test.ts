@@ -80,6 +80,8 @@ function makeInput(id: string): Input {
     updatedAt: "2026-09-14T00:00:00Z",
     path: `inputs/${id}.md`,
     attachments: [],
+    resolution: "",
+    resolvedTask: "",
   };
 }
 
