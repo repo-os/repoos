@@ -25,7 +25,7 @@ Steps run in order, and several are conditional on what your repo declares:
 | Bare `require()` | No bare `require` in ESM source | Scans `src/{core,server,commands,cli}` |
 | Task assets | No committed binaries under your task/input dirs | Always |
 | Tests | Runs your `test` script | A `test` script or a test directory exists |
-| UI smoke | A headless browser boots the app, asserts it mounts with no console errors | You opt in (see below) |
+| UI smoke | Boots the app and checks whatever your declared smoke command asserts (RepoOS's own default: the app mounts with no console errors) | You opt in (see below) |
 
 The steps that are RepoOS-specific — zero-runtime-deps, CSS layering, theme
 contrast, the bare-require scan roots — **skip cleanly** in a repo they don't
@@ -34,8 +34,10 @@ satisfy them.
 
 ## Making it meaningful in your repo
 
-`repoos check` picks up the standard `package.json` scripts by name: `build`,
-`test`, `fmt:check`, `lint`. Declare the ones you have; the rest skip.
+`repoos check` picks up the standard `package.json` scripts by name. A
+**`build` script is required** — the full-build step runs it on every check, so
+a repo without one fails the gate. `test`, `fmt:check`, and `lint` are
+optional: each step skips cleanly when its script is absent.
 
 **The UI smoke test is opt-in.** Because only your project knows how to boot
 its own UI, RepoOS runs it only when you tell it how:

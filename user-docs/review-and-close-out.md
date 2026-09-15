@@ -61,10 +61,10 @@ can't leave your working tree dirty.
 2. **syncing → validating** — merges the task's feature branch into the
    candidate. Generated files that routinely differ — `dist/`, `screenshots/`,
    and the task's own `work/<id>-*.md` bookkeeping file — are auto-resolved.
-3. **validating** — builds and runs `repoos check` in the candidate. A real
-   failure here stays in the branch: fix it there and retry. If a deps bot has
-   advanced `main` since the job started, the job resyncs from the new `main`
-   automatically.
+3. **validating** — re-checks `main` first: if it advanced since the candidate
+   synced, the job discards the candidate and resyncs before validating. Then
+   it builds and runs `repoos check`. A real check failure stays in the branch:
+   fix it there and retry.
 4. **publishing** — takes the repo lock, confirms `main` hasn't moved again,
    and fast-forward-or-merges the candidate into `main`. If `main` did move, it
    goes back to step 2 and self-heals.
