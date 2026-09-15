@@ -41,4 +41,27 @@ describe("taskAssetOffenders", () => {
       "inputs/x/B.WebP",
     ]);
   });
+
+  it("flags binaries under a custom workDir/inputsDir from repoos.toml", () => {
+    expect(
+      taskAssetOffenders(
+        [
+          "tasks/.attachments/0350/screenshot.png",
+          "tasks/0350-some-task.md",
+          "inbox/.attachments/abc/spec.pdf",
+          "inbox/abc-raw-thought.md",
+        ],
+        { workDir: "tasks", inputsDir: "inbox" },
+      ),
+    ).toEqual(["tasks/.attachments/0350/screenshot.png", "inbox/.attachments/abc/spec.pdf"]);
+  });
+
+  it("does not flag the default folders when custom ones are configured", () => {
+    expect(
+      taskAssetOffenders(["work/.attachments/1/a.png", "inputs/b.pdf"], {
+        workDir: "tasks",
+        inputsDir: "inbox",
+      }),
+    ).toEqual([]);
+  });
 });

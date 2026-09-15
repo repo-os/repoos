@@ -13,7 +13,7 @@
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -28,7 +28,7 @@ import { cpus, tmpdir, totalmem } from "node:os";
 import { join, sep } from "node:path";
 import { c } from "../cli/colors.js";
 import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
-import { findRepoRoot } from "../core/config.js";
+import { findRepoRoot, loadConfig } from "../core/config.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
 import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
@@ -145,22 +145,29 @@ function bareRequireOffenders(): string[] {
 }
 
 /**
- * Binary attachments (screenshots, PDFs) under `work/` or `inputs/` must never
- * enter git history: they are uploaded through the UI, written to
+ * Binary attachments (screenshots, PDFs) under the task/input folders must
+ * never enter git history: they are uploaded through the UI, written to
  * `<dir>/.attachments/`, and served back by the running server from disk — the
  * committed record is the task/input `.md`, not the pixels. Binaries in
  * history bloat the repo irreversibly (this repo once carried ~250 MiB of
  * stale screenshot churn). Product image assets — UI, icons, logos, docs —
- * live outside `work/`/`inputs/` and stay tracked.
+ * live outside those folders and stay tracked.
+ *
+ * The folder names come from `repoos.toml` (`workDir`/`inputsDir`) so a managed
+ * repo that renames them still gets the guard; they default to `work`/`inputs`.
  *
  * Pure (takes the tracked-file list) so it is unit-testable; the check block
  * feeds it `git ls-files`.
  */
-export function taskAssetOffenders(trackedPaths: string[]): string[] {
+export function taskAssetOffenders(
+  trackedPaths: string[],
+  dirs: { workDir?: string; inputsDir?: string } = {},
+): string[] {
   const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|pdf)$/i;
-  return trackedPaths.filter(
-    (p) => (p.startsWith("work/") || p.startsWith("inputs/")) && IMG.test(p),
+  const prefixes = [dirs.workDir ?? "work", dirs.inputsDir ?? "inputs"].map(
+    (d) => `${d.replace(/\/+$/, "")}/`,
   );
+  return trackedPaths.filter((p) => prefixes.some((pre) => p.startsWith(pre)) && IMG.test(p));
 }
 
 /**
@@ -747,9 +754,15 @@ export async function cmdCheck(): Promise<void> {
   // ── 2d′. Task / input asset guard ───────────────────────────────────
   heading("Task asset guard");
   {
+    // Folder names are configurable (`workDir`/`inputsDir` in repoos.toml); a
+    // managed repo that renames them must still be guarded, so read them rather
+    // than assuming the default `work`/`inputs`.
+    const config = loadConfig();
+    const workDir = config.workDir;
+    const inputsDir = config.inputsDir ?? "inputs";
     let tracked: string[] = [];
     try {
-      tracked = execSync("git ls-files -- work inputs", {
+      tracked = execFileSync("git", ["ls-files", "--", workDir, inputsDir], {
         encoding: "utf8",
         maxBuffer: 16 * 1024 * 1024,
       })
@@ -758,11 +771,11 @@ export async function cmdCheck(): Promise<void> {
     } catch {
       /* not a git repo / git unavailable — nothing to guard */
     }
-    const offenders = taskAssetOffenders(tracked);
+    const offenders = taskAssetOffenders(tracked, { workDir, inputsDir });
     if (offenders.length > 0) {
       const msg =
-        "Binary attachments committed under work/ or inputs/ — these are served by the " +
-        "running server from disk and must never enter git history (it bloats the repo " +
+        `Binary attachments committed under ${workDir}/ or ${inputsDir}/ — these are served by ` +
+        "the running server from disk and must never enter git history (it bloats the repo " +
         "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
         "`.gitignore` keep them out:\n    " +
         offenders.slice(0, 15).join("\n    ") +
@@ -771,7 +784,7 @@ export async function cmdCheck(): Promise<void> {
       results.push(fail("task-assets", msg));
       exitCode = 1;
     } else {
-      console.log(c.green("  ✔ No committed binaries under work/ or inputs/"));
+      console.log(c.green(`  ✔ No committed binaries under ${workDir}/ or ${inputsDir}/`));
       results.push(pass("task-assets"));
     }
   }
