@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-13T15:12:36Z"
-updated_at: "2026-09-15T15:50:35Z"
+updated_at: "2026-09-15T15:59:05Z"
 ---
 `user-docs/` (docs.repoos.org) was split out of `docs/` and seeded with four
 pages: `getting-started`, `concepts`, `cli`, `configuration`. This task fills
@@ -125,3 +126,4 @@ lower-priority than the 10 pages above for a first-time adopter.
 - 2026-09-13T15:12:36Z · created · unknown
 - 2026-09-14T08:25:25Z · status inbox→ready
 - 2026-09-15T15:50:35Z · body
+- 2026-09-15T15:59:05Z · model_override
