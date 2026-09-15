@@ -67,7 +67,7 @@ export interface StatusServer {
 
 export interface StatusBuild {
   /** Same codes as core/build.ts checkBuildForRoot. */
-  code: "fresh" | "stale" | "no-marker" | "no-build" | "dev-mode" | "published";
+  code: "fresh" | "stale" | "no-marker" | "no-build" | "corrupt" | "dev-mode" | "published";
   stale: boolean;
   message: string | null;
   version: string | null;
@@ -554,7 +554,11 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
 
   // Stale build FIRST and loud — per AGENTS.md it is the #1 time-waster in
   // this repo; it must never read as a quiet footnote.
-  if (s.build.stale && s.build.message) {
+  // Only when the RepoOS build contract applies: no dist/ or no marker means
+  // this checkout isn't using our build pipeline, so the "skip" message isn't a
+  // warning (#0349).
+  const buildCheckApplicable = s.build.code !== "no-build" && s.build.code !== "no-marker";
+  if (s.build.stale && buildCheckApplicable && s.build.message) {
     console.log("");
     for (const line of s.build.message.split("\n")) {
       console.log(c.bold(c.yellow("  ⚠ " + line.trim())));

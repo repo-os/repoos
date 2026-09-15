@@ -138,7 +138,10 @@ function main(): void {
   ]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
-    if (result.stale) {
+    // Only warn when the RepoOS build contract actually applies (marker
+    // present). No dist/ or no marker means this checkout isn't using our build
+    // pipeline — see checkBuildForRoot's `applicable` (#0349).
+    if (result.stale && result.applicable) {
       const config = loadConfig();
       const strict =
         config.strictBuild ||
