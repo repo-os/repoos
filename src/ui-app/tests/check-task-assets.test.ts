@@ -93,6 +93,7 @@ describe("normalizeGuardDir", () => {
     expect(normalizeGuardDir("./tasks")).toBe("tasks");
     expect(normalizeGuardDir("tasks/")).toBe("tasks");
     expect(normalizeGuardDir("./tasks/")).toBe("tasks");
+    expect(normalizeGuardDir("././tasks")).toBe("tasks");
     expect(normalizeGuardDir("nested/dir")).toBe("nested/dir");
   });
 
@@ -100,5 +101,25 @@ describe("normalizeGuardDir", () => {
     expect(normalizeGuardDir("")).toBe("");
     expect(normalizeGuardDir(".")).toBe("");
     expect(normalizeGuardDir("./")).toBe("");
+  });
+
+  it("normalizes non-repo-relative paths to empty (they can never match ls-files output)", () => {
+    expect(normalizeGuardDir("../tasks")).toBe("");
+    expect(normalizeGuardDir("foo/../tasks")).toBe("");
+    expect(normalizeGuardDir("/abs/tasks")).toBe("");
+    expect(normalizeGuardDir("~/tasks")).toBe("");
+  });
+});
+
+describe("taskAssetOffenders with non-repo-relative dirs", () => {
+  it("does not silently match when a configured dir escapes the repo root", () => {
+    // `../tasks` normalizes to empty, so it must not fall back to matching
+    // everything — only the usable inputsDir is matched.
+    expect(
+      taskAssetOffenders(["tasks/.attachments/1/a.png", "inbox/spec.pdf"], {
+        workDir: "../tasks",
+        inputsDir: "inbox",
+      }),
+    ).toEqual(["inbox/spec.pdf"]);
   });
 });
