@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T10:45:58Z"
-updated_at: "2026-09-15T15:00:20Z"
+updated_at: "2026-09-15T15:00:26Z"
 ---
 ## Problem
 
@@ -55,3 +56,4 @@ before merge").
 
 - 2026-09-15T10:45:58Z · created · unknown
 - 2026-09-15T15:00:20Z · status inbox→ready
+- 2026-09-15T15:00:26Z · model_override
