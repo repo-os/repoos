@@ -40,7 +40,7 @@ describe("resolvePreviewTarget", () => {
     const result = resolvePreviewTarget(baseConfig(), task("web"));
     expect(result.kind).toBe("none");
     if (result.kind === "none") {
-      expect(result.reason).toContain("no [preview] config");
+      expect(result.reason).toContain("no usable [preview] config");
       expect(result.reason).toContain('No preview configured for area "web"');
       expect(result.reason).toContain("#0001");
       expect(result.reason).toContain("[[preview.targets]]");
@@ -304,7 +304,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     expect(manager.get("0002")).toBeNull();
   }, 30_000);
 
-  it("never falls back to repoos serve: no [preview] config is a clean error (#0370)", async () => {
+  it("never falls back to repoos serve: no usable [preview] config is a clean error (#0370)", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
     const branch = "feat/preview-noconfig";
@@ -317,7 +317,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     const t = { id: "0003", area: "web", branch, status: "active" } as unknown as Task;
     const result = await manager.start(t);
     expect(result.ok).toBe(false);
-    expect(result.error).toContain("no [preview] config");
+    expect(result.error).toContain("no usable [preview] config");
     expect(result.error).toContain('No preview configured for area "web"');
     expect(manager.get("0003")).toBeNull();
   }, 30_000);

@@ -123,16 +123,19 @@ export type PreviewTargetResolution = PreviewTarget | { kind: "none"; reason: st
 function noPreviewReason(task: Task, lead: string): string {
   const area = (task.area ?? "").trim();
   const label = area || "(none)";
+  // TOML basic-string escape, so an area containing a backslash or quote can't
+  // produce a malformed suggested snippet. Message-only; Vue escapes the text.
+  const quoted = area.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
   const snippet = area
     ? [
         "[[preview.targets]]",
-        `name = "${area}"`,
-        `areas = ["${area}"]`,
+        `name = "${quoted}"`,
+        `areas = ["${quoted}"]`,
         'command = "bun run dev --port {port} --host {host}"',
       ].join("\n")
     : ["[preview]", 'command = "bun run dev --port {port} --host {host}"'].join("\n");
   return (
-    `${lead} No preview configured for area "${label}" (#${task.id}). ` +
+    `${lead ? `${lead} ` : ""}No preview configured for area "${label}" (#${task.id}). ` +
     `Add this to repoos.toml:\n\n${snippet}`
   );
 }
@@ -153,7 +156,7 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
   if (!hasTargets && !defaultCommand) {
     return {
       kind: "none",
-      reason: noPreviewReason(task, "This project has no [preview] config in repoos.toml."),
+      reason: noPreviewReason(task, "This project has no usable [preview] config in repoos.toml."),
     };
   }
 
@@ -272,7 +275,9 @@ export async function probePreview(
  * True when `info.pid` is a live process that is serving this preview. Every
  * preview is a project-declared command (#0362/#0370), so the recorded resolved
  * command is matched by its binary token and port binding — there is no fixed
- * shape to key on.
+ * shape to key on. A registry entry persisted before #0370 has no `command`
+ * (it was the removed `repoos serve` fallback); those are matched structurally
+ * so a crash across the upgrade still reaps them.
  */
 function isPreviewProcess(info: PreviewInfo): boolean {
   const { pid, port } = info;
@@ -283,12 +288,18 @@ function isPreviewProcess(info: PreviewInfo): boolean {
     return false; // no such process
   }
   if (process.platform === "win32") return true; // no portable cmdline inspection
-  if (!info.command) return false; // a preview always records its resolved command
   try {
     const cmd = execFileSync("ps", ["-p", String(pid), "-o", "command="], {
       encoding: "utf8",
       timeout: 4000,
     });
+    if (!info.command) {
+      return (
+        /cli[/\\]index\.(js|ts)/.test(cmd) &&
+        cmd.includes("serve") &&
+        cmd.includes(`--port ${port}`)
+      );
+    }
     // The shell may quote the binary, and `ps` may report an absolute path —
     // match on the executable's basename plus the exact port binding.
     const first =

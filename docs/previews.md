@@ -46,10 +46,15 @@ readyPath = "/"
   `HOST` are exported into the child's environment.
 - `readyPath` is the path polled for readiness (and probed server-side after
   start). The default is `/`.
-- A project-declared command owns its own build. RepoOS's build-staleness step
-  (`ensureFreshBuild`) was removed along with the `repoos serve` fallback in
-  #0370 — this repo's own preview command runs `bun run build && repoos serve`
-  explicitly instead.
+- **A declared command must run the worktree's own code.** RepoOS no longer
+  picks the CLI entry for you — that was `resolveServeEntry`, removed with the
+  fallback in #0370. A command that invokes a globally installed binary serves
+  stale code: UI changes may still appear (the worktree's `bun run build`
+  refreshes root-relative `dist/ui`), but server/core changes in the worktree's
+  `src/` never execute, and a new API route 404s into the SPA fallback — the
+  #0313 failure. This repo's own command therefore builds and then runs the
+  worktree's compiled entry directly:
+  `bun run build && bun dist/cli/index.js serve --port {port} --host {host}`.
 
 ## The monorepo multi-target question (the decision)
 
@@ -85,9 +90,9 @@ would make it resolve.
 
 The old `repoos serve`-on-worktree fallback existed only for RepoOS's own
 self-hosted repo, which now declares its preview explicitly in `repoos.toml`
-(`[preview] command = "bun run build && repoos serve …"` plus `landing`/`docs`
-targets). No adopter should ever want RepoOS's own board as *their* app's
-preview, so the fallback — and its supporting `resolveServeEntry` /
+(`[preview] command = "bun run build && bun dist/cli/index.js serve …"` plus
+`landing`/`docs` targets). No adopter should ever want RepoOS's own board as
+*their* app's preview, so the fallback — and its supporting `resolveServeEntry` /
 `ensureFreshBuild` code — was removed rather than gated behind an "is this
 RepoOS itself" heuristic.
 

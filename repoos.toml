@@ -220,7 +220,11 @@ subdir = "user-docs"
 # "core", ...) are building, so the `command` below exists to cover those
 # areas explicitly — it is not decorative.
 [preview]
-command = "bun run build && repoos serve --port {port} --host {host}"
+# Run the worktree's OWN compiled CLI, never the globally installed `repoos`
+# release: a preview must serve the code under review, including new server
+# routes. `repoos` on PATH is the last published release, so `bun run build`
+# (this worktree) followed by `bun dist/cli/index.js serve` is required.
+command = "bun run build && bun dist/cli/index.js serve --port {port} --host {host}"
 
 [[preview.targets]]
 name = "Landing page"
