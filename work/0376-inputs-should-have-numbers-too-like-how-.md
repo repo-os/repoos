@@ -2,14 +2,14 @@
 id: "0376"
 title: Add stable numeric IDs to inputs with deep links
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-16T08:35:46Z"
-updated_at: "2026-09-16T08:36:18Z"
+updated_at: "2026-09-16T09:03:28Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ Inputs should have numbers too (like how tasks have numbers), so that it's easy 
 
 - 2026-09-16T08:35:46Z · created · hello@repoos.org
 - 2026-09-16T08:36:18Z · status draft→inbox, title, area, body
+- 2026-09-16T09:03:28Z · status inbox→ready
