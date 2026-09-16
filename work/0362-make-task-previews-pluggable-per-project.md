@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-16T02:14:18Z"
+review_passes: 2
 id: "0362"
 title: Make task previews pluggable per project instead of hardcoded to repoos serve
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-task-previews-pluggable-per-project
 created_at: "2026-09-15T19:33:40Z"
-updated_at: "2026-09-16T02:09:28Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ assume, the following before writing code:
 - 2026-09-15T19:40:22Z · status ready→active, branch
 - 2026-09-15T19:55:40Z · status active→review
 - 2026-09-16T02:09:28Z · note: Addressed two of three reviewer suggestions: added a label field (PreviewTarget/PreviewInfo/PreviewResult) surfacing which preview target ran, threaded into lifecycle logs; documented the Windows detached:false grandchild-leak limitation in docs/previews.md. Filed #0363 as a follow-up for the third suggestion (isPreviewProcess's bare-binary-basename orphan match under pid reuse) rather than rushing a fix to process-killing logic that needs real cross-platform ps/shell-quoting verification. repoos check passed clean. Committed 615470cc + 0d0055f0 (task-file resync) on the branch.
+
