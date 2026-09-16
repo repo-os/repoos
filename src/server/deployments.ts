@@ -29,6 +29,14 @@ export interface DeploymentRow {
   lastPushAt: string | null;
   /** Short SHA of that commit. */
   lastPushSha: string | null;
+  /**
+   * Subdir-scoped version of the branch's `mainSync` ahead/behind counts
+   * (#0367): of the commits separating origin/<branch> from local main, how
+   * many actually touch THIS row's subdir. Null when no `subdir` is
+   * configured (the branch-level count already is this row's scope) or when
+   * either ref couldn't be resolved.
+   */
+  changesVsMain: { aheadOfMain: number; behindMain: number } | null;
 }
 
 export interface DeploymentBranch {
@@ -191,6 +199,39 @@ async function branchVsMain(
 }
 
 /**
+ * Same question as `branchVsMain`, scoped to one service's `subdir` (#0367):
+ * of the commits separating `origin/<branch>` from local `main`, how many
+ * actually touch this subtree? The branch-level count is honestly whole-
+ * branch (a repo doing unrelated work between deploys inflates it), which
+ * reads as misleading next to a specific service — this answers "does any of
+ * that distance actually apply to what I'm looking at."
+ *
+ * Returns null when there's nothing to scope (no subdir configured — the
+ * branch-level count already IS this row's scope) or when either ref can't
+ * be resolved (mirrors `branchVsMain`'s "unknown" case without a redundant
+ * ref-existence check, since a branch's own `branchVsMain` result already
+ * covers that call site).
+ */
+async function subdirVsMain(
+  exec: DeployCommandRunner,
+  branch: string,
+  subdir: string | undefined,
+  cwd: string,
+): Promise<{ aheadOfMain: number; behindMain: number } | null> {
+  if (!subdir) return null;
+  const origin = `origin/${branch}`;
+  const [aheadRes, behindRes] = await Promise.all([
+    cmd(exec, ["rev-list", "--count", `${SYNC_REFERENCE_BRANCH}..${origin}`, "--", subdir], cwd),
+    cmd(exec, ["rev-list", "--count", `${origin}..${SYNC_REFERENCE_BRANCH}`, "--", subdir], cwd),
+  ]);
+  if (aheadRes.code !== 0 || behindRes.code !== 0) return null;
+  return {
+    aheadOfMain: Number(aheadRes.stdout.trim()) || 0,
+    behindMain: Number(behindRes.stdout.trim()) || 0,
+  };
+}
+
+/**
  * Nearest configured branch that this branch can be fast-forwarded to: a
  * strict ancestor relationship (branch behind, never diverged), closest first.
  * Derived entirely from actual topology + config — no main/prod constants, so
@@ -252,19 +293,28 @@ async function branchSummary(
   return { branch, ahead, behind, hasOrigin, localExists, ffFrom, mainSync };
 }
 
+interface RowFreshnessAndSync {
+  lastPushAt: string | null;
+  lastPushSha: string | null;
+  changesVsMain: DeploymentRow["changesVsMain"];
+}
+
 async function rowFreshness(
   exec: DeployCommandRunner,
   row: DeploymentConfig,
   cwd: string,
-): Promise<{ lastPushAt: string | null; lastPushSha: string | null }> {
+): Promise<RowFreshnessAndSync> {
   // The revision goes BEFORE `--`: `git log -1 <branch> -- <subdir>`. Appending
   // the branch after `--` would read it as a path, silently degrading to HEAD.
   const args = ["log", "-1", "--format=%cI%n%h", row.branch];
   if (row.subdir) args.push("--", row.subdir);
-  const res = await cmd(exec, args, cwd);
-  if (res.code !== 0) return { lastPushAt: null, lastPushSha: null };
+  const [res, changesVsMain] = await Promise.all([
+    cmd(exec, args, cwd),
+    subdirVsMain(exec, row.branch, row.subdir, cwd),
+  ]);
+  if (res.code !== 0) return { lastPushAt: null, lastPushSha: null, changesVsMain };
   const [at, sha] = res.stdout.trim().split("\n");
-  return { lastPushAt: at?.trim() || null, lastPushSha: sha?.trim() || null };
+  return { lastPushAt: at?.trim() || null, lastPushSha: sha?.trim() || null, changesVsMain };
 }
 
 export async function getDeploymentsStatus(
@@ -289,12 +339,9 @@ export async function getDeploymentsStatus(
     cmd(exec, ["branch", "--show-current"], cwd),
     ...branches.map((b) => branchSummary(exec, b, branches, cwd)),
   ]);
-  // Freshness is cached per (branch, subdir) — two rows sharing both run one
-  // git log, not two.
-  const freshness = new Map<
-    string,
-    Promise<{ lastPushAt: string | null; lastPushSha: string | null }>
-  >();
+  // Freshness (+ subdir-scoped sync, #0367) is cached per (branch, subdir) —
+  // two rows sharing both run one set of git calls, not two.
+  const freshness = new Map<string, Promise<RowFreshnessAndSync>>();
   const resolvedRows: DeploymentRow[] = await Promise.all(
     rows.map(async (row) => {
       const key = `${row.branch}\u0000${row.subdir ?? ""}`;
@@ -314,6 +361,7 @@ export async function getDeploymentsStatus(
         subdir: row.subdir ?? null,
         lastPushAt: f.lastPushAt,
         lastPushSha: f.lastPushSha,
+        changesVsMain: f.changesVsMain,
       };
     }),
   );
