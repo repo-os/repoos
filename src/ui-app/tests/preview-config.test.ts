@@ -11,7 +11,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
@@ -124,6 +125,26 @@ describe("resolvePreviewTarget", () => {
       expect(result.reason).toContain("[[preview.targets]]");
       expect(result.reason).toContain('areas = ["server"]');
       expect(result.reason).toContain("bun run dev --port {port} --host {host}");
+    }
+  });
+});
+
+/**
+ * Regression guard for #0370's own config: this repo's `[preview]` command must
+ * run the WORKTREE's compiled CLI. Invoking the globally installed `repoos`
+ * release instead serves stale server/core code (the #0313 failure), and no
+ * fixture-based test exercises this repo's own `repoos.toml`.
+ */
+describe("this repo's own [preview] config", () => {
+  it("runs the worktree's compiled CLI, not the global repoos binary", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+    const config = loadConfig(repoRoot);
+    const result = resolvePreviewTarget(config, { id: "0370", area: "web" } as unknown as Task);
+    expect(result.kind).toBe("command");
+    if (result.kind === "command") {
+      expect(result.command).toContain("bun dist/cli/index.js serve");
+      expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
+      expect(result.readyPath).toBe("/");
     }
   });
 });
