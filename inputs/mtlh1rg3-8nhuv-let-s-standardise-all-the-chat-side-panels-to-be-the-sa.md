@@ -1,4 +1,5 @@
 ---
+number: "0005"
 area: "UI"
 id: "mtlh1rg3-8nhuv"
 title: "Standardise chat side panels to match tasks panel (resizable, click-outside close)"

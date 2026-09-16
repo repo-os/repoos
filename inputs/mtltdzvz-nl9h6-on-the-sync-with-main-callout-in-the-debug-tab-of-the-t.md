@@ -1,4 +1,5 @@
 ---
+number: "0006"
 area: "task panel debug tab"
 id: "mtltdzvz-nl9h6"
 title: "Show worktree divergence from main in task panel 'sync with main' callout"

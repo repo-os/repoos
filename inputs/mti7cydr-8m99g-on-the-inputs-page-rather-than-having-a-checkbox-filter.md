@@ -1,4 +1,5 @@
 ---
+number: "0004"
 area: "inputs page"
 id: "mti7cydr-8m99g"
 title: "Inputs page: expandable state lists (localStorage-persisted) + user avatars"
