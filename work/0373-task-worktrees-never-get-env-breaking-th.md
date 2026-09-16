@@ -2,14 +2,14 @@
 id: "0373"
 title: "Task worktrees never get .env, breaking this repo's own default preview (auth requires it)"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T07:47:49Z"
-updated_at: "2026-09-16T07:50:59Z"
+updated_at: "2026-09-16T17:04:30Z"
 ---
 ## Problem
 
@@ -125,3 +125,4 @@ Mechanism options to weigh, contingent on the opt-in design:
 
 - 2026-09-16T07:47:49Z · created · unknown
 - 2026-09-16T07:50:59Z · body
+- 2026-09-16T17:04:30Z · status inbox→ready
