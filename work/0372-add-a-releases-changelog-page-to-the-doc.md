@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-16T16:48:19Z"
+review_passes: 2
 id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
@@ -10,8 +12,6 @@ created_by: ""
 branch: feat/add-a-releases-changelog-page-to-the-doc
 review_model_override: opencode-go/hy3
 created_at: "2026-09-16T06:55:11Z"
-updated_at: "2026-09-16T16:48:18Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -90,3 +90,4 @@ add this preemptively without evidence it's needed.
 - 2026-09-16T08:22:47Z · needs_input
 - 2026-09-16T16:47:19Z · review_model_override
 - 2026-09-16T16:48:18Z · needs_input
+
