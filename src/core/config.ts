@@ -603,6 +603,25 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (typeof checkBackdropToken === "string" && checkBackdropToken.trim()) {
       cfg.check = { ...cfg.check, backdropToken: checkBackdropToken.trim() };
     }
+    // [check] bare-require source roots (#0352). The guard is generic but the
+    // directories to scan are RepoOS-shaped, so a managed project declares its
+    // own; empty rows are dropped rather than poisoning the scan.
+    const checkBareRequireDirs =
+      parsed["check.bareRequireDirs"] ?? parsed["checks.bareRequireDirs"];
+    if (Array.isArray(checkBareRequireDirs)) {
+      const dirs = checkBareRequireDirs
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (dirs.length) cfg.check = { ...cfg.check, bareRequireDirs: dirs };
+    }
+    const checkBareRequireExcludes =
+      parsed["check.bareRequireExcludes"] ?? parsed["checks.bareRequireExcludes"];
+    if (Array.isArray(checkBareRequireExcludes)) {
+      const excludes = checkBareRequireExcludes
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
+    }
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];

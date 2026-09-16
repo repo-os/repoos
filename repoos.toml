@@ -62,6 +62,14 @@ uiStylesheet = "src/ui-app/src/style.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
 
+# Source roots the bare-require guard scans (#0352). The guard's premise (a bare
+# require in a "type": "module" package breaks only in the compiled ESM output)
+# is generic, but the directories are not — RepoOS declares its own here rather
+# than hardcoding them in check.ts. A managed project that sets neither this nor
+# a usable tsconfig include skips the guard with a clear message. RepoOS's
+# tsconfig also compiles src/ui-app, which is intentionally out of scope.
+bareRequireDirs = ["src/core", "src/server", "src/commands", "src/cli"]
+
 # Each theme block in the stylesheet: the selectors it owns, a variant name for
 # failure messages, and the earlier scopes whose declarations it inherits
 # (cascade order, later wins). Order is the order the guard evaluates them in.

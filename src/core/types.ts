@@ -552,6 +552,22 @@ export interface CheckConfig {
    * not a solid color — a solid value renders a transparent button) (#0351).
    */
   gradientTokens?: string[];
+  /**
+   * Repo-relative source roots the bare-`require()` guard scans (#0352). The
+   * guard is generic — a bare `require` in a `"type": "module"` package breaks
+   * only in the compiled ESM output — but the directories to scan are not, so
+   * they are declared per-project here. Absent, the guard falls back to the
+   * repo's `tsconfig` `include`/`files` list (minus its `exclude` list); if
+   * neither yields a root it skips with a clear message.
+   */
+  bareRequireDirs?: string[];
+  /**
+   * Repo-relative paths or tsconfig-style globs the bare-`require()` guard
+   * skips when scanning `bareRequireDirs` (#0352) — e.g. a generated subtree.
+   * Only consulted alongside `bareRequireDirs`; when the roots come from the
+   * tsconfig instead, the tsconfig's own `exclude` list is used.
+   */
+  bareRequireExcludes?: string[];
 }
 
 /**
