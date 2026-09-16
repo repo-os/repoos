@@ -363,8 +363,9 @@ cannot tell from the code alone:
   whatever preview was running for a different task (FIFO); that's expected,
   not a bug — if you need to re-verify something you checked earlier and the
   slot has since moved on, just emit the signal again.
-  **This server-side probe is a plain HTTP health check (`/api/health` then the
-  root page) — it does not open a browser and does not require login.** Auth
+  **This server-side probe is a plain HTTP request to the target's configured
+  readiness path (`/` unless the target overrides it) — it does not open a
+  browser and does not require login.** Auth
   being enabled is not a reason to skip verification or fall back to a
   component-level unit test instead: emitting the signal and reading the probe
   result from your transcript confirms the change serves, with no OTP involved.

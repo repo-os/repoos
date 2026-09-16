@@ -17,9 +17,9 @@
  * this drives all three tasks through the SAME preview slot sequentially
  * rather than asserting three concurrent ports.
  *
- * This exercises the real `PreviewManager` spawning real `repoos serve`
- * children (the trusted runner owns process/port lifecycle — ADR-0005), so it
- * needs the repo to be built (repoos check builds before running tests).
+ * This exercises the real `PreviewManager` spawning a real preview child — a
+ * project-declared command (#0370: there is no implicit `repoos serve`
+ * fallback), so the trusted runner owns process/port lifecycle (ADR-0005).
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -30,6 +30,31 @@ import { basename, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { ensureWorktree } from "../../core/git";
 import { PreviewManager } from "../../server/preview";
+
+/**
+ * A tiny static server the fixture's `[preview] command` runs: `/` proves it
+ * is up (the default readiness path), `/notes.md` serves a worktree-local file
+ * so a preview can be shown to serve ITS OWN worktree's content.
+ */
+const SERVER_SCRIPT = `
+import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
+const port = Number(process.env.PORT);
+createServer((req, res) => {
+  if (req.url === "/notes.md") {
+    try {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.end(readFileSync("notes.md", "utf8"));
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("missing");
+    }
+    return;
+  }
+  res.writeHead(200, { "content-type": "text/plain" });
+  res.end("PREVIEW-OK");
+}).listen(port, "127.0.0.1");
+`.trimStart();
 
 interface Fixture {
   root: string;
@@ -68,7 +93,14 @@ function makeFixture(): Fixture {
     const marker = `marker-${i + 1}-${branch}`;
     markers[branch] = marker;
     writeFileSync(join(wt.path, "notes.md"), `# ${branch}\n\n${marker}\n`);
+    writeFileSync(join(wt.path, "preview-server.mjs"), SERVER_SCRIPT);
   });
+
+  // Every task preview runs this declared command (#0370: no implicit fallback).
+  writeFileSync(
+    join(root, "repoos.toml"),
+    `[preview]\ncommand = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}\n`,
+  );
 
   branches.forEach((branch, i) => {
     const id = String(i + 1).padStart(4, "0");
@@ -179,7 +211,7 @@ describe("server-owned previews (#0096 integration)", () => {
         urlById[id] = url;
 
         // Serves ITS OWN worktree build (a unique marker file).
-        expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
+        expect(await (await fetch(url)).text()).toContain("PREVIEW-OK");
         const body = await (await fetch(`${url}/notes.md`)).text();
         expect(body).toContain(`marker-${i + 1}-${branches[i]}`);
 

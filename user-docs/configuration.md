@@ -43,9 +43,8 @@ one repo's server never kills another's.
 ## Task previews
 
 A preview is a read-only server RepoOS starts from a task's worktree so you can
-look at the change in a browser while the task is `active` or `review`. By
-default RepoOS previews its own board UI. Point `[preview]` at your own app to
-preview *your* project instead:
+look at the change in a browser while the task is `active` or `review`. Declare
+what to boot in `[preview]` so RepoOS can preview *your* project:
 
 ```toml
 [preview]
@@ -64,10 +63,11 @@ cwd     = "landing"                       # relative to the task's worktree
   the process lifecycle — never hardcode one.
 - A task is matched to the target whose `areas` includes its `area:`. If none
   matches, the default `[preview] command` runs; if there is none, the preview
-  request tells you no preview is configured for that area (instead of failing).
+  request tells you how to configure one for that area (instead of failing).
 - `readyPath` is the path RepoOS polls until the app is up; it defaults to `/`.
-- With no `[preview]` section at all, RepoOS keeps its original behavior and
-  previews its own board UI.
+- There is no built-in default target. A repo (or a task's area) with no
+  matching `[preview]` config gets an actionable "no preview configured" message
+  naming the area and the snippet to add — not RepoOS's own board.
 
 Previews are on demand and one runs at a time — starting another evicts the
 previous one.

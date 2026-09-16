@@ -379,11 +379,11 @@ export interface RepoOSConfig {
    */
   check?: CheckConfig;
   /**
-   * Per-project config for task previews (task #0362). Omitted means the
-   * backward-compatible default: preview a task by booting RepoOS's own board
-   * UI (`repoos serve`) rooted at the task's worktree. When a repo declares a
-   * command or named targets here, those run instead — and a task whose `area`
-   * matches no configured target gets a clean "no preview configured" result.
+   * Per-project config for task previews (task #0362). A repo declares a
+   * command and/or named targets here; those run, selected by the task's
+   * `area`. Omitting the section is not an implicit default (#0370): a task
+   * with no resolvable target gets a clean, actionable "no preview configured"
+   * result rather than booting RepoOS's own board.
    */
   preview?: PreviewConfig;
   /**
@@ -632,10 +632,17 @@ export interface PreviewTargetConfig {
   cwd?: string;
   /**
    * Optional path polled for readiness (relative to the preview URL). Defaults
-   * to `/`. Must not be `/api/health` — that path is RepoOS's own health
-   * contract, only assumed for the implicit `repoos serve` fallback.
+   * to `/`.
    */
   readyPath?: string;
+  /**
+   * Optional override for how long the manager waits for this target to
+   * answer before giving up (milliseconds). Defaults to a value sized for a
+   * plain dev-server start; a command that also builds first (`bun run
+   * build && ...`) needs this raised, or a cold/unbuilt worktree is killed
+   * mid-build and reported as "did not become ready" (#0370).
+   */
+  readyTimeoutMs?: number;
 }
 
 /**
@@ -647,10 +654,9 @@ export interface PreviewTargetConfig {
  * Resolution order for a given task:
  *   1. a `[[preview.targets]]` whose `areas` include the task's `area` wins;
  *   2. else the top-level `command` (a default target for any area);
- *   3. else — the section is present but nothing matches — "no preview
- *      configured", returned cleanly rather than attempted;
- *   4. when the section is entirely absent, RepoOS's own `repoos serve`-on-
- *      worktree behavior is preserved for backward compatibility.
+ *   3. else — nothing matches (or the section is absent entirely) — "no preview
+ *      configured", returned cleanly with an actionable message rather than
+ *      attempted (#0370).
  */
 export interface PreviewConfig {
   /** Default preview command, used when no target matches the task's area. */
@@ -659,6 +665,8 @@ export interface PreviewConfig {
   cwd?: string;
   /** Default readiness path for `command` (default `/`). */
   readyPath?: string;
+  /** Default readiness timeout for `command` — see PreviewTargetConfig.readyTimeoutMs. */
+  readyTimeoutMs?: number;
   /** Named targets, selected by the task's `area:` frontmatter. */
   targets?: PreviewTargetConfig[];
 }

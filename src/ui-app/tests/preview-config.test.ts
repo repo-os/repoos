@@ -3,15 +3,16 @@
  * `repoos serve`.
  *
  * Covers the resolution precedence (`[[preview.targets]]` by task `area` →
- * default `[preview] command` → clean "none" → `repoos serve` fallback), the
- * `[preview]` TOML parsing, and one real end-to-end custom-command preview:
- * spawn, serve, and group-kill.
+ * default `[preview] command` → clean, actionable "none"), the `[preview]`
+ * TOML parsing, and one real end-to-end custom-command preview: spawn, serve,
+ * and group-kill.
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
@@ -36,12 +37,28 @@ function task(area: string): Task {
 }
 
 describe("resolvePreviewTarget", () => {
-  it("falls back to repoos serve when no [preview] section exists", () => {
-    expect(resolvePreviewTarget(baseConfig(), task("web"))).toEqual({
-      kind: "repoos",
-      readyPath: "/api/health",
-      label: "repoos",
-    });
+  it("returns an actionable 'no preview configured' result when no [preview] section exists (#0370)", () => {
+    const result = resolvePreviewTarget(baseConfig(), task("web"));
+    expect(result.kind).toBe("none");
+    if (result.kind === "none") {
+      expect(result.reason).toContain("no usable [preview] config");
+      expect(result.reason).toContain('No preview configured for area "web"');
+      expect(result.reason).toContain("#0001");
+      expect(result.reason).toContain("[[preview.targets]]");
+      expect(result.reason).toContain('areas = ["web"]');
+      expect(result.reason).toContain("bun run dev --port {port} --host {host}");
+    }
+  });
+
+  it("suggests a default command when the task has no area", () => {
+    const result = resolvePreviewTarget(baseConfig(), task(""));
+    expect(result.kind).toBe("none");
+    if (result.kind === "none") {
+      expect(result.reason).toContain('No preview configured for area "(none)"');
+      expect(result.reason).toContain("[preview]");
+      expect(result.reason).toContain("bun run dev --port {port} --host {host}");
+      expect(result.reason).not.toContain("[[preview.targets]]");
+    }
   });
 
   it("uses a default command for any area, with a '/' readiness default", () => {
@@ -52,6 +69,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run dev --port {port}",
       cwd: undefined,
       readyPath: "/",
+      readyTimeoutMs: 10_000,
     });
   });
 
@@ -75,6 +93,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run landing --port {port}",
       cwd: undefined,
       readyPath: "/",
+      readyTimeoutMs: 10_000,
     });
     expect(resolvePreviewTarget(cfg, task("docs"))).toEqual({
       kind: "command",
@@ -82,6 +101,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run docs --port {port}",
       cwd: "apps/docs",
       readyPath: "/healthz",
+      readyTimeoutMs: 10_000,
     });
   });
 
@@ -105,16 +125,64 @@ describe("resolvePreviewTarget", () => {
     if (result.kind === "none") {
       expect(result.reason).toContain('No preview configured for area "server"');
       expect(result.reason).toContain("#0001");
+      expect(result.reason).toContain("[[preview.targets]]");
+      expect(result.reason).toContain('areas = ["server"]');
+      expect(result.reason).toContain("bun run dev --port {port} --host {host}");
+    }
+  });
+
+  it("uses the configured readyTimeoutMs override, per-target and as a default (#0370 review)", () => {
+    const cfg = baseConfig({
+      command: "bun run build && bun dist/cli/index.js serve --port {port}",
+      readyTimeoutMs: 240_000,
+      targets: [
+        {
+          name: "Fast",
+          areas: ["web"],
+          command: "vite --port {port}",
+          readyTimeoutMs: 5_000,
+        },
+        { name: "Plain", areas: ["docs"], command: "vitepress dev --port {port}" },
+      ],
+    });
+    // A target with its own override uses it, not the section default.
+    expect(resolvePreviewTarget(cfg, task("web"))).toMatchObject({ readyTimeoutMs: 5_000 });
+    // A target with no override falls back to HEALTH_TIMEOUT_MS (10s), NOT the
+    // section's default `command` timeout — each target's budget is its own.
+    expect(resolvePreviewTarget(cfg, task("docs"))).toMatchObject({ readyTimeoutMs: 10_000 });
+    // The default `command` (no area matches) uses the section-level override —
+    // this is what makes a cold-worktree build-then-serve command survivable.
+    expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
+  });
+});
+
+/**
+ * Regression guard for #0370's own config: this repo's `[preview]` command must
+ * run the WORKTREE's compiled CLI. Invoking the globally installed `repoos`
+ * release instead serves stale server/core code (the #0313 failure), and no
+ * fixture-based test exercises this repo's own `repoos.toml`.
+ */
+describe("this repo's own [preview] config", () => {
+  it("runs the worktree's compiled CLI, not the global repoos binary", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+    const config = loadConfig(repoRoot);
+    const result = resolvePreviewTarget(config, { id: "0370", area: "web" } as unknown as Task);
+    expect(result.kind).toBe("command");
+    if (result.kind === "command") {
+      expect(result.command).toContain("bun dist/cli/index.js serve");
+      expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
+      expect(result.readyPath).toBe("/");
     }
   });
 });
 
 describe("parsePreviewConfig", () => {
-  it("parses a default command, cwd, readiness path, and named targets", () => {
+  it("parses a default command, cwd, readiness path/timeout, and named targets", () => {
     const parsed = parsePreviewConfig({
       "preview.command": "bun run dev --port {port}",
       "preview.cwd": "apps/site",
       "preview.readyPath": "healthz",
+      "preview.readyTimeoutMs": 240_000,
       "preview.targets": [
         {
           name: "Landing",
@@ -122,6 +190,7 @@ describe("parsePreviewConfig", () => {
           command: "bun run landing --port {port}",
           cwd: "landing",
           ready_path: "/ready",
+          ready_timeout_ms: 5_000,
         },
       ],
     });
@@ -129,6 +198,7 @@ describe("parsePreviewConfig", () => {
       command: "bun run dev --port {port}",
       cwd: "apps/site",
       readyPath: "/healthz",
+      readyTimeoutMs: 240_000,
       targets: [
         {
           name: "Landing",
@@ -136,9 +206,23 @@ describe("parsePreviewConfig", () => {
           command: "bun run landing --port {port}",
           cwd: "landing",
           readyPath: "/ready",
+          readyTimeoutMs: 5_000,
         },
       ],
     });
+  });
+
+  it("ignores a non-positive or non-numeric readyTimeoutMs", () => {
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": 0 })?.readyTimeoutMs,
+    ).toBeUndefined();
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": -5 })?.readyTimeoutMs,
+    ).toBeUndefined();
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": "240000" })
+        ?.readyTimeoutMs,
+    ).toBeUndefined();
   });
 
   it("accepts a single-string area and defaults a missing target name", () => {
@@ -283,5 +367,23 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain('No preview configured for area "server"');
     expect(manager.get("0002")).toBeNull();
+  }, 30_000);
+
+  it("never falls back to repoos serve: no usable [preview] config is a clean error (#0370)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-noconfig";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+
+    const config = loadConfig(fx.root);
+    expect(config.preview).toBeUndefined();
+    const manager = new PreviewManager(config, () => {});
+    const t = { id: "0003", area: "web", branch, status: "active" } as unknown as Task;
+    const result = await manager.start(t);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("no usable [preview] config");
+    expect(result.error).toContain('No preview configured for area "web"');
+    expect(manager.get("0003")).toBeNull();
   }, 30_000);
 });

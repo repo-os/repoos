@@ -451,6 +451,8 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
   if (typeof cwd === "string" && cwd.trim()) preview.cwd = cwd.trim();
   const readyPath = normalizeReadyPath(parsed["preview.readyPath"]);
   if (readyPath) preview.readyPath = readyPath;
+  const readyTimeoutMs = normalizeReadyTimeoutMs(parsed["preview.readyTimeoutMs"]);
+  if (readyTimeoutMs) preview.readyTimeoutMs = readyTimeoutMs;
 
   if (Array.isArray(parsed["preview.targets"])) {
     const targets: PreviewTargetConfig[] = [];
@@ -470,6 +472,8 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       if (targetCwd) target.cwd = targetCwd;
       const targetReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
       if (targetReadyPath) target.readyPath = targetReadyPath;
+      const targetReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
+      if (targetReadyTimeoutMs) target.readyTimeoutMs = targetReadyTimeoutMs;
       targets.push(target);
     }
     if (targets.length) preview.targets = targets;
@@ -485,6 +489,12 @@ function normalizeReadyPath(value: unknown): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+/** Normalize a configured readiness timeout (ms) to a positive finite number, or undefined. */
+function normalizeReadyTimeoutMs(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
+  return value;
 }
 
 export function loadConfig(rootArg?: string): RepoOSConfig {
@@ -675,10 +685,9 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
 
-    // [preview] section (#0362) — how to preview a task's worktree. Absent
-    // entirely means the backward-compatible RepoOS `repoos serve` fallback;
-    // present with a command and/or named targets means the project's own
-    // command runs instead (selected by the task's `area`).
+    // [preview] section (#0362) — how to preview a task's worktree. The
+    // project's own command runs, selected by the task's `area`; when no
+    // section is declared there is no implicit default (#0370).
     const preview = parsePreviewConfig(parsed);
     if (preview) cfg.preview = preview;
 

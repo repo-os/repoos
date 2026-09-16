@@ -72,10 +72,10 @@ export interface StatusBuild {
   /**
    * Whether RepoOS's build-staleness contract applies to this checkout (see
    * BuildCheckResult.applicable in core/build.ts). `stale` stays true for a
-   * non-RepoOS-build checkout so build-triggering callers (e.g. the preview's
-   * ensureFreshBuild) still work — callers that want to know whether this is
-   * a real problem, not just a pipeline that doesn't use RepoOS's marker,
-   * should check `applicable` too rather than `stale` alone.
+   * non-RepoOS-build checkout so build-triggering callers still work — callers
+   * that want to know whether this is a real problem, not just a pipeline that
+   * doesn't use RepoOS's marker, should check `applicable` too rather than
+   * `stale` alone.
    */
   applicable: boolean;
   message: string | null;

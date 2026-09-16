@@ -120,9 +120,11 @@ for a hidden assumption that a fresh worktree already has a `dist/`:
   regardless of git tracking, so this was never at risk.
 - The candidate worktree (`integration-orchestrator.ts`) already runs
   `bun run build` unconditionally before invoking its own CLI.
-- The preview path (`preview.ts`'s `ensureFreshBuild`) already builds on
-  demand when `checkBuildForRoot` reports `no-build` — this was flagged as a
-  gap in an earlier draft of this doc; it turned out to already be handled.
+- The preview path no longer builds on the worktree's behalf: #0370 removed the
+  `repoos serve` fallback and its `ensureFreshBuild`. A declared
+  `[preview] command` owns its own build, and this repo's command runs
+  `bun run build` before serving, so a fresh worktree's `dist/` is still
+  created before it is needed.
 
 So nothing in the live pipeline assumed a fresh worktree's `dist/` pre-exists.
 `git rm -r --cached dist/`, verified `repoos check` still green and a rebuild

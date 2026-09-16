@@ -213,17 +213,23 @@ subdir = "user-docs"
 # "docs"` specifically, not the generic "web" most tasks here use, or they
 # won't route to the right target below.
 #
-# IMPORTANT: adding ANY [[preview.targets]] or a [preview] command makes this
-# section "present", which per resolvePreviewTarget (src/server/preview.ts)
-# disables the implicit repoos-serve-on-worktree fallback for every area that
-# doesn't match a target — an unmatched area then gets a clean "no preview
-# configured" instead. That's the right default for an external adopting repo
-# (falling back to RepoOS's own board would be nonsensical there), but for
-# THIS repo the main web app genuinely IS what most tasks (area = "web",
-# "server", "core", ...) are building, so the `command` below explicitly
-# restores that behavior as the default target — it is not decorative.
+# IMPORTANT: there is no implicit fallback (#0370). A task whose `area`
+# matches no target below, with no default command, gets a clean "no preview
+# configured" message instead of previewing RepoOS's own board. For THIS repo
+# the main web app genuinely IS what most tasks (area = "web", "server",
+# "core", ...) are building, so the `command` below exists to cover those
+# areas explicitly — it is not decorative.
 [preview]
-command = "bun run build && repoos serve --port {port} --host {host}"
+# Run the worktree's OWN compiled CLI, never the globally installed `repoos`
+# release: a preview must serve the code under review, including new server
+# routes. `repoos` on PATH is the last published release, so `bun run build`
+# (this worktree) followed by `bun dist/cli/index.js serve` is required.
+command = "bun run build && bun dist/cli/index.js serve --port {port} --host {host}"
+# The command above builds before serving, which the default 10s readiness
+# window (sized for a plain dev-server start) can't cover on a cold/unbuilt
+# worktree — the normal state for a fresh one (AGENTS.md). Budget matches the
+# old ensureFreshBuild's 240s build allowance plus boot time (#0370 review).
+readyTimeoutMs = 240000
 
 [[preview.targets]]
 name = "Landing page"
