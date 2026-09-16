@@ -26,6 +26,17 @@ import { basename, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { ensureWorktree } from "../../core/git";
 
+/** A tiny HTTP server the fixture's configured preview command runs (#0370:
+ *  there is no implicit fallback, so each fixture declares its own preview). */
+const SERVER_SCRIPT = `
+import { createServer } from "node:http";
+const port = Number(process.env.PORT);
+createServer((_req, res) => {
+  res.writeHead(200, { "content-type": "text/plain" });
+  res.end("AUTO-PREVIEW-OK");
+}).listen(port, "127.0.0.1");
+`.trimStart();
+
 interface Fixture {
   root: string;
   clean: () => void;
@@ -60,6 +71,7 @@ function makeFixture(count: number): Fixture {
     const wt = ensureWorktree(root, branch);
     if (!wt.ok) throw new Error(`could not create worktree for ${branch}: ${wt.reason}`);
     writeFileSync(join(wt.path, "notes.md"), `# ${branch}\n\nmarker-${i + 1}\n`);
+    writeFileSync(join(wt.path, "preview-server.mjs"), SERVER_SCRIPT);
     const id = String(i + 1).padStart(4, "0");
     const task = `---
 id: "${id}"
@@ -75,6 +87,11 @@ branch: ${branch}
 `;
     writeFileSync(join(root, "work", `${id}-task-${i + 1}.md`), task);
   }
+
+  writeFileSync(
+    join(root, "repoos.toml"),
+    `[preview]\ncommand = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}\n`,
+  );
 
   const wtRoot = join(root, "..", `${basename(root)}-worktrees`);
   return {
@@ -135,7 +152,7 @@ describe("on-demand previews (#0271 follow-up)", () => {
       expect(started.status).toBe(200);
       expect(started.body.ok).toBe(true);
       const url = started.body.url as string;
-      expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
+      expect(await (await fetch(url)).text()).toContain("AUTO-PREVIEW-OK");
       expect(await previewUrl(server, "0001")).toBe(url);
 
       // Leaving the previewable states closes it automatically. The real
@@ -164,13 +181,13 @@ describe("on-demand previews (#0271 follow-up)", () => {
       const first = await api(server, "POST", "/api/tasks/0001/preview");
       expect(first.status).toBe(200);
       const firstUrl = first.body.url as string;
-      expect(await (await fetch(`${firstUrl}/api/health`)).json()).toMatchObject({ ok: true });
+      expect(await (await fetch(firstUrl)).text()).toContain("AUTO-PREVIEW-OK");
 
       // Starting a second task's preview evicts the first (cap of 1, FIFO).
       const second = await api(server, "POST", "/api/tasks/0002/preview");
       expect(second.status).toBe(200);
       const secondUrl = second.body.url as string;
-      expect(await (await fetch(`${secondUrl}/api/health`)).json()).toMatchObject({ ok: true });
+      expect(await (await fetch(secondUrl)).text()).toContain("AUTO-PREVIEW-OK");
 
       for (let i = 0; i < 40; i++) {
         if (!(await previewUrl(server, "0001"))) break;

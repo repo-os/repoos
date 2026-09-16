@@ -3,8 +3,9 @@
  *
  * How a task is previewed is pluggable per project (#0362): a repo declares a
  * command and/or named targets in `repoos.toml`'s `[preview]` section, selected
- * by the task's `area`. With no config, RepoOS's own backward-compatible
- * fallback runs `repoos serve` rooted at the task's worktree.
+ * by the task's `area`. There is no implicit default (#0370): a project with no
+ * `[preview]` config at all gets the same clean "no preview configured" result
+ * as one whose config has no target for the task's area.
  *
  * Each preview is a separate process rooted at the task's own git worktree,
  * bound to an OS-assigned ephemeral port (never a hardcoded range). The main
@@ -15,14 +16,12 @@
  *
  * Zero runtime deps: node:child_process / node:net / node:fs only.
  */
-import { spawn, spawnSync, execFileSync, type ChildProcess } from "node:child_process";
+import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { worktreePathForBranch } from "../core/git.js";
-import { checkBuildForRoot } from "../core/build.js";
 import type { RepoEvent } from "./live-index.js";
 
 export interface PreviewInfo {
@@ -31,21 +30,21 @@ export interface PreviewInfo {
   startedAt: string;
   pid: number;
   /**
-   * Path polled on the preview URL for readiness (#0362). `/api/health` for the
-   * implicit `repoos serve` target, `/` (or the target's override) otherwise.
+   * Path polled on the preview URL for readiness (#0362): `/` (or the target's
+   * override). Always a project-declared path since #0370 removed the implicit
+   * `repoos serve` target.
    */
   readyPath?: string;
   /**
    * Resolved custom command the preview child was started with (#0362), used to
-   * identify the process during boot-time orphan cleanup. Absent for the
-   * `repoos serve` fallback, which is identified structurally instead.
+   * identify the process during boot-time orphan cleanup. Every preview now
+   * carries one — the implicit `repoos serve` fallback was removed (#0370).
    */
   command?: string;
   /**
    * Human label for which preview target ran (#0362 review): the matched
-   * `[[preview.targets]]` name, "default" for the bare `[preview] command`, or
-   * "repoos" for the backward-compatible fallback. Aids debugging on a foreign
-   * repo with several configured targets.
+   * `[[preview.targets]]` name, or "default" for the bare `[preview] command`.
+   * Aids debugging on a foreign repo with several configured targets.
    */
   label?: string;
   /**
@@ -83,7 +82,6 @@ interface RegistryFile {
 const PREVIEW_STATES: readonly Status[] = ["active", "review"];
 const HOST = "127.0.0.1";
 const HEALTH_TIMEOUT_MS = 10_000;
-const BUILD_TIMEOUT_MS = 240_000;
 /**
  * Hard cap on concurrently running preview servers (#0198). Lowered to 1
  * (#0271 follow-up) now that previews are on-demand only, not auto-launched:
@@ -99,45 +97,65 @@ const now = (): string => new Date().toISOString();
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Readiness path for RepoOS's own `repoos serve` fallback. */
-const REPOOS_READY_PATH = "/api/health";
 /** Default readiness path for a project-declared preview command. */
 const DEFAULT_READY_PATH = "/";
 
-/**
- * The preview target resolved for one task (#0362). `repoos` is the backward-
- * compatible fallback (no `[preview]` config): boot RepoOS's board UI rooted at
- * the worktree. `command` is a project-declared shell command.
- */
-export type PreviewTarget =
-  | { kind: "repoos"; readyPath: string; label: string }
-  | {
-      kind: "command";
-      /** Human label for diagnostics: the target name, or "default". */
-      label: string;
-      command: string;
-      cwd?: string;
-      readyPath: string;
-    };
+/** The preview target resolved for one task (#0362): a project-declared
+ *  shell command selected by the task's `area`. */
+export type PreviewTarget = {
+  kind: "command";
+  /** Human label for diagnostics: the target name, or "default". */
+  label: string;
+  command: string;
+  cwd?: string;
+  readyPath: string;
+};
 
 /** Resolution result: a runnable target, or a clean "nothing configured". */
 export type PreviewTargetResolution = PreviewTarget | { kind: "none"; reason: string };
 
 /**
+ * The actionable message shown when nothing resolves for a task (#0370). Both
+ * "no `[preview]` section at all" and "section present but no area match" reach
+ * here, so the user gets the same guidance either way: the task's own `area`,
+ * and the minimal `repoos.toml` that would make it resolve.
+ */
+function noPreviewReason(task: Task, lead: string): string {
+  const area = (task.area ?? "").trim();
+  const label = area || "(none)";
+  const snippet = area
+    ? [
+        "[[preview.targets]]",
+        `name = "${area}"`,
+        `areas = ["${area}"]`,
+        'command = "bun run dev --port {port} --host {host}"',
+      ].join("\n")
+    : ["[preview]", 'command = "bun run dev --port {port} --host {host}"'].join("\n");
+  return (
+    `${lead} No preview configured for area "${label}" (#${task.id}). ` +
+    `Add this to repoos.toml:\n\n${snippet}`
+  );
+}
+
+/**
  * Decide how to preview `task` from the repo's `[preview]` config (#0362).
  *
  * Precedence: a named target whose `areas` include the task's `area` wins; then
- * a default `[preview] command`; then, when the section is present but neither
- * matches, a `none` result with an actionable message (never a spawn failure);
- * and when the section is absent entirely, the RepoOS `repoos serve` fallback
- * that self-hosted repos have always had. Exported for tests.
+ * a default `[preview] command`; then a `none` result with an actionable message
+ * (never a spawn failure). A project with no `[preview]` config at all is the
+ * same clean `none`, not an implicit RepoOS-board preview (#0370). Exported for
+ * tests.
  */
 export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewTargetResolution {
   const preview = config.preview;
   const hasTargets = Boolean(preview?.targets?.length);
   const defaultCommand = preview?.command?.trim();
-  if (!hasTargets && !defaultCommand)
-    return { kind: "repoos", readyPath: REPOOS_READY_PATH, label: "repoos" };
+  if (!hasTargets && !defaultCommand) {
+    return {
+      kind: "none",
+      reason: noPreviewReason(task, "This project has no [preview] config in repoos.toml."),
+    };
+  }
 
   const area = (task.area ?? "").trim();
   if (hasTargets) {
@@ -163,13 +181,7 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
       readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
     };
   }
-  const label = area || "(none)";
-  return {
-    kind: "none",
-    reason:
-      `No preview configured for area "${label}" (#${task.id}). Add a [[preview.targets]] ` +
-      `entry whose areas include "${label}", or a default [preview] command, to repoos.toml.`,
-  };
+  return { kind: "none", reason: noPreviewReason(task, "") };
 }
 
 /**
@@ -202,8 +214,8 @@ function reservePort(): Promise<number> {
 
 /**
  * Whether the child responds at `readyPath` within the window. A 2xx/3xx there
- * means it has bound and is serving; for the `repoos serve` fallback this is
- * `/api/health`, for a project command it is `/` by default (#0362).
+ * means it has bound and is serving; the path is `/` by default and can be
+ * overridden per target (#0362).
  */
 async function waitForReady(url: string, readyPath: string, timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
@@ -220,20 +232,17 @@ async function waitForReady(url: string, readyPath: string, timeoutMs: number): 
 }
 
 /**
- * Probe a live preview URL from the trusted server side (#0121): the readiness
- * endpoint first (RepoOS's `/api/health` by default, or a project target's
- * configured path — #0362), then the root page. A healthy readiness endpoint is
- * enough for a pass — the static-page check is informational so the transcript
- * can state exactly what was verified. Used when a sandboxed agent cannot open
- * the returned URL itself.
+ * Probe a live preview URL from the trusted server side (#0121): the target's
+ * configured readiness path (`/` by default — #0362). A healthy readiness
+ * endpoint is enough for a pass. Used when a sandboxed agent cannot open the
+ * returned URL itself.
  */
 export async function probePreview(
   url: string,
-  readyPath: string = REPOOS_READY_PATH,
+  readyPath: string = DEFAULT_READY_PATH,
 ): Promise<PreviewProbe> {
   const deadline = Date.now() + HEALTH_TIMEOUT_MS;
   let lastError = "preview did not respond";
-  const isRepoosHealth = readyPath === REPOOS_READY_PATH;
   while (Date.now() < deadline) {
     let readyStatus = 0;
     try {
@@ -243,25 +252,9 @@ export async function probePreview(
       lastError = err instanceof Error ? err.message : String(err);
     }
     if (readyStatus >= 200 && readyStatus < 400) {
-      let pageStatus = 0;
-      try {
-        const page = await fetch(url);
-        pageStatus = page.status;
-      } catch {
-        /* static-page check is best-effort */
-      }
-      if (!isRepoosHealth) {
-        return {
-          ok: true,
-          detail: `readiness endpoint ${readyPath} responds (HTTP ${readyStatus})`,
-        };
-      }
       return {
         ok: true,
-        detail:
-          pageStatus === 200
-            ? "health endpoint and root page respond"
-            : `health endpoint responds (root page: HTTP ${pageStatus || "unreachable"})`,
+        detail: `readiness endpoint ${readyPath} responds (HTTP ${readyStatus})`,
       };
     }
     if (readyStatus > 0) {
@@ -275,87 +268,11 @@ export async function probePreview(
   return { ok: false, error: lastError };
 }
 
-/** Absolute path of the compiled CLI entrypoint relative to this module. */
-function cliEntry(): string | null {
-  const here = dirname(fileURLToPath(import.meta.url)); // dist/server or src/server
-  const candidates = [
-    join(here, "..", "cli", "index.js"), // compiled: dist/cli/index.js
-    join(here, "..", "..", "dist", "cli", "index.js"), // dev: repo-root dist
-  ];
-  for (const p of candidates) if (existsSync(p)) return p;
-  return null;
-}
-
 /**
- * The compiled CLI entry to serve a worktree with: the worktree's OWN build
- * when it has one, falling back to the control plane's entry (the previous
- * behavior). This matters because `ensureFreshBuild` guarantees the worktree's
- * dist matches the worktree's src, but says nothing about the control plane's
- * build — which the worktree's UI is served against. Spawning the control
- * plane's stale server for a fresh worktree UI is exactly how a preview ends
- * up 404ing brand-new API routes into the SPA fallback (HTML for `/api/*`),
- * which the client reports as `Unexpected token '<'` (0313). A preview of a
- * worktree must run the worktree's code. Exported for tests.
- */
-export function resolveServeEntry(root: string): string | null {
-  const own = join(root, "dist", "cli", "index.js");
-  if (existsSync(own)) return own;
-  return cliEntry();
-}
-
-/**
- * Rebuild a worktree's `dist/` when its src hash no longer matches its build
- * marker — the same staleness check the CLI warns about — so a preview always
- * serves current code. A checkout with no `src/` is treated as published.
- */
-function ensureFreshBuild(root: string): { ok: boolean; error?: string } {
-  const check = checkBuildForRoot(root);
-  if (!check.stale) return { ok: true };
-  const steps: string[][] = [
-    ["bun", "run", "build"],
-    ["npm", "run", "build"],
-  ];
-  let lastError = check.message ?? "build failed";
-  for (const cmd of steps) {
-    const run = spawnSync(cmd[0], cmd.slice(1), {
-      cwd: root,
-      encoding: "utf8",
-      timeout: BUILD_TIMEOUT_MS,
-    });
-    if (run.status === 0) return { ok: true };
-    // Fall back to the next tool only when this one isn't installed. A build
-    // that ran and failed is the answer: re-running it under npm/Node would
-    // repeat the failure, take as long again, and hide which runtime built it.
-    const code = (run.error as NodeJS.ErrnoException | undefined)?.code;
-    if (code === "ENOENT" || code === "EACCES") {
-      lastError = `${cmd[0]} is not available`;
-      continue;
-    }
-    const out = [run.stdout, run.stderr]
-      .filter((x): x is string => typeof x === "string" && x.trim() !== "")
-      .join("\n")
-      .trim()
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .slice(0, 6)
-      .join(" · ");
-    return {
-      ok: false,
-      error: `could not build the worktree before previewing: ${out || `${cmd[0]} ${cmd[1]} failed (exit ${run.status})`}`,
-    };
-  }
-  return { ok: false, error: `could not build the worktree before previewing: ${lastError}` };
-}
-
-/**
- * True when `info.pid` is a live process that is serving this preview. For the
- * `repoos serve` fallback the command line is matched structurally — the repoos
- * CLI entry + the exact `--port` value the preview was spawned with — so it
- * never depends on the repo path happening to contain "repoos". For a
- * project-declared command (#0362) the recorded resolved command is matched by
- * its binary token and port binding instead, since there is no fixed shape to
- * key on.
+ * True when `info.pid` is a live process that is serving this preview. Every
+ * preview is a project-declared command (#0362/#0370), so the recorded resolved
+ * command is matched by its binary token and port binding — there is no fixed
+ * shape to key on.
  */
 function isPreviewProcess(info: PreviewInfo): boolean {
   const { pid, port } = info;
@@ -366,25 +283,21 @@ function isPreviewProcess(info: PreviewInfo): boolean {
     return false; // no such process
   }
   if (process.platform === "win32") return true; // no portable cmdline inspection
+  if (!info.command) return false; // a preview always records its resolved command
   try {
     const cmd = execFileSync("ps", ["-p", String(pid), "-o", "command="], {
       encoding: "utf8",
       timeout: 4000,
     });
-    if (info.command) {
-      // The shell may quote the binary, and `ps` may report an absolute path —
-      // match on the executable's basename plus the exact port binding.
-      const first =
-        info.command
-          .trim()
-          .split(/\s+/)[0]
-          ?.replace(/^['"]|['"]$/g, "") ?? "";
-      const binary = basename(first);
-      return cmd.includes(`--port ${port}`) || (Boolean(binary) && cmd.includes(binary));
-    }
-    return (
-      /cli[/\\]index\.(js|ts)/.test(cmd) && cmd.includes("serve") && cmd.includes(`--port ${port}`)
-    );
+    // The shell may quote the binary, and `ps` may report an absolute path —
+    // match on the executable's basename plus the exact port binding.
+    const first =
+      info.command
+        .trim()
+        .split(/\s+/)[0]
+        ?.replace(/^['"]|['"]$/g, "") ?? "";
+    const binary = basename(first);
+    return cmd.includes(`--port ${port}`) || (Boolean(binary) && cmd.includes(binary));
   } catch {
     return false;
   }
@@ -420,10 +333,9 @@ export class PreviewManager {
 
   /**
    * Start a preview for a task: resolve its preview target from `[preview]`
-   * config (#0362), allocate an ephemeral port, spawn the target (a project
-   * command, or `repoos serve` for the no-config fallback) rooted at the
-   * worktree, and wait for it to come up. Returns `{ ok, port, url }` or a
-   * human-readable error.
+   * config (#0362), allocate an ephemeral port, spawn the project-declared
+   * command rooted at the worktree, and wait for it to come up. Returns
+   * `{ ok, port, url }` or a human-readable error.
    *
    * Every check happens BEFORE anything starts: the task id must resolve, the
    * task must be in an allowed state (active/review), it must carry a
@@ -482,24 +394,13 @@ export class PreviewManager {
     }
 
     // Decide how to preview this task (#0362): a project-declared command
-    // selected by area, or the backward-compatible `repoos serve` fallback. A
-    // task whose area matches no configured target returns a clear "nothing
-    // configured" result instead of spawning (and failing) something.
+    // selected by area. A task whose area matches no configured target — or a
+    // project with no `[preview]` config at all (#0370) — returns a clear
+    // "nothing configured" result instead of spawning (and failing) something.
     const target = resolvePreviewTarget(this.config, task);
     if (target.kind === "none") {
       this.logLifecycle("start-skipped", task.id, target.reason);
       return { ok: false, error: target.reason };
-    }
-
-    // The RepoOS build-staleness step only applies to the repoos fallback: a
-    // project-declared command owns its own build (and a foreign repo's `src/`
-    // has nothing to do with RepoOS's dist/.build-info.json contract).
-    if (target.kind === "repoos") {
-      const build = ensureFreshBuild(root);
-      if (!build.ok) {
-        this.logLifecycle("start-failed", task.id, build.error);
-        return { ok: false, error: build.error };
-      }
     }
 
     // Enforce the concurrent-preview cap (#0198): before launching a new
@@ -665,48 +566,30 @@ export class PreviewManager {
   ):
     | { ok: true; pid: number; command?: string; processGroup?: boolean }
     | { ok: false; error: string } {
+    const cwd = resolvePreviewCwd(root, target.cwd);
+    if (!cwd) {
+      return {
+        ok: false,
+        error: `preview target cwd "${target.cwd}" is not inside the task's worktree`,
+      };
+    }
+    const resolvedCommand = target.command
+      .replaceAll("{port}", String(port))
+      .replaceAll("{host}", HOST);
+    // Own process group (POSIX) so a shell command's whole tree — the shell
+    // plus whatever it spawns — can be torn down with one signal.
+    const processGroup = process.platform !== "win32";
     let child: ChildProcess;
-    let resolvedCommand: string | undefined;
-    let processGroup = false;
-    if (target.kind === "repoos") {
-      const entry = resolveServeEntry(root);
-      if (!entry) {
-        return { ok: false, error: "could not locate the repoos CLI to serve the worktree" };
-      }
-      try {
-        child = spawn(process.execPath, [entry, "serve", "--port", String(port), "--host", HOST], {
-          cwd: root,
-          stdio: ["ignore", "ignore", "pipe"],
-          env: { ...process.env, [CHILD_ENV]: "1" },
-        });
-      } catch (err) {
-        return { ok: false, error: `could not launch preview server: ${(err as Error).message}` };
-      }
-    } else {
-      const cwd = resolvePreviewCwd(root, target.cwd);
-      if (!cwd) {
-        return {
-          ok: false,
-          error: `preview target cwd "${target.cwd}" is not inside the task's worktree`,
-        };
-      }
-      resolvedCommand = target.command
-        .replaceAll("{port}", String(port))
-        .replaceAll("{host}", HOST);
-      // Own process group (POSIX) so a shell command's whole tree — the shell
-      // plus whatever it spawns — can be torn down with one signal.
-      processGroup = process.platform !== "win32";
-      try {
-        child = spawn(resolvedCommand, {
-          cwd,
-          shell: true,
-          detached: processGroup,
-          stdio: ["ignore", "ignore", "pipe"],
-          env: { ...process.env, [CHILD_ENV]: "1", PORT: String(port), HOST },
-        });
-      } catch (err) {
-        return { ok: false, error: `could not launch preview command: ${(err as Error).message}` };
-      }
+    try {
+      child = spawn(resolvedCommand, {
+        cwd,
+        shell: true,
+        detached: processGroup,
+        stdio: ["ignore", "ignore", "pipe"],
+        env: { ...process.env, [CHILD_ENV]: "1", PORT: String(port), HOST },
+      });
+    } catch (err) {
+      return { ok: false, error: `could not launch preview command: ${(err as Error).message}` };
     }
     const pid = child.pid;
     if (!pid) return { ok: false, error: "could not launch preview server (no pid)" };

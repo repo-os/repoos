@@ -21,10 +21,12 @@ opt-in `[check] uiSmoke`.
 1. a named target whose `areas` list includes the task's `area:` frontmatter
    (case-insensitive), else
 2. a default `[preview] command`, else
-3. — when the section exists but neither matched — a clean
-   **"No preview configured for area …"** result, not a spawn failure;
-4. — when the section is entirely absent — RepoOS's own `repoos serve`
-   fallback, so self-hosted repos keep working with zero config changes.
+3. — when neither matched, or when the section is absent entirely — a clean
+   **"No preview configured for area …"** result, not a spawn failure (#0370).
+   There is no implicit default: a project that hasn't declared a preview for a
+   task's area gets an actionable message (the task's area, and the minimal
+   `[preview]`/`[[preview.targets]]` snippet that would resolve it), never
+   RepoOS's own board.
 
 ```toml
 [preview]
@@ -43,11 +45,11 @@ readyPath = "/"
 - `{port}` / `{host}` are replaced with the OS-assigned values, and `PORT` /
   `HOST` are exported into the child's environment.
 - `readyPath` is the path polled for readiness (and probed server-side after
-  start). The default is `/`; it must not be `/api/health`, which is RepoOS's
-  own health contract and only assumed for the `repoos serve` fallback.
-- The RepoOS build-staleness step (`ensureFreshBuild`) runs **only** for the
-  fallback. A project-declared command owns its own build; a foreign repo's
-  `src/` has nothing to do with RepoOS's `dist/.build-info.json` contract.
+  start). The default is `/`.
+- A project-declared command owns its own build. RepoOS's build-staleness step
+  (`ensureFreshBuild`) was removed along with the `repoos serve` fallback in
+  #0370 — this repo's own preview command runs `bun run build && repoos serve`
+  explicitly instead.
 
 ## The monorepo multi-target question (the decision)
 
@@ -71,29 +73,53 @@ configured" result above. Mobile is not a separate target: per
 shell that opens the same web UI, so a `mobile` area simply points at whatever
 web target exists (`areas = ["mobile", "web"]`).
 
-## Backward compatibility
+## No implicit fallback (#0370)
 
-No `[preview]` section → `resolvePreviewTarget` returns the `repoos` fallback,
-`resolveServeEntry` picks the worktree's own compiled CLI (falling back to the
-control plane's), and readiness is `/api/health`. This repo declares no
-`[preview]` config, so its own previews run the exact code path they always
-did. The existing `server-owned-preview` / `auto-preview` integration tests are
-the regression guard for that path.
+There is no default preview target. An absent `[preview]` section behaves
+exactly like a present one with no matching target: `resolvePreviewTarget`
+returns `{ kind: "none", reason }`, the start request fails cleanly, and the UI
+shows the reason as a toast (option 2 of #0370 — show the affordance, explain on
+click — matching the pre-existing "present but no match" behavior). The reason
+names the task's `area` and includes the minimal `repoos.toml` snippet that
+would make it resolve.
+
+The old `repoos serve`-on-worktree fallback existed only for RepoOS's own
+self-hosted repo, which now declares its preview explicitly in `repoos.toml`
+(`[preview] command = "bun run build && repoos serve …"` plus `landing`/`docs`
+targets). No adopter should ever want RepoOS's own board as *their* app's
+preview, so the fallback — and its supporting `resolveServeEntry` /
+`ensureFreshBuild` code — was removed rather than gated behind an "is this
+RepoOS itself" heuristic.
+
+## Open question: `area` is free text and single-valued
+
+`area:` has no schema (`--area` is documented as free text) and a task carries
+exactly one, which limits area-based matching in two ways worth naming even
+though #0370 did not fix them:
+
+- A task spanning multiple areas (a bug touching both a frontend and a backend)
+  has no natural single preview target.
+- Nothing enforces consistent area naming across a project's tasks — RepoOS's
+  own tasks mostly use generic `area: web` regardless of whether they touch the
+  main app, the landing page, or the docs site.
+
+A more reliable selection axis might be the paths a task's diff actually
+touches (rather than a free-text field an agent has to remember to set), but
+that is a larger redesign, deliberately deferred.
 
 ## Process lifecycle
 
-A custom command is spawned through a shell (so `&&`, pipes, and env prefixes
-work) with `detached: true` on POSIX, making it its own process group. Stop /
+A command is spawned through a shell (so `&&`, pipes, and env prefixes work)
+with `detached: true` on POSIX, making it its own process group. Stop /
 eviction / boot-time cleanup signal `-pid` (the group), so a shell's whole tree
-comes down, not just the shell. The repoos fallback is spawned directly and is
-identified structurally (CLI entry + `--port N`) for orphan cleanup; a custom
-child is identified by its recorded resolved command instead. Both are recorded
-in `<cacheDir>/previews.json` for crash recovery.
+comes down, not just the shell. A preview child is identified for orphan
+cleanup by its recorded resolved command; every preview is recorded in
+`<cacheDir>/previews.json` for crash recovery.
 
 **Windows:** `detached` stays `false` there (no portable process-group
 equivalent), so stopping a preview only signals the immediate `cmd.exe` child —
 a shell command with its own subprocess tree (`&&`-chained scripts, an `npm`
 wrapper spawning a real dev server) can leave a grandchild running with the
 port still bound after "stop." Not a regression from the previous behavior
-(the `repoos` fallback had the same limitation), just a limit worth knowing
+(the old `repoos` fallback had the same limitation), just a limit worth knowing
 before relying on previews for a Windows-hosted repo.

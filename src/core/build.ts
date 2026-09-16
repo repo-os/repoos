@@ -33,7 +33,7 @@ export interface BuildCheckResult {
    * entirely) means the project uses a different build pipeline and staleness
    * cannot be assessed there. `repoos check` degrades those to a skip instead
    * of a hard failure; `stale` stays true so callers that need a usable build
-   * (e.g. the preview's ensureFreshBuild) still trigger one.
+   * still trigger one.
    */
   applicable: boolean;
 }

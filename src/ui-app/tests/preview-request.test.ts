@@ -45,6 +45,21 @@ const PLAIN_FAKEBIN = `#!/usr/bin/env node
 process.stdout.write("plain output\\n");
 `;
 
+/**
+ * The E2E fixture's declared `[preview] command` (#0370: there is no implicit
+ * `repoos serve` fallback). Written at the fixture root and referenced by
+ * absolute path so it needn't be copied into the task worktree, which the
+ * server creates when the task starts.
+ */
+const E2E_PREVIEW_SERVER = `
+import { createServer } from "node:http";
+const port = Number(process.env.PORT);
+createServer((_req, res) => {
+  res.writeHead(200, { "content-type": "text/plain" });
+  res.end("PREVIEW-OK");
+}).listen(port, "127.0.0.1");
+`.trimStart();
+
 interface Fixture {
   bin: string;
   clean: () => void;
@@ -395,6 +410,13 @@ function makeE2eFixture(): E2eFixture {
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   git(root, ["commit", "--allow-empty", "-m", "init"]);
+  // A declared preview command (#0370): without it the server would (correctly)
+  // refuse to start a preview at all.
+  writeFileSync(join(root, "preview-server.mjs"), E2E_PREVIEW_SERVER);
+  writeFileSync(
+    join(root, "repoos.toml"),
+    `[preview]\ncommand = ${JSON.stringify(`${process.execPath} ${join(root, "preview-server.mjs")}`)}\n`,
+  );
   const task = `---
 id: "0001"
 title: Preview request
@@ -487,8 +509,8 @@ describe("sandboxed preview request E2E (#0121)", () => {
       // Exactly one request fired for the run (idempotent single-fire).
       expect(lines.filter((l) => l.includes("✓ Managed preview ready:")).length).toBe(1);
 
-      // The preview actually serves the worktree.
-      expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({ ok: true });
+      // The preview actually serves.
+      expect(await (await fetch(url)).text()).toContain("PREVIEW-OK");
 
       // The task endpoint surfaces the live preview for the human.
       const task = await api(server, "GET", "/api/tasks/0001");
@@ -502,7 +524,7 @@ describe("sandboxed preview request E2E (#0121)", () => {
       expect(patch.status).toBe(200);
       await waitForAsync(async () => {
         try {
-          await fetch(`${url}/api/health`);
+          await fetch(url);
           return false;
         } catch {
           return true;

@@ -675,10 +675,9 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
 
-    // [preview] section (#0362) — how to preview a task's worktree. Absent
-    // entirely means the backward-compatible RepoOS `repoos serve` fallback;
-    // present with a command and/or named targets means the project's own
-    // command runs instead (selected by the task's `area`).
+    // [preview] section (#0362) — how to preview a task's worktree. The
+    // project's own command runs, selected by the task's `area`; when no
+    // section is declared there is no implicit default (#0370).
     const preview = parsePreviewConfig(parsed);
     if (preview) cfg.preview = preview;
 

@@ -83,6 +83,9 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
   line-height: 1.45;
   color: var(--txt);
   word-break: break-word;
+  /* Preserve the line breaks in multi-line messages (e.g. the actionable
+     `repoos.toml` snippet in #0370's "no preview configured" toast). */
+  white-space: pre-line;
 }
 .toast-close {
   display: grid;
