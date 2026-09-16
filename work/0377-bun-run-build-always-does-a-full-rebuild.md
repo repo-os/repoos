@@ -2,14 +2,14 @@
 id: "0377"
 title: Make bun run build staleness-aware by default
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/make-bun-run-build-staleness-aware-by-de
 created_at: "2026-09-16T08:58:32Z"
-updated_at: "2026-09-16T08:59:17Z"
+updated_at: "2026-09-16T08:59:26Z"
 ---
 ## Problem
 
@@ -79,3 +79,4 @@ Needs care, not a quick bolt-on: this interacts with repoos check's existing "se
 - 2026-09-16T08:58:32Z · created · hello@repoos.org
 - 2026-09-16T08:58:44Z · status draft→inbox, title, area, body
 - 2026-09-16T08:59:17Z · status inbox→ready
+- 2026-09-16T08:59:26Z · status ready→active, branch
