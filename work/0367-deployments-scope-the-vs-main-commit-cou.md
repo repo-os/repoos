@@ -2,14 +2,14 @@
 id: "0367"
 title: "Deployments: scope the vs-main commit count to each service's subdir"
 type: bug
-status: inbox
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/deployments-scope-the-vs-main-commit-cou
 created_at: "2026-09-16T05:35:56Z"
-updated_at: "2026-09-16T05:36:00Z"
+updated_at: "2026-09-16T05:36:01Z"
 ---
 ## Problem
 
@@ -67,3 +67,5 @@ count is already 0 for that direction.
 
 - 2026-09-16T05:35:56Z · created · unknown
 - 2026-09-16T05:36:00Z · branch
+- 2026-09-16T05:36:01Z · status inbox→active
+- 2026-09-16T05:36:01Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
