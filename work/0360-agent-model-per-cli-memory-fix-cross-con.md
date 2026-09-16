@@ -2,14 +2,14 @@
 id: "0360"
 title: "Agent/model-per-CLI memory: fix cross-context crosstalk and surface unrecoverable resets"
 type: feature
-status: review
+status: done
 priority: p3
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/agent-model-per-cli-memory-fix-cross-con
 created_at: "2026-09-15T19:00:08Z"
-updated_at: "2026-09-16T06:56:15Z"
+updated_at: "2026-09-16T07:27:54Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Follow-up from #0342's review (good to go, not blocking, but flagged two real ga
 - 2026-09-16T06:52:00Z · status inbox→ready
 - 2026-09-16T06:52:01Z · status ready→active, branch
 - 2026-09-16T06:56:15Z · status active→review
+- 2026-09-16T07:27:54Z · status review→done, release:success
