@@ -89,3 +89,11 @@ comes down, not just the shell. The repoos fallback is spawned directly and is
 identified structurally (CLI entry + `--port N`) for orphan cleanup; a custom
 child is identified by its recorded resolved command instead. Both are recorded
 in `<cacheDir>/previews.json` for crash recovery.
+
+**Windows:** `detached` stays `false` there (no portable process-group
+equivalent), so stopping a preview only signals the immediate `cmd.exe` child —
+a shell command with its own subprocess tree (`&&`-chained scripts, an `npm`
+wrapper spawning a real dev server) can leave a grandchild running with the
+port still bound after "stop." Not a regression from the previous behavior
+(the `repoos` fallback had the same limitation), just a limit worth knowing
+before relying on previews for a Windows-hosted repo.

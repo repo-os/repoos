@@ -40,6 +40,7 @@ describe("resolvePreviewTarget", () => {
     expect(resolvePreviewTarget(baseConfig(), task("web"))).toEqual({
       kind: "repoos",
       readyPath: "/api/health",
+      label: "repoos",
     });
   });
 

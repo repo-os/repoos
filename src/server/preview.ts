@@ -42,6 +42,13 @@ export interface PreviewInfo {
    */
   command?: string;
   /**
+   * Human label for which preview target ran (#0362 review): the matched
+   * `[[preview.targets]]` name, "default" for the bare `[preview] command`, or
+   * "repoos" for the backward-compatible fallback. Aids debugging on a foreign
+   * repo with several configured targets.
+   */
+  label?: string;
+  /**
    * True when the preview child leads its own process group (POSIX custom
    * commands), so stop/reap signals must target the group (`-pid`) to take the
    * shell's whole tree down with it.
@@ -55,6 +62,8 @@ export interface PreviewResult {
   url?: string;
   /** Readiness path for the started preview, so callers probe the right endpoint. */
   readyPath?: string;
+  /** Which preview target ran (#0362 review) — see `PreviewInfo.label`. */
+  label?: string;
   error?: string;
 }
 
@@ -101,7 +110,7 @@ const DEFAULT_READY_PATH = "/";
  * the worktree. `command` is a project-declared shell command.
  */
 export type PreviewTarget =
-  | { kind: "repoos"; readyPath: string }
+  | { kind: "repoos"; readyPath: string; label: string }
   | {
       kind: "command";
       /** Human label for diagnostics: the target name, or "default". */
@@ -127,7 +136,8 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
   const preview = config.preview;
   const hasTargets = Boolean(preview?.targets?.length);
   const defaultCommand = preview?.command?.trim();
-  if (!hasTargets && !defaultCommand) return { kind: "repoos", readyPath: REPOOS_READY_PATH };
+  if (!hasTargets && !defaultCommand)
+    return { kind: "repoos", readyPath: REPOOS_READY_PATH, label: "repoos" };
 
   const area = (task.area ?? "").trim();
   if (hasTargets) {
@@ -532,19 +542,30 @@ export class PreviewManager {
       startedAt: now(),
       pid,
       readyPath: target.readyPath,
+      label: target.label,
       ...(spawned.command ? { command: spawned.command } : {}),
       ...(spawned.processGroup ? { processGroup: true } : {}),
     };
     this.registry.set(task.id, info);
     this.persist();
-    this.logLifecycle("started", task.id, `url=${info.url} pid=${info.pid} port=${info.port}`);
+    this.logLifecycle(
+      "started",
+      task.id,
+      `target=${info.label} url=${info.url} pid=${info.pid} port=${info.port}`,
+    );
     this.emit({
       type: "preview",
       id: task.id,
       preview: { port: info.port, url: info.url, startedAt: info.startedAt },
       at: now(),
     });
-    return { ok: true, port: info.port, url: info.url, readyPath: target.readyPath };
+    return {
+      ok: true,
+      port: info.port,
+      url: info.url,
+      readyPath: target.readyPath,
+      label: info.label,
+    };
   }
 
   /** Stop a task's preview. Idempotent: stopping nothing is a no-op success. */
@@ -553,7 +574,11 @@ export class PreviewManager {
     if (!info) return;
     this.registry.delete(taskId);
     this.persist();
-    this.logLifecycle("stopped", taskId, `url=${info.url} pid=${info.pid}`);
+    this.logLifecycle(
+      "stopped",
+      taskId,
+      `target=${info.label ?? "?"} url=${info.url} pid=${info.pid}`,
+    );
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
     await this.kill(info.pid, info.processGroup);
   }
