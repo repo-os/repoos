@@ -2325,6 +2325,7 @@ watch(
                     <AgentModelControl
                       :cli-options="cliOptions"
                       :model-options="freeformModelOptions"
+                      memory-key="panel:new-task"
                       v-model:cli="freeformOverride.cli"
                       v-model:model="freeformOverride.model"
                       :disabled="freeformRunning"
@@ -2970,6 +2971,7 @@ watch(
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="modelOptions"
+                  :memory-key="'task:' + ui.active.id + ':agent'"
                   v-model:cli="overrideDraft.cli"
                   v-model:model="overrideDraft.model"
                   :disabled="ui.saving"
@@ -3122,6 +3124,7 @@ watch(
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="reviewModelOptions"
+                  :memory-key="'task:' + ui.active.id + ':review'"
                   v-model:cli="reviewOverrideDraft.cli"
                   v-model:model="reviewOverrideDraft.model"
                   :disabled="ui.saving"
@@ -3695,6 +3698,7 @@ watch(
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="pmModelOptions"
+                  :memory-key="'task:' + ui.active.id + ':pm'"
                   v-model:cli="pmOverrideDraft.cli"
                   v-model:model="pmOverrideDraft.model"
                   :disabled="ui.saving"

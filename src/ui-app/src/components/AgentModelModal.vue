@@ -18,6 +18,13 @@ const props = defineProps<{
   modelOptions: SelectSearchOption[];
   cli: string;
   model: string;
+  /**
+   * Identifies the thing whose cli/model this modal edits — an agent, a task
+   * override, or a transient panel. Memory is keyed by this plus the CLI so one
+   * context's pick can't silently restore into another (#0360). Required: a
+   * shared/blank key would reintroduce the cross-context crosstalk this fixes.
+   */
+  memoryKey: string;
   disabled?: boolean;
 }>();
 
@@ -42,9 +49,21 @@ const {
 const { remember, recall } = useModelMemory();
 const config = useConfigStore();
 
-const currentModelLabel = computed(() => {
-  return props.modelOptions.find((m) => m.value === props.model)?.label ?? props.model;
-});
+const memoryContext = computed(() => props.memoryKey);
+
+/**
+ * Label of the model a CLI switch wiped, shown until the user picks a model or
+ * switches again. `null` unless the last switch reset to "default" from a real
+ * pin. #0342's recall is browser-local, so on a first-ever switch (another
+ * browser, cleared storage) the wipe is otherwise silent and permanent.
+ */
+const resetNotice = ref<string | null>(null);
+
+function modelLabel(model: string): string {
+  return props.modelOptions.find((m) => m.value === model)?.label ?? model;
+}
+
+const currentModelLabel = computed(() => modelLabel(props.model));
 
 const filteredModels = computed(() => {
   const q = modelQuery.value.trim().toLowerCase();
@@ -66,13 +85,13 @@ const favoriteItems = computed(() => {
 /**
  * The model to apply for `cli` when switching to it. A recalled pin is only
  * reapplied when it is still a known option for that CLI: the memory is
- * browser-local and shared across agents, so a live model list that shifted
- * between sessions (or a legacy value remembered by another agent) can
- * otherwise re-persist a model the CLI no longer offers — silently. When the
- * pin can't be confirmed, fall back to "default".
+ * browser-local and scoped to this modal's context, so a live model list that
+ * shifted between sessions (or a legacy value remembered by another context)
+ * can otherwise re-persist a model the CLI no longer offers — silently. When
+ * the pin can't be confirmed, fall back to "default".
  */
 function resolveModelForCli(cli: string): string {
-  const remembered = recall(cli);
+  const remembered = recall(memoryContext.value, cli);
   if (!remembered) return "default";
   return config.isKnownModelForCli(cli, remembered) ? remembered : "default";
 }
@@ -80,17 +99,27 @@ function resolveModelForCli(cli: string): string {
 function selectCli(cli: string): void {
   const previousCli = props.cli;
   if (cli === previousCli) return;
+  const previousModel = props.model;
   // Remember the model that belonged to the CLI we're leaving, so returning to
   // it restores the pin instead of silently collapsing it to "default".
-  remember(previousCli, props.model);
+  remember(memoryContext.value, previousCli, previousModel);
   emit("update:cli", cli);
   // A model is reset only when the new CLI has no remembered pin of its own,
   // or when that pin is no longer a valid option for it.
-  emit("update:model", resolveModelForCli(cli));
+  const nextModel = resolveModelForCli(cli);
+  emit("update:model", nextModel);
+  // Surface the wipe when the switch discards a real pin and nothing could be
+  // restored: the memory is browser-local, so on a first-ever switch (or a
+  // different browser) the user would otherwise never learn their pin changed.
+  resetNotice.value =
+    nextModel === "default" && previousModel && previousModel !== "default"
+      ? modelLabel(previousModel)
+      : null;
 }
 
 function selectModel(model: string): void {
-  remember(props.cli, model);
+  remember(memoryContext.value, props.cli, model);
+  resetNotice.value = null;
   emit("update:model", model);
   emit("update:open", false);
 }
@@ -108,6 +137,7 @@ watch(
   () => props.open,
   (v) => {
     if (v) {
+      resetNotice.value = null;
       modelQuery.value = "";
       nextTick(() => {
         const list = modelListEl.value;
@@ -150,6 +180,11 @@ watch(
           >
             {{ c }}
           </button>
+        </div>
+
+        <div v-if="resetNotice" class="am-reset-notice" role="status" data-testid="am-reset-notice">
+          <span class="am-reset-notice-title">Model reset to default</span>
+          <span class="am-reset-notice-detail">— was {{ resetNotice }}</span>
         </div>
 
         <div class="am-model-search">

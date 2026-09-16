@@ -327,6 +327,7 @@ function onDocBodyTranscribed(text: string): void {
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="modelOptions"
+                  memory-key="panel:new-doc"
                   v-model:cli="freeformOverride.cli"
                   v-model:model="freeformOverride.model"
                   :disabled="freeformRunning"

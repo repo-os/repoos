@@ -10,6 +10,12 @@ const props = defineProps<{
   modelOptions: SelectSearchOption[];
   cli: string;
   model: string;
+  /**
+   * Stable id of the agent/task/panel whose cli/model this edits. Scopes the
+   * browser-local per-CLI model memory so contexts don't bleed into each other
+   * (#0360). Required so no consumer can accidentally share one.
+   */
+  memoryKey: string;
   disabled?: boolean;
 }>();
 
@@ -35,6 +41,7 @@ const modelLabel = computed(() => (props.model ? labelForModel(props.model) : "M
     :model-options="modelOptions"
     :cli="cli"
     :model="model"
+    :memory-key="memoryKey"
     :disabled="disabled"
     @update:open="(v) => (modalOpen = v)"
     @update:cli="(v) => emit('update:cli', v)"
