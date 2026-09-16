@@ -2,7 +2,7 @@
 id: "0365"
 title: "Redesign Deployments page: services×branches matrix, vs-main sync status instead of raw ahead/behind"
 type: feature
-status: inbox
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -84,3 +84,5 @@ redesign mockup from another AI:
 
 - 2026-09-16T04:31:37Z · created · unknown
 - 2026-09-16T04:31:44Z · branch
+- 2026-09-16T04:31:44Z · status inbox→active
+- 2026-09-16T04:31:44Z · note: Implementing directly per explicit user request in chat (attached redesign mockup + specific vs-main sync semantics) — claiming immediately to avoid a race with auto-dispatch.
