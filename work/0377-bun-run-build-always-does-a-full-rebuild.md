@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-bun-run-build-staleness-aware-by-de
 created_at: "2026-09-16T08:58:32Z"
-updated_at: "2026-09-16T08:59:26Z"
+updated_at: "2026-09-16T16:49:05Z"
 ---
 ## Problem
 
