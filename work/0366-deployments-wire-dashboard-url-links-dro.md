@@ -5,11 +5,11 @@ type: chore
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/deployments-wire-dashboard-url-links-dro
 created_at: "2026-09-16T05:01:19Z"
-updated_at: "2026-09-16T05:01:19Z"
+updated_at: "2026-09-16T05:01:24Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Follow-up from #0365's Deployments redesign, per user feedback:
 ## Activity
 
 - 2026-09-16T05:01:19Z · created · unknown
+- 2026-09-16T05:01:24Z · branch
