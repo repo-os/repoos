@@ -2,14 +2,14 @@
 id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T06:55:11Z"
-updated_at: "2026-09-16T06:55:11Z"
+updated_at: "2026-09-16T07:45:16Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ add this preemptively without evidence it's needed.
 ## Activity
 
 - 2026-09-16T06:55:11Z · created · unknown
+- 2026-09-16T07:45:16Z · status inbox→ready
