@@ -723,24 +723,6 @@ export function themeContrastOffenders(css: string, config: ThemeContrastConfig)
 }
 
 /**
- * What the "Full build" step should do for a given run.
- *
- * Standalone `repoos check` (env without REPOOS_SKIP_BUILD) always builds —
- * that path is agents' definition-of-done gate and must never weaken. Only the
- * close-out pipeline (done.ts / integration-orchestrator.ts) sets
- * REPOOS_SKIP_BUILD=1 after running `bun run build` itself, and even then the
- * skip only applies when the staleness check above verified dist matches the
- * current source exactly. If dist is missing or stale the build still runs, so
- * REPOOS_SKIP_BUILD can never let the UI smoke test probe a bad build.
- */
-export type BuildStepAction = "skip" | "build" | "build-not-fresh";
-
-export function skipBuildAction(env: NodeJS.ProcessEnv, buildFresh: boolean): BuildStepAction {
-  if (env.REPOOS_SKIP_BUILD !== "1") return "build";
-  return buildFresh ? "skip" : "build-not-fresh";
-}
-
-/**
  * Which git ref (if any) to scope the Tests step to, via Vitest's own
  * `--changed <ref>` (git-diff + module graph, only runs tests that could
  * actually be affected). Unset for a standalone `repoos check` — that path
@@ -841,10 +823,6 @@ export async function cmdCheck(): Promise<void> {
     console.log(c.dim(`  · ${stale.message ?? stale.code}`));
     results.push(pass("staleness", stale.message ?? stale.code));
   }
-  // True when dist matches the current source exactly — the precondition under
-  // which REPOOS_SKIP_BUILD may skip the build below (nothing changed since the
-  // caller built). Never true when dist is missing or stale.
-  const buildFresh = !stale.stale && stale.code === "fresh";
 
   // ── 1b. Lockfile sync check ─────────────────────────────────────────
   // A dependency bump in package.json without a regenerated bun.lock passes
@@ -965,15 +943,18 @@ export async function cmdCheck(): Promise<void> {
   }
 
   // ── 2. Full build ───────────────────────────────────────────────────
-  // Skippable via REPOOS_SKIP_BUILD (see skipBuildAction): the close-out
-  // pipeline (`completeTask` in src/server/done.ts, and `validateCandidate` in
-  // src/server/integration-orchestrator.ts) runs `bun run build` itself and
-  // then invokes `repoos check` with this env var set, so its own "Full build"
-  // step — which would rebuild the exact same source with nothing changed in
-  // between — is skipped. Standalone `repoos check` from the CLI never sets
-  // the var and always builds.
+  // Always run `bun run build`; it is staleness-aware now (scripts/build.mjs,
+  // #0377) and skips in ~0.1s when src/ is unchanged since the marker was
+  // written. That replaces the old REPOOS_SKIP_BUILD opt-in: the close-out
+  // pipeline (src/server/done.ts, integration-orchestrator.ts, release.ts) runs
+  // `bun run build` just before invoking `repoos check`, and this step now
+  // detects the fresh marker on its own instead of via a private env flag.
+  //
+  // The staleness step above still runs and reports FIRST (#0276): a genuinely
+  // stale build is surfaced there, then this step repairs it within the same
+  // invocation. The build's skip is safe here precisely because step 1 already
+  // verified the marker matches src/ — a stale or missing marker never skips.
   heading("Full build");
-  const buildAction = skipBuildAction(process.env, buildFresh);
   if (fmtLintFailed) {
     console.log(
       c.dim(
@@ -982,15 +963,7 @@ export async function cmdCheck(): Promise<void> {
       ),
     );
     results.push(pass("build", "skipped — formatting/lint failed, fix and rerun"));
-  } else if (buildAction === "skip") {
-    console.log(
-      c.dim("  · Skipped — caller already built, build verified fresh (REPOOS_SKIP_BUILD=1)"),
-    );
-    results.push(pass("build", "skipped — caller already built, build verified fresh"));
   } else {
-    if (buildAction === "build-not-fresh") {
-      console.log(c.yellow("  · REPOOS_SKIP_BUILD=1 but build is not fresh — building anyway"));
-    }
     try {
       execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
       console.log(c.green("  ✔ Build succeeded"));
@@ -1279,8 +1252,8 @@ export async function cmdCheck(): Promise<void> {
   if (fmtLintFailed) {
     // Build was skipped above, so dist reflects whatever the last successful
     // build was (possibly stale, possibly absent) — never a build of the
-    // current, still-unformatted source. Probing it here would be testing
-    // the wrong thing, same principle as the REPOOS_SKIP_BUILD guard above.
+    // current, still-unformatted source. Probing it here would be testing the
+    // wrong thing — the same reason the build step above is gated on it.
     console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
     results.push(pass("ui-smoke", "skipped — formatting/lint failed, fix and rerun"));
   } else if (smokeCommand) {

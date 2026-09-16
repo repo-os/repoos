@@ -1012,11 +1012,11 @@ export class CloseOutOrchestrator {
       // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
       // evaluates the exact code that was just merged and built above.
       // The build above already ran `bun run build` with nothing changed since,
-      // so `check`'s own "Full build" step is redundant (#0213) — pass
-      // REPOOS_SKIP_BUILD so it skips it. Standalone `repoos check` never sets it.
-      const skipBuildEnv = {
+      // and `bun run build` is staleness-aware now (#0377), so `check`'s own
+      // "Full build" step detects the fresh marker and skips itself — no
+      // private skip env flag needed.
+      const checkEnv = {
         ...process.env,
-        REPOOS_SKIP_BUILD: "1",
         ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
       };
       const localCli = join(wtPath, "dist", "cli", "index.js");
@@ -1029,7 +1029,7 @@ export class CloseOutOrchestrator {
         runProcess(cli, args, {
           cwd: wtPath,
           timeout: 600_000,
-          env: skipBuildEnv,
+          env: checkEnv,
           onChunk: checkHandle?.chunk,
         });
       // A check whose ONLY failure is a stale build marker: the same marker the
@@ -1087,11 +1087,12 @@ export class CloseOutOrchestrator {
         } else if (isStalenessFailure(checkRes)) {
           // Self-resolving build staleness: only the stale-marker report failed,
           // and that same marker is what `bun run build` below refreshes. Refresh
-          // it provably for the current source (REPOOS_SKIP_BUILD only lets check
-          // skip its own build when the marker is already fresh), then re-run the
-          // SAME check on the same candidate tree. Bounded to this one re-check —
-          // it never loops, and it stays inside validateCandidate rather than
-          // triggering an extra orchestrator-level retry / re-sync / debugger.
+          // it provably for the current source — `bun run build` is
+          // staleness-aware (#0377) and rebuilds because the marker is stale —
+          // then re-run the SAME check on the same candidate tree. Bounded to
+          // this one re-check — it never loops, and it stays inside
+          // validateCandidate rather than triggering an extra orchestrator-level
+          // retry / re-sync / debugger.
           this.logger?.integration(
             job.taskId,
             "info",

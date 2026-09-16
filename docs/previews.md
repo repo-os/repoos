@@ -94,7 +94,9 @@ self-hosted repo, which now declares its preview explicitly in `repoos.toml`
 `landing`/`docs` targets). No adopter should ever want RepoOS's own board as
 *their* app's preview, so the fallback — and its supporting `resolveServeEntry` /
 `ensureFreshBuild` code — was removed rather than gated behind an "is this
-RepoOS itself" heuristic.
+RepoOS itself" heuristic. As of #0377 the preview doesn't need its own staleness
+check to stay fast: `bun run build` is itself staleness-aware, so an unchanged
+worktree's preview skips the rebuild (~0.1s) instead of paying a full one.
 
 ## Open question: `area` is free text and single-valued
 

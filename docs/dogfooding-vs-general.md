@@ -119,7 +119,8 @@ for a hidden assumption that a fresh worktree already has a `dist/`:
   `dist/`, not the new worktree's — main's `dist/` persists on disk
   regardless of git tracking, so this was never at risk.
 - The candidate worktree (`integration-orchestrator.ts`) already runs
-  `bun run build` unconditionally before invoking its own CLI.
+  `bun run build` before invoking its own CLI (staleness-aware since #0377, but
+  a fresh worktree with no `dist/` still builds).
 - The preview path no longer builds on the worktree's behalf: #0370 removed the
   `repoos serve` fallback and its `ensureFreshBuild`. A declared
   `[preview] command` owns its own build, and this repo's command runs

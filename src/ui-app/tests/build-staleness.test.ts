@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkBuildForRoot } from "../../core/build.js";
+import { checkBuildForRoot, shouldSkipBuild, type BuildCheckResult } from "../../core/build.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -117,5 +117,36 @@ describe("checkBuildForRoot — staleness applicability (#0349)", () => {
     expect(r.code).toBe("corrupt");
     expect(r.stale).toBe(true);
     expect(r.applicable).toBe(true);
+  });
+});
+
+/**
+ * `bun run build` is staleness-aware (#0377) via `shouldSkipBuild`. It may skip
+ * only when the marker proves src/ is unchanged; every other outcome and any
+ * forced run must build. `scripts/build.mjs` is the only caller that acts on
+ * this, but keeping the decision pure here covers the contract without spawning
+ * a build.
+ */
+describe("shouldSkipBuild — bun run build's skip decision (#0377)", () => {
+  const result = (code: BuildCheckResult["code"], stale: boolean): BuildCheckResult => ({
+    code,
+    stale,
+    message: null,
+    applicable: true,
+  });
+
+  it("skips only a verified-fresh build", () => {
+    expect(shouldSkipBuild(result("fresh", false))).toBe(true);
+  });
+
+  it("never skips when dist is stale, missing, or has no marker", () => {
+    for (const code of ["stale", "no-build", "no-marker", "corrupt", "published"] as const) {
+      expect(shouldSkipBuild(result(code, code !== "published"))).toBe(false);
+    }
+  });
+
+  it("force always builds, even on a fresh marker", () => {
+    expect(shouldSkipBuild(result("fresh", false), true)).toBe(false);
+    expect(shouldSkipBuild(result("stale", true), true)).toBe(false);
   });
 });

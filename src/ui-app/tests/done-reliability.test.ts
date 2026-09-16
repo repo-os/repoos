@@ -292,12 +292,12 @@ describe("runDoneStep — diagnosable gate failures", () => {
     }
   });
 
-  it("passes the provided env to the child so the close-out can skip the redundant build", async () => {
+  it("passes the provided env to the child so flags like REPOOS_SKIP_TESTS reach the gate", async () => {
     const { root, clean } = makeRepo();
     try {
-      // The close-out already ran a full build, so it invokes `repoos check`
-      // with REPOOS_SKIP_BUILD=1 to skip check's own "Full build" step (#0213).
-      // This proves the env reaches the spawned gate process.
+      // The close-out hands the test suite to the remote runner and then
+      // invokes `repoos check` with REPOOS_SKIP_TESTS=1. This proves a
+      // caller-supplied env actually reaches the spawned gate process.
       // Echo the env var and exit non-zero so it lands in the captured output
       // tail (a successful candidate only returns `{ ok: true }`).
       const result = await runDoneStep({
@@ -306,16 +306,16 @@ describe("runDoneStep — diagnosable gate failures", () => {
           [
             process.execPath,
             "-e",
-            "process.stderr.write('REPOOS_SKIP_BUILD=' + (process.env.REPOOS_SKIP_BUILD ?? 'unset')); process.exit(1)",
+            "process.stderr.write('REPOOS_SKIP_TESTS=' + (process.env.REPOOS_SKIP_TESTS ?? 'unset')); process.exit(1)",
           ],
         ],
         label: "repoos check",
         stage: "check",
-        env: { ...process.env, REPOOS_SKIP_BUILD: "1" },
+        env: { ...process.env, REPOOS_SKIP_TESTS: "1" },
       });
 
       expect(result.ok).toBe(false);
-      expect(result.output).toContain("REPOOS_SKIP_BUILD=1");
+      expect(result.output).toContain("REPOOS_SKIP_TESTS=1");
     } finally {
       clean();
     }
@@ -446,24 +446,21 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
     }
   });
 
-  it("passes REPOOS_SKIP_BUILD through to the gate CLI (#0213)", async () => {
-    const root = mkdtempSync(join(tmpdir(), "repoos-done-skipbuild-"));
+  it("passes a caller-supplied env through to the gate CLI", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-done-envpass-"));
     try {
-      // The close-out already ran `bun run build` (BUILD_STEPS) with nothing
-      // changed since, so `completeTask` invokes the gate with
-      // REPOOS_SKIP_BUILD=1 to skip `repoos check`'s own redundant "Full
-      // build" step. This proves the env actually reaches the spawned gate
-      // process — the exact wiring the skip depends on (and the mirror image
-      // of the direct runDoneStep-level test above).
+      // The close-out may hand flags to the gate (e.g. REPOOS_SKIP_TESTS for
+      // the remote validation runner). This proves the env actually reaches the
+      // spawned gate process — the wiring every such flag depends on.
       const envOut = join(root, "env.out");
       const { log } = fakeCheckCli(
         root,
         `
-        require("node:fs").writeFileSync(${JSON.stringify(envOut)}, process.env.REPOOS_SKIP_BUILD ?? "unset");
+        require("node:fs").writeFileSync(${JSON.stringify(envOut)}, process.env.REPOOS_SKIP_TESTS ?? "unset");
         process.exit(0);
       `,
       );
-      const result = await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_BUILD: "1" });
+      const result = await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_TESTS: "1" });
       expect(result.ok).toBe(true);
       expect(readFileSync(envOut, "utf8")).toBe("1");
     } finally {

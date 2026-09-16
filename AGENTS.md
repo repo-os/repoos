@@ -331,6 +331,9 @@ cannot tell from the code alone:
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
+  Staleness-aware by default (#0377): it skips when `src/` is unchanged since the
+  last build (~0.1s vs ~5s), so a no-op build is cheap. Force a rebuild with
+  `--force` or `REPOOS_FORCE_BUILD=1`; the raw pipeline is `bun run build:raw`.
 - Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
   `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
 - UI sitemap: routes are declared in `src/ui-app/src/router.ts` (path → view),
