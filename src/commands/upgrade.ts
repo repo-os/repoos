@@ -46,6 +46,19 @@ interface Release {
   tag_name: string;
   assets: ReleaseAsset[];
   prerelease?: boolean;
+  /** GitHub release body — the notes authored in the "Cut a release" modal (#0361), when set. */
+  body?: string | null;
+}
+
+/**
+ * The release notes to print after an upgrade, or null when there's nothing
+ * to show — GitHub returns `body` as `null`/absent for a release cut with an
+ * empty notes field (#0361's UI leaves the field optional), and this must
+ * stay silent then, not print an empty line or "no notes available" filler.
+ */
+export function releaseNotesToPrint(body: string | null | undefined): string | null {
+  const trimmed = body?.trim();
+  return trimmed ? trimmed : null;
 }
 
 /** `--channel beta|canary|rc` from argv, or null for the default stable channel. */
@@ -162,6 +175,11 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   regenerateLauncher(root);
 
   console.log(c.green(`  Upgraded to v${latest}.`));
+  const notes = releaseNotesToPrint(release.body);
+  if (notes) {
+    console.log("");
+    console.log(notes);
+  }
 }
 
 /**
