@@ -2,14 +2,14 @@
 id: "0370"
 title: "Preview: stop silently defaulting to RepoOS's own board when a project has no [preview] config"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/preview-stop-silently-defaulting-to-repo
 created_at: "2026-09-16T06:38:15Z"
-updated_at: "2026-09-16T06:38:28Z"
+updated_at: "2026-09-16T06:48:29Z"
 ---
 ## Problem
 
@@ -132,3 +132,4 @@ task, so it isn't lost.
 - 2026-09-16T06:38:15Z · created · unknown
 - 2026-09-16T06:38:28Z · status inbox→ready
 - 2026-09-16T06:38:28Z · note: Written up per user request to try next, before configuring previews on squishy.
+- 2026-09-16T06:48:29Z · status ready→active, branch
