@@ -2,14 +2,14 @@
 id: "0369"
 title: "Document rules for interactive agents driving the board directly, outside the normal task pipeline"
 type: chore
-status: active
+status: done
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/document-rules-for-interactive-agents-dr
 created_at: "2026-09-16T06:31:01Z"
-updated_at: "2026-09-16T06:31:08Z"
+updated_at: "2026-09-16T06:33:59Z"
 ---
 ## Problem
 
@@ -90,3 +90,5 @@ agent session driving the board directly via CLI/API rather than through
 - 2026-09-16T06:31:07Z · branch
 - 2026-09-16T06:31:08Z · status inbox→active
 - 2026-09-16T06:31:08Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
+- 2026-09-16T06:33:59Z · status active→done
+- 2026-09-16T06:33:59Z · note: repoos check passed clean. Landing directly (skipping review) per the exact rule this task itself just documented, and per explicit user request to commit on main.
