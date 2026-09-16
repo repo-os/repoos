@@ -69,6 +69,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run dev --port {port}",
       cwd: undefined,
       readyPath: "/",
+      readyTimeoutMs: 10_000,
     });
   });
 
@@ -92,6 +93,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run landing --port {port}",
       cwd: undefined,
       readyPath: "/",
+      readyTimeoutMs: 10_000,
     });
     expect(resolvePreviewTarget(cfg, task("docs"))).toEqual({
       kind: "command",
@@ -99,6 +101,7 @@ describe("resolvePreviewTarget", () => {
       command: "bun run docs --port {port}",
       cwd: "apps/docs",
       readyPath: "/healthz",
+      readyTimeoutMs: 10_000,
     });
   });
 
@@ -127,6 +130,30 @@ describe("resolvePreviewTarget", () => {
       expect(result.reason).toContain("bun run dev --port {port} --host {host}");
     }
   });
+
+  it("uses the configured readyTimeoutMs override, per-target and as a default (#0370 review)", () => {
+    const cfg = baseConfig({
+      command: "bun run build && bun dist/cli/index.js serve --port {port}",
+      readyTimeoutMs: 240_000,
+      targets: [
+        {
+          name: "Fast",
+          areas: ["web"],
+          command: "vite --port {port}",
+          readyTimeoutMs: 5_000,
+        },
+        { name: "Plain", areas: ["docs"], command: "vitepress dev --port {port}" },
+      ],
+    });
+    // A target with its own override uses it, not the section default.
+    expect(resolvePreviewTarget(cfg, task("web"))).toMatchObject({ readyTimeoutMs: 5_000 });
+    // A target with no override falls back to HEALTH_TIMEOUT_MS (10s), NOT the
+    // section's default `command` timeout — each target's budget is its own.
+    expect(resolvePreviewTarget(cfg, task("docs"))).toMatchObject({ readyTimeoutMs: 10_000 });
+    // The default `command` (no area matches) uses the section-level override —
+    // this is what makes a cold-worktree build-then-serve command survivable.
+    expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
+  });
 });
 
 /**
@@ -150,11 +177,12 @@ describe("this repo's own [preview] config", () => {
 });
 
 describe("parsePreviewConfig", () => {
-  it("parses a default command, cwd, readiness path, and named targets", () => {
+  it("parses a default command, cwd, readiness path/timeout, and named targets", () => {
     const parsed = parsePreviewConfig({
       "preview.command": "bun run dev --port {port}",
       "preview.cwd": "apps/site",
       "preview.readyPath": "healthz",
+      "preview.readyTimeoutMs": 240_000,
       "preview.targets": [
         {
           name: "Landing",
@@ -162,6 +190,7 @@ describe("parsePreviewConfig", () => {
           command: "bun run landing --port {port}",
           cwd: "landing",
           ready_path: "/ready",
+          ready_timeout_ms: 5_000,
         },
       ],
     });
@@ -169,6 +198,7 @@ describe("parsePreviewConfig", () => {
       command: "bun run dev --port {port}",
       cwd: "apps/site",
       readyPath: "/healthz",
+      readyTimeoutMs: 240_000,
       targets: [
         {
           name: "Landing",
@@ -176,9 +206,23 @@ describe("parsePreviewConfig", () => {
           command: "bun run landing --port {port}",
           cwd: "landing",
           readyPath: "/ready",
+          readyTimeoutMs: 5_000,
         },
       ],
     });
+  });
+
+  it("ignores a non-positive or non-numeric readyTimeoutMs", () => {
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": 0 })?.readyTimeoutMs,
+    ).toBeUndefined();
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": -5 })?.readyTimeoutMs,
+    ).toBeUndefined();
+    expect(
+      parsePreviewConfig({ "preview.command": "x", "preview.readyTimeoutMs": "240000" })
+        ?.readyTimeoutMs,
+    ).toBeUndefined();
   });
 
   it("accepts a single-string area and defaults a missing target name", () => {

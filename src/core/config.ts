@@ -451,6 +451,8 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
   if (typeof cwd === "string" && cwd.trim()) preview.cwd = cwd.trim();
   const readyPath = normalizeReadyPath(parsed["preview.readyPath"]);
   if (readyPath) preview.readyPath = readyPath;
+  const readyTimeoutMs = normalizeReadyTimeoutMs(parsed["preview.readyTimeoutMs"]);
+  if (readyTimeoutMs) preview.readyTimeoutMs = readyTimeoutMs;
 
   if (Array.isArray(parsed["preview.targets"])) {
     const targets: PreviewTargetConfig[] = [];
@@ -470,6 +472,8 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       if (targetCwd) target.cwd = targetCwd;
       const targetReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
       if (targetReadyPath) target.readyPath = targetReadyPath;
+      const targetReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
+      if (targetReadyTimeoutMs) target.readyTimeoutMs = targetReadyTimeoutMs;
       targets.push(target);
     }
     if (targets.length) preview.targets = targets;
@@ -485,6 +489,12 @@ function normalizeReadyPath(value: unknown): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+/** Normalize a configured readiness timeout (ms) to a positive finite number, or undefined. */
+function normalizeReadyTimeoutMs(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
+  return value;
 }
 
 export function loadConfig(rootArg?: string): RepoOSConfig {

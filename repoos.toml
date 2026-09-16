@@ -225,6 +225,11 @@ subdir = "user-docs"
 # routes. `repoos` on PATH is the last published release, so `bun run build`
 # (this worktree) followed by `bun dist/cli/index.js serve` is required.
 command = "bun run build && bun dist/cli/index.js serve --port {port} --host {host}"
+# The command above builds before serving, which the default 10s readiness
+# window (sized for a plain dev-server start) can't cover on a cold/unbuilt
+# worktree — the normal state for a fresh one (AGENTS.md). Budget matches the
+# old ensureFreshBuild's 240s build allowance plus boot time (#0370 review).
+readyTimeoutMs = 240000
 
 [[preview.targets]]
 name = "Landing page"

@@ -635,6 +635,14 @@ export interface PreviewTargetConfig {
    * to `/`.
    */
   readyPath?: string;
+  /**
+   * Optional override for how long the manager waits for this target to
+   * answer before giving up (milliseconds). Defaults to a value sized for a
+   * plain dev-server start; a command that also builds first (`bun run
+   * build && ...`) needs this raised, or a cold/unbuilt worktree is killed
+   * mid-build and reported as "did not become ready" (#0370).
+   */
+  readyTimeoutMs?: number;
 }
 
 /**
@@ -657,6 +665,8 @@ export interface PreviewConfig {
   cwd?: string;
   /** Default readiness path for `command` (default `/`). */
   readyPath?: string;
+  /** Default readiness timeout for `command` — see PreviewTargetConfig.readyTimeoutMs. */
+  readyTimeoutMs?: number;
   /** Named targets, selected by the task's `area:` frontmatter. */
   targets?: PreviewTargetConfig[];
 }

@@ -1576,8 +1576,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // for; now that startup itself is fast (#0271 follow-up), auto-launching
   // N previews at once — at boot, or as N tasks land in review in quick
   // succession — is no longer worth the CPU contention it causes (each
-  // preview is a full nested `repoos serve`). MAX_PREVIEWS is 1 (preview.ts)
-  // so only one is ever running; starting a new one evicts the last.
+  // preview is a project-declared command, or this repo's own `repoos serve`
+  // — #0370 removed the implicit nested-`repoos serve` default for every
+  // OTHER project). MAX_PREVIEWS is 1 (preview.ts) so only one is ever
+  // running; starting a new one evicts the last.
 
   // Handle needsInput changes separately (fires alongside status change when both occur).
   const unsubscribeNeedsInput = index.on((e) => {

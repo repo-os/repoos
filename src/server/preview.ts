@@ -109,6 +109,8 @@ export type PreviewTarget = {
   command: string;
   cwd?: string;
   readyPath: string;
+  /** How long to wait for this target before giving up (ms). See PreviewTargetConfig.readyTimeoutMs. */
+  readyTimeoutMs: number;
 };
 
 /** Resolution result: a runnable target, or a clean "nothing configured". */
@@ -172,6 +174,7 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
         command: match.command,
         cwd: match.cwd,
         readyPath: match.readyPath ?? DEFAULT_READY_PATH,
+        readyTimeoutMs: match.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       };
     }
   }
@@ -182,6 +185,7 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
       command: defaultCommand,
       cwd: preview?.cwd,
       readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
+      readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
     };
   }
   return { kind: "none", reason: noPreviewReason(task, "") };
@@ -439,7 +443,7 @@ export class PreviewManager {
     const { pid } = spawned;
 
     const url = `http://${HOST}:${port}`;
-    if (!(await waitForReady(url, target.readyPath, HEALTH_TIMEOUT_MS))) {
+    if (!(await waitForReady(url, target.readyPath, target.readyTimeoutMs))) {
       void this.kill(pid, spawned.processGroup);
       const diag = this.bootErrors.get(task.id);
       this.bootErrors.delete(task.id);
