@@ -13,6 +13,7 @@ interface DeploymentRow {
   subdir: string | null;
   lastPushAt: string | null;
   lastPushSha: string | null;
+  changesVsMain: { aheadOfMain: number; behindMain: number } | null;
 }
 
 interface DeploymentMainSync {
@@ -124,6 +125,32 @@ function mainSyncLabel(b: DeploymentBranch): string {
       return `diverged from main (${sync.aheadOfMain} ahead, ${sync.behindMain} behind)`;
     default:
       return "sync with main unknown";
+  }
+}
+
+/**
+ * Subdir-scoped breakdown of the branch's vs-main distance (#0367): the
+ * branch-level count is honestly whole-branch, which reads as misleading
+ * next to one specific service when most of that distance is unrelated work.
+ * Empty string when there's nothing to add — no subdir configured (the
+ * branch-level number already IS this row's scope), nothing resolvable, or
+ * the branch is already in sync (nothing to break down).
+ */
+function serviceSyncLabel(row: DeploymentRow, b: DeploymentBranch): string {
+  if (!row.subdir || !row.changesVsMain) return "";
+  const { aheadOfMain, behindMain } = row.changesVsMain;
+  switch (b.mainSync.state) {
+    case "behind":
+      return `${behindMain} of ${b.mainSync.behindMain} behind-main ${PLURAL(b.mainSync.behindMain)} touch this service`;
+    case "ahead":
+      return `${aheadOfMain} of ${b.mainSync.aheadOfMain} ahead-of-main ${PLURAL(b.mainSync.aheadOfMain)} touch this service`;
+    case "diverged":
+      return (
+        `${behindMain} of ${b.mainSync.behindMain} behind, ` +
+        `${aheadOfMain} of ${b.mainSync.aheadOfMain} ahead, touch this service`
+      );
+    default:
+      return "";
   }
 }
 
@@ -324,6 +351,9 @@ onBeforeUnmount(() => {
                     on <code>{{ b.branch }}</code>
                   </template>
                 </div>
+                <div v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)" class="dep-service-sync">
+                  {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
+                </div>
                 <div class="dep-cell-actions">
                   <Button
                     variant="ghost"
@@ -362,7 +392,9 @@ onBeforeUnmount(() => {
           “Latest branch change” is the newest commit on the branch touching this service's
           directory — the push that tells the provider to build. It is not confirmed build success:
           a broken build still shows a fresh time while the site serves an older version. Check the
-          linked dashboard for the actual build/deploy result.
+          linked dashboard for the actual build/deploy result. The branch cards' "vs main" count is
+          whole-branch; a service's own cell breaks down how much of that distance actually touches
+          it, since the two can differ a lot when other parts of the repo are moving.
         </p>
 
         <section v-if="message" class="dep-outcome dep-outcome--ok" aria-live="polite">
@@ -690,6 +722,10 @@ onBeforeUnmount(() => {
 .dep-fresh code {
   font-family: var(--mono);
   color: var(--txt-dim);
+}
+.dep-service-sync {
+  color: var(--txt-faint);
+  font-size: 11.5px;
 }
 .dep-cell-actions {
   display: flex;

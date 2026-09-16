@@ -29,6 +29,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         subdir: "landing",
         lastPushAt: "2026-09-15T00:00:00Z",
         lastPushSha: "abc1234",
+        changesVsMain: null,
       },
       {
         name: "Landing page (dev)",
@@ -40,6 +41,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         subdir: "landing",
         lastPushAt: "2026-09-15T01:00:00Z",
         lastPushSha: "def5678",
+        changesVsMain: null,
       },
       {
         name: "Docs (prod)",
@@ -51,6 +53,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         subdir: "user-docs",
         lastPushAt: null,
         lastPushSha: null,
+        changesVsMain: null,
       },
     ],
     branches: [
@@ -128,6 +131,116 @@ describe("DeploymentsView matrix (#0365)", () => {
     api.mockResolvedValue(status());
     const wrapper = await mountView();
     expect(wrapper.text()).toContain("no commits yet");
+    wrapper.unmount();
+  });
+});
+
+describe("DeploymentsView per-service vs-main breakdown (#0367)", () => {
+  it("shows 0 of N when the branch is behind but none of it touches this service", async () => {
+    // Reproduces the live-reported case: the branch card says "17 commits
+    // behind main," but none of them touch this service's subdir.
+    api.mockResolvedValue(
+      status({
+        rows: [
+          {
+            name: "Landing page (prod)",
+            service: "Landing page",
+            branch: "prod",
+            provider: "cloudflare-workers",
+            url: "https://repoos.org",
+            dashboardUrl: null,
+            subdir: "landing",
+            lastPushAt: "2026-09-15T00:00:00Z",
+            lastPushSha: "abc1234",
+            changesVsMain: { aheadOfMain: 0, behindMain: 0 },
+          },
+        ],
+        branches: [
+          {
+            branch: "prod",
+            ahead: 0,
+            behind: 0,
+            hasOrigin: true,
+            localExists: true,
+            ffFrom: "main",
+            mainSync: { state: "behind", aheadOfMain: 0, behindMain: 17 },
+          },
+        ],
+      }),
+    );
+    const wrapper = await mountView();
+    expect(wrapper.text()).toContain("17 commits behind main"); // the branch card
+    expect(wrapper.text()).toContain("0 of 17 behind-main commits touch this service");
+    wrapper.unmount();
+  });
+
+  it("shows the real count when part of the distance does touch the service", async () => {
+    api.mockResolvedValue(
+      status({
+        rows: [
+          {
+            name: "Landing page (prod)",
+            service: "Landing page",
+            branch: "prod",
+            provider: "cloudflare-workers",
+            url: "https://repoos.org",
+            dashboardUrl: null,
+            subdir: "landing",
+            lastPushAt: "2026-09-15T00:00:00Z",
+            lastPushSha: "abc1234",
+            changesVsMain: { aheadOfMain: 0, behindMain: 3 },
+          },
+        ],
+        branches: [
+          {
+            branch: "prod",
+            ahead: 0,
+            behind: 0,
+            hasOrigin: true,
+            localExists: true,
+            ffFrom: "main",
+            mainSync: { state: "behind", aheadOfMain: 0, behindMain: 17 },
+          },
+        ],
+      }),
+    );
+    const wrapper = await mountView();
+    expect(wrapper.text()).toContain("3 of 17 behind-main commits touch this service");
+    wrapper.unmount();
+  });
+
+  it("shows nothing extra for a row with no subdir configured (branch-level count already is its scope)", async () => {
+    api.mockResolvedValue(
+      status({
+        rows: [
+          {
+            name: "Whole-branch service",
+            service: "Whole-branch service",
+            branch: "prod",
+            provider: null,
+            url: "https://example.com",
+            dashboardUrl: null,
+            subdir: null,
+            lastPushAt: null,
+            lastPushSha: null,
+            changesVsMain: null,
+          },
+        ],
+        branches: [
+          {
+            branch: "prod",
+            ahead: 0,
+            behind: 0,
+            hasOrigin: true,
+            localExists: true,
+            ffFrom: "main",
+            mainSync: { state: "behind", aheadOfMain: 0, behindMain: 17 },
+          },
+        ],
+      }),
+    );
+    const wrapper = await mountView();
+    expect(wrapper.find(".dep-service-sync").exists()).toBe(false);
     wrapper.unmount();
   });
 });

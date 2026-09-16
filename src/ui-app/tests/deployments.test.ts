@@ -80,8 +80,15 @@ function mockGit(spec: MockSpec = {}): { exec: DeployCommandRunner; calls: strin
         ? { code: 0, stdout: `${sha}\n`, stderr: "" }
         : { code: 1, stdout: "", stderr: "" };
     }
-    if (args[0] === "rev-list")
-      return { code: 0, stdout: `${spec.counts?.[args[args.length - 1]] ?? 1}\n`, stderr: "" };
+    if (args[0] === "rev-list") {
+      // Key is everything after "rev-list --count", joined — just the range
+      // for a plain call ("origin/main..main"), or "range -- subdir" once a
+      // pathspec is appended (#0367's subdir-scoped sync counts). Backward
+      // compatible with existing single-token range keys: slice(2).join(" ")
+      // equals args[args.length - 1] when there's nothing after the range.
+      const key = args.slice(2).join(" ");
+      return { code: 0, stdout: `${spec.counts?.[key] ?? 1}\n`, stderr: "" };
+    }
     if (args[0] === "merge") {
       const m = spec.merge ?? { code: 0 };
       return { code: m.code, stdout: "", stderr: m.stderr ?? "" };
@@ -366,6 +373,71 @@ describe("mainSync — deployed ref vs local main (#0365)", () => {
     await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
     expect(calls).toContain("rev-list --count main..origin/prod");
     expect(calls).toContain("rev-list --count origin/prod..main");
+  });
+});
+
+describe("changesVsMain — subdir-scoped breakdown of mainSync (#0367)", () => {
+  it("is null for a row with no subdir configured (the branch-level count already is its scope)", async () => {
+    const { exec } = mockGit(BASE_SPEC);
+    const rows = [{ name: "Whole-branch service", branch: "prod" }];
+    const status = await getDeploymentsStatus(config(tmpDir(), rows), exec);
+    expect(status.rows[0].changesVsMain).toBeNull();
+  });
+
+  it("reproduces the live discrepancy: whole-branch distance nonzero, subdir-scoped distance zero", async () => {
+    // The exact scenario reported live: prod shows 17 commits behind main,
+    // but none of them touch "landing" or "user-docs".
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: {
+        ...BASE_SPEC.counts,
+        "main..origin/prod": 0,
+        "origin/prod..main": 17,
+        "main..origin/prod -- landing": 0,
+        "origin/prod..main -- landing": 0,
+      },
+    };
+    const { exec } = mockGit(spec);
+    const status = await getDeploymentsStatus(
+      config(tmpDir(), [{ name: "Landing page", branch: "prod", subdir: "landing" }]),
+      exec,
+    );
+    const prodBranch = status.branches.find((b) => b.branch === "prod")!;
+    expect(prodBranch.mainSync).toEqual({ state: "behind", aheadOfMain: 0, behindMain: 17 });
+    expect(status.rows[0].changesVsMain).toEqual({ aheadOfMain: 0, behindMain: 0 });
+  });
+
+  it("counts the commits that DO touch the subdir when some of the distance is relevant", async () => {
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: {
+        ...BASE_SPEC.counts,
+        "main..origin/prod": 0,
+        "origin/prod..main": 17,
+        "main..origin/prod -- landing": 0,
+        "origin/prod..main -- landing": 3,
+      },
+    };
+    const { exec } = mockGit(spec);
+    const status = await getDeploymentsStatus(
+      config(tmpDir(), [{ name: "Landing page", branch: "prod", subdir: "landing" }]),
+      exec,
+    );
+    expect(status.rows[0].changesVsMain).toEqual({ aheadOfMain: 0, behindMain: 3 });
+  });
+
+  it("passes the correct pathspec-scoped rev-list calls, sharing them across rows with the same (branch, subdir)", async () => {
+    const { exec, calls } = mockGit(BASE_SPEC);
+    const rows = [
+      { name: "Landing page (prod)", branch: "prod", subdir: "landing" },
+      { name: "Landing page (dupe)", branch: "prod", subdir: "landing" },
+    ];
+    await getDeploymentsStatus(config(tmpDir(), rows), exec);
+    expect(calls).toContain("rev-list --count main..origin/prod -- landing");
+    expect(calls).toContain("rev-list --count origin/prod..main -- landing");
+    expect(calls.filter((c) => c === "rev-list --count origin/prod..main -- landing")).toHaveLength(
+      1,
+    );
   });
 });
 
