@@ -2,14 +2,14 @@
 id: "0371"
 title: "repoos upgrade: show the release notes it already fetches, not just the version bump"
 type: feature
-status: active
+status: done
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-upgrade-show-the-release-notes-it
 created_at: "2026-09-16T06:39:39Z"
-updated_at: "2026-09-16T06:39:45Z"
+updated_at: "2026-09-16T06:44:52Z"
 ---
 ## Problem
 
@@ -62,3 +62,5 @@ today's silent behavior, no "no notes available" filler.
 - 2026-09-16T06:39:44Z · branch
 - 2026-09-16T06:39:45Z · status inbox→active
 - 2026-09-16T06:39:45Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
+- 2026-09-16T06:44:52Z · status active→done
+- 2026-09-16T06:44:52Z · note: repoos check passed clean (build + 6 new tests). Landing directly (skip review) per the rule in AGENTS.md's new Interactive agents section.
