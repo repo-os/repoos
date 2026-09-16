@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-16T07:26:00Z"
-review_passes: 3
 id: "0370"
 title: "Preview: stop silently defaulting to RepoOS's own board when a project has no [preview] config"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/preview-stop-silently-defaulting-to-repo
 created_at: "2026-09-16T06:38:15Z"
+updated_at: "2026-09-16T08:02:49Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -140,4 +140,4 @@ task, so it isn't lost.
 - 2026-09-16T07:11:24Z · status active→review
 - 2026-09-16T07:14:52Z · status review→active
 - 2026-09-16T07:20:05Z · status active→review
-
+- 2026-09-16T08:02:49Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
