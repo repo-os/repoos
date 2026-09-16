@@ -10,7 +10,14 @@
  * initial commit.
  */
 import { spawn } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -56,6 +63,101 @@ running \`repoos init\` already satisfies everything above. There's nothing to
 
 Status is a frontmatter field — never move files between folders. Keep diffs
 small. Read AGENTS.md before starting any task.
+`;
+
+/**
+ * The first *workable* task a guided new-project init leaves on the board.
+ * 0001 is deliberately `done` (scaffolding is the whole of it), so this is what
+ * a new user — or their first agent — actually picks up. `repoos init` runs
+ * before any server or agent exists, so the body itself is the prompt: it
+ * embeds the one-line description collected at init and carries the questions
+ * that turn that description into docs and real tasks later.
+ */
+const NEW_PROJECT_STARTER_TASK = (id: string, description: string) => `---
+id: "${id}"
+title: Flesh out the product vision and initial architecture
+type: spec
+status: ready
+priority: p2
+area: product
+assigned_to: unassigned
+created_by: human
+branch: ""
+---
+## Overview
+
+This project started from a one-line description. This task turns it into
+something a team can actually build from — a shared vision, an initial
+architecture, and a first batch of concrete work.
+
+## Project description
+
+${
+  description
+    ? `> ${description}`
+    : "_No description was given at init time. Start by writing one line that says what this project is and who it's for._"
+}
+
+## What to do
+
+1. Read the description above and the rest of this repo.
+2. Work through the questions that block design — on your own, or with the
+   project's owner:
+   - Who is this for, and what is the smallest useful first release?
+   - What stack and hosting, and why those over the alternatives?
+   - What is explicitly **out of scope** for now?
+3. Write the answers into \`docs/\` — at minimum a short vision note and an
+   architecture note. Keep them specific to this project.
+4. Break the result into a handful of concrete tasks with
+   \`repoos new "<title>"\`, and move the ones that are ready into \`ready\`.
+5. Record the docs you wrote here, then move this task to \`review\` (or
+   \`done\` if there is genuinely nothing left to capture).
+
+## Notes for AI
+
+This task is self-contained: the description above and the questions in step 2
+are the prompt. Ask the human before inventing answers about stack, scope or
+priorities — a short back-and-forth here saves a lot of rework later.
+`;
+
+/**
+ * The first workable task for `repoos init` inside an existing codebase. There
+ * is already a repo to read, so unlike the new-project starter this one is
+ * about documenting what exists and turning the gaps into a real backlog.
+ */
+const EXISTING_REPO_STARTER_TASK = (id: string) => `---
+id: "${id}"
+title: Read this codebase and propose docs/ + an initial task backlog
+type: spec
+status: ready
+priority: p2
+area: docs
+assigned_to: unassigned
+created_by: human
+branch: ""
+---
+## Overview
+
+RepoOS was just added to an existing codebase. The first useful move is to read
+what's already here, write down what a newcomer — human or agent — would need,
+then turn what's missing into work.
+
+## What to do
+
+1. Scan the repo: top-level structure, languages and frameworks, build and
+   test commands, and any existing conventions or docs.
+2. Write the durable findings into \`docs/\` — architecture notes and the
+   conventions anyone working here must follow.
+3. Draft a small starter backlog of real tasks with \`repoos new "<title>"\`,
+   each concrete enough to work on its own.
+4. Record what you wrote here, then move this task to \`review\` (or \`done\` if
+   there is nothing left to capture).
+
+## Notes for AI
+
+Read \`AGENTS.md\` first — it's the operating loop for this repo. Base the docs
+on what the code actually does rather than what you'd expect it to; where the
+repo is silent, write down the open question instead of guessing.
 `;
 
 const AGENTS_MD = `# AGENTS.md
@@ -187,7 +289,57 @@ const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
 type ScaffoldLayout = "root" | "repoos";
 
-function scaffoldInto(root: string, description: string, layout: ScaffoldLayout = "root") {
+/** Which starter task to seed beyond 0001 — a blank project or an existing repo. */
+type ScaffoldKind = "new" | "existing";
+
+const STARTER_TASK: Record<
+  ScaffoldKind,
+  { slug: string; build: (id: string, description: string) => string }
+> = {
+  new: { slug: "flesh-out-the-vision", build: NEW_PROJECT_STARTER_TASK },
+  existing: { slug: "read-the-codebase", build: (id) => EXISTING_REPO_STARTER_TASK(id) },
+};
+
+/**
+ * Next free 4-digit task id for a scaffolded file, derived from the ids that
+ * already exist under `workDir` (matching the numbering scheme used by
+ * `createTask`). 0001 is written just before this runs, so a fresh scaffold
+ * gets 0002; a repo that already has tasks gets the next id past the highest.
+ */
+function nextScaffoldId(root: string, workDir: string): string {
+  let max = 0;
+  try {
+    for (const name of readdirSync(join(root, workDir))) {
+      const m = name.match(/^(\d+)/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+  } catch {
+    /* workDir doesn't exist yet — start from zero */
+  }
+  return String(max + 1).padStart(4, "0");
+}
+
+/**
+ * Locate an already-seeded starter task by its slug suffix. Init is
+ * idempotent, so once the starter exists a re-run must not write another one —
+ * and crucially, must not compute a *new* id every time (which would append a
+ * fresh 0002, 0003, … starter on each run).
+ */
+function findStarter(root: string, workDir: string, slug: string): string | null {
+  try {
+    const match = readdirSync(join(root, workDir)).find((n) => n.endsWith(`-${slug}.md`));
+    return match ? join(workDir, match).split("\\").join("/") : null;
+  } catch {
+    return null;
+  }
+}
+
+export function scaffoldInto(
+  root: string,
+  description: string,
+  layout: ScaffoldLayout = "root",
+  kind: ScaffoldKind = "new",
+) {
   const created: string[] = [];
   const skipped: string[] = [];
 
@@ -220,6 +372,20 @@ function scaffoldInto(root: string, description: string, layout: ScaffoldLayout 
   ensureDir(config.docsDir);
   ensureFile("AGENTS.md", AGENTS_MD);
   ensureFile(join(config.workDir, "0001-set-up-repoos.md"), SAMPLE_TASK(description));
+  // 0001 is `done` (scaffolding is all of it), so without this the ready
+  // column is empty right after init. Seed one genuinely workable task; its
+  // id follows whatever is already on the board.
+  const starter = STARTER_TASK[kind];
+  const existingStarter = findStarter(root, config.workDir, starter.slug);
+  if (existingStarter) {
+    skipped.push(existingStarter);
+  } else {
+    const starterId = nextScaffoldId(root, config.workDir);
+    ensureFile(
+      join(config.workDir, `${starterId}-${starter.slug}.md`),
+      starter.build(starterId, description),
+    );
+  }
   ensureFile(".env.example", ENV_EXAMPLE);
 
   // gitignore the derived cache and local secrets
@@ -592,7 +758,7 @@ export async function cmdInit(args: string[]): Promise<void> {
   if (isGitRepo(cwd)) {
     // existing-repo path — unchanged, idempotent, no prompts
     const root = findRepoRoot(cwd);
-    const { created, skipped } = scaffoldInto(root, "");
+    const { created, skipped } = scaffoldInto(root, "", "root", "existing");
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));

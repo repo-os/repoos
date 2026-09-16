@@ -7,8 +7,9 @@ Run `repoos` with no arguments to see this list in your terminal.
 ### `repoos init [name]`
 
 Scaffolds `work/`, `docs/`, `AGENTS.md`, `repoos.toml` and a `.gitignore` entry
-in the current repo. Run outside a git repo, it starts a guided new-project
-flow instead, which can launch the web console for you.
+in the current repo, plus a `ready` starter task so the board isn't empty. Run
+outside a git repo, it starts a guided new-project flow instead, which can
+launch the web console for you.
 
 ### `repoos upgrade [--channel beta|canary|rc]`
 

@@ -20,7 +20,8 @@ It creates only what isn't already there:
 | `docs/` | Context an agent reads before working — architecture notes, decisions, history. |
 | `AGENTS.md` | The cross-tool agent-instructions standard. |
 | `repoos.toml` | Configuration. Every field is optional. |
-| `work/0001-set-up-repoos.md` | A first task, ready to work. |
+| `work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
+| `work/0002-read-the-codebase.md` | A `ready` starter task: read this codebase and propose `docs/` + an initial task backlog. |
 | `.env.example` | Documents the secrets a fuller setup expects. |
 | `.gitignore` entries | Ignore the derived cache (`.repoos/`) and local secrets (`.env`). |
 
@@ -56,7 +57,10 @@ You don't have to move your whole roadmap at once:
 Run `repoos init` in a directory that isn't inside a git repo and it switches to
 a guided flow for a brand-new project instead: it can create the project in a
 subdirectory, offer a repo-root or `repoos/`-subfolder layout, take a one-line
-description for the sample task, and optionally make the initial commit.
+description, and optionally make the initial commit. That description is
+embedded in the starter task ("Flesh out the product vision and initial
+architecture"), so the first thing on the board is turning it into a real
+vision, architecture notes and a follow-on backlog.
 
 ## Next
 
