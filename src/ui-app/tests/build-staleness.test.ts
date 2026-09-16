@@ -11,7 +11,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { checkBuildForRoot, shouldSkipBuild, type BuildCheckResult } from "../../core/build.js";
 
 const roots: string[] = [];
@@ -148,5 +149,28 @@ describe("shouldSkipBuild — bun run build's skip decision (#0377)", () => {
   it("force always builds, even on a fresh marker", () => {
     expect(shouldSkipBuild(result("fresh", false), true)).toBe(false);
     expect(shouldSkipBuild(result("stale", true), true)).toBe(false);
+  });
+});
+
+/**
+ * The marker is written by `scripts/copy-assets.mjs`, which must run LAST. If it
+ * ran before `build:ui`, a failing Vite/vue-tsc pass would leave
+ * `dist/.build-info.json` claiming fresh for the current `src/` while `dist/ui`
+ * is stale — and the staleness-aware build would then skip the repair, exactly
+ * the "silently absorbed staleness" #0377 set out to avoid. Pin the order.
+ */
+describe("build:raw ordering (#0377)", () => {
+  it("writes the build marker only after tsc and the UI build succeed", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+    const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    const raw = pkg.scripts["build:raw"];
+    const tscAt = raw.indexOf("tsc");
+    const uiAt = raw.indexOf("build:ui");
+    const markerAt = raw.indexOf("copy-assets");
+    expect(tscAt).toBeGreaterThanOrEqual(0);
+    expect(uiAt).toBeGreaterThan(tscAt);
+    expect(markerAt).toBeGreaterThan(uiAt);
   });
 });

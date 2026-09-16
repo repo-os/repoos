@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "build": "bun scripts/build.mjs",
-    "build:raw": "tsc -p tsconfig.json && bun scripts/copy-assets.mjs && bun run build:ui",
+    "build:raw": "tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs",
     "build:ui": "vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts",
     "dev": "bun src/cli/index.ts",
     "repoos": "bun src/cli/index.ts",
