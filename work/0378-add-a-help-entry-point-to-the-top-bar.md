@@ -2,14 +2,14 @@
 id: "0378"
 title: "Add Help (\"?\") entry point to the top bar"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-help-entry-point-to-the-top-bar
 created_at: "2026-09-16T17:09:45Z"
-updated_at: "2026-09-16T17:10:27Z"
+updated_at: "2026-09-16T17:13:33Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ Keep it minimal for v1: a small dropdown/popover with 2-3 links, no in-app help 
 - 2026-09-16T17:09:58Z · status draft→inbox, title, area, body
 - 2026-09-16T17:10:20Z · status inbox→ready
 - 2026-09-16T17:10:27Z · status ready→active, branch
+- 2026-09-16T17:13:33Z · status active→review
