@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/deployments-scope-the-vs-main-commit-cou
 created_at: "2026-09-16T05:35:56Z"
-updated_at: "2026-09-16T05:35:56Z"
+updated_at: "2026-09-16T05:36:00Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ count is already 0 for that direction.
 ## Activity
 
 - 2026-09-16T05:35:56Z · created · unknown
+- 2026-09-16T05:36:00Z · branch
