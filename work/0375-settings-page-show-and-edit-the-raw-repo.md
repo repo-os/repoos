@@ -2,7 +2,7 @@
 id: "0375"
 title: "Settings page: show and edit the raw repoos.toml, not just curated fields"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/settings-page-show-and-edit-the-raw-repo
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T08:05:56Z"
-updated_at: "2026-09-16T17:15:36Z"
+updated_at: "2026-09-16T17:23:54Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -84,3 +84,4 @@ cover), an addition/escape hatch for everything else:
 - 2026-09-16T16:55:17Z · status ready→active, branch
 - 2026-09-16T17:10:26Z · status active→review
 - 2026-09-16T17:15:36Z · status review→active
+- 2026-09-16T17:23:54Z · status active→review
