@@ -2,17 +2,14 @@
 id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-failed
+status: done
 priority: p3
-area: docs
+area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-releases-changelog-page-to-the-doc
 created_at: "2026-09-16T06:55:11Z"
-updated_at: "2026-09-16T08:22:47Z"
-review_passes: 1
+updated_at: "2026-09-16T16:54:54Z"
 ---
 ## Problem
 
@@ -87,5 +84,4 @@ add this preemptively without evidence it's needed.
 - 2026-09-16T07:45:16Z · status inbox→ready
 - 2026-09-16T07:45:21Z · status ready→active, branch
 - 2026-09-16T07:49:08Z · status active→review
-- 2026-09-16T08:04:58Z · area
-- 2026-09-16T08:22:47Z · needs_input
+- 2026-09-16T16:54:54Z · status review→done, release:success

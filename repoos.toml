@@ -222,13 +222,22 @@ subdir = "user-docs"
 [preview]
 # Run the worktree's OWN compiled CLI, never the globally installed `repoos`
 # release: a preview must serve the code under review, including new server
-# routes. `repoos` on PATH is the last published release, so `bun run build`
-# (this worktree) followed by `bun dist/cli/index.js serve` is required.
-command = "bun run build && bun dist/cli/index.js serve --port {port} --host {host}"
-# The command above builds before serving, which the default 10s readiness
-# window (sized for a plain dev-server start) can't cover on a cold/unbuilt
-# worktree — the normal state for a fresh one (AGENTS.md). Budget matches the
-# old ensureFreshBuild's 240s build allowance plus boot time (#0370 review).
+# routes. `repoos` on PATH is the last published release.
+#
+# Build ONLY if stale, then serve (scripts/preview-serve.mjs) — NOT a plain
+# `bun run build && ... serve`. #0370 removed the old special-cased "repoos"
+# preview target's `ensureFreshBuild` staleness check along with the rest of
+# that path; an unconditional `bun run build` measured ~5s even with nothing
+# changed (no incremental skip in the build script itself), where the old
+# code skipped straight to `serve` (~1s) when the worktree was already
+# fresh — the common case, since `repoos check` already builds before a task
+# reaches review. Confirmed by user report (2026-09-16): previews here used
+# to feel instant, not 5+ seconds every time.
+command = "bun scripts/preview-serve.mjs --port {port} --host {host}"
+# Still needs the generous budget for the genuinely-cold-worktree case (a
+# fresh worktree has no dist/ at all — AGENTS.md) where the script DOES
+# build. Matches the old ensureFreshBuild's 240s build allowance plus boot
+# time (#0370 review).
 readyTimeoutMs = 240000
 
 [[preview.targets]]
