@@ -2,14 +2,14 @@
 id: "0364"
 title: "Onboarding: seed a real starter task after repoos init instead of leaving Ready empty"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T03:38:14Z"
-updated_at: "2026-09-16T03:38:14Z"
+updated_at: "2026-09-16T03:52:46Z"
 ---
 ## Problem
 
@@ -108,3 +108,4 @@ from different information:
 ## Activity
 
 - 2026-09-16T03:38:14Z · created · unknown
+- 2026-09-16T03:52:46Z · status inbox→ready
