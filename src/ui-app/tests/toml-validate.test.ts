@@ -35,9 +35,7 @@ describe("validateToml accepts", () => {
     ["dotted keys", "auth.enabled = true\nauth.sessionMaxAge = 604800\n"],
     ["quoted keys", '"a b" = 1\n'],
     ["literal strings with quotes inside", "selector = '[data-theme=\"light\"]'\n"],
-    ["multiline arrays with comments", "a = [\n  1, # one\n  2,\n]\n"],
-    ["triple-quoted strings", "a = \"\"\"line\nline\"\"\"\nb = '''lit\nlit'''\n"],
-    ["inline table", 'a = { b = 1, c = "x" }\n'],
+    ["single-line arrays", 'a = [1, 2, 3]\nb = ["x", "y"]\n'],
     [
       "dates, hex, floats, specials",
       "d = 1979-05-27T07:32:00Z\nh = 0xDEAD_beef\nf = -1.5e3\nn = inf\n",
@@ -56,16 +54,27 @@ describe("validateToml rejects", () => {
     ["bare word value", "a = foo\n", 1],
     ["bad number", "a = 1.2.3\n", 1],
     ["unterminated string", 'a = "x\n', 1],
-    ["unterminated multi-line string", 'a = """x\ny\n', 3],
     ["unclosed table header", "[a\n", 1],
-    ["unclosed array", "a = [1, 2\n", 2],
-    ["unclosed inline table", "a = { b = 1\n", 2],
+    ["unclosed array on one line", "a = [1, 2", 1],
     ["junk after statement", "[a] extra\n", 1],
   ])("%s reports line %i", (_name, source, line) => {
     const result = validateToml(source);
     expect(result.ok).toBe(false);
     expect(result.line).toBe(line);
     expect(result.error).toBeTruthy();
+  });
+
+  // Valid TOML that RepoOS's line-based reader cannot load must be refused, or
+  // a save would be accepted and then silently ignored (#0375 review).
+  it.each([
+    ["multi-line array", "a = [\n  1,\n  2,\n]\n"],
+    ["multi-line basic string", 'a = """x\ny"""\n'],
+    ["multi-line literal string", "a = '''x\ny'''\n"],
+    ["inline table", 'a = { b = 1, c = "x" }\n'],
+  ])("refuses %s as unsupported by the config reader", (_name, source) => {
+    const result = validateToml(source);
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/aren't supported/);
   });
 });
 

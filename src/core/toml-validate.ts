@@ -10,11 +10,18 @@
  * first structural problem it finds (unterminated string/array, missing `=`,
  * bad table header, invalid scalar) with a 1-based line number. It accepts the
  * TOML shapes RepoOS itself emits plus the common hand-written ones (dotted
- * and quoted keys, literal + multi-line strings, nested arrays and inline
- * tables, dates/times, hex/octal/binary numbers). It deliberately does not
- * enforce key uniqueness or table-redefinition rules — those are valid-TOML
- * concerns that never affect what `loadConfig` reads, and rejecting on them
- * would make the escape hatch stricter than the loader it feeds.
+ * and quoted keys, literal strings, single-line arrays, dates/times,
+ * hex/octal/binary numbers). It deliberately does not enforce key uniqueness
+ * or table-redefinition rules — those are valid-TOML concerns that never
+ * affect what `loadConfig` reads, and rejecting on them would make the escape
+ * hatch stricter than the loader it feeds.
+ *
+ * Crucially, it rejects the *valid TOML* shapes that `parseFlatToml`
+ * (`config.ts`) cannot read: multi-line strings, multi-line arrays, and inline
+ * tables. Those would otherwise sail through a save and then be silently
+ * misread (the first line of a multi-line array parses as the string `"["`,
+ * an inline table as a plain string), so a whole save could take no effect
+ * with no error — the exact silent-config failure this gate exists to stop.
  */
 
 export interface TomlValidationResult {
@@ -68,6 +75,11 @@ class TomlScanner {
 
   eof(): boolean {
     return this.i >= this.source.length;
+  }
+
+  /** Current 1-based line, for callers that need to detect a value spanning lines. */
+  get lineNumber(): number {
+    return this.line;
   }
 
   peek(offset = 0): string {
@@ -135,11 +147,11 @@ function parseKey(sc: TomlScanner): void {
 function parseSimpleKey(sc: TomlScanner): void {
   const ch = sc.peek();
   if (ch === '"') {
-    readBasicString(sc, false);
+    readBasicString(sc);
     return;
   }
   if (ch === "'") {
-    readLiteralString(sc, false);
+    readLiteralString(sc);
     return;
   }
   let key = "";
@@ -147,16 +159,7 @@ function parseSimpleKey(sc: TomlScanner): void {
   if (!key) sc.fail("expected a key");
 }
 
-function readBasicString(sc: TomlScanner, multiline: boolean): void {
-  if (multiline) {
-    if (!(sc.peek() === '"' && sc.peek(1) === '"' && sc.peek(2) === '"')) {
-      sc.fail("expected a multi-line string");
-    }
-    sc.advance();
-    sc.advance();
-    sc.advance();
-    return;
-  }
+function readBasicString(sc: TomlScanner): void {
   sc.advance(); // opening quote
   while (!sc.eof()) {
     const ch = sc.peek();
@@ -176,13 +179,7 @@ function readBasicString(sc: TomlScanner, multiline: boolean): void {
   sc.fail("unterminated string");
 }
 
-function readLiteralString(sc: TomlScanner, multiline: boolean): void {
-  if (multiline) {
-    sc.advance();
-    sc.advance();
-    sc.advance();
-    return;
-  }
+function readLiteralString(sc: TomlScanner): void {
   sc.advance(); // opening quote
   while (!sc.eof()) {
     const ch = sc.peek();
@@ -196,56 +193,7 @@ function readLiteralString(sc: TomlScanner, multiline: boolean): void {
   sc.fail("unterminated string");
 }
 
-/**
- * Read a `"""…"""` value. A run of 3+ quotes closes it, with any quotes beyond
- * the last three belonging to the value (TOML allows up to two literal quotes
- * before the closing delimiter).
- */
-function readMultilineBasic(sc: TomlScanner): void {
-  sc.advance();
-  sc.advance();
-  sc.advance();
-  while (!sc.eof()) {
-    if (sc.peek() === '"') {
-      let run = 0;
-      while (sc.peek(run) === '"') run++;
-      if (run >= 3) {
-        for (let n = 0; n < run; n++) sc.advance();
-        return;
-      }
-      for (let n = 0; n < run; n++) sc.advance();
-      continue;
-    }
-    if (sc.peek() === "\\") {
-      sc.advance();
-      if (sc.eof()) sc.fail("unterminated multi-line string");
-      sc.advance();
-      continue;
-    }
-    sc.advance();
-  }
-  sc.fail("unterminated multi-line string");
-}
-
-function readMultilineLiteral(sc: TomlScanner): void {
-  sc.advance();
-  sc.advance();
-  sc.advance();
-  while (!sc.eof()) {
-    if (sc.peek() === "'") {
-      let run = 0;
-      while (sc.peek(run) === "'") run++;
-      if (run >= 3) {
-        for (let n = 0; n < run; n++) sc.advance();
-        return;
-      }
-      for (let n = 0; n < run; n++) sc.advance();
-      continue;
-    }
-    sc.advance();
-  }
-  sc.fail("unterminated multi-line string");
-}
+const MULTILINE_UNSUPPORTED = "multi-line strings aren't supported — keep each value on one line";
 
 function readArray(sc: TomlScanner): void {
   sc.advance(); // [
@@ -274,34 +222,6 @@ function readArray(sc: TomlScanner): void {
   }
 }
 
-function readInlineTable(sc: TomlScanner): void {
-  sc.advance(); // {
-  sc.skipWhitespace();
-  if (sc.peek() === "}") {
-    sc.advance();
-    return;
-  }
-  while (true) {
-    parseKey(sc);
-    sc.skipInlineWhitespace();
-    if (sc.peek() !== "=") sc.fail("expected '=' in inline table");
-    sc.advance();
-    sc.skipWhitespace();
-    readValue(sc);
-    sc.skipWhitespace();
-    if (sc.peek() === ",") {
-      sc.advance();
-      sc.skipWhitespace();
-      continue;
-    }
-    if (sc.peek() === "}") {
-      sc.advance();
-      return;
-    }
-    sc.fail("expected ',' or '}' in inline table");
-  }
-}
-
 function readBareValue(sc: TomlScanner): void {
   let token = "";
   while (!sc.eof()) {
@@ -327,13 +247,13 @@ function readBareValue(sc: TomlScanner): void {
 function readValue(sc: TomlScanner): void {
   const ch = sc.peek();
   if (ch === '"') {
-    if (sc.peek(1) === '"' && sc.peek(2) === '"') readMultilineBasic(sc);
-    else readBasicString(sc, false);
+    if (sc.peek(1) === '"' && sc.peek(2) === '"') sc.fail(MULTILINE_UNSUPPORTED);
+    readBasicString(sc);
     return;
   }
   if (ch === "'") {
-    if (sc.peek(1) === "'" && sc.peek(2) === "'") readMultilineLiteral(sc);
-    else readLiteralString(sc, false);
+    if (sc.peek(1) === "'" && sc.peek(2) === "'") sc.fail(MULTILINE_UNSUPPORTED);
+    readLiteralString(sc);
     return;
   }
   if (ch === "[") {
@@ -341,8 +261,9 @@ function readValue(sc: TomlScanner): void {
     return;
   }
   if (ch === "{") {
-    readInlineTable(sc);
-    return;
+    sc.fail(
+      "inline tables aren't supported — use a [section] or [[array-of-tables]] block instead",
+    );
   }
   readBareValue(sc);
 }
@@ -376,7 +297,13 @@ function readKeyValue(sc: TomlScanner): void {
   if (sc.peek() !== "=") sc.fail("expected '=' after key");
   sc.advance();
   sc.skipInlineWhitespace();
+  const startLine = sc.lineNumber;
   readValue(sc);
+  if (sc.lineNumber !== startLine) {
+    sc.fail(
+      "multi-line values aren't supported by RepoOS's config reader — keep arrays on a single line",
+    );
+  }
   sc.finishStatement();
 }
 

@@ -107,6 +107,21 @@ describe("config raw routes (#0375)", () => {
     expect(refreshAll).toHaveBeenCalled();
   });
 
+  it("refuses valid TOML the flat config reader can't load (multi-line array)", async () => {
+    writeFileSync(tomlPath(), 'taskExtensions = [".md"]\n', "utf8");
+    const { ctx } = makeCtx(root);
+    const { res, fake } = makeRes();
+    await writeRawConfig(
+      ctx,
+      makeReq(JSON.stringify({ content: 'taskExtensions = [\n  ".md",\n  ".markdown",\n]\n' })),
+      res,
+      {},
+    );
+    expect(fake.status).toBe(400);
+    expect(fake.payload.error).toMatch(/aren't supported/);
+    expect(readFileSync(tomlPath(), "utf8")).toBe('taskExtensions = [".md"]\n');
+  });
+
   it("refuses invalid TOML without touching the file", async () => {
     writeFileSync(tomlPath(), "maxActiveTasks = 3\n", "utf8");
     const { ctx } = makeCtx(root);

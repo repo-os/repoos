@@ -1,6 +1,6 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
-import { api, JSON_OPTS } from "../api";
+import { api, ApiError, JSON_OPTS } from "../api";
 import type { Agent, AgentsMeta, ConfigField, ModelSourcesResponse } from "../types";
 
 /** claude code takes model aliases, not the provider/model ids other CLIs use. */
@@ -448,6 +448,20 @@ export const useConfigStore = defineStore("config", () => {
     await loadRaw();
   }
 
+  /** True when a restart-tier schema value differs between two config payloads. */
+  function restartTierChanged(
+    before: Record<string, unknown> | null,
+    after: Record<string, unknown> | null,
+  ): boolean {
+    if (!before || !after) return false;
+    return schema.value
+      .filter((f) => f.restartRequired)
+      .some(
+        (f) =>
+          JSON.stringify(configValue(before, f.key)) !== JSON.stringify(configValue(after, f.key)),
+      );
+  }
+
   /**
    * Save the raw draft back to repoos.toml. The server validates the TOML and
    * rejects a stale `baseHash` with a conflict, so a malformed edit never
@@ -457,19 +471,35 @@ export const useConfigStore = defineStore("config", () => {
   async function saveRaw(): Promise<void> {
     rawSaving.value = true;
     rawError.value = "";
+    const submitted = rawDraft.value;
+    const beforeData = data.value ? { ...data.value } : null;
     try {
       const res = await api<{ content?: unknown; hash?: unknown }>(
         "/api/config/raw",
-        JSON_OPTS("PUT", { content: rawDraft.value, baseHash: rawHash.value }),
+        JSON_OPTS("PUT", { content: submitted, baseHash: rawHash.value }),
       );
-      const content = typeof res?.content === "string" ? res.content : rawDraft.value;
+      const content = typeof res?.content === "string" ? res.content : submitted;
       rawContent.value = content;
       rawHash.value = typeof res?.hash === "string" ? res.hash : rawHash.value;
-      rawDraft.value = content;
+      // Keystrokes typed while the save was in flight are newer than the
+      // request; don't let the server echo overwrite them.
+      if (rawDraft.value === submitted) rawDraft.value = content;
       await load();
-      msg.value = "repoos.toml saved — applied live.";
+      msg.value = restartTierChanged(beforeData, data.value)
+        ? "repoos.toml saved — restart server to apply some changes."
+        : "repoos.toml saved — applied live.";
     } catch (err) {
       rawError.value = err instanceof Error ? err.message : String(err);
+      // A 409 means another writer got there first. Adopt the server's current
+      // content/hash (so the editor no longer treats its stale base as
+      // current) but keep the user's draft, and make the overwrite explicit:
+      // Save again writes the draft over the server version, Reload discards.
+      if (err instanceof ApiError && err.status === 409) {
+        const body = err.body as { content?: unknown; hash?: unknown } | null;
+        if (typeof body?.content === "string") rawContent.value = body.content;
+        if (typeof body?.hash === "string") rawHash.value = body.hash;
+        rawError.value += " Save again to overwrite it, or Reload to discard your changes.";
+      }
     } finally {
       rawSaving.value = false;
     }

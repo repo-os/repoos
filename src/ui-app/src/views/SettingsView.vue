@@ -93,7 +93,9 @@ onMounted(async () => {
     /* status remains safe default */
   }
   void refreshRvStatus();
-  void config.loadRaw();
+  // The store is app-scoped, so a dirty raw draft survives navigating away and
+  // back; only (re)load when there's nothing local to lose.
+  if (!config.rawLoaded || !config.rawDirty) void config.loadRaw();
 });
 
 // ---- Raw repoos.toml editor (#0375) ----
@@ -112,6 +114,12 @@ function syncRawScroll(): void {
 }
 
 function reloadRaw(): void {
+  if (
+    config.rawDirty &&
+    !window.confirm("Discard your unsaved repoos.toml changes and reload from disk?")
+  ) {
+    return;
+  }
   void config.loadRaw();
 }
 
@@ -837,8 +845,9 @@ onUnmounted(() => {
               <div class="setting-desc" style="margin: 0">
                 The whole file, for sections the fields above don't cover —
                 <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
-                <code>[[deployments]]</code>, and anything you add. Saved changes apply live. Keep
-                secrets in <code>.env</code>, not here.
+                <code>[[deployments]]</code>, and anything you add. Values stay on one line:
+                RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
+                inline tables. Keep secrets in <code>.env</code>, not here.
               </div>
               <div class="toml-raw-actions">
                 <Button

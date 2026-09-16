@@ -9,7 +9,9 @@ repoos.toml** editor at the bottom for everything else — `[preview]`, `[check]
 `[release]`, `[[deployments]]`, and any section the fields above don't cover.
 The raw editor validates TOML before saving and refuses a save if the file
 changed underneath it (another tab, or a field auto-save), so neither editor
-silently overwrites the other. Secrets still belong in `.env`, not here.
+silently overwrites the other. Values stay on a single line — RepoOS's config
+reader doesn't support multi-line arrays, multi-line strings, or inline tables.
+Secrets still belong in `.env`, not here.
 
 ## Layout
 

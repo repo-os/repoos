@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useConfigStore } from "../src/stores/config";
 import * as apiMod from "../src/api";
+import { ApiError } from "../src/api";
 import type { ConfigField } from "../src/types";
 
 const api = vi.spyOn(apiMod, "api");
@@ -25,9 +26,21 @@ const SCHEMA: ConfigField[] = [
     description: "",
     options: [{ value: "3", label: "3" }],
   } as ConfigField,
+  {
+    key: "strictBuild",
+    label: "Strict build",
+    type: "boolean",
+    tier: "restart",
+    restartRequired: true,
+    group: "general",
+    default: false,
+    description: "",
+  } as ConfigField,
 ];
 
-function configResponse(config: Record<string, unknown> = { maxActiveTasks: 3 }) {
+function configResponse(
+  config: Record<string, unknown> = { maxActiveTasks: 3, strictBuild: false },
+) {
   return { config, schema: SCHEMA };
 }
 
@@ -141,5 +154,75 @@ describe("raw repoos.toml store (#0375)", () => {
     await store.save({ maxActiveTasks: 3 });
 
     expect(rawGets).toHaveLength(2);
+  });
+
+  it("keeps keystrokes typed while a raw save is in flight", async () => {
+    let store: ReturnType<typeof useConfigStore>;
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/config/raw") {
+        if (opts?.method === "PUT") {
+          // The user keeps typing before the response lands.
+          store.rawDraft = "a = 3\n";
+          return { ok: true, content: "a = 2\n", hash: "h2" };
+        }
+        return { content: "a = 1\n", hash: "h1" };
+      }
+      return configResponse();
+    });
+    store = useConfigStore();
+    await store.loadRaw();
+    store.rawDraft = "a = 2\n";
+    await store.saveRaw();
+
+    expect(store.rawDraft).toBe("a = 3\n");
+    expect(store.rawContent).toBe("a = 2\n");
+    expect(store.rawDirty).toBe(true);
+  });
+
+  it("a 409 adopts the server's content/hash but keeps the draft for an explicit overwrite", async () => {
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/config/raw") {
+        if (opts?.method === "PUT") {
+          throw new ApiError("repoos.toml changed on disk", 409, {
+            content: "a = 9\n",
+            hash: "h9",
+          });
+        }
+        return { content: "a = 1\n", hash: "h1" };
+      }
+      return configResponse();
+    });
+    const store = useConfigStore();
+    await store.loadRaw();
+    store.rawDraft = "a = 2\n";
+    await store.saveRaw();
+
+    expect(store.rawError).toMatch(/changed on disk/);
+    expect(store.rawError).toMatch(/Save again to overwrite/);
+    expect(store.rawContent).toBe("a = 9\n");
+    expect(store.rawHash).toBe("h9");
+    expect(store.rawDraft).toBe("a = 2\n");
+    expect(store.rawDirty).toBe(true);
+  });
+
+  it("reports a restart when a raw save changes a restart-tier field", async () => {
+    let strictBuild = false;
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/config/raw") {
+        if (opts?.method === "PUT") {
+          strictBuild = true;
+          return { ok: true, content: "strictBuild = true\n", hash: "h2" };
+        }
+        return { content: "strictBuild = false\n", hash: "h1" };
+      }
+      return configResponse({ maxActiveTasks: 3, strictBuild });
+    });
+    const store = useConfigStore();
+    await store.load();
+    await store.loadRaw();
+    store.rawDraft = "strictBuild = true\n";
+    await store.saveRaw();
+
+    expect(store.msg).toMatch(/restart server to apply/);
   });
 });
