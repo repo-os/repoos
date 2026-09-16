@@ -279,6 +279,94 @@ describe("getDeploymentsStatus", () => {
     expect(deploymentBranches(TWO_BRANCH_ROWS)).toEqual(["prod", "main"]);
     expect(deploymentBranches([])).toEqual([]);
   });
+
+  it("resolves each row's service, defaulting to its own name when unconfigured", async () => {
+    const { exec } = mockGit(BASE_SPEC);
+    const rows = [
+      { name: "Landing page (prod)", service: "Landing page", branch: "prod" },
+      { name: "Landing page (dev)", service: "Landing page", branch: "main" },
+      { name: "Solo target", branch: "main" }, // no `service` configured
+    ];
+    const status = await getDeploymentsStatus(config(tmpDir(), rows), exec);
+    expect(status.rows.map((r) => r.service)).toEqual([
+      "Landing page",
+      "Landing page",
+      "Solo target",
+    ]);
+  });
+});
+
+describe("mainSync — deployed ref vs local main (#0365)", () => {
+  it("reports 'same' when origin/<branch> equals local main", async () => {
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: { ...BASE_SPEC.counts, "main..origin/main": 0, "origin/main..main": 0 },
+    };
+    const { exec } = mockGit(spec);
+    const status = await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
+    const main = status.branches.find((b) => b.branch === "main")!;
+    expect(main.mainSync).toEqual({ state: "same", aheadOfMain: 0, behindMain: 0 });
+  });
+
+  it("reports 'behind' with a count when origin/<branch> is a strict ancestor of local main", async () => {
+    // Reuses the existing "origin/main..main": 8 / "main..origin/main": 0 pair
+    // from BASE_SPEC — the same numbers that already drive the unrelated
+    // ahead/behind-vs-own-origin fields, just read with main as the reference.
+    const { exec } = mockGit(BASE_SPEC);
+    const status = await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
+    const main = status.branches.find((b) => b.branch === "main")!;
+    expect(main.mainSync).toEqual({ state: "behind", aheadOfMain: 0, behindMain: 8 });
+  });
+
+  it("reports 'ahead' when the deployed ref has commits local main lacks", async () => {
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: { ...BASE_SPEC.counts, "main..origin/prod": 3, "origin/prod..main": 0 },
+    };
+    const { exec } = mockGit(spec);
+    const status = await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
+    const prod = status.branches.find((b) => b.branch === "prod")!;
+    expect(prod.mainSync).toEqual({ state: "ahead", aheadOfMain: 3, behindMain: 0 });
+  });
+
+  it("reports 'diverged' when both sides have commits the other lacks", async () => {
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: { ...BASE_SPEC.counts, "main..origin/prod": 2, "origin/prod..main": 4 },
+    };
+    const { exec } = mockGit(spec);
+    const status = await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
+    const prod = status.branches.find((b) => b.branch === "prod")!;
+    expect(prod.mainSync).toEqual({ state: "diverged", aheadOfMain: 2, behindMain: 4 });
+  });
+
+  it("reports 'unknown' when the branch has no origin ref yet", async () => {
+    const { exec } = mockGit({ dirty: "", local: { main: "a".repeat(8) } });
+    const status = await getDeploymentsStatus(
+      config(tmpDir(), [{ name: "Site", branch: "trunk", url: "https://example.com" }]),
+      exec,
+    );
+    expect(status.branches[0].mainSync).toEqual({
+      state: "unknown",
+      aheadOfMain: 0,
+      behindMain: 0,
+    });
+  });
+
+  it("compares against local main regardless of which branch is being measured", async () => {
+    // Sanity check on the framing itself: the function never substitutes the
+    // branch's own name for "main" — it is always the literal local `main`
+    // ref, including when measuring the "main" deployment branch against
+    // itself (a deliberate, documented simplification — see #0365's task).
+    const spec: MockSpec = {
+      ...BASE_SPEC,
+      counts: { ...BASE_SPEC.counts, "main..origin/prod": 0, "origin/prod..main": 5 },
+    };
+    const { exec, calls } = mockGit(spec);
+    await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);
+    expect(calls).toContain("rev-list --count main..origin/prod");
+    expect(calls).toContain("rev-list --count origin/prod..main");
+  });
 });
 
 describe("deployBranch", () => {
@@ -443,6 +531,30 @@ describe("loadConfig [[deployments]] parsing", () => {
 
   it("leaves deployments unset when the repo has no [[deployments]] block", () => {
     expect(loadConfig(tmpDir()).deployments).toBeUndefined();
+  });
+
+  it("parses the optional service field (#0365), omitting it when unset", () => {
+    const root = tmpDir();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        "[[deployments]]",
+        'name = "Landing page (prod)"',
+        'service = "Landing page"',
+        'branch = "prod"',
+        "",
+        "[[deployments]]",
+        'name = "Solo target"',
+        'branch = "main"',
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const cfg = loadConfig(root);
+    expect(cfg.deployments).toEqual([
+      { name: "Landing page (prod)", service: "Landing page", branch: "prod" },
+      { name: "Solo target", branch: "main" },
+    ]);
   });
 });
 

@@ -546,6 +546,7 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         if (typeof r.name !== "string" || !r.name.trim()) continue;
         if (typeof r.branch !== "string" || !r.branch.trim()) continue;
         const row: DeploymentConfig = { name: r.name.trim(), branch: r.branch.trim() };
+        if (typeof r.service === "string" && r.service.trim()) row.service = r.service.trim();
         if (typeof r.provider === "string" && r.provider.trim()) row.provider = r.provider.trim();
         if (typeof r.url === "string" && r.url.trim()) row.url = r.url.trim();
         // TOML spelling is `dashboard_url`; normalized to camelCase here.
