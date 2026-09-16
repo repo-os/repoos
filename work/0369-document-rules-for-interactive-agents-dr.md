@@ -2,14 +2,14 @@
 id: "0369"
 title: "Document rules for interactive agents driving the board directly, outside the normal task pipeline"
 type: chore
-status: inbox
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/document-rules-for-interactive-agents-dr
 created_at: "2026-09-16T06:31:01Z"
-updated_at: "2026-09-16T06:31:07Z"
+updated_at: "2026-09-16T06:31:08Z"
 ---
 ## Problem
 
@@ -88,3 +88,5 @@ agent session driving the board directly via CLI/API rather than through
 
 - 2026-09-16T06:31:01Z · created · unknown
 - 2026-09-16T06:31:07Z · branch
+- 2026-09-16T06:31:08Z · status inbox→active
+- 2026-09-16T06:31:08Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
