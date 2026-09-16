@@ -164,10 +164,8 @@ function closeAndFocusTrigger(): void {
   });
 }
 
-function onUserMenuKeyDown(e: KeyboardEvent): void {
-  if (e.key !== "Tab") return;
-  const popover = userMenuPopover.value;
-  if (!popover) return;
+function trapTabKey(e: KeyboardEvent, popover: HTMLElement | null): void {
+  if (e.key !== "Tab" || !popover) return;
   const focusable = popover.querySelectorAll<HTMLElement>(
     "button, [href], [tabindex]:not([tabindex='-1'])",
   );
@@ -187,6 +185,10 @@ function onUserMenuKeyDown(e: KeyboardEvent): void {
   }
 }
 
+function onUserMenuKeyDown(e: KeyboardEvent): void {
+  trapTabKey(e, userMenuPopover.value);
+}
+
 watch(userMenuOpen, (open) => {
   if (open) {
     nextTick(() => {
@@ -198,8 +200,48 @@ watch(userMenuOpen, (open) => {
   }
 });
 
+/**
+ * Help menu in the top bar. Deliberately NOT a `nav.ts` entry — this is a
+ * persistent header affordance on every route, not a page. Links are plain
+ * external destinations (published docs + GitHub), so the Docs URL is a single
+ * constant to update if publishing moves.
+ */
+const HELP_LINKS: { label: string; href: string }[] = [
+  { label: "Docs", href: "https://docs.repoos.org" },
+  { label: "GitHub Discussions", href: "https://github.com/repo-os/repoos/discussions" },
+  { label: "GitHub Issues", href: "https://github.com/repo-os/repoos/issues" },
+];
+
+const helpMenuOpen = ref(false);
+const helpMenuTrigger = ref<InstanceType<typeof HTMLButtonElement> | null>(null);
+const helpMenuPopover = ref<InstanceType<typeof HTMLDivElement> | null>(null);
+
+function toggleHelpMenu(): void {
+  helpMenuOpen.value = !helpMenuOpen.value;
+}
+
+function closeHelpMenuAndFocusTrigger(): void {
+  helpMenuOpen.value = false;
+  nextTick(() => {
+    helpMenuTrigger.value?.focus();
+  });
+}
+
+function onHelpMenuKeyDown(e: KeyboardEvent): void {
+  trapTabKey(e, helpMenuPopover.value);
+}
+
+watch(helpMenuOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      helpMenuPopover.value?.querySelector<HTMLElement>("a, button")?.focus();
+    });
+  }
+});
+
 function onDocumentMouseDown(e: MouseEvent): void {
   const target = e.target as HTMLElement;
+  if (!target.closest(".help-menu-wrapper")) helpMenuOpen.value = false;
   if (target.closest(".repo-pill-wrapper")) return;
   popoverOpen.value = false;
   if (target.closest(".user-menu-wrapper")) return;
@@ -211,6 +253,9 @@ function onDocumentKeyDown(e: KeyboardEvent): void {
     popoverOpen.value = false;
     if (userMenuOpen.value) {
       closeAndFocusTrigger();
+    }
+    if (helpMenuOpen.value) {
+      closeHelpMenuAndFocusTrigger();
     }
   }
 }
@@ -312,6 +357,50 @@ watch(repoName, () => {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
+    <div class="help-menu-wrapper">
+      <button
+        ref="helpMenuTrigger"
+        class="help-menu-trigger"
+        type="button"
+        aria-label="Help and support"
+        aria-haspopup="menu"
+        :aria-expanded="helpMenuOpen"
+        title="Help and support"
+        @click="toggleHelpMenu"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+          <path
+            d="M9.4 9.2a2.7 2.7 0 015.1 1c0 1.8-2.5 2.1-2.5 3.6"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="17.2" r="1" fill="currentColor" />
+        </svg>
+      </button>
+      <div
+        v-if="helpMenuOpen"
+        ref="helpMenuPopover"
+        class="help-menu-popover"
+        role="menu"
+        tabindex="-1"
+        @keydown="onHelpMenuKeyDown"
+      >
+        <a
+          v-for="link in HELP_LINKS"
+          :key="link.href"
+          class="help-menu-link"
+          :href="link.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          role="menuitem"
+          @click="helpMenuOpen = false"
+          >{{ link.label }}</a
+        >
+      </div>
+    </div>
     <div v-if="auth.authEnabled && auth.authenticated" class="user-menu-wrapper">
       <button
         class="user-menu-trigger"
@@ -408,6 +497,59 @@ watch(repoName, () => {
 .repo-color-default:hover {
   color: var(--txt);
   border-color: var(--txt-dim);
+}
+.help-menu-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+.help-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.help-menu-trigger:hover {
+  color: var(--txt);
+  border-color: var(--border-bright);
+  background: var(--panel-solid);
+}
+.help-menu-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  width: max-content;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.help-menu-link {
+  display: block;
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--txt-dim);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: 0.15s;
+}
+.help-menu-link:hover {
+  color: var(--txt);
+  background: var(--panel-solid);
 }
 .user-menu-wrapper {
   position: relative;
