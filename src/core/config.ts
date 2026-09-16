@@ -22,6 +22,8 @@ import type {
   CheckThemeScope,
   DeploymentConfig,
   ModelProviderKeysConfig,
+  PreviewConfig,
+  PreviewTargetConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -436,6 +438,55 @@ function parseFlatToml(text: string): Record<string, unknown> {
   return out;
 }
 
+/**
+ * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
+ * TOML. Exported for tests; `loadConfig` merges the result into the config.
+ * Rows without a usable `command` are dropped rather than poisoning resolution.
+ */
+export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConfig | undefined {
+  const preview: PreviewConfig = {};
+  const command = parsed["preview.command"];
+  if (typeof command === "string" && command.trim()) preview.command = command.trim();
+  const cwd = parsed["preview.cwd"];
+  if (typeof cwd === "string" && cwd.trim()) preview.cwd = cwd.trim();
+  const readyPath = normalizeReadyPath(parsed["preview.readyPath"]);
+  if (readyPath) preview.readyPath = readyPath;
+
+  if (Array.isArray(parsed["preview.targets"])) {
+    const targets: PreviewTargetConfig[] = [];
+    for (const raw of parsed["preview.targets"]) {
+      if (typeof raw !== "object" || raw === null) continue;
+      const r = raw as Record<string, unknown>;
+      const targetCommand = typeof r.command === "string" ? r.command.trim() : "";
+      if (!targetCommand) continue;
+      const areasRaw = r.areas;
+      const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
+        .map((a) => (typeof a === "string" ? a.trim() : ""))
+        .filter(Boolean);
+      const name =
+        typeof r.name === "string" && r.name.trim() ? r.name.trim() : areas.join("/") || "target";
+      const target: PreviewTargetConfig = { name, areas, command: targetCommand };
+      const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+      if (targetCwd) target.cwd = targetCwd;
+      const targetReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
+      if (targetReadyPath) target.readyPath = targetReadyPath;
+      targets.push(target);
+    }
+    if (targets.length) preview.targets = targets;
+  }
+
+  const hasCustom = Boolean(preview.command) || Boolean(preview.targets?.length);
+  return hasCustom ? preview : undefined;
+}
+
+/** Normalize a configured readiness path to a leading-slash path, or undefined. */
+function normalizeReadyPath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
 export function loadConfig(rootArg?: string): RepoOSConfig {
   const root = rootArg ? resolve(rootArg) : findRepoRoot();
   // Load .env before resolving [auth]/[whisper] secrets below, so every path
@@ -622,6 +673,13 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         .map((v) => v.trim());
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
+
+    // [preview] section (#0362) — how to preview a task's worktree. Absent
+    // entirely means the backward-compatible RepoOS `repoos serve` fallback;
+    // present with a command and/or named targets means the project's own
+    // command runs instead (selected by the task's `area`).
+    const preview = parsePreviewConfig(parsed);
+    if (preview) cfg.preview = preview;
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];

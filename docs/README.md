@@ -39,6 +39,8 @@ can't assume any.
   decision gets a new ADR, not an edit.
 - `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —
   subsystem guides.
+- `previews.md` — how per-project preview targets work (`[preview]` config,
+  area-based selection, the `repoos serve` fallback).
 - `agent-model-recommendations.md`, `opencode-models.md`, `token-optimization.md`,
   `prompt-caching-audit.md` — agent and model operations.
 - `dogfooding-vs-general.md` — which problems are artifacts of RepoOS running on

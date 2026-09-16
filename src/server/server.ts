@@ -1240,7 +1240,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(request.taskId, `✓ Managed preview ready: ${url}`);
         // The sandbox may not be able to open the URL — probe it from the
         // privileged server side and record the structured outcome.
-        const probe = await probePreview(url);
+        const probe = await probePreview(url, result.readyPath);
         if (probe.ok) {
           runner.system(
             request.taskId,
