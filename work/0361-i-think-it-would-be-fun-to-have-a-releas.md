@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-15T19:59:58Z"
-review_passes: 2
 id: "0361"
 title: Add optional AI-draftable release notes when cutting a release
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: hello@repoos.org
 branch: feat/add-optional-ai-draftable-release-notes-
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T19:22:15Z"
+updated_at: "2026-09-16T02:02:42Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -83,4 +83,4 @@ I think it would be fun to have a release notes option when cutting a new releas
 - 2026-09-15T19:44:25Z · needs_input
 - 2026-09-15T19:44:25Z · status review→active
 - 2026-09-15T19:53:02Z · status active→review
-
+- 2026-09-16T02:02:42Z · status review→done, release:success
