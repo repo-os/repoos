@@ -177,7 +177,7 @@ service = "Landing page"
 branch = "prod"
 provider = "cloudflare-workers"
 url = "https://repoos.org"
-dashboard_url = ""
+dashboard_url = "https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-landing/production/deployments"
 subdir = "landing"
 
 [[deployments]]
@@ -186,7 +186,7 @@ service = "Landing page"
 branch = "main"
 provider = "cloudflare-workers"
 url = "https://main-repoos-landing.njachowski.workers.dev"
-dashboard_url = ""
+dashboard_url = "https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-landing/production/deployments"
 subdir = "landing"
 
 [[deployments]]
@@ -195,7 +195,7 @@ service = "Docs"
 branch = "prod"
 provider = "cloudflare-workers"
 url = "https://docs.repoos.org"
-dashboard_url = ""
+dashboard_url = "https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-docs/production/deployments"
 subdir = "user-docs"
 
 [[deployments]]
@@ -204,7 +204,7 @@ service = "Docs"
 branch = "main"
 provider = "cloudflare-workers"
 url = "https://main-repoos-docs.njachowski.workers.dev"
-dashboard_url = ""
+dashboard_url = "https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-docs/production/deployments"
 subdir = "user-docs"
 
 [tunnel]
