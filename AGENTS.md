@@ -111,6 +111,67 @@ straight back into `review`.
   explicit "move task <id> to done". Then delete the remote + local branches and
   set `status: done` with an activity entry (commit `docs(<id>): set status done`).
 
+## Interactive agents driving the board directly (not through `repoos start`)
+
+This is for the **interactive/external session** case from "Who this file is
+for" above, specifically when it creates and drives tasks itself — via
+`repoos new`/`repoos mv`/`repoos update` or the HTTP API — rather than leaving
+them for `repoos start`'s managed task-runner lifecycle. A `repoos mv <id>
+<status>` call is **not** a synchronous "and now the system has settled"
+operation the way it feels from the CLI. It's a file write; the running
+`repoos serve` discovers it asynchronously via its file watcher, and whatever
+background machinery that discovery triggers — spawning the reviewer agent,
+push notifications, auto-dispatch — runs on its own clock, entirely outside
+anything the external caller can see or block on. Firing several
+status-changing commands back-to-back on the assumption each one is fully
+"done" before the next starts is the mistake this section exists to prevent.
+
+**Worked example (2026-09-16).** An interactive session moved a
+self-implemented task from `active` through `review` to `done` via two
+separate `repoos mv` calls a few minutes apart. The `active`→`review`
+transition correctly triggered the server's normal automatic reviewer spawn
+(`startReview` in `src/server/server.ts`). The later `review`→`done`
+transition should have cancelled that run — `reviews.cancel()`
+(`src/server/review.ts`) fires on exactly `prev === "review" && next !==
+"review"` — but the spawned OS process (confirmed via `ps`) kept running for
+**six more minutes** regardless, wrote its report, and on finishing tripped
+`enforceStillInReview`'s guard: the task file said `done` while a review was
+ending, so — per that guard's own documented assumption, "every human route
+out of `review` cancels the run first" — it assumed the reviewer had moved the
+task there itself and reverted it back to `review`. That assumption holds for
+the UI's synchronous PATCH request; it does not hold for an external
+CLI/file-write transition the server only learns about later, after the
+reviewer is already running. Two sibling tasks in the same session that went
+straight `active`→`done` (no `review` hop) landed cleanly with no such
+issue — confirming the mechanism: skipping `review` avoids spawning a
+reviewer to race against in the first place. If this happens to you, it's not
+data loss — the review already ran and produced its report; just re-issue
+`repoos mv <id> done` once you've confirmed no live review process remains.
+
+Rules that follow from this, in rough priority order:
+
+1. **To land something yourself without a human/reviewer in the loop, skip
+   `review` entirely** — `active` → `done` directly. No reviewer gets
+   spawned, so there is nothing to race or get reverted by.
+2. **If you deliberately want the reviewer's advisory opinion first (worth it
+   for anything nontrivial), enter `review` and WAIT for it to actually
+   finish** before touching status again — confirm `.repoos/reviews/<id>.md`
+   exists (or that the `review:<id>.out.log` process has exited), not just
+   that some time has passed.
+3. **Never assume a CLI status change synchronously cancels a running
+   background job.** Treat any spawned reviewer/agent process as something
+   that will run to completion regardless of what you do to the task file
+   next.
+4. **Claim a freshly created task by moving straight to `active` (skip
+   `ready`)** so the auto-engineering dispatch pass never sees it sitting in
+   the queue to grab concurrently — a different race with the same root
+   cause (asynchronous discovery of a file-level status change).
+5. **Re-check the task file against `main` immediately before merging, not
+   just once early.** Other machinery — a reviewer writing its report, an
+   auto-dispatched task, another concurrent close-out — can commit to `main`
+   at any point between when you start and when you finish; the hand-landing
+   check under Rules below is a special case of this same general fact.
+
 ## Definition of done
 
 Before a task moves to review, `repoos check` must pass. This runs:
