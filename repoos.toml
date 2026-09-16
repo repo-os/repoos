@@ -173,6 +173,7 @@ workflow = ".github/workflows/release.yml"
 # address bar); subdir scopes each row's freshness lookup to its own tree.
 [[deployments]]
 name = "Landing page (prod)"
+service = "Landing page"
 branch = "prod"
 provider = "cloudflare-workers"
 url = "https://repoos.org"
@@ -181,6 +182,7 @@ subdir = "landing"
 
 [[deployments]]
 name = "Landing page (dev)"
+service = "Landing page"
 branch = "main"
 provider = "cloudflare-workers"
 url = "https://main-repoos-landing.njachowski.workers.dev"
@@ -189,6 +191,7 @@ subdir = "landing"
 
 [[deployments]]
 name = "Docs (prod)"
+service = "Docs"
 branch = "prod"
 provider = "cloudflare-workers"
 url = "https://docs.repoos.org"
@@ -197,6 +200,7 @@ subdir = "user-docs"
 
 [[deployments]]
 name = "Docs (dev)"
+service = "Docs"
 branch = "main"
 provider = "cloudflare-workers"
 url = "https://main-repoos-docs.njachowski.workers.dev"

@@ -418,6 +418,14 @@ export interface RepoOSConfig {
 export interface DeploymentConfig {
   /** Human label, e.g. "Landing page (prod)". */
   name: string;
+  /**
+   * Groups this row with others of the same service across branches (e.g.
+   * "Landing page" for both its prod and dev rows), so the Deployments page
+   * can render one row per service with a column per branch. Defaults to
+   * `name` when absent, so a config with no `service` keys keeps today's
+   * ungrouped, one-row-per-config-entry behavior exactly.
+   */
+  service?: string;
   /** Branch whose pushes deploy this target (e.g. prod / main). */
   branch: string;
   /** Provider label, e.g. "cloudflare-workers". Informational only. */

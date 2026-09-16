@@ -14,6 +14,8 @@ import type { DeploymentConfig, RepoOSConfig } from "../core/types.js";
 
 export interface DeploymentRow {
   name: string;
+  /** Groups this row with others of the same service across branches (#0365). Defaults to `name`. */
+  service: string;
   branch: string;
   /** Plain provider label from config (e.g. "cloudflare-workers"). */
   provider: string | null;
@@ -45,6 +47,24 @@ export interface DeploymentBranch {
    * a branch equal to its neighbor (just deployed) drops back to a plain push.
    */
   ffFrom: string | null;
+  /**
+   * Where the DEPLOYED ref (`origin/<branch>`) stands relative to the LOCAL
+   * `main` branch (#0365) — the headline sync metric, replacing the raw
+   * ahead/behind-vs-own-origin chips. "same": origin/<branch> == local main.
+   * "behind": origin/<branch> is a strict ancestor of local main (deploying
+   * would fast-forward it up to date — see the `ffFrom` badge). "ahead":
+   * local main is a strict ancestor of origin/<branch> (the deployed ref has
+   * commits local main lacks — unusual, e.g. a hotfix landed directly on this
+   * branch). "diverged": neither is an ancestor of the other. "unknown": no
+   * origin/<branch>, or no local `main` ref to compare against.
+   */
+  mainSync: {
+    state: "same" | "behind" | "ahead" | "diverged" | "unknown";
+    /** Commits on origin/<branch> missing from local main (0 unless "ahead"/"diverged"). */
+    aheadOfMain: number;
+    /** Commits on local main missing from origin/<branch> (0 unless "behind"/"diverged"). */
+    behindMain: number;
+  };
 }
 
 export interface DeploymentsStatus {
@@ -126,6 +146,51 @@ function cmd(exec: DeployCommandRunner, args: string[], cwd: string, timeout?: n
 }
 
 /**
+ * The local branch every deployment target's sync status is measured against
+ * (#0365) — this repo's (and most repos') trunk, matching the same "main"
+ * assumption `release.ts` already makes for cutting a release. Not sourced
+ * from config: making this configurable is real scope this task explicitly
+ * deferred (the user accepted the simplification of comparing every branch,
+ * including prod, against local main directly rather than a stricter
+ * prod-vs-origin/main chain).
+ */
+const SYNC_REFERENCE_BRANCH = "main";
+
+/**
+ * Where `origin/<branch>` (the deployed ref) stands relative to the local
+ * `main` branch (#0365) — see `DeploymentBranch.mainSync`.
+ */
+async function branchVsMain(
+  exec: DeployCommandRunner,
+  branch: string,
+  cwd: string,
+): Promise<DeploymentBranch["mainSync"]> {
+  const unknown = { state: "unknown" as const, aheadOfMain: 0, behindMain: 0 };
+  const origin = `origin/${branch}`;
+  const [originRef, mainRef] = await Promise.all([
+    cmd(exec, ["rev-parse", "--verify", "--quiet", origin], cwd),
+    cmd(exec, ["rev-parse", "--verify", "--quiet", SYNC_REFERENCE_BRANCH], cwd),
+  ]);
+  if (originRef.code !== 0 || mainRef.code !== 0) return unknown;
+  const [aheadRes, behindRes] = await Promise.all([
+    cmd(exec, ["rev-list", "--count", `${SYNC_REFERENCE_BRANCH}..${origin}`], cwd),
+    cmd(exec, ["rev-list", "--count", `${origin}..${SYNC_REFERENCE_BRANCH}`], cwd),
+  ]);
+  if (aheadRes.code !== 0 || behindRes.code !== 0) return unknown;
+  const aheadOfMain = Number(aheadRes.stdout.trim()) || 0;
+  const behindMain = Number(behindRes.stdout.trim()) || 0;
+  const state =
+    aheadOfMain === 0 && behindMain === 0
+      ? "same"
+      : aheadOfMain === 0
+        ? "behind"
+        : behindMain === 0
+          ? "ahead"
+          : "diverged";
+  return { state, aheadOfMain, behindMain };
+}
+
+/**
  * Nearest configured branch that this branch can be fast-forwarded to: a
  * strict ancestor relationship (branch behind, never diverged), closest first.
  * Derived entirely from actual topology + config — no main/prod constants, so
@@ -180,8 +245,11 @@ async function branchSummary(
     if (aheadRes.code === 0) ahead = Number(aheadRes.stdout.trim()) || 0;
     if (behindRes.code === 0) behind = Number(behindRes.stdout.trim()) || 0;
   }
-  const ffFrom = await fastForwardSource(exec, branch, branches, cwd);
-  return { branch, ahead, behind, hasOrigin, localExists, ffFrom };
+  const [ffFrom, mainSync] = await Promise.all([
+    fastForwardSource(exec, branch, branches, cwd),
+    branchVsMain(exec, branch, cwd),
+  ]);
+  return { branch, ahead, behind, hasOrigin, localExists, ffFrom, mainSync };
 }
 
 async function rowFreshness(
@@ -238,6 +306,7 @@ export async function getDeploymentsStatus(
       const f = await pending;
       return {
         name: row.name,
+        service: row.service ?? row.name,
         branch: row.branch,
         provider: row.provider ?? null,
         url: row.url ?? null,
