@@ -1,17 +1,15 @@
 ---
-updated_at: "2026-09-16T16:48:19Z"
-review_passes: 2
 id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
 status: review
 priority: p3
-area: docs
+area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-releases-changelog-page-to-the-doc
-review_model_override: opencode-go/hy3
 created_at: "2026-09-16T06:55:11Z"
+updated_at: "2026-09-16T07:49:08Z"
 ---
 ## Problem
 
@@ -86,8 +84,3 @@ add this preemptively without evidence it's needed.
 - 2026-09-16T07:45:16Z · status inbox→ready
 - 2026-09-16T07:45:21Z · status ready→active, branch
 - 2026-09-16T07:49:08Z · status active→review
-- 2026-09-16T08:04:58Z · area
-- 2026-09-16T08:22:47Z · needs_input
-- 2026-09-16T16:47:19Z · review_model_override
-- 2026-09-16T16:48:18Z · needs_input
-
