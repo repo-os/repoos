@@ -2,14 +2,14 @@
 id: "0367"
 title: "Deployments: scope the vs-main commit count to each service's subdir"
 type: bug
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/deployments-scope-the-vs-main-commit-cou
 created_at: "2026-09-16T05:35:56Z"
-updated_at: "2026-09-16T05:36:01Z"
+updated_at: "2026-09-16T05:45:46Z"
 ---
 ## Problem
 
@@ -69,3 +69,5 @@ count is already 0 for that direction.
 - 2026-09-16T05:36:00Z · branch
 - 2026-09-16T05:36:01Z · status inbox→active
 - 2026-09-16T05:36:01Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
+- 2026-09-16T05:45:46Z · status active→done
+- 2026-09-16T05:45:46Z · note: repoos check passed clean (build + tests: 40 server tests + 14 component tests). Verified live against this repo's own real git state (not just mocks) — confirmed both branches show 21/21 whole-branch but 0/0 for all four services. Landing directly as a hotfix per established pattern with this user this session.
