@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-16T17:07:08Z"
+review_passes: 1
 id: "0376"
 title: Add stable numeric IDs to inputs with deep links
 type: feature
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/add-stable-numeric-ids-to-inputs-with-de
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T08:35:46Z"
-updated_at: "2026-09-16T17:00:15Z"
 ---
 ## Problem
 
@@ -79,3 +80,4 @@ Inputs should have numbers too (like how tasks have numbers), so that it's easy 
 - 2026-09-16T09:03:34Z · status ready→active, branch
 - 2026-09-16T16:48:03Z · model_override
 - 2026-09-16T17:00:15Z · status active→review
+
