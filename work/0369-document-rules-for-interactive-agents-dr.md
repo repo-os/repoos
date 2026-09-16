@@ -5,11 +5,11 @@ type: chore
 status: inbox
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/document-rules-for-interactive-agents-dr
 created_at: "2026-09-16T06:31:01Z"
-updated_at: "2026-09-16T06:31:01Z"
+updated_at: "2026-09-16T06:31:07Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ agent session driving the board directly via CLI/API rather than through
 ## Activity
 
 - 2026-09-16T06:31:01Z · created · unknown
+- 2026-09-16T06:31:07Z · branch
