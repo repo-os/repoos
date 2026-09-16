@@ -1,4 +1,5 @@
 ---
+number: "0007"
 area: "task panel UI"
 id: "mtlvm8sr-wqfma"
 title: "Redesign task panel token tabs: drop top section, split data into sections"

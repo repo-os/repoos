@@ -64,6 +64,7 @@ import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types
 import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
+import { ensureInputNumbers } from "../core/input.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import { createLogger, type Logger } from "../core/logger.js";
@@ -770,6 +771,29 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   });
   activeLogger = logger;
   registerFatalHandlersOnce();
+
+  // One-time, idempotent backfill (#0376): give every existing input a stable
+  // number (its counterpart to a task's `id`) before anything serves reads.
+  // Subsequent boots find every input already numbered and do nothing, so this
+  // never renumbers. On the control plane, commit the changed `inputs/*.md` so
+  // the migration doesn't leave the tree dirty; fail-soft for a non-git root.
+  try {
+    const migrated = ensureInputNumbers(config);
+    if (migrated.length) {
+      logger.system("info", `input numbering migration: assigned ${migrated.length} number(s)`);
+      if (isControlPlane) {
+        for (const input of migrated) {
+          commitTaskFile(
+            config.root,
+            join(config.root, input.path),
+            `inputs(#${input.number}): assign number`,
+          );
+        }
+      }
+    }
+  } catch (e) {
+    logger.system("warn", `input numbering migration failed: ${(e as Error).message}`);
+  }
 
   // ---- Fail-closed auth validation at startup (0246) ----
   // When auth is enabled, the server must have a usable login method and a

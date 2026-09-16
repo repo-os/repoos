@@ -67,9 +67,10 @@ function makeTask(id: string, status: Task["status"] = "ready"): Task {
   };
 }
 
-function makeInput(id: string): Input {
+function makeInput(id: string, number = ""): Input {
   return {
     id,
+    number,
     title: `Idea ${id}`,
     status: "new",
     body: "A captured thought.",
@@ -241,6 +242,51 @@ describe("inputs ?input= deep-link (#0345)", () => {
     // "processed" is unchecked by default, but the drawer still opens.
     expect(wrapper.findComponent(DialogContent).exists()).toBe(true);
     expect(wrapper.findComponent(DialogTitle).text()).toBe("Idea idea-3");
+    wrapper.unmount();
+  });
+
+  it("?input=<number> opens the input with that stable number", async () => {
+    api.mockResolvedValue([makeInput("idea-9", "0001"), makeInput("idea-10", "0002")]);
+    currentQuery = { input: "0001" };
+    const wrapper = mount(InputsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(wrapper.findComponent(DialogTitle).text()).toBe("Idea idea-9");
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
+    api.mockResolvedValue([makeInput("idea-9", "0007")]);
+    currentQuery = { input: "#7" };
+    const wrapper = mount(InputsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(wrapper.findComponent(DialogTitle).text()).toBe("Idea idea-9");
+    wrapper.unmount();
+  });
+
+  it("an unknown numeric param degrades gracefully (no drawer, no crash)", async () => {
+    api.mockResolvedValue([makeInput("idea-9", "0001")]);
+    currentQuery = { input: "9999" };
+    const wrapper = mount(InputsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 200));
+
+    // No drawer opens and the param is left intact.
+    expect(wrapper.findComponent(DialogTitle).exists()).toBe(false);
+    expect(replaceSpy).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("displays the number with each input", async () => {
+    api.mockResolvedValue([makeInput("idea-9", "0001")]);
+    const wrapper = mount(InputsView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(wrapper.find(".input-row .input-number").text()).toBe("Input #0001");
     wrapper.unmount();
   });
 });

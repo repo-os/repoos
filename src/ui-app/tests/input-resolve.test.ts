@@ -29,6 +29,7 @@ vi.mock("vue-router", () => ({
 function makeInput(overrides: Partial<Input> = {}): Input {
   return {
     id: "idea-1",
+    number: "0001",
     title: "Add a dark mode toggle",
     status: "new",
     body: "It would be nice to have a dark mode toggle in settings.",

@@ -71,6 +71,10 @@ function statusLabel(status: Input["status"]): string {
 function openInput(input: Input): void {
   activeInput.value = input;
 }
+/** "Input #0001" for a numbered input, or just "Input" for one not yet migrated. */
+function inputLabel(input: Input): string {
+  return input.number ? `Input #${input.number}` : "Input";
+}
 // ── Resolve actions (#0359): turn an input into a task via the freeform PM
 // flow, or close it as "no action". Both persist the outcome on the input so
 // the drawer can show how it was resolved after a reload.
@@ -129,12 +133,14 @@ onMounted(() => {
 });
 onBeforeUnmount(() => window.removeEventListener("repoos:inputs-updated", onInputsUpdated));
 
-// ── #0345 Deep-linking: /inputs?input=<id> opens that input's drawer and
-// ?input=new opens the new-input panel. The param is cleared once the panel
-// opens (the same router.replace clear pattern as the settings ?focus=
-// handler) so a refresh doesn't re-open it. A link that arrives through the
-// login round-trip survives end-to-end: the router guard redirects with
-// redirect=to.fullPath and LoginView restores the full path after sign-in.
+// ── #0345 Deep-linking: /inputs?input=<id|number> opens that input's drawer,
+// and ?input=new opens the new-input panel. A numeric value matches the
+// input's stable number ("0001", or a bare "1"); the opaque id still matches
+// too, so older links keep working. The param is cleared once the panel opens
+// (the same router.replace clear pattern as the settings ?focus= handler) so a
+// refresh doesn't re-open it. A link that arrives through the login round-trip
+// survives end-to-end: the router guard redirects with redirect=to.fullPath
+// and LoginView restores the full path after sign-in.
 const route = useRoute();
 const router = useRouter();
 watch(
@@ -158,16 +164,23 @@ async function clearInputParam(): Promise<void> {
 }
 
 // Inputs load asynchronously after mount (load()), so retry briefly until the
-// list contains the id — the same retry-until-ready shape the settings
+// list contains the target — the same retry-until-ready shape the settings
 // ?focus= handler uses for its config-dependent scroll target. A deep-linked
 // input opens even when its status is filtered out of the visible list.
-function tryOpenInput(id: string, attempt: number): void {
-  const found = inputs.value.find((i) => i.id === id);
+function findInputByRef(ref: string): Input | undefined {
+  const v = ref.replace(/^#/, "").trim();
+  if (!v) return undefined;
+  const numeric = /^\d+$/.test(v) ? [v, v.padStart(4, "0")] : [v];
+  return inputs.value.find((i) => (i.number && numeric.includes(i.number)) || i.id === v);
+}
+
+function tryOpenInput(ref: string, attempt: number): void {
+  const found = findInputByRef(ref);
   if (found) {
     openInput(found);
     void clearInputParam();
   } else if (attempt < 20) {
-    window.setTimeout(() => tryOpenInput(id, attempt + 1), 100);
+    window.setTimeout(() => tryOpenInput(ref, attempt + 1), 100);
   }
 }
 </script>
@@ -212,7 +225,8 @@ function tryOpenInput(id: string, attempt: number): void {
       >
         <div class="input-row-main">
           <div class="input-row-meta">
-            <span class="input-status" :class="i.status"
+            <span class="input-number">{{ inputLabel(i) }}</span
+            ><span class="input-status" :class="i.status"
               ><span class="state-dot"></span>{{ i.status }}</span
             ><span v-if="i.type">{{ i.type }}</span
             ><span v-if="i.area">{{ i.area }}</span
@@ -298,7 +312,8 @@ function tryOpenInput(id: string, attempt: number): void {
             <template v-else>No resolution recorded.</template>
           </div>
           <div class="detail-meta">
-            <span>{{ activeInput.type || "other" }}</span
+            <span class="input-number">{{ inputLabel(activeInput) }}</span
+            ><span>{{ activeInput.type || "other" }}</span
             ><span>{{ activeInput.area || "Unknown area" }}</span
             ><span>Created by {{ activeInput.createdBy || "Unknown" }}</span
             ><span v-if="activeInput.createdAt">Created {{ relTime(activeInput.createdAt) }}</span>
@@ -423,6 +438,11 @@ function tryOpenInput(id: string, attempt: number): void {
   align-items: center;
   color: var(--txt-faint);
   font-size: 11px;
+}
+.input-number {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 .input-status {
   display: inline-flex;

@@ -1,4 +1,5 @@
 ---
+number: "0008"
 area: "Releases"
 id: "mu2lpo14-grb0w"
 title: "Add optional release notes field (or AI generation) when cutting a release"

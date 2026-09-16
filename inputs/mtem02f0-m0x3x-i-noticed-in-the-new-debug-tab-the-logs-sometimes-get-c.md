@@ -1,4 +1,5 @@
 ---
+number: "0001"
 id: "mtem02f0-m0x3x"
 title: "I noticed in the new debug tab the logs sometimes get cutoff and don't have an option to expand (but"
 status: new

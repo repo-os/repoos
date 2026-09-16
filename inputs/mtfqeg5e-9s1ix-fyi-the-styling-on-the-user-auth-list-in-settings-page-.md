@@ -1,4 +1,5 @@
 ---
+number: "0003"
 area: "settings UI"
 id: "mtfqeg5e-9s1ix"
 title: "Styling issue: user auth list in settings has poor text color contrast"

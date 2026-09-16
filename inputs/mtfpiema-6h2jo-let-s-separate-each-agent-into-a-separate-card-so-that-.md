@@ -1,4 +1,5 @@
 ---
+number: "0002"
 area: "UI"
 id: "mtfpiema-6h2jo"
 title: "Separate each agent into its own card for visual distinction"
