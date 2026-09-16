@@ -6942,6 +6942,26 @@
   box-shadow: 0 0 12px rgba(0, 200, 220, 0.15);
 }
 
+/* Shown only when a CLI switch discarded a real pin and nothing could be
+   restored — the browser-local memory on another machine/cleared storage. */
+.am-reset-notice {
+  margin: 12px 24px 0;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+  color: var(--amber);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.am-reset-notice-title {
+  font-weight: 600;
+}
+.am-reset-notice-detail {
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+}
+
 /* Model search */
 .am-model-search {
   padding: 14px 24px 0;

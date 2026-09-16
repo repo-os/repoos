@@ -271,6 +271,7 @@ async function runNow(): Promise<void> {
           :model-options="modelsFor(effectiveCli, effectiveModel)"
           :cli="effectiveCli"
           :model="effectiveModel"
+          :memory-key="'builtin:' + agent"
           @update:cli="onCliUpdate"
           @update:model="onModelUpdate"
         />

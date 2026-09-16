@@ -467,6 +467,7 @@ onUnmounted(() => {
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="config.modelsFor(a.cli, a.model)"
+                  :memory-key="'headless:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />
@@ -579,6 +580,7 @@ onUnmounted(() => {
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="config.modelsFor(a.cli, a.model)"
+                  :memory-key="'custom:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />
@@ -666,6 +668,7 @@ onUnmounted(() => {
                 <AgentModelControl
                   :cli-options="cliOptions"
                   :model-options="config.modelsFor(a.cli, a.model)"
+                  :memory-key="'team:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />

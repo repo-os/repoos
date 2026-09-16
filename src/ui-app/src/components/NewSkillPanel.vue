@@ -234,6 +234,7 @@ watch(freeformLines, () => {
             <AgentModelControl
               :cli-options="cliOptions"
               :model-options="modelOptions"
+              memory-key="panel:new-skill"
               v-model:cli="freeformOverride.cli"
               v-model:model="freeformOverride.model"
               :disabled="freeformRunning"
