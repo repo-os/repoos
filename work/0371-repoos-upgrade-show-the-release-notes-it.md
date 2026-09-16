@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p2
 area: cli
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/repoos-upgrade-show-the-release-notes-it
 created_at: "2026-09-16T06:39:39Z"
-updated_at: "2026-09-16T06:39:39Z"
+updated_at: "2026-09-16T06:39:44Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ today's silent behavior, no "no notes available" filler.
 ## Activity
 
 - 2026-09-16T06:39:39Z · created · unknown
+- 2026-09-16T06:39:44Z · branch
