@@ -14,6 +14,10 @@
 // mismatched marker, or a missing `dist/`, still builds.
 //
 // Force a full rebuild with `--force` or `REPOOS_FORCE_BUILD=1`.
+//
+// Only `src/` is hashed, so a change to `scripts/`, `package.json`,
+// `tsconfig.json` or `bun.lock` does not by itself invalidate the marker — a
+// forced build is how those get picked up before the next `src/` edit.
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

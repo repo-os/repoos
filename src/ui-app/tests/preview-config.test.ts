@@ -165,25 +165,30 @@ describe("resolvePreviewTarget", () => {
 describe("this repo's own [preview] config", () => {
   const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-  it("runs scripts/preview-serve.mjs, not the global repoos binary directly", () => {
+  it("builds with the worktree's staleness-aware build, then its own compiled CLI", () => {
     const config = loadConfig(repoRoot);
     const result = resolvePreviewTarget(config, { id: "0370", area: "web" } as unknown as Task);
     expect(result.kind).toBe("command");
     if (result.kind === "command") {
-      // The staleness-aware wrapper (build-only-if-needed, ~1s when nothing
-      // changed) replaced a plain "bun run build && ... serve" that always
-      // rebuilt unconditionally (~5s even with nothing to do — regression
-      // found 2026-09-16). See scripts/preview-serve.mjs's own header.
-      expect(result.command).toContain("bun scripts/preview-serve.mjs");
+      // #0377: `bun run build` is itself staleness-aware (scripts/build.mjs),
+      // so the preview no longer needs a separate build-only-if-stale wrapper.
+      // A plain build-then-serve is cheap when nothing changed and still does
+      // the build on a cold worktree. The served binary must still be the
+      // worktree's own dist/cli, never the global release.
+      expect(result.command).toContain("bun run build");
+      expect(result.command).toContain("dist/cli/index.js");
       expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
       expect(result.readyPath).toBe("/");
       expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(60_000);
     }
   });
 
-  it("scripts/preview-serve.mjs itself invokes the worktree's compiled CLI, not a global repoos", () => {
-    const script = readFileSync(join(repoRoot, "scripts", "preview-serve.mjs"), "utf8");
-    expect(script).toContain("dist/cli/index.js");
+  it("scripts/build.mjs reuses checkBuildForRoot and runs the raw pipeline", () => {
+    const script = readFileSync(join(repoRoot, "scripts", "build.mjs"), "utf8");
+    // The single staleness decision lives in core/build.ts and is rendered
+    // here — not reimplemented — and the actual work is the raw pipeline.
+    expect(script).toContain("checkBuildForRoot");
+    expect(script).toContain("build:raw");
     expect(script).not.toMatch(/(^|[\s&|;])repoos serve/);
   });
 });
