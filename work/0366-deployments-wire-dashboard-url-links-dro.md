@@ -2,7 +2,7 @@
 id: "0366"
 title: "Deployments: wire dashboard_url links, drop noisy 'build status unknown' badge"
 type: chore
-status: inbox
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -49,3 +49,5 @@ Follow-up from #0365's Deployments redesign, per user feedback:
 
 - 2026-09-16T05:01:19Z · created · unknown
 - 2026-09-16T05:01:24Z · branch
+- 2026-09-16T05:01:24Z · status inbox→active
+- 2026-09-16T05:01:24Z · note: Implementing directly per explicit user request in chat — claiming immediately to avoid a race with auto-dispatch.
