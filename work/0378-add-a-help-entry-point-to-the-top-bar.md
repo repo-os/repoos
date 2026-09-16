@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-09-16T17:16:36Z"
+updated_at: "2026-09-16T17:21:47Z"
 review_passes: 1
 id: "0378"
 title: "Add Help (\"?\") entry point to the top bar"
