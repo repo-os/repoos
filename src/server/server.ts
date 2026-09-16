@@ -228,6 +228,8 @@ import {
   // Config routes
   readConfig,
   patchConfig,
+  readRawConfig,
+  writeRawConfig,
   // Models routes
   listModels,
   testModel,
@@ -1856,6 +1858,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Config routes
   router.register("GET", "/api/config", readConfig);
   router.register("PATCH", "/api/config", patchConfig);
+  router.register("GET", "/api/config/raw", readRawConfig);
+  router.register("PUT", "/api/config/raw", writeRawConfig);
 
   // Model routes
   router.register("GET", "/api/models", listModels);
