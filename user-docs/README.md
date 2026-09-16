@@ -50,6 +50,25 @@ generate it from the file tree. A new page must be added to
 `themeConfig.sidebar` or it won't appear in navigation, even though it still
 builds and is reachable by direct URL.
 
+## The changelog page fetches from GitHub at build time
+
+`/changelog` (`changelog.md` + `changelog.data.ts`) embeds the most recent
+GitHub Releases via a VitePress **data loader**, so the fetch runs once per
+build (and per dev-server start), not in a visitor's browser. It reads the
+unauthenticated public Releases API — no token needed — and renders each
+release's markdown body with VitePress's own markdown renderer, then links out
+to the full history for anything older.
+
+Two consequences worth knowing:
+
+- **The build needs network access to `api.github.com`.** If the fetch fails
+  (offline build, rate limit), the data loader returns an error object instead
+  of throwing, and the page degrades to just the link-out — the docs build
+  never fails over it. Unauthenticated rate limit is 60/hour; add
+  `GITHUB_TOKEN` only if the build ever actually hits it.
+- The page is a **snapshot from deploy time**, not live. That is why the link
+  to the GitHub Releases page is always present alongside the embed.
+
 ## Deploy (Cloudflare)
 
 Cloudflare's project, DNS and custom domains are manual dashboard work. The

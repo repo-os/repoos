@@ -88,6 +88,7 @@ export default defineConfig({
           { text: "Configuration", link: "/configuration" },
           { text: "Authentication", link: "/authentication" },
           { text: "Deployments and releases", link: "/deployments-and-releases" },
+          { text: "Changelog", link: "/changelog" },
         ],
       },
       {
