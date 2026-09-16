@@ -2,14 +2,14 @@
 id: "0376"
 title: Add stable numeric IDs to inputs with deep links
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-stable-numeric-ids-to-inputs-with-de
 created_at: "2026-09-16T08:35:46Z"
-updated_at: "2026-09-16T09:03:28Z"
+updated_at: "2026-09-16T09:03:34Z"
 ---
 ## Problem
 
@@ -75,3 +75,4 @@ Inputs should have numbers too (like how tasks have numbers), so that it's easy 
 - 2026-09-16T08:35:46Z · created · hello@repoos.org
 - 2026-09-16T08:36:18Z · status draft→inbox, title, area, body
 - 2026-09-16T09:03:28Z · status inbox→ready
+- 2026-09-16T09:03:34Z · status ready→active, branch
