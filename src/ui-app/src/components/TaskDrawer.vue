@@ -28,7 +28,7 @@ import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
-import { fmtTime } from "../lib/time";
+import { fmtTime, formatDuration } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
@@ -806,17 +806,72 @@ function cancelDraft(): void {
 
 /** True while a preview start/stop request is in flight. */
 const previewBusy = ref(false);
+/** Which preview action is in flight, so the progress state can name it. */
+const previewAction = ref<"start" | "stop" | null>(null);
+/** When the in-flight preview action began, for the live elapsed readout. */
+const previewStartedAt = ref<number | null>(null);
+/** Ticks once a second while a preview action is in flight (see below). */
+const previewTick = ref(Date.now());
+let previewTimer: number | undefined;
 
-async function stopPreview(): Promise<void> {
+function startPreviewTimer(): void {
+  if (previewTimer !== undefined) return;
+  previewTick.value = Date.now();
+  previewTimer = window.setInterval(() => {
+    previewTick.value = Date.now();
+  }, 1000);
+}
+function stopPreviewTimer(): void {
+  window.clearInterval(previewTimer);
+  previewTimer = undefined;
+}
+onUnmounted(stopPreviewTimer);
+
+/**
+ * Elapsed ms of the in-flight preview action; 0 when idle.
+ *
+ * The readout in the template only appears after the first second: a fast
+ * preview (sub-2s) flashes the spinner and resolves before a "0s" counter is
+ * ever shown, while a slow command gets a steadily ticking elapsed time — the
+ * two no longer look identical (#0374). There is no artificial minimum
+ * duration; the state clears the instant the request resolves.
+ *
+ * Backend boot progress is deliberately not surfaced here: `preview.ts` only
+ * captures stderr, which a successful boot usually has none of, and streaming
+ * it would need a new SSE event plus a drawer log region — a full log viewer,
+ * well beyond this feedback task. A spinner + ticking elapsed covers the wait.
+ */
+const previewElapsedMs = computed(() =>
+  previewStartedAt.value === null ? 0 : Math.max(0, previewTick.value - previewStartedAt.value),
+);
+
+/**
+ * Run one preview start/stop request with shared busy/label state. Start and
+ * stop are separate buttons but share `previewBusy`, so routing both through
+ * here is what keeps the timer/label from drifting between them.
+ */
+async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   if (!ui.active || previewBusy.value) return;
+  const task = ui.active;
   previewBusy.value = true;
+  previewAction.value = action;
+  previewStartedAt.value = Date.now();
+  startPreviewTimer();
   try {
-    await repo.stopPreview(ui.active);
+    if (action === "start") await repo.startPreview(task);
+    else await repo.stopPreview(task);
   } catch (err) {
     repo.onError(err);
   } finally {
     previewBusy.value = false;
+    previewAction.value = null;
+    previewStartedAt.value = null;
+    stopPreviewTimer();
   }
+}
+
+function stopPreview(): Promise<void> {
+  return runPreviewAction("stop");
 }
 
 /**
@@ -828,16 +883,8 @@ async function stopPreview(): Promise<void> {
  * a fresh agent turn. This button is shown only when review has no live
  * preview yet, so it never duplicates or interferes with the automatic one.
  */
-async function startPreview(): Promise<void> {
-  if (!ui.active || previewBusy.value) return;
-  previewBusy.value = true;
-  try {
-    await repo.startPreview(ui.active);
-  } catch (err) {
-    repo.onError(err);
-  } finally {
-    previewBusy.value = false;
-  }
+function startPreview(): Promise<void> {
+  return runPreviewAction("start");
 }
 
 // ---- agent review (0101) ----
@@ -2671,7 +2718,23 @@ watch(
                 {{ ui.active.preview.url }}
               </a>
             </div>
-            <Button variant="outline" :disabled="ui.saving || previewBusy" @click="stopPreview">
+            <span
+              v-if="previewBusy && previewAction === 'stop'"
+              class="preview-progress"
+              role="status"
+            >
+              <ActivityIndicator label="Stopping preview" />
+              Stopping preview…
+              <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
+                {{ formatDuration(previewElapsedMs) }}
+              </span>
+            </span>
+            <Button
+              v-else
+              variant="outline"
+              :disabled="ui.saving || previewBusy"
+              @click="stopPreview"
+            >
               <Square class="size-3.5" />
               Stop preview
             </Button>
@@ -2702,7 +2765,23 @@ watch(
             <p class="preview-hint">
               No preview running — the agent didn't request one before handoff.
             </p>
-            <Button variant="outline" :disabled="ui.saving || previewBusy" @click="startPreview">
+            <span
+              v-if="previewBusy && previewAction === 'start'"
+              class="preview-progress"
+              role="status"
+            >
+              <ActivityIndicator label="Starting preview" />
+              Starting preview…
+              <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
+                {{ formatDuration(previewElapsedMs) }}
+              </span>
+            </span>
+            <Button
+              v-else
+              variant="outline"
+              :disabled="ui.saving || previewBusy"
+              @click="startPreview"
+            >
               <Play class="size-3.5" />
               Start preview
             </Button>
