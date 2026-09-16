@@ -31,6 +31,8 @@ can't assume any.
 ## What's here
 
 - `vision.md`, `concepts.md`, `roadmap.md` — what RepoOS is and where it's going.
+- `onboarding.md` — what `repoos init` leaves on the board, why task 0001 is
+  `done`, and how the starter task differs for a new project vs. an existing repo.
 - `architecture.md`, `close-out-pipeline.md` — how the system is built, and the
   known close-out failure classes with the guards that exist for them.
 - `debugging-check-failures.md` — triage order for a `repoos check` failure you

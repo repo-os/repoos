@@ -36,6 +36,15 @@ That scaffolds four things and touches nothing else:
 Run `repoos init` outside a git repo and it starts a guided flow for a brand
 new project instead.
 
+Either way the board is never empty: init seeds a `ready` task you can start on
+immediately. In an existing repo it's "Read this codebase and propose docs/ + an
+initial task backlog"; in the guided new-project flow it's "Flesh out the
+product vision and initial architecture", and it carries the one-line project
+description you gave at init. Both are self-contained enough to work without an
+agent — read the task, do what it says, and it turns into `docs/` content and
+concrete follow-up tasks. (`work/0001-set-up-repoos.md` is still scaffolded,
+but it's marked `done`: it's a worked example of a task file, not work to do.)
+
 ## Start the server
 
 ```bash
