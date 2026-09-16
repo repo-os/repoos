@@ -2,14 +2,14 @@
 id: "0374"
 title: Preview start button gives zero feedback while a slow command boots
 type: bug
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/preview-start-button-gives-zero-feedback
 created_at: "2026-09-16T08:05:25Z"
-updated_at: "2026-09-16T16:55:25Z"
+updated_at: "2026-09-16T17:20:58Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ button:
 
 - 2026-09-16T08:05:25Z · created · unknown
 - 2026-09-16T16:55:25Z · status inbox→ready
+- 2026-09-16T17:20:58Z · status ready→active, branch
