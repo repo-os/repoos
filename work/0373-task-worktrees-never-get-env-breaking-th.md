@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T07:47:49Z"
-updated_at: "2026-09-16T07:47:49Z"
+updated_at: "2026-09-16T07:50:59Z"
 ---
 ## Problem
 
@@ -23,7 +23,8 @@ comparable treatment (symlinked from the main checkout in
 This repo's own `[preview] command` (`repoos.toml`, added in `a44bce4a`) runs
 `bun run build && bun dist/cli/index.js serve --port {port} --host {host}`
 inside the task's worktree. Since this repo has `auth.enabled = true`, that
-`serve` fails immediately:
+`serve` fails immediately — it does not "work fine without .env," it does not
+start at all:
 
     Failed to start server: Auth is enabled but no login provider is
     configured. Set [auth.emailProvider] ... or [auth.google] ... in your
@@ -38,26 +39,58 @@ path too, since neither path ever copied `.env`. It's a pre-existing gap in
 worktree creation, only surfaced now because #0370 made this repo actually
 exercise its own default preview command in the field for the first time.
 
+Worth being precise about the two config layers here, since they're easy to
+conflate: `repoos.toml` (git-tracked) holds the *declaration* — `auth.enabled
+= true` — and it already propagates to every worktree fine, since it's
+committed. `.env` (gitignored) holds the *secret* that declaration requires
+(the Resend API key). The gap is specifically about secrets, not config.
+
 ## Scope
 
 This affects THIS repo's own preview specifically (any repo with
 `auth.enabled = true` and secrets required at boot would hit the same thing —
 Resend API key, Google OAuth secret, etc., all sourced from `.env` per
 `docs/native-auth.md`). It does not affect a typical external project with
-auth off (the common case per #0341's audit: auth defaults to false).
+auth off (the common case per #0341's audit: auth defaults to false) or any
+project whose build/preview command genuinely doesn't need secrets.
+
+## Decision needed first: opt-in, not automatic (2026-09-16 discussion)
+
+Before picking a mechanism, settle whether ANY worktree should get `.env` by
+default. Leaning **opt-in**, not "always copy it in the same way
+`node_modules` is symlinked" — the `node_modules` precedent doesn't transfer
+cleanly:
+
+- **Most projects don't need `.env` in a worktree at all.** Copying it
+  unconditionally means every task worktree for every project carries a copy
+  of secrets it will never use — pure downside (see next point), no benefit,
+  for what's likely the common case.
+- **Blast radius.** Every worktree is a new place secrets physically live on
+  disk — more copies is more surface area if a worktree gets zipped up, handed
+  to a sandboxed agent environment, or just left around after a task closes
+  out. `node_modules` is huge-but-disposable; secrets are neither.
+- So: a project that knows its build/preview genuinely needs secrets (this
+  repo, via its own `[preview] command`) should say so explicitly — a
+  `repoos.toml` flag (e.g. `worktrees.inheritEnv = true`, naming not
+  prescribed) that `ensureWorktree` checks before doing anything with `.env`.
+  Silence/absence means no `.env` in worktrees, same as today.
+
+Report back if investigation finds a reason this repo-level opt-in isn't
+enough (e.g. some worktrees need it and others in the same repo don't) rather
+than assuming a single project-wide flag is sufficient — but start from that
+as the working design.
 
 ## Desired outcome
 
-A task worktree needs access to whatever `.env` secrets the main checkout has
-so its own preview (or any other worktree-local process depending on them,
-e.g. `repoos check`'s steps that touch external services) can actually boot.
-Options to weigh — not prescribed, and consider which best matches how
-`node_modules` is already handled:
+Once the opt-in question above is settled, a task worktree in a project that
+opted in gets access to the main checkout's `.env` so its own preview (or any
+other worktree-local process depending on those secrets) can actually boot.
+Mechanism options to weigh, contingent on the opt-in design:
 - Symlink `.env` into the worktree the same way `node_modules` is symlinked
   (`syncCandidate` in `src/server/integration-orchestrator.ts` is the
-  existing pattern to match, though that's the close-out candidate worktree,
-  not every task worktree — check where task worktrees are actually created,
-  likely `ensureWorktree` in `src/core/git.ts`).
+  existing pattern to reference, though that's the close-out candidate
+  worktree, not every task worktree — check where task worktrees are
+  actually created, likely `ensureWorktree` in `src/core/git.ts`).
 - Copy `.env` at worktree-creation time instead of symlinking, if a symlink
   risks a task's own process accidentally writing back and corrupting the
   main checkout's secrets file.
@@ -67,9 +100,15 @@ Options to weigh — not prescribed, and consider which best matches how
 
 ## Acceptance criteria
 
-- [ ] A fresh task worktree can run a preview command that depends on secrets
-      from the main checkout's `.env` (verify with this repo's own default
-      `[preview] command`, on a genuinely fresh worktree, auth enabled).
+- [ ] A repo can opt in (config flag, not automatic) to its task worktrees
+      having access to the main checkout's `.env`.
+- [ ] With opt-in enabled, a fresh task worktree can run a preview command
+      that depends on `.env` secrets (verify with this repo's own default
+      `[preview] command`, on a genuinely fresh worktree, auth enabled) —
+      set this repo's own `repoos.toml` to opt in as part of this task.
+- [ ] Without opt-in (the default), worktree behavior is unchanged from
+      today — no `.env` copied, no new failure mode introduced for the
+      common case.
 - [ ] Whatever mechanism is chosen does not risk leaking `.env` into git
       history (it must stay gitignored in the worktree too, if copied rather
       than symlinked).
@@ -85,3 +124,4 @@ Options to weigh — not prescribed, and consider which best matches how
 ## Activity
 
 - 2026-09-16T07:47:49Z · created · unknown
+- 2026-09-16T07:50:59Z · body
