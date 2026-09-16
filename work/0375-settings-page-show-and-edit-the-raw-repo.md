@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: ui
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T08:05:56Z"
-updated_at: "2026-09-16T08:05:56Z"
+updated_at: "2026-09-16T16:55:15Z"
 ---
 ## Problem
 
@@ -76,3 +77,4 @@ cover), an addition/escape hatch for everything else:
 ## Activity
 
 - 2026-09-16T08:05:56Z · created · unknown
+- 2026-09-16T16:55:15Z · model_override
