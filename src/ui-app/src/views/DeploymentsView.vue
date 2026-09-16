@@ -309,7 +309,6 @@ onBeforeUnmount(() => {
                     >{{ svc.cells.get(b.branch)!.url!.replace(/^https:\/\//, "") }}&nbsp;↗</a
                   >
                   <span v-else class="dep-nourl">no URL configured</span>
-                  <span class="dep-status unknown">build status unknown</span>
                 </div>
                 <div class="dep-fresh" :title="svc.cells.get(b.branch)!.lastPushAt ?? undefined">
                   <template v-if="svc.cells.get(b.branch)!.lastPushAt">
@@ -354,15 +353,16 @@ onBeforeUnmount(() => {
             <span class="dep-dot"></span>{{ b.branch }}
           </span>
           <span class="dep-legend-note"
-            >"build status unknown" is honest, not broken — RepoOS reads git state, not the
-            provider's build result (out of scope for now; see the note below).</span
+            >RepoOS reads git state, not the provider's build result — click "Dashboard" on a target
+            to check its real build status.</span
           >
         </div>
 
         <p class="dep-note">
           “Latest branch change” is the newest commit on the branch touching this service's
           directory — the push that tells the provider to build. It is not confirmed build success:
-          a broken build still shows a fresh time while the site serves an older version.
+          a broken build still shows a fresh time while the site serves an older version. Check the
+          linked dashboard for the actual build/deploy result.
         </p>
 
         <section v-if="message" class="dep-outcome dep-outcome--ok" aria-live="polite">
@@ -666,22 +666,6 @@ onBeforeUnmount(() => {
   color: var(--txt-faint);
   font-size: 12.5px;
   font-style: italic;
-}
-.dep-status {
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--txt-faint);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.dep-status::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
 }
 /* The URL is the point of the page: the row's one big, obvious link. */
 .dep-url {
