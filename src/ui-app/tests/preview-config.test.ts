@@ -9,7 +9,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -163,16 +163,28 @@ describe("resolvePreviewTarget", () => {
  * fixture-based test exercises this repo's own `repoos.toml`.
  */
 describe("this repo's own [preview] config", () => {
-  it("runs the worktree's compiled CLI, not the global repoos binary", () => {
-    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+
+  it("runs scripts/preview-serve.mjs, not the global repoos binary directly", () => {
     const config = loadConfig(repoRoot);
     const result = resolvePreviewTarget(config, { id: "0370", area: "web" } as unknown as Task);
     expect(result.kind).toBe("command");
     if (result.kind === "command") {
-      expect(result.command).toContain("bun dist/cli/index.js serve");
+      // The staleness-aware wrapper (build-only-if-needed, ~1s when nothing
+      // changed) replaced a plain "bun run build && ... serve" that always
+      // rebuilt unconditionally (~5s even with nothing to do — regression
+      // found 2026-09-16). See scripts/preview-serve.mjs's own header.
+      expect(result.command).toContain("bun scripts/preview-serve.mjs");
       expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
       expect(result.readyPath).toBe("/");
+      expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(60_000);
     }
+  });
+
+  it("scripts/preview-serve.mjs itself invokes the worktree's compiled CLI, not a global repoos", () => {
+    const script = readFileSync(join(repoRoot, "scripts", "preview-serve.mjs"), "utf8");
+    expect(script).toContain("dist/cli/index.js");
+    expect(script).not.toMatch(/(^|[\s&|;])repoos serve/);
   });
 });
 
