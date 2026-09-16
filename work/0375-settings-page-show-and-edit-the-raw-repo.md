@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-16T17:15:36Z"
-review_passes: 1
 id: "0375"
 title: "Settings page: show and edit the raw repoos.toml, not just curated fields"
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,6 +10,9 @@ created_by: ""
 branch: feat/settings-page-show-and-edit-the-raw-repo
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T08:05:56Z"
+updated_at: "2026-09-16T17:15:36Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -82,4 +83,4 @@ cover), an addition/escape hatch for everything else:
 - 2026-09-16T16:55:16Z · status inbox→ready
 - 2026-09-16T16:55:17Z · status ready→active, branch
 - 2026-09-16T17:10:26Z · status active→review
-
+- 2026-09-16T17:15:36Z · status review→active
