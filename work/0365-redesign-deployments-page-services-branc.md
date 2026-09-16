@@ -2,14 +2,14 @@
 id: "0365"
 title: "Redesign Deployments page: services×branches matrix, vs-main sync status instead of raw ahead/behind"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/redesign-deployments-page-services-branc
 created_at: "2026-09-16T04:31:37Z"
-updated_at: "2026-09-16T04:45:41Z"
+updated_at: "2026-09-16T04:45:55Z"
 ---
 ## Problem
 
@@ -88,3 +88,5 @@ redesign mockup from another AI:
 - 2026-09-16T04:31:44Z · note: Implementing directly per explicit user request in chat (attached redesign mockup + specific vs-main sync semantics) — claiming immediately to avoid a race with auto-dispatch.
 - 2026-09-16T04:45:41Z · status active→review
 - 2026-09-16T04:45:41Z · note: repoos check passed clean (build + 47 tests: extended deployments.test.ts + new deployments-view.test.ts component suite). Landing directly per explicit user request ('incorporate this as a hotfix on main') rather than opening a PR/waiting for review — matches this repo's own hotfix semantics for a small, well-scoped, user-reviewed-mockup UI change.
+- 2026-09-16T04:45:55Z · status review→done
+- 2026-09-16T04:45:55Z · note: Landed as a hotfix per explicit user request. Merging feat/redesign-deployments-page-services-branc into main.
