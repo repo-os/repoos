@@ -24,29 +24,33 @@ const SAMPLE_TASK = (description: string) => `---
 id: "0001"
 title: Set up RepoOS
 type: chore
-status: ready
+status: done
 priority: p2
 area: infra
-assigned_to: ai
+assigned_to: unassigned
 created_by: human
 branch: ""
 ---
 ${description ? `\n## Overview\n\n${description}\n` : ""}
 ## Problem
 
-The repo needs a lightweight, repo-native way to track work that AI agents
-and humans share. Tasks should live as markdown files, versioned in git.
+The repo needed a lightweight, repo-native way to track work that AI agents
+and humans share. Tasks live as markdown files, versioned in git.
 
 ## Desired UX
 
-Run \`repoos list\` to see the board. Run \`repoos show 0001\` to read a task.
-Agents read these files directly for full context.
+Run \`repoos list\` to see the board. Run \`repoos show 0001\` to read a task
+(this one). Agents read these files directly for full context.
 
 ## Acceptance criteria
 
-- [ ] \`repoos init\` has scaffolded work/, repoos.toml, AGENTS.md
-- [ ] \`repoos list\` shows this task
-- [ ] Editing the \`status:\` field moves it across the board
+- [x] \`repoos init\` scaffolded work/, repoos.toml, AGENTS.md
+- [x] \`repoos list\` shows this task
+- [x] Editing the \`status:\` field moves it across the board
+
+This task exists to show you the shape of a task file — it's done because
+running \`repoos init\` already satisfies everything above. There's nothing to
+"work" here; move on to your next task.
 
 ## Notes for AI
 
