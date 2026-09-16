@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-16T04:51:47Z"
+review_passes: 1
 id: "0365"
 title: "Redesign Deployments page: services×branches matrix, vs-main sync status instead of raw ahead/behind"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/redesign-deployments-page-services-branc
 created_at: "2026-09-16T04:31:37Z"
-updated_at: "2026-09-16T04:51:47Z"
 ---
 ## Problem
 
@@ -91,3 +92,4 @@ redesign mockup from another AI:
 - 2026-09-16T04:45:55Z · status review→done
 - 2026-09-16T04:45:55Z · note: Landed as a hotfix per explicit user request. Merging feat/redesign-deployments-page-services-branc into main.
 - 2026-09-16T04:51:47Z · status done→review
+
