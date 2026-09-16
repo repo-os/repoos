@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { ArrowRight, Bug } from "lucide-vue-next";
+import { ArrowRight, Bug, Sparkles } from "lucide-vue-next";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -60,6 +60,10 @@ const confirmOpen = ref(false);
 const newVersion = ref("");
 const message = ref("");
 const error = ref("");
+/** Optional release notes; empty means the cut ships with none (the default). */
+const notes = ref("");
+const generatingNotes = ref(false);
+const notesError = ref("");
 /** Full command output from a failed release phase (repoos check log, build errors). */
 const runLog = ref("");
 const debuggerSending = ref(false);
@@ -207,9 +211,49 @@ function openConfirm(): void {
   error.value = "";
   runLog.value = "";
   newVersion.value = "";
+  notes.value = "";
+  notesError.value = "";
+  generatingNotes.value = false;
   debuggerSent.value = false;
   debuggerErr.value = "";
   confirmOpen.value = true;
+}
+
+/**
+ * Ask the server to draft notes from the commits since the last release and
+ * drop the draft into the text area. Purely fills the field — it never cuts a
+ * release, and a failure leaves whatever the operator typed untouched so the
+ * cut can still proceed.
+ */
+async function generateNotes(): Promise<void> {
+  if (generatingNotes.value || running.value) return;
+  // Generation replaces the field, so confirm first when that would discard
+  // something the operator typed.
+  if (
+    notes.value.trim() &&
+    !confirm("Replace the release notes you've typed with an AI-generated draft?")
+  ) {
+    return;
+  }
+  generatingNotes.value = true;
+  notesError.value = "";
+  try {
+    const result = await api<{ notes: string; sinceTag: string | null; commitCount: number }>(
+      "/api/release/notes",
+      JSON_OPTS("POST", { version: newVersion.value || suggestedVersion.value || undefined }),
+    );
+    if (result.notes.trim()) {
+      notes.value = result.notes;
+    } else {
+      notesError.value = result.sinceTag
+        ? `No commits since ${result.sinceTag} to draft from.`
+        : "No commits to draft from.";
+    }
+  } catch (err) {
+    notesError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    generatingNotes.value = false;
+  }
 }
 
 async function release(): Promise<void> {
@@ -217,12 +261,17 @@ async function release(): Promise<void> {
   running.value = true;
   error.value = "";
   runLog.value = "";
+  notesError.value = "";
   debuggerSent.value = false;
   debuggerErr.value = "";
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
-      JSON_OPTS("POST", { version: newVersion.value, confirmTag: newTag.value }),
+      JSON_OPTS("POST", {
+        version: newVersion.value,
+        confirmTag: newTag.value,
+        notes: notes.value.trim() || undefined,
+      }),
     );
     run.value = result.run;
     startPolling();
@@ -548,6 +597,32 @@ onBeforeUnmount(() => {
                   </span>
                 </div>
               </label>
+
+              <div v-if="!running" class="rel-notes-field">
+                <div class="rel-notes-head">
+                  <label class="rel-field-label" for="rel-notes">
+                    Release notes <span class="rel-optional">optional</span>
+                  </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    :disabled="generatingNotes"
+                    @click="generateNotes"
+                  >
+                    <Sparkles class="btn-ico" aria-hidden="true" />
+                    {{ generatingNotes ? "Drafting…" : "Generate with AI" }}
+                  </Button>
+                </div>
+                <textarea
+                  id="rel-notes"
+                  v-model="notes"
+                  class="rel-notes-input"
+                  rows="6"
+                  placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
+                ></textarea>
+                <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
+              </div>
             </div>
             <div class="release-actions">
               <Button variant="accent" :disabled="!newVersionValid || running" @click="release">

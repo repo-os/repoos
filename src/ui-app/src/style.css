@@ -7390,6 +7390,54 @@
   white-space: nowrap;
 }
 
+/* Optional release notes (task #0361): the field stays optional end to end —
+   an empty textarea cuts exactly as before. */
+.rel-notes-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+}
+.rel-notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rel-optional {
+  color: var(--txt-faint);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.rel-notes-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 112px;
+  resize: vertical;
+  background: var(--input);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.rel-notes-input:focus-visible {
+  outline: none;
+  border-color: var(--border-bright);
+}
+.rel-notes-input::placeholder {
+  color: var(--txt-faint);
+}
+.rel-notes-error {
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .release-modal .release-actions {
   flex-shrink: 0;
   display: flex;

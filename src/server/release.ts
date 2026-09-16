@@ -273,6 +273,69 @@ export async function getReleaseStatus(
   };
 }
 
+/** Commit subjects to draft release notes from, and the range they cover. */
+export interface ReleaseCommits {
+  /** Tag the range starts after, or null when no previous release exists. */
+  sinceTag: string | null;
+  /** `git log` subject lines, newest first. */
+  commits: string[];
+  /** True when more commits existed than `limit` and the oldest were dropped. */
+  truncated: boolean;
+}
+
+/**
+ * Collect the commit subjects an AI draft of release notes should summarize:
+ * everything since the last reachable tag, or the whole history when no
+ * release has been cut yet (task #0361's stated fallback). Capped at `limit`
+ * so a long history can't blow the prompt; the newest commits win, and
+ * `truncated` tells the caller the oldest were dropped.
+ */
+export async function collectReleaseCommits(
+  config: RepoOSConfig,
+  exec: Run = run,
+  limit = 300,
+): Promise<ReleaseCommits> {
+  const latest = await exec("git", ["describe", "--tags", "--abbrev=0"], config.root);
+  const sinceTag = latest.code === 0 ? latest.stdout.trim() || null : null;
+  const range = sinceTag ? `${sinceTag}..HEAD` : "HEAD";
+  const res = await exec(
+    "git",
+    ["log", range, "-n", String(limit + 1), "--pretty=format:%h %s"],
+    config.root,
+  );
+  const lines = res.code === 0 ? res.stdout.split("\n").filter((l) => l.trim()) : [];
+  const truncated = lines.length > limit;
+  return { sinceTag, commits: truncated ? lines.slice(0, limit) : lines, truncated };
+}
+
+/**
+ * One-shot prompt for drafting release notes from a commit list. Pure and
+ * exported so the wording is unit-testable without spawning an agent.
+ */
+export function releaseNotesPrompt(
+  commits: string[],
+  opts: { sinceTag: string | null; version: string | null; truncated?: boolean },
+): string {
+  const context = [
+    opts.version ? `Upcoming version: ${opts.version}` : null,
+    opts.sinceTag
+      ? `Commits since the previous release (${opts.sinceTag}):`
+      : "There is no previous release tag, so the commits below are the repository's full history:",
+    opts.truncated ? "(Older commits were omitted for length.)" : null,
+  ]
+    .filter((line): line is string => !!line)
+    .join("\n");
+  return [
+    "Draft release notes for the next version of this software, written for the people who use it.",
+    "",
+    context,
+    "",
+    commits.join("\n"),
+    "",
+    "Write concise, user-facing release notes in Markdown. Summarize what changed and why it matters to a user; group related changes under short headings only when it helps. Lead with the most significant change. Do not invent changes that the commits do not support. Output only the release notes themselves — no version heading, no date, no preamble, and no commentary about these instructions.",
+  ].join("\n");
+}
+
 export async function cutNewRelease(
   config: RepoOSConfig,
   version: string,
@@ -286,6 +349,13 @@ export async function cutNewRelease(
    * of config, so the release falls back to the full local `repoos check`.
    */
   remoteValidator?: RemoteValidator,
+  /**
+   * Optional human/AI-authored release notes. Written into the annotated tag's
+   * body (the git-native release record this provider creates), where CI reads
+   * them back as the GitHub release body. Empty/undefined keeps the previous
+   * `Release <tag>` annotation exactly as before.
+   */
+  notes?: string,
 ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
   onProgress?.("preparing", "Validating the configured branch and release version…");
   let status = await getReleaseStatus(config, exec);
@@ -467,7 +537,22 @@ export async function cutNewRelease(
     };
   }
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
-  const createdTag = await exec("git", ["tag", "-a", tag, "-m", `Release ${tag}`], config.root);
+  const trimmedNotes = notes?.trim();
+  // `--cleanup=verbatim` keeps Markdown headings ("# " lines) verbatim.
+  // Strictly a belt-and-braces move here: with `-m` supplied (never an
+  // editor), git's default cleanup mode is already "whitespace", not
+  // "strip" — it would not eat "#" lines on its own. `--cleanup=verbatim`
+  // additionally skips the trailing-whitespace/blank-line trimming that
+  // "whitespace" mode does, so it's the more literal, more future-proof
+  // choice regardless. The first `-m` is the subject; the second is the
+  // body CI reads.
+  const createdTag = await exec(
+    "git",
+    trimmedNotes
+      ? ["tag", "-a", tag, "--cleanup=verbatim", "-m", `Release ${tag}`, "-m", trimmedNotes]
+      : ["tag", "-a", tag, "-m", `Release ${tag}`],
+    config.root,
+  );
   if (createdTag.code !== 0)
     return {
       ok: false,

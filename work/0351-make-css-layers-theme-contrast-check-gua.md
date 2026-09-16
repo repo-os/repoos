@@ -2,7 +2,7 @@
 id: "0351"
 title: Make css-layers/theme-contrast check guards configurable per project
 type: feature
-status: active
+status: done
 priority: p3
 area: cli
 assigned_to: ai
@@ -10,10 +10,7 @@ created_by: ""
 branch: feat/make-css-layers-theme-contrast-check-gua
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-09-15T09:22:36Z"
-updated_at: "2026-09-15T19:40:08Z"
-review_rounds: 1
-review_passes: 1
-dev_error_count: 1
+updated_at: "2026-09-15T22:33:12Z"
 ---
 ## Problem
 
@@ -64,6 +61,4 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 - 2026-09-15T19:14:49Z · model_override
 - 2026-09-15T19:15:04Z · status ready→active, branch
 - 2026-09-15T19:30:18Z · status active→review
-- 2026-09-15T19:33:41Z · status review→active
-- 2026-09-15T19:37:56Z · agent exited with an error (opencode) · error: This request would exceed your available credits given your current in-flight requests. Retry after in-flight requests settle, or add credits.
-- 2026-09-15T19:40:08Z · needs_input
+- 2026-09-15T22:33:12Z · status review→done, release:success

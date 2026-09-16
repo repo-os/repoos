@@ -39,7 +39,7 @@ timeout). Now opt-in:
   A test in `check-smoke-command.test.ts` fails if the declaration goes
   missing, which would otherwise turn RepoOS's smoke step into a silent skip.
 
-## 2. `css-layers` / `theme-contrast` — hidden RepoOS-shape, benign skip
+## 2. `css-layers` / `theme-contrast` — fixed by #0351
 
 Both read a **hardcoded** path, `src/ui-app/src/style.css` (`cssPath`, check.ts
 roughly line 700+), and:
@@ -61,6 +61,14 @@ vocabulary configurable under the same `[check]` mechanism (`uiStylesheet`,
 and either declared token pairs or a project-supplied command), rather than
 growing `ui-smoke` to cover it.
 
+**Fixed in #0351.** Both guards now read `[check] uiStylesheet`, and the
+contrast guard's vocabulary is declared under `[check]` as `themeScopes`
+(selector → variant name + inherited scopes), `contrastPairs`, and
+`gradientTokens`. `check.ts` no longer contains `THEME_VARIANTS`,
+`CONTRAST_PAIRS`, `GRADIENT_TOKENS`, or the `src/ui-app/src/style.css` path;
+RepoOS declares its current coverage through the same config in its
+`repoos.toml`, and a project that configures nothing skips both steps cleanly.
+
 ## 3. `bare-require` — hidden RepoOS-shape, benign
 
 `bareRequireOffenders()` walks the fixed directories `src/{core,server,commands,cli}`
@@ -73,6 +81,13 @@ directory list is RepoOS-shaped.
 **Recommendation (follow-up):** let the scanned source roots come from config
 (e.g. a `[check] sourceDirs` list, or derive from the repo's `tsconfig`), or
 scope the guard to `"type": "module"` packages only.
+
+**Fixed in #0352.** The guard now runs only for a `"type": "module"` package and
+scans `[check] bareRequireDirs` when configured, else the repo's tsconfig
+`include`/`files` minus its `exclude`. `check.ts` no longer contains the
+`src/{core,server,commands,cli}` list; RepoOS declares its own roots through the
+same `[check]` config in its `repoos.toml`, and a non-module package (or one with
+no resolvable root) skips with a clear message rather than passing vacuously.
 
 ## 4. `task-assets` — hidden RepoOS-shape, benign
 
@@ -118,8 +133,8 @@ step is **not** changed by #0348; it predates it and is out of scope here.
 ## Follow-ups filed
 
 1. #0351: `[check]`-driven stylesheet path + token vocabulary for
-   `css-layers`/`theme-contrast`.
-2. #0352: configurable source roots for `bare-require`.
+   `css-layers`/`theme-contrast`. **Done** — see section 2.
+2. #0352: configurable source roots for `bare-require`. **Done** — see section 3.
 3. #0350: honor `workDir`/`inputsDir` in `task-assets`.
 4. #0349: opt-in / graceful degradation for the `dist/.build-info.json`
    staleness step when a project's `src/` doesn't use RepoOS's build pipeline.

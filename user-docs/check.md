@@ -20,17 +20,16 @@ Steps run in order, and several are conditional on what your repo declares:
 | Zero runtime deps | `package.json` has empty `dependencies` | The package is named `repoos` |
 | Formatting & lint | Runs your `fmt:check` and `lint` scripts | Those scripts exist |
 | Full build | Runs your `build` script | Always |
-| CSS layering | No unlayered universal/bare-element selectors | Your stylesheet imports Tailwind v4 |
-| Theme contrast | Button gradients valid; token pairs meet ≥3:1 | Your stylesheet defines `:root` tokens |
-| Bare `require()` | No bare `require` in ESM source | Scans `src/{core,server,commands,cli}` |
+| CSS layering | No unlayered universal/bare-element selectors | `[check] uiStylesheet` imports Tailwind v4 |
+| Theme contrast | Button gradients valid; token pairs meet ≥3:1 | `[check] uiStylesheet` and `themeScopes` are configured |
+| Bare `require()` | No bare `require` in ESM source | The package is `"type": "module"` and a source root is declared (`[check] bareRequireDirs` or a tsconfig `include`) |
 | Task assets | No committed binaries under your task/input dirs | Always |
 | Tests | Runs your `test` script | A `test` script or a test directory exists |
 | UI smoke | Boots the app and checks whatever your declared smoke command asserts (RepoOS's own default: the app mounts with no console errors) | You opt in (see below) |
 
-The steps that are RepoOS-specific — zero-runtime-deps, CSS layering, theme
-contrast, the bare-require scan roots — **skip cleanly** in a repo they don't
-apply to. They exist to enforce RepoOS's own invariants; you don't have to
-satisfy them.
+The one step that is RepoOS-specific — zero-runtime-deps — **skips cleanly**
+in a repo it doesn't apply to. It exists to enforce RepoOS's own zero-dependency
+invariant; you don't have to satisfy it.
 
 ## Making it meaningful in your repo
 
@@ -49,7 +48,39 @@ The config value wins if both are set. With neither, the step skips with a clear
 message rather than pretending your UI was tested. RepoOS's own repo dogfoods
 this same mechanism — it declares a `smoke` script instead of being special-cased.
 
-**Two steps adapt to your layout rather than assuming RepoOS's:**
+**The CSS-layering and theme-contrast guards are opt-in too, and carry no
+RepoOS-shaped default.** Point them at your own stylesheet with `[check]
+uiStylesheet` in `repoos.toml`. CSS layering then runs automatically whenever
+that file imports Tailwind v4 (`@import "tailwindcss"`).
+
+The theme-contrast guard also needs your token vocabulary, because token names
+are project-specific:
+
+```toml
+[check]
+uiStylesheet = "src/app.css"
+backdropToken = "--bg"                   # page background; semi-transparent tokens composite over it
+gradientTokens = ["--btn-primary-bg"]   # must resolve to a gradient, not a solid color
+
+[[check.themeScopes]]                    # one row per theme block
+selector = ":root"
+name = "dark"
+inherits = ["dark"]                      # earlier scopes whose tokens it inherits
+
+[[check.contrastPairs]]                  # fg/bg pairs checked for ≥3:1 contrast
+fg = "--txt"
+bg = "--bg"
+```
+
+`themeScopes` are evaluated in order; each inherits the declarations of the
+scopes named in `inherits` (later wins), so a light variant can inherit a dark
+base and override only what differs. With no `uiStylesheet` — or no
+`themeScopes` — both steps skip with a clear message; a `uiStylesheet` that
+doesn't exist is called out with a warning. RepoOS's own repo declares its
+stylesheet and full token vocabulary this way rather than relying on hardcoded
+defaults.
+
+**Several steps adapt to your layout rather than assuming RepoOS's:**
 
 - The **build-staleness** step degrades to a skip — not a failure — for a
   project whose `src/` uses a different build pipeline. It only applies once a
@@ -58,6 +89,14 @@ this same mechanism — it declares a `smoke` script instead of being special-ca
 - The **task-asset guard** reads `workDir` and `inputsDir` from `repoos.toml`,
   so a repo that calls those folders `tasks/` and `attachments/` is still
   guarded.
+- The **bare-require guard** carries no RepoOS source layout: it runs only for a
+  `"type": "module"` package, and scans the roots you declare in `[check]
+  bareRequireDirs` (carving out subtrees with `bareRequireExcludes` if you need
+  to) — or, absent that, your tsconfig `include` list minus its `exclude` list.
+  With neither a configured root nor a usable tsconfig include it skips with a
+  clear message, rather than passing vacuously. Only the repo-root
+  `tsconfig.json` is read; a config that gets its `include`/`exclude` from an
+  `extends` base won't be followed, so declare `bareRequireDirs` there instead.
 
 ## Using it in CI
 
