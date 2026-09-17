@@ -231,6 +231,41 @@ result in your task transcript. The preview is reaped when the task leaves
 active/review.
 `;
 
+/** Marker makes the optional existing-repo addition safe to offer repeatedly. */
+export const REPOOS_AGENTS_SECTION_MARKER = "<!-- repoos:managed-instructions -->";
+
+/**
+ * A deliberately small appendix for a repository that already owns its agent
+ * instructions. RepoOS supplies its managed-runner instructions itself; this
+ * only documents the project-level contract that a human or external agent
+ * should see in the repo.
+ */
+export const REPOOS_AGENTS_SECTION = `${REPOOS_AGENTS_SECTION_MARKER}
+
+## RepoOS
+
+RepoOS keeps tasks as Markdown under \`work/\` and runs task work in dedicated
+Git worktrees. Use the RepoOS UI or \`repoos\` commands to create and update
+tasks; do not hand-edit task files. Read the relevant project docs before
+starting work, run \`repoos check\` before handoff, and let the reviewer decide
+what merges.
+`;
+
+/**
+ * Return the exact addition that `repoos init` may offer for an existing
+ * AGENTS.md, or null when this repository already documents RepoOS.
+ */
+export function repoOSAgentsSectionAddition(existing: string): string | null {
+  if (
+    existing.includes(REPOOS_AGENTS_SECTION_MARKER) ||
+    /this repo uses \*\*repoos\*\*/i.test(existing) ||
+    /this repository uses repoos/i.test(existing)
+  ) {
+    return null;
+  }
+  return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION;
+}
+
 function repoosToml(layout: "root" | "repoos"): string {
   const ns =
     layout === "repoos"
@@ -466,6 +501,50 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
   const answer = (await ask(question + c.dim(hint) + " ")).toLowerCase();
   if (answer === "") return dflt;
   return answer === "y" || answer === "yes";
+}
+
+/**
+ * Existing projects own AGENTS.md, so RepoOS never edits it silently. In an
+ * interactive terminal, show the exact small appendix and add it only after an
+ * explicit opt-in. Non-interactive init stays fully non-blocking.
+ */
+async function offerRepoOSAgentsSection(root: string): Promise<void> {
+  if (!input.isTTY || !output.isTTY) return;
+
+  const path = join(root, "AGENTS.md");
+  if (!existsSync(path)) return;
+
+  let original: string;
+  try {
+    original = readFileSync(path, "utf8");
+  } catch {
+    return;
+  }
+  const addition = repoOSAgentsSectionAddition(original);
+  if (!addition) return;
+
+  console.log(c.dim("\n  Existing AGENTS.md detected — it will not be replaced."));
+  console.log(c.dim("  Proposed RepoOS addition:"));
+  console.log(c.dim(addition.trimEnd().split("\n").map((line) => `    ${line}`).join("\n")));
+
+  if (!(await confirm("\n  Add this section to AGENTS.md?", false))) return;
+
+  // Do not append to a file a person or another process changed while the
+  // preview was on screen. Re-running init produces a fresh preview.
+  try {
+    if (readFileSync(path, "utf8") !== original) {
+      console.log(
+        c.yellow(
+          "  AGENTS.md changed while this prompt was open; nothing was added. Run repoos init again to review the latest file.",
+        ),
+      );
+      return;
+    }
+    writeFileSync(path, original + addition);
+    console.log(c.green("  added") + c.dim(" RepoOS guidance to AGENTS.md"));
+  } catch {
+    console.log(c.yellow("  Could not update AGENTS.md; existing instructions were left unchanged."));
+  }
 }
 
 /** Ask where the scaffold should live: repo root (default) or a repoos/ subfolder. */
@@ -756,9 +835,11 @@ export async function cmdInit(args: string[]): Promise<void> {
   const cwd = process.cwd();
 
   if (isGitRepo(cwd)) {
-    // existing-repo path — unchanged, idempotent, no prompts
+    // Existing-repo scaffolding remains idempotent. The only optional edit is
+    // a separately previewed, explicitly accepted AGENTS.md appendix.
     const root = findRepoRoot(cwd);
     const { created, skipped } = scaffoldInto(root, "", "root", "existing");
+    await offerRepoOSAgentsSection(root);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));

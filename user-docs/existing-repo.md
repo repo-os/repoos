@@ -25,10 +25,12 @@ It creates only what isn't already there:
 | `.env.example` | Documents the secrets a fuller setup expects. |
 | `.gitignore` entries | Ignore the derived cache (`.repoos/`) and local secrets (`.env`). |
 
-If `AGENTS.md` or `.gitignore` already exist, they're left alone — `.gitignore`
-is only *appended* to if the two RepoOS lines are missing, and an existing
-`AGENTS.md` is kept as-is. Re-running `repoos init` reports "already set up" and
-changes nothing.
+If `.gitignore` already exists, it is only *appended* to if the two RepoOS
+ignore lines are missing. An existing `AGENTS.md` is never overwritten: in an
+interactive terminal, `repoos init` previews a small RepoOS guidance section
+and adds it only if you explicitly approve it. Non-interactive runs leave it
+unchanged. Re-running `repoos init` reports "already set up" and changes
+nothing else.
 
 ## What it doesn't touch
 

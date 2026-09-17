@@ -2,7 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { scaffoldInto } from "../../commands/init";
+import {
+  REPOOS_AGENTS_SECTION_MARKER,
+  repoOSAgentsSectionAddition,
+  scaffoldInto,
+} from "../../commands/init";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
 
@@ -84,5 +88,21 @@ describe("scaffoldInto starter tasks", () => {
     scaffoldInto(root, "desc", "root", "new");
     const { created } = scaffoldInto(root, "desc", "root", "new");
     expect(created).toEqual([]);
+  });
+});
+
+describe("existing AGENTS.md RepoOS guidance", () => {
+  it("offers a small, marked addition without replacing existing instructions", () => {
+    const existing = "# Project instructions\n\nRun pnpm test before opening a PR.\n";
+    const addition = repoOSAgentsSectionAddition(existing);
+
+    expect(addition).toContain(REPOOS_AGENTS_SECTION_MARKER);
+    expect(existing + addition).toContain("Run pnpm test before opening a PR.");
+    expect(existing + addition).toContain("Use the RepoOS UI or `repoos` commands");
+  });
+
+  it("does not offer a duplicate addition when RepoOS guidance is already present", () => {
+    expect(repoOSAgentsSectionAddition(`${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS`)).toBeNull();
+    expect(repoOSAgentsSectionAddition("This repo uses **RepoOS** for task tracking.\n")).toBeNull();
   });
 });
