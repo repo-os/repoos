@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-17T07:28:36Z"
 review_passes: 2
 id: "0382"
@@ -162,4 +163,5 @@ In the task panel the PM tab has text chat but no way to add screenshots, let's 
 - 2026-09-17T07:08:02Z · status active→review
 - 2026-09-17T07:12:34Z · status review→active
 - 2026-09-17T07:25:10Z · status active→review
+
 
