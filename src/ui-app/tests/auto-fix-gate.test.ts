@@ -53,9 +53,9 @@ describe("repoSearchContains", () => {
     expect(repoSearchContains(root, "DOES_NOT_EXIST")).toBe(false);
   });
 
-  it("returns true for empty text", () => {
+  it("returns false for empty text", () => {
     const root = makeRepo({});
-    expect(repoSearchContains(root, "")).toBe(true);
+    expect(repoSearchContains(root, "")).toBe(false);
   });
 
   it("skips node_modules", () => {
@@ -162,5 +162,37 @@ describe("isSafeToAutoCommit", () => {
       newText: "src/new.ts",
     };
     expect(isSafeToAutoCommit(fix, root)).toBe(false);
+  });
+
+  it("returns false when doc is empty", () => {
+    const root = makeRepo({ "src/new.ts": "export const util = 1;" });
+    expect(isSafeToAutoCommit({ doc: "", oldText: "x", newText: "src/new.ts" }, root)).toBe(false);
+  });
+
+  it("returns false when oldText is empty", () => {
+    const root = makeRepo({
+      "docs/guide.md": "content",
+      "src/new.ts": "export const util = 1;",
+    });
+    expect(
+      isSafeToAutoCommit({ doc: "docs/guide.md", oldText: "", newText: "src/new.ts" }, root),
+    ).toBe(false);
+  });
+
+  it("returns false when newText is empty", () => {
+    const root = makeRepo({ "docs/guide.md": "Use `src/old.ts`." });
+    expect(
+      isSafeToAutoCommit({ doc: "docs/guide.md", oldText: "src/old.ts", newText: "" }, root),
+    ).toBe(false);
+  });
+
+  it("returns false when doc path contains traversal", () => {
+    const root = makeRepo({
+      "docs/guide.md": "Use `src/old.ts`.",
+      "src/new.ts": "export const util = 1;",
+    });
+    expect(
+      isSafeToAutoCommit({ doc: "../etc/passwd", oldText: "x", newText: "src/new.ts" }, root),
+    ).toBe(false);
   });
 });

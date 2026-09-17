@@ -71,9 +71,9 @@ const MAX_TOTAL_BYTES = 5_000_000; // 5 MB total cap
 export function repoSearchContains(
   repoRoot: string,
   text: string,
-  maxFiles: number = 100,
+  maxFiles: number = 500,
 ): boolean {
-  if (!text) return true; // empty text is trivially "contained"
+  if (!text) return false; // empty text is never a meaningful match
 
   let filesChecked = 0;
   let totalBytes = 0;
@@ -123,10 +123,11 @@ export function repoSearchContains(
  * 2. Whether `newText` appears as content in any file (for text replacements)
  */
 export function repoActuallyContains(repoRoot: string, newText: string): boolean {
+  if (!newText) return false;
   // Check if the newText is a path to an existing file
   if (existsSync(join(repoRoot, newText))) return true;
   // Check if the newText appears as content in any file
-  return repoSearchContains(repoRoot, newText, 100);
+  return repoSearchContains(repoRoot, newText);
 }
 
 /**
@@ -135,12 +136,15 @@ export function repoActuallyContains(repoRoot: string, newText: string): boolean
  * call inside.
  *
  * Returns true only when:
- * 1. The doc currently contains the oldText (the AI's claim is not stale)
- * 2. The repo actually contains the newText (the AI's replacement is real)
+ * 1. All fields are non-empty and the doc path has no traversal
+ * 2. The doc currently contains the oldText (the AI's claim is not stale)
+ * 3. The repo actually contains the newText (the AI's replacement is real)
  *
- * If either check fails, the fix must be routed to a human for review.
+ * If any check fails, the fix must be routed to a human for review.
  */
 export function isSafeToAutoCommit(fix: ProposedFix, repoRoot: string): boolean {
+  if (!fix.doc || !fix.oldText || !fix.newText) return false;
+  if (fix.doc.includes("..")) return false;
   if (!docCurrentlyContains(fix.doc, fix.oldText, repoRoot)) return false;
   if (!repoActuallyContains(repoRoot, fix.newText)) return false;
   return true;

@@ -151,15 +151,12 @@ function buildSkillGuidedPrompt(agentName: string, skillDoc: string, repoContext
 
 // ── Repo context gathering ──
 
-/** Maximum number of files to include in the repo context summary. */
-const MAX_CONTEXT_FILES = 200;
-
 /**
  * Gather lightweight repo context for the LLM prompt: file tree, key
  * manifests, and skill doc content. This is bounded to avoid sending
  * the entire repo to the model.
  */
-export function gatherRepoContext(repoRoot: string, skillDocPath?: string): string {
+export function gatherRepoContext(repoRoot: string): string {
   const lines: string[] = [];
 
   // File tree (top-level + one level deep)
@@ -202,20 +199,6 @@ export function gatherRepoContext(repoRoot: string, skillDocPath?: string): stri
     lines.push("");
   } catch {
     // no package.json — skip
-  }
-
-  // Skill doc content
-  if (skillDocPath) {
-    try {
-      const content = readFileSync(join(repoRoot, skillDocPath), "utf8");
-      lines.push("## Skill / guidance doc");
-      lines.push(content.slice(0, 4000)); // cap to avoid huge prompts
-      lines.push("");
-    } catch {
-      lines.push(`## Skill / guidance doc`);
-      lines.push(`(could not read ${skillDocPath})`);
-      lines.push("");
-    }
   }
 
   return lines.join("\n");
@@ -352,7 +335,7 @@ export async function runSkillGuidedAgent(
   logger?.agent(agentName, "info", `Skill-guided agent run started`);
 
   // Gather repo context
-  const repoContext = gatherRepoContext(config.root, skillDocPath);
+  const repoContext = gatherRepoContext(config.root);
 
   // Build prompt
   const prompt = buildSkillGuidedPrompt(agentName, skillDoc, repoContext);
@@ -366,13 +349,14 @@ export async function runSkillGuidedAgent(
     });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
-    logger?.agent(agentName, "error", `Agent invocation failed: ${error}`);
+    const msg = `Built-in agent "${agentName}": invocation failed — ${error}`;
+    logger?.agent(agentName, "error", msg);
     return {
       ok: false,
       findings: [],
       fixes: [],
       report: "",
-      error: `Agent invocation failed: ${error}`,
+      error: msg,
     };
   }
 
@@ -384,13 +368,14 @@ export async function runSkillGuidedAgent(
 
   if (!result.ok) {
     const error = result.error ?? "unknown error";
-    logger?.agent(agentName, "error", `Agent run failed: ${error}`);
+    const msg = `Built-in agent "${agentName}": run failed — ${error}`;
+    logger?.agent(agentName, "error", msg);
     return {
       ok: false,
       findings: [],
       fixes: [],
       report: "",
-      error,
+      error: msg,
       elapsedMs: result.elapsedMs,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,

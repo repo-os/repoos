@@ -71,21 +71,6 @@ describe("gatherRepoContext", () => {
     expect(ctx).toContain("my-app");
     expect(ctx).toContain("build");
   });
-
-  it("includes skill doc content when provided", () => {
-    const root = makeRepo({
-      "skills/tech-debt/SKILL.md": "# Tech Debt\nScan for issues.",
-    });
-    const ctx = gatherRepoContext(root, "skills/tech-debt/SKILL.md");
-    expect(ctx).toContain("Skill / guidance doc");
-    expect(ctx).toContain("Tech Debt");
-  });
-
-  it("handles missing skill doc gracefully", () => {
-    const root = makeRepo({});
-    const ctx = gatherRepoContext(root, "skills/missing/SKILL.md");
-    expect(ctx).toContain("could not read");
-  });
 });
 
 describe("runSkillGuidedAgent", () => {
@@ -241,7 +226,22 @@ describe("runSkillGuidedAgent", () => {
 
     const result = await runSkillGuidedAgent("tech-debt", config, "Scan.");
     expect(result.ok).toBe(false);
+    expect(result.error).toContain("tech-debt");
     expect(result.error).toContain("timed out");
+  });
+
+  it("returns error when runPrompt throws", async () => {
+    const root = makeRepo({});
+    const config = configFor(root, {
+      builtInAgents: { "tech-debt": { enabled: true } },
+    });
+
+    vi.mocked(runPrompt).mockRejectedValue(new Error("spawn failed"));
+
+    const result = await runSkillGuidedAgent("tech-debt", config, "Scan.");
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("tech-debt");
+    expect(result.error).toContain("spawn failed");
   });
 
   it("records usage via recordOneShotSession", async () => {
