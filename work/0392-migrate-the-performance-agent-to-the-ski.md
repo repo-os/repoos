@@ -1,17 +1,20 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-17T18:12:44Z"
-review_passes: 2
 id: "0392"
 title: Migrate the Performance Agent to the skill-guided runner
 type: feature
 status: review
+needs_input: true
+needs_input_reason: dev-error
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-performance-agent-to-the-ski
 created_at: "2026-09-17T14:03:32Z"
+updated_at: "2026-09-17T18:33:47Z"
+merge_conflict_retry_count: 1
+review_passes: 2
+dev_error_count: 1
 ---
 ## Problem
 
@@ -45,6 +48,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T15:15:49Z · status inbox→ready
 - 2026-09-17T16:32:36Z · status ready→active, branch
 - 2026-09-17T16:44:57Z · status active→review
-
-
-
+- 2026-09-17T18:33:47Z · agent exited with an error (opencode) · ↻ automatically resuming after merge conflict (attempt 1 of 2)
