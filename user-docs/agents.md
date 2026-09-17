@@ -7,7 +7,7 @@ output into the task, and recording its token spend.
 
 ## Supported coding agents
 
-RepoOS has a driver for six CLIs:
+RepoOS has a driver for seven CLIs:
 
 | CLI | Notes |
 | --- | --- |
@@ -17,11 +17,34 @@ RepoOS has a driver for six CLIs:
 | `github copilot` | Driver present; capabilities vary. |
 | `qwen code` | Driver present; no machine-parseable output format. |
 | `kiro` | Driver present. |
+| `cursor` | The Cursor Agent CLI (`cursor-agent`). Structured stream-JSON, session resume, and model selection. |
 
 A CLI has to be installable headless and drivable over stdin/stdout to be
 useful here. If a tool is missing from `PATH`, the **Detected Coding Agents**
 tab tells you whether it's installed and headless-ready, desktop-only, or
-missing.
+missing. For agents that report it (Cursor), the tab also shows whether the
+CLI is signed in and the exact command to authenticate.
+
+### Cursor Agent CLI
+
+Install with Cursor's official installer:
+
+```bash
+curl https://cursor.com/install -fsS | bash
+```
+
+RepoOS detects and launches only the `cursor-agent` binary — never a bare
+`agent` command, which can collide with another tool on `PATH`. Authenticate
+once with `cursor-agent login` (or set `CURSOR_API_KEY` for automation); the
+Detected Coding Agents tab shows sign-in state when it can probe it.
+
+RepoOS runs Cursor in print mode with `--output-format stream-json` inside the
+task's dedicated worktree, with `--trust` and `--force` so worktree edits and
+`repoos check` run without waiting for an approval that can never be answered
+(the process has no interactive stdin). Follow-up messages resume the exact
+session Cursor reported; RepoOS deliberately never uses `--continue`, which
+could attach a different task's most recent session. Models come from
+`cursor-agent --list-models`, with `default` meaning Cursor's own choice.
 
 ## The Agents page
 

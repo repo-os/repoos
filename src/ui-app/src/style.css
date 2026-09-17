@@ -5871,6 +5871,13 @@
 .detect-ver {
   color: var(--txt-dim);
 }
+.detect-cap {
+  color: var(--txt-faint);
+  font-size: 10.5px;
+  font-family: "JetBrains Mono", monospace;
+  flex-basis: 100%;
+  padding-left: 17px;
+}
 .detect-driver-yes {
   color: var(--green);
   border-color: var(--green);
