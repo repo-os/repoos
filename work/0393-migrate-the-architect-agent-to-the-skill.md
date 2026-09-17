@@ -11,8 +11,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-architect-agent-to-the-skill
 cli_override: opencode
+model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:03:42Z"
-updated_at: "2026-09-17T18:49:18Z"
+updated_at: "2026-09-17T18:49:22Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -50,3 +51,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T18:48:38Z · status active→ready
 - 2026-09-17T18:48:38Z · agent exited with an error (cursor) · Skill routing: frontend-design, code-review, frontend-testing
 - 2026-09-17T18:49:18Z · cli_override
+- 2026-09-17T18:49:22Z · model_override
