@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-17T09:35:38Z"
+review_passes: 1
 id: "0386"
 title: "MTD publish-time main-drift resync has no retry cap, unlike validate-phase retries"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/mtd-publish-time-main-drift-resync-has-n
 created_at: "2026-09-17T08:23:08Z"
-updated_at: "2026-09-17T09:32:39Z"
 ---
 ## Problem
 
@@ -100,3 +101,4 @@ kinds already get their own hint.
 - 2026-09-17T09:24:22Z · status inbox→ready
 - 2026-09-17T09:24:24Z · status ready→active, branch
 - 2026-09-17T09:32:39Z · status active→review
+
