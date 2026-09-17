@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: "openrouter/z-ai/glm-5.2:free"
+review_model_override: opencode-go/hy3
 created_at: "2026-09-17T05:19:55Z"
-updated_at: "2026-09-17T05:32:19Z"
+updated_at: "2026-09-17T05:32:30Z"
 ---
 ## Problem
 
@@ -146,3 +147,4 @@ In the task panel the PM tab has text chat but no way to add screenshots, let's 
 - 2026-09-17T05:19:56Z · screenshots
 - 2026-09-17T05:21:21Z · status draft→inbox, title, area, body
 - 2026-09-17T05:32:19Z · model_override
+- 2026-09-17T05:32:30Z · review_model_override
