@@ -67,7 +67,7 @@ const steps = [
     body: "RepoOS runs the checks your project defines: build, typecheck, tests, UI smoke tests or whatever else the repo needs. Work that fails them doesn't move forward.",
   },
   {
-    title: "You sign off",
+    title: "You approve",
     body: "The agent can implement, test and review the work. It cannot approve its own merge. You decide what reaches main.",
   },
 ];
@@ -235,7 +235,7 @@ const year = new Date().getFullYear();
           </h1>
           <p class="mt-6 max-w-[50ch] text-[17px] leading-relaxed text-[var(--txt)]">
             RepoOS gives coding agents a practical way to work on a real codebase: written tasks,
-            isolated worktrees, project context, checks, review and human sign-off. It all lives in
+            isolated worktrees, project context, checks, review and human approval. It all lives in
             Git.
           </p>
           <p class="mt-4 max-w-[50ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">

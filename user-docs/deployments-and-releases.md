@@ -12,7 +12,7 @@ one, the other, or both.
 ## Releases
 
 The only provider is `git-tag`, and it deliberately stays small: after a green
-check gate, RepoOS bumps the version, pushes the branch and an annotated tag, and
+set of passing checks, RepoOS bumps the version, pushes the branch and an annotated tag, and
 **your CI does the actual build and publish**. RepoOS never builds the GitHub
 release itself, which is what lets it stay dependency-free.
 
@@ -39,7 +39,7 @@ the latest *stable* tag, and any blockers. A release can't be cut unless:
 - the working tree is clean, and
 - the tag doesn't already exist.
 
-Cutting a release asks you to confirm the exact tag, then runs the same gate as
+Cutting a release asks you to confirm the exact tag, then runs the same checks as
 task close-out: bump the version file, commit it, rebuild, run `repoos check`,
 push the branch, create the annotated tag, and push the tag. If the tag push
 fails, the local tag is removed so nothing is left half-done. Pushing the tag is

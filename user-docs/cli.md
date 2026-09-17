@@ -88,10 +88,10 @@ tunnel, and git state.
 
 ### `repoos check`
 
-The definition-of-done gate: build staleness, full build, and tests always
+The pre-merge checks: build staleness, full build, and tests always
 run; formatting/lint and a UI smoke test run once your repo declares them
-(see [The check gate](/check)). Exits non-zero on any failure, so it works as
-a CI gate as well as a local one.
+(see [Checks before merge](/check)). Exits non-zero on any failure, so it works in
+CI as well as locally.
 
 ### `repoos index [--json]`
 

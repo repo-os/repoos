@@ -1,15 +1,15 @@
 # Review and close-out
 
 A task only reaches `done` through review. This page covers the two halves of
-that: the **review gate** — what happens while a task sits in `review` — and the
+that: the **review process** — what happens while a task sits in `review` — and the
 **close-out pipeline** that runs when you move it to `done`.
 
 ## Why an agent can't merge itself
 
 When an agent finishes a task it moves it to `review` and stops. It does not
 merge its own branch, and it can't: the merge happens only when a human moves
-the task to `done`. That's the whole design — agents do the work, you hold the
-sign-off gate.
+the task to `done`. That's the whole design — agents do the work, and you
+review and decide what merges.
 
 ## The reviewer agent
 
@@ -18,7 +18,7 @@ automatically the moment a task lands in `review`. The reviewer reads the
 branch's diff in the task's own worktree and writes a short report — bugs, edge
 cases, suggestions — shown in the task drawer next to **Move to done**.
 
-It's advisory. It changes nothing and never replaces your sign-off. Its verdict
+It's advisory. It changes nothing and never replaces your approval. Its verdict
 is one of three lines:
 
 - `` `good to go` `` — correct and complete.
@@ -43,7 +43,7 @@ RepoOS stops and leaves the task for a human rather than looping forever. It
 also stops early and escalates if the reviewer flags the task's own relevance —
 an obsolete task needs a scoping decision, not more engineering.
 
-## Sign-off
+## Approve and merge
 
 When you're happy, move the task to `done` — from the board, the task drawer,
 or `POST /api/tasks/:id/done`. That's what starts the close-out pipeline. Until
@@ -76,7 +76,7 @@ can't leave your working tree dirty.
 
 A **docs-only fast path** skips the build and check when the merged diff touches
 nothing but docs — every changed path under `docs/` or `user-docs/`, or ending
-in `.md`. There is no "mostly docs" scoring; any other path runs the full gate.
+in `.md`. There is no "mostly docs" scoring; any other path runs the full set of checks.
 
 ### Merge conflicts repair themselves
 

@@ -38,7 +38,7 @@ them; it isn't a hosted service and it doesn't ask you to move your work
 anywhere.
 
 If your project uses a build pipeline RepoOS doesn't recognise, the
-[check gate](/check) degrades gracefully rather than failing you for not looking
+[checks](/check) degrade gracefully rather than failing you for not looking
 like RepoOS.
 
 ## Adopt incrementally

@@ -43,8 +43,8 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 | `inbox` | Captured, not yet specified well enough to act on. |
 | `ready` | Specified. An agent (or person) can pick this up as-is. |
 | `active` | Being worked, in its own git worktree. |
-| `review` | Implementation finished and the check gate is green. Waiting on a human. |
-| `done` | Signed off and merged. |
+| `review` | Implementation finished and checks pass. Waiting on a human. |
+| `done` | Approved and merged. |
 
 ## One task, one worktree
 
@@ -53,7 +53,7 @@ it. The agent works there — never in your main checkout — so you can keep
 working while an agent does, and several tasks can be in flight without
 stepping on each other.
 
-## The check gate
+## Checks before merge
 
 ```bash
 repoos check
@@ -61,10 +61,10 @@ repoos check
 
 This is the single bar for "did this break anything?": build staleness, a full
 build, and the test suite always run; format/lint and a UI smoke test run too
-once your repo declares them (see [The check gate](/check)). An agent must get
+once your repo declares them (see [Checks before merge](/check)). An agent must get
 it green before handing work back, and it runs again before anything merges.
 
-Because it's one command with a non-zero exit code on failure, the same gate
+Because it's one command with a non-zero exit code on failure, the same checks
 works locally, in CI, and inside RepoOS's own close-out pipeline.
 
 ## Humans hold the merge
@@ -75,7 +75,7 @@ the task to `done`.
 
 If a reviewer agent is enabled, it reads the branch diff and writes an advisory
 report for that review — findings, edge cases, suggestions. It changes nothing
-and it doesn't replace your sign-off; it's there to make your review faster.
+and it doesn't replace your approval; it's there to make your review faster.
 
 ## `docs/` is the project's memory
 

@@ -11,7 +11,7 @@ It is **not** a Jira/Linear replacement bolted onto your repo. It is the
 connective tissue for an AI-native workflow: humans define and review work,
 agents read the same files as full context and execute against the repo.
 RepoOS directly spawns and manages coding agents in isolated worktrees,
-streams their output, and keeps humans as the sign-off gate.
+streams their output, and leaves merge decisions with humans.
 
 ```
 the repo  ──▶  source of truth (markdown + git)
@@ -33,8 +33,8 @@ RepoOS doesn't just host tasks that agents read — it spawns and manages the
 agents themselves. You configure a coding agent on the Agents page, click Start
 on a task, and RepoOS launches the agent in a dedicated git worktree, streams
 its output live, and lets you resume the conversation at any point. When the
-agent finishes, the task moves to review for human sign-off. Agents are
-first-class participants, but humans always hold the gate.
+agent finishes, the task moves to review for human approval. Agents are
+first-class participants, but people decide what merges.
 
 ## Install
 
@@ -124,7 +124,7 @@ repoos mv <id> <status>        Move a task (inbox|ready|active|review|done)
 repoos new "<title>" [flags]   Create a task
 repoos index [--json]          Rebuild the derived index (--json for agents/tools)
 repoos serve [--port N]        Start the local server: live API + SSE event stream
-repoos check                   Definition-of-done gate (build, typecheck, tests, UI smoke)
+repoos check                   Pre-merge checks (build, typecheck, tests, UI smoke)
 repoos tunnel [subcommand]     Cloudflare Tunnel + Zero Trust publishing
 ```
 
@@ -287,7 +287,7 @@ RepoOS can spawn and manage coding agents (opencode, Claude Code, Qwen, Codex)
 to execute tasks. Agents run in isolated git worktrees per task so parallel work
 never collides. Output streams over SSE in real time, and the per-task chat tab
 lets you resume a session mid-flight. When the agent finishes, the task moves to
-review — human sign-off is always the gate.
+review — a human decides whether it is ready to merge.
 
 Configure agents on the Agents page: choose the CLI, pick a model (sourced live
 from `opencode models`), add custom instructions, and set up PM and reviewer

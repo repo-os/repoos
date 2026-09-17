@@ -26,7 +26,7 @@ features:
     link: /concepts
     linkText: How tasks work
   - title: Agents work in isolation
-    details: Each task gets its own git worktree and branch. Agents run there, never on your main checkout, and nothing merges until the check gate is green and you sign off.
+    details: Each task gets its own git worktree and branch. Agents run there, never on your main checkout, and nothing merges until checks pass and you approve it.
     link: /concepts
     linkText: The task lifecycle
   - title: Local-first, zero lock-in

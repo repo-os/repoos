@@ -126,6 +126,6 @@ floating head, next to Ross and the CTO.
 
 ## Where `repoos check` fits
 
-Built-in agents don't run your tests, and their findings are advisory. The gate
-that decides whether code is done is separate — see [The check gate](/check) for
+Built-in agents don't run your tests, and their findings are advisory. The
+checks that determine whether code is ready are separate — see [Checks before merge](/check) for
 exactly what `repoos check` covers and what's opt-in per repo.

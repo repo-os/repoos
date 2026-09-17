@@ -1,11 +1,11 @@
-# The check gate
+# Checks before merge
 
 ```bash
 repoos check
 ```
 
 One command is the whole definition of done. It exits non-zero on any failure,
-so the same gate works locally, in CI, and inside the close-out pipeline. An
+so the same checks work locally, in CI, and inside the close-out pipeline. An
 agent must get it green before handing a task back, and it runs again before
 anything merges.
 
@@ -35,7 +35,7 @@ invariant; you don't have to satisfy it.
 
 `repoos check` picks up the standard `package.json` scripts by name. A
 **`build` script is required** — the full-build step runs it on every check, so
-a repo without one fails the gate. `test`, `fmt:check`, and `lint` are
+a repo without one fails the check. `test`, `fmt:check`, and `lint` are
 optional: each step skips cleanly when its script is absent.
 
 **The UI smoke test is opt-in.** Because only your project knows how to boot

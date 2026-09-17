@@ -98,7 +98,7 @@ never collide; pin one with `servePort` if you'd rather. Stop it with
 `repoos stop`.
 
 The UI is where you'll spend most of your time: the board, agent chats, task
-diffs, and the sign-off gate all live there.
+diffs, and the review controls all live there.
 
 ## Create your first task
 
@@ -128,7 +128,7 @@ worktree and branch for it, runs the coding agent there, and streams its output
 live. Your main checkout is never touched.
 
 When the agent is finished it moves the task to `review` and stops. It does
-**not** merge its own work — that's your gate. Review the diff, then move the
+**not** merge its own work. Review the diff, then move the
 task to `done`, which is what actually merges the branch to your trunk.
 
 ## The bar for "done"
@@ -138,7 +138,7 @@ repoos check
 ```
 
 One command is the whole definition of done: build, tests, and whatever else
-your repo declares (see [The check gate](/check) for the full list and what's
+your repo declares (see [Checks before merge](/check) for the full list and what's
 opt-in). Agents must get this green before handing a task back to you, and it
 runs again before anything merges.
 
