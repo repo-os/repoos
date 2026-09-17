@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-09-17T14:03:53Z"
-updated_at: "2026-09-17T15:15:56Z"
+updated_at: "2026-09-17T18:49:31Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 
 - 2026-09-17T14:03:53Z · created · unknown
 - 2026-09-17T15:15:56Z · status inbox→ready
+- 2026-09-17T18:49:31Z · cli_override
