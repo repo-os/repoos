@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/mimo-v2.5
+review_model_override: opencode-go/hy3
 created_at: "2026-08-14T04:16:57Z"
-updated_at: "2026-09-17T15:14:40Z"
+updated_at: "2026-09-17T15:14:55Z"
 ---
 ## Problem
 
@@ -77,3 +78,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T11:40:39Z · title, body
 - 2026-09-17T15:14:03Z · status inbox→ready
 - 2026-09-17T15:14:40Z · model_override
+- 2026-09-17T15:14:55Z · review_model_override
