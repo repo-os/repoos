@@ -3,8 +3,6 @@ id: "0399"
 title: "detectDroppedMerge guard failed to catch #0389's dropped merge to done"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
 priority: p1
 area: server
 assigned_to: ai
@@ -12,7 +10,7 @@ created_by: ""
 branch: feat/detectdroppedmerge-guard-failed-to-catch
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-17T17:36:38Z"
-updated_at: "2026-09-17T18:09:26Z"
+updated_at: "2026-09-17T18:15:30Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -114,3 +112,4 @@ since it's a safety-critical guard for the close-out pipeline generally
 - 2026-09-17T18:04:29Z · status active→review
 - 2026-09-17T18:06:34Z · needs_input
 - 2026-09-17T18:09:26Z · review_model_override
+- 2026-09-17T18:15:30Z · needs_input
