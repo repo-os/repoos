@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-09-17T05:39:33Z"
+updated_at: "2026-09-17T06:07:15Z"
 review_passes: 1
 id: "0380"
 title: Redesign task drawer Tokens tab into distinct sections

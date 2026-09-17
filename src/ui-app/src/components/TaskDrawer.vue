@@ -3602,50 +3602,62 @@ watch(
               <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
             </span>
           </div>
-          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
-            <div class="task-usage-title">usage — all roles &amp; sessions</div>
-            <div class="task-usage-grid">
-              <span class="agent-stat">
-                <span class="agent-stat-label">total time</span>
-                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total tokens</span>
-                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
-              </span>
-              <span
-                class="agent-stat"
-                title="Input tokens served from the provider's prompt cache ÷ all input tokens, summed across this task's sessions. '—' when no CLI reported cache figures."
-              >
-                <span class="agent-stat-label">cache hit</span>
-                <span class="agent-stat-value">{{
-                  cacheHitPct(
-                    taskUsage.totalInputTokens,
-                    taskUsage.totalCacheReadTokens,
-                    taskUsage.totalCacheCreationTokens,
-                  )
-                }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total cost</span>
-                <span class="agent-stat-value">{{
-                  fmtCost(taskUsage.totalCostUsd, taskUsage.costSource)
-                }}</span>
-              </span>
-              <span
-                class="agent-stat"
-                title="Total model round-trips across this task's sessions (one turn may run several tool calls). '—' when no CLI reported it."
-              >
-                <span class="agent-stat-label">turns</span>
-                <span class="agent-stat-value">{{ taskUsage.totalTurns ?? "—" }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">sessions</span>
-                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
-              </span>
-            </div>
-            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
-              <span class="agent-stat-label">by role</span>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-sections">
+            <section class="task-section">
+              <header class="task-section-head">
+                <div class="task-section-title">task totals</div>
+                <div class="task-section-desc">Whole-task summary across every session.</div>
+              </header>
+              <div class="task-usage-grid">
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total time</span>
+                  <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total tokens</span>
+                  <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+                </span>
+                <span
+                  class="agent-stat"
+                  title="Input tokens served from the provider's prompt cache ÷ all input tokens, summed across this task's sessions. '—' when no CLI reported cache figures."
+                >
+                  <span class="agent-stat-label">cache hit</span>
+                  <span class="agent-stat-value">{{
+                    cacheHitPct(
+                      taskUsage.totalInputTokens,
+                      taskUsage.totalCacheReadTokens,
+                      taskUsage.totalCacheCreationTokens,
+                    )
+                  }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total cost</span>
+                  <span class="agent-stat-value">{{
+                    fmtCost(taskUsage.totalCostUsd, taskUsage.costSource)
+                  }}</span>
+                </span>
+                <span
+                  class="agent-stat"
+                  title="Total model round-trips across this task's sessions (one turn may run several tool calls). '—' when no CLI reported it."
+                >
+                  <span class="agent-stat-label">turns</span>
+                  <span class="agent-stat-value">{{ taskUsage.totalTurns ?? "—" }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">sessions</span>
+                  <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+                </span>
+              </div>
+            </section>
+            <section
+              v-if="taskUsage.roles && taskUsage.roles.length > 1"
+              class="task-section"
+              aria-labelledby="task-section-role"
+            >
+              <header class="task-section-head">
+                <div id="task-section-role" class="task-section-title">by role</div>
+                <div class="task-section-desc">Who spent what, broken down by role.</div>
+              </header>
               <div class="task-usage-table-wrap">
                 <table class="task-usage-table">
                   <thead>
@@ -3666,12 +3678,16 @@ watch(
                   </tbody>
                 </table>
               </div>
-            </div>
-            <div
+            </section>
+            <section
               v-if="taskUsage.sessions && taskUsage.sessions.length > 0"
-              class="task-usage-sessions"
+              class="task-section"
+              aria-labelledby="task-section-sessions"
             >
-              <div class="task-usage-title">individual sessions</div>
+              <header class="task-section-head">
+                <div id="task-section-sessions" class="task-section-title">individual sessions</div>
+                <div class="task-section-desc">The raw session log — one row per session.</div>
+              </header>
               <div class="task-usage-table-wrap">
                 <table class="task-usage-table">
                   <thead>
@@ -3758,7 +3774,7 @@ watch(
                   </tbody>
                 </table>
               </div>
-            </div>
+            </section>
           </div>
           <div
             v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)"
