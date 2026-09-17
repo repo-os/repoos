@@ -8,13 +8,16 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { ensureWorktree, listWorktrees } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
-import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
+import {
+  CloseOutOrchestrator,
+  mainDriftIsBookkeepingOnly,
+} from "../../server/integration-orchestrator.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
 function git(root: string, args: string[]): string {
@@ -368,6 +371,152 @@ describe("publish-time main-drift retry cap (#0386)", () => {
         expect(job?.publishDriftCount).toBe(i + 1);
       }
       throw new Error("expected the job to give up within 8 drift cycles, it never did");
+    } finally {
+      clean();
+    }
+  }, 30_000);
+});
+
+describe("main-drift booking-only classification (#0386)", () => {
+  function commit(root: string, relPath: string, content: string, message: string): void {
+    const abs = join(root, relPath);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+    git(root, ["add", relPath]);
+    git(root, ["commit", "-m", message]);
+  }
+
+  it("classifies a work/*.md-only advance as bookkeeping (no resync)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "work/9999-other.md", "# other\n", "docs(9999): update task");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          workDir: "work",
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("requires a resync when the advance touches real source", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "src/feature.ts", "export const x = 1;\n", "feat: land something");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          workDir: "work",
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("requires a resync when bookkeeping and code advance together", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "work/9999-other.md", "# other\n", "docs(9999): update task");
+      commit(root, "src/feature.ts", "export const x = 1;\n", "feat: land something");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          workDir: "work",
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("fails closed when the base commit does not exist", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: "0000000000000000000000000000000000000000",
+          currentMainSha: head,
+          workDir: "work",
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("publish-time drift with bookkeeping-only advance (#0386)", () => {
+  it("publishes directly instead of resyncing when main only gained task bookkeeping", async () => {
+    // The observed root cause of #0376/#0382's loops: main picked up a burst
+    // of `docs(<id>): update task` commits for unrelated tasks, each one
+    // tripping the publish-time drift check and discarding a perfectly valid
+    // candidate. A bookkeeping-only advance must publish straight through.
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T12";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+      const staleMainSha = git(root, ["rev-parse", "main"]);
+
+      // Main advances, but only with another task's bookkeeping file — no code
+      // the candidate was validated against moves.
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "9999-other.md"), "# other\n");
+      git(root, ["add", "work/9999-other.md"]);
+      git(root, ["commit", "-m", "docs(9999): update task"]);
+      const driftedMainSha = git(root, ["rev-parse", "main"]);
+      expect(driftedMainSha).not.toBe(staleMainSha);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T12", branch } as any);
+      coordinator.updateJob("T12", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: staleMainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+      const job = coordinator.getJob("T12");
+
+      expect(result.ok).toBe(true);
+      expect(job?.phase).toBe("done");
+      // Never resynced: no drift counter, and the base was advanced in place
+      // to what was actually merged.
+      expect(job?.publishDriftCount).toBeUndefined();
+      expect(job?.baseMainSha).toBe(driftedMainSha);
+      // The candidate's work landed on main, alongside the bookkeeping commit.
+      expect(existsSync(join(root, "feature.txt"))).toBe(true);
+      expect(existsSync(join(root, "work", "9999-other.md"))).toBe(true);
     } finally {
       clean();
     }

@@ -225,10 +225,16 @@ reports `failed`, the job likely got interrupted mid-flight by a server reload (
 debugging the candidate further.
 
 ### 4. `validating` → `publishing` → `cleanup` → `done`
-Acquires a repo lock, re-checks main hasn't drifted since `syncing` started (if it has,
-the job goes back to `syncing` automatically — this is correct self-healing, not a bug),
-fast-forward-or-merges the candidate into live `main`, then removes the candidate
-worktree/branch and the task's own feature worktree/branch, and marks the task `done`.
+Acquires a repo lock and re-checks whether main has drifted since the candidate was
+synced. If it has, the default is to go back to `syncing` and rebuild against the new
+main — correct self-healing for a competing change. Two refinements bound and focus
+that loop (#0386): a drift touching only task bookkeeping (`work/*.md`) or generated
+output (`dist/`, `screenshots/`) cannot invalidate the candidate's validation, so it
+publishes straight through without a resync; a drift that does touch real code resyncs,
+capped at `MAX_PUBLISH_DRIFT_RETRIES` (5) before the job gives up with an actionable
+reason instead of racing forever. It then fast-forward-or-merges the candidate into live
+`main`, removes the candidate worktree/branch and the task's own feature
+worktree/branch, and marks the task `done`.
 
 If a job fails here (rare — validation already passed), main was NOT touched; the repo
 lock guarantees that. Safe to just retry.
