@@ -1,6 +1,6 @@
 ---
 id: "0396"
-title: "Flesh out task #0395, “Configurable board column labels,”…"
+title: Configurable board column labels (display-only rename via repoos.toml)
 type: feature
 status: draft
 priority: p2
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-17T14:20:31Z"
-updated_at: "2026-09-17T14:20:31Z"
+updated_at: "2026-09-17T14:34:04Z"
 ---
 Flesh out task #0395, “Configurable board column labels,” into an implementation-ready RepoOS task. Do not implement it yet.
 
@@ -105,3 +105,4 @@ The task should call out the main product constraint: familiar labels are valuab
 
 - 2026-09-17T14:20:31Z · created · hello@repoos.org
 - 2026-09-17T14:20:31Z · screenshots
+- 2026-09-17T14:34:04Z · title
