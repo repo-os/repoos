@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-17T09:28:57Z"
-review_passes: 1
+updated_at: "2026-09-17T09:45:30Z"
+review_passes: 2
 id: "0384"
 title: Give Agents page lists card-like separation and widen the agent/model modal
 type: feature
@@ -71,4 +71,5 @@ I like the new look of the tokens tab fixed in task #380 and I want that same ca
 - 2026-09-17T08:18:17Z · status inbox→ready
 - 2026-09-17T09:24:43Z · status ready→active, branch
 - 2026-09-17T09:26:23Z · status active→review
+
 
