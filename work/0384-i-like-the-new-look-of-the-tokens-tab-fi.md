@@ -2,14 +2,14 @@
 id: "0384"
 title: Give Agents page lists card-like separation and widen the agent/model modal
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-17T08:15:06Z"
-updated_at: "2026-09-17T08:16:54Z"
+updated_at: "2026-09-17T08:18:17Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ I like the new look of the tokens tab fixed in task #380 and I want that same ca
 - 2026-09-17T08:15:06Z · created · hello@repoos.org
 - 2026-09-17T08:15:06Z · screenshots
 - 2026-09-17T08:16:54Z · status draft→inbox, title, area, body
+- 2026-09-17T08:18:17Z · status inbox→ready
