@@ -2,14 +2,14 @@
 id: "0399"
 title: "detectDroppedMerge guard failed to catch #0389's dropped merge to done"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-17T17:36:38Z"
-updated_at: "2026-09-17T17:36:38Z"
+updated_at: "2026-09-17T17:44:28Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ since it's a safety-critical guard for the close-out pipeline generally
 ## Activity
 
 - 2026-09-17T17:36:38Z · created · unknown
+- 2026-09-17T17:44:28Z · status inbox→ready
