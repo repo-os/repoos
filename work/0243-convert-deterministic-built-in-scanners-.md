@@ -2,7 +2,7 @@
 id: "0243"
 title: Convert deterministic built-in scanners into configurable AI agents
 type: feature
-status: ready
+status: inbox
 priority: p1
 area: agent
 assigned_to: ai
@@ -70,3 +70,5 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-25T16:16:08Z · model_override
 - 2026-08-28T11:51:37Z · status active→ready, needs_input
 - 2026-09-17T14:02:16Z · note: Superseded 2026-09-17: splitting into a foundational task (shared skill-guided runner + deterministic auto-fix verification gate) plus one migration task per agent, and folding in Docs Debt (a 5th deterministic scanner that didn't exist when this task was written). This task's own scope was sound but it failed twice as one unit (watchdog-stuck: agent exited without the handoff signal; then a monthly model quota error mid-run) — splitting it should make each piece small enough to complete and review independently instead of re-attempting one large run. See the new tasks for the actual work; this one is parked, not picked up.
+- 2026-09-17T14:02:16Z · status ready→inbox
+- 2026-09-17T14:02:16Z · note: Parked — split into foundational + per-agent migration tasks (see note above). Do not pick this up as-is; work continues under the split tasks.
