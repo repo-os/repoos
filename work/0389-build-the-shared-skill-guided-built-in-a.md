@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:02:47Z"
-updated_at: "2026-09-17T14:02:47Z"
+updated_at: "2026-09-17T14:12:08Z"
 ---
 ## Problem
 
@@ -63,3 +64,4 @@ If a proposed fix doesn't clear this, it goes into the findings/report bundle fo
 ## Activity
 
 - 2026-09-17T14:02:47Z · created · unknown
+- 2026-09-17T14:12:08Z · model_override
