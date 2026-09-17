@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-tech-debt-agent-to-the-skill
 created_at: "2026-09-17T14:03:23Z"
-updated_at: "2026-09-17T18:48:28Z"
+updated_at: "2026-09-17T18:48:41Z"
 ---
 ## Problem
 
