@@ -31,6 +31,7 @@ import net from "node:net";
 import { homedir } from "node:os";
 import { basename, join, dirname, resolve } from "node:path";
 import { realpathSync } from "node:fs";
+import { loadConfig } from "./config.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -463,6 +464,65 @@ export function deriveStatus(liveStatus: "running" | "stopped", autoStart: boole
   return autoStart ? "stopped" : "disabled";
 }
 
+// ── Reload-orphan detection ─────────────────────────────────────────────────
+//
+// server/reload.ts hands off by spawning a detached replacement process and
+// exiting the old one. AbandonProcessGroup=true (launchd) keeps that
+// replacement alive instead of being killed with the old process's group,
+// but neither launchd nor systemd ever learns the replacement's PID — their
+// job tracking still points at the original, now-exited process. So
+// `launchctl list` / `systemctl is-active` can report "stopped" while a
+// real server is still bound to the port: an orphan invisible to the OS
+// service manager. Stop/Restart/Remove would otherwise silently no-op
+// against it.
+//
+// The fix doesn't touch reload.ts (deliberately out of scope — see the task
+// notes). Instead it uses the one thing every generation of `repoos serve`
+// already does on bind regardless of how it was started: register its PID
+// in `.repoos/serve-<port>.lock` (server/serve-reaper.ts). That lockfile is
+// the actual source of truth for "who is serving this port right now."
+
+/** Read the real PID currently registered as serving `port` for `root`, or
+ * null if there's no lockfile, it's stale, or it names a dead process. */
+export function readServeLockPid(root: string, port: number): number | null {
+  const cacheDir = loadConfig(root).cacheDir;
+  const lockPath = join(root, cacheDir, `serve-${port}.lock`);
+  try {
+    const info = JSON.parse(readFileSync(lockPath, "utf8")) as { pid?: unknown; port?: unknown };
+    if (typeof info.pid !== "number" || info.port !== port) return null;
+    process.kill(info.pid, 0); // throws (ESRCH) if not alive; sends no signal
+    return info.pid;
+  } catch {
+    return null;
+  }
+}
+
+/** Best-effort SIGTERM-then-SIGKILL of a bare PID (no ChildProcess handle). */
+async function killPid(pid: number): Promise<void> {
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {
+    return; // already gone
+  }
+  await new Promise((r) => setTimeout(r, 500));
+  try {
+    process.kill(pid, 0); // still alive?
+    process.kill(pid, "SIGKILL");
+  } catch {
+    // exited on SIGTERM, or already gone
+  }
+}
+
+/**
+ * Reap a reload replacement that launchd/systemd lost track of. Called after
+ * the OS-level stop, which only ever touches the (possibly long-exited) job
+ * PID it knows about.
+ */
+export async function reapOrphan(root: string, port: number): Promise<void> {
+  const pid = readServeLockPid(root, port);
+  if (pid !== null) await killPid(pid);
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -539,6 +599,24 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
       ? queryLaunchdStatus(entry.label)
       : querySystemdStatus(entry.label);
   const status = deriveStatus(liveStatus as "running" | "stopped", entry.autoStart);
+
+  // launchd/systemd reporting "not running" doesn't mean the port is free —
+  // a reload replacement can still be bound to it, invisible to their job
+  // tracking (see the "Reload-orphan detection" section above). Surface
+  // that as "Needs attention" instead of silently showing Stopped/Disabled
+  // while a server is actually still alive and serving.
+  if (status !== "running" && readServeLockPid(root, entry.port) !== null) {
+    const orphanMsg =
+      "An unmanaged process is still running on this port (a reload replacement " +
+      "launchd/systemd lost track of) — Stop or Remove will clean it up.";
+    if (entry.status !== "error" || entry.healthError !== orphanMsg) {
+      entry.status = "error";
+      entry.healthError = orphanMsg;
+      entry.updatedAt = new Date().toISOString();
+      writeRegistry(entries);
+    }
+    return entry;
+  }
 
   // Update status if changed
   if (entry.status !== status || entry.healthError !== null) {
@@ -755,7 +833,12 @@ export async function startService(root: string): Promise<{ ok: boolean; error?:
     entry.platform === "launchd"
       ? queryLaunchdStatus(entry.label)
       : querySystemdStatus(entry.label);
-  entry.status = liveStatus;
+  // deriveStatus, not the raw liveStatus — otherwise a start that fails to
+  // actually bring the process up (still "stopped" per launchd/systemd)
+  // would be recorded as plain "stopped" even when autoStart is off, an
+  // inconsistency with how getServiceStatus/checkHealth report that same
+  // not-running+autoStart-off case as "disabled".
+  entry.status = deriveStatus(liveStatus as "running" | "stopped", entry.autoStart);
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 
@@ -786,9 +869,18 @@ export async function stopService(root: string): Promise<{ ok: boolean; error?: 
     if (!result.ok) stopError = `systemctl stop failed: ${result.stderr}`;
   }
 
+  // The OS-level stop above only touches the job launchd/systemd is
+  // tracking. A reload replacement that took over after that job's original
+  // process exited (server/reload.ts) is invisible to that tracking — reap
+  // it directly via the port's serve lockfile so Stop actually frees the
+  // port instead of leaving an orphan running. See the "Reload-orphan
+  // detection" section above for why this can't be solved through
+  // launchctl/systemctl alone.
+  await reapOrphan(root, entry.port);
+
   // Always update status — even on failure, the service is no longer
   // managed as "running" from RepoOS's perspective.
-  entry.status = "stopped";
+  entry.status = deriveStatus("stopped", entry.autoStart);
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 

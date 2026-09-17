@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+} from "node:fs";
 import { createServer } from "node:net";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -10,6 +19,8 @@ import {
   isLingerEnabled,
   isPortInUse,
   deriveStatus,
+  readServeLockPid,
+  reapOrphan,
   type ServiceEntry,
 } from "./service-manager.js";
 
@@ -100,6 +111,72 @@ describe("isPortInUse", () => {
     await new Promise<void>((res) => probe.close(() => res()));
 
     expect(await isPortInUse(port)).toBe(false);
+  });
+});
+
+describe("readServeLockPid / reapOrphan", () => {
+  // Regression coverage for the reload-orphan gap: after server/reload.ts's
+  // spawn-and-exit handoff, launchd/systemd only ever tracks the original
+  // (now-exited) job PID — the actual replacement process, still bound to
+  // the port, is invisible to `launchctl list`/`systemctl is-active`. The
+  // fix reads the same `.repoos/serve-<port>.lock` every `repoos serve`
+  // process registers into on bind (server/serve-reaper.ts) instead.
+
+  function writeLock(root: string, port: number, pid: number): void {
+    const dir = join(root, ".repoos");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, `serve-${port}.lock`),
+      JSON.stringify({ pid, port, host: "127.0.0.1", startedAt: new Date().toISOString() }),
+    );
+  }
+
+  it("returns null when no lockfile exists", () => {
+    const root = tmpDir("repoos-orphan-");
+    expect(readServeLockPid(root, 7200)).toBeNull();
+  });
+
+  it("returns null when the lockfile names a different port", () => {
+    const root = tmpDir("repoos-orphan-");
+    writeLock(root, 7200, process.pid);
+    expect(readServeLockPid(root, 7201)).toBeNull();
+  });
+
+  it("returns null when the lockfile names a dead process", () => {
+    const root = tmpDir("repoos-orphan-");
+    // A PID essentially guaranteed not to exist.
+    writeLock(root, 7200, 2 ** 30);
+    expect(readServeLockPid(root, 7200)).toBeNull();
+  });
+
+  it("returns the pid when the lockfile names a live process", () => {
+    const root = tmpDir("repoos-orphan-");
+    writeLock(root, 7200, process.pid);
+    expect(readServeLockPid(root, 7200)).toBe(process.pid);
+  });
+
+  it("reapOrphan actually kills the process the lockfile names", async () => {
+    const root = tmpDir("repoos-orphan-");
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+      stdio: "ignore",
+    });
+    await new Promise<void>((res) => {
+      if (child.pid) res();
+      else child.once("spawn", res);
+    });
+    const pid = child.pid as number;
+    writeLock(root, 7200, pid);
+
+    await reapOrphan(root, 7200);
+
+    // Give the kill signal a moment to land, then confirm the process is gone.
+    await new Promise((res) => setTimeout(res, 200));
+    expect(() => process.kill(pid, 0)).toThrow();
+  });
+
+  it("reapOrphan is a no-op when nothing is registered on the port", async () => {
+    const root = tmpDir("repoos-orphan-");
+    await expect(reapOrphan(root, 7200)).resolves.toBeUndefined();
   });
 });
 
