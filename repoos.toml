@@ -53,6 +53,16 @@ remoteValidation.fallbackToLocal = false
 
 worktreeWarnThreshold = 20
 
+# Task worktrees inherit the main checkout's gitignored `.env` (#0373). This
+# repo has auth.enabled = true, and its own `[preview] command` below boots a
+# real server from the task's worktree — which refuses to start without the
+# provider keys (REPOOS_RESEND_API_KEY, …) that live only in `.env`. Opting in
+# makes `ensureWorktree` symlink the main `.env` into every task worktree, so a
+# worktree-local preview or build can actually boot. Off by default for repos
+# whose build/preview needs no secrets; see user-docs/configuration.md.
+[worktrees]
+inheritEnv = true
+
 # `repoos check` stylesheet guards (#0351). The CSS-layering and WCAG
 # theme-contrast steps run only for a repo that declares its stylesheet and
 # token vocabulary here — there is no RepoOS-shaped default path, so a managed

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -175,6 +176,99 @@ describe("ensureWorktree", () => {
       expect(res.reason).toMatch(/not a git repository/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * `.env` inheritance is opt-in per repo (#0373): a repo with
+ * `[worktrees] inheritEnv = true` gets the main checkout's gitignored `.env`
+ * symlinked into each task worktree, so a worktree-local preview that needs
+ * local secrets can boot. Off by default — no worktree behavior changes.
+ */
+describe("ensureWorktree .env inheritance (#0373)", () => {
+  it("does not link .env by default, even when the main checkout has one", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+
+      const wt = ensureWorktree(root, "feat/no-env");
+
+      expect(wt.ok).toBe(true);
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("symlinks the main checkout's .env when the repo opts in", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+      writeFileSync(join(root, ".env"), "REPOOS_RESEND_API_KEY=secret\n");
+
+      const wt = ensureWorktree(root, "feat/with-env");
+
+      const wtEnv = join(wt.path, ".env");
+      expect(lstatSync(wtEnv).isSymbolicLink()).toBe(true);
+      expect(readFileSync(wtEnv, "utf8")).toBe("REPOOS_RESEND_API_KEY=secret\n");
+      // One source of truth: a later change to the main file is visible.
+      writeFileSync(join(root, ".env"), "REPOOS_RESEND_API_KEY=updated\n");
+      expect(readFileSync(wtEnv, "utf8")).toContain("updated");
+    } finally {
+      clean();
+    }
+  });
+
+  it("stays a silent no-op when opted in but the main checkout has no .env", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+
+      const wt = ensureWorktree(root, "feat/missing-env");
+
+      expect(wt.ok).toBe(true);
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("links the opt-in .env when an existing worktree is reused", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/reuse-env");
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+
+      // Opt in only after the worktree already exists.
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+      writeFileSync(join(root, ".env"), "KEY=value\n");
+
+      const again = ensureWorktree(root, "feat/reuse-env");
+
+      expect(again.created).toBe(false);
+      expect(lstatSync(join(again.path, ".env")).isSymbolicLink()).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps the inherited .env gitignored in the worktree", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, ".gitignore"), ".env\n");
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+      git(root, ["add", ".gitignore", "repoos.toml"]);
+      git(root, ["commit", "-m", "config"]);
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+
+      const wt = ensureWorktree(root, "feat/ignored-env");
+
+      expect(lstatSync(join(wt.path, ".env")).isSymbolicLink()).toBe(true);
+      expect(git(wt.path, ["check-ignore", ".env"])).toBe(".env");
+      expect(git(wt.path, ["status", "--porcelain"])).toBe("");
+    } finally {
+      clean();
     }
   });
 });

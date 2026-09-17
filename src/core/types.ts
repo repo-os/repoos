@@ -387,6 +387,11 @@ export interface RepoOSConfig {
    */
   preview?: PreviewConfig;
   /**
+   * Per-project task-worktree behavior (#0373). Omitted means defaults — in
+   * particular, no `.env` is placed in any worktree.
+   */
+  worktrees?: WorktreesConfig;
+  /**
    * Deployment targets (task #0340) — one row per (service, branch). Absent or
    * empty means the Deployments nav item and API stay hidden for this repo.
    */
@@ -669,6 +674,24 @@ export interface PreviewConfig {
   readyTimeoutMs?: number;
   /** Named targets, selected by the task's `area:` frontmatter. */
   targets?: PreviewTargetConfig[];
+}
+
+/**
+ * Per-project task-worktree behavior (#0373). Opt-in: omitted (the default)
+ * keeps worktrees exactly as they were — no secrets placed in them.
+ */
+export interface WorktreesConfig {
+  /**
+   * When true, a task worktree is given access to the main checkout's
+   * gitignored `.env` — symlinked in by `ensureWorktree` — so a worktree-local
+   * build or preview command that needs local secrets (e.g. a repo with
+   * `auth.enabled = true` and provider keys in `.env`) can actually boot.
+   *
+   * Default false: most projects need no `.env` in a worktree, and every
+   * worktree is another place secrets would live on disk, so this is a
+   * deliberate per-repo opt-in rather than a `node_modules`-style automatic.
+   */
+  inheritEnv?: boolean;
 }
 
 /** Whisper voice transcription configuration. */

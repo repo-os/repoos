@@ -134,6 +134,43 @@ RepoOS itself" heuristic. As of #0377 the preview doesn't need its own staleness
 check to stay fast: `bun run build` is itself staleness-aware, so an unchanged
 worktree's preview skips the rebuild (~0.1s) instead of paying a full one.
 
+## Secrets in the worktree: `[worktrees] inheritEnv` (#0373)
+
+A preview boots *inside the task's worktree*, which is a fresh checkout cut
+from `main` — so a gitignored `.env` at the repo root is **not** present there
+by default. For most projects that's fine; a preview command with no secret
+dependency just runs. It is not fine for a repo like this one, where
+`auth.enabled = true` and the `serve` process refuses to start without the
+provider keys that live only in `.env`. The failure is a hard one, not a
+degraded preview:
+
+    Failed to start server: Auth is enabled but no login provider is configured.
+
+`repoos.toml` therefore has an opt-in:
+
+```toml
+[worktrees]
+inheritEnv = true   # default false — no .env is placed in worktrees
+```
+
+When set, `ensureWorktree` (`src/core/git.ts`) symlinks the main checkout's
+`.env` into the worktree on both creation and reuse, so a worktree-local build
+or preview command can read the same secrets the main checkout does. It is
+deliberately opt-in rather than automatic (unlike `node_modules`): most
+projects never need `.env` in a worktree, and each worktree is another place
+secrets would live on disk. Absent, malformed, or with no `.env` at the main
+root, the link is a silent no-op and worktrees behave exactly as before.
+
+A symlink (not a copy) is used on purpose: there is one source of truth, so a
+secret added to the main `.env` later is immediately visible in every live
+worktree instead of going stale in per-worktree copies, and no extra physical
+copy of every secret lands on disk. `.env` stays gitignored in the worktree
+because the committed `.gitignore` that ignores it comes along with the branch.
+The one thing a copy would avoid — a worktree process writing *through* the
+symlink back into main's `.env` — is narrow: the only writer,
+`setDotEnvSecret`, is called by the server's model-provider settings and
+targets its own config root.
+
 ## Open question: `area` is free text and single-valued
 
 `area:` has no schema (`--area` is documented as free text) and a task carries
