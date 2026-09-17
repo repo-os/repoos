@@ -552,7 +552,15 @@ export async function installService(
 
   // Write OS service files
   if (platform === "launchd") {
-    const plist = generatePlist(entry);
+    let plist: string;
+    try {
+      // generatePlist() calls repoosBinary(), which throws when it can't
+      // find a runnable `repoos` — surface that as a normal {ok:false}
+      // result instead of an uncaught exception (a 500 from the route).
+      plist = generatePlist(entry);
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
     const dest = plistPath(label);
     if (!existsSync(dirname(dest))) {
       mkdirSync(dirname(dest), { recursive: true });
@@ -593,21 +601,19 @@ export async function installService(
   entries.push(entry);
   writeRegistry(entries);
 
-  // Start the service immediately after install. On launchd, the `launchctl
-  // load` above already started it (RunAtLoad=true in the generated plist),
-  // so calling startService() here would `load` a second time — which fails
-  // with "Service is already loaded" and silently masks that error. Just
-  // refresh the live status instead. systemd's `enable` does not start the
-  // unit, so that path still needs the real startService() start command.
-  if (platform === "launchd") {
-    entry.status = queryLaunchdStatus(entry.label);
-    entry.updatedAt = new Date().toISOString();
-    writeRegistry(entries);
-  } else {
-    await startService(root);
-  }
+  // Start the service immediately after install, on both platforms — the
+  // acceptance criterion is "creates AND starts exactly one service". On
+  // launchd, `load` above only starts it for free when RunAtLoad=true (i.e.
+  // autoStart was requested); for the common default (autoStart:false) the
+  // job is loaded-but-stopped until startService()'s `launchctl start`
+  // actually runs it. startService() tolerates the job already being loaded,
+  // so this is not a double-load error on either path.
+  await startService(root);
 
-  return { ok: true, entry };
+  // Re-read so the returned entry reflects the post-start status startService
+  // just wrote, rather than the pre-start "stopped" snapshot from above.
+  const freshEntry = findEntry(readRegistry(), root) ?? entry;
+  return { ok: true, entry: freshEntry };
 }
 
 /**
@@ -652,8 +658,13 @@ export async function removeService(root: string): Promise<{ ok: boolean; error?
 
 /**
  * Start a background service.
- * macOS: `launchctl load` re-registers and starts the agent (idempotent if
- * already loaded). `launchctl start` alone fails when the job isn't loaded.
+ * macOS: `launchctl load` only registers the job with launchd — it starts it
+ * immediately ONLY when RunAtLoad=true. A loaded-but-stopped job (the default,
+ * RunAtLoad=false, or one that previously exited) needs an explicit
+ * `launchctl start <label>` to actually run; `load` alone is a no-op for it.
+ * `load` on an already-loaded job fails with "already loaded", which is not
+ * a real error — the job is exactly where we want it, so that case is
+ * tolerated rather than surfaced.
  * Linux: `systemctl start` works for both loaded and enabled units.
  */
 export async function startService(root: string): Promise<{ ok: boolean; error?: string }> {
@@ -662,14 +673,18 @@ export async function startService(root: string): Promise<{ ok: boolean; error?:
   if (!entry) return { ok: false, error: "No service found for this repository" };
 
   if (entry.platform === "launchd") {
-    // load is idempotent — if already loaded, launchd is a no-op. This
-    // handles the unload-then-start recovery cycle.
     const dest = plistPath(entry.label);
     if (!existsSync(dest)) {
       return { ok: false, error: "LaunchAgent plist missing — reinstall the service" };
     }
-    const result = launchctl("load", dest);
-    if (!result.ok) return { ok: false, error: `launchctl load failed: ${result.stderr}` };
+    const loadResult = launchctl("load", dest);
+    if (!loadResult.ok && !/already loaded/i.test(loadResult.stderr)) {
+      return { ok: false, error: `launchctl load failed: ${loadResult.stderr}` };
+    }
+    // Actually run the job — `load` alone does not for RunAtLoad=false.
+    const startResult = launchctl("start", entry.label);
+    if (!startResult.ok)
+      return { ok: false, error: `launchctl start failed: ${startResult.stderr}` };
   } else {
     const result = systemctl("start", `${entry.label}.service`);
     if (!result.ok) return { ok: false, error: `systemctl start failed: ${result.stderr}` };
