@@ -812,6 +812,54 @@ describe("scanForDocsDebt", () => {
     expect(result.needsHuman).toHaveLength(1);
   });
 
+  it("never treats a non-doc path as an auto-fix target, even when the gate would pass", async () => {
+    const root = makeRepo({
+      "package.json": '{"note":"oldDep"}\n',
+      "src/new/dep.ts": "export const newDep = 1;\n",
+    });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "package.json",
+            oldText: "oldDep",
+            newText: "src/new/dep.ts",
+            evidence: "a guess",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+  });
+
+  it("downgrades a fix whose old text appears more than once in the doc", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See src/old/util.ts and src/old/util.ts again.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/new/util.ts",
+            evidence: "renamed",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+  });
+
   it("surfaces a runner failure instead of pretending the docs are clean", async () => {
     const root = makeRepo({ "AGENTS.md": "# Docs\n" });
     vi.mocked(runSkillGuidedAgent).mockResolvedValue(
@@ -884,6 +932,25 @@ describe("createDocsDebtTask", () => {
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
   });
 
+  it("renders a finding with no file path without a malformed doc line", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    await createDocsDebtTask(configFor(root), [
+      {
+        kind: "missing-symbol",
+        doc: "",
+        line: 1,
+        claim: "ghost",
+        evidence: "not declared anywhere",
+        severity: "low",
+      },
+    ]);
+    const files = readdirSync(join(root, "work"));
+    const content = readFileSync(join(root, "work", files[0]), "utf8");
+    expect(content).toContain("not specified");
+    expect(content).not.toContain("``:1");
+  });
+
   it("throws a clear error when the work dir does not exist", async () => {
     const root = makeRepo({});
     await expect(
@@ -951,6 +1018,26 @@ describe("applyDocsDebtFixes", () => {
     expect(result.applied).toBe(0);
     expect(result.skipped).toBe(1);
     expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("src/old/util.ts");
+  });
+
+  it("refuses a fix targeting a non-doc file", async () => {
+    const root = makeRepo({
+      "package.json": '{"note":"oldDep"}\n',
+      "src/new/dep.ts": "export const newDep = 1;\n",
+    });
+    const result = await applyDocsDebtFixes(configFor(root), [
+      {
+        kind: "renamed-path",
+        doc: "package.json",
+        line: 1,
+        from: "oldDep",
+        to: "src/new/dep.ts",
+        evidence: "a guess",
+      },
+    ]);
+    expect(result.applied).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(readFileSync(join(root, "package.json"), "utf8")).toContain("oldDep");
   });
 
   it("caps how many fixes land in one run and reports the rest as skipped", async () => {

@@ -10,7 +10,7 @@ import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
 import { commitTaskFile } from "../core/git.js";
 import type { Logger } from "../core/logger.js";
-import { runSkillGuidedAgent } from "./built-in-agent-runner.js";
+import { runSkillGuidedAgent, saveLastRunAt } from "./built-in-agent-runner.js";
 import { isSafeToAutoCommit } from "./auto-fix-gate.js";
 
 export type TechDebtIssueType =
@@ -1666,6 +1666,54 @@ function lineOfText(root: string, doc: string, needle: string): number {
   }
 }
 
+/** Count non-overlapping occurrences of `needle` in `haystack`. */
+function countOccurrences(haystack: string, needle: string): number {
+  if (!needle) return 0;
+  let count = 0;
+  let idx = haystack.indexOf(needle);
+  while (idx !== -1) {
+    count++;
+    idx = haystack.indexOf(needle, idx + needle.length);
+  }
+  return count;
+}
+
+/**
+ * The agent may only ever write to the project's own docs. `fix.doc` comes
+ * straight from model output, so this allowlist (root `AGENTS.md`, any nested
+ * `AGENTS.md`, and anything under `docs/`/`user-docs/`) is enforced here rather
+ * than assumed — a "fix" naming `package.json` or a source file must never
+ * auto-commit.
+ */
+function isDocsDebtDocPath(doc: string): boolean {
+  if (!doc) return false;
+  if (doc === "AGENTS.md" || doc.endsWith("/AGENTS.md")) return true;
+  return doc.startsWith("docs/") || doc.startsWith("user-docs/");
+}
+
+/**
+ * Whether a proposed fix is safe to apply mechanically and auto-commit:
+ * it targets an allowed doc, clears the deterministic gate, and its `oldText`
+ * appears exactly once in that doc — otherwise `split/join` would silently
+ * rewrite every occurrence, not just the one the agent cited.
+ */
+function isSafeDocsDebtFix(
+  config: RepoOSConfig,
+  doc: string,
+  oldText: string,
+  newText: string,
+): boolean {
+  if (!isDocsDebtDocPath(doc)) return false;
+  if (!isSafeToAutoCommit({ doc, oldText, newText }, config.root)) return false;
+  let content: string;
+  try {
+    content = readFileSync(join(config.root, doc), "utf8");
+  } catch {
+    return false;
+  }
+  return countOccurrences(content, oldText) === 1;
+}
+
 /** Collect the docs this agent may read (and, for trivial fixes, edit). */
 function collectDocFiles(root: string): string[] {
   const out: string[] = [];
@@ -1755,10 +1803,7 @@ export async function scanForDocsDebt(
 
   for (const fix of run.fixes) {
     const line = lineOfText(config.root, fix.doc, fix.oldText);
-    const safe = isSafeToAutoCommit(
-      { doc: fix.doc, oldText: fix.oldText, newText: fix.newText },
-      config.root,
-    );
+    const safe = isSafeDocsDebtFix(config, fix.doc, fix.oldText, fix.newText);
     if (safe) {
       trivialFixes.push({
         kind: "renamed-path",
@@ -1816,7 +1861,7 @@ export async function applyDocsDebtFixes(
     try {
       // Defense in depth: the scan already filters through the gate, but the
       // write itself must never be reachable without a fresh, independent pass.
-      if (!isSafeToAutoCommit({ doc: fix.doc, oldText: fix.from, newText: fix.to }, config.root)) {
+      if (!isSafeDocsDebtFix(config, fix.doc, fix.from, fix.to)) {
         result.errors.push(`${fix.doc}: fix did not clear the auto-fix gate`);
         result.skipped++;
         continue;
@@ -1899,7 +1944,9 @@ export async function createDocsDebtTask(
   body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\`/\`docs/\`/\`user-docs/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
   findings.forEach((finding, index) => {
     body += `### ${index + 1}. ${finding.claim}\n`;
-    body += `- **Doc**: \`${finding.doc}\`:${finding.line}\n`;
+    body += finding.doc
+      ? `- **Doc**: \`${finding.doc}\`${finding.line ? `:${finding.line}` : ""}\n`
+      : `- **Doc**: not specified\n`;
     body += `- **Kind**: ${finding.kind}\n`;
     body += `- **Severity**: ${finding.severity}\n`;
     body += `- **Evidence**: ${finding.evidence}\n`;
@@ -1974,10 +2021,7 @@ export async function runDocsDebtAgent(
     logger?.agent("docs-debt", "info", `Created ${task.created} docs debt task`);
   }
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["docs-debt"] = { ...(agents["docs-debt"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
+  saveLastRunAt(config.root, "docs-debt", config);
 
   logger?.agent("docs-debt", "info", "Docs Debt Agent run completed", {
     trivialFixesApplied: apply.applied,

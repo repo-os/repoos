@@ -338,7 +338,7 @@ async function runNow(): Promise<void> {
             </li>
           </ul>
           <div v-if="bannerTaskId" class="built-in-task-link">
-            <router-link :to="`/work?id=${bannerTaskId}`">
+            <router-link :to="`/work?task=${bannerTaskId}`">
               #{{ bannerTaskId }} — review the findings task
             </router-link>
           </div>
