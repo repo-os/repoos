@@ -611,6 +611,9 @@ export function validateNamespace(input: string): string {
   // reject relative-path prefix that adds no semantic value
   if (trimmed.startsWith("./"))
     return "!Leading ./ is not needed — type the path directly (e.g. repoos).";
+  // reject bare dot (cwd) — meaningless as a namespace
+  if (trimmed === ".")
+    return "! is not a valid namespace — use / for root or type a directory name.";
   // reject unsafe characters
   if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "!Only letters, digits, . _ - / are allowed.";
   return trimmed;
@@ -947,26 +950,48 @@ export async function cmdInit(args: string[]): Promise<void> {
     // Existing-repo scaffolding remains idempotent. The only optional edit is
     // a separately previewed, explicitly accepted AGENTS.md appendix.
     const root = findRepoRoot(cwd);
-
-    // Determine the namespace: respect an existing repoos.toml's paths, or
-    // default to the namespaced layout for fresh installs.
-    let namespace: ScaffoldLayout = "";
     const tomlPath = join(root, "repoos.toml");
-    if (existsSync(tomlPath)) {
+    const hasExisting = existsSync(tomlPath);
+
+    // Determine the initial namespace from an existing config, or a sensible
+    // default for fresh installs.  Interactive prompts may override this.
+    let namespace: ScaffoldLayout = "";
+    if (hasExisting) {
       const config = loadConfig(root);
-      // If the existing config already uses namespaced paths, preserve them.
-      // If workDir is still the root default, stay with root layout.
       if (config.workDir !== "work") {
-        // Extract namespace from workDir (e.g. "repoos/work" → "repoos")
         const parts = config.workDir.split("/");
         if (parts.length >= 2 && parts[parts.length - 1] === "work") {
           namespace = parts.slice(0, -1).join("/");
         }
       }
     } else {
-      // Fresh install: default to namespaced layout
       namespace = "repoos";
     }
+
+    // Interactive prompt: let the user choose a layout and confirm.
+    if (input.isTTY && output.isTTY) {
+      console.log(c.dim("\n  RepoOS is not yet set up in ") + c.cyan(root) + c.dim("."));
+      namespace = await askLayout();
+
+      // Show the resolved layout preview
+      const config = loadConfig(root);
+      const workDir = namespace ? `${namespace}/work` : "work";
+      const docsDir = namespace ? `${namespace}/docs` : "docs";
+      const cacheDir = namespace ? `${namespace}/.repoos` : ".repoos";
+      console.log(c.dim("\n  Resolved layout:"));
+      console.log(c.dim("    repoos.toml   (root)"));
+      console.log(c.dim("    AGENTS.md     (root)"));
+      console.log(`    ${workDir}/`);
+      console.log(`    ${docsDir}/`);
+      console.log(`    ${cacheDir}/   (gitignored)`);
+      console.log();
+
+      if (!(await confirm(`  Scaffold these files in ${c.cyan(root)}?`, true))) {
+        console.log(c.yellow("\n  Cancelled — nothing was created."));
+        return;
+      }
+    }
+    // Non-interactive: `namespace` is already the deterministic default.
 
     // Pre-scaffold collision check
     const collision = checkNamespaceCollision(root, namespace);

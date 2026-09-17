@@ -78,6 +78,10 @@ describe("validateNamespace", () => {
     expect(validateNamespace("repoos@home")).toContain("!");
   });
 
+  it("rejects bare dot (cwd)", () => {
+    expect(validateNamespace(".")).toContain("!");
+  });
+
   it("trims whitespace", () => {
     expect(validateNamespace("  repoos  ")).toBe("repoos");
   });
