@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-17T05:19:55Z"
-updated_at: "2026-09-17T05:19:55Z"
+updated_at: "2026-09-17T05:19:56Z"
 ---
 In the task panel the PM tab has text chat but no way to add screenshots, let's add screenshot upload in that chat  (a small button is good, see attached screenshot) and the PM agent should be able to include screenshots in the task spec if appropriate (likely any screenshots provided to the PM for a task should be included / linked to in the task somewhere). also if an input has screenshots and it gets turned into a task those screenshots should always be included in the task. and check that tasks can never lose screenshots when the task md file is edited (I think we discussed this before but I'm not sure if there are tests to cover that case)
 
@@ -17,6 +17,11 @@ In the task panel the PM tab has text chat but no way to add screenshots, let's 
 
 In the task panel the PM tab has text chat but no way to add screenshots, let's add screenshot upload in that chat  (a small button is good, see attached screenshot) and the PM agent should be able to include screenshots in the task spec if appropriate (likely any screenshots provided to the PM for a task should be included / linked to in the task somewhere). also if an input has screenshots and it gets turned into a task those screenshots should always be included in the task. and check that tasks can never lose screenshots when the task md file is edited (I think we discussed this before but I'm not sure if there are tests to cover that case)
 
+## Screenshots
+
+![Screenshot-2026-09-17-at-13.19.44](/api/tasks/0382/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-17T05:19:55Z · created · hello@repoos.org
+- 2026-09-17T05:19:56Z · screenshots
