@@ -525,7 +525,15 @@ async function offerRepoOSAgentsSection(root: string): Promise<void> {
 
   console.log(c.dim("\n  Existing AGENTS.md detected — it will not be replaced."));
   console.log(c.dim("  Proposed RepoOS addition:"));
-  console.log(c.dim(addition.trimEnd().split("\n").map((line) => `    ${line}`).join("\n")));
+  console.log(
+    c.dim(
+      addition
+        .trimEnd()
+        .split("\n")
+        .map((line) => `    ${line}`)
+        .join("\n"),
+    ),
+  );
 
   if (!(await confirm("\n  Add this section to AGENTS.md?", false))) return;
 
@@ -543,7 +551,9 @@ async function offerRepoOSAgentsSection(root: string): Promise<void> {
     writeFileSync(path, original + addition);
     console.log(c.green("  added") + c.dim(" RepoOS guidance to AGENTS.md"));
   } catch {
-    console.log(c.yellow("  Could not update AGENTS.md; existing instructions were left unchanged."));
+    console.log(
+      c.yellow("  Could not update AGENTS.md; existing instructions were left unchanged."),
+    );
   }
 }
 

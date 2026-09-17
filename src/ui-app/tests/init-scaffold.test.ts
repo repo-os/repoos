@@ -103,6 +103,8 @@ describe("existing AGENTS.md RepoOS guidance", () => {
 
   it("does not offer a duplicate addition when RepoOS guidance is already present", () => {
     expect(repoOSAgentsSectionAddition(`${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS`)).toBeNull();
-    expect(repoOSAgentsSectionAddition("This repo uses **RepoOS** for task tracking.\n")).toBeNull();
+    expect(
+      repoOSAgentsSectionAddition("This repo uses **RepoOS** for task tracking.\n"),
+    ).toBeNull();
   });
 });

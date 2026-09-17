@@ -272,6 +272,17 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  // Service routes
+  getServiceStatusRoute,
+  listServicesRoute,
+  installServiceRoute,
+  startServiceRoute,
+  stopServiceRoute,
+  restartServiceRoute,
+  enableAutoStartRoute,
+  disableAutoStartRoute,
+  removeServiceRoute,
+  healthCheckRoute,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -2002,6 +2013,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
+
+  // Background service management routes (0185)
+  router.register("GET", "/api/service/status", getServiceStatusRoute);
+  router.register("GET", "/api/service/list", listServicesRoute);
+  router.register("POST", "/api/service/install", installServiceRoute);
+  router.register("POST", "/api/service/start", startServiceRoute);
+  router.register("POST", "/api/service/stop", stopServiceRoute);
+  router.register("POST", "/api/service/restart", restartServiceRoute);
+  router.register("POST", "/api/service/enable", enableAutoStartRoute);
+  router.register("POST", "/api/service/disable", disableAutoStartRoute);
+  router.register("POST", "/api/service/remove", removeServiceRoute);
+  router.register("POST", "/api/service/health", healthCheckRoute);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);
