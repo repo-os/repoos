@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-17T09:49:39Z"
-review_passes: 3
 id: "0384"
 title: Give Agents page lists card-like separation and widen the agent/model modal
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/give-agents-page-lists-card-like-separat
 created_at: "2026-09-17T08:15:06Z"
+updated_at: "2026-09-17T10:45:24Z"
+review_passes: 3
 review_rounds: 1
 ---
 ## Problem
@@ -75,4 +75,4 @@ I like the new look of the tokens tab fixed in task #380 and I want that same ca
 - 2026-09-17T09:45:30Z · status review→active
 - 2026-09-17T09:46:12Z · note: Widened the Coding Agent + Model selector modal to width: min(700px, 92vw) via a new .am-modal-wide modifier (was min(560px, 92vw)), so the CLI buttons and model entries fit on one line at desktop widths while never overflowing small viewports. Scoped to AgentModelModal.vue only, so the skills modal keeps the narrower default. Card treatment (1px border, 10px radius, var(--panel-solid), 12px gap) applied to .agent-card and .detect-row.
 - 2026-09-17T09:46:48Z · status active→review
-
+- 2026-09-17T10:45:24Z · note: Applied the same card treatment to the Model Providers tab (previously plain top-border rows). Also flattened the outer <Card> wrapper on all 5 tab lists (Default/Custom/Team/Detected/Providers) — it used --panel (translucent) directly stacking on the items' --panel-solid, which composited to nearly the same color and read as a nested box rather than distinct cards. Tabs now sit flat on the page background, same layering as the Tokens tab's .task-section cards (no outer wrapper at all). repoos check passes; verified visually via a local preview of the worktree build across all 5 tabs — cards now clearly separated with no regressions.
