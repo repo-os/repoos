@@ -27,9 +27,9 @@ tick. This state — enabled, schedule, last run — is kept in
 `.repoos/built-in-agents.json`, not `repoos.toml`; it's runtime state, like the
 rest of the cache directory.
 
-Each scan is deliberately bounded and heuristic: it reads at most a few hundred
-files, and it's looking for signal, not a full static analysis. Treat its output
-as a well-informed first pass, not a verdict.
+Each agent works from a deliberately bounded view of the repository and looks
+for signal, not a full static analysis. Treat its output as a well-informed
+first pass, not a verdict.
 
 ## Tech Debt agent
 
@@ -50,19 +50,25 @@ finds nothing creates no tasks.
 
 ## Performance agent
 
-Scans for things that tend to get slow:
+Reviews your code for performance problems using its configured coding agent and
+model. It works out what languages and entry points your repo actually uses
+(manifests, lockfiles, layout) instead of assuming JavaScript, so a Python, Go,
+Rust or Java project is reviewed on its own terms:
 
-- **Slow functions** — files longer than 300 lines.
-- **Blocking operations** — deeply nested loops, and synchronous file or
-  serialization calls (`fs.readFileSync`, `fs.writeFileSync`, large
-  `JSON.stringify`).
-- **Unbounded growth** — heavy `.push()` / `Map` construction with no obvious
-  cleanup.
-- **Duplicated computation** — expensive calls made inside a loop.
+- **Blocking operations** — synchronous I/O on an async event loop, CPU-heavy
+  work on a UI or request path, serial calls that should be batched.
+- **Slow functions** — poor algorithmic complexity, repeated linear scans,
+  expensive setup done on every call.
+- **Unbounded growth** — caches, listeners or accumulators that are never
+  evicted or unsubscribed.
+- **Duplicated computation** — work recomputed inside a loop that could be
+  hoisted, or the same payload parsed on every call.
 
 **Good output:** inbox tasks grouped by issue type, `area: performance`, each
 with the location and a plain-language description. As with Tech Debt, an empty
-scan files nothing.
+review files nothing. If the configured model or CLI is unreachable, the run
+fails with a message on the agent's own card instead of reporting a clean
+result.
 
 ## Architect agent
 

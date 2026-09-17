@@ -78,6 +78,14 @@ export interface SkillGuidedRunResult {
   report: string;
   /** Error message if the run failed. */
   error?: string;
+  /**
+   * Number of repo files included in the bounded context the agent saw.
+   * Migrated agents surface this as their `scannedFiles` count so an empty
+   * result reads as "N files reviewed" rather than the old misleading "0
+   * files scanned" that a hardcoded extension filter produced for other
+   * languages.
+   */
+  scannedFiles?: number;
   /** Duration in milliseconds. */
   elapsedMs?: number;
   /** Token usage from the LLM call. */
@@ -166,19 +174,31 @@ const CONTEXT_TREE_DEPTH = 2;
 /** Maximum entries per directory in the context tree. */
 const CONTEXT_TREE_ENTRIES = 30;
 
+/** Repo context plus the number of files the bounded walk actually saw. */
+interface RepoContext {
+  text: string;
+  fileCount: number;
+}
+
 /**
  * Gather lightweight repo context for the LLM prompt: bounded recursive
  * file tree, key manifests, and doc titles. This is bounded to avoid
  * sending the entire repo to the model.
  */
 export function gatherRepoContext(repoRoot: string): string {
+  return buildRepoContext(repoRoot).text;
+}
+
+function buildRepoContext(repoRoot: string): RepoContext {
   const lines: string[] = [];
+  let fileCount = 0;
 
   // Bounded recursive file tree
   try {
     const tree = buildDirTree(repoRoot, 0, CONTEXT_TREE_DEPTH);
+    fileCount = tree.count;
     lines.push("## Repository tree");
-    lines.push(tree);
+    lines.push(tree.text);
     lines.push("");
   } catch {
     lines.push("## Repository tree");
@@ -229,17 +249,24 @@ export function gatherRepoContext(repoRoot: string): string {
     }
   }
 
-  return lines.join("\n");
+  return { text: lines.join("\n"), fileCount };
 }
 
 /**
- * Build a bounded recursive directory tree string. Stops at `maxDepth`
- * and caps entries per directory.
+ * Build a bounded recursive directory tree. Stops at `maxDepth` and caps
+ * entries per directory. Returns the rendered tree plus the number of file
+ * entries included, so the caller can report a "files reviewed" count that
+ * is never an extension-filtered zero.
  */
-function buildDirTree(dir: string, depth: number, maxDepth: number): string {
-  if (depth >= maxDepth) return "";
+function buildDirTree(
+  dir: string,
+  depth: number,
+  maxDepth: number,
+): { text: string; count: number } {
+  if (depth >= maxDepth) return { text: "", count: 0 };
   const indent = "  ".repeat(depth);
   const lines: string[] = [];
+  let count = 0;
   try {
     const entries = readdirSync(dir, { withFileTypes: true })
       .filter((e) => !e.name.startsWith(".") && e.name !== "node_modules")
@@ -248,15 +275,17 @@ function buildDirTree(dir: string, depth: number, maxDepth: number): string {
       if (entry.isDirectory()) {
         lines.push(`${indent}${entry.name}/`);
         const child = buildDirTree(join(dir, entry.name), depth + 1, maxDepth);
-        if (child) lines.push(child);
+        if (child.text) lines.push(child.text);
+        count += child.count;
       } else {
         lines.push(`${indent}${entry.name}`);
+        count++;
       }
     }
   } catch {
     // skip unreadable dirs
   }
-  return lines.join("\n");
+  return { text: lines.join("\n"), count };
 }
 
 // ── Response parsing ──
@@ -388,11 +417,12 @@ export async function runSkillGuidedAgent(
   const agent = agentFromBuiltInConfig(agentName, agentConfig);
   logger?.agent(agentName, "info", `Skill-guided agent run started`);
 
-  // Gather repo context
-  const repoContext = gatherRepoContext(config.root);
+  // Gather repo context (and the number of files it actually saw)
+  const context = buildRepoContext(config.root);
+  const scannedFiles = context.fileCount;
 
   // Build prompt
-  const prompt = buildSkillGuidedPrompt(agentName, skillDoc, repoContext);
+  const prompt = buildSkillGuidedPrompt(agentName, skillDoc, context.text);
 
   // Invoke the LLM
   let result: PromptResult;
@@ -411,6 +441,7 @@ export async function runSkillGuidedAgent(
       fixes: [],
       report: "",
       error: msg,
+      scannedFiles,
     };
   }
 
@@ -430,6 +461,7 @@ export async function runSkillGuidedAgent(
       fixes: [],
       report: "",
       error: msg,
+      scannedFiles,
       elapsedMs: result.elapsedMs,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
@@ -453,6 +485,7 @@ export async function runSkillGuidedAgent(
       fixes: [],
       report: reportText,
       error: msg,
+      scannedFiles,
       elapsedMs: result.elapsedMs,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
@@ -471,6 +504,7 @@ export async function runSkillGuidedAgent(
     findings,
     fixes,
     report: reportText,
+    scannedFiles,
     elapsedMs: result.elapsedMs,
     inputTokens: result.inputTokens,
     outputTokens: result.outputTokens,
