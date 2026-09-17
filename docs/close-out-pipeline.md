@@ -387,8 +387,16 @@ with a 1346-line branch delta that never reached main; its job file has the
 same `candidateSha == baseMainSha` signature. The fix: `validateCandidate`
 returns a distinct `resynced: true` result and `processJob` returns without
 promoting, so the phase machine re-runs `syncing → validating` (real merge,
-real gate, real guard) from the new tip. Do not "simplify" this back into
-returning the sync result from the drift branch — that is the bug.
+real gate, real guard) from the new tip. It is bounded like the publish-time
+resync — `MAX_VALIDATE_DRIFT_RETRIES` (5) consecutive drifts fail the job with
+an actionable reason instead of revalidating forever (this repo's background
+bookkeeping commits can invalidate every validation window on a busy board).
+Do not "simplify" this back into returning the sync result from the drift
+branch — that is the bug. And `resynced` must be checked after **both**
+`validateCandidate` calls in `processJob`: the #0216 gate-retry second call can
+also discover drift, and there it would otherwise be misclassified as a real
+gate failure and fail the job with a misleading "main advanced … revalidating"
+reason.
 
 ### 2. Foreign `work/*.md` drift published to main
 

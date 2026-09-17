@@ -57,6 +57,14 @@ export interface IntegrationJob {
    * the race to publish on a busy board instead of resyncing forever.
    */
   publishDriftCount?: number;
+  /**
+   * Consecutive validate-time "main advanced" resyncs for this job (#0399).
+   * Capped at MAX_VALIDATE_DRIFT_RETRIES in integration-orchestrator.ts, same
+   * shape as publishDriftCount — bounds a job whose candidate keeps being
+   * discarded by commits landing during validation instead of resyncing
+   * forever.
+   */
+  validateDriftCount?: number;
 }
 
 export interface JobCoordinator {
@@ -130,6 +138,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       candidateSha: stored.candidateSha,
       reason: stored.reason,
       publishDriftCount: stored.publishDriftCount,
+      validateDriftCount: stored.validateDriftCount,
     };
   } catch {
     return null;

@@ -63,6 +63,17 @@ const PHASE_FAILED = "failed";
  */
 const MAX_PUBLISH_DRIFT_RETRIES = 5;
 
+/**
+ * Cap on consecutive validate-time "main advanced" resyncs (#0399). The
+ * validate-phase resync has the same exposure as its publish-time twin above:
+ * this repo's background bookkeeping commits land on main continuously, so a
+ * candidate whose validation window keeps getting invalidated would otherwise
+ * be discarded and rebuilt forever with no terminal state. Once retries are
+ * clearly not converging, fail with an actionable reason instead. Same value as
+ * the publish cap (a busy board can strand either path the same way).
+ */
+const MAX_VALIDATE_DRIFT_RETRIES = 5;
+
 function candidateBranchName(taskId: string): string {
   return `${CANDIDATE_BRANCH_PREFIX}${taskId}`;
 }
@@ -651,6 +662,16 @@ export class CloseOutOrchestrator {
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
           validateRes = await this.validateCandidate(job);
+          if (validateRes.resynced) {
+            // Main advanced before the retry could run: identical to the first
+            // call's drift branch — candidate discarded, job reset to
+            // `syncing`. This MUST be checked before the retry-failure
+            // classification below; otherwise the resync's `ok: false` is
+            // reported as a genuine validation failure and the job is failed
+            // with a misleading "main advanced … revalidating" reason instead
+            // of being revalidated (#0399, one loop later).
+            return { ok: false, reason: validateRes.reason };
+          }
           if (!validateRes.ok) {
             const secondReason = validateRes.reason ?? "unknown";
             const reason =
@@ -898,11 +919,28 @@ export class CloseOutOrchestrator {
       // of its branch's work integrated (#0399). The next syncing phase runs
       // the same pre-flight conflict check, so a real conflict still reaches
       // the repair handoff with the identical non-retryable classification.
+      //
+      // Bounded exactly like the publish-time resync (#0386): on a busy board
+      // with a stream of background bookkeeping commits, a candidate whose
+      // validation window keeps being invalidated would otherwise be discarded
+      // and rebuilt forever with no terminal state.
+      const driftCount = (job.validateDriftCount ?? 0) + 1;
+      if (driftCount > MAX_VALIDATE_DRIFT_RETRIES) {
+        return {
+          ok: false,
+          retryable: false,
+          reason:
+            `main advanced ${driftCount} times in a row while validating the candidate — giving up ` +
+            "rather than revalidating forever. The branch itself is fine, it's just losing the race " +
+            "to land; retry Move-to-done once main quiets down.",
+        };
+      }
       removeWorktree(root, branch);
       this.coordinator.updateJob(job.taskId, {
         phase: "syncing",
         baseMainSha: null,
         candidateSha: null,
+        validateDriftCount: driftCount,
       });
       return {
         ok: false,

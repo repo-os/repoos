@@ -597,4 +597,55 @@ describe("validate-phase main-advance resync still merges the branch (#0399)", (
       clean();
     }
   }, 30_000);
+
+  it("gives up after repeated validate-time drift instead of revalidating forever", async () => {
+    // Same exposure as the publish-time resync (#0386): on a busy board a
+    // stream of bookkeeping commits can invalidate every validation window, so
+    // the resync must be capped rather than livelocking the job. One drift past
+    // the cap must fail with an actionable reason.
+    const { root, clean } = makeRepo();
+    try {
+      const feature = ensureWorktree(root, "feat/T21");
+      expect(feature.ok).toBe(true);
+      mkdirSync(join(feature.path, "docs"), { recursive: true });
+      writeFileSync(join(feature.path, "docs", "feature.md"), "# feature\n");
+      git(feature.path, ["add", "docs/feature.md"]);
+      git(feature.path, ["commit", "-m", "feature work"]);
+
+      const cand = ensureWorktree(root, "repoos/integrate/T21");
+      expect(cand.ok).toBe(true);
+      git(cand.path, ["reset", "--hard", "main"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T21", branch: "feat/T21" } as any);
+      coordinator.updateJob("T21", {
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+        baseMainSha: git(root, ["rev-parse", "main"]),
+        validateDriftCount: 5, // MAX_VALIDATE_DRIFT_RETRIES
+      });
+
+      // Main advances, so validating sees drift and would resync once more.
+      mkdirSync(join(root, "docs"), { recursive: true });
+      writeFileSync(join(root, "docs", "drift.md"), "# drift\n");
+      git(root, ["add", "docs/drift.md"]);
+      git(root, ["commit", "-m", "docs: unrelated main advance"]);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+      const job = coordinator.getJob("T21");
+      expect(result.ok).toBe(false);
+      expect(job?.phase).toBe("failed");
+      expect(job?.reason).toMatch(/advanced 6 times in a row while validating/i);
+      expect(job?.reason).toMatch(/giving up/i);
+    } finally {
+      clean();
+    }
+  }, 30_000);
 });
