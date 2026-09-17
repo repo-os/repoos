@@ -77,6 +77,36 @@ describe("renderMarkdown", () => {
     expect(renderMarkdown("use `repoos check`")).toContain("<code>repoos check</code>");
   });
 
+  it("keeps image-looking syntax inside a code span literal", () => {
+    const html = renderMarkdown("dedups by the `![alt](url)` syntax itself");
+    expect(html).toContain("<code>![alt](url)</code>");
+    expect(html).not.toContain("<img");
+  });
+
+  it("keeps link-looking syntax inside a code span literal", () => {
+    const html = renderMarkdown("see `[label](https://example.com)` for the shape");
+    expect(html).toContain("<code>[label](https://example.com)</code>");
+    expect(html).not.toContain("<a href");
+  });
+
+  it("keeps emphasis- and strikethrough-looking syntax inside a code span literal", () => {
+    const html = renderMarkdown("literal `**not bold**` and `*not italic*` and `~~not struck~~`");
+    expect(html).toContain("<code>**not bold**</code>");
+    expect(html).toContain("<code>*not italic*</code>");
+    expect(html).toContain("<code>~~not struck~~</code>");
+    expect(html).not.toContain("<strong>");
+    expect(html).not.toContain("<em>");
+    expect(html).not.toContain("<del>");
+  });
+
+  it("still applies formatting outside code spans next to one", () => {
+    const html = renderMarkdown("**bold** and `![x](y)` and *italic*");
+    expect(html).toContain("<strong>bold</strong>");
+    expect(html).toContain("<code>![x](y)</code>");
+    expect(html).toContain("<em>italic</em>");
+    expect(html).not.toContain("<img");
+  });
+
   it("renders markdown tables with header, body, and inline formatting", () => {
     const src =
       "| Model | Tier | Best for |\n" +

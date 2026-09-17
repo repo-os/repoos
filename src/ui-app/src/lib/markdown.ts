@@ -15,8 +15,18 @@ function escapeHtml(s: string): string {
 
 /** Inline transforms on already-escaped text. */
 function inline(s: string): string {
-  // fenced-style inline code first so emphasis doesn't touch its contents
-  s = s.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  // Code spans must be extracted into opaque placeholders BEFORE the other
+  // passes, not simply rendered first: emitting `<code>...</code>` leaves the
+  // quoted text sitting in the string for every later regex to match, so
+  // image/link/bold/italic-looking content inside a code span gets
+  // re-interpreted (e.g. `` `![x](y)` `` became a real broken <img>). The
+  // placeholder is wrapped in NUL, which `escapeHtml` cannot produce and none
+  // of the passes below match, and the real HTML is restored at the very end.
+  const codeSpans: string[] = [];
+  s = s.replace(/`([^`\n]+)`/g, (_m, content: string) => {
+    codeSpans.push(`<code>${content}</code>`);
+    return `\u0000${codeSpans.length - 1}\u0000`;
+  });
   // images: ![alt](src) — must run BEFORE links, whose pattern also matches
   // the `[alt](src)` tail. Only http(s) and repo-relative paths are allowed.
   s = s.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()]*\))*)\)/g, (_m, alt: string, src: string) => {
@@ -41,6 +51,8 @@ function inline(s: string): string {
   s = s.replace(/(?<![\w_])_([^_\n]+?)_(?![\w_])/g, "<em>$1</em>");
   // strikethrough
   s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+  // restore the extracted code spans now that no pass can touch their content
+  s = s.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => codeSpans[Number(i)] ?? "");
   return s;
 }
 
@@ -213,6 +225,8 @@ function renderBlock(b: Block): string {
       return `<${tag}>${inline(escapeHtml(b.text))}</${tag}>`;
     }
     case "code": {
+      // Fenced code is a distinct block type and never passes through inline(),
+      // so its content is already safe from the inline formatting passes.
       const code = escapeHtml(b.lines.join("\n"));
       const cls = b.lang ? ` class="language-${escapeHtml(b.lang)}"` : "";
       return `<pre><code${cls}>${code}</code></pre>`;
