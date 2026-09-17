@@ -68,6 +68,60 @@ function candidateBranchName(taskId: string): string {
 }
 
 /**
+ * A path whose change on main can never invalidate a build/test run that
+ * already passed on the candidate: task bookkeeping under the work dir, or
+ * generated `dist/`+`screenshots/` output. The publish merge auto-resolves
+ * (or ignores) all three, so they are non-code drift by construction.
+ */
+function isNonCodePublishDrift(path: string, workPrefix: string): boolean {
+  return path.startsWith(workPrefix) || path.startsWith("dist/") || path.startsWith("screenshots/");
+}
+
+/**
+ * Is main's advance between `baseMainSha` and `currentMainSha` purely
+ * non-code churn?
+ *
+ * The publish phase normally discards a validated candidate and resyncs from
+ * scratch whenever main moved, because a code change on main could invalidate
+ * the candidate's validation. That is correct for a competing feature merge;
+ * it is pure waste for bookkeeping-only drift, which is auto-resolved to
+ * main's copy at publish time and cannot affect a build or test result.
+ *
+ * This is the root cause of #0376/#0382's unbounded resync loops: git log for
+ * both incident windows showed a burst of `docs(<id>): update task` commits
+ * across UNRELATED tasks, not competing feature merges. Skipping the resync
+ * for exactly that case lets the candidate land directly instead of
+ * rebuilding a byte-identical tree and hoping to win a race it never had to
+ * run. A drift touching any real source/config path still resyncs (bounded by
+ * MAX_PUBLISH_DRIFT_RETRIES).
+ *
+ * Fails closed: a git error, or any path that is not bookkeeping/generated,
+ * returns false so the caller takes the existing, capped resync path.
+ */
+export async function mainDriftIsBookkeepingOnly(opts: {
+  root: string;
+  baseMainSha: string;
+  currentMainSha: string;
+  workDir: string;
+}): Promise<boolean> {
+  const { root, baseMainSha, currentMainSha, workDir } = opts;
+  const res = await runGit(
+    root,
+    ["diff", "--name-only", `${baseMainSha}..${currentMainSha}`],
+    10_000,
+  );
+  if (res.status !== 0) return false;
+  const workPrefix = `${workDir || "work"}/`;
+  // No net tree change (e.g. main advanced only via an empty/merge commit) is
+  // trivially safe to publish past.
+  return res.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .every((p) => isNonCodePublishDrift(p, workPrefix));
+}
+
+/**
  * The merge that just ran left the candidate at exactly base main — it added
  * nothing. That is legitimate when the feature branch was already fully
  * integrated (a re-run of a close-out, a branch cherry-picked onto main
@@ -1203,38 +1257,66 @@ export class CloseOutOrchestrator {
       const currentMainSha = currentMainRes.stdout.trim();
 
       if (job.baseMainSha !== currentMainSha) {
-        // Main advanced between validation and publishing. Every OTHER retry
-        // path in this close-out pipeline is capped (#0216's validate-phase
-        // 2-attempt cap; handoff.ts's MAX_*_RETRY_ATTEMPTS for merge-conflict/
-        // check-failure/handoff-signal repairs) — this one wasn't, so a task
-        // whose sync→validate→publish cycle takes longer than the interval
-        // between OTHER tasks landing on main could retry forever, never
-        // winning the race. Reproduced live twice in one session (#0376,
-        // #0382): 3-4 consecutive resets, ~2 minutes each, on a busy board.
-        const driftCount = (job.publishDriftCount ?? 0) + 1;
-        if (driftCount > MAX_PUBLISH_DRIFT_RETRIES) {
-          // Deliberately do NOT set phase: "syncing" here — leaving it
-          // unchanged (still "publishing") means processJob's own existing
-          // `currentJob.phase === "syncing"` check below is false, so it
-          // falls through to failOrReconcile exactly the way a genuine
-          // publish failure already does. No new give-up path needed; this
-          // reuses the one that's already there.
-          return {
-            ok: false,
-            reason:
-              `main advanced ${driftCount} times in a row while trying to publish — giving up ` +
-              "rather than retrying forever. The branch itself is fine, it's just losing the race " +
-              "to land; retry Move-to-done once main quiets down.",
-          };
+        // Root-cause escape hatch (#0386): if main only picked up
+        // bookkeeping/generated churn since the candidate was validated
+        // (typically a burst of `docs(<id>): update task` commits for
+        // unrelated tasks), no code the candidate was tested against moved.
+        // Resyncing would rebuild a byte-identical tree and throw away a clean
+        // validation — the actual driver of #0376/#0382's loops. Publish
+        // directly onto the new main instead, recording the new base so the
+        // job state matches what was merged.
+        const bookkeepingOnly = job.baseMainSha
+          ? await mainDriftIsBookkeepingOnly({
+              root,
+              baseMainSha: job.baseMainSha,
+              currentMainSha,
+              workDir: this.config.workDir,
+            })
+          : false;
+
+        if (bookkeepingOnly) {
+          this.logger?.integration(
+            job.taskId,
+            "info",
+            "main advanced with bookkeeping-only commits — publishing without a resync",
+            { from: job.baseMainSha, to: currentMainSha },
+          );
+          this.coordinator.updateJob(job.taskId, { baseMainSha: currentMainSha });
+        } else {
+          // Main advanced with a real code change between validation and
+          // publishing. Every OTHER retry path in this close-out pipeline is
+          // capped (#0216's validate-phase 2-attempt cap; handoff.ts's
+          // MAX_*_RETRY_ATTEMPTS for merge-conflict/check-failure/handoff-
+          // signal repairs) — this one wasn't, so a task whose
+          // sync→validate→publish cycle takes longer than the interval
+          // between OTHER tasks landing on main could retry forever, never
+          // winning the race. Reproduced live twice in one session (#0376,
+          // #0382): 3-4 consecutive resets, ~2 minutes each, on a busy board.
+          const driftCount = (job.publishDriftCount ?? 0) + 1;
+          if (driftCount > MAX_PUBLISH_DRIFT_RETRIES) {
+            // Deliberately do NOT set phase: "syncing" here — leaving it
+            // unchanged (still "publishing") means processJob's own existing
+            // `currentJob.phase === "syncing"` check below is false, so it
+            // falls through to failOrReconcile exactly the way a genuine
+            // publish failure already does. No new give-up path needed; this
+            // reuses the one that's already there.
+            return {
+              ok: false,
+              reason:
+                `main advanced ${driftCount} times in a row while trying to publish — giving up ` +
+                "rather than retrying forever. The branch itself is fine, it's just losing the race " +
+                "to land; retry Move-to-done once main quiets down.",
+            };
+          }
+          removeWorktree(root, branch);
+          this.coordinator.updateJob(job.taskId, {
+            phase: "syncing",
+            baseMainSha: null,
+            candidateSha: null,
+            publishDriftCount: driftCount,
+          });
+          return { ok: false, reason: "main advanced, revalidating" };
         }
-        removeWorktree(root, branch);
-        this.coordinator.updateJob(job.taskId, {
-          phase: "syncing",
-          baseMainSha: null,
-          candidateSha: null,
-          publishDriftCount: driftCount,
-        });
-        return { ok: false, reason: "main advanced, revalidating" };
       }
 
       // Ensure the main checkout is on the actual main branch before merging.
