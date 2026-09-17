@@ -17,6 +17,7 @@ import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
+import ServiceSettings from "../components/ServiceSettings.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
@@ -431,6 +432,8 @@ onUnmounted(() => {
           </div>
         </div>
       </Card>
+
+      <ServiceSettings />
 
       <Card style="padding: 0 18px 6px; margin-bottom: 16px">
         <div class="setting-group">

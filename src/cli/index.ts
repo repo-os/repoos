@@ -22,6 +22,7 @@ import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
+import { cmdService } from "../commands/service.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecUnderBunIfRequested } from "../core/runtime.js";
@@ -126,6 +127,10 @@ function help(): void {
     ),
     cmdRow("serve [--port N]", "Start the local server (live API + SSE stream)"),
     cmdRow("stop [--port N]", "Stop this repo's serve process (by its own lockfile)"),
+    cmdRow(
+      "service [sub]",
+      `Manage background services ${c.dim("list|status|install|start|stop|restart|enable|disable|remove")}`,
+    ),
     cmdRow(
       "tunnel <sub>",
       `Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|rename|destroy|start|install|stop|list|status)")}`,
@@ -271,6 +276,9 @@ function main(): void {
       break;
     case "stop":
       cmdStop(rest);
+      break;
+    case "service":
+      void cmdService(rest);
       break;
     case "check":
       void cmdCheck();
