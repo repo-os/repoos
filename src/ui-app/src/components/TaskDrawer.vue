@@ -2796,6 +2796,11 @@ watch(
                 <ExternalLink class="size-3.5" />
                 {{ ui.active.preview.url }}
               </a>
+              <!-- Which target/frontend is being served (#0379), so "a preview
+                   is running" is never the whole story. -->
+              <span v-if="ui.active.preview.label" class="preview-target-name">
+                {{ ui.active.preview.label }}
+              </span>
             </div>
             <span
               v-if="isPreviewBusyForActive && previewAction === 'stop'"
