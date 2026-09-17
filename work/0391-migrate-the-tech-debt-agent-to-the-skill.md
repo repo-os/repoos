@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-tech-debt-agent-to-the-skill
 cli_override: claude code
+model_override: haiku
 created_at: "2026-09-17T14:03:23Z"
-updated_at: "2026-09-17T18:49:04Z"
+updated_at: "2026-09-17T18:49:06Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T18:48:58Z · cli_override
 - 2026-09-17T18:49:03Z · cli_override
 - 2026-09-17T18:49:04Z · cli_override
+- 2026-09-17T18:49:06Z · model_override
