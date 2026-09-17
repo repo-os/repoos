@@ -5,6 +5,13 @@ import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
+import {
+  autoRepairHint,
+  formatActivity,
+  formatDuration,
+  silentMs,
+  STUCK_SILENCE_MS,
+} from "../lib/retryHints";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -103,33 +110,9 @@ onUnmounted(() => {
   clearInterval(nowTimer);
 });
 
-/** Mirrors the task watchdog's default staleness window (task-watchdog.ts) — a
- *  reasonable heuristic even though the server-configured value can differ. */
-const STUCK_SILENCE_MS = 5 * 60 * 1000;
-
-function silentMs(at: string | undefined): number | null {
-  if (!at || Number.isNaN(Date.parse(at))) return null;
-  return now.value - Date.parse(at);
-}
-
-function formatDuration(ms: number): string {
-  const mins = Math.round(ms / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return rem ? `${hours}h ${rem}m` : `${hours}h`;
-}
-
-function formatActivity(at: string | undefined): string | null {
-  // const ms = silentMs(at);
-  // return ms === null ? null : `${formatDuration(ms)} ago`;
-
-  const ms = silentMs(at);
-  if (ms === null) return null;
-
-  const duration = formatDuration(ms);
-  return duration === "just now" ? duration : `${duration} ago`;
+/** The task's most recent agent activity timestamp, if known. */
+function lastActivityFor(taskId: string): string | undefined {
+  return repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
 }
 
 /** Diff stats for this task. */
@@ -240,8 +223,8 @@ const pipelineStage = computed(() => {
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
 function codingOrStuckHint(taskId: string): CardHint {
-  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
-  const ms = silentMs(lastActivity);
+  const lastActivity = lastActivityFor(taskId);
+  const ms = silentMs(now.value, lastActivity);
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
@@ -250,99 +233,10 @@ function codingOrStuckHint(taskId: string): CardHint {
       cls: "tc-stuck",
     };
   }
-  const activity = formatActivity(lastActivity);
+  const activity = formatActivity(now.value, lastActivity);
   return {
     label: activity ? `coding · active ${activity}` : "coding",
     title: "agent is making code changes — click to watch the session",
-    cls: "tc-coding",
-  };
-}
-
-/** Mirrors handoff.ts's MAX_CHECK_RETRY_ATTEMPTS. */
-const MAX_CHECK_RETRY_ATTEMPTS = 2;
-
-/** A running agent on a review-status task is otherwise indistinguishable
- *  from ordinary coding — but when `repoos check` fails right after a
- *  handoff, the server silently resumes the same engineer to fix it
- *  (handoff.ts's scheduleCheckFailureRetry) without ever leaving `review`.
- *  Label that case distinctly so it doesn't look like the task regressed. */
-function checkRetryHint(taskId: string, retryCount: number): CardHint {
-  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
-  const ms = silentMs(lastActivity);
-  if (ms !== null && ms >= STUCK_SILENCE_MS) {
-    return {
-      label: `stuck · silent ${formatDuration(ms)}`,
-      title:
-        "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
-      cls: "tc-stuck",
-    };
-  }
-  const activity = formatActivity(lastActivity);
-  return {
-    label: activity
-      ? `fixing check failure · active ${activity}`
-      : `fixing check failure (retry ${retryCount}/${MAX_CHECK_RETRY_ATTEMPTS})`,
-    title:
-      "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
-    cls: "tc-coding",
-  };
-}
-
-/** Mirrors handoff.ts's MAX_MERGE_CONFLICT_RETRY_ATTEMPTS (#0271 follow-up). */
-const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
-
-/** Same purpose as checkRetryHint, one step earlier: the close-out's
- *  `validating` phase hit a real merge conflict with main, and the engineer
- *  was automatically resumed to merge main into its own branch and resolve
- *  it (handoff.ts's scheduleMergeConflictRetry). */
-function mergeConflictRetryHint(taskId: string, retryCount: number): CardHint {
-  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
-  const ms = silentMs(lastActivity);
-  if (ms !== null && ms >= STUCK_SILENCE_MS) {
-    return {
-      label: `stuck · silent ${formatDuration(ms)}`,
-      title:
-        "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
-      cls: "tc-stuck",
-    };
-  }
-  const activity = formatActivity(lastActivity);
-  return {
-    label: activity
-      ? `fixing merge conflict · active ${activity}`
-      : `fixing merge conflict (retry ${retryCount}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
-    title:
-      "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
-    cls: "tc-coding",
-  };
-}
-
-/** Mirrors handoff.ts's MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS (#0271 follow-up). */
-const MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS = 2;
-
-/** Same purpose as the other two retry hints, but for `active` status: the
- *  task-watchdog detected a dead session that ended without emitting the
- *  handoff signal, and the engineer was automatically resumed to check its
- *  own work and either finish or re-emit the signal correctly
- *  (handoff.ts's scheduleHandoffSignalRetry). */
-function handoffSignalRetryHint(taskId: string, retryCount: number): CardHint {
-  const lastActivity = repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
-  const ms = silentMs(lastActivity);
-  if (ms !== null && ms >= STUCK_SILENCE_MS) {
-    return {
-      label: `stuck · silent ${formatDuration(ms)}`,
-      title:
-        "agent was auto-resumed after a missed handoff signal but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
-      cls: "tc-stuck",
-    };
-  }
-  const activity = formatActivity(lastActivity);
-  return {
-    label: activity
-      ? `confirming handoff · active ${activity}`
-      : `confirming handoff (retry ${retryCount}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
-    title:
-      "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
     cls: "tc-coding",
   };
 }
@@ -404,8 +298,14 @@ const hint = computed<CardHint | null>(() => {
     }
     if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
-      if (t.mergeConflictRetryCount) return mergeConflictRetryHint(t.id, t.mergeConflictRetryCount);
-      return t.checkRetryCount ? checkRetryHint(t.id, t.checkRetryCount) : codingOrStuckHint(t.id);
+      return (
+        autoRepairHint({
+          task: t,
+          running: true,
+          lastActivity: lastActivityFor(t.id),
+          now: now.value,
+        }) ?? codingOrStuckHint(t.id)
+      );
     }
     // A failed Move to done shows its own error banner below (DoneErrorCard)
     // — "review passed · ready to finish" right above it reads as
@@ -442,8 +342,14 @@ const hint = computed<CardHint | null>(() => {
   if (t.status === "active") {
     if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
-      if (t.handoffSignalRetryCount) return handoffSignalRetryHint(t.id, t.handoffSignalRetryCount);
-      return codingOrStuckHint(t.id);
+      return (
+        autoRepairHint({
+          task: t,
+          running: true,
+          lastActivity: lastActivityFor(t.id),
+          now: now.value,
+        }) ?? codingOrStuckHint(t.id)
+      );
     }
     if (t.needsInput) {
       return {
@@ -466,6 +372,18 @@ const hint = computed<CardHint | null>(() => {
   if (pmWorking) return PM_WORKING_HINT;
   return null;
 });
+
+/** The auto-repair hint in flight for the error card below, or null when no
+ *  covered retry is running — so the card's Fix button stays the explicit
+ *  "only path" when the automatic retries have given up (#0385). */
+const doneErrorRetryHint = computed(() =>
+  autoRepairHint({
+    task: props.task,
+    running: repo.isRunning(props.task.id),
+    lastActivity: lastActivityFor(props.task.id),
+    now: now.value,
+  }),
+);
 
 const IN_PIPELINE: CardAction = {
   label: "Moving to done…",
@@ -863,6 +781,7 @@ async function openDebuggerFromError(): Promise<void> {
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
       :detail="repo.doneErrorFor(task.id)!.detail"
       :hint="repo.doneErrorFor(task.id)!.hint"
+      :retry-hint="doneErrorRetryHint"
       :task-id="task.id"
       :task-title="task.title"
       @open-panel="openPanelFromError"

@@ -158,3 +158,69 @@ describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
     expect(wrapper.text()).toContain("long stack trace");
   });
 });
+
+describe("DoneErrorCard (auto-repair in flight — #0385)", () => {
+  const retryHint = {
+    label: "fixing check failure (retry 1/2)",
+    title: "`repoos check` failed right after handoff — the engineer is automatically fixing it",
+    cls: "tc-coding",
+  };
+
+  it("shows the being-resolved framing instead of a bare dead-end error", async () => {
+    const wrapper = mount(DoneErrorCard, {
+      props: { mode: "panel", message: "The validation check failed", retryHint },
+    });
+    await flush();
+
+    const banner = wrapper.find(".done-error-retry");
+    expect(banner.exists()).toBe(true);
+    expect(banner.text()).toContain("fixing check failure (retry 1/2)");
+    expect(banner.text()).toContain("automatically fixing it");
+  });
+
+  it("relabels Fix so it reads as additional, not the only path", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const wrapper = mount(DoneErrorCard, {
+      props: {
+        message: "The validation check failed",
+        taskId: "0385",
+        taskTitle: "T",
+        retryHint,
+      },
+    });
+    await flush();
+
+    const fix = wrapper.find("button.done-error-fix");
+    expect(fix.text()).toBe("Investigate anyway");
+    expect(fix.attributes("title")).toMatch(/already repairing this automatically/i);
+    // Card mode leaves the framing to TaskCard's own `.tc-hint` chip — the
+    // banner is the drawer's (panel) surface.
+    expect(wrapper.find(".done-error-retry").exists()).toBe(false);
+
+    // It still routes to the task's own debugger — it just doesn't pretend
+    // to be the only recovery path.
+    await fix.trigger("click");
+    await flush();
+    expect(calls).toEqual(["/api/tasks/0385/debugger/message"]);
+    expect(wrapper.emitted("open-debugger")).toHaveLength(1);
+  });
+
+  it("keeps the plain dead-end Fix button when no retry is in flight", async () => {
+    const wrapper = mount(DoneErrorCard, {
+      props: { message: "boom", taskId: "0385", retryHint: null },
+    });
+    await flush();
+
+    expect(wrapper.find(".done-error-retry").exists()).toBe(false);
+    const fix = wrapper.find("button.done-error-fix");
+    expect(fix.text()).toBe("Fix");
+    expect(fix.attributes("title")).toBeUndefined();
+  });
+});

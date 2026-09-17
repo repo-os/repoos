@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   X,
@@ -60,6 +60,7 @@ import SelectViewport from "./ui/select/viewport.vue";
 import AgentModelControl from "./AgentModelControl.vue";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
+import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -69,6 +70,38 @@ const router = useRouter();
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
 const restartTask = ref<Task | null>(null);
+
+/**
+ * A clock for the auto-repair hint's "stuck · silent Ns" variant (#0385):
+ * mirrors TaskCard's own tick so the drawer recomputes staleness without
+ * needing any store event to fire while an agent sits quiet.
+ */
+const now = ref(Date.now());
+let nowTimer: number | undefined;
+onMounted(() => {
+  nowTimer = window.setInterval(() => {
+    now.value = Date.now();
+  }, 15_000);
+});
+onUnmounted(() => {
+  window.clearInterval(nowTimer);
+});
+
+/** The auto-repair hint in flight for the open task, or null when no covered
+ *  retry is running (#0385). For a review task this is the close-out error's
+ *  check/merge-conflict retry; for an `active` task it is the missed-handoff
+ *  retry (shown next to "agent coding"). Null once the retry cap is hit, so
+ *  the drawer falls back to the normal dead-end error + Fix button. */
+const autoRepairRetryHint = computed(() => {
+  const t = ui.active;
+  if (!t) return null;
+  return autoRepairHint({
+    task: t,
+    running: repo.isRunning(t.id),
+    lastActivity: repo.agentActivityAt[t.id] ?? repo.runningSince[t.id],
+    now: now.value,
+  });
+});
 
 const allStatuses = computed(() => [
   { id: "draft", label: "Draft", color: statusColor("draft") },
@@ -961,9 +994,15 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (repo.isRunning(ui.active.id)) {
     // A running agent on an already-review task, outside auto-review, means
     // the server silently resumed the engineer to fix a post-handoff
-    // `repoos check` failure (handoff.ts's scheduleCheckFailureRetry) —
-    // never that the task regressed to active. Label it distinctly.
-    return ui.active.checkRetryCount
+    // `repoos check` failure or resolve a close-out merge conflict
+    // (handoff.ts's scheduleCheckFailureRetry / scheduleMergeConflictRetry) —
+    // never that the task regressed to active. Label it distinctly. The
+    // counters are read through the shared helper so they survive the full
+    // Task a `task.updated` SSE payload carries (they live in `extra` there).
+    if (retryCountFrom(ui.active, "mergeConflict")) {
+      return { label: "fixing merge conflict", cls: "rs-coding" };
+    }
+    return retryCountFrom(ui.active, "check")
       ? { label: "fixing check failure", cls: "rs-coding" }
       : { label: "coding", cls: "rs-coding" };
   }
@@ -2750,7 +2789,8 @@ watch(
             v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
             class="drawer-run"
           >
-            <ActivityIndicator /> agent coding
+            <ActivityIndicator />
+            {{ autoRepairRetryHint ? autoRepairRetryHint.label : "agent coding" }}
           </span>
           <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
                chat turn (the flag is the same server-side registry). Cleared
@@ -2772,6 +2812,7 @@ watch(
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
             :detail="repo.doneErrorFor(ui.active.id)!.detail"
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :retry-hint="autoRepairRetryHint"
             :task-id="ui.active.id"
             :task-title="ui.active.title"
             @open-debugger="openDebuggerFromError"
