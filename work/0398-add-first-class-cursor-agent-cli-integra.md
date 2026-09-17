@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-17T17:23:53Z"
-review_passes: 1
 id: "0398"
 title: Add first-class Cursor Agent CLI integration
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-first-class-cursor-agent-cli-integra
 created_at: "2026-09-17T16:34:39Z"
+updated_at: "2026-09-17T17:20:28Z"
 ---
 ## Problem
 
@@ -62,4 +61,3 @@ Run an end-to-end compatibility probe against an installed Cursor Agent when ava
 - 2026-09-17T17:06:29Z · status inbox→ready
 - 2026-09-17T17:06:32Z · status ready→active, branch
 - 2026-09-17T17:20:28Z · status active→review
-

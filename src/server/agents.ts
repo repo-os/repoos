@@ -191,7 +191,7 @@ interface Session {
   /** Model name (e.g., "big pickle", "default"). */
   model?: string;
   /** Which session engine parses the CLI output into AgentOutputEntry cards. */
-  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "kiro" | "plain";
+  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "kiro" | "cursor" | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp when the session was first created (never changes). */
@@ -241,6 +241,12 @@ interface Session {
    * turn ends before the result.
    */
   pendingTool?: { id: string; name: string; input?: string };
+  /**
+   * cursor stream only: recovery/actionable hints already surfaced for this
+   * session, so a repeated CLI error (auth, permission) does not spam the
+   * transcript with the same advice on every line.
+   */
+  cursorHints?: Set<string>;
   /**
    * Edge-detection only, not part of the public stats shape: whether the last
    * `agent.stats` snapshot we pushed already reported `stalled: true`, so the
@@ -798,6 +804,7 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "qwen code") return "qwen";
   if (cli === "codex") return "codex";
   if (cli === "kiro") return "kiro";
+  if (cli === "cursor") return "cursor";
   return "opencode";
 }
 
@@ -1399,6 +1406,238 @@ export function parseCodexEvent(raw: string): CodexEventResult | null {
   return { sessionID };
 }
 
+/**
+ * Cursor Agent CLI's `--output-format stream-json` is a Cursor-specific NDJSON
+ * dialect: `system/init` carries `session_id`, `assistant` events nest text
+ * under `message.content[]`, and tool activity arrives as separate
+ * `tool_call`/`started` and `tool_call`/`completed` events keyed by `call_id`
+ * (mirroring claude's call/result split). `result` is the terminal event with
+ * `is_error`/`duration_ms`. Unknown event fields and future event types are
+ * swallowed rather than dumped, so a Cursor upgrade cannot turn the Agent tab
+ * into a wall of JSON.
+ */
+export interface CursorParseResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+  /** Display model reported by `system/init` (informational only). */
+  model?: string;
+  pendingTool?: { id: string; name: string; input?: string };
+  toolResult?: { id: string; output?: string; isError?: boolean };
+}
+
+/**
+ * Normalize one Cursor `tool_call` payload. Cursor names the payload by tool
+ * kind (`readToolCall`, `writeToolCall`, …), or uses a generic
+ * `function: { name, arguments }` shape for other tools. Unknown shapes return
+ * null so the event is swallowed, never rendered as raw JSON.
+ */
+function cursorToolCall(
+  toolCall: unknown,
+): { name: string; args?: unknown; result?: unknown } | null {
+  if (!toolCall || typeof toolCall !== "object") return null;
+  const obj = toolCall as Record<string, unknown>;
+  const siblingError = obj.error;
+  const withSibling = (result: unknown): unknown =>
+    result ?? (siblingError !== undefined ? { error: siblingError } : undefined);
+  for (const key of Object.keys(obj)) {
+    if (key === "error" || key === "result") continue;
+    const value = obj[key];
+    if (!value || typeof value !== "object") continue;
+    const v = value as Record<string, unknown>;
+    if (key === "function") {
+      const name = typeof v.name === "string" && v.name ? v.name : "tool";
+      return { name, args: v.arguments ?? v.args, result: withSibling(v.result ?? obj.result) };
+    }
+    // `readToolCall` -> `read`, `writeToolCall` -> `write`, etc.
+    const name = key.replace(/ToolCall$/, "") || key;
+    return { name, args: v.args, result: withSibling(v.result) };
+  }
+  return null;
+}
+
+/** Render a Cursor tool input: prefer the file path / command over raw args. */
+function cursorToolInput(args: unknown): string | undefined {
+  if (args && typeof args === "object") {
+    const a = args as Record<string, unknown>;
+    if (typeof a.path === "string" && a.path) return a.path;
+    if (typeof a.command === "string" && a.command) return a.command;
+  }
+  return toolInputText(args);
+}
+
+/** Extract display output / error state from a completed Cursor tool call. */
+function cursorToolResult(result: unknown): { output?: string; isError?: boolean } {
+  if (!result || typeof result !== "object") return {};
+  const r = result as Record<string, unknown>;
+  if (r.success !== undefined) {
+    // Some Cursor tools report a boolean instead of an `error` sibling. An
+    // explicit false is a failed card, not an opaque successful JSON payload.
+    if (r.success === false) return { output: "Cursor tool reported failure", isError: true };
+    if (typeof r.success === "string" && r.success) return { output: r.success };
+    if (r.success && typeof r.success === "object") {
+      const s = r.success as Record<string, unknown>;
+      if (typeof s.content === "string" && s.content) return { output: s.content };
+      const summary: Record<string, unknown> = {};
+      for (const key of ["path", "linesCreated", "fileSize", "totalLines", "totalChars"]) {
+        if (key in s) summary[key] = s[key];
+      }
+      const rendered = Object.keys(summary).length
+        ? toolOutputText(summary)
+        : toolOutputText(r.success);
+      return { output: rendered };
+    }
+  }
+  if (r.error !== undefined) {
+    const e = r.error;
+    const message =
+      typeof e === "string"
+        ? e
+        : e && typeof e === "object" && typeof (e as Record<string, unknown>).message === "string"
+          ? ((e as Record<string, unknown>).message as string)
+          : toolOutputText(e);
+    return { output: message, isError: true };
+  }
+  return { output: toolOutputText(result) };
+}
+
+/** Best-effort human message from an `error` / failed `result` event. */
+function cursorErrorMessage(ev: Record<string, unknown>): string | undefined {
+  if (typeof ev.message === "string" && ev.message) return ev.message;
+  const err = ev.error;
+  if (typeof err === "string" && err) return err;
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    if (typeof e.message === "string" && e.message) return e.message;
+    if (typeof e.error === "string" && e.error) return e.error;
+  }
+  if (ev.is_error === true && typeof ev.result === "string" && ev.result) return ev.result;
+  return undefined;
+}
+
+/** Parse one line of Cursor Agent's `--output-format stream-json` NDJSON. */
+export function parseCursorEvent(raw: string): CursorParseResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const ev = parsed as Record<string, unknown>;
+  const type = typeof ev.type === "string" ? ev.type : "";
+  if (!type) return null;
+  const sessionID =
+    typeof ev.session_id === "string" && ev.session_id
+      ? ev.session_id
+      : typeof ev.sessionId === "string" && ev.sessionId
+        ? ev.sessionId
+        : undefined;
+  const withMeta = (base: CursorParseResult): CursorParseResult => ({
+    ...base,
+    ...(sessionID ? { sessionID } : {}),
+  });
+
+  switch (type) {
+    case "system": {
+      const model = typeof ev.model === "string" && ev.model ? ev.model : undefined;
+      return withMeta({ ...(model ? { model } : {}) });
+    }
+    case "user":
+      return withMeta({});
+    case "assistant": {
+      const message =
+        ev.message && typeof ev.message === "object"
+          ? (ev.message as Record<string, unknown>)
+          : undefined;
+      const content = Array.isArray(message?.content)
+        ? (message.content as ClaudeContentBlock[])
+        : [];
+      for (const block of content) {
+        if (block.type !== "text") continue;
+        const text = typeof block.text === "string" ? block.text : "";
+        if (text.trim()) return withMeta({ entry: { type: "text", text } });
+      }
+      return withMeta({});
+    }
+    case "tool_call": {
+      const subtype = typeof ev.subtype === "string" ? ev.subtype : "";
+      const callId =
+        typeof ev.call_id === "string" && ev.call_id
+          ? ev.call_id
+          : typeof ev.id === "string"
+            ? ev.id
+            : "";
+      const tool = cursorToolCall(ev.tool_call);
+      if (!callId || !tool) return withMeta({});
+      if (subtype === "started") {
+        const input = cursorToolInput(tool.args);
+        return withMeta({
+          pendingTool: { id: callId, name: tool.name, ...(input ? { input } : {}) },
+        });
+      }
+      if (subtype === "completed") {
+        const { output, isError } = cursorToolResult(tool.result);
+        return withMeta({
+          toolResult: {
+            id: callId,
+            ...(output ? { output } : {}),
+            ...(isError ? { isError } : {}),
+          },
+        });
+      }
+      return withMeta({});
+    }
+    case "error": {
+      const message = cursorErrorMessage(ev);
+      return withMeta(message ? { entry: { type: "sys", d: `error: ${message}` } } : {});
+    }
+    case "result": {
+      if (ev.is_error === true) {
+        const message = cursorErrorMessage(ev) ?? "Cursor run failed";
+        return withMeta({ entry: { type: "sys", d: `error: ${message}` } });
+      }
+      return withMeta({});
+    }
+    default:
+      // Unknown/future event types (thinking, future tools, …): swallow, never
+      // dump raw JSON into the transcript.
+      return withMeta({});
+  }
+}
+
+/**
+ * Actionable recovery advice for recognizable Cursor failures. Cursor surfaces
+ * auth/permission/version failures as stderr text or `error` events; this maps
+ * the common ones to the next thing the user should do. Matching is narrow so
+ * an ordinary tool error is never mislabeled as a driver problem.
+ */
+const CURSOR_ERROR_HINTS: ReadonlyArray<{ re: RegExp; hint: string }> = [
+  {
+    re: /\bnot (?:logged in|authenticated|signed in)\b|authentication required|unauthorized|\b401\b|\b403\b|invalid api key/i,
+    hint: "Cursor Agent authentication required — run `cursor-agent login` (or set CURSOR_API_KEY) and restart the turn.",
+  },
+  {
+    re: /\bpermission denied\b|\bnot allowed\b|\bdenied\b|requires approval|approval required/i,
+    hint: "Cursor Agent was denied a tool/command. RepoOS launches it with --force in the task worktree; check Cursor deny rules or sandbox settings.",
+  },
+  {
+    re: /unknown (?:option|argument|command)|unsupported (?:flag|option)|unrecognized (?:option|argument)/i,
+    hint: "Cursor Agent may be out of date for this RepoOS driver — run `cursor-agent update`.",
+  },
+  {
+    re: /\bsession (?:not found|expired|invalid)\b|\bno (?:such|matching) session\b/i,
+    hint: "Cursor session is no longer available. Retry the follow-up to start a fresh session for this task.",
+  },
+];
+
+/** The actionable hint for a Cursor failure line, or null when none applies. */
+export function cursorErrorHint(text: string): string | null {
+  for (const { re, hint } of CURSOR_ERROR_HINTS) {
+    if (re.test(text)) return hint;
+  }
+  return null;
+}
+
 /** Byte estimate of one entry, for the transcript cap. */
 function entryBytes(e: AgentOutputEntry): number {
   const legacy = e as { d?: string };
@@ -1629,6 +1868,29 @@ function copilotArgs(options: { write: boolean }): string[] {
   ];
 }
 
+/**
+ * Cursor Agent CLI's print-mode flags. `--output-format stream-json` emits one
+ * complete assistant message per event plus discrete tool start/completion
+ * events and a terminal result — the shape `parseCursorEvent` renders as chat
+ * cards. `--trust` is REQUIRED in headless mode: without it Cursor prompts to
+ * trust the workspace, and stdin is ignored so the prompt can never be
+ * answered. `write` adds `--force` (Cursor's documented permission bypass) so
+ * normal worktree edits and project checks run instead of waiting for an
+ * approval that can never arrive. The blast radius is the task's own git
+ * worktree: RepoOS never launches this driver in the main checkout.
+ */
+function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
+  return [
+    "-p",
+    "--output-format",
+    "stream-json",
+    ...(options.write ? ["--force"] : []),
+    "--trust",
+    "--approve-mcps",
+    ...(options.cwd ? ["--workspace", options.cwd] : []),
+  ];
+}
+
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   if (cli === "claude code") {
@@ -1680,6 +1942,15 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
     return {
       cmd: "kiro-cli",
       args: ["chat", "--no-interactive", "--trust-all-tools", ...modelArgs(cli, model), mission],
+    };
+  }
+  if (cli === "cursor") {
+    // cursor-agent: explicit binary (never a bare `agent`). Print mode + stream
+    // JSON, --force so worktree edits and `repoos check` are not gated behind
+    // an unanswerable approval prompt, --workspace pinned to the task worktree.
+    return {
+      cmd: "cursor-agent",
+      args: [...cursorArgs({ write: true, cwd }), ...modelArgs(cli, model), mission],
     };
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
@@ -1777,6 +2048,22 @@ function resumeCommand(
         "--no-interactive",
         "--trust-all-tools",
         ...(sessionId ? ["--resume-id", sessionId] : ["-r"]),
+        ...modelArgs(cli, model),
+        text,
+      ],
+    };
+  }
+  if (cli === "cursor") {
+    // Resume the EXACT session RepoOS captured from `system/init`. Cursor's
+    // `--continue` attaches the most recent session in the cwd, which could
+    // belong to a different task — so when no id is known, start a fresh
+    // session (the text still gets a real turn) rather than continuing
+    // unrelated work.
+    return {
+      cmd: "cursor-agent",
+      args: [
+        ...cursorArgs({ write: true, cwd }),
+        ...(sessionId ? ["--resume", sessionId] : []),
         ...modelArgs(cli, model),
         text,
       ],
@@ -2068,6 +2355,11 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
+  if (agent.cli === "cursor") {
+    // One-shot authoring/probe: read-only (no --force), but --trust so the
+    // headless print run does not stall on a workspace-trust prompt.
+    return { cmd: "cursor-agent", args: [...cursorArgs({ write: false }), ...extra, prompt] };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -2140,6 +2432,15 @@ export function pmCommand(
     return {
       cmd: "kiro-cli",
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
+    };
+  }
+  if (agent.cli === "cursor") {
+    // stream-json so the PM authoring pass's final answer and any usage the CLI
+    // reports flow through `extractOneShotReportText` / `extractUsage`.
+    // Deliberately NO --force: the PM only authors text, applied by RepoOS.
+    return {
+      cmd: "cursor-agent",
+      args: [...cursorArgs({ write: false, cwd }), ...extra, prompt],
     };
   }
   // opencode: `--format json` separates the final answer from step-by-step
@@ -2237,6 +2538,15 @@ export function reviewCommand(
       args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
     };
   }
+  if (agent.cli === "cursor") {
+    // The reviewer must run `git diff` / tests, and stdin is ignored — without
+    // --force those calls would block on an unanswerable approval prompt.
+    // RepoOS still owns the review boundary; this only opens the task worktree.
+    return {
+      cmd: "cursor-agent",
+      args: [...cursorArgs({ write: true, cwd }), ...extra, prompt],
+    };
+  }
   return {
     cmd: "opencode",
     args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt],
@@ -2280,6 +2590,10 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
   }
   if (cli === "github copilot") {
     const parsed = parseCopilotEvent(raw);
+    return parsed?.entry ?? null;
+  }
+  if (cli === "cursor") {
+    const parsed = parseCursorEvent(raw);
     return parsed?.entry ?? null;
   }
   return { s: "out", d: raw };
@@ -3571,6 +3885,15 @@ export class AgentRunner {
       this.appendCodexLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "cursor") {
+      this.appendCursorLine(taskId, session, raw);
+      return;
+    }
+    // Cursor surfaces auth/permission/version failures on stderr; map the
+    // recognizable ones to an actionable recovery hint.
+    if (stream === "err" && session.engine === "cursor") {
+      this.maybeCursorHint(taskId, session, raw);
+    }
 
     const parsed = stream === "out" && session.engine === "opencode" ? parseJsonEvent(raw) : null;
     let entry: AgentOutputEntry;
@@ -3739,6 +4062,71 @@ export class AgentRunner {
       );
     }
     this.lineTouched(taskId, session, raw);
+  }
+
+  /**
+   * Cursor Agent's stream-json branch. Tool activity is a start/complete pair
+   * keyed by `call_id`, so — like claude — the card is buffered until its
+   * completion arrives and emitted with name + input + output together. Any
+   * recognized-but-voiceless event (init, the terminal result, unknown future
+   * types) is swallowed, never dumped as raw JSON.
+   */
+  private appendCursorLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseCursorEvent(raw);
+    if (!parsed) {
+      const entry: AgentOutputEntry = { s: "out", d: raw };
+      this.tryExtractSessionId(raw, session);
+      this.maybeCursorHint(taskId, session, raw);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.pendingTool) {
+      // A second call starting before the first resolved: flush the stale card
+      // without output so it is not lost, then buffer the new one.
+      if (session.pendingTool && session.pendingTool.id !== parsed.pendingTool.id) {
+        this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
+      }
+      session.pendingTool = parsed.pendingTool;
+    } else if (parsed.toolResult) {
+      const pending =
+        session.pendingTool && session.pendingTool.id === parsed.toolResult.id
+          ? session.pendingTool
+          : undefined;
+      if (pending) {
+        session.pendingTool = undefined;
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.name,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(parsed.toolResult.output ? { output: parsed.toolResult.output } : {}),
+          state: parsed.toolResult.isError ? "error" : "completed",
+        });
+      }
+      // An orphaned completion (no matching start) has nothing to attach to.
+    } else if (parsed.entry) {
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
+      if ("type" in parsed.entry && parsed.entry.type === "sys") {
+        this.maybeCursorHint(taskId, session, raw);
+      }
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** Emit an actionable recovery hint for a Cursor error line, once per session. */
+  private maybeCursorHint(taskId: string, session: Session, raw: string): void {
+    const hint = cursorErrorHint(raw);
+    if (!hint) return;
+    const seen = (session.cursorHints ??= new Set<string>());
+    if (seen.has(hint)) return;
+    seen.add(hint);
+    this.recordEntry(taskId, session, "sys", { type: "sys", d: hint });
   }
 
   /** The transcript entry for a tool_use whose result never arrived. */
@@ -4208,7 +4596,12 @@ export class AgentRunner {
     if (entry.killTimer) clearTimeout(entry.killTimer);
     // claude stream (0109): a tool_use whose result never arrived before the
     // turn ended still gets its card, so a call is never silently invisible.
-    if ((session?.engine === "claude" || session?.engine === "qwen") && session.pendingTool) {
+    if (
+      (session?.engine === "claude" ||
+        session?.engine === "qwen" ||
+        session?.engine === "cursor") &&
+      session.pendingTool
+    ) {
       this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
       session.pendingTool = undefined;
     }
@@ -4456,7 +4849,7 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "plain"].includes(
+        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "cursor", "plain"].includes(
           value.engine as string,
         ) ||
         typeof value.updatedAt !== "string" ||

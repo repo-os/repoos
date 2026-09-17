@@ -601,6 +601,12 @@ export interface DetectedAgent {
   headless: boolean | null;
   drivable: boolean;
   installHint: string;
+  /** Copyable sign-in hint, when the CLI reports auth state. */
+  authHint?: string;
+  /** One-line capability note shown beside the agent. */
+  capability?: string;
+  /** Auth state from the CLI's own status probe: true/false/null (unknown). */
+  auth: boolean | null;
 }
 
 /** Live model result for one coding agent (GET /api/models). */

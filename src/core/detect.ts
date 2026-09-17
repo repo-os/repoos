@@ -23,6 +23,17 @@ export interface KnownAgent {
   drivable: boolean;
   /** Copyable install hint shown when the CLI is missing. */
   installHint: string;
+  /** Copyable sign-in hint shown when the binary is installed but not logged in. */
+  authHint?: string;
+  /**
+   * Arguments (after the binary) whose JSON stdout reports authentication
+   * state. Only set for CLIs that expose a reliable machine-readable status
+   * probe; the parser is {@link parseAuthState}. Probed only when the binary
+   * is installed and headless.
+   */
+  authCheckArgs?: string[];
+  /** One-line capability note shown in the Agents UI. */
+  capability?: string;
 }
 
 /** One row of the detection result. */
@@ -40,6 +51,13 @@ export interface DetectedAgent extends KnownAgent {
    * - `null` — not installed (headless is unknown)
    */
   headless: boolean | null;
+  /**
+   * Authentication state reported by the CLI's own status probe:
+   * - `true` — logged in
+   * - `false` — installed but not authenticated
+   * - `null` — no probe available, or it timed out / returned unparseable output
+   */
+  auth: boolean | null;
 }
 
 /** Default ceiling on the `--version` probe, ms. A hung binary is SIGKILLed. */
@@ -126,6 +144,16 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     binary: "pi",
     drivable: false,
     installHint: "npm i -g @earendil-works/pi-coding-agent",
+  },
+  {
+    id: "cursor",
+    name: "cursor agent",
+    binary: "cursor-agent",
+    drivable: true,
+    installHint: "curl https://cursor.com/install -fsS | bash",
+    authHint: "cursor-agent login   (or export CURSOR_API_KEY=<key>)",
+    authCheckArgs: ["status", "--format", "json"],
+    capability: "Print mode with stream-JSON, session resume, and model selection",
   },
 ];
 
@@ -262,6 +290,79 @@ export interface DetectOptions {
 }
 
 /**
+ * Parse a CLI's auth-status JSON. Deliberately tolerant of the handful of
+ * boolean-ish shapes a status command might use; anything unrecognized is
+ * `null` (unknown), never a fabricated false.
+ */
+export function parseAuthState(text: string): boolean | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(text.trim());
+  } catch {
+    return null;
+  }
+  if (!value || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.isAuthenticated === "boolean") return obj.isAuthenticated;
+  if (typeof obj.authenticated === "boolean") return obj.authenticated;
+  if (typeof obj.status === "string") return obj.status.trim().toLowerCase() === "authenticated";
+  return null;
+}
+
+/**
+ * Run a CLI's auth-status command and parse its JSON stdout. Never throws and
+ * never hangs: a spawn failure, error, non-zero exit, timeout, or unparseable
+ * output all resolve `null`.
+ */
+export function captureAuthState(
+  binaryPath: string,
+  args: string[],
+  timeoutMs: number,
+): Promise<boolean | null> {
+  return new Promise((resolve) => {
+    const needsShell = process.platform === "win32" && WIN32_SCRIPT_RE.test(binaryPath);
+    let proc: ChildProcess;
+    try {
+      proc = spawn(binaryPath, args, {
+        stdio: ["ignore", "pipe", "pipe"],
+        shell: needsShell,
+      });
+    } catch {
+      resolve(null);
+      return;
+    }
+
+    let out = "";
+    let settled = false;
+    const done = (v: boolean | null): void => {
+      if (settled) return;
+      settled = true;
+      resolve(v);
+    };
+    const timer = setTimeout(() => {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        /* already gone */
+      }
+      done(null);
+    }, timeoutMs);
+
+    proc.stdout?.on("data", (c: Buffer) => {
+      if (out.length < VERSION_MAX_LEN * 8) out += c.toString("utf8");
+    });
+    proc.on("error", () => {
+      clearTimeout(timer);
+      done(null);
+    });
+    proc.on("exit", () => {
+      clearTimeout(timer);
+      done(parseAuthState(out));
+    });
+  });
+}
+
+/**
  * Probe every known coding agent: resolve its binary on PATH and, when found,
  * capture a version. Rows for missing binaries carry `installed: false`.
  *
@@ -278,7 +379,14 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
     list.map(async (agent) => {
       const resolved = resolveBinary(agent.binary, pathEnv);
       if (!resolved) {
-        return { ...agent, installed: false, path: null, version: null, headless: null };
+        return {
+          ...agent,
+          installed: false,
+          path: null,
+          version: null,
+          headless: null,
+          auth: null,
+        };
       }
       const appBundle = isAppBundleBinary(resolved);
       let version: string | null = null;
@@ -291,12 +399,21 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
       }
       const desktopOnly =
         appBundle || (agent.id === "opencode" && isDesktopOutputSignature(version));
+      let auth: boolean | null = null;
+      if (!desktopOnly && agent.authCheckArgs?.length) {
+        try {
+          auth = await captureAuthState(resolved, agent.authCheckArgs, timeoutMs);
+        } catch {
+          auth = null;
+        }
+      }
       return {
         ...agent,
         installed: true,
         path: resolved,
         version,
         headless: !desktopOnly,
+        auth,
       };
     }),
   );
