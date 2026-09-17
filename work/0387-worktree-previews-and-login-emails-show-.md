@@ -2,7 +2,7 @@
 id: "0387"
 title: Worktree previews and login emails show the branch name instead of the repo name
 type: bug
-status: review
+status: done
 priority: p3
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/worktree-previews-and-login-emails-show-
 model_override: openrouter/xiaomi/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T11:17:47Z"
-updated_at: "2026-09-17T12:10:49Z"
+updated_at: "2026-09-17T13:13:17Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ The fix already has prior art to follow: `src/server/deployments.ts` gets this r
 - 2026-09-17T11:46:19Z · review_model_override
 - 2026-09-17T11:46:21Z · status ready→active, branch
 - 2026-09-17T12:10:49Z · status active→review
+- 2026-09-17T13:13:17Z · status review→done, release:success
