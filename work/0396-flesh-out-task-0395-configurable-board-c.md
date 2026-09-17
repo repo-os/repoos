@@ -5,7 +5,7 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-17T14:20:31Z"
@@ -97,6 +97,11 @@ Add automated coverage for config parsing/defaults/validation and the relevant U
 
 The task should call out the main product constraint: familiar labels are valuable, but RepoOS must preserve one stable underlying workflow for task files, automation, integrations, and upgrades.
 
+## Screenshots
+
+![Screenshot-2026-09-17-at-21.38.11](/api/tasks/0396/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-17T14:20:31Z · created · hello@repoos.org
+- 2026-09-17T14:20:31Z · screenshots
