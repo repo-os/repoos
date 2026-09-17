@@ -2,14 +2,14 @@
 id: "0384"
 title: Give Agents page lists card-like separation and widen the agent/model modal
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/give-agents-page-lists-card-like-separat
 created_at: "2026-09-17T08:15:06Z"
-updated_at: "2026-09-17T09:46:12Z"
+updated_at: "2026-09-17T09:46:48Z"
 review_rounds: 1
 review_passes: 2
 ---
@@ -74,3 +74,4 @@ I like the new look of the tokens tab fixed in task #380 and I want that same ca
 - 2026-09-17T09:26:23Z · status active→review
 - 2026-09-17T09:45:30Z · status review→active
 - 2026-09-17T09:46:12Z · note: Widened the Coding Agent + Model selector modal to width: min(700px, 92vw) via a new .am-modal-wide modifier (was min(560px, 92vw)), so the CLI buttons and model entries fit on one line at desktop widths while never overflowing small viewports. Scoped to AgentModelModal.vue only, so the skills modal keeps the narrower default. Card treatment (1px border, 10px radius, var(--panel-solid), 12px gap) applied to .agent-card and .detect-row.
+- 2026-09-17T09:46:48Z · status active→review
