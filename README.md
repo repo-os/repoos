@@ -46,7 +46,7 @@ Install the standalone `repoos` command. This is the quickest option when you
 want a self-contained release build:
 
 ```bash
-curl -fsSL https://repoos.org/install.sh | bash
+curl -fsSL https://repoos.org/install | bash
 ```
 
 It runs on Bun when available (recommended), otherwise requires Node.js >=

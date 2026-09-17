@@ -6,10 +6,12 @@ Run `repoos` with no arguments to see this list in your terminal.
 
 ### `repoos init [name]`
 
-Scaffolds `work/`, `docs/`, `AGENTS.md`, `repoos.toml` and a `.gitignore` entry
-in the current repo, plus a `ready` starter task so the board isn't empty. Run
-outside a git repo, it starts a guided new-project flow instead, which can
-launch the web console for you.
+Scaffolds RepoOS files in the current repo, plus a `ready` starter task so the
+board isn't empty. By default files go under a `repoos/` subdirectory;
+interactive prompts let you choose a different location or `/` for the repo
+root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
+repo, it starts a guided new-project flow instead, which can launch the web
+console for you.
 
 ### `repoos upgrade [--channel beta|canary|rc]`
 

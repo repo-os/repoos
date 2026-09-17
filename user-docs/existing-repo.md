@@ -12,23 +12,51 @@ From the root of your repo:
 repoos init
 ```
 
+By default, RepoOS files live under a `repoos/` subdirectory to keep metadata
+out of your project source. You can choose a different location or explicitly
+pick the repo root during the interactive prompt.
+
 It creates only what isn't already there:
 
 | Path | What it is |
 | --- | --- |
-| `work/` | One markdown file per task. The board. |
-| `docs/` | Context an agent reads before working — architecture notes, decisions, history. |
-| `AGENTS.md` | The cross-tool agent-instructions standard. |
-| `repoos.toml` | Configuration. Every field is optional. |
-| `work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
-| `work/0002-read-the-codebase.md` | A `ready` starter task: read this codebase and propose `docs/` + an initial task backlog. |
+| `repoos/work/` | One markdown file per task. The board. |
+| `repoos/docs/` | Context an agent reads before working — architecture notes, decisions, history. |
+| `AGENTS.md` | The cross-tool agent-instructions standard. Always at the repo root. |
+| `repoos.toml` | Configuration. Every field is optional. Always at the repo root. |
+| `repoos/work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
+| `repoos/work/0002-read-the-codebase.md` | A `ready` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. |
 | `.env.example` | Documents the secrets a fuller setup expects. |
-| `.gitignore` entries | Ignore the derived cache (`.repoos/`) and local secrets (`.env`). |
+| `.gitignore` entries | Ignore the derived cache (`repoos/.repoos/`) and local secrets (`.env`). |
+
+With the default layout, `repoos.toml` persists the configured paths:
+
+```toml
+workDir  = "repoos/work"
+docsDir  = "repoos/docs"
+cacheDir = "repoos/.repoos"
+```
 
 If `AGENTS.md` or `.gitignore` already exist, they're left alone — `.gitignore`
 is only *appended* to if the two RepoOS lines are missing, and an existing
 `AGENTS.md` is kept as-is. Re-running `repoos init` reports "already set up" and
 changes nothing.
+
+## Choosing a layout
+
+During interactive `repoos init`, you'll be prompted:
+
+```
+Where should RepoOS files live? [repoos/]
+```
+
+- **Enter** accepts the default `repoos/` subdirectory.
+- Type a custom path like `.meta/repoos/` to nest it elsewhere.
+- Type `/` to place `work/`, `docs/`, and `.repoos/` at the repo root (the
+  original layout).
+
+`repoos.toml` and `AGENTS.md` always stay at the repo root regardless of the
+layout choice.
 
 ## What it doesn't touch
 
@@ -45,12 +73,12 @@ like RepoOS.
 
 You don't have to move your whole roadmap at once:
 
-1. Run `repoos init` and commit `work/`, `docs/`, `AGENTS.md`, and
-   `repoos.toml`. `AGENTS.md` is what agents read first, so getting it into the
-   repo is what makes agents useful here.
+1. Run `repoos init` and commit the scaffolded files. `AGENTS.md` is what
+   agents read first, so getting it into the repo is what makes agents useful
+   here.
 2. Add a handful of tasks with `repoos new` and work them through the lifecycle.
-3. Grow `docs/` as you go — each durable decision you write down once stops
-   being re-derived on every future task. See [Concepts](/concepts).
+3. Grow `repoos/docs/` as you go — each durable decision you write down once
+   stops being re-derived on every future task. See [Concepts](/concepts).
 
 ## Running it outside a git repo
 

@@ -35,6 +35,67 @@ autoEngineeringMode = false   # automatically dispatch ready tasks to agents
 worktreeWarnThreshold = 20    # warn once this many task worktrees exist
 ```
 
+### Board column labels
+
+Rename the six board column display labels without changing the underlying
+status IDs. Status IDs (`draft`, `inbox`, `ready`, `active`, `review`, `done`)
+are fixed — they appear in task frontmatter, the CLI, the API, and transition
+rules. `[board.columns]` only changes what you *see* in the UI and CLI.
+
+```toml
+[board.columns]
+draft  = "Ideas"
+inbox  = "Backlog"
+ready  = "Selected for development"
+active = "In progress"
+review = "Code review"
+done   = "Shipped"
+```
+
+Labels are partial — any column you don't override keeps its default. Blank,
+non-string, duplicate, or labels over 40 characters fall back to the default
+for that column. Changes apply live (no restart needed).
+
+**Defaults:**
+
+| Column  | Default label       |
+| ------- | ------------------- |
+| `draft` | Proposed / Drafts   |
+| `inbox` | Inbox               |
+| `ready` | Ready               |
+| `active`| Active              |
+| `review`| Review              |
+| `done`  | Done                |
+
+**Presets:**
+
+Plain RepoOS (defaults):
+```toml
+[board.columns]  # no overrides needed — these are the defaults
+```
+
+Jira-style:
+```toml
+[board.columns]
+draft  = "To Do"
+inbox  = "Backlog"
+ready  = "Selected for Development"
+active = "In Progress"
+review = "Code Review"
+done   = "Done"
+```
+
+Lightweight Kanban:
+```toml
+[board.columns]
+draft  = "Ideas"
+inbox  = "Backlog"
+ready  = "Next Up"
+active = "Working"
+review = "Checking"
+done   = "Done"
+```
+
 ## Server
 
 ```toml

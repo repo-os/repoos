@@ -10,7 +10,7 @@ interface InstallOption {
 // curl is the default tab: it's the one true zero-dependency path (no
 // package manager required), so it's what a first-time visitor should see.
 const INSTALL_OPTIONS: InstallOption[] = [
-  { id: "curl", label: "curl", cmd: "curl -fsSL https://repoos.org/install.sh | bash" },
+  { id: "curl", label: "curl", cmd: "curl -fsSL https://repoos.org/install | bash" },
   { id: "brew", label: "brew", cmd: "brew install repo-os/tap/repoos" },
   { id: "npm", label: "npm", cmd: "npm install -g @repo-os/repoos" },
   { id: "bun", label: "bun", cmd: "bun add -g @repo-os/repoos" },
@@ -72,7 +72,9 @@ function selectOption(option: InstallOption): void {
 
     <div class="install-box">
       <span class="dollar font-mono text-[13.5px]">$</span>
-      <code>{{ active.cmd }}</code>
+      <div class="install-command-scroll">
+        <code>{{ active.cmd }}</code>
+      </div>
       <button
         class="copy-btn"
         :class="{ copied }"

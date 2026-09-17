@@ -2,14 +2,14 @@
 id: "0394"
 title: Migrate the Design Agent to the skill-guided runner
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-17T14:03:53Z"
-updated_at: "2026-09-17T14:03:53Z"
+updated_at: "2026-09-17T15:15:56Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 ## Activity
 
 - 2026-09-17T14:03:53Z · created · unknown
+- 2026-09-17T15:15:56Z · status inbox→ready
