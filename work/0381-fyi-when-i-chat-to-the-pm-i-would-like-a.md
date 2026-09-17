@@ -2,7 +2,7 @@
 id: "0381"
 title: Show PM-working indicators on task card and task panel
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-pm-working-indicators-on-task-card-
 model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-09-17T05:13:21Z"
-updated_at: "2026-09-17T05:16:24Z"
+updated_at: "2026-09-17T06:06:36Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ FYI when I chat to the PM I would like a visual indicator on the task card that 
 - 2026-09-17T05:16:13Z · model_override
 - 2026-09-17T05:16:14Z · status inbox→ready
 - 2026-09-17T05:16:24Z · status ready→active, branch
+- 2026-09-17T06:06:36Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
