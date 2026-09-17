@@ -2,14 +2,14 @@
 id: "0385"
 title: DoneErrorCard shows a dead-end error + Fix button even when auto-repair is already running
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: ui
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-17T08:22:45Z"
-updated_at: "2026-09-17T08:22:45Z"
+updated_at: "2026-09-17T09:24:33Z"
 ---
 ## Problem
 
@@ -98,3 +98,4 @@ the "Fix" button when a covered auto-repair is in flight:
 ## Activity
 
 - 2026-09-17T08:22:45Z · created · unknown
+- 2026-09-17T09:24:33Z · status inbox→ready
