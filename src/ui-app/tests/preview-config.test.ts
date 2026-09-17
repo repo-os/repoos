@@ -248,8 +248,10 @@ describe("this repo's own [preview] config", () => {
   it("scripts/build.mjs reuses checkBuildForRoot and runs the raw pipeline", () => {
     const script = readFileSync(join(repoRoot, "scripts", "build.mjs"), "utf8");
     // The single staleness decision lives in core/build.ts and is rendered
-    // here — not reimplemented — and the actual work is the raw pipeline.
+    // here — with the release-version guard — and the actual work is the raw
+    // pipeline.
     expect(script).toContain("checkBuildForRoot");
+    expect(script).toContain("buildVersionMatchesPackage");
     expect(script).toContain("build:raw");
     expect(script).not.toMatch(/(^|[\s&|;])repoos serve/);
   });

@@ -21,7 +21,7 @@
 // `tsconfig.json` or `bun.lock` does not by itself invalidate the marker — a
 // forced build is how those get picked up before the next `src/` edit.
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -78,6 +78,23 @@ function buildOutputsPresent(r) {
   );
 }
 
+/**
+ * A package release can change package.json without changing src/. In that
+ * case a fresh source hash alone is not enough: copy-assets.mjs must rerun to
+ * stamp the release version into dist/.build-info.json before npm packs it.
+ */
+function buildVersionMatchesPackage(r) {
+  try {
+    const { version: packageVersion } = JSON.parse(readFileSync(join(r, "package.json"), "utf8"));
+    const { version: buildVersion } = JSON.parse(
+      readFileSync(join(r, "dist", ".build-info.json"), "utf8"),
+    );
+    return typeof packageVersion === "string" && packageVersion === buildVersion;
+  } catch {
+    return false;
+  }
+}
+
 // Decide via the shared check. It is imported dynamically, not statically, so a
 // broken `src/core/build.ts` — the very thing a build is meant to catch — falls
 // through to `build:raw` and lets tsc report the real error, instead of failing
@@ -86,7 +103,10 @@ function buildOutputsPresent(r) {
 let skip = false;
 try {
   const { checkBuildForRoot, shouldSkipBuild } = await import("../src/core/build.ts");
-  skip = shouldSkipBuild(checkBuildForRoot(root), force) && buildOutputsPresent(root);
+  skip =
+    shouldSkipBuild(checkBuildForRoot(root), force) &&
+    buildOutputsPresent(root) &&
+    buildVersionMatchesPackage(root);
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
   console.warn(`build: staleness check unavailable (${message}) — running a full build`);
