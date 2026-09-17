@@ -410,6 +410,16 @@ export interface RepoOSConfig {
    * whose port other tooling hardcodes (e.g. this dogfood repo → 7171).
    */
   servePort?: number;
+  /**
+   * Display-only column label overrides for the six board columns (task
+   * #0396). Keys are canonical status IDs (`draft`, `inbox`, `ready`, `active`,
+   * `review`, `done`); values are display labels shown in the UI and CLI.
+   * Partial overrides merge over defaults — only specified keys change.
+   * Invalid entries (blank, non-string, >40 chars, duplicates) fall back to
+   * the default for that column. Never affects status IDs, transition rules,
+   * frontmatter, or API/CLI status inputs.
+   */
+  boardColumns?: Record<string, string>;
 }
 
 /**

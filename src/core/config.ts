@@ -34,6 +34,16 @@ import type {
 import { STATUSES } from "./types.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
+/** Default display labels for board columns, keyed by canonical status ID. */
+export const DEFAULT_COLUMN_LABELS: Record<string, string> = {
+  draft: "Proposed / Drafts",
+  inbox: "Inbox",
+  ready: "Ready",
+  active: "Active",
+  review: "Review",
+  done: "Done",
+};
+
 /** Coding agents an Agent can run under. */
 export const AGENT_CLIS = [
   "opencode",
@@ -475,6 +485,62 @@ function parseFlatToml(text: string): Record<string, unknown> {
 }
 
 /**
+ * Parse `[board.columns]` from the flat TOML output. Invalid entries (blank,
+ * non-string, >40 chars after trim, or duplicate of another column's label)
+ * fall back to the default for that column. Returns undefined when no
+ * override is configured.
+ */
+export function parseBoardColumns(
+  parsed: Record<string, unknown>,
+): Record<string, string> | undefined {
+  const overrides: Record<string, string> = {};
+  const usedLabels = new Map<string, string>(); // label → status id (for dup check)
+
+  for (const status of STATUSES) {
+    const key = `board.columns.${status}`;
+    const raw = parsed[key];
+    if (raw === undefined) continue;
+    if (typeof raw !== "string") {
+      console.warn(`[board.columns] ${status}: non-string value ignored`);
+      continue;
+    }
+    const label = raw.trim();
+    if (!label) {
+      console.warn(`[board.columns] ${status}: blank label ignored, using default`);
+      continue;
+    }
+    if (label.length > 40) {
+      console.warn(
+        `[board.columns] ${status}: label exceeds 40 chars (${label.length}), using default`,
+      );
+      continue;
+    }
+    const existing = usedLabels.get(label.toLowerCase());
+    if (existing) {
+      console.warn(
+        `[board.columns] ${status}: duplicate label "${label}" (already used by ${existing}), using default`,
+      );
+      continue;
+    }
+    usedLabels.set(label.toLowerCase(), status);
+    overrides[status] = label;
+  }
+
+  return Object.keys(overrides).length ? overrides : undefined;
+}
+
+/** Resolve the full set of column labels, merging config overrides over defaults. */
+export function resolveColumnLabels(boardColumns?: Record<string, string>): Record<string, string> {
+  const out = { ...DEFAULT_COLUMN_LABELS };
+  if (boardColumns) {
+    for (const [k, v] of Object.entries(boardColumns)) {
+      if (k in out) out[k] = v;
+    }
+  }
+  return out;
+}
+
+/**
  * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
  * TOML. Exported for tests; `loadConfig` merges the result into the config.
  * Rows without a usable `command` are dropped rather than poisoning resolution.
@@ -736,6 +802,12 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         .map((v) => v.trim());
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
+
+    // [board.columns] section (#0396) — display-only column label overrides.
+    // Invalid entries (blank, non-string, >40 chars, duplicates) fall back to
+    // the default for that column; valid siblings still apply.
+    const boardColumns = parseBoardColumns(parsed);
+    if (boardColumns) cfg.boardColumns = boardColumns;
 
     // [preview] section (#0362) — how to preview a task's worktree. The
     // project's own command runs, selected by the task's `area`; when no
@@ -1193,6 +1265,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
+    // [board.columns] — display-only label overrides (#0396).
+    ...STATUSES.map((status) => ({
+      key: `board.columns.${status}`,
+      label: `Column label: ${status}`,
+      type: "string" as const,
+      tier: "live" as const,
+      restartRequired: false,
+      default: DEFAULT_COLUMN_LABELS[status],
+      description: `Display label for the "${status}" column (${DEFAULT_COLUMN_LABELS[status]})`,
+    })),
   ];
 }
 
@@ -1264,6 +1346,53 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     kept.push(blocks);
     result = kept;
     modified = true;
+  }
+
+  // [board.columns] section keys: find or create the section header, then
+  // patch entries under it. These keys use dotted notation (board.columns.draft)
+  // but live indented under `[board.columns]`, not at root scope.
+  const boardColKeys = Object.entries(patch).filter(([k]) => k.startsWith("board.columns."));
+  if (boardColKeys.length) {
+    const sectionHeader = "[board.columns]";
+    let sectionIdx = result.findIndex((l) => stripTomlComment(l).trim() === sectionHeader);
+    if (sectionIdx === -1) {
+      // Create the section — insert before the first existing header or at end.
+      const firstHeader = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
+      sectionIdx = firstHeader === -1 ? result.length : firstHeader;
+      result.splice(sectionIdx, 0, sectionHeader, "");
+      sectionIdx += 1; // skip past the header itself
+      modified = true;
+    }
+    // Find the end of the [board.columns] section (next section header or EOF).
+    let sectionEnd = result.length;
+    for (let i = sectionIdx + 1; i < result.length; i++) {
+      const s = stripTomlComment(result[i]).trim();
+      if (s.startsWith("[") && s !== sectionHeader) {
+        sectionEnd = i;
+        break;
+      }
+    }
+    // Patch each board.columns.* key within the section.
+    for (const [key, rawVal] of boardColKeys) {
+      const shortKey = key.slice("board.columns.".length);
+      const serialized = serializeTomlVal(rawVal);
+      let found = false;
+      for (let i = sectionIdx; i < sectionEnd; i++) {
+        const stripped = stripTomlComment(result[i]).trim();
+        const kv = stripped.match(/^([A-Za-z0-9_-]+)\s*=\s*/);
+        if (kv && kv[1] === shortKey) {
+          result[i] = `  ${shortKey} = ${serialized}`;
+          found = true;
+          modified = true;
+          break;
+        }
+      }
+      if (!found) {
+        result.splice(sectionEnd, 0, `  ${shortKey} = ${serialized}`);
+        sectionEnd += 1;
+        modified = true;
+      }
+    }
   }
 
   // Scalars and plain arrays: in-place line-preserving patch.

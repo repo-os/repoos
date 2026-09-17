@@ -255,6 +255,29 @@ export const useConfigStore = defineStore("config", () => {
     return starred.length > 0 ? starred : DESIGN_THEMES;
   });
 
+  /** Default column labels — must match DEFAULT_COLUMN_LABELS in core/config.ts. */
+  const DEFAULT_COL_LABELS: Record<string, string> = {
+    draft: "Proposed / Drafts",
+    inbox: "Inbox",
+    ready: "Ready",
+    active: "Active",
+    review: "Review",
+    done: "Done",
+  };
+
+  /** Resolved column labels from config (merges overrides over defaults). */
+  const columnLabels = computed<Record<string, string>>(() => {
+    const out = { ...DEFAULT_COL_LABELS };
+    for (const key of Object.keys(form)) {
+      if (key.startsWith("board.columns.")) {
+        const status = key.slice("board.columns.".length);
+        const val = form[key];
+        if (status in out && typeof val === "string" && val.trim()) out[status] = val.trim();
+      }
+    }
+    return out;
+  });
+
   /** The effective mode the UI is showing right now: resolves "system" to dark/light. */
   const effectiveTheme = computed<string>(() => {
     const stored = typeof form.theme === "string" ? form.theme : "system";
@@ -585,5 +608,6 @@ export const useConfigStore = defineStore("config", () => {
     loadModels,
     modelsFor,
     isKnownModelForCli,
+    columnLabels,
   };
 });

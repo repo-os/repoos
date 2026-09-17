@@ -23,7 +23,13 @@ import {
   Bug,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
-import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
+import {
+  COLUMNS,
+  columnsWithLabels,
+  pmCannedMessagesFor,
+  statusColor,
+  useRepoStore,
+} from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
@@ -104,8 +110,8 @@ const autoRepairRetryHint = computed(() => {
 });
 
 const allStatuses = computed(() => [
-  { id: "draft", label: "Draft", color: statusColor("draft") },
-  ...COLUMNS,
+  { id: "draft", label: config.columnLabels.draft ?? "Draft", color: statusColor("draft") },
+  ...columnsWithLabels(config.columnLabels),
 ]);
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;

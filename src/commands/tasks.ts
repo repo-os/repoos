@@ -8,7 +8,7 @@
  */
 import { readFileSync } from "node:fs";
 import { createRepoOS } from "../core/repoos.js";
-import { boardRoot } from "../core/config.js";
+import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
@@ -50,6 +50,7 @@ function pad(s: string, n: number): string {
 export function cmdList(statusArg?: string): void {
   const repoos = boardRepoOS();
   const idx = repoos.reindex();
+  const labels = resolveColumnLabels(loadConfig(idx.root).boardColumns);
 
   if (idx.taskCount === 0) {
     console.log(
@@ -70,7 +71,8 @@ export function cmdList(statusArg?: string): void {
     const tasks = idx.tasks.filter((t) => t.status === status);
     if (tasks.length === 0 && statusArg === undefined) continue;
     const sc = statusColor(status);
-    console.log("  " + sc("● ") + c.bold(status.toUpperCase()) + c.dim(`  (${tasks.length})`));
+    const label = labels[status] ?? status.toUpperCase();
+    console.log("  " + sc("● ") + c.bold(label) + c.dim(`  (${tasks.length})`));
     for (const t of tasks) {
       const line =
         "    " +

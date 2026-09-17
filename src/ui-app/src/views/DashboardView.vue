@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { useConfigStore } from "../stores/config";
 import Button from "../components/ui/button.vue";
 import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
@@ -14,7 +16,10 @@ import TestRunPanel from "../components/TestRunPanel.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const config = useConfigStore();
 const { counts, repoName } = storeToRefs(repo);
+
+const labels = computed(() => config.columnLabels);
 </script>
 
 <template>
@@ -53,7 +58,7 @@ const { counts, repoName } = storeToRefs(repo);
     <div class="stat-grid">
       <router-link :to="{ path: '/work', query: { status: 'draft' } }" class="stat-link">
         <StatCard
-          label="drafts"
+          :label="labels.draft"
           :value="counts.draft || 0"
           bg="var(--chip-bg)"
           color="var(--txt-faint)"
@@ -70,7 +75,7 @@ const { counts, repoName } = storeToRefs(repo);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'inbox' } }" class="stat-link">
         <StatCard
-          label="inbox"
+          :label="labels.inbox"
           :value="counts.inbox || 0"
           bg="rgba(138,150,180,0.12)"
           color="var(--txt-dim)"
@@ -87,7 +92,7 @@ const { counts, repoName } = storeToRefs(repo);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'ready' } }" class="stat-link">
         <StatCard
-          label="ready to start"
+          :label="labels.ready"
           :value="counts.ready || 0"
           bg="var(--cyan-dim)"
           color="var(--cyan)"
@@ -101,7 +106,7 @@ const { counts, repoName } = storeToRefs(repo);
       <router-link :to="{ path: '/work', query: { status: 'active' } }" class="stat-link">
         <StatCard
           glow
-          label="in progress"
+          :label="labels.active"
           :value="counts.active || 0"
           bg="var(--violet-tint)"
           color="var(--violet)"
@@ -119,7 +124,7 @@ const { counts, repoName } = storeToRefs(repo);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'review' } }" class="stat-link">
         <StatCard
-          label="awaiting review"
+          :label="labels.review"
           :value="counts.review || 0"
           bg="var(--amber-tint)"
           color="var(--amber)"
@@ -138,7 +143,7 @@ const { counts, repoName } = storeToRefs(repo);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'done' } }" class="stat-link">
         <StatCard
-          label="done"
+          :label="labels.done"
           :value="counts.done || 0"
           bg="var(--green-tint)"
           color="var(--green)"

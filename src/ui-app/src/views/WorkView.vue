@@ -3,9 +3,16 @@ import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { api } from "../api";
-import { COLUMNS, SORT_ORDER_OPTIONS, useRepoStore } from "../stores/repo";
+import {
+  COLUMNS,
+  SORT_ORDER_OPTIONS,
+  useRepoStore,
+  columnsWithLabels,
+  draftColumnWithLabel,
+} from "../stores/repo";
 import type { Column, SortOrder } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { useConfigStore } from "../stores/config";
 import { useBoardKeyboardNav } from "../composables/useBoardKeyboardNav";
 import {
   collapseAllEmpty,
@@ -25,7 +32,11 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import type { Task } from "../types";
 
-const DRAFT_COL: Column = { id: "draft", label: "Proposed / Drafts", color: "var(--txt-faint)" };
+const DRAFT_COL_DEFAULT: Column = {
+  id: "draft",
+  label: "Proposed / Drafts",
+  color: "var(--txt-faint)",
+};
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
 const DRAFT_BAR = "#3a4055";
 
@@ -33,8 +44,13 @@ const STATUS_IDS = new Set(["draft", "inbox", "ready", "active", "review", "done
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const config = useConfigStore();
 const route = useRoute();
 const { workDir } = storeToRefs(repo);
+
+const columnLabels = computed(() => config.columnLabels);
+const DRAFT_COL = computed(() => draftColumnWithLabel(columnLabels.value));
+const labeledColumns = computed(() => columnsWithLabels(columnLabels.value));
 
 const statusFilter = computed<string | null>(() => {
   const s = route.query.status;
@@ -42,8 +58,8 @@ const statusFilter = computed<string | null>(() => {
 });
 
 const filterCol = computed<Column | null>(() => {
-  if (statusFilter.value === "draft") return DRAFT_COL;
-  return COLUMNS.find((c) => c.id === statusFilter.value) ?? null;
+  if (statusFilter.value === "draft") return DRAFT_COL.value;
+  return labeledColumns.value.find((c) => c.id === statusFilter.value) ?? null;
 });
 
 // ── #0345 Deep-linking: /work?task=<id> opens that task's drawer and
@@ -104,7 +120,9 @@ async function openFromTaskParam(raw: string): Promise<void> {
 // keyboard highlight index mirrors exactly what is on screen. Collapsed
 // columns are skipped so the highlight never lands on a hidden row (req 3).
 const visibleTasks = computed<Task[]>(() => {
-  const order = statusFilter.value ? [filterCol.value!] : [DRAFT_COL, ...COLUMNS];
+  const order = statusFilter.value
+    ? [filterCol.value!]
+    : [DRAFT_COL.value, ...labeledColumns.value];
   const out: Task[] = [];
   for (const col of order) {
     // In the filtered single-column view the column is force-expanded, so it is
@@ -129,18 +147,21 @@ const boardKey = useBoardKeyboardNav({
 // Board columns in render order. The draft column is rendered separately from
 // COLUMNS, so it is listed explicitly (same iteration pattern as
 // applyCollapseDefaults).
-const BOARD_IDS: readonly string[] = ["draft", ...COLUMNS.map((c) => c.id)];
+const BOARD_IDS = computed<readonly string[]>(() => [
+  "draft",
+  ...labeledColumns.value.map((c) => c.id),
+]);
 
 /** True when every empty column is already collapsed — the toggle's two
  *  states swap between "collapse the empty columns" and "expand all columns".
  *  With no empty columns at all this is vacuously true, so the button acts as
  *  "expand all". Reads the shared collapse ref, so it flips the moment any
  *  column is toggled, bulk-collapsed, or auto-opened. */
-const allEmptyCollapsed = computed(() => !hasExpandedEmptyColumn(repo.byStatus, BOARD_IDS));
+const allEmptyCollapsed = computed(() => !hasExpandedEmptyColumn(repo.byStatus, BOARD_IDS.value));
 
 function toggleEmptyColumns(): void {
-  if (allEmptyCollapsed.value) expandAll(BOARD_IDS);
-  else collapseAllEmpty(repo.byStatus, BOARD_IDS);
+  if (allEmptyCollapsed.value) expandAll(BOARD_IDS.value);
+  else collapseAllEmpty(repo.byStatus, BOARD_IDS.value);
 }
 
 // A task arriving in a collapsed column must be visible, whatever moved it
@@ -263,7 +284,7 @@ watch(countsSnapshot, (now, prev) => {
           :highlight-id="boardKey.highlightId.value"
         />
         <BoardColumn
-          v-for="col in COLUMNS"
+          v-for="col in labeledColumns"
           :key="col.id"
           :col="col"
           :highlight-id="boardKey.highlightId.value"

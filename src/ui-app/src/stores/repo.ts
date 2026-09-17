@@ -192,6 +192,22 @@ export const COLUMNS: Column[] = [
   { id: "done", label: "Done", color: "#4ef0a8" },
 ];
 
+/** Default colors for each status ID. */
+const COLUMN_COLORS: Record<string, string> = Object.fromEntries(
+  COLUMNS.map((c) => [c.id, c.color]),
+);
+COLUMN_COLORS.draft = "var(--txt-faint)";
+
+/** Build the COLUMNS array with labels applied from config. */
+export function columnsWithLabels(labels: Record<string, string>): Column[] {
+  return COLUMNS.map((c) => ({ ...c, label: labels[c.id] ?? c.label }));
+}
+
+/** Build the draft column with its label from config. */
+export function draftColumnWithLabel(labels: Record<string, string>): Column {
+  return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: "var(--txt-faint)" };
+}
+
 /** "recent" sorts by updated_at desc; "current" is the backend's status/priority/id order. */
 export type SortOrder = "recent" | "current";
 
