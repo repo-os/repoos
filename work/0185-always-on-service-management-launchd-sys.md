@@ -2,7 +2,7 @@
 id: "0185"
 title: Per-repo background service management (launchd/systemd)
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -88,3 +88,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T15:57:55Z · status active→review
 - 2026-09-17T15:59:38Z · status review→active
 - 2026-09-17T16:18:25Z · status active→review
+- 2026-09-17T16:18:25Z · status review→active
