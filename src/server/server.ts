@@ -46,7 +46,7 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
- *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint }] }
+ *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint, auth, authHint?, capability? }] }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
  *   POST /api/supervisor/check-now -> { ok } run a supervisor check immediately
@@ -272,6 +272,17 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  // Service routes
+  getServiceStatusRoute,
+  listServicesRoute,
+  installServiceRoute,
+  startServiceRoute,
+  stopServiceRoute,
+  restartServiceRoute,
+  enableAutoStartRoute,
+  disableAutoStartRoute,
+  removeServiceRoute,
+  healthCheckRoute,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -1970,6 +1981,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           findingsFound: "findingsFound" in result ? result.findingsFound : 0,
           trivialFixesApplied: "trivialFixesApplied" in result ? result.trivialFixesApplied : 0,
           scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+          taskId: "taskId" in result ? result.taskId : null,
+          autoFixed: "autoFixed" in result ? result.autoFixed : [],
+          error: "error" in result ? result.error : undefined,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to run built-in agent";
@@ -2002,6 +2016,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
+
+  // Background service management routes (0185)
+  router.register("GET", "/api/service/status", getServiceStatusRoute);
+  router.register("GET", "/api/service/list", listServicesRoute);
+  router.register("POST", "/api/service/install", installServiceRoute);
+  router.register("POST", "/api/service/start", startServiceRoute);
+  router.register("POST", "/api/service/stop", stopServiceRoute);
+  router.register("POST", "/api/service/restart", restartServiceRoute);
+  router.register("POST", "/api/service/enable", enableAutoStartRoute);
+  router.register("POST", "/api/service/disable", disableAutoStartRoute);
+  router.register("POST", "/api/service/remove", removeServiceRoute);
+  router.register("POST", "/api/service/health", healthCheckRoute);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);

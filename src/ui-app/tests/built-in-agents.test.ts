@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
@@ -32,6 +39,34 @@ import {
   DEFAULT_CONFIG,
 } from "../../core/config.js";
 import type { RepoOSConfig } from "../../core/types.js";
+
+// The Docs Debt Agent is skill-guided now: it calls the shared runner, which
+// shells out to an LLM. Mock the runner so these tests exercise the mapping
+// (agent output -> findings/TrivialFixes -> task) deterministically.
+vi.mock("../../server/built-in-agent-runner.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../server/built-in-agent-runner.js")>();
+  return { ...actual, runSkillGuidedAgent: vi.fn() };
+});
+
+import {
+  runSkillGuidedAgent,
+  type SkillGuidedRunResult,
+} from "../../server/built-in-agent-runner.js";
+
+/** Build a runner result with sensible defaults for the fields a test omits. */
+function runnerResult(partial: Partial<SkillGuidedRunResult>): SkillGuidedRunResult {
+  return {
+    ok: true,
+    findings: [],
+    fixes: [],
+    report: "",
+    ...partial,
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const configFor = (root: string, extra: Partial<RepoOSConfig> = {}): RepoOSConfig => ({
   root,
@@ -554,33 +589,59 @@ describe("runDesignAgent", () => {
 });
 
 describe("scanForDocsDebt", () => {
-  it("catches the #0343 failure mode: docs claiming zero runtime deps while package.json has one", async () => {
-    const root = makeRepo({
-      "package.json": JSON.stringify({ dependencies: { mermaid: "^11.17.2" } }),
-      "AGENTS.md": "# Repo\n\nZero runtime dependencies is a hard constraint.\n",
-    });
+  it("maps an agent finding into a needs-human finding with its claim and evidence", async () => {
+    const root = makeRepo({ "docs/guide.md": "# Guide\n" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        findings: [
+          {
+            type: "missing-symbol",
+            file: "docs/guide.md",
+            line: 7,
+            description: "`ensureFreshBuild()` no longer exists",
+            claim: "ensureFreshBuild()",
+            evidence: "no declaration or reference to it exists in the repo",
+            severity: "medium",
+            recommendation: "Remove or replace the stale reference.",
+          },
+        ],
+      }),
+    );
+
     const result = await scanForDocsDebt(configFor(root));
-    const falseConstraint = result.needsHuman.filter((f) => f.kind === "false-constraint");
-    expect(falseConstraint).toHaveLength(1);
-    expect(falseConstraint[0].doc).toBe("AGENTS.md");
-    expect(falseConstraint[0].evidence).toContain("mermaid");
+
+    expect(result.error).toBeUndefined();
+    expect(result.needsHuman).toHaveLength(1);
+    expect(result.needsHuman[0]).toMatchObject({
+      kind: "missing-symbol",
+      doc: "docs/guide.md",
+      line: 7,
+      claim: "ensureFreshBuild()",
+      evidence: "no declaration or reference to it exists in the repo",
+      severity: "medium",
+    });
   });
 
-  it("does not flag the constraint when package.json declares no runtime dependencies", async () => {
+  it("accepts a proposed fix only after it clears the deterministic auto-fix gate", async () => {
     const root = makeRepo({
-      "package.json": JSON.stringify({ devDependencies: { vitest: "^4.1.10" } }),
-      "AGENTS.md": "Zero runtime dependencies is a hard constraint.\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    expect(result.needsHuman.filter((f) => f.kind === "false-constraint")).toHaveLength(0);
-  });
-
-  it("classifies a moved path with a unique basename as a trivial fix", async () => {
-    const root = makeRepo({
-      "docs/guide.md": "See `src/old/util.ts` for helpers.\n",
+      "docs/guide.md": "See src/old/util.ts for helpers.\n",
       "src/new/util.ts": "export const util = 1;\n",
     });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/new/util.ts",
+            evidence: "file was renamed",
+          },
+        ],
+      }),
+    );
+
     const result = await scanForDocsDebt(configFor(root));
+
     expect(result.trivialFixes).toHaveLength(1);
     expect(result.trivialFixes[0]).toMatchObject({
       kind: "renamed-path",
@@ -588,60 +649,122 @@ describe("scanForDocsDebt", () => {
       from: "src/old/util.ts",
       to: "src/new/util.ts",
     });
-    expect(result.needsHuman.filter((f) => f.kind === "missing-path")).toHaveLength(0);
-  });
-
-  it("reports a missing path with no unique replacement as needs-human", async () => {
-    const root = makeRepo({
-      "docs/guide.md": "See `src/missing/thing.ts`.\n",
-      "src/other.ts": "export const other = 1;\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    expect(result.trivialFixes).toHaveLength(0);
-    const missing = result.needsHuman.filter((f) => f.kind === "missing-path");
-    expect(missing).toHaveLength(1);
-    expect(missing[0].claim).toBe("src/missing/thing.ts");
-  });
-
-  it("flags a symbol that does not appear anywhere under src/", async () => {
-    const root = makeRepo({
-      "docs/guide.md": "Call `scanForGhost()` to start.\n",
-      "src/real.ts": "export function scanForReal(): void {}\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    const missing = result.needsHuman.filter((f) => f.kind === "missing-symbol");
-    expect(missing.map((f) => f.claim)).toContain("scanForGhost()");
-  });
-
-  it("accepts a symbol that does appear in src/", async () => {
-    const root = makeRepo({
-      "docs/guide.md": "Call `scanForReal()` to start.\n",
-      "src/real.ts": "export function scanForReal(): void {}\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    expect(result.needsHuman.filter((f) => f.kind === "missing-symbol")).toHaveLength(0);
-  });
-
-  it("flags a `bun run <script>` claim whose script is absent, and accepts one that exists", async () => {
-    const root = makeRepo({
-      "package.json": JSON.stringify({ scripts: { build: "tsc" } }),
-      "docs/guide.md": "Run `bun run build` then `bun run never`.\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    const missing = result.needsHuman.filter((f) => f.kind === "missing-script");
-    expect(missing).toHaveLength(1);
-    expect(missing[0].claim).toBe("bun run never");
-  });
-
-  it("never treats markdown under src/ as a doc to verify or edit", async () => {
-    const root = makeRepo({
-      "src/notes.md": "See `src/ghost.ts`.\n",
-      "AGENTS.md": "# Repo\n",
-    });
-    const result = await scanForDocsDebt(configFor(root));
-    expect(result.scannedDocs).toBe(1);
-    expect(result.trivialFixes).toHaveLength(0);
     expect(result.needsHuman).toHaveLength(0);
+  });
+
+  it("downgrades a fix whose replacement the repo does not contain to a finding", async () => {
+    const root = makeRepo({ "docs/guide.md": "See src/old/util.ts for helpers.\n" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/invented/nothing.ts",
+            evidence: "a guess",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+    expect(result.needsHuman[0].evidence).toContain("auto-fix");
+  });
+
+  it("downgrades a fix whose old text is not in the doc (stale claim)", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "Nothing stale here.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/new/util.ts",
+            evidence: "renamed",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+  });
+
+  it("never treats a non-doc path as an auto-fix target, even when the gate would pass", async () => {
+    const root = makeRepo({
+      "package.json": '{"note":"oldDep"}\n',
+      "src/new/dep.ts": "export const newDep = 1;\n",
+    });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "package.json",
+            oldText: "oldDep",
+            newText: "src/new/dep.ts",
+            evidence: "a guess",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+  });
+
+  it("downgrades a fix whose old text appears more than once in the doc", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See src/old/util.ts and src/old/util.ts again.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/new/util.ts",
+            evidence: "renamed",
+          },
+        ],
+      }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.trivialFixes).toHaveLength(0);
+    expect(result.needsHuman).toHaveLength(1);
+  });
+
+  it("surfaces a runner failure instead of pretending the docs are clean", async () => {
+    const root = makeRepo({ "AGENTS.md": "# Docs\n" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({ ok: false, error: `Built-in agent "docs-debt": run failed — quota exceeded` }),
+    );
+
+    const result = await scanForDocsDebt(configFor(root));
+
+    expect(result.error).toContain("quota exceeded");
+    expect(result.needsHuman).toHaveLength(0);
+    expect(result.trivialFixes).toHaveLength(0);
+  });
+
+  it("ships a skill doc that generalizes past this repo's layout and third-party vocabulary", () => {
+    const skillPath = join(process.cwd(), "docs/agents/skills/docs-debt.md");
+    expect(existsSync(skillPath)).toBe(true);
+    const doc = readFileSync(skillPath, "utf8");
+    expect(doc).toMatch(/third-party/i);
+    expect(doc).toMatch(/source|layout|assume/i);
   });
 });
 
@@ -675,7 +798,7 @@ describe("createDocsDebtTask", () => {
         severity: "medium",
       },
     ]);
-    expect(result).toEqual({ created: 1, failed: 0, errors: [] });
+    expect(result).toEqual({ created: 1, failed: 0, errors: [], taskId: "0001" });
 
     const files = readdirSync(join(root, "work"));
     expect(files).toHaveLength(1);
@@ -691,8 +814,27 @@ describe("createDocsDebtTask", () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
     const result = await createDocsDebtTask(configFor(root), []);
-    expect(result).toEqual({ created: 0, failed: 0, errors: [] });
+    expect(result).toEqual({ created: 0, failed: 0, errors: [], taskId: null });
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
+  });
+
+  it("renders a finding with no file path without a malformed doc line", async () => {
+    const root = makeRepo({});
+    mkdirSync(join(root, "work"));
+    await createDocsDebtTask(configFor(root), [
+      {
+        kind: "missing-symbol",
+        doc: "",
+        line: 1,
+        claim: "ghost",
+        evidence: "not declared anywhere",
+        severity: "low",
+      },
+    ]);
+    const files = readdirSync(join(root, "work"));
+    const content = readFileSync(join(root, "work", files[0]), "utf8");
+    expect(content).toContain("not specified");
+    expect(content).not.toContain("``:1");
   });
 
   it("throws a clear error when the work dir does not exist", async () => {
@@ -725,32 +867,88 @@ describe("createDocsDebtTask", () => {
 });
 
 describe("applyDocsDebtFixes", () => {
-  it("applies a trivial fix directly to the doc file", async () => {
+  it("replaces the stale text and records the applied change", async () => {
     const root = makeRepo({
-      "docs/guide.md": "See `src/old/util.ts` for helpers.\n",
+      "docs/guide.md": "See src/old/util.ts for helpers.\n",
       "src/new/util.ts": "export const util = 1;\n",
     });
-    const scan = await scanForDocsDebt(configFor(root));
-    const result = await applyDocsDebtFixes(configFor(root), scan.trivialFixes);
-    expect(result.applied).toBe(1);
-    expect(result.skipped).toBe(0);
-    expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("`src/new/util.ts`");
+    const result = await applyDocsDebtFixes(configFor(root), [
+      {
+        kind: "renamed-path",
+        doc: "docs/guide.md",
+        line: 1,
+        from: "src/old/util.ts",
+        to: "src/new/util.ts",
+        evidence: "file was renamed",
+      },
+    ]);
+    expect(result).toMatchObject({ applied: 1, skipped: 0 });
+    expect(result.fixed).toEqual([
+      { doc: "docs/guide.md", from: "src/old/util.ts", to: "src/new/util.ts" },
+    ]);
+    expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("src/new/util.ts");
   });
 
-  it("caps how many trivial fixes land in one run and reports the rest as skipped", async () => {
+  it("refuses an ungated fix even when called directly", async () => {
+    const root = makeRepo({ "docs/guide.md": "See src/old/util.ts for helpers.\n" });
+    const result = await applyDocsDebtFixes(configFor(root), [
+      {
+        kind: "renamed-path",
+        doc: "docs/guide.md",
+        line: 1,
+        from: "src/old/util.ts",
+        to: "src/invented/nothing.ts",
+        evidence: "a guess",
+      },
+    ]);
+    expect(result.applied).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("src/old/util.ts");
+  });
+
+  it("refuses a fix targeting a non-doc file", async () => {
+    const root = makeRepo({
+      "package.json": '{"note":"oldDep"}\n',
+      "src/new/dep.ts": "export const newDep = 1;\n",
+    });
+    const result = await applyDocsDebtFixes(configFor(root), [
+      {
+        kind: "renamed-path",
+        doc: "package.json",
+        line: 1,
+        from: "oldDep",
+        to: "src/new/dep.ts",
+        evidence: "a guess",
+      },
+    ]);
+    expect(result.applied).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(readFileSync(join(root, "package.json"), "utf8")).toContain("oldDep");
+  });
+
+  it("caps how many fixes land in one run and reports the rest as skipped", async () => {
     const files: Record<string, string> = {};
     const total = MAX_TRIVIAL_FIXES_PER_RUN + 2;
+    const fixes = [];
     for (let i = 0; i < total; i++) {
-      files[`docs/d${i}.md`] = `See \`src/old/a${i}.ts\`.\n`;
+      files[`docs/d${i}.md`] = `See src/old/a${i}.ts.\n`;
       files[`src/new/a${i}.ts`] = "export const x = 1;\n";
+      fixes.push({
+        kind: "renamed-path" as const,
+        doc: `docs/d${i}.md`,
+        line: 1,
+        from: `src/old/a${i}.ts`,
+        to: `src/new/a${i}.ts`,
+        evidence: "file was renamed",
+      });
     }
     const root = makeRepo(files);
-    const scan = await scanForDocsDebt(configFor(root));
-    expect(scan.trivialFixes).toHaveLength(total);
 
-    const result = await applyDocsDebtFixes(configFor(root), scan.trivialFixes);
+    const result = await applyDocsDebtFixes(configFor(root), fixes);
+
     expect(result.applied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
     expect(result.skipped).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.fixed).toHaveLength(MAX_TRIVIAL_FIXES_PER_RUN);
 
     const updated = Object.keys(files)
       .filter((f) => f.startsWith("docs/"))
@@ -760,27 +958,84 @@ describe("applyDocsDebtFixes", () => {
 });
 
 describe("runDocsDebtAgent", () => {
-  it("applies trivial fixes, files one task for the rest, and records lastRunAt", async () => {
-    const files: Record<string, string> = {};
-    const total = MAX_TRIVIAL_FIXES_PER_RUN + 2;
-    for (let i = 0; i < total; i++) {
-      files[`docs/d${i}.md`] = `See \`src/old/a${i}.ts\`.\n`;
-      files[`src/new/a${i}.ts`] = "export const x = 1;\n";
-    }
-    const root = makeRepo(files);
+  it("applies gated fixes, files one task, and exposes taskId + autoFixed", async () => {
+    const root = makeRepo({
+      "docs/guide.md": "See src/old/util.ts for helpers.\n",
+      "src/new/util.ts": "export const util = 1;\n",
+    });
     mkdirSync(join(root, "work"));
     const config = configFor(root);
 
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        findings: [
+          {
+            type: "missing-symbol",
+            file: "docs/guide.md",
+            line: 2,
+            description: "`ghost()` is gone",
+            claim: "ghost()",
+            evidence: "not declared anywhere in the repo",
+            severity: "medium",
+          },
+        ],
+        fixes: [
+          {
+            doc: "docs/guide.md",
+            oldText: "src/old/util.ts",
+            newText: "src/new/util.ts",
+            evidence: "file was renamed",
+          },
+        ],
+      }),
+    );
+
     const result = await runDocsDebtAgent(config);
-    expect(result.trivialFixesApplied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
-    expect(result.findingsFound).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
+
+    expect(result.trivialFixesApplied).toBe(1);
+    expect(result.findingsFound).toBe(1);
     expect(result.taskCreated).toBe(1);
+    expect(result.taskId).toBe("0001");
+    expect(result.autoFixed).toEqual([
+      { doc: "docs/guide.md", from: "src/old/util.ts", to: "src/new/util.ts" },
+    ]);
     expect(result.failed).toBe(0);
 
-    expect(readdirSync(join(root, "work"))).toHaveLength(1);
+    const files = readdirSync(join(root, "work"));
+    expect(files).toHaveLength(1);
+    expect(readFileSync(join(root, "work", files[0]), "utf8")).toContain("ghost()");
+
+    expect(readFileSync(join(root, "docs/guide.md"), "utf8")).toContain("src/new/util.ts");
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["docs-debt"]?.lastRunAt).toBeTruthy();
     expect(config.builtInAgents?.["docs-debt"]?.lastRunAt).toBeTruthy();
+  });
+
+  it("applies the per-run cap and downgrades the overflow into the task", async () => {
+    const files: Record<string, string> = {};
+    const total = MAX_TRIVIAL_FIXES_PER_RUN + 2;
+    const fixes = [];
+    for (let i = 0; i < total; i++) {
+      files[`docs/d${i}.md`] = `See src/old/a${i}.ts.\n`;
+      files[`src/new/a${i}.ts`] = "export const x = 1;\n";
+      fixes.push({
+        doc: `docs/d${i}.md`,
+        oldText: `src/old/a${i}.ts`,
+        newText: `src/new/a${i}.ts`,
+        evidence: "file was renamed",
+      });
+    }
+    const root = makeRepo(files);
+    mkdirSync(join(root, "work"));
+
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(runnerResult({ fixes }));
+
+    const result = await runDocsDebtAgent(configFor(root));
+
+    expect(result.trivialFixesApplied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.findingsFound).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.autoFixed).toHaveLength(MAX_TRIVIAL_FIXES_PER_RUN);
+    expect(result.taskCreated).toBe(1);
   });
 
   it("creates no task when the run finds nothing needing a human", async () => {
@@ -789,17 +1044,39 @@ describe("runDocsDebtAgent", () => {
       "AGENTS.md": "# Docs\n\nEverything here is true.\n",
     });
     mkdirSync(join(root, "work"));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(runnerResult({}));
+
     const result = await runDocsDebtAgent(configFor(root));
+
     expect(result.findingsFound).toBe(0);
     expect(result.taskCreated).toBe(0);
+    expect(result.taskId).toBeNull();
+    expect(result.autoFixed).toEqual([]);
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
   });
 
   it("is reachable through the runBuiltInAgent dispatcher", async () => {
     const root = makeRepo({ "AGENTS.md": "# Docs\n" });
     mkdirSync(join(root, "work"));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(runnerResult({}));
+
     const result = await runBuiltInAgent("docs-debt", configFor(root));
+
     expect(result).not.toBeNull();
     expect(result && "scannedDocs" in result ? result.scannedDocs : -1).toBe(1);
+  });
+
+  it("surfaces a failed agent run instead of reporting clean docs", async () => {
+    const root = makeRepo({ "AGENTS.md": "# Docs\n" });
+    mkdirSync(join(root, "work"));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({ ok: false, error: `Built-in agent "docs-debt": run failed — quota exceeded` }),
+    );
+
+    const result = await runDocsDebtAgent(configFor(root));
+
+    expect(result.error).toContain("quota exceeded");
+    expect(result.taskCreated).toBe(0);
+    expect(result.findingsFound).toBe(0);
   });
 });

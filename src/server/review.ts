@@ -376,7 +376,7 @@ function extractReportSections(markdown: string): {
  * transcript (0288). This is the `runPrompt`-era `extractOneShotReportText`,
  * re-sourced from the entries the runner keeps in the review session so the
  * report can be built after a reload. Structured engines (opencode/claude/
- * qwen/codex) surface the final answer as the LAST `text` entry; the plain
+ * qwen/codex/cursor) surface the final answer as the LAST `text` entry; the plain
  * path (kiro) keeps each line as an `{ s: "out", d }` entry whose `d` values
  * concatenate into the report.
  */
