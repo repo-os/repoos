@@ -8,8 +8,9 @@ area: init
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-17T14:26:27Z"
-updated_at: "2026-09-17T14:46:56Z"
+updated_at: "2026-09-17T14:51:52Z"
 ---
 ## Problem
 
@@ -89,3 +90,4 @@ Update new-project and existing-repo onboarding plus configuration/layout docume
 
 - 2026-09-17T14:26:27Z · created · unknown
 - 2026-09-17T14:46:56Z · body
+- 2026-09-17T14:51:52Z · model_override
