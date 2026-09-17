@@ -90,11 +90,15 @@ flooding your inbox.
 
 ## Design agent
 
-Reviews the web UI for quality and consistency. It scans `src/ui-app/src/`
-specifically, and flags things like hardcoded inline styles and hex colours that
-bypass your theme, icon-only buttons with no accessible name, click handlers on
-non-interactive elements, `v-html`, inputs with no label, and oversized
-components.
+Reviews your web UI for quality and consistency — however it is built and
+wherever it lives. It is **skill-guided**: the model reads a guidance doc
+describing UI/UX review, then works out from your manifests and repo structure
+whether you have a web UI at all and where its sources are — React, Vue,
+Svelte, Angular, plain HTML/CSS/JS, and anything in between — rather than
+assuming RepoOS's own framework or folder layout. It flags layout and rendering
+bugs, styling that bypasses your design system, accessibility problems
+(icon-only buttons, unlabelled inputs, keyboard-inaccessible controls), and
+interaction-flow friction, and proposes concrete design improvements.
 
 **Good output:** a timestamped markdown report under
 
@@ -102,14 +106,15 @@ components.
 docs/agents/Design/Design_report_<YYYY-MM-DD-HHMM>.md
 ```
 
-Like Architect, it files no tasks. If your repo has no `src/ui-app/src/`
-directory, the report says so rather than guessing — the scan is scoped to the UI
-layout RepoOS itself uses.
+Like Architect, it files no tasks. If your repo has no detectable web UI, the
+report says so plainly — "no web UI detected" — rather than reporting a
+misleading zero. A model or CLI failure surfaces on the agent's own card, as
+with the other built-ins.
 
 ## Docs Debt agent
 
-Checks that your documentation still tells the truth about the code. Unlike the
-other scanners, it is **skill-guided**: the model reads a guidance doc
+Checks that your documentation still tells the truth about the code. Like the
+Performance and Design agents, it is **skill-guided**: the model reads a guidance doc
 (`docs/agents/skills/docs-debt.md`) describing what documentation debt means,
 then verifies concrete, checkable claims in `AGENTS.md`, `docs/`, and
 `user-docs/` against the actual repository. It finds where your code really
