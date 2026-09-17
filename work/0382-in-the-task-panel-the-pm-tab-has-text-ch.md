@@ -2,7 +2,7 @@
 id: "0382"
 title: "Screenshot upload in the PM chat tab, and never lose task screenshots"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/screenshot-upload-in-the-pm-chat-tab-and
 model_override: "openrouter/z-ai/glm-5.2:free"
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T05:19:55Z"
-updated_at: "2026-09-17T05:32:34Z"
+updated_at: "2026-09-17T07:08:02Z"
 ---
 ## Problem
 
@@ -150,3 +150,4 @@ In the task panel the PM tab has text chat but no way to add screenshots, let's 
 - 2026-09-17T05:32:30Z · review_model_override
 - 2026-09-17T05:32:32Z · status inbox→ready
 - 2026-09-17T05:32:34Z · status ready→active, branch
+- 2026-09-17T07:08:02Z · status active→review
