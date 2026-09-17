@@ -2,14 +2,14 @@
 id: "0300"
 title: Set up mobile testing for the native RepoOS Hub
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: mobile
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T15:18:19Z"
-updated_at: "2026-09-17T15:13:36Z"
+updated_at: "2026-08-26T15:20:43Z"
 ---
 ## Problem
 
@@ -51,4 +51,3 @@ Establish a repeatable test strategy and automation harness for the native mobil
 
 - 2026-08-26T15:18:19Z · created · unknown
 - 2026-08-26T15:20:43Z · status inbox→ready
-- 2026-09-17T15:13:36Z · status ready→inbox
