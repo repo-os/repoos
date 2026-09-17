@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { serviceId, serviceLabel, detectPlatform, type ServiceEntry } from "./service-manager.js";
+import {
+  serviceId,
+  serviceLabel,
+  detectPlatform,
+  isLingerEnabled,
+  type ServiceEntry,
+} from "./service-manager.js";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -51,6 +57,48 @@ describe("detectPlatform", () => {
   it("returns a valid platform", () => {
     const platform = detectPlatform();
     expect(["launchd", "systemd"]).toContain(platform);
+  });
+});
+
+describe("isLingerEnabled", () => {
+  const originalPath = process.env.PATH;
+
+  afterEach(() => {
+    process.env.PATH = originalPath;
+  });
+
+  it("returns null on macOS — linger is a systemd/Linux-only concept", () => {
+    if (process.platform !== "darwin") return;
+    expect(isLingerEnabled()).toBeNull();
+  });
+
+  it("reads the real loginctl-reported state, not a guessed filesystem path", () => {
+    if (process.platform === "darwin") return;
+    // Regression: the old implementation checked a
+    // ~/.config/systemd/user/linger/<uid>.d path that systemd never creates —
+    // real linger state is only queryable via loginctl (it lives in the
+    // root-owned /var/lib/systemd/linger/<user>). A fake loginctl on PATH
+    // stands in for the real one so this is testable without root.
+    const bin = tmpDir("repoos-loginctl-");
+    writeFileSync(join(bin, "loginctl"), "#!/bin/sh\necho yes\n");
+    chmodSync(join(bin, "loginctl"), 0o755);
+    process.env.PATH = `${bin}:${originalPath}`;
+    expect(isLingerEnabled()).toBe(true);
+  });
+
+  it("treats loginctl reporting 'no' as linger disabled", () => {
+    if (process.platform === "darwin") return;
+    const bin = tmpDir("repoos-loginctl-");
+    writeFileSync(join(bin, "loginctl"), "#!/bin/sh\necho no\n");
+    chmodSync(join(bin, "loginctl"), 0o755);
+    process.env.PATH = `${bin}:${originalPath}`;
+    expect(isLingerEnabled()).toBe(false);
+  });
+
+  it("returns null when loginctl is unavailable rather than throwing", () => {
+    if (process.platform === "darwin") return;
+    process.env.PATH = tmpDir("repoos-empty-path-");
+    expect(isLingerEnabled()).toBeNull();
   });
 });
 

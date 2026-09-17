@@ -381,13 +381,20 @@ function querySystemdStatus(label: string): ServiceStatus {
 export function isLingerEnabled(): boolean | null {
   if (process.platform === "darwin") return null; // not applicable on macOS
   try {
-    const uid = execFileSync("id", ["-u"], {
-      encoding: "utf8",
-      timeout: 3000,
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-    const lingerDir = join(homedir(), ".config", "systemd", "user", "linger", `${uid}.d`);
-    return existsSync(lingerDir);
+    // The authoritative state is `loginctl show-user -p Linger`. It reads
+    // /var/lib/systemd/linger/<user> (root-owned, not readable by us), so
+    // the only reliable check is asking systemd-logind via loginctl rather
+    // than guessing at a filesystem path.
+    const out = execFileSync(
+      "loginctl",
+      ["show-user", String(process.getuid?.() ?? ""), "-p", "Linger", "--value"],
+      {
+        encoding: "utf8",
+        timeout: 3000,
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    ).trim();
+    return out === "yes";
   } catch {
     return null;
   }
@@ -586,8 +593,19 @@ export async function installService(
   entries.push(entry);
   writeRegistry(entries);
 
-  // Start the service immediately after install — but only if install succeeded
-  await startService(root);
+  // Start the service immediately after install. On launchd, the `launchctl
+  // load` above already started it (RunAtLoad=true in the generated plist),
+  // so calling startService() here would `load` a second time — which fails
+  // with "Service is already loaded" and silently masks that error. Just
+  // refresh the live status instead. systemd's `enable` does not start the
+  // unit, so that path still needs the real startService() start command.
+  if (platform === "launchd") {
+    entry.status = queryLaunchdStatus(entry.label);
+    entry.updatedAt = new Date().toISOString();
+    writeRegistry(entries);
+  } else {
+    await startService(root);
+  }
 
   return { ok: true, entry };
 }
