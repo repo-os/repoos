@@ -85,6 +85,14 @@ describe("validateNamespace", () => {
   it("trims whitespace", () => {
     expect(validateNamespace("  repoos  ")).toBe("repoos");
   });
+
+  it("rejects a namespace that collides with a root marker file", () => {
+    // repoos.toml and AGENTS.md must stay at the repo root — a namespace with
+    // either name would make mkdir hit ENOTDIR against that existing file.
+    expect(validateNamespace("repoos.toml")).toContain("!");
+    expect(validateNamespace("AGENTS.md")).toContain("!");
+    expect(validateNamespace("AGENTS.md/nested")).toContain("!");
+  });
 });
 
 describe("scaffoldInto starter tasks", () => {
@@ -215,6 +223,27 @@ describe("scaffoldInto starter tasks", () => {
     scaffoldInto(root, "", "repoos", "existing");
     const starter = readTask(root, "repoos/work/0002-read-the-codebase.md");
     expect(starter.title).toContain("repoos/docs/");
+  });
+
+  it("aborts cleanly instead of throwing when a file blocks the namespace directory", () => {
+    const root = scratch();
+    // A plain file named "repoos" blocks mkdir("repoos/work") with ENOTDIR.
+    writeFileSync(join(root, "repoos"), "not a directory");
+
+    // ensureDir's ENOTDIR branch sets process.exitCode as a side effect for
+    // the real CLI process; restore it so this test doesn't leak a nonzero
+    // exit code into the vitest process running the suite.
+    const prevExitCode = process.exitCode;
+    let created: string[] = [];
+    try {
+      expect(() => {
+        created = scaffoldInto(root, "", "repoos", "new").created;
+      }).not.toThrow();
+      expect(created).not.toContain("repoos/work/");
+      expect(existsSync(join(root, "repoos/work/0001-set-up-repoos.md"))).toBe(false);
+    } finally {
+      process.exitCode = prevExitCode;
+    }
   });
 });
 

@@ -397,8 +397,10 @@ export function scaffoldInto(
 ) {
   const created: string[] = [];
   const skipped: string[] = [];
+  let aborted = false;
 
   const ensureDir = (rel: string) => {
+    if (aborted) return;
     const p = join(root, rel);
     if (!existsSync(p)) {
       try {
@@ -412,6 +414,11 @@ export function scaffoldInto(
             ),
           );
           process.exitCode = 1;
+          // A file blocking one directory almost certainly blocks its siblings
+          // too (same namespace prefix) — stop the whole scaffold rather than
+          // letting later ensureFile() calls throw an uncaught ENOENT trying
+          // to write into a directory that was never created.
+          aborted = true;
           return;
         }
         throw err;
@@ -439,6 +446,10 @@ export function scaffoldInto(
 
   ensureDir(config.workDir);
   ensureDir(config.docsDir);
+  // A blocked workDir/docsDir means every ensureFile() below (which writes
+  // INTO those directories) would throw an uncaught ENOENT — bail with
+  // whatever succeeded so far instead of crashing mid-scaffold.
+  if (aborted) return { created, skipped };
   ensureFile("AGENTS.md", AGENTS_MD(config.workDir, config.docsDir));
   ensureFile(
     join(config.workDir, "0001-set-up-repoos.md"),
@@ -616,6 +627,12 @@ export function validateNamespace(input: string): string {
     return "! is not a valid namespace — use / for root or type a directory name.";
   // reject unsafe characters
   if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "!Only letters, digits, . _ - / are allowed.";
+  // reject a namespace that collides with a root marker file — mkdir would
+  // hit ENOTDIR trying to create a directory where repoos.toml/AGENTS.md
+  // already exists as a file, both of which must stay at the repo root
+  const firstSegment = trimmed.split("/")[0];
+  if (firstSegment === "repoos.toml" || firstSegment === "AGENTS.md")
+    return `!${firstSegment} must stay at the repo root — choose a different directory name.`;
   return trimmed;
 }
 
@@ -970,8 +987,18 @@ export async function cmdInit(args: string[]): Promise<void> {
 
     // Interactive prompt: let the user choose a layout and confirm.
     if (input.isTTY && output.isTTY) {
-      console.log(c.dim("\n  RepoOS is not yet set up in ") + c.cyan(root) + c.dim("."));
-      namespace = await askLayout();
+      if (hasExisting) {
+        // Never re-layout an existing installation — the layout is already
+        // fixed by its config. Only the AGENTS.md appendix below is optional.
+        console.log(
+          c.dim("\n  RepoOS is already set up in ") +
+            c.cyan(root) +
+            c.dim(` (using the ${namespace ? `${namespace}/` : "repo root"} layout).`),
+        );
+      } else {
+        console.log(c.dim("\n  RepoOS is not yet set up in ") + c.cyan(root) + c.dim("."));
+        namespace = await askLayout();
+      }
 
       // Show the resolved layout preview
       const config = loadConfig(root);
