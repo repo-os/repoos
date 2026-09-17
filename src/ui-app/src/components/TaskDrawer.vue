@@ -821,6 +821,36 @@ const isPreviewBusyForActive = computed(
 );
 /** Which preview action is in flight, so the progress state can name it. */
 const previewAction = ref<"start" | "stop" | null>(null);
+/**
+ * Preview targets the open task's area resolves to (#0379). Supplied by the
+ * server (board + GET /api/tasks/:id); more than one means the area is claimed
+ * by several `[[preview.targets]]` and the user must choose.
+ */
+const previewTargets = computed(() => ui.active?.previewTargets ?? []);
+/** True when the user must pick a target before starting (#0379). */
+const previewTargetChoiceRequired = computed(() => previewTargets.value.length > 1);
+/** The target the user picked from the multi-target picker (#0379). */
+const previewTarget = ref<string | null>(null);
+/**
+ * The target a start would serve: the explicit pick, else the sole matching
+ * target. Null while the user must choose one and hasn't. Captured at request
+ * time into `previewStartingTarget` so the progress text names it.
+ */
+const effectivePreviewTarget = computed<string | null>(
+  () =>
+    previewTarget.value ??
+    (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
+);
+/** Target name for the in-flight start, shown in the progress state (#0379). */
+const previewStartingTarget = ref<string | null>(null);
+// A target picked for one task must never carry over to another — reset the
+// choice (not the targets, which come from the task) whenever the drawer swaps.
+watch(
+  () => ui.active?.id,
+  () => {
+    previewTarget.value = null;
+  },
+);
 /** When the in-flight preview action began, for the live elapsed readout. */
 const previewStartedAt = ref<number | null>(null);
 /** Ticks once a second while a preview action is in flight (see below). */
@@ -865,14 +895,20 @@ const previewElapsedMs = computed(() =>
  */
 async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   if (!ui.active || previewBusy.value) return;
+  // Never silently pick when the task matches several targets: the Start
+  // button is disabled until one is chosen, and this guards the API path too.
+  if (action === "start" && previewTargetChoiceRequired.value && !effectivePreviewTarget.value)
+    return;
   const task = ui.active;
   previewBusy.value = true;
   previewTaskId.value = task.id;
   previewAction.value = action;
+  previewStartingTarget.value = action === "start" ? effectivePreviewTarget.value : null;
   previewStartedAt.value = Date.now();
   startPreviewTimer();
   try {
-    if (action === "start") await repo.startPreview(task);
+    if (action === "start")
+      await repo.startPreview(task, effectivePreviewTarget.value ?? undefined);
     else await repo.stopPreview(task);
   } catch (err) {
     repo.onError(err);
@@ -880,6 +916,7 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
     previewBusy.value = false;
     previewTaskId.value = null;
     previewAction.value = null;
+    previewStartingTarget.value = null;
     previewStartedAt.value = null;
     stopPreviewTimer();
   }
@@ -2750,6 +2787,11 @@ watch(
                  fallback (below) covers review tasks where that didn't happen. -->
             <div class="preview-live">
               <span class="preview-dot"></span>
+              <!-- Which target/frontend is being served (#0379), so "a preview
+                   is running" is never the whole story. -->
+              <span v-if="ui.active.preview.label" class="preview-target-name">
+                {{ ui.active.preview.label }}
+              </span>
               <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
                 <ExternalLink class="size-3.5" />
                 {{ ui.active.preview.url }}
@@ -2800,15 +2842,43 @@ watch(
           </p>
           <div v-else-if="ui.active.status === 'review' && !ui.active.preview" class="quickbar-row">
             <p class="preview-hint">
-              No preview running — the agent didn't request one before handoff.
+              <template v-if="previewTargetChoiceRequired">
+                This task's area matches more than one preview target — choose which to serve.
+              </template>
+              <template v-else>
+                No preview running — the agent didn't request one before handoff.
+              </template>
             </p>
+            <!-- #0379: when several targets match the task's area, make the
+                 choice explicit rather than silently serving the first one. -->
+            <select
+              v-if="previewTargetChoiceRequired"
+              v-model="previewTarget"
+              class="preview-target-select"
+              :disabled="ui.saving || isPreviewBusyForActive"
+              aria-label="Preview target"
+            >
+              <option :value="null" disabled>Choose target…</option>
+              <option v-for="t in previewTargets" :key="t.name" :value="t.name">
+                {{ t.name }}
+              </option>
+            </select>
+            <span
+              v-else-if="effectivePreviewTarget"
+              class="preview-target-name"
+              :title="`Preview target: ${effectivePreviewTarget}`"
+            >
+              {{ effectivePreviewTarget }}
+            </span>
             <span
               v-if="isPreviewBusyForActive && previewAction === 'start'"
               class="preview-progress"
               role="status"
             >
               <ActivityIndicator label="Starting preview" />
-              Starting preview…
+              Starting preview<span v-if="previewStartingTarget">
+                — {{ previewStartingTarget }}</span
+              >…
               <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
                 {{ formatDuration(previewElapsedMs) }}
               </span>
@@ -2816,7 +2886,11 @@ watch(
             <Button
               v-else
               variant="outline"
-              :disabled="ui.saving || isPreviewBusyForActive"
+              :disabled="
+                ui.saving ||
+                isPreviewBusyForActive ||
+                (previewTargetChoiceRequired && !effectivePreviewTarget)
+              "
               @click="startPreview"
             >
               <Play class="size-3.5" />

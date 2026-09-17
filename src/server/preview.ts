@@ -117,6 +117,25 @@ export type PreviewTarget = {
 export type PreviewTargetResolution = PreviewTarget | { kind: "none"; reason: string };
 
 /**
+ * A selectable preview target for the UI (#0379). Every configured target whose
+ * `areas` include the task's `area` is a candidate; when more than one matches,
+ * the drawer must let the user choose rather than silently previewing the first.
+ */
+export interface PreviewTargetOption {
+  /** Human label shown in the drawer and recorded on the run: the target's
+   *  `name`, or "default" for the bare `[preview] command`. */
+  name: string;
+  /** Task areas this target declared (empty for the default command). */
+  areas: string[];
+}
+
+/** A runnable target plus the `areas` it declared, for candidate listing. */
+interface PreviewCandidate {
+  target: PreviewTarget;
+  areas: string[];
+}
+
+/**
  * The actionable message shown when nothing resolves for a task (#0370). Both
  * "no `[preview]` section at all" and "section present but no area match" reach
  * here, so the user gets the same guidance either way: the task's own `area`,
@@ -143,15 +162,77 @@ function noPreviewReason(task: Task, lead: string): string {
 }
 
 /**
+ * Every runnable target for `task`, in precedence order: all named targets
+ * whose `areas` include the task's `area` (config order), else the single
+ * default `[preview] command`. Empty when nothing resolves for the area
+ * (#0370). Returning the whole list — not just the first match — is what lets
+ * #0379 surface a picker instead of silently choosing.
+ */
+function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
+  const preview = config.preview;
+  const area = (task.area ?? "").trim().toLowerCase();
+  const candidates: PreviewCandidate[] = [];
+  for (const t of preview?.targets ?? []) {
+    if (!t.areas.some((a) => a.trim().toLowerCase() === area)) continue;
+    candidates.push({
+      areas: [...t.areas],
+      target: {
+        kind: "command",
+        label: t.name,
+        command: t.command,
+        cwd: t.cwd,
+        readyPath: t.readyPath ?? DEFAULT_READY_PATH,
+        readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+      },
+    });
+  }
+  if (candidates.length) return candidates;
+  const defaultCommand = preview?.command?.trim();
+  if (defaultCommand) {
+    candidates.push({
+      areas: [],
+      target: {
+        kind: "command",
+        label: "default",
+        command: defaultCommand,
+        cwd: preview?.cwd,
+        readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
+        readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+      },
+    });
+  }
+  return candidates;
+}
+
+/**
+ * The preview targets the UI can offer for `task` (#0379). One entry for the
+ * common single-match case; several when the task's `area` is claimed by more
+ * than one `[[preview.targets]]`; empty when nothing is configured for it.
+ * Exported for the board/task routes and tests.
+ */
+export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewTargetOption[] {
+  return previewCandidates(config, task).map((c) => ({
+    name: c.target.label,
+    areas: c.areas,
+  }));
+}
+
+/**
  * Decide how to preview `task` from the repo's `[preview]` config (#0362).
  *
- * Precedence: a named target whose `areas` include the task's `area` wins; then
- * a default `[preview] command`; then a `none` result with an actionable message
- * (never a spawn failure). A project with no `[preview]` config at all is the
- * same clean `none`, not an implicit RepoOS-board preview (#0370). Exported for
- * tests.
+ * Precedence: named targets whose `areas` include the task's `area` (config
+ * order); then a default `[preview] command`; then a `none` result with an
+ * actionable message (never a spawn failure). A project with no `[preview]`
+ * config at all is the same clean `none`, not an implicit RepoOS-board preview
+ * (#0370). When `targetName` is given — the UI's picker choice (#0379) — that
+ * exact target is used; an unknown name is a clean `none`, never a silent
+ * fallback to a different target. Exported for tests.
  */
-export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewTargetResolution {
+export function resolvePreviewTarget(
+  config: RepoOSConfig,
+  task: Task,
+  targetName?: string,
+): PreviewTargetResolution {
   const preview = config.preview;
   const hasTargets = Boolean(preview?.targets?.length);
   const defaultCommand = preview?.command?.trim();
@@ -162,32 +243,20 @@ export function resolvePreviewTarget(config: RepoOSConfig, task: Task): PreviewT
     };
   }
 
-  const area = (task.area ?? "").trim();
-  if (hasTargets) {
-    const match = preview?.targets?.find((t) =>
-      t.areas.some((a) => a.trim().toLowerCase() === area.toLowerCase()),
-    );
-    if (match) {
-      return {
-        kind: "command",
-        label: match.name,
-        command: match.command,
-        cwd: match.cwd,
-        readyPath: match.readyPath ?? DEFAULT_READY_PATH,
-        readyTimeoutMs: match.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
-      };
-    }
-  }
-  if (defaultCommand) {
+  const candidates = previewCandidates(config, task);
+  if (targetName) {
+    const chosen = candidates.find((c) => c.target.label === targetName);
+    if (chosen) return chosen.target;
+    const area = (task.area ?? "").trim() || "(none)";
+    const names = candidates.map((c) => `"${c.target.label}"`).join(", ");
     return {
-      kind: "command",
-      label: "default",
-      command: defaultCommand,
-      cwd: preview?.cwd,
-      readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
-      readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+      kind: "none",
+      reason:
+        `No preview target named "${targetName}" matches area "${area}" (#${task.id}).` +
+        (names ? ` Available targets: ${names}.` : ""),
     };
   }
+  if (candidates.length) return candidates[0]!.target;
   return { kind: "none", reason: noPreviewReason(task, "") };
 }
 
@@ -358,8 +427,13 @@ export class PreviewManager {
    * worktree path is resolved from the task's own branch — never an
    * agent-supplied path (ADR-0005). Repeated requests are idempotent and
    * return the existing healthy preview.
+   *
+   * When the task's area matches more than one target (#0379), `targetName`
+   * picks the one the user chose in the drawer; omitting it (the agent-request
+   * path) starts the first match and reports its label so the choice is never
+   * silent.
    */
-  async start(task: Task): Promise<PreviewResult> {
+  async start(task: Task, targetName?: string): Promise<PreviewResult> {
     // A preview is a read-only leaf in the process tree. It still hosts the
     // normal API for static rendering, but it must never become an authority
     // that can create another preview (which otherwise permits recursive
@@ -382,13 +456,19 @@ export class PreviewManager {
     }
     const existing = this.registry.get(task.id);
     if (existing) {
-      return { ok: true, port: existing.port, url: existing.url, readyPath: existing.readyPath };
+      return {
+        ok: true,
+        port: existing.port,
+        url: existing.url,
+        readyPath: existing.readyPath,
+        label: existing.label,
+      };
     }
     // Concurrent starts for the same task (e.g. duplicate transition events)
     // must share one spawn — never double-spawn a process and leak one.
     const inflight = this.inflight.get(task.id);
     if (inflight) return inflight;
-    const p = this.doStart(task);
+    const p = this.doStart(task, targetName);
     this.inflight.set(task.id, p);
     p.finally(() => this.inflight.delete(task.id)).catch(() => {
       /* handled by caller */
@@ -396,7 +476,7 @@ export class PreviewManager {
     return p;
   }
 
-  private async doStart(task: Task): Promise<PreviewResult> {
+  private async doStart(task: Task, targetName?: string): Promise<PreviewResult> {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
     }
@@ -412,7 +492,7 @@ export class PreviewManager {
     // selected by area. A task whose area matches no configured target — or a
     // project with no `[preview]` config at all (#0370) — returns a clear
     // "nothing configured" result instead of spawning (and failing) something.
-    const target = resolvePreviewTarget(this.config, task);
+    const target = resolvePreviewTarget(this.config, task, targetName);
     if (target.kind === "none") {
       this.logLifecycle("start-skipped", task.id, target.reason);
       return { ok: false, error: target.reason };
@@ -472,7 +552,7 @@ export class PreviewManager {
     this.emit({
       type: "preview",
       id: task.id,
-      preview: { port: info.port, url: info.url, startedAt: info.startedAt },
+      preview: { port: info.port, url: info.url, startedAt: info.startedAt, label: info.label },
       at: now(),
     });
     return {

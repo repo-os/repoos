@@ -5077,6 +5077,38 @@
   font-family: "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
 }
+/* Which preview target/frontend a row refers to (#0379) — the target's name so
+   "a preview is running" is never the whole story. */
+.preview-target-name {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* Pick-one-target control when a task's area matches several targets (#0379). */
+.preview-target-select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 180px;
+}
+.preview-target-select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .new-btn {
   display: flex;
   align-items: center;

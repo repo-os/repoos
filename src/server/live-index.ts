@@ -85,7 +85,7 @@ export type RepoEvent =
   | {
       type: "preview";
       id: string;
-      preview: { port: number; url: string; startedAt: string } | null;
+      preview: { port: number; url: string; startedAt: string; label?: string } | null;
       at: string;
     }
   /** Lifecycle of the automatic agent review of a task in `review` (0101). */

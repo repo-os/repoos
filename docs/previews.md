@@ -78,6 +78,35 @@ configured" result above. Mobile is not a separate target: per
 shell that opens the same web UI, so a `mobile` area simply points at whatever
 web target exists (`areas = ["mobile", "web"]`).
 
+## Target identity and multiple matches (#0379)
+
+The quickbar names the target being served, not just "a preview is running":
+`PreviewInfo.label` (the target `name`, or `"default"` for the bare
+`[preview] command`) is carried on the start response, the `preview` SSE event,
+and `GET /api/tasks/:id`, and the drawer renders it as a chip next to the live
+URL — and inside the "Starting preview — …" progress text.
+
+Because resolution is by **`area`**, "multiple matches" means more than one
+`[[preview.targets]]` declares the task's area (the config-order first match is
+no longer assumed to be the only one). When a task's area resolves to more than
+one target:
+
+- `previewTargetOptions(config, task)` returns every match, and the board /
+  `GET /api/tasks/:id` responses carry it as `previewTargets` so the drawer can
+  list them.
+- The drawer shows a picker and **disables Start until the user chooses** —
+  the server is never asked to pick silently. The choice is sent as
+  `{ "target": "<name>" }` on `POST /api/tasks/:id/preview`; an unknown name is
+  a clean error, never a silent fallback to a different target.
+- The agent-request path (`::repoos-preview-request::`) has no picker: it starts
+  the config-order first match, and the label is recorded in the transcript
+  ("Managed preview ready (target: docs)") so the choice is not silent either.
+
+The single-match case (today's common case) is unchanged: one click starts the
+one target, and only the name label is new. A task spanning *genuinely*
+different areas still has one `area:` and therefore one resolved set; the
+changed-file-glob axis that would split it remains deferred (above).
+
 ## No implicit fallback (#0370)
 
 There is no default preview target. An absent `[preview]` section behaves

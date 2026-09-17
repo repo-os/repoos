@@ -1,4 +1,4 @@
-import type { Status, Agent, Task } from "../../core/types.js";
+import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
@@ -58,6 +58,7 @@ import { parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
+import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -73,8 +74,20 @@ function withReviewStatus<T extends { id: string }>(
   };
 }
 
+/**
+ * Add the preview targets a task can be served from (#0379). The drawer reads
+ * this to show the active target's name and, when the task's area matches more
+ * than one target, to offer a picker instead of silently previewing the first.
+ */
+function withPreviewTargets<T extends Task>(
+  task: T,
+  config: RepoOSConfig,
+): T & { previewTargets: PreviewTargetOption[] } {
+  return { ...task, previewTargets: previewTargetOptions(config, task) };
+}
+
 export const getTasks: RouteHandler = (ctx, req, res) => {
-  const { index, reviews } = ctx;
+  const { config, index, reviews } = ctx;
   const url = new URL(req.url ?? "/", "http://localhost");
   const status = url.searchParams.get("status") as Status | null;
   if (status && !(STATUSES as readonly string[]).includes(status)) {
@@ -82,7 +95,7 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
   }
   const tasks = index
     .getTasks(status ?? undefined)
-    .map((t) => withPmWorking(withReviewStatus(t, reviews)));
+    .map((t) => withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)));
   return json(res, 200, tasks);
 };
 
@@ -329,12 +342,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
 };
 
 export const getTask: RouteHandler = (ctx, _req, res, params) => {
-  const { index, previews, reviews } = ctx;
+  const { config, index, previews, reviews } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
   return t
     ? json(res, 200, {
-        ...withPmWorking(withReviewStatus(t, reviews)),
+        ...withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)),
         preview: previews.get(t.id) ?? null,
       })
     : json(res, 404, { error: `Task #${id} not found` });
@@ -1036,18 +1049,23 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 };
 
 // Preview routes
-export const startPreview: RouteHandler = async (ctx, _req, res, params) => {
+export const startPreview: RouteHandler = async (ctx, req, res, params) => {
   const { index, previews } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
   if (!t) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  const result = await previews.start(t);
+  // The drawer's picker passes the chosen target when the task's area matches
+  // more than one (#0379); omitting it starts the first match.
+  const body = (await readBody(req)) as { target?: unknown };
+  const target =
+    typeof body?.target === "string" && body.target.trim() ? body.target.trim() : undefined;
+  const result = await previews.start(t, target);
   if (!result.ok) {
     return json(res, 400, { error: result.error ?? "could not start preview" });
   }
-  return json(res, 200, { ok: true, port: result.port, url: result.url });
+  return json(res, 200, { ok: true, port: result.port, url: result.url, label: result.label });
 };
 
 export const stopPreview: RouteHandler = async (ctx, _req, res, params) => {

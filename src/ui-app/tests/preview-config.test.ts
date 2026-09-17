@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
-import { PreviewManager, resolvePreviewTarget } from "../../server/preview";
+import { PreviewManager, previewTargetOptions, resolvePreviewTarget } from "../../server/preview";
 
 function baseConfig(preview?: RepoOSConfig["preview"]): RepoOSConfig {
   return {
@@ -153,6 +153,61 @@ describe("resolvePreviewTarget", () => {
     // The default `command` (no area matches) uses the section-level override —
     // this is what makes a cold-worktree build-then-serve command survivable.
     expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
+  });
+
+  it("lists every target whose areas match the task, in config order (#0379)", () => {
+    const cfg = baseConfig({
+      command: "bun run default --port {port}",
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    // Several targets claim `web`: both are offered, in config order.
+    expect(previewTargetOptions(cfg, task("web"))).toEqual([
+      { name: "App", areas: ["web"] },
+      { name: "Web v2", areas: ["web"] },
+    ]);
+    // Exactly one match stays a single-entry list (today's common case).
+    expect(previewTargetOptions(cfg, task("landing"))).toEqual([
+      { name: "Landing", areas: ["landing"] },
+    ]);
+    // The default command is offered only when no named target matches.
+    expect(previewTargetOptions(cfg, task("server"))).toEqual([{ name: "default", areas: [] }]);
+    // Nothing configured for the area → no options at all.
+    expect(previewTargetOptions(baseConfig(), task("web"))).toEqual([]);
+  });
+
+  it("selects the requested target by name, and rejects an unknown one (#0379)", () => {
+    const cfg = baseConfig({
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"), "Web v2")).toMatchObject({
+      kind: "command",
+      label: "Web v2",
+      command: "bun run web2 --port {port}",
+    });
+    const missing = resolvePreviewTarget(cfg, task("web"), "Nope");
+    expect(missing.kind).toBe("none");
+    if (missing.kind === "none") {
+      expect(missing.reason).toContain('No preview target named "Nope"');
+      expect(missing.reason).toContain('"App"');
+      expect(missing.reason).toContain('"Web v2"');
+    }
+  });
+
+  it("defaults to the first match when no target is named (#0379)", () => {
+    const cfg = baseConfig({
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"))).toMatchObject({ label: "App" });
   });
 });
 
