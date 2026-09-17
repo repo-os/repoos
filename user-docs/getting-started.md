@@ -10,39 +10,63 @@ Choose one:
 
 ### curl — standalone build
 
+<div class="install-command">
+
 ```bash
-curl -fsSL https://repoos.org/install.sh | bash
+curl -fsSL https://repoos.org/install | bash
 ```
 
+</div>
+
 ### Homebrew
+
+<div class="install-command">
 
 ```bash
 brew install repo-os/tap/repoos
 ```
 
+</div>
+
 ### npm
+
+<div class="install-command">
 
 ```bash
 npm install -g @repo-os/repoos
 ```
 
+</div>
+
 ### Bun
+
+<div class="install-command">
 
 ```bash
 bun add -g @repo-os/repoos
 ```
 
+</div>
+
 ### pnpm
+
+<div class="install-command">
 
 ```bash
 pnpm add -g @repo-os/repoos
 ```
 
+</div>
+
 ### mise
+
+<div class="install-command">
 
 ```bash
 mise use --global npm:@repo-os/repoos
 ```
+
+</div>
 
 This uses mise's npm backend and saves RepoOS to your global mise
 configuration. Enable mise shell activation so its `repoos` shim is on PATH.

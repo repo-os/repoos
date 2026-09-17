@@ -198,6 +198,29 @@
   font-size: 13.5px;
 }
 
+/* Install commands are intentionally one line. The command scrolls horizontally
+ * on narrow screens while VitePress's copy action stays visible on the right. */
+.vp-doc .install-command [class*="language-"] {
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.vp-doc .install-command [class*="language-"] pre {
+  padding-right: 76px;
+}
+
+.vp-doc .install-command [class*="language-"] code {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.vp-doc .install-command [class*="language-"] > button.copy {
+  top: 50%;
+  right: 12px;
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
 /* ---------- changelog (/changelog) ----------
  * Release cards. The signature is the cyan→violet rail down the left edge —
  * the site's hero gradient, reduced to a hairline so it reads as a timeline

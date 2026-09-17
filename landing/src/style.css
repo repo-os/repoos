@@ -211,6 +211,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   background: var(--code-bg);
   border: 1px solid var(--border-bright);
   border-radius: 12px;
@@ -219,13 +220,20 @@ body {
   margin-top: 8px;
   max-width: 640px;
 }
+.install-command-scroll {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
 .install-box code {
+  display: block;
   font-family: var(--font-mono);
   font-size: 13.5px;
-  line-height: 1.7;
+  line-height: 1.5;
   color: var(--txt);
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: pre;
 }
 .install-box .dollar {
   color: var(--cyan);

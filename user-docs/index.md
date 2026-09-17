@@ -39,10 +39,12 @@ features:
 
 Three commands, inside a repo you already have:
 
+<div class="install-command install-command--group">
+
 ::: code-group
 
 ```bash [curl]
-curl -fsSL https://repoos.org/install.sh | bash
+curl -fsSL https://repoos.org/install | bash
 ```
 
 ```bash [brew]
@@ -62,6 +64,8 @@ pnpm add -g @repo-os/repoos
 ```
 
 :::
+
+</div>
 
 ```bash
 repoos init    # scaffolds work/, docs/, AGENTS.md — touches nothing else
