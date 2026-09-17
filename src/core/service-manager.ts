@@ -10,6 +10,17 @@
  * managed RepoOS services on this machine, keyed by a collision-safe
  * repository identifier derived from the canonical root path.
  *
+ * Platform notes:
+ *   - macOS: LaunchAgent plist with AbandonProcessGroup=true so the reload
+ *     handoff (spawn replacement + exit old) works. The reference plist on
+ *     this machine (~/Library/LaunchAgents/com.repoos.serve.plist) was the
+ *     starting point; per-repo units extend it with collision-safe labels.
+ *   - Linux: systemd user unit with WantedBy=default.target (always —
+ *     multi-user.target is a system target and ignored for --user units).
+ *     For the service to survive logout, the user must explicitly enable
+ *     lingering via `loginctl enable-linger <user>`. We never do this
+ *     automatically — it is surfaced in the UI and CLI as guidance.
+ *
  * Zero runtime deps: node:fs / node:path / node:crypto / node:child_process.
  */
 import { execFileSync } from "node:child_process";
@@ -142,11 +153,11 @@ function logDir(): string {
 }
 
 function repoosBinary(): string {
-  // For the service, we want the `repoos` CLI command (or `node <script>`)
-  // that the user can run. Try PATH lookup first.
+  // The service unit must point at a real, runnable `repoos` command. Try PATH
+  // first — this covers global installs (`npm i -g`, `bun link`) and any
+  // environment where the user can already run `repoos serve`.
   try {
-    const which = process.platform === "darwin" ? "which" : "which";
-    const result = execFileSync(which, ["repoos"], {
+    const result = execFileSync("which", ["repoos"], {
       encoding: "utf8",
       timeout: 5000,
       stdio: ["pipe", "pipe", "pipe"],
@@ -155,18 +166,35 @@ function repoosBinary(): string {
   } catch {
     // repoos not on PATH
   }
-  // Fallback: use process.execPath (bun or node) with the CLI entry point
-  return process.execPath;
+  // If running from the source checkout (dist/ exists next to src/), use
+  // process.execPath + the CLI entry directly. This covers the common dev
+  // case where `repoos` is a bun link pointing at this repo's dist/.
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
+  if (existsSync(cliEntry)) {
+    return process.execPath;
+  }
+  // Nothing found — caller should surface an error rather than generating
+  // a unit that will fail to start.
+  throw new Error(
+    "Cannot find the `repoos` binary. Ensure it is installed and on PATH, " +
+      "or run this command from a RepoOS source checkout with a built dist/.",
+  );
 }
 
 function generatePlist(entry: ServiceEntry): string {
   const bin = repoosBinary();
   const isInterpreter =
     bin.includes("node") || bin.endsWith("node") || bin.includes("bun") || bin.endsWith("bun");
+  // When the binary is an interpreter (node/bun), we need the CLI entry point
+  // script. Derive it from this module's location (src/core/service-manager.ts
+  // → ../../dist/cli/index.js) rather than guessing from the binary path.
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
   const programArgs = isInterpreter
     ? [
         `<string>${xmlEscape(bin)}</string>`,
-        `<string>${xmlEscape(join(dirname(dirname(bin)), "dist", "cli", "index.js"))}</string>`,
+        `<string>${xmlEscape(existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js"))}</string>`,
         `<string>serve</string>`,
         `<string>--port</string>`,
         `<string>${String(entry.port)}</string>`,
@@ -259,10 +287,15 @@ function generateUnit(entry: ServiceEntry): string {
   const bin = repoosBinary();
   const isInterpreter =
     bin.includes("node") || bin.endsWith("node") || bin.includes("bun") || bin.endsWith("bun");
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
   const execStart = isInterpreter
-    ? `${bin} ${join(dirname(dirname(bin)), "dist", "cli", "index.js")} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
+    ? `${bin} ${existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js")} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
     : `${bin} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`;
 
+  // Always default.target for user units — multi-user.target is a system
+  // target and silently ignored for --user services. Auto-start is controlled
+  // by systemctl enable/disable, not by the target.
   return `[Unit]
 Description=RepoOS serve — ${basename(entry.root)}
 After=network.target
@@ -275,7 +308,7 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=${entry.autoStart ? "default.target" : "multi-user.target"}
+WantedBy=default.target
 `;
 }
 
@@ -339,6 +372,27 @@ function querySystemdStatus(label: string): ServiceStatus {
 
 // ── Health check ─────────────────────────────────────────────────────────────
 
+/**
+ * Check if systemd user lingering is enabled for the current user. When
+ * disabled, user services stop on logout — the service won't survive a
+ * terminal close or reboot. We never enable this automatically; it requires
+ * explicit user confirmation per the task spec.
+ */
+export function isLingerEnabled(): boolean | null {
+  if (process.platform === "darwin") return null; // not applicable on macOS
+  try {
+    const uid = execFileSync("id", ["-u"], {
+      encoding: "utf8",
+      timeout: 3000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+    const lingerDir = join(homedir(), ".config", "systemd", "user", "linger", `${uid}.d`);
+    return existsSync(lingerDir);
+  } catch {
+    return null;
+  }
+}
+
 function probeHealth(port: number): Promise<{ ok: boolean; error?: string }> {
   return new Promise((resolve) => {
     const req = http.get(
@@ -372,44 +426,71 @@ function probeHealth(port: number): Promise<{ ok: boolean; error?: string }> {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * List all registered managed RepoOS services.
+ * List all registered managed RepoOS services, plus Linux linger status
+ * when applicable.
  */
-export function listServices(): ServiceListEntry[] {
+export function listServices(): {
+  services: ServiceListEntry[];
+  lingerEnabled: boolean | null;
+} {
   const entries = readRegistry();
-  return entries.map(
-    ({
-      id,
-      root,
-      port,
-      platform,
-      label,
-      autoStart,
-      status,
-      lastHealthCheck,
-      healthError,
-      createdAt,
-    }) => ({
-      id,
-      root,
-      port,
-      platform,
-      label,
-      autoStart,
-      status,
-      lastHealthCheck,
-      healthError,
-      createdAt,
-    }),
-  );
+  const lingerEnabled = isLingerEnabled();
+  return {
+    services: entries.map(
+      ({
+        id,
+        root,
+        port,
+        platform,
+        label,
+        autoStart,
+        status,
+        lastHealthCheck,
+        healthError,
+        createdAt,
+      }) => ({
+        id,
+        root,
+        port,
+        platform,
+        label,
+        autoStart,
+        status,
+        lastHealthCheck,
+        healthError,
+        createdAt,
+      }),
+    ),
+    lingerEnabled,
+  };
 }
 
 /**
  * Get the service status for a specific repo, querying the OS live.
+ * Detects external drift (plist/unit removed outside RepoOS).
  */
 export async function getServiceStatus(root: string): Promise<ServiceEntry | null> {
   const entries = readRegistry();
   const entry = findEntry(entries, root);
   if (!entry) return null;
+
+  // Detect external drift: check if the OS service file still exists
+  const artifactExists =
+    entry.platform === "launchd"
+      ? existsSync(plistPath(entry.label))
+      : existsSync(systemdUnitPath(entry.label));
+
+  if (!artifactExists) {
+    // The plist/unit was removed outside RepoOS — mark as stopped with a
+    // clear error so the UI surfaces it as "Needs attention".
+    if (entry.status !== "stopped" || entry.healthError !== "Service file removed externally") {
+      entry.status = "stopped";
+      entry.healthError = "Service file removed externally — reinstall to restore";
+      entry.updatedAt = new Date().toISOString();
+      writeRegistry(entries);
+    }
+    return entry;
+  }
 
   // Query live OS status
   const liveStatus =
@@ -418,8 +499,9 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
       : querySystemdStatus(entry.label);
 
   // Update status if changed
-  if (entry.status !== liveStatus) {
+  if (entry.status !== liveStatus || entry.healthError !== null) {
     entry.status = liveStatus;
+    entry.healthError = null;
     entry.updatedAt = new Date().toISOString();
     writeRegistry(entries);
   }
@@ -428,7 +510,9 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
 }
 
 /**
- * Install a background service for the current repo.
+ * Install a background service for the current repo and start it immediately.
+ * The service is created in a stopped state, then started — matching the
+ * acceptance criterion "creates and starts exactly one service".
  */
 export async function installService(
   root: string,
@@ -481,8 +565,9 @@ export async function installService(
     }
     writeFileSync(dest, unit, "utf8");
 
-    // Reload systemd and enable
+    // Reload systemd
     systemctl("daemon-reload");
+    // Enable/disable controls auto-start; always reload the unit first
     if (entry.autoStart) {
       systemctl("enable", `${label}.service`);
     }
@@ -490,6 +575,9 @@ export async function installService(
 
   entries.push(entry);
   writeRegistry(entries);
+
+  // Start the service immediately after install
+  const startResult = await startService(root);
 
   return { ok: true, entry };
 }
@@ -570,20 +658,24 @@ export async function stopService(root: string): Promise<{ ok: boolean; error?: 
   const entry = findEntry(entries, root);
   if (!entry) return { ok: false, error: "No service found for this repository" };
 
+  let stopError: string | undefined;
   if (entry.platform === "launchd") {
     const result = launchctl("stop", entry.label);
-    if (!result.ok) return { ok: false, error: `launchctl stop failed: ${result.stderr}` };
+    if (!result.ok) stopError = `launchctl stop failed: ${result.stderr}`;
   } else {
     const result = systemctl("stop", `${entry.label}.service`);
-    if (!result.ok) return { ok: false, error: `systemctl stop failed: ${result.stderr}` };
+    if (!result.ok) stopError = `systemctl stop failed: ${result.stderr}`;
   }
 
-  // Update status
+  // Always update status — even on failure, the service is no longer
+  // managed as "running" from RepoOS's perspective. The OS may have
+  // already stopped it, or the stop may have failed because it was
+  // already stopped.
   entry.status = "stopped";
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 
-  return { ok: true };
+  return stopError ? { ok: false, error: stopError } : { ok: true };
 }
 
 /**

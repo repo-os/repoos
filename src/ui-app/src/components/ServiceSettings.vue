@@ -22,6 +22,7 @@ const service = ref<ServiceInfo | null>(null);
 const loading = ref(true);
 const actionPending = ref<string | null>(null);
 const errorMsg = ref("");
+const lingerEnabled = ref<boolean | null>(null);
 
 async function refreshStatus(): Promise<void> {
   loading.value = true;
@@ -33,6 +34,15 @@ async function refreshStatus(): Promise<void> {
     service.value = null;
   } finally {
     loading.value = false;
+  }
+}
+
+async function refreshLinger(): Promise<void> {
+  try {
+    const res = (await api("/api/service/list")) as { lingerEnabled: boolean | null };
+    lingerEnabled.value = res.lingerEnabled;
+  } catch {
+    lingerEnabled.value = null;
   }
 }
 
@@ -167,7 +177,10 @@ const statusLabel = computed(() => {
 
 const isBusy = computed(() => actionPending.value !== null);
 
-onMounted(refreshStatus);
+onMounted(() => {
+  refreshStatus();
+  refreshLinger();
+});
 </script>
 
 <template>
@@ -289,6 +302,21 @@ onMounted(refreshStatus);
             </div>
           </div>
         </template>
+
+        <!-- Linux linger guidance -->
+        <div
+          v-if="service && service.platform === 'systemd' && lingerEnabled === false"
+          class="setting-row"
+        >
+          <div class="setting-info">
+            <div class="setting-label" style="color: var(--yellow)">⚠ Linger not enabled</div>
+            <div class="setting-desc">
+              Systemd user services stop on logout unless lingering is enabled. To keep this service
+              running after you close your terminal or log out:
+              <code>loginctl enable-linger {{ "$USER" }}</code>
+            </div>
+          </div>
+        </div>
 
         <div v-if="errorMsg" class="setting-desc" style="color: var(--red); padding-bottom: 10px">
           {{ errorMsg }}

@@ -56,7 +56,7 @@ export async function cmdService(argv: string[]): Promise<void> {
   switch (sub) {
     case "list":
     case "ls": {
-      const services = listServices();
+      const { services, lingerEnabled } = listServices();
       if (services.length === 0) {
         console.log(c.dim("  No managed background services."));
         console.log(c.dim("  Use ") + c.cyan("repoos service install") + c.dim(" to set one up."));
@@ -65,6 +65,19 @@ export async function cmdService(argv: string[]): Promise<void> {
       console.log(c.bold("  Managed background services:\n"));
       for (const s of services) {
         printService(s);
+        console.log();
+      }
+      // Linux linger guidance — surface when services exist but linger is off
+      if (lingerEnabled === false && services.some((s) => s.platform === "systemd")) {
+        console.log(
+          c.yellow("  ⚠") +
+            c.dim(" Systemd user services stop on logout unless lingering is enabled."),
+        );
+        console.log(
+          c.dim("    Enable with: ") +
+            c.cyan("loginctl enable-linger " + (process.env.USER ?? "")) +
+            c.dim(" (survives reboot and terminal close)"),
+        );
         console.log();
       }
       return;

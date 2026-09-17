@@ -34,8 +34,8 @@ export const getServiceStatusRoute: RouteHandler = async (ctx, _req, res) => {
 };
 
 export const listServicesRoute: RouteHandler = (_ctx, _req, res) => {
-  const services = listServices();
-  return json(res, 200, { ok: true, services });
+  const result = listServices();
+  return json(res, 200, { ok: true, ...result });
 };
 
 export const installServiceRoute: RouteHandler = async (ctx, _req, res) => {
