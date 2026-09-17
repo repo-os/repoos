@@ -13,7 +13,6 @@ import type {
   ModelTestResult,
 } from "../types";
 import Button from "../components/ui/button.vue";
-import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
 import AgentModelControl from "../components/AgentModelControl.vue";
@@ -419,7 +418,11 @@ onUnmounted(() => {
       </div>
 
       <div class="agents-tab-content">
-        <Card v-show="activeTab === 'default'" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div
+          class="agent-tab-panel"
+          v-show="activeTab === 'default'"
+          style="padding: 0 18px 6px; margin-bottom: 16px"
+        >
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
             <span class="live-dot"></span>Default agents
             <!-- <a
@@ -525,9 +528,13 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card v-show="activeTab === 'custom'" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div
+          class="agent-tab-panel"
+          v-show="activeTab === 'custom'"
+          style="padding: 0 18px 6px; margin-bottom: 16px"
+        >
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
             <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>Custom
             agents
@@ -638,9 +645,13 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card v-show="activeTab === 'team'" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div
+          class="agent-tab-panel"
+          v-show="activeTab === 'team'"
+          style="padding: 0 18px 6px; margin-bottom: 16px"
+        >
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
             <span class="live-dot" style="background: var(--green)"></span>Build your team
           </div>
@@ -733,9 +744,10 @@ onUnmounted(() => {
           <BuiltInAgentCard agent="architect" />
           <BuiltInAgentCard agent="design" />
           <BuiltInAgentCard agent="docs-debt" />
-        </Card>
+        </div>
 
-        <Card
+        <div
+          class="agent-tab-panel"
           v-if="!detectError"
           v-show="activeTab === 'detected'"
           style="padding: 0 18px 6px; margin-bottom: 16px"
@@ -803,7 +815,7 @@ onUnmounted(() => {
               </Button>
             </div>
           </template>
-        </Card>
+        </div>
 
         <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
         <ModelProvidersPanel v-if="providersActivated" v-show="activeTab === 'providers'" />

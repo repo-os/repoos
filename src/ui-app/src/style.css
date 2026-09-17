@@ -5533,6 +5533,18 @@
 .agents-tab-content::-webkit-scrollbar {
   display: none;
 }
+/*
+ * Each tab's list used to sit inside a translucent <Card> (bg: --panel) that
+ * wrapped the already-solid .agent-card / .detect-row items (bg:
+ * --panel-solid) — two nearly-identical dark blues stacked on top of each
+ * other read as one muddy nested box rather than distinct cards (#0384
+ * follow-up). The tab content now sits directly on the page background, the
+ * same flat layering the Tokens tab's .task-section cards already use.
+ */
+.agent-tab-panel {
+  background: transparent;
+  border: none;
+}
 .agent-card {
   border: 1px solid var(--border);
   border-radius: 10px;
