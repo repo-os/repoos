@@ -2,7 +2,7 @@
 id: "0389"
 title: Build the shared skill-guided built-in-agent runner and the deterministic auto-fix verification gate
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
@@ -65,3 +65,4 @@ If a proposed fix doesn't clear this, it goes into the findings/report bundle fo
 
 - 2026-09-17T14:02:47Z · created · unknown
 - 2026-09-17T14:12:08Z · model_override
+- 2026-09-17T14:12:08Z · status inbox→ready
