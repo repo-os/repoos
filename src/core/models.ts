@@ -275,6 +275,42 @@ const kiroAdapter: ModelSourceAdapter = {
   },
 };
 
+/**
+ * Cursor adapter: parses `cursor-agent --list-models` output. Each model row is
+ * `<id> - <display name>` (e.g. `auto - Auto (current, default)`); the header
+ * and any non-matching line are dropped. Cursor's model ids are stable enough
+ * to offer in the dropdown, but the CLI default is always `default` here.
+ */
+export function parseCursorModels(text: string): string[] {
+  const seen = new Set<string>();
+  const clean = text.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
+  for (const raw of clean.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^([a-zA-Z0-9][^\s]*)\s+-\s+\S/);
+    if (!m) continue;
+    const id = m[1];
+    if (!id || id.length > MODEL_ID_MAX_LEN) continue;
+    seen.add(id);
+  }
+  return [...seen];
+}
+
+const cursorAdapter: ModelSourceAdapter = {
+  id: "cursor",
+  cli: "cursor",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("cursor-agent", process.env.PATH ?? "");
+    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    const out = await spawnModels(bin, ["--list-models"], {
+      timeoutMs: MODELS_TIMEOUT_MS,
+      cwd: opts.cwd,
+    });
+    return { supported: true, models: ["default", ...parseCursorModels(out)], refreshable: true };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -293,13 +329,15 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   codex: codexAdapter,
   "github copilot": copilotAdapter,
   kiro: kiroAdapter,
+  cursor: cursorAdapter,
 };
 for (const known of KNOWN_AGENTS) {
   if (
     known.id === "opencode" ||
     known.id === "codex" ||
     known.id === "copilot" ||
-    known.id === "kiro"
+    known.id === "kiro" ||
+    known.id === "cursor"
   )
     continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);

@@ -324,7 +324,7 @@ const detectLoading = ref(false);
 const detectError = ref(false);
 const detectHintCopied = ref<string>("");
 
-type DetectStatus = "ok" | "desktop" | "missing";
+type DetectStatus = "ok" | "desktop" | "auth" | "missing";
 
 interface DetectRow {
   agent: DetectedAgent;
@@ -348,6 +348,14 @@ const detectRows = computed<DetectRow[]>(() =>
         agent,
         status: "desktop",
         statusLabel: "desktop only",
+        color: "var(--amber)",
+      };
+    }
+    if (agent.auth === false) {
+      return {
+        agent,
+        status: "auth",
+        statusLabel: "sign-in required",
         color: "var(--amber)",
       };
     }
@@ -789,7 +797,18 @@ onUnmounted(() => {
                     r.agent.path
                   }}</span>
                   <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
-                  <span v-if="!r.agent.headless" class="detect-hint">
+                  <span v-if="r.status === 'auth'" class="detect-hint">
+                    Installed but not signed in:
+                    <code>{{ r.agent.authHint || "sign in with the CLI" }}</code>
+                    <button
+                      v-if="r.agent.authHint"
+                      class="detect-copy"
+                      @click="copyHint(r.agent.authHint!)"
+                    >
+                      {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
+                    </button>
+                  </span>
+                  <span v-else-if="!r.agent.headless" class="detect-hint">
                     Desktop app shadows PATH — install headless CLI:
                     <code>{{ r.agent.installHint }}</code>
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
@@ -806,6 +825,7 @@ onUnmounted(() => {
                     </button>
                   </span>
                 </template>
+                <span v-if="r.agent.capability" class="detect-cap">{{ r.agent.capability }}</span>
               </div>
             </div>
 

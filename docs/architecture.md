@@ -211,6 +211,29 @@ Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers `default`; any configured model id can still be checked through the
 existing compatibility probe.
 
+## Cursor Agent CLI driver
+
+RepoOS runs the Cursor Agent CLI under its explicit `cursor-agent` binary
+(`curl https://cursor.com/install -fsS | bash`) — never a bare `agent`, which
+can collide with another tool on `PATH`. It launches in a task worktree with
+`-p --output-format stream-json`, plus `--trust` and `--force`. Both flags are
+load-bearing: stdin is ignored, so without `--trust` Cursor blocks on a
+workspace-trust prompt and without `--force` it blocks on tool approval — either
+one hangs the turn forever. The blast radius is the task's own worktree; RepoOS
+never launches this driver in the main checkout.
+
+`parseCursorEvent` reads the stream defensively: `system/init` carries the
+`session_id` and model, `assistant` events nest text under `message.content[]`,
+`tool_call`/`started` and `tool_call`/`completed` are paired by `call_id` into a
+single tool card, `error` and a failed terminal `result` surface as sys lines,
+and unknown future event types are swallowed rather than dumped as raw JSON.
+Follow-up turns resume the EXACT captured session id with `--resume <id>`; when
+no id is known it starts a fresh turn rather than using `--continue` (which
+could attach a different task's most recent session). Recognizable stderr
+failures (auth, permission, stale CLI) are mapped to an actionable hint once per
+session. Models come from `cursor-agent --list-models`; `default` omits
+`--model` and lets Cursor choose.
+
 ## The three runtime states (don't conflate them)
 
 - Truth — the markdown files + git. Survives everything.
