@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-17T16:19:57Z"
-review_passes: 3
 id: "0185"
 title: Per-repo background service management (launchd/systemd)
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/per-repo-background-service-management-l
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-08-14T04:16:57Z"
+updated_at: "2026-09-17T16:24:08Z"
+review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
 ---
@@ -89,4 +89,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T15:59:38Z · status review→active
 - 2026-09-17T16:18:25Z · status active→review
 - 2026-09-17T16:18:25Z · status review→active
-
+- 2026-09-17T16:24:08Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
