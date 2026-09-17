@@ -8,8 +8,9 @@ area: board
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:09:02Z"
-updated_at: "2026-09-17T14:09:02Z"
+updated_at: "2026-09-17T14:11:21Z"
 ---
 ## Activity
 
@@ -31,3 +32,7 @@ _What should the end experience be?_
 ## Notes for AI
 
 _Constraints, files to touch, things NOT to do._
+
+## Activity
+
+- 2026-09-17T14:11:21Z · model_override
