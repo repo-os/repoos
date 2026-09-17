@@ -2,14 +2,14 @@
 id: "0386"
 title: "MTD publish-time main-drift resync has no retry cap, unlike validate-phase retries"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-17T08:23:08Z"
-updated_at: "2026-09-17T08:33:31Z"
+updated_at: "2026-09-17T09:24:22Z"
 ---
 ## Problem
 
@@ -97,3 +97,4 @@ kinds already get their own hint.
 
 - 2026-09-17T08:23:08Z · created · unknown
 - 2026-09-17T08:33:31Z · note: Backstop landed in commit 237588c4: a capped publishDriftCount on the IntegrationJob stops the resync loop after 5 consecutive drifts instead of looping forever, with a test driving 5+ real drift cycles. This does NOT address the root cause yet — checked git log for both #0376 and #0382's incident windows and found the dominant driver was a BURST of docs(<id>): update task bookkeeping commits across several UNRELATED tasks, not competing feature merges as originally assumed. The smarter fix (skip resyncing when main's new commits don't touch any path the candidate's own diff touches) is still the preferred direction and remains open — the cap is a safety net, not the real fix.
+- 2026-09-17T09:24:22Z · status inbox→ready
