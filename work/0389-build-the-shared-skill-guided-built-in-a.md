@@ -2,7 +2,7 @@
 id: "0389"
 title: Build the shared skill-guided built-in-agent runner and the deterministic auto-fix verification gate
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/build-the-shared-skill-guided-built-in-a
 model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:02:47Z"
-updated_at: "2026-09-17T14:54:45Z"
+updated_at: "2026-09-17T15:03:12Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -74,3 +74,4 @@ If a proposed fix doesn't clear this, it goes into the findings/report bundle fo
 - 2026-09-17T14:40:49Z · status review→active
 - 2026-09-17T14:47:35Z · status active→review
 - 2026-09-17T14:54:45Z · status review→active
+- 2026-09-17T15:03:12Z · status active→review
