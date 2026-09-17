@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 2
 id: "0397"
 title: Default existing-repo init to a namespaced RepoOS directory
 type: feature
@@ -108,3 +109,5 @@ Update new-project and existing-repo onboarding plus configuration/layout docume
 - 2026-09-17T15:47:55Z · status review→active
 - 2026-09-17T15:47:56Z · status active→review
 - 2026-09-17T16:18:00Z · needs_merge
+
+
