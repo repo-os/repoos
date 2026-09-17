@@ -582,8 +582,11 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
 
   if (!artifactExists) {
     // The plist/unit was removed outside RepoOS — mark as "error" (Needs
-    // attention) so the UI surfaces the drift clearly.
-    const driftMsg = "Service file removed externally — reinstall to restore";
+    // attention) so the UI surfaces the drift clearly. installService()
+    // refuses while a registry entry for this repo still exists, so the
+    // recovery path is Remove (clears the stale entry) then reinstall —
+    // "reinstall" alone is a dead end.
+    const driftMsg = "Service file removed externally — remove, then reinstall, to restore";
     if (entry.status !== "error" || entry.healthError !== driftMsg) {
       entry.status = "error";
       entry.healthError = driftMsg;
@@ -907,17 +910,29 @@ export async function enableAutoStart(root: string): Promise<{ ok: boolean; erro
   if (!entry) return { ok: false, error: "No service found for this repository" };
 
   if (entry.platform === "launchd") {
-    // Rewrite the plist with RunAtLoad=true
+    // Flipping RunAtLoad requires an unload+load round-trip, and `load` with
+    // RunAtLoad=true starts the job immediately regardless of whether it was
+    // already running. Toggling "Start at login" must only change what
+    // happens at the NEXT login, not the service's current running state —
+    // so if it wasn't running before, stop the immediate start `load` caused.
+    const wasRunning = queryLaunchdStatus(entry.label) === "running";
     const plist = generatePlist({ ...entry, autoStart: true });
     writeFileSync(plistPath(entry.label), plist, "utf8");
-    // Reload to pick up changes
     launchctl("unload", plistPath(entry.label));
     launchctl("load", plistPath(entry.label));
+    if (!wasRunning) launchctl("stop", entry.label);
   } else {
+    // systemd's enable/disable never touch the running unit — no equivalent
+    // side effect to correct for.
     systemctl("enable", `${entry.label}.service`);
   }
 
   entry.autoStart = true;
+  const liveStatus =
+    entry.platform === "launchd"
+      ? queryLaunchdStatus(entry.label)
+      : querySystemdStatus(entry.label);
+  entry.status = deriveStatus(liveStatus as "running" | "stopped", true);
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 
@@ -933,15 +948,26 @@ export async function disableAutoStart(root: string): Promise<{ ok: boolean; err
   if (!entry) return { ok: false, error: "No service found for this repository" };
 
   if (entry.platform === "launchd") {
+    // Same unload+load round-trip as enableAutoStart, but the opposite
+    // failure mode: RunAtLoad=false means the `load` above does NOT restart
+    // it, so a service that was running before this toggle would otherwise
+    // be silently stopped by "Disable at login" — bring it back explicitly.
+    const wasRunning = queryLaunchdStatus(entry.label) === "running";
     const plist = generatePlist({ ...entry, autoStart: false });
     writeFileSync(plistPath(entry.label), plist, "utf8");
     launchctl("unload", plistPath(entry.label));
     launchctl("load", plistPath(entry.label));
+    if (wasRunning) launchctl("start", entry.label);
   } else {
     systemctl("disable", `${entry.label}.service`);
   }
 
   entry.autoStart = false;
+  const liveStatus =
+    entry.platform === "launchd"
+      ? queryLaunchdStatus(entry.label)
+      : querySystemdStatus(entry.label);
+  entry.status = deriveStatus(liveStatus as "running" | "stopped", false);
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 
