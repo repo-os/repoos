@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T17:18:21Z"
-updated_at: "2026-09-17T06:07:24Z"
+updated_at: "2026-09-17T06:54:02Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ separate concerns even though both touch the preview quickbar.
 
 - 2026-09-16T17:18:21Z · created · unknown
 - 2026-09-17T06:07:24Z · status inbox→ready
+- 2026-09-17T06:54:02Z · model_override
