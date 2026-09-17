@@ -154,6 +154,7 @@ const statusColor = computed(() => {
     case "running":
       return "var(--green)";
     case "stopped":
+    case "disabled":
       return "var(--txt-dim)";
     case "error":
       return "var(--red)";
@@ -168,6 +169,8 @@ const statusLabel = computed(() => {
       return "Running";
     case "stopped":
       return "Stopped";
+    case "disabled":
+      return "Disabled";
     case "error":
       return "Needs attention";
     default:

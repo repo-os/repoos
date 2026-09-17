@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -7,6 +8,8 @@ import {
   serviceLabel,
   detectPlatform,
   isLingerEnabled,
+  isPortInUse,
+  deriveStatus,
   type ServiceEntry,
 } from "./service-manager.js";
 
@@ -57,6 +60,46 @@ describe("detectPlatform", () => {
   it("returns a valid platform", () => {
     const platform = detectPlatform();
     expect(["launchd", "systemd"]).toContain(platform);
+  });
+});
+
+describe("deriveStatus", () => {
+  it("reports running regardless of autoStart", () => {
+    expect(deriveStatus("running", true)).toBe("running");
+    expect(deriveStatus("running", false)).toBe("running");
+  });
+
+  it("reports stopped when not running but set to auto-start", () => {
+    expect(deriveStatus("stopped", true)).toBe("stopped");
+  });
+
+  it("reports disabled when not running and not set to auto-start", () => {
+    // Regression: an installed, auto-start-off service used to be
+    // indistinguishable from a genuinely stopped one — both showed "stopped".
+    expect(deriveStatus("stopped", false)).toBe("disabled");
+  });
+});
+
+describe("isPortInUse", () => {
+  it("detects a port already bound by something else", async () => {
+    const srv = createServer();
+    await new Promise<void>((res) => srv.listen(0, "127.0.0.1", res));
+    const { port } = srv.address() as { port: number };
+    try {
+      expect(await isPortInUse(port)).toBe(true);
+    } finally {
+      await new Promise<void>((res) => srv.close(() => res()));
+    }
+  });
+
+  it("reports a free port as not in use", async () => {
+    // Bind briefly to learn a free ephemeral port, then release it.
+    const probe = createServer();
+    await new Promise<void>((res) => probe.listen(0, "127.0.0.1", res));
+    const { port } = probe.address() as { port: number };
+    await new Promise<void>((res) => probe.close(() => res()));
+
+    expect(await isPortInUse(port)).toBe(false);
   });
 });
 

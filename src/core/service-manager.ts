@@ -27,6 +27,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import { homedir } from "node:os";
 import { basename, join, dirname, resolve } from "node:path";
 import { realpathSync } from "node:fs";
@@ -430,6 +431,38 @@ function probeHealth(port: number): Promise<{ ok: boolean; error?: string }> {
   });
 }
 
+/**
+ * Check whether something is already bound to `port` on localhost. Used to
+ * refuse installing/starting a managed service against a port a foreground
+ * `repoos serve` (or anything else) is already holding — without this, the
+ * new LaunchAgent/systemd unit fails to bind (EADDRINUSE) and KeepAlive /
+ * Restart=on-failure crash-loops it every few seconds.
+ */
+export function isPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolvePromise) => {
+    const srv = net.createServer();
+    srv.once("error", (err: NodeJS.ErrnoException) => {
+      resolvePromise(err.code === "EADDRINUSE");
+    });
+    srv.once("listening", () => {
+      srv.close(() => resolvePromise(false));
+    });
+    srv.listen(port, "127.0.0.1");
+  });
+}
+
+/**
+ * Map the OS-reported running/stopped state plus autoStart to the spec's
+ * four visible states: a service that isn't running is "Stopped" if it will
+ * still start at login (autoStart), or "Disabled" if it won't — otherwise an
+ * installed-but-off service and a genuinely stopped one were indistinguishable
+ * in the UI.
+ */
+export function deriveStatus(liveStatus: "running" | "stopped", autoStart: boolean): ServiceStatus {
+  if (liveStatus === "running") return "running";
+  return autoStart ? "stopped" : "disabled";
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -505,10 +538,11 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
     entry.platform === "launchd"
       ? queryLaunchdStatus(entry.label)
       : querySystemdStatus(entry.label);
+  const status = deriveStatus(liveStatus as "running" | "stopped", entry.autoStart);
 
   // Update status if changed
-  if (entry.status !== liveStatus || entry.healthError !== null) {
-    entry.status = liveStatus;
+  if (entry.status !== status || entry.healthError !== null) {
+    entry.status = status;
     entry.healthError = null;
     entry.updatedAt = new Date().toISOString();
     writeRegistry(entries);
@@ -531,6 +565,18 @@ export async function installService(
   const existing = findEntry(entries, root);
   if (existing) {
     return { ok: false, error: `Service already installed (id: ${existing.id}). Remove it first.` };
+  }
+
+  // Refuse to install against a port something is already bound to — most
+  // commonly the foreground `repoos serve` the user is looking at right now
+  // when they click "Install service". Without this the new managed unit
+  // fails to bind (EADDRINUSE) and KeepAlive/Restart=on-failure crash-loops
+  // it every few seconds.
+  if (await isPortInUse(port)) {
+    return {
+      ok: false,
+      error: `Port ${port} is already in use — stop the running \`repoos serve\` on this port (or whatever else is bound to it) before installing a background service.`,
+    };
   }
 
   const platform = detectPlatform();
@@ -671,6 +717,20 @@ export async function startService(root: string): Promise<{ ok: boolean; error?:
   const entries = readRegistry();
   const entry = findEntry(entries, root);
   if (!entry) return { ok: false, error: "No service found for this repository" };
+
+  // Only refuse when the service isn't already the thing holding the port —
+  // otherwise a normal "already running" start (e.g. right after install)
+  // would false-positive against itself.
+  const alreadyRunning =
+    (entry.platform === "launchd"
+      ? queryLaunchdStatus(entry.label)
+      : querySystemdStatus(entry.label)) === "running";
+  if (!alreadyRunning && (await isPortInUse(entry.port))) {
+    return {
+      ok: false,
+      error: `Port ${entry.port} is already in use by something else — stop it before starting this service, or the service will crash-loop trying to bind it.`,
+    };
+  }
 
   if (entry.platform === "launchd") {
     const dest = plistPath(entry.label);
@@ -813,21 +873,25 @@ export async function checkHealth(
       : querySystemdStatus(entry.label);
 
   if (liveStatus !== "running") {
-    entry.status = liveStatus;
+    const status = deriveStatus(liveStatus as "running" | "stopped", entry.autoStart);
+    entry.status = status;
     entry.lastHealthCheck = new Date().toISOString();
     entry.healthError = "Service is not running";
     entry.updatedAt = new Date().toISOString();
     writeRegistry(entries);
-    return { ok: false, status: liveStatus, error: "Service is not running" };
+    return { ok: false, status, error: "Service is not running" };
   }
 
-  // Probe the health endpoint
+  // Probe the health endpoint. Alive-but-failing-to-respond is exactly the
+  // "Needs attention" case (spec's 4th state) — surface it as "error" rather
+  // than "running", or the UI has no way to distinguish it from healthy.
   const health = await probeHealth(entry.port);
-  entry.status = liveStatus;
+  const status: ServiceStatus = health.ok ? "running" : "error";
+  entry.status = status;
   entry.lastHealthCheck = new Date().toISOString();
   entry.healthError = health.error ?? null;
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);
 
-  return { ok: health.ok, status: liveStatus, error: health.error };
+  return { ok: health.ok, status, error: health.error };
 }

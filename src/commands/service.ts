@@ -33,6 +33,7 @@ import { c } from "../cli/colors.js";
 function statusLabel(s: string): string {
   if (s === "running") return c.green("running");
   if (s === "stopped") return c.dim("stopped");
+  if (s === "disabled") return c.dim("disabled");
   if (s === "error") return c.red("error");
   return c.yellow("unknown");
 }
