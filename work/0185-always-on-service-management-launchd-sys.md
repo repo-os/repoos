@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-17T17:23:07Z"
+review_passes: 10
 id: "0185"
 title: Per-repo background service management (launchd/systemd)
 type: feature
@@ -11,8 +13,6 @@ branch: feat/per-repo-background-service-management-l
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-08-14T04:16:57Z"
-updated_at: "2026-09-17T17:20:56Z"
-review_passes: 9
 handoff_signal_retry_count: 2
 review_rounds: 2
 ---
@@ -102,3 +102,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T17:10:55Z · status active→review
 - 2026-09-17T17:20:55Z · status review→active
 - 2026-09-17T17:20:56Z · status active→review
+
