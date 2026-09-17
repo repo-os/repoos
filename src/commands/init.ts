@@ -27,7 +27,7 @@ import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../co
 import { c } from "../cli/colors.js";
 import { cmdServe } from "./serve.js";
 
-const SAMPLE_TASK = (description: string) => `---
+const SAMPLE_TASK = (description: string, workDir: string) => `---
 id: "0001"
 title: Set up RepoOS
 type: chore
@@ -51,7 +51,7 @@ Run \`repoos list\` to see the board. Run \`repoos show 0001\` to read a task
 
 ## Acceptance criteria
 
-- [x] \`repoos init\` scaffolded work/, repoos.toml, AGENTS.md
+- [x] \`repoos init\` scaffolded ${workDir}/, repoos.toml, AGENTS.md
 - [x] \`repoos list\` shows this task
 - [x] Editing the \`status:\` field moves it across the board
 
@@ -73,7 +73,12 @@ small. Read AGENTS.md before starting any task.
  * embeds the one-line description collected at init and carries the questions
  * that turn that description into docs and real tasks later.
  */
-const NEW_PROJECT_STARTER_TASK = (id: string, description: string) => `---
+const NEW_PROJECT_STARTER_TASK = (
+  id: string,
+  description: string,
+  workDir = "work",
+  docsDir = "docs",
+) => `---
 id: "${id}"
 title: Flesh out the product vision and initial architecture
 type: spec
@@ -106,7 +111,7 @@ ${
    - Who is this for, and what is the smallest useful first release?
    - What stack and hosting, and why those over the alternatives?
    - What is explicitly **out of scope** for now?
-3. Write the answers into \`docs/\` — at minimum a short vision note and an
+3. Write the answers into \`${docsDir}/\` — at minimum a short vision note and an
    architecture note. Keep them specific to this project.
 4. Break the result into a handful of concrete tasks with
    \`repoos new "<title>"\`, and move the ones that are ready into \`ready\`.
@@ -125,9 +130,14 @@ priorities — a short back-and-forth here saves a lot of rework later.
  * is already a repo to read, so unlike the new-project starter this one is
  * about documenting what exists and turning the gaps into a real backlog.
  */
-const EXISTING_REPO_STARTER_TASK = (id: string) => `---
+const EXISTING_REPO_STARTER_TASK = (
+  id: string,
+  _description = "",
+  workDir = "work",
+  docsDir = "docs",
+) => `---
 id: "${id}"
-title: Read this codebase and propose docs/ + an initial task backlog
+title: Read this codebase and propose ${docsDir}/ + an initial task backlog
 type: spec
 status: ready
 priority: p2
@@ -146,7 +156,7 @@ then turn what's missing into work.
 
 1. Scan the repo: top-level structure, languages and frameworks, build and
    test commands, and any existing conventions or docs.
-2. Write the durable findings into \`docs/\` — architecture notes and the
+2. Write the durable findings into \`${docsDir}/\` — architecture notes and the
    conventions anyone working here must follow.
 3. Draft a small starter backlog of real tasks with \`repoos new "<title>"\`,
    each concrete enough to work on its own.
@@ -160,15 +170,15 @@ on what the code actually does rather than what you'd expect it to; where the
 repo is silent, write down the open question instead of guessing.
 `;
 
-const AGENTS_MD = `# AGENTS.md
+const AGENTS_MD = (workDir: string, docsDir: string) => `# AGENTS.md
 
-This repo uses **RepoOS**: tasks are markdown files under \`work/\`, and the
+This repo uses **RepoOS**: tasks are markdown files under \`${workDir}/\`, and the
 repo itself is the source of truth. This file tells AI agents how to operate.
 
 ## Operating loop
 
-1. Read this file and any relevant docs under \`docs/\`.
-2. Pick a task from \`work/\` whose \`status: ready\`.
+1. Read this file and any relevant docs under \`${docsDir}/\`.
+2. Pick a task from \`${workDir}/\` whose \`status: ready\`.
 3. Set its \`status: active\` (edit the frontmatter; do not move the file).
 4. Create a worktree on the branch named in the task's \`branch:\` field, or set one.
 5. Implement → test → if the repo has a git remote, open an MR/PR against main.
@@ -197,7 +207,7 @@ off; the implementer never merges to \`main\` at \`review\` time.
 ## Rules
 
 - **Never** move task files between folders. Status lives in frontmatter.
-- **Never write directly to \`work/*.md\` files.** All task creation and
+- **Never write directly to \`${workDir}/*.md\` files.** All task creation and
   manipulation goes through \`repoos\` commands or HTTP API endpoints
   (\`POST /api/tasks\`, \`PATCH /api/tasks/:id\`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
@@ -240,11 +250,11 @@ export const REPOOS_AGENTS_SECTION_MARKER = "<!-- repoos:managed-instructions --
  * only documents the project-level contract that a human or external agent
  * should see in the repo.
  */
-export const REPOOS_AGENTS_SECTION = `${REPOOS_AGENTS_SECTION_MARKER}
+export const REPOOS_AGENTS_SECTION = (workDir: string) => `${REPOOS_AGENTS_SECTION_MARKER}
 
 ## RepoOS
 
-RepoOS keeps tasks as Markdown under \`work/\` and runs task work in dedicated
+RepoOS keeps tasks as Markdown under \`${workDir}/\` and runs task work in dedicated
 Git worktrees. Use the RepoOS UI or \`repoos\` commands to create and update
 tasks; do not hand-edit task files. Read the relevant project docs before
 starting work, run \`repoos check\` before handoff, and let the reviewer decide
@@ -255,7 +265,7 @@ what merges.
  * Return the exact addition that `repoos init` may offer for an existing
  * AGENTS.md, or null when this repository already documents RepoOS.
  */
-export function repoOSAgentsSectionAddition(existing: string): string | null {
+export function repoOSAgentsSectionAddition(existing: string, workDir = "work"): string | null {
   if (
     existing.includes(REPOOS_AGENTS_SECTION_MARKER) ||
     /this repo uses \*\*repoos\*\*/i.test(existing) ||
@@ -263,14 +273,13 @@ export function repoOSAgentsSectionAddition(existing: string): string | null {
   ) {
     return null;
   }
-  return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION;
+  return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION(workDir);
 }
 
-function repoosToml(layout: "root" | "repoos"): string {
-  const ns =
-    layout === "repoos"
-      ? `workDir = "repoos/work"\ndocsDir = "repoos/docs"\ncacheDir = "repoos/.repoos"\n`
-      : "";
+function repoosToml(namespace: string): string {
+  const ns = namespace
+    ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\ncacheDir = "${namespace}/.repoos"\n`
+    : "";
   return `# RepoOS configuration. All fields optional — these are the defaults.
 
 ${ns}defaultStatus = "inbox"
@@ -322,17 +331,27 @@ const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitign
 
 const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";
 
-type ScaffoldLayout = "root" | "repoos";
+/**
+ * A namespace string: empty string or "/" means repo root; anything else is a
+ * repo-relative subdirectory (e.g. "repoos", ".meta/repoos").
+ */
+type ScaffoldLayout = string;
 
 /** Which starter task to seed beyond 0001 — a blank project or an existing repo. */
 type ScaffoldKind = "new" | "existing";
 
 const STARTER_TASK: Record<
   ScaffoldKind,
-  { slug: string; build: (id: string, description: string) => string }
+  {
+    slug: string;
+    build: (id: string, description: string, workDir: string, docsDir: string) => string;
+  }
 > = {
   new: { slug: "flesh-out-the-vision", build: NEW_PROJECT_STARTER_TASK },
-  existing: { slug: "read-the-codebase", build: (id) => EXISTING_REPO_STARTER_TASK(id) },
+  existing: {
+    slug: "read-the-codebase",
+    build: (id, _desc, workDir, docsDir) => EXISTING_REPO_STARTER_TASK(id, _desc, workDir, docsDir),
+  },
 };
 
 /**
@@ -372,7 +391,7 @@ function findStarter(root: string, workDir: string, slug: string): string | null
 export function scaffoldInto(
   root: string,
   description: string,
-  layout: ScaffoldLayout = "root",
+  layout: ScaffoldLayout = "",
   kind: ScaffoldKind = "new",
 ) {
   const created: string[] = [];
@@ -405,8 +424,11 @@ export function scaffoldInto(
 
   ensureDir(config.workDir);
   ensureDir(config.docsDir);
-  ensureFile("AGENTS.md", AGENTS_MD);
-  ensureFile(join(config.workDir, "0001-set-up-repoos.md"), SAMPLE_TASK(description));
+  ensureFile("AGENTS.md", AGENTS_MD(config.workDir, config.docsDir));
+  ensureFile(
+    join(config.workDir, "0001-set-up-repoos.md"),
+    SAMPLE_TASK(description, config.workDir),
+  );
   // 0001 is `done` (scaffolding is all of it), so without this the ready
   // column is empty right after init. Seed one genuinely workable task; its
   // id follows whatever is already on the board.
@@ -418,7 +440,7 @@ export function scaffoldInto(
     const starterId = nextScaffoldId(root, config.workDir);
     ensureFile(
       join(config.workDir, `${starterId}-${starter.slug}.md`),
-      starter.build(starterId, description),
+      starter.build(starterId, description, config.workDir, config.docsDir),
     );
   }
   ensureFile(".env.example", ENV_EXAMPLE);
@@ -508,7 +530,7 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
  * interactive terminal, show the exact small appendix and add it only after an
  * explicit opt-in. Non-interactive init stays fully non-blocking.
  */
-async function offerRepoOSAgentsSection(root: string): Promise<void> {
+async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise<void> {
   if (!input.isTTY || !output.isTTY) return;
 
   const path = join(root, "AGENTS.md");
@@ -520,12 +542,20 @@ async function offerRepoOSAgentsSection(root: string): Promise<void> {
   } catch {
     return;
   }
-  const addition = repoOSAgentsSectionAddition(original);
+  const addition = repoOSAgentsSectionAddition(original, workDir);
   if (!addition) return;
 
   console.log(c.dim("\n  Existing AGENTS.md detected — it will not be replaced."));
   console.log(c.dim("  Proposed RepoOS addition:"));
-  console.log(c.dim(addition.trimEnd().split("\n").map((line) => `    ${line}`).join("\n")));
+  console.log(
+    c.dim(
+      addition
+        .trimEnd()
+        .split("\n")
+        .map((line) => `    ${line}`)
+        .join("\n"),
+    ),
+  );
 
   if (!(await confirm("\n  Add this section to AGENTS.md?", false))) return;
 
@@ -543,27 +573,53 @@ async function offerRepoOSAgentsSection(root: string): Promise<void> {
     writeFileSync(path, original + addition);
     console.log(c.green("  added") + c.dim(" RepoOS guidance to AGENTS.md"));
   } catch {
-    console.log(c.yellow("  Could not update AGENTS.md; existing instructions were left unchanged."));
+    console.log(
+      c.yellow("  Could not update AGENTS.md; existing instructions were left unchanged."),
+    );
   }
 }
 
-/** Ask where the scaffold should live: repo root (default) or a repoos/ subfolder. */
+/**
+ * Validate a user-supplied namespace string. Returns null when valid, or an
+ * error message. The special value "/" means "use repo root" (no namespace).
+ */
+function validateNamespace(input: string): string | null {
+  const trimmed = input.trim();
+  if (trimmed === "/" || trimmed === "") return null; // root is always valid
+  // reject absolute paths (other than the special /)
+  if (trimmed.startsWith("/"))
+    return "Absolute paths are not allowed. Use / for the repo root layout.";
+  // reject parent traversal
+  if (trimmed.includes("..")) return "Parent traversal (..) is not allowed.";
+  // reject unsafe characters
+  if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "Only letters, digits, . _ - / are allowed.";
+  // reject trailing slash
+  if (trimmed.endsWith("/")) return "No trailing slash — type e.g. repoos or .meta/repoos.";
+  return null;
+}
+
+/** Ask where the scaffold should live: repoos/ subfolder (default) or repo root (/). */
 async function askLayout(): Promise<ScaffoldLayout> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const answer = (
       await ask(
-        "  Where should RepoOS live?" +
-          c.dim(
-            "  r = repo root (default), n = repoos/ subfolder — avoids clashing with existing dirs",
-          ) +
+        "  Where should RepoOS files live?" +
+          c.dim("  Enter for repoos/ (default), or / for the repo root layout") +
           ": ",
       )
-    ).toLowerCase();
-    if (answer === "" || answer === "r" || answer === "root") return "root";
-    if (answer === "n" || answer === "namespace" || answer === "repoos") return "repoos";
-    console.log(c.yellow(`  "${answer}" — type r (root) or n (repoos/ subfolder).`));
+    ).trim();
+    // empty → namespaced default
+    if (answer === "") return "repoos";
+    // "/" → root layout
+    if (answer === "/") return "";
+    const err = validateNamespace(answer);
+    if (err) {
+      console.log(c.yellow(`  ${err}`));
+      continue;
+    }
+    return answer;
   }
-  return "root";
+  return "repoos"; // fallback to namespaced default
 }
 
 /** Open a URL in the default browser. Fail-soft (best effort, never blocks). */
@@ -697,12 +753,12 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   }
 
   const layout = await askLayout();
+  const nsLabel = layout ? `${layout}/` : "root";
 
   console.log();
-  const scaffoldFiles =
-    layout === "repoos"
-      ? "repoos/work/, repoos/docs/, AGENTS.md, repoos.toml, .gitignore"
-      : "work/, docs/, AGENTS.md, repoos.toml, .gitignore";
+  const scaffoldFiles = layout
+    ? `${layout}/work/, ${layout}/docs/, AGENTS.md, repoos.toml, .gitignore`
+    : "work/, docs/, AGENTS.md, repoos.toml, .gitignore";
   const proceed = await confirm(
     "  Ready to " +
       c.cyan("git init") +
@@ -838,8 +894,30 @@ export async function cmdInit(args: string[]): Promise<void> {
     // Existing-repo scaffolding remains idempotent. The only optional edit is
     // a separately previewed, explicitly accepted AGENTS.md appendix.
     const root = findRepoRoot(cwd);
-    const { created, skipped } = scaffoldInto(root, "", "root", "existing");
-    await offerRepoOSAgentsSection(root);
+
+    // Determine the namespace: respect an existing repoos.toml's paths, or
+    // default to the namespaced layout for fresh installs.
+    let namespace: ScaffoldLayout = "";
+    const tomlPath = join(root, "repoos.toml");
+    if (existsSync(tomlPath)) {
+      const config = loadConfig(root);
+      // If the existing config already uses namespaced paths, preserve them.
+      // If workDir is still the root default, stay with root layout.
+      if (config.workDir !== "work") {
+        // Extract namespace from workDir (e.g. "repoos/work" → "repoos")
+        const parts = config.workDir.split("/");
+        if (parts.length >= 2 && parts[parts.length - 1] === "work") {
+          namespace = parts.slice(0, -1).join("/");
+        }
+      }
+    } else {
+      // Fresh install: default to namespaced layout
+      namespace = "repoos";
+    }
+
+    const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
+    const config = loadConfig(root);
+    await offerRepoOSAgentsSection(root, config.workDir);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));
