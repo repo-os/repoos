@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-09-17T09:45:30Z"
-review_passes: 2
 id: "0384"
 title: Give Agents page lists card-like separation and widen the agent/model modal
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/give-agents-page-lists-card-like-separat
 created_at: "2026-09-17T08:15:06Z"
+updated_at: "2026-09-17T09:45:30Z"
+review_rounds: 1
+review_passes: 2
 ---
 ## Problem
 
@@ -71,5 +72,4 @@ I like the new look of the tokens tab fixed in task #380 and I want that same ca
 - 2026-09-17T08:18:17Z · status inbox→ready
 - 2026-09-17T09:24:43Z · status ready→active, branch
 - 2026-09-17T09:26:23Z · status active→review
-
-
+- 2026-09-17T09:45:30Z · status review→active
