@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -12,6 +14,7 @@ import {
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
 } from "../../core/config.js";
+import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 import { listSkills } from "./helpers.js";
 
@@ -339,4 +342,75 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   return json(res, 200, { ok: true, config: safeConfigForBrowser({ ...repoos.config }) });
+};
+
+/** Content hash used to detect concurrent edits to repoos.toml. */
+function hashConfigContent(content: string): string {
+  return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+/** Read repoos.toml, tolerating its absence (a repo may have no config file). */
+function readRawToml(root: string): string {
+  const path = join(root, "repoos.toml");
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
+/**
+ * The raw `repoos.toml`, for the Settings page's escape-hatch editor (#0375).
+ * Unlike GET /api/config this is deliberately unredacted: the file IS the
+ * content the user edits, so hiding values would make a raw save write them
+ * back. The endpoint is behind the same auth as every other API route.
+ */
+export const readRawConfig: RouteHandler = (ctx, _req, res) => {
+  const content = readRawToml(ctx.config.root);
+  return json(res, 200, { content, hash: hashConfigContent(content) });
+};
+
+/**
+ * Replace repoos.toml with the posted content (#0375).
+ *
+ * The body is `{ content, baseHash? }`. `baseHash` is the hash from the last
+ * GET/PUT; when it no longer matches the file on disk another writer (a
+ * curated-field auto-save, another tab, the CLI) changed it, and the write is
+ * refused with 409 so the raw editor can never silently stomp that change.
+ * Invalid TOML is rejected with 400 before anything touches disk.
+ */
+export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
+  const { config, repoos, index } = ctx;
+  const body = (await readBody(req)) as Record<string, unknown>;
+  if (typeof body.content !== "string") {
+    return json(res, 400, { error: "content must be a string" });
+  }
+
+  const result = validateToml(body.content);
+  if (!result.ok) {
+    return json(res, 400, { error: formatTomlError(result), line: result.line });
+  }
+
+  const path = join(config.root, "repoos.toml");
+  const current = readRawToml(config.root);
+  const currentHash = hashConfigContent(current);
+  if (typeof body.baseHash === "string" && body.baseHash !== currentHash) {
+    return json(res, 409, {
+      error:
+        "repoos.toml changed on disk since this editor loaded it — reload to see the current " +
+        "content before saving, so the other change isn't overwritten.",
+      content: current,
+      hash: currentHash,
+    });
+  }
+
+  writeFileSync(path, body.content, "utf8");
+
+  // Apply immediately, exactly like a PATCH /api/config save: refresh the
+  // in-memory config and reconcile the index (the raw file can change
+  // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
+  Object.assign(repoos.config, loadConfig(config.root));
+  index.refreshAll();
+
+  return json(res, 200, {
+    ok: true,
+    content: body.content,
+    hash: hashConfigContent(body.content),
+  });
 };

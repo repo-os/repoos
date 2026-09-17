@@ -229,6 +229,8 @@ import {
   // Config routes
   readConfig,
   patchConfig,
+  readRawConfig,
+  writeRawConfig,
   // Models routes
   listModels,
   testModel,
@@ -481,7 +483,7 @@ function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   });
   res.end(payload);
@@ -1880,6 +1882,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Config routes
   router.register("GET", "/api/config", readConfig);
   router.register("PATCH", "/api/config", patchConfig);
+  router.register("GET", "/api/config/raw", readRawConfig);
+  router.register("PUT", "/api/config/raw", writeRawConfig);
 
   // Model routes
   router.register("GET", "/api/models", listModels);
@@ -1982,7 +1986,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (method === "OPTIONS") {
         res.writeHead(204, {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+          "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
         });
         res.end();

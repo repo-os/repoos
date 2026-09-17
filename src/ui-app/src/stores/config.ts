@@ -1,6 +1,6 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
-import { api, JSON_OPTS } from "../api";
+import { api, ApiError, JSON_OPTS } from "../api";
 import type { Agent, AgentsMeta, ConfigField, ModelSourcesResponse } from "../types";
 
 /** claude code takes model aliases, not the provider/model ids other CLIs use. */
@@ -78,6 +78,21 @@ export const useConfigStore = defineStore("config", () => {
   const data = ref<Record<string, unknown> | null>(null);
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
+
+  // ---- Raw repoos.toml editor (#0375) ----
+  // `rawContent`/`rawHash` mirror what's on disk as of the last load; `rawDraft`
+  // is what the editor is showing. Editing the draft marks it dirty, which
+  // gates the auto-refresh after a curated-field save (so a curated save never
+  // silently overwrites in-progress raw edits) and the Save button.
+  const rawLoaded = ref(false);
+  const rawLoading = ref(false);
+  const rawSaving = ref(false);
+  const rawContent = ref("");
+  const rawHash = ref("");
+  const rawDraft = ref("");
+  const rawError = ref("");
+  const rawDirty = computed(() => rawDraft.value !== rawContent.value);
+
   const uiTheme = ref("classic");
   // Starred design themes (#0255), in star order. Client-side only like
   // uiTheme: persisted per browser in localStorage, never sent to the server.
@@ -302,6 +317,7 @@ export const useConfigStore = defineStore("config", () => {
     try {
       await api("/api/config", JSON_OPTS("PATCH", partial));
       if (data.value) for (const k of Object.keys(partial)) data.value[k] = partial[k];
+      void maybeRefreshRaw();
       const needsRestart = Object.keys(partial).some(
         (k) => schema.value.find((x) => x.key === k)?.restartRequired,
       );
@@ -395,11 +411,97 @@ export const useConfigStore = defineStore("config", () => {
       const res = await api<ConfigResponse>("/api/config");
       agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
       data.value = res.config;
+      void maybeRefreshRaw();
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
       throw err;
     } finally {
       saving.value = false;
+    }
+  }
+
+  /** Load repoos.toml verbatim into the raw editor (discards any local draft). */
+  async function loadRaw(): Promise<void> {
+    rawLoading.value = true;
+    rawError.value = "";
+    try {
+      const res = await api<{ content?: unknown; hash?: unknown }>("/api/config/raw");
+      const content = typeof res?.content === "string" ? res.content : "";
+      rawContent.value = content;
+      rawHash.value = typeof res?.hash === "string" ? res.hash : "";
+      rawDraft.value = content;
+      rawLoaded.value = true;
+    } catch (err) {
+      rawError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      rawLoading.value = false;
+    }
+  }
+
+  /**
+   * Re-fetch the raw file after a curated-field write so the two views can't
+   * drift. Skipped while the raw draft is dirty — those edits are the user's,
+   * and the next raw save will be refused with a 409 if the file moved.
+   */
+  async function maybeRefreshRaw(): Promise<void> {
+    if (!rawLoaded.value || rawDirty.value) return;
+    await loadRaw();
+  }
+
+  /** True when a restart-tier schema value differs between two config payloads. */
+  function restartTierChanged(
+    before: Record<string, unknown> | null,
+    after: Record<string, unknown> | null,
+  ): boolean {
+    if (!before || !after) return false;
+    return schema.value
+      .filter((f) => f.restartRequired)
+      .some(
+        (f) =>
+          JSON.stringify(configValue(before, f.key)) !== JSON.stringify(configValue(after, f.key)),
+      );
+  }
+
+  /**
+   * Save the raw draft back to repoos.toml. The server validates the TOML and
+   * rejects a stale `baseHash` with a conflict, so a malformed edit never
+   * reaches disk and a concurrent curated-field save is never stomped. On
+   * success the curated form is reloaded from the newly written file.
+   */
+  async function saveRaw(): Promise<void> {
+    rawSaving.value = true;
+    rawError.value = "";
+    const submitted = rawDraft.value;
+    const beforeData = data.value ? { ...data.value } : null;
+    try {
+      const res = await api<{ content?: unknown; hash?: unknown }>(
+        "/api/config/raw",
+        JSON_OPTS("PUT", { content: submitted, baseHash: rawHash.value }),
+      );
+      const content = typeof res?.content === "string" ? res.content : submitted;
+      rawContent.value = content;
+      rawHash.value = typeof res?.hash === "string" ? res.hash : rawHash.value;
+      // Keystrokes typed while the save was in flight are newer than the
+      // request; don't let the server echo overwrite them.
+      if (rawDraft.value === submitted) rawDraft.value = content;
+      await load();
+      msg.value = restartTierChanged(beforeData, data.value)
+        ? "repoos.toml saved — restart server to apply some changes."
+        : "repoos.toml saved — applied live.";
+    } catch (err) {
+      rawError.value = err instanceof Error ? err.message : String(err);
+      // A 409 means another writer got there first. Adopt the server's current
+      // content/hash (so the editor no longer treats its stale base as
+      // current) but keep the user's draft, and make the overwrite explicit:
+      // Save again writes the draft over the server version, Reload discards.
+      if (err instanceof ApiError && err.status === 409) {
+        const body = err.body as { content?: unknown; hash?: unknown } | null;
+        if (typeof body?.content === "string") rawContent.value = body.content;
+        if (typeof body?.hash === "string") rawHash.value = body.hash;
+        rawError.value += " Save again to overwrite it, or Reload to discard your changes.";
+      }
+    } finally {
+      rawSaving.value = false;
     }
   }
 
@@ -426,6 +528,8 @@ export const useConfigStore = defineStore("config", () => {
       form.uiTheme = storedUiTheme;
       applyTheme(storedTheme);
       applyUiTheme(storedUiTheme);
+      // Keep the raw editor in step with the file this save just rewrote.
+      void maybeRefreshRaw();
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
       throw err;
@@ -450,6 +554,16 @@ export const useConfigStore = defineStore("config", () => {
     load,
     save,
     saveAgents,
+    rawLoaded,
+    rawLoading,
+    rawSaving,
+    rawContent,
+    rawHash,
+    rawDraft,
+    rawError,
+    rawDirty,
+    loadRaw,
+    saveRaw,
     applyTheme,
     applyUiTheme,
     setUiTheme,

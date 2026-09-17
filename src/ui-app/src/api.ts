@@ -1,5 +1,21 @@
 /** Thin fetch wrapper over the RepoOS local server API. */
 
+/**
+ * An HTTP error from the API. Carries the status and decoded body so a caller
+ * can react to a specific failure (e.g. the raw-config editor's 409, whose
+ * body holds the current file content/hash) rather than only a message.
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly body: unknown,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function api<T = unknown>(path: string, opts?: RequestInit): Promise<T> {
   let r: Response;
   try {
@@ -17,13 +33,16 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
   }
   if (!r.ok) {
     let message = r.statusText;
+    let body: unknown;
     try {
-      const body = await r.json();
-      if (body && (body.error || body.reason)) message = body.error ?? body.reason;
+      body = await r.json();
+      const b = body as { error?: unknown; reason?: unknown } | null;
+      const detail = b?.error ?? b?.reason;
+      if (typeof detail === "string") message = detail;
     } catch {
       /* keep statusText */
     }
-    throw new Error(message);
+    throw new ApiError(message, r.status, body);
   }
   try {
     return (await r.json()) as T;
@@ -37,7 +56,7 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
   }
 }
 
-export const JSON_OPTS = (method: "POST" | "PATCH", body: unknown): RequestInit => ({
+export const JSON_OPTS = (method: "POST" | "PATCH" | "PUT", body: unknown): RequestInit => ({
   method,
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),

@@ -11,6 +11,7 @@ import {
   type NotificationType,
 } from "../stores/notifications";
 import { api } from "../api";
+import { highlightToml } from "../lib/toml-highlight";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -92,7 +93,39 @@ onMounted(async () => {
     /* status remains safe default */
   }
   void refreshRvStatus();
+  // The store is app-scoped, so a dirty raw draft survives navigating away and
+  // back; only (re)load when there's nothing local to lose.
+  if (!config.rawLoaded || !config.rawDirty) void config.loadRaw();
 });
+
+// ---- Raw repoos.toml editor (#0375) ----
+// The highlighted layer sits exactly under a transparent textarea; it must
+// scroll with the textarea or the two drift apart.
+const rawPre = ref<HTMLElement | null>(null);
+const rawTextarea = ref<HTMLTextAreaElement | null>(null);
+const highlightedRaw = computed(() => highlightToml(config.rawDraft));
+
+function syncRawScroll(): void {
+  const ta = rawTextarea.value;
+  const pre = rawPre.value;
+  if (!ta || !pre) return;
+  pre.scrollTop = ta.scrollTop;
+  pre.scrollLeft = ta.scrollLeft;
+}
+
+function reloadRaw(): void {
+  if (
+    config.rawDirty &&
+    !window.confirm("Discard your unsaved repoos.toml changes and reload from disk?")
+  ) {
+    return;
+  }
+  void config.loadRaw();
+}
+
+function saveRaw(): void {
+  void config.saveRaw();
+}
 
 const testState = ref<"idle" | "sending" | "sent" | "failed">("idle");
 let testStateTimer: ReturnType<typeof setTimeout> | undefined;
@@ -797,6 +830,66 @@ onUnmounted(() => {
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+        <div class="setting-group">
+          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <span class="live-dot"></span>Raw repoos.toml
+          </div>
+          <div class="toml-raw">
+            <div class="toml-raw-head">
+              <div class="setting-desc" style="margin: 0">
+                The whole file, for sections the fields above don't cover —
+                <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
+                <code>[[deployments]]</code>, and anything you add. Values stay on one line:
+                RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
+                inline tables. Keep secrets in <code>.env</code>, not here.
+              </div>
+              <div class="toml-raw-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="config.rawLoading || config.rawSaving"
+                  @click="reloadRaw"
+                  >Reload</Button
+                >
+                <Button
+                  size="sm"
+                  :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
+                  @click="saveRaw"
+                  >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
+                >
+              </div>
+            </div>
+            <div class="toml-editor">
+              <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
+              <textarea
+                ref="rawTextarea"
+                v-model="config.rawDraft"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                aria-label="repoos.toml contents"
+                :disabled="config.rawLoading"
+                @scroll="syncRawScroll"
+              ></textarea>
+            </div>
+            <div v-if="config.rawLoading" class="setting-desc" style="padding: 8px 0 4px">
+              Loading…
+            </div>
+            <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
+              {{ config.rawError }}
+            </div>
+            <div v-else-if="config.rawDirty" class="setting-desc" style="padding: 8px 0 4px">
+              Unsaved changes.
+            </div>
+            <div v-else class="setting-desc" style="padding: 8px 0 4px">
+              In sync with <span class="mono">repoos.toml</span>.
             </div>
           </div>
         </div>
