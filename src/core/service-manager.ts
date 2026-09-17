@@ -625,13 +625,26 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
 
   // launchd/systemd reporting "not running" doesn't mean the port is free —
   // a reload replacement can still be bound to it, invisible to their job
-  // tracking (see the "Reload-orphan detection" section above). Surface
-  // that as "Needs attention" instead of silently showing Stopped/Disabled
-  // while a server is actually still alive and serving.
+  // tracking (see the "Reload-orphan detection" section above), and this is
+  // the ordinary state of a healthy service after ANY reload (which fires on
+  // every build) — not an exceptional one. Probe its health directly rather
+  // than blanket-reporting "Needs attention": a healthy orphan is exactly
+  // what "running" should mean here, and only a genuinely stuck/dead one is
+  // actually Needs-attention-worthy.
   if (status !== "running" && readServeLockPid(root, entry.port) !== null) {
+    const health = await probeHealth(entry.port);
+    if (health.ok) {
+      if (entry.status !== "running" || entry.healthError !== null) {
+        entry.status = "running";
+        entry.healthError = null;
+        entry.updatedAt = new Date().toISOString();
+        writeRegistry(entries);
+      }
+      return entry;
+    }
     const orphanMsg =
-      "An unmanaged process is still running on this port (a reload replacement " +
-      "launchd/systemd lost track of) — Stop or Remove will clean it up.";
+      "An unmanaged, unhealthy process is still running on this port (a reload " +
+      "replacement launchd/systemd lost track of) — Stop or Remove will clean it up.";
     if (entry.status !== "error" || entry.healthError !== orphanMsg) {
       entry.status = "error";
       entry.healthError = orphanMsg;
@@ -1010,7 +1023,12 @@ export async function checkHealth(
       ? queryLaunchdStatus(entry.label)
       : querySystemdStatus(entry.label);
 
-  if (liveStatus !== "running") {
+  // launchd/systemd reporting "not running" doesn't rule out a live reload
+  // replacement still bound to the port (see the "Reload-orphan detection"
+  // section) — that's the ordinary state after any reload, not a failure.
+  // Only report "not running" outright when there's no orphan to probe
+  // either.
+  if (liveStatus !== "running" && readServeLockPid(root, entry.port) === null) {
     const status = deriveStatus(liveStatus as "running" | "stopped", entry.autoStart);
     entry.status = status;
     entry.lastHealthCheck = new Date().toISOString();
@@ -1020,9 +1038,11 @@ export async function checkHealth(
     return { ok: false, status, error: "Service is not running" };
   }
 
-  // Probe the health endpoint. Alive-but-failing-to-respond is exactly the
-  // "Needs attention" case (spec's 4th state) — surface it as "error" rather
-  // than "running", or the UI has no way to distinguish it from healthy.
+  // Probe the health endpoint — either the OS reports it running, or an
+  // orphan replacement is alive on the port. Alive-but-failing-to-respond is
+  // exactly the "Needs attention" case (spec's 4th state) — surface it as
+  // "error" rather than "running", or the UI has no way to distinguish it
+  // from healthy.
   const health = await probeHealth(entry.port);
   const status: ServiceStatus = health.ok ? "running" : "error";
   entry.status = status;
