@@ -2,7 +2,7 @@
 id: "0396"
 title: Configurable board column labels (display-only rename via repoos.toml)
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:20:31Z"
-updated_at: "2026-09-17T14:37:47Z"
+updated_at: "2026-09-17T14:37:49Z"
 ---
 ## Summary
 
@@ -118,3 +118,4 @@ The task should call out the main product constraint: familiar labels are valuab
 - 2026-09-17T14:34:26Z · body
 - 2026-09-17T14:37:46Z · model_override
 - 2026-09-17T14:37:47Z · status draft→inbox
+- 2026-09-17T14:37:49Z · status inbox→ready
