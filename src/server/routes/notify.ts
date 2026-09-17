@@ -1,7 +1,7 @@
-import { basename } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json } from "./utils.js";
 import { publish } from "../ntfy.js";
+import { projectDisplayName } from "../../core/config.js";
 
 export const testNotification: RouteHandler = (ctx, _req, res) => {
   const { config } = ctx;
@@ -12,7 +12,7 @@ export const testNotification: RouteHandler = (ctx, _req, res) => {
   if (!topic) {
     return json(res, 400, { error: "ntfy topic is empty" });
   }
-  const repoName = basename(config.root);
+  const repoName = projectDisplayName(config.root);
   const message = `Hello from RepoOS at ${repoName}!`;
   publish(config, message);
   return json(res, 200, { ok: true });

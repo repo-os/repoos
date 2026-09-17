@@ -1,6 +1,6 @@
-import { basename } from "node:path";
 import type { RouteContext, RouteHandler } from "./types.js";
 import { serveStaticUi, UI_MIME } from "./helpers.js";
+import { projectDisplayName } from "../../core/config.js";
 
 /** Read the optional repo color from the `c` query param, or null when absent/invalid. */
 function colorFromUrl(req: { url?: string }): string | null {
@@ -11,7 +11,7 @@ function colorFromUrl(req: { url?: string }): string | null {
 
 export const serveManifest: RouteHandler = (ctx, req, res) => {
   const { config } = ctx;
-  const name = basename(config.root) || "repoos";
+  const name = projectDisplayName(config.root);
   const c = colorFromUrl(req);
   const suffix = c ? `?c=${c}` : "";
   const manifest = JSON.stringify(

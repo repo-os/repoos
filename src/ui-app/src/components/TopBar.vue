@@ -11,10 +11,24 @@ const repo = useRepoStore();
 const config = useConfigStore();
 const auth = useAuthStore();
 const { health, streamDown, loading, newVersion, restarting } = storeToRefs(repo);
-const { repoName } = storeToRefs(repo);
+const { repoName, branch } = storeToRefs(repo);
 
 const isDark = computed(() => config.effectiveTheme === "dark");
 const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
+
+/** Truncate a branch name to a max length, showing the start and end with an ellipsis. */
+function truncateBranch(name: string, maxLen: number): string {
+  if (name.length <= maxLen) return name;
+  const keep = Math.floor((maxLen - 1) / 2);
+  return name.slice(0, keep + 1) + "\u2026" + name.slice(-keep);
+}
+
+/** The text shown in the repo pill: "repo" or "repo × branch" when in a worktree. */
+const pillText = computed(() => {
+  if (!repoName.value) return "";
+  if (!branch.value) return repoName.value;
+  return `${repoName.value} \u00d7 ${truncateBranch(branch.value, 20)}`;
+});
 
 const connState = computed<"loading" | "live" | "offline">(() => {
   if (loading.value) return "loading";
@@ -314,7 +328,7 @@ watch(repoName, () => {
             stroke-width="1.8"
           />
         </svg>
-        <span class="mono" :style="pillTextStyle">{{ repoName }}</span>
+        <span class="mono" :style="pillTextStyle">{{ pillText }}</span>
       </button>
       <div v-if="popoverOpen" class="repo-color-popover">
         <div class="repo-color-grid">

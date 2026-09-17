@@ -79,6 +79,7 @@ import {
   resolveServePort,
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
+  projectDisplayName,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -329,7 +330,7 @@ function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   const docs = listDocs(config)
     .map((doc) => `- ${doc.title} (${doc.path})`)
     .join("\n");
-  return `Repository: ${basename(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
+  return `Repository: ${projectDisplayName(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
 }
 
 function tunnelProcessRunning(): boolean {
@@ -669,7 +670,7 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
 
 /** Per-instance PWA manifest so multiple RepoOS installs are distinguishable. */
 function manifestFor(root: string): string {
-  const name = basename(root) || "repoos";
+  const name = projectDisplayName(root);
   return JSON.stringify(
     {
       id: "/",
@@ -1712,7 +1713,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
   setIconRenderer((size: number, color?: string) =>
-    renderInstanceIcon(basename(config.root) || "repoos", size, color),
+    renderInstanceIcon(projectDisplayName(config.root), size, color),
   );
 
   // Create and register all routes with the router
