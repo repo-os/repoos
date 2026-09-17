@@ -16,6 +16,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
@@ -400,7 +401,21 @@ export function scaffoldInto(
   const ensureDir = (rel: string) => {
     const p = join(root, rel);
     if (!existsSync(p)) {
-      mkdirSync(p, { recursive: true });
+      try {
+        mkdirSync(p, { recursive: true });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("ENOTDIR")) {
+          console.error(
+            c.red(
+              `\n  Cannot create ${rel}/ — a file at that path is in the way. Remove it and try again.`,
+            ),
+          );
+          process.exitCode = 1;
+          return;
+        }
+        throw err;
+      }
       created.push(rel + "/");
     } else {
       skipped.push(rel + "/");
@@ -580,22 +595,53 @@ async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise
 }
 
 /**
- * Validate a user-supplied namespace string. Returns null when valid, or an
- * error message. The special value "/" means "use repo root" (no namespace).
+ * Validate a user-supplied namespace string. Returns null when the input means
+ * "repo root" (the special `/` or empty), a normalized repo-relative path when
+ * valid, or an error message prefixed with `!` when invalid. The caller
+ * distinguishes valid from error by checking `result.startsWith("!")`.
  */
-function validateNamespace(input: string): string | null {
-  const trimmed = input.trim();
-  if (trimmed === "/" || trimmed === "") return null; // root is always valid
+export function validateNamespace(input: string): string {
+  const trimmed = input.trim().replace(/\/+$/, "");
+  if (trimmed === "/" || trimmed === "") return ""; // root is always valid
   // reject absolute paths (other than the special /)
   if (trimmed.startsWith("/"))
-    return "Absolute paths are not allowed. Use / for the repo root layout.";
+    return "!Absolute paths are not allowed. Use / for the repo root layout.";
   // reject parent traversal
-  if (trimmed.includes("..")) return "Parent traversal (..) is not allowed.";
+  if (trimmed.includes("..")) return "!Parent traversal (..) is not allowed.";
+  // reject relative-path prefix that adds no semantic value
+  if (trimmed.startsWith("./"))
+    return "!Leading ./ is not needed — type the path directly (e.g. repoos).";
   // reject unsafe characters
-  if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "Only letters, digits, . _ - / are allowed.";
-  // reject trailing slash
-  if (trimmed.endsWith("/")) return "No trailing slash — type e.g. repoos or .meta/repoos.";
-  return null;
+  if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "!Only letters, digits, . _ - / are allowed.";
+  return trimmed;
+}
+
+/**
+ * Check whether a namespace path collides with existing filesystem entries.
+ * Returns null when the path is safe to scaffold into, or an error message.
+ */
+function checkNamespaceCollision(root: string, namespace: string): string | null {
+  if (!namespace) return null; // root layout — no subdirectory to check
+  const nsPath = join(root, namespace);
+  if (!existsSync(nsPath)) return null; // nothing there — safe
+  let stat;
+  try {
+    stat = statSync(nsPath);
+  } catch {
+    return null; // race or permission issue — let scaffoldInto handle it
+  }
+  if (!stat.isDirectory()) {
+    return `A file already exists at ${namespace}/ — cannot create a directory there. Remove it or choose a different location.`;
+  }
+  // Directory exists — check if it already looks like a RepoOS namespace
+  const entries = readdirSync(nsPath);
+  const isRepoOSish = entries.some((e) => e === "work" || e === "docs" || e === ".repoos");
+  if (isRepoOSish) {
+    // Existing namespace — idempotent, safe to proceed
+    return null;
+  }
+  // Directory exists with unrelated content
+  return `The directory ${namespace}/ already exists and does not look like a RepoOS layout. Remove it or choose a different location to avoid mixing files.`;
 }
 
 /** Ask where the scaffold should live: repoos/ subfolder (default) or repo root (/). */
@@ -612,14 +658,15 @@ async function askLayout(): Promise<ScaffoldLayout> {
     if (answer === "") return "repoos";
     // "/" → root layout
     if (answer === "/") return "";
-    const err = validateNamespace(answer);
-    if (err) {
-      console.log(c.yellow(`  ${err}`));
+    const result = validateNamespace(answer);
+    if (result.startsWith("!")) {
+      console.log(c.yellow(`  ${result.slice(1)}`));
       continue;
     }
-    return answer;
+    return result; // normalized path, or "" for root
   }
-  return "repoos"; // fallback to namespaced default
+  console.log(c.yellow("  Too many invalid attempts — using the default (repoos/)."));
+  return "repoos";
 }
 
 /** Open a URL in the default browser. Fail-soft (best effort, never blocks). */
@@ -753,7 +800,13 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   }
 
   const layout = await askLayout();
-  const nsLabel = layout ? `${layout}/` : "root";
+
+  // Pre-scaffold collision check for the chosen namespace
+  const collision = checkNamespaceCollision(target, layout);
+  if (collision) {
+    console.log(c.red(`\n  ${collision}`));
+    return;
+  }
 
   console.log();
   const scaffoldFiles = layout
@@ -913,6 +966,14 @@ export async function cmdInit(args: string[]): Promise<void> {
     } else {
       // Fresh install: default to namespaced layout
       namespace = "repoos";
+    }
+
+    // Pre-scaffold collision check
+    const collision = checkNamespaceCollision(root, namespace);
+    if (collision) {
+      console.log(c.red(`\n  ${collision}`));
+      process.exitCode = 1;
+      return;
     }
 
     const { created, skipped } = scaffoldInto(root, "", namespace, "existing");

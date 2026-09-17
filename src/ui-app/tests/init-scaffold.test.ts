@@ -6,6 +6,7 @@ import {
   REPOOS_AGENTS_SECTION_MARKER,
   repoOSAgentsSectionAddition,
   scaffoldInto,
+  validateNamespace,
 } from "../../commands/init";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
@@ -31,6 +32,55 @@ function readTask(root: string, rel: string) {
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmFixture(root);
+});
+
+describe("validateNamespace", () => {
+  it("accepts empty string as root", () => {
+    expect(validateNamespace("")).toBe("");
+  });
+
+  it("accepts / as root", () => {
+    expect(validateNamespace("/")).toBe("");
+  });
+
+  it("accepts plain namespace", () => {
+    expect(validateNamespace("repoos")).toBe("repoos");
+  });
+
+  it("accepts nested namespace", () => {
+    expect(validateNamespace(".meta/repoos")).toBe(".meta/repoos");
+  });
+
+  it("strips trailing slashes", () => {
+    expect(validateNamespace("repoos/")).toBe("repoos");
+    expect(validateNamespace(".meta/repoos/")).toBe(".meta/repoos");
+    expect(validateNamespace("a/b/c/")).toBe("a/b/c");
+  });
+
+  it("rejects absolute paths other than /", () => {
+    expect(validateNamespace("/etc")).toContain("!");
+    expect(validateNamespace("/repoos")).toContain("!");
+  });
+
+  it("rejects parent traversal", () => {
+    expect(validateNamespace("../repoos")).toContain("!");
+    expect(validateNamespace("repoos/..")).toContain("!");
+  });
+
+  it("rejects ./ prefix", () => {
+    expect(validateNamespace("./repoos")).toContain("!");
+    expect(validateNamespace("./a/b")).toContain("!");
+  });
+
+  it("rejects unsafe characters", () => {
+    expect(validateNamespace("repo os")).toContain("!");
+    expect(validateNamespace("repoos!")).toContain("!");
+    expect(validateNamespace("repoos@home")).toContain("!");
+  });
+
+  it("trims whitespace", () => {
+    expect(validateNamespace("  repoos  ")).toBe("repoos");
+  });
 });
 
 describe("scaffoldInto starter tasks", () => {
