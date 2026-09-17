@@ -2,14 +2,14 @@
 id: "0391"
 title: Migrate the Tech Debt Agent to the skill-guided runner
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-tech-debt-agent-to-the-skill
 created_at: "2026-09-17T14:03:23Z"
-updated_at: "2026-09-17T18:48:28Z"
+updated_at: "2026-09-17T18:55:47Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T14:03:23Z · created · unknown
 - 2026-09-17T15:15:48Z · status inbox→ready
 - 2026-09-17T18:48:28Z · status ready→active, branch
+- 2026-09-17T18:55:47Z · status active→review
