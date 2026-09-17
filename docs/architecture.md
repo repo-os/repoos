@@ -227,9 +227,19 @@ existing compatibility probe.
 
 ## Build and layout notes
 
-`bun run build` runs tsc, copies server assets, and builds `src/ui-app/` with
-Vite into `dist/ui/`. The published package ships prebuilt `dist/`, so users
-never compile. NodeNext modules mean `.ts` source uses `.js` import specifiers
+`bun run build` runs tsc, builds `src/ui-app/` with Vite into `dist/ui/`, and
+finally writes the build markers (`scripts/copy-assets.mjs`). The marker is
+written **last** on purpose: it is what staleness compares against, so a failed
+tsc or Vite pass must not leave it claiming the current `src/` is fresh while
+`dist/` is half-built. It is staleness-aware by default (#0377): the
+`build` script is `scripts/build.mjs`, which reuses `checkBuildForRoot`
+(src/core/build.ts) and skips the whole pipeline when `src/` is unchanged since
+`dist/.build-info.json` was written (a full rebuild is ~5–9s; the skip is
+~0.1s). Force one with `--force` or `REPOOS_FORCE_BUILD=1`; the raw pipeline is
+`build:raw`. The marker hashes only `src/`, so a `scripts/`, `package.json`,
+`tsconfig.json` or `bun.lock` edit does not by itself trigger a rebuild — use
+`--force` for those. The published package ships prebuilt `dist/`, so users never
+compile. NodeNext modules mean `.ts` source uses `.js` import specifiers
 — intentional, not a bug.
 
 ## Runtime: Node or Bun

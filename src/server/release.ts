@@ -493,10 +493,9 @@ export async function cutNewRelease(
   onProgress?.("checking", "Running repoos check — this usually takes a few minutes.");
   const checkEnv: NodeJS.ProcessEnv = {
     ...process.env,
-    // The rebuild above already refreshed dist/ (and its build marker), so
-    // check's own "Full build" step is redundant — skip it (close-out does the
-    // same with REPOOS_SKIP_BUILD).
-    REPOOS_SKIP_BUILD: "1",
+    // The rebuild above already refreshed dist/ (and its build marker), and
+    // `bun run build` is staleness-aware now (#0377), so check's own "Full
+    // build" step skips itself — no private skip env flag needed.
     ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
   };
   const check = await exec(

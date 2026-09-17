@@ -604,13 +604,11 @@ async function completeTaskLocked(
   await commitGenerated(root);
 
   onProgress?.("check");
-  // The close-out already ran a full build above (`BUILD_STEPS`), so the
-  // `repoos check` subprocess's own "Full build" step is redundant — nothing
-  // changed since. Pass REPOOS_SKIP_BUILD so check skips it (see cmdCheck in
-  // check.ts). Standalone `repoos check` never sets it and always builds.
-  const check = steps.check
-    ? await steps.check(root)
-    : await runCloseOutCheck(root, { ...process.env, REPOOS_SKIP_BUILD: "1" });
+  // The close-out already ran a full build above (`BUILD_STEPS`), and
+  // `bun run build` is staleness-aware now (#0377), so `repoos check`'s own
+  // "Full build" step detects the fresh marker and skips itself — no private
+  // skip env flag needed (that plumbing was removed with #0377).
+  const check = steps.check ? await steps.check(root) : await runCloseOutCheck(root);
   if (!check.ok) {
     return {
       ok: false,

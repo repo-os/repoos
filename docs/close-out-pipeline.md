@@ -171,19 +171,22 @@ here runs with `REPOOS_SKIP_TESTS=1` (guards + UI smoke only). A remote infra fa
 fails the job *retryably* (resume from this phase); a real remote test failure is
 non-retryable — fix it in the feature branch and resubmit.
 
-Since #0213, the `repoos check` subprocess is invoked with `REPOOS_SKIP_BUILD=1` (the
-candidate was just built with nothing changed since), so `check`'s own internal "Full
-build" step is skipped — exactly one build per close-out. Standalone `repoos check`
-never sets the var and always builds.
+Since #0377, `bun run build` is itself staleness-aware (`scripts/build.mjs`): it reuses
+`checkBuildForRoot` (src/core/build.ts) and skips the rebuild when `src/` is unchanged
+since `dist/.build-info.json` was written. The candidate is built immediately before
+`repoos check`, so check's own "Full build" step now detects the fresh marker and skips
+itself — exactly one build per close-out — with no private env flag. (Before #0377 that
+skip was the `REPOOS_SKIP_BUILD=1` opt-in; it was removed once the build became smart on
+its own, so the decision lives in one place instead of three.) Standalone `repoos check`
+is unchanged: its staleness step still reports a genuinely stale build first, then the
+build step repairs it within the same invocation.
 
-**Measured win (#0213):** the skip was verified by instrumentation, not just reading
-code — a `bun` shim counting `run build` invocations recorded **0** builds inside the
-`REPOOS_SKIP_BUILD=1` check subprocess vs **exactly 1** for a standalone check. The
-saved wall-clock is the "Full build" step itself: ~9s on this machine
-(`bun run build` = 8.7s), the only step the skip removes. Full-check wall-clock is
-dominated by the test suite and machine load (~1min either way on a loaded box), so
-the ~9s build-step saving is the honest, deterministic number to quote for a full
-move-to-done.
+**Measured win (#0377):** a no-op `bun run build` on an unchanged tree returns in
+staleness-check time (~0.05–0.1s) instead of a full rebuild (~5–9s). The close-out's
+second ("Full build") invocation is now that no-op; the first real build still runs.
+The earlier #0213 instrumentation (a `bun` shim counting `run build` invocations: 0
+inside the skip-build check subprocess vs 1 standalone) measured the same saved step —
+the mechanism changed, the saving did not.
 
 **Browser/server dedup (#0213, scoped down):** the UI smoke test `repoos check` runs
 (RepoOS's own `smoke` script since #0348) and the standalone `bun run screenshots` script previously hand-rolled two independent
@@ -232,10 +235,11 @@ lock guarantees that. Safe to just retry.
 
 ## The reload-churn interaction (SIGNIFICANTLY MITIGATED as of #0271, 2026-08-25 — read this before troubleshooting flakiness)
 
-Every `validating` phase's `bun run build` rewrites `dist/` on the **candidate**
+Every `validating` phase's `bun run build` builds `dist/` on the **candidate**
 worktree, which is harmless. (Since 2026-08-15 a rebuild of unchanged source rewrites
 the marker with identical content, so a no-op rebuild no longer trips the auto-reload
-hash watcher at all.) But if a job is running close together with other repo activity
+hash watcher at all; since #0377 an unchanged build skips the rebuild entirely, so it
+does not even touch the marker.) But if a job is running close together with other repo activity
 (another agent's build landing on `main`, or you running `bun run build`/`repoos check`
 on `main` directly), the MAIN server process's own auto-reload (`src/server/reload.ts`)
 may attempt a handoff at the same time.

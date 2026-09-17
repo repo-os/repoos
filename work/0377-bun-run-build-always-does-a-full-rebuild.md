@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-16T17:44:49Z"
-review_passes: 3
 id: "0377"
 title: Make bun run build staleness-aware by default
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-bun-run-build-staleness-aware-by-de
 created_at: "2026-09-16T08:58:32Z"
-review_rounds: 2
+updated_at: "2026-09-16T17:26:31Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -85,6 +85,3 @@ Needs care, not a quick bolt-on: this interacts with repoos check's existing "se
 - 2026-09-16T17:08:02Z · status active→review
 - 2026-09-16T17:14:59Z · status review→active
 - 2026-09-16T17:26:31Z · status active→review
-- 2026-09-16T17:31:24Z · status review→active
-- 2026-09-16T17:39:16Z · status active→review
-

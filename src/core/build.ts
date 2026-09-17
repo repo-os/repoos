@@ -150,6 +150,22 @@ export function checkBuildForRoot(root: string): BuildCheckResult {
   return { stale: false, message: null, code: "fresh", applicable: true };
 }
 
+/**
+ * Whether a build invocation may skip its work entirely. Only a checkout whose
+ * marker proves `src/` is unchanged (`code: "fresh"`) may skip; every other
+ * outcome — a missing or mismatched marker, a missing `dist/`, a published
+ * install — must build. `force` (the `--force` flag / `REPOOS_FORCE_BUILD=1`)
+ * always builds, even when the marker says fresh.
+ *
+ * This is the single decision every build caller shares. `scripts/build.mjs`
+ * turns it into the skip; `repoos check` calls `bun run build` and inherits it,
+ * so staleness is never silently absorbed (check reports staleness first in its
+ * own step, then the build step repairs).
+ */
+export function shouldSkipBuild(result: BuildCheckResult, force = false): boolean {
+  return !force && result.code === "fresh";
+}
+
 export function checkBuild(): BuildCheckResult {
   const root = findPackageRoot();
   if (!root) {
