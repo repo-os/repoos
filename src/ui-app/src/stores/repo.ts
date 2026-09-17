@@ -807,6 +807,10 @@ export const useRepoStore = defineStore("repo", () => {
       const merged = {
         ...e.task,
         preview: e.task.preview ?? before?.preview ?? null,
+        // Preview target candidates are attached by GET /api/board and
+        // /api/tasks/:id, not the SSE payload — carry them across updates so
+        // the drawer's picker doesn't vanish on a background task.updated (#0379).
+        previewTargets: e.task.previewTargets ?? before?.previewTargets ?? [],
         checkRetryCount,
       };
       if (i >= 0) tasks.value[i] = merged;
@@ -1909,10 +1913,15 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  /** Start a read-only preview of the task's worktree on its own port. */
-  async function startPreview(t: Task): Promise<{ port: number; url: string }> {
-    return api<{ port: number; url: string }>(`/api/tasks/${t.id}/preview`, {
-      method: "POST",
+  /** Start a read-only preview of the task's worktree on its own port.
+   *  `target` names which matching preview target to serve when the task's
+   *  area resolves to more than one (#0379). */
+  async function startPreview(
+    t: Task,
+    target?: string,
+  ): Promise<{ port: number; url: string; label?: string }> {
+    return api<{ port: number; url: string; label?: string }>(`/api/tasks/${t.id}/preview`, {
+      ...JSON_OPTS("POST", target ? { target } : {}),
     });
   }
 

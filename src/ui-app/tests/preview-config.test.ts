@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
-import { PreviewManager, resolvePreviewTarget } from "../../server/preview";
+import { PreviewManager, previewTargetOptions, resolvePreviewTarget } from "../../server/preview";
 
 function baseConfig(preview?: RepoOSConfig["preview"]): RepoOSConfig {
   return {
@@ -154,6 +154,61 @@ describe("resolvePreviewTarget", () => {
     // this is what makes a cold-worktree build-then-serve command survivable.
     expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
   });
+
+  it("lists every target whose areas match the task, in config order (#0379)", () => {
+    const cfg = baseConfig({
+      command: "bun run default --port {port}",
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    // Several targets claim `web`: both are offered, in config order.
+    expect(previewTargetOptions(cfg, task("web"))).toEqual([
+      { name: "App", areas: ["web"] },
+      { name: "Web v2", areas: ["web"] },
+    ]);
+    // Exactly one match stays a single-entry list (today's common case).
+    expect(previewTargetOptions(cfg, task("landing"))).toEqual([
+      { name: "Landing", areas: ["landing"] },
+    ]);
+    // The default command is offered only when no named target matches.
+    expect(previewTargetOptions(cfg, task("server"))).toEqual([{ name: "default", areas: [] }]);
+    // Nothing configured for the area → no options at all.
+    expect(previewTargetOptions(baseConfig(), task("web"))).toEqual([]);
+  });
+
+  it("selects the requested target by name, and rejects an unknown one (#0379)", () => {
+    const cfg = baseConfig({
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"), "Web v2")).toMatchObject({
+      kind: "command",
+      label: "Web v2",
+      command: "bun run web2 --port {port}",
+    });
+    const missing = resolvePreviewTarget(cfg, task("web"), "Nope");
+    expect(missing.kind).toBe("none");
+    if (missing.kind === "none") {
+      expect(missing.reason).toContain('No preview target named "Nope"');
+      expect(missing.reason).toContain('"App"');
+      expect(missing.reason).toContain('"Web v2"');
+    }
+  });
+
+  it("defaults to the first match when no target is named (#0379)", () => {
+    const cfg = baseConfig({
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"))).toMatchObject({ label: "App" });
+  });
 });
 
 /**
@@ -256,6 +311,17 @@ describe("parsePreviewConfig", () => {
     expect(parsed?.targets?.[0]).toMatchObject({ areas: ["web"], name: "web" });
   });
 
+  it("disambiguates duplicate target names so the picker and label match stay unambiguous (#0379)", () => {
+    const parsed = parsePreviewConfig({
+      "preview.targets": [
+        { areas: ["web"], command: "bun run a --port {port}" },
+        { areas: ["web"], command: "bun run b --port {port}" },
+        { name: "web", areas: ["blog"], command: "bun run c --port {port}" },
+      ],
+    });
+    expect(parsed?.targets?.map((t) => t.name)).toEqual(["web", "web (2)", "web (3)"]);
+  });
+
   it("drops targets with no command and returns undefined when nothing usable remains", () => {
     expect(
       parsePreviewConfig({ "preview.targets": [{ name: "x", areas: ["web"] }] }),
@@ -319,6 +385,35 @@ async function waitFor(pred: () => Promise<boolean> | boolean, ms = 8000): Promi
 const fixtures: Fixture[] = [];
 afterEach(() => {
   for (const f of fixtures.splice(0)) f.clean();
+});
+
+describe("PreviewManager ambiguous-target enforcement (#0379)", () => {
+  const multi = baseConfig({
+    targets: [
+      { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+      { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+    ],
+  });
+
+  it("refuses an ambiguous area with no explicit choice instead of silently picking", async () => {
+    const manager = new PreviewManager(multi, () => {});
+    const result = await manager.start(task("web"));
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("matches more than one preview target");
+    expect(result.error).toContain("App");
+    expect(result.error).toContain("Web v2");
+    expect(manager.get("0001")).toBeNull();
+  });
+
+  it("lets the agent-request path opt into the first match", async () => {
+    const manager = new PreviewManager(multi, () => {});
+    // No worktree here, so `doStart` fails on that — but crucially NOT on the
+    // ambiguity guard, proving `allowAmbiguous` got past enforcement.
+    const result = await manager.start(task("web"), undefined, { allowAmbiguous: true });
+    expect(result.ok).toBe(false);
+    expect(result.error).not.toContain("matches more than one preview target");
+    expect(result.error).toMatch(/worktree|branch/i);
+  });
 });
 
 describe("PreviewManager with a project-declared command (#0362)", () => {
@@ -410,4 +505,57 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     expect(result.error).toContain('No preview configured for area "web"');
     expect(manager.get("0003")).toBeNull();
   }, 30_000);
+
+  it("starts the explicitly chosen target and rejects a different one while running (#0379)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-multi";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(join(wt.path, "preview-server.mjs"), SERVER_SCRIPT);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "App"',
+        'areas = ["web"]',
+        `command = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}`,
+        "[[preview.targets]]",
+        'name = "Web v2"',
+        'areas = ["web"]',
+        `command = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}`,
+      ].join("\n") + "\n",
+    );
+
+    const config = loadConfig(fx.root);
+    const manager = new PreviewManager(config, () => {});
+    const t = { id: "0009", area: "web", branch, status: "active" } as unknown as Task;
+    try {
+      // Ambiguous area, no choice: refused before anything spawns.
+      const ambiguous = await manager.start(t);
+      expect(ambiguous.ok).toBe(false);
+      expect(ambiguous.error).toContain("matches more than one preview target");
+      expect(manager.get("0009")).toBeNull();
+
+      // An explicit choice starts exactly that target.
+      const started = await manager.start(t, "Web v2");
+      expect(started.ok).toBe(true);
+      expect(started.label).toBe("Web v2");
+      expect(await (await fetch(`${started.url}/`)).text()).toContain("CUSTOM-PREVIEW-OK");
+
+      // Asking for the other target while one runs is an explicit mismatch,
+      // never an idempotent 200 that silently returns the wrong one.
+      const mismatch = await manager.start(t, "App");
+      expect(mismatch.ok).toBe(false);
+      expect(mismatch.error).toContain("already has a preview running");
+      expect(mismatch.error).toContain("Web v2");
+
+      // Repeat with the same target stays idempotent.
+      const same = await manager.start(t, "Web v2");
+      expect(same.ok).toBe(true);
+      expect(same.label).toBe("Web v2");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 60_000);
 });

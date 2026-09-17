@@ -7,6 +7,19 @@ export interface PreviewInfo {
   port: number;
   url: string;
   startedAt: string;
+  /** Which preview target is serving (#0379): the target's `name`, or
+   *  "default" for the bare `[preview] command`. Undefined on very old servers. */
+  label?: string;
+}
+
+/** A preview target a task can be served from (#0379). More than one means the
+ *  task's `area` is claimed by several `[[preview.targets]]`, so the drawer
+ *  must let the user pick rather than silently previewing the first. */
+export interface PreviewTargetOption {
+  /** Human label shown in the drawer: the target's `name`, or "default". */
+  name: string;
+  /** Task areas this target declared (empty for the default command). */
+  areas: string[];
 }
 
 /** Lightweight automatic-review state included with indexed tasks. */
@@ -75,6 +88,9 @@ export interface Task {
   };
   /** Running preview of this task's worktree, or null when stopped. */
   preview: PreviewInfo | null;
+  /** Preview targets this task's area resolves to (server-computed, #0379).
+   *  More than one means the user should choose; see `PreviewTargetOption`. */
+  previewTargets?: PreviewTargetOption[];
   /** Server-authoritative automatic-review activity, refreshed with the index. */
   automaticReview?: AutomaticReview;
   /** True while the freeform-create PM agent is fleshing this draft out
@@ -184,6 +200,8 @@ export interface BoardTask {
   };
   /** Always null from server — populated from SSE events on the client. */
   preview: PreviewInfo | null;
+  /** Preview targets this task's area resolves to (server-computed, #0379). */
+  previewTargets?: PreviewTargetOption[];
   automaticReview?: AutomaticReview;
   /** True while the PM agent is fleshing this draft out (0335). */
   pmWorking?: boolean;
