@@ -43,14 +43,17 @@ info()  { printf '  %s%s%s%s\n' "${DIM}" "$1" "$RESET"; }
 warn()  { printf '%s  %s! %s%s%s\n' "${YELLOW}›$RESET" "$YELLOW" "$1" "$RESET"; }
 err()   { printf '\n%s  %s✖ %s%s\n' "${RED}›$RESET" "$RED" "$1" "$RESET" >&2; exit 1; }
 banner() {
+  # "REPOOS" in block letters, drawn top-to-bottom with a cyan-to-magenta
+  # gradient for a bit of pop. (Was previously drawing the "R" glyph twice
+  # instead of R-E-P-O-O-S, so it read as "REROOS".)
   printf '%s\n' \
-"${MAGENTA}
-   ██████╗ ███████╗██████╗  ██████╗  ██████╗ ███████╗
-   ██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔═══██╗██╔════╝
-   ██████╔╝█████╗  ██████╔╝██║   ██║██║   ██║███████╗
-   ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██║   ██║╚════██║
-   ██║  ██║███████╗██║  ██║╚██████╔╝╚██████╔╝███████║
-   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝${RESET}"
+"
+${CYAN}   ██████╗ ███████╗██████╗  ██████╗  ██████╗ ███████╗
+${CYAN}   ██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔═══██╗██╔════╝
+${CYAN}   ██████╔╝█████╗  ██████╔╝██║   ██║██║   ██║███████╗
+${MAGENTA}   ██╔══██╗██╔══╝  ██╔═══╝ ██║   ██║██║   ██║╚════██║
+${MAGENTA}   ██║  ██║███████╗██║     ╚██████╔╝╚██████╔╝███████║
+${MAGENTA}   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝  ╚═════╝ ╚══════╝${RESET}"
   printf '%s  %srepoos installer%s\n\n' "${GRAY}   ›$RESET" "$CYAN" "$RESET"
 }
 
