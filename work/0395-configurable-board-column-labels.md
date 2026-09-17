@@ -2,7 +2,7 @@
 id: "0395"
 title: Configurable board column labels
 type: feature
-status: active
+status: ready
 priority: p2
 area: board
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/configurable-board-column-labels
 model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:09:02Z"
-updated_at: "2026-09-17T14:26:20Z"
+updated_at: "2026-09-17T14:28:36Z"
 ---
 ## Activity
 
@@ -38,3 +38,4 @@ _Constraints, files to touch, things NOT to do._
 - 2026-09-17T14:11:21Z · model_override
 - 2026-09-17T14:26:15Z · status inbox→ready
 - 2026-09-17T14:26:20Z · status ready→active, branch
+- 2026-09-17T14:28:36Z · status active→ready
