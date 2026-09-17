@@ -25,6 +25,7 @@ import { markPmWorking, clearPmWorking, withPmWorking } from "../pm-runs.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
+import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
   commitDirtyFiles,
@@ -124,6 +125,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "explanation is required" });
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
+  // #0382: when a freeform task is created from a resolved input, carry the
+  // input's screenshots onto the new task so they are linked in the task
+  // itself. The copy runs BEFORE the PM agent's rewrite so the agent's prompt
+  // already contains them (via `## Screenshots` in the draft body), and
+  // PROTECTED_SECTIONS preserves the section across the rewrite.
+  const sourceInputId = typeof body?.inputId === "string" && body.inputId ? body.inputId : null;
 
   // #0251: create a draft task with the raw prompt preserved FIRST, then spawn
   // the PM agent asynchronously to flesh it out. The draft survives a PM
@@ -141,6 +148,41 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   });
   index.applyFileChange(created.absPath);
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
+
+  // Carry input attachments onto the new task before the PM rewrite (so the
+  // PM sees them in the draft body via `## Screenshots`). Each file is
+  // re-saved through `saveScreenshot` so it lands under the task's own
+  // `.attachments/<taskId>/` folder and gets a numbered name — the task is
+  // self-contained and unaffected by later input deletion (#0382).
+  if (sourceInputId) {
+    const input = listInputs(config).find((i) => i.id === sourceInputId);
+    if (input) {
+      const inputAttDir = join(config.root, config.inputsDir ?? "inputs", ".attachments", input.id);
+      let carried = 0;
+      for (const att of input.attachments) {
+        const srcPath = join(inputAttDir, att.name);
+        if (!existsSync(srcPath)) continue;
+        const bytes = readFileSync(srcPath);
+        const result = saveScreenshot(config, created, {
+          name: att.name,
+          mime: att.mime,
+          data: bytes.toString("base64"),
+        });
+        if ("error" in result) {
+          logger.task(created.id, "warn", `Skipping input attachment ${att.name}: ${result.error}`);
+          continue;
+        }
+        const updated = patchTaskFile(config, created.absPath, { addScreenshot: result });
+        index.applyFileChange(updated.absPath);
+        carried++;
+      }
+      if (carried > 0) {
+        logger.task(created.id, "info", `Carried ${carried} input attachment(s) onto task`, {
+          inputId: sourceInputId,
+        });
+      }
+    }
+  }
 
   const freeformAgentName =
     typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
@@ -1143,6 +1185,34 @@ export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { ok: true, ...result });
 };
 
+/**
+ * Build the "newly attached screenshots" fragment appended to the PM's task
+ * context (#0382). Each entry surfaces the API URL and the repo-relative
+ * path so the PM can either link them or quote them when editing the spec.
+ * Empty/missing url+path combos are silently dropped. Returns an empty
+ * string when there are no usable screenshots, leaving the prompt unchanged
+ * for plain text messages.
+ */
+export function buildPmShotContext(incoming: ReadonlyArray<unknown>): string {
+  const lines: string[] = [];
+  for (const raw of incoming) {
+    if (!raw || typeof raw !== "object") continue;
+    const url =
+      typeof (raw as { url?: unknown }).url === "string" ? (raw as { url: string }).url.trim() : "";
+    const path =
+      typeof (raw as { path?: unknown }).path === "string"
+        ? (raw as { path: string }).path.trim()
+        : "";
+    if (!url && !path) continue;
+    const bits: string[] = [];
+    if (url) bits.push(`url=${url}`);
+    if (path) bits.push(`repo-path=${path}`);
+    lines.push(`- ${bits.join(" ")}`);
+  }
+  if (!lines.length) return "";
+  return `\nNewly attached screenshots (already saved to this task — link them in the spec if relevant):\n${lines.join("\n")}\n`;
+}
+
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner } = ctx;
   const id = params.param1;
@@ -1224,12 +1294,23 @@ Type: ${existing.type || "unset"}
 Description:
 ${existing.body || "(no description)"}`;
 
+  // #0382: the PM tab's attach button lets the user upload screenshots that
+  // arrive as a `screenshots` array of {url,path} on this message. They are
+  // already persisted in the task's `## Screenshots` section (and on disk) by
+  // `POST /api/tasks/:id/attachments`; we surface them here so the PM agent
+  // knows what to reference or link into the spec when relevant. Empty/missing
+  // keys are silently ignored — a plain text message stays a plain text
+  // message.
+  const shotContext = buildPmShotContext(Array.isArray(body?.screenshots) ? body.screenshots : []);
+
+  const fullContext = `${taskContext}${shotContext}`;
+
   const existing_session = runner.output(pmSessionId);
   const result = existing_session
     ? runner.send(pmSessionId, text, pm, {
-        resumePreamble: `Task context:\n${taskContext}`,
+        resumePreamble: `Task context:\n${fullContext}`,
       })
-    : runner.startChat(pmSessionId, text, pm, taskContext, taskPmPrompt);
+    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt);
 
   if (!result.ok && result.busy) {
     return json(res, 409, { error: result.reason ?? "PM is busy" });

@@ -52,6 +52,28 @@ describe("appendScreenshotsSection", () => {
       true,
     );
   });
+
+  it("merges new screenshots with the existing section instead of replacing (#0382)", () => {
+    const prior =
+      "## Problem\n\nSomething.\n\n## Screenshots\n\n![first](a.png)\n\n## Activity\n\n- log";
+    const out = appendScreenshotsSection(prior, [META]);
+    expect(out).toContain("![first](a.png)");
+    expect(out).toContain("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)");
+    // Order: existing entry first, new entry second.
+    expect(out.indexOf("![first](a.png)")).toBeLessThan(
+      out.indexOf("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)"),
+    );
+    // Exactly one Screenshots section.
+    expect(out.split("## Screenshots").length - 1).toBe(1);
+  });
+
+  it("dedupes by url when the same screenshot is appended twice", () => {
+    const prior = "## Screenshots\n\n![first](a.png)\n";
+    const out = appendScreenshotsSection(prior, [META, META]);
+    expect(out.split("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)").length - 1).toBe(
+      1,
+    );
+  });
 });
 
 describe("saveScreenshot", () => {

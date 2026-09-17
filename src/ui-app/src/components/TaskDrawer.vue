@@ -21,6 +21,7 @@ import {
   ChevronsDownUp,
   Coins,
   Bug,
+  Paperclip,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
@@ -364,7 +365,15 @@ function onDragLeave(): void {
 function onDrop(e: DragEvent): void {
   dragDepth.value = 0;
   const files = e.dataTransfer?.files;
-  if (files && files.length) ui.addScreenshots(Array.from(files));
+  if (!files || !files.length) return;
+  // #0382: when the PM tab is open, a file dropped on the drawer is for the
+  // current task's PM chat — route to the per-task upload. Otherwise it
+  // belongs to the New-task panel's queued list.
+  if (ui.activeTab === "pm") {
+    void pmAddShotFiles(Array.from(files));
+  } else {
+    ui.addScreenshots(Array.from(files));
+  }
 }
 
 async function setStatus(status: string): Promise<void> {
@@ -1192,6 +1201,73 @@ const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
 
+/**
+ * #0382 — PM tab screenshot upload. The task already exists, so unlike the
+ * New-task panel there's no "queue and upload after create" step: each picked
+ * image uploads immediately to the current task id and lands in `##
+ * Screenshots` (server-side `addScreenshot`). The picked file is shown as a
+ * thumbnail chip above the compose box; the chip clears when the upload
+ * resolves. The server returns the persisted metadata (URL + repo-relative
+ * path); we stash it in `pmShotRefs` so the next PM message can include the
+ * new screenshot refs in its prompt — that lets the PM link them in the spec
+ * when relevant. The list is cleared when the active task changes, so each
+ * task only carries its own recently uploaded screenshots.
+ */
+const pmShotRefs = ref<{ url: string; path: string; name: string }[]>([]);
+const pmShotInput = ref<HTMLInputElement | null>(null);
+
+/** Reset recently-uploaded screenshot refs when the active task changes. */
+watch(
+  () => ui.active?.id,
+  () => {
+    pmShotRefs.value = [];
+  },
+);
+
+/** Read picked files from the attach-screenshot input and upload each one. */
+function pmOnShotFiles(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files) return;
+  void pmAddShotFiles(Array.from(input.files));
+  input.value = "";
+}
+
+async function pmAddShotFiles(files: File[]): Promise<void> {
+  if (!ui.active) return;
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+    const reader = new FileReader();
+    const dataUrl: string = await new Promise((resolve) => {
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.readAsDataURL(file);
+    });
+    if (!dataUrl) continue;
+    await pmUploadShot(file.name, file.type, dataUrl);
+  }
+}
+
+/**
+ * Upload a single PM-tab screenshot against the current task and remember the
+ * server's URL/path so it can be passed to the next PM message. The server's
+ * `addScreenshot` patch has already appended the image to the task's `##
+ * Screenshots` section by the time this resolves.
+ */
+async function pmUploadShot(name: string, mime: string, dataUrl: string): Promise<void> {
+  const taskId = ui.active?.id;
+  if (!taskId) return;
+  try {
+    const r = await repo.uploadScreenshot(taskId, { name, mime, dataUrl, size: 0 });
+    if (r?.attachment) {
+      pmShotRefs.value = [
+        ...pmShotRefs.value,
+        { url: r.attachment.url, path: r.attachment.path, name },
+      ];
+    }
+  } catch (err) {
+    repo.onError(err);
+  }
+}
+
 /** Check if PM agent is enabled. */
 const pmAgentEnabled = computed(() => {
   if (!config.loaded) return true;
@@ -1274,6 +1350,12 @@ async function pmSend(): Promise<void> {
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
+  // #0382: snapshot the screenshots uploaded on this task before clearing the
+  // ref list, then drain so the same shots aren't passed again on the next
+  // message. They're already persisted in `## Screenshots` — we only need
+  // their URL/path so the PM can reference them in this turn.
+  const shotRefs = pmShotRefs.value;
+  pmShotRefs.value = [];
   pmDraft.value = "";
   pmScrollToLatest();
 
@@ -1285,6 +1367,7 @@ async function pmSend(): Promise<void> {
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
+        screenshots: shotRefs,
       }),
     );
   } catch (error) {
@@ -1292,6 +1375,10 @@ async function pmSend(): Promise<void> {
       (_entry, index) => index !== optimisticIndex,
     );
     pmDraft.value = text;
+    // Restore the shot refs on failure so the user can retry without
+    // re-uploading. They were drained above to avoid double-passing on the
+    // successful path.
+    pmShotRefs.value = shotRefs;
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
@@ -3855,7 +3942,37 @@ watch(
               <span>{{ msg }}</span>
             </div>
           </div>
+          <div v-if="pmShotRefs.length" class="pm-shot-chips" aria-label="Attached screenshots">
+            <div
+              v-for="(shot, i) in pmShotRefs"
+              :key="shot.url + i"
+              class="pm-shot-chip"
+              :title="shot.name"
+            >
+              <img :src="shot.url" :alt="shot.name" />
+              <span class="pm-shot-name">{{ shot.name }}</span>
+            </div>
+          </div>
           <form class="pm-compose" @submit.prevent="pmSend">
+            <button
+              type="button"
+              class="pm-attach"
+              :disabled="!pmAgentEnabled || pmBusy"
+              aria-label="Attach screenshot"
+              title="Attach a screenshot — also accepts drag &amp; drop"
+              @click="pmShotInput?.click()"
+            >
+              <Paperclip class="size-[15px]" />
+              <input
+                ref="pmShotInput"
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+                multiple
+                class="sr-only"
+                @change="pmOnShotFiles"
+                @click.stop
+              />
+            </button>
             <textarea
               ref="pmDraftTextarea"
               v-model="pmDraft"
@@ -4165,6 +4282,42 @@ watch(
   background: var(--panel-solid);
 }
 
+.pm-shot-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 12px 8px;
+}
+
+.pm-shot-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-solid);
+  color: var(--txt-secondary);
+  font-size: 11.5px;
+  max-width: 200px;
+}
+
+.pm-shot-chip img {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+
+.pm-shot-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pm-compose:focus-within {
   border-color: var(--border-bright);
   box-shadow: 0 0 0 3px var(--violet-dim);
@@ -4213,6 +4366,18 @@ watch(
 .pm-compose button.pm-stop {
   background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
   color: var(--red, #ef5b5b);
+}
+
+.pm-compose button.pm-attach {
+  background: transparent;
+  color: var(--txt-faint);
+  border: 1px solid var(--border);
+}
+
+.pm-compose button.pm-attach:hover {
+  color: var(--violet);
+  border-color: var(--border-focus);
+  background: transparent;
 }
 
 .pm-canned {
