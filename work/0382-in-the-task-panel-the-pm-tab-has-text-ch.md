@@ -10,10 +10,10 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/screenshot-upload-in-the-pm-chat-tab-and
-model_override: "openrouter/z-ai/glm-5.2:free"
+model_override: opencode-go/minimax-m3
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T05:19:55Z"
-updated_at: "2026-09-17T05:32:37Z"
+updated_at: "2026-09-17T06:13:17Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -154,3 +154,4 @@ In the task panel the PM tab has text chat but no way to add screenshots, let's 
 - 2026-09-17T05:32:32Z · status inbox→ready
 - 2026-09-17T05:32:34Z · status ready→active, branch
 - 2026-09-17T05:32:37Z · agent exited with an error (opencode) · error: No endpoints found that support tool use. Try disabling "bash". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection
+- 2026-09-17T06:13:17Z · model_override
