@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-17T17:02:53Z"
-review_passes: 2
 id: "0390"
 title: Migrate the Docs Debt Agent to the skill-guided runner
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-docs-debt-agent-to-the-skill
 created_at: "2026-09-17T14:03:10Z"
+updated_at: "2026-09-17T18:09:46Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -63,4 +63,4 @@ Separately, the UI/plumbing around this agent has real gaps: the run result neve
 - 2026-09-17T16:48:40Z · status active→review
 - 2026-09-17T16:56:05Z · status review→active
 - 2026-09-17T16:58:42Z · status active→review
-
+- 2026-09-17T18:09:46Z · status review→done, release:success
