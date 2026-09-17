@@ -356,6 +356,15 @@ const QUEUED_HINT: CardHint = {
   cls: "tc-queued",
 };
 
+/** A PM run is live on this task (0381): the freeform flesh-out for a draft,
+ *  or a PM chat turn. The same server-side registry backs both, so one hint
+ *  serves them; only the title differs for drafts. */
+const PM_WORKING_HINT: CardHint = {
+  label: "PM is working",
+  title: "the PM agent is working on this task — open it to see the PM tab",
+  cls: "tc-pm-working",
+};
+
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
  *  unparseable. Distinct from `reviewFor(id)?.running`: that's whether a
@@ -367,11 +376,12 @@ const reviewVerdict = computed(() =>
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
+  const pmWorking = repo.pmWorkingFor(t.id);
   // The freeform-create PM agent is fleshing this draft out right now
   // (0335) — a draft otherwise looks identical to an idle one. Guarded on
   // `draft` so the indicator disappears the moment the promotion lands,
   // even in the sub-second window before the server's pmFinished event.
-  if (t.status === "draft" && repo.pmWorkingFor(t.id)) {
+  if (t.status === "draft" && pmWorking) {
     return {
       label: "PM is working",
       title: "the PM agent is fleshing out this draft — it moves to inbox when done",
@@ -401,6 +411,9 @@ const hint = computed<CardHint | null>(() => {
     // — "review passed · ready to finish" right above it reads as
     // contradictory once that attempt already failed.
     if (repo.doneErrorFor(t.id)) return null;
+    // 0381: a PM chat run on a review task outranks the idle verdicts —
+    // the PM is touching the task right now.
+    if (pmWorking) return PM_WORKING_HINT;
     // "Nothing is currently running" isn't the same claim as "the review
     // passed" — a task can sit here idle after a "needs some work" or "back
     // to the drawing board" verdict too (e.g. auto-bounce hit its round
@@ -439,12 +452,18 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-needs-input",
       };
     }
+    // 0381: the engineer is idle (paused) but the PM is chatting about this
+    // task right now — that is the live thing happening.
+    if (pmWorking) return PM_WORKING_HINT;
     return {
       label: "paused",
       title: "agent stopped — click Restart work to resume",
       cls: "tc-stalled",
     };
   }
+  // 0381: a PM chat run can touch a task in ANY status — ready, inbox,
+  // even done. Without this the card would look idle while the PM works.
+  if (pmWorking) return PM_WORKING_HINT;
   return null;
 });
 
@@ -614,6 +633,12 @@ async function openAgent(): Promise<void> {
   ui.activeTab = "agent";
 }
 
+/** Open the drawer on the PM tab — where a live PM run's chat lives (0381). */
+async function openPm(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "pm";
+}
+
 /** Open the task panel and focus the error surface (0272): the card stays
  *  compact, so clicking the error on the card surfaces the full detail in the
  *  drawer instead of expanding inline. */
@@ -641,7 +666,7 @@ async function openDebuggerFromError(): Promise<void> {
       'kb-highlight': highlighted,
       'transition-success': repo.transitionState?.id === task.id,
       coding: repo.isRunning(task.id),
-      'pm-working': task.status === 'draft' && repo.pmWorkingFor(task.id),
+      'pm-working': repo.pmWorkingFor(task.id),
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human':
@@ -729,7 +754,11 @@ async function openDebuggerFromError(): Promise<void> {
           :class="hint.cls"
           :title="hint.title"
           @click.stop="
-            hint.cls === 'tc-coding' || hint.cls === 'tc-stuck' ? openAgent() : undefined
+            hint.cls === 'tc-coding' || hint.cls === 'tc-stuck'
+              ? openAgent()
+              : hint.cls === 'tc-pm-working'
+                ? openPm()
+                : undefined
           "
         >
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />

@@ -21,7 +21,14 @@ import {
   parseOneShotLine,
   extractOneShotReportText,
 } from "../agents.js";
-import { markPmWorking, clearPmWorking, withPmWorking } from "../pm-runs.js";
+import {
+  markPmWorking,
+  clearPmWorking,
+  withPmWorking,
+  markPmChatSession,
+  isPmWorking,
+} from "../pm-runs.js";
+import { queuePmImages, dropPmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
@@ -304,9 +311,13 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       // 0335: cleared on EVERY exit path — success (the promotion's own
       // task.updated event lands first, so the card swaps its indicator for
       // its new column), failure, or a thrown error — so the indicator can
-      // never get stuck showing "working".
+      // never get stuck showing "working". 0381: a live PM chat session on
+      // this task keeps the flag up — only emit pmFinished when nothing
+      // else is still working it.
       clearPmWorking(created.id);
-      emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
+      if (!isPmWorking(created.id)) {
+        emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
+      }
     }
   })();
 
@@ -1144,7 +1155,7 @@ export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
 };
 
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, runner } = ctx;
+  const { config, index, runner, logger, emitEvent } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -1214,6 +1225,23 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  // 0381: chat-input screenshots ride along as a pending batch keyed to this
+  // PM session. The task the PM creates from the message doesn't exist yet,
+  // so the batch is parked on disk now and attached to the created task by
+  // the server's task.created hook while the session is still running.
+  const rawImages = Array.isArray(body?.images) ? (body?.images as IncomingPmImage[]) : [];
+  let imageBatchId: string | null = null;
+  if (rawImages.length > 0) {
+    const queuedImages = queuePmImages(config, pmSessionId, rawImages);
+    imageBatchId = queuedImages.batchId;
+    if (queuedImages.errors.length > 0) {
+      // Best-effort: a rejected image never blocks the message itself.
+      logger.task(id, "warn", "Some PM chat attachments were rejected", {
+        errors: queuedImages.errors,
+      });
+    }
+  }
+
   // Build context about the current task for the PM
   const taskContext = `Task #${id}: ${existing.title}
 Status: ${existing.status}
@@ -1232,11 +1260,21 @@ ${existing.body || "(no description)"}`;
     : runner.startChat(pmSessionId, text, pm, taskContext, taskPmPrompt);
 
   if (!result.ok && result.busy) {
+    dropPmImages(imageBatchId);
     return json(res, 409, { error: result.reason ?? "PM is busy" });
   }
   if (!result.ok) {
+    dropPmImages(imageBatchId);
     return json(res, 400, { error: result.reason ?? "could not send message to PM" });
   }
+
+  // 0381: the runner accepted the turn (running now, or queued behind
+  // maxConcurrentAgents) — flag the task so its card and panel show "PM is
+  // working". Cleared by the emit hook in server.ts when the runner reports
+  // the session's exit (success, error, or user interrupt).
+  markPmChatSession(pmSessionId, id);
+  emitEvent({ type: "task.pmWorking", id, at: new Date().toISOString() });
+
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
 };
 
