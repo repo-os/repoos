@@ -8,9 +8,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: openrouter/xiaomi/mimo-v2.5
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T11:17:47Z"
-updated_at: "2026-09-17T11:46:05Z"
+updated_at: "2026-09-17T11:46:15Z"
 ---
 ## Problem
 
@@ -52,3 +53,4 @@ The fix already has prior art to follow: `src/server/deployments.ts` gets this r
 - 2026-09-17T11:17:47Z · created · unknown
 - 2026-09-17T11:44:09Z · status inbox→ready
 - 2026-09-17T11:46:05Z · review_model_override
+- 2026-09-17T11:46:15Z · model_override
