@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-17T18:11:24Z"
-review_passes: 13
 id: "0185"
 title: Per-repo background service management (launchd/systemd)
 type: feature
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/per-repo-background-service-management-l
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-08-14T04:16:57Z"
+updated_at: "2026-09-17T18:18:30Z"
+review_passes: 13
 merge_conflict_retry_count: 2
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -110,4 +110,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T17:48:30Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/commands/init.ts, src/ui-app/tests/init-scaffold.test.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
 - 2026-09-17T18:10:42Z · status review→done
 - 2026-09-17T18:11:24Z · status done→review
-
+- 2026-09-17T18:18:30Z · status review→done
