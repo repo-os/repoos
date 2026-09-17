@@ -2845,9 +2845,7 @@ watch(
               <template v-if="previewTargetChoiceRequired">
                 This task's area matches more than one preview target — choose which to serve.
               </template>
-              <template v-else>
-                No preview running — the agent didn't request one before handoff.
-              </template>
+              <template v-else> No preview running. </template>
             </p>
             <!-- #0379: when several targets match the task's area, make the
                  choice explicit rather than silently serving the first one. -->
