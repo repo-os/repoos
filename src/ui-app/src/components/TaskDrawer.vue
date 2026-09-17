@@ -21,7 +21,6 @@ import {
   ChevronsDownUp,
   Coins,
   Bug,
-  Paperclip,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
 import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
@@ -365,15 +364,7 @@ function onDragLeave(): void {
 function onDrop(e: DragEvent): void {
   dragDepth.value = 0;
   const files = e.dataTransfer?.files;
-  if (!files || !files.length) return;
-  // #0382: when the PM tab is open, a file dropped on the drawer is for the
-  // current task's PM chat — route to the per-task upload. Otherwise it
-  // belongs to the New-task panel's queued list.
-  if (ui.activeTab === "pm") {
-    void pmAddShotFiles(Array.from(files));
-  } else {
-    ui.addScreenshots(Array.from(files));
-  }
+  if (files && files.length) ui.addScreenshots(Array.from(files));
 }
 
 async function setStatus(status: string): Promise<void> {
@@ -815,8 +806,51 @@ function cancelDraft(): void {
 
 /** True while a preview start/stop request is in flight. */
 const previewBusy = ref(false);
+/**
+ * Which task the in-flight preview action belongs to. The drawer is a single
+ * component instance whose content swaps to whatever `ui.active` is — if the
+ * user opens a different task while a previous task's preview request is
+ * still in flight, `previewBusy` alone would make the NEW task's drawer show
+ * "Starting preview…" too, even though that request is for a different task
+ * entirely (found live, 2026-09-17). `isPreviewBusyForActive` below is what
+ * the template must check, never the bare `previewBusy`.
+ */
+const previewTaskId = ref<string | null>(null);
+const isPreviewBusyForActive = computed(
+  () => previewBusy.value && previewTaskId.value === ui.active?.id,
+);
 /** Which preview action is in flight, so the progress state can name it. */
 const previewAction = ref<"start" | "stop" | null>(null);
+/**
+ * Preview targets the open task's area resolves to (#0379). Supplied by the
+ * server (board + GET /api/tasks/:id); more than one means the area is claimed
+ * by several `[[preview.targets]]` and the user must choose.
+ */
+const previewTargets = computed(() => ui.active?.previewTargets ?? []);
+/** True when the user must pick a target before starting (#0379). */
+const previewTargetChoiceRequired = computed(() => previewTargets.value.length > 1);
+/** The target the user picked from the multi-target picker (#0379). */
+const previewTarget = ref<string | null>(null);
+/**
+ * The target a start would serve: the explicit pick, else the sole matching
+ * target. Null while the user must choose one and hasn't. Captured at request
+ * time into `previewStartingTarget` so the progress text names it.
+ */
+const effectivePreviewTarget = computed<string | null>(
+  () =>
+    previewTarget.value ??
+    (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
+);
+/** Target name for the in-flight start, shown in the progress state (#0379). */
+const previewStartingTarget = ref<string | null>(null);
+// A target picked for one task must never carry over to another — reset the
+// choice (not the targets, which come from the task) whenever the drawer swaps.
+watch(
+  () => ui.active?.id,
+  () => {
+    previewTarget.value = null;
+  },
+);
 /** When the in-flight preview action began, for the live elapsed readout. */
 const previewStartedAt = ref<number | null>(null);
 /** Ticks once a second while a preview action is in flight (see below). */
@@ -861,19 +895,28 @@ const previewElapsedMs = computed(() =>
  */
 async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   if (!ui.active || previewBusy.value) return;
+  // Never silently pick when the task matches several targets: the Start
+  // button is disabled until one is chosen, and this guards the API path too.
+  if (action === "start" && previewTargetChoiceRequired.value && !effectivePreviewTarget.value)
+    return;
   const task = ui.active;
   previewBusy.value = true;
+  previewTaskId.value = task.id;
   previewAction.value = action;
+  previewStartingTarget.value = action === "start" ? effectivePreviewTarget.value : null;
   previewStartedAt.value = Date.now();
   startPreviewTimer();
   try {
-    if (action === "start") await repo.startPreview(task);
+    if (action === "start")
+      await repo.startPreview(task, effectivePreviewTarget.value ?? undefined);
     else await repo.stopPreview(task);
   } catch (err) {
     repo.onError(err);
   } finally {
     previewBusy.value = false;
+    previewTaskId.value = null;
     previewAction.value = null;
+    previewStartingTarget.value = null;
     previewStartedAt.value = null;
     stopPreviewTimer();
   }
@@ -1200,72 +1243,13 @@ const pmDraft = ref("");
 const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
-
-/**
- * #0382 — PM tab screenshot upload. The task already exists, so unlike the
- * New-task panel there's no "queue and upload after create" step: each picked
- * image uploads immediately to the current task id and lands in `##
- * Screenshots` (server-side `addScreenshot`). The picked file is shown as a
- * thumbnail chip above the compose box; the chip clears when the upload
- * resolves. The server returns the persisted metadata (URL + repo-relative
- * path); we stash it in `pmShotRefs` so the next PM message can include the
- * new screenshot refs in its prompt — that lets the PM link them in the spec
- * when relevant. The list is cleared when the active task changes, so each
- * task only carries its own recently uploaded screenshots.
- */
-const pmShotRefs = ref<{ url: string; path: string; name: string }[]>([]);
+/** Hidden file input behind the PM compose box's attach button (0381). */
 const pmShotInput = ref<HTMLInputElement | null>(null);
 
-/** Reset recently-uploaded screenshot refs when the active task changes. */
-watch(
-  () => ui.active?.id,
-  () => {
-    pmShotRefs.value = [];
-  },
-);
-
-/** Read picked files from the attach-screenshot input and upload each one. */
-function pmOnShotFiles(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files) return;
-  void pmAddShotFiles(Array.from(input.files));
+function onPmShotFiles(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  if (input.files) ui.addPmScreenshots(Array.from(input.files));
   input.value = "";
-}
-
-async function pmAddShotFiles(files: File[]): Promise<void> {
-  if (!ui.active) return;
-  for (const file of files) {
-    if (!file.type.startsWith("image/")) continue;
-    const reader = new FileReader();
-    const dataUrl: string = await new Promise((resolve) => {
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.readAsDataURL(file);
-    });
-    if (!dataUrl) continue;
-    await pmUploadShot(file.name, file.type, dataUrl);
-  }
-}
-
-/**
- * Upload a single PM-tab screenshot against the current task and remember the
- * server's URL/path so it can be passed to the next PM message. The server's
- * `addScreenshot` patch has already appended the image to the task's `##
- * Screenshots` section by the time this resolves.
- */
-async function pmUploadShot(name: string, mime: string, dataUrl: string): Promise<void> {
-  const taskId = ui.active?.id;
-  if (!taskId) return;
-  try {
-    const r = await repo.uploadScreenshot(taskId, { name, mime, dataUrl, size: 0 });
-    if (r?.attachment) {
-      pmShotRefs.value = [
-        ...pmShotRefs.value,
-        { url: r.attachment.url, path: r.attachment.path, name },
-      ];
-    }
-  } catch (err) {
-    repo.onError(err);
-  }
 }
 
 /** Check if PM agent is enabled. */
@@ -1350,13 +1334,15 @@ async function pmSend(): Promise<void> {
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
-  // #0382: snapshot the screenshots uploaded on this task before clearing the
-  // ref list, then drain so the same shots aren't passed again on the next
-  // message. They're already persisted in `## Screenshots` — we only need
-  // their URL/path so the PM can reference them in this turn.
-  const shotRefs = pmShotRefs.value;
-  pmShotRefs.value = [];
   pmDraft.value = "";
+  // Same wire shape as the per-task attachment upload: base64 without the
+  // data-URL prefix. Kept locally until the send succeeds so a failure
+  // doesn't lose the user's picks.
+  const shots = ui.pmScreenshots.map((s) => ({
+    name: s.name,
+    mime: s.mime,
+    data: s.dataUrl.split(",")[1] ?? "",
+  }));
   pmScrollToLatest();
 
   try {
@@ -1367,18 +1353,15 @@ async function pmSend(): Promise<void> {
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
-        screenshots: shotRefs,
+        images: shots.length ? shots : undefined,
       }),
     );
+    ui.clearPmScreenshots();
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
     );
     pmDraft.value = text;
-    // Restore the shot refs on failure so the user can retry without
-    // re-uploading. They were drained above to avoid double-passing on the
-    // successful path.
-    pmShotRefs.value = shotRefs;
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
@@ -2769,12 +2752,16 @@ watch(
           >
             <ActivityIndicator /> agent coding
           </span>
-          <span
-            v-if="ui.active.status === 'draft' && repo.pmWorkingFor(ui.active.id)"
-            class="drawer-run"
-            role="status"
-          >
-            <ActivityIndicator /> PM is working on this draft…
+          <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
+               chat turn (the flag is the same server-side registry). Cleared
+               on every run exit path server-side. -->
+          <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
+            <ActivityIndicator />
+            {{
+              ui.active.status === "draft"
+                ? "PM is working on this draft…"
+                : "PM is working on this task…"
+            }}
           </span>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -2800,13 +2787,23 @@ watch(
                  fallback (below) covers review tasks where that didn't happen. -->
             <div class="preview-live">
               <span class="preview-dot"></span>
+              <!-- Which target/frontend is being served (#0379), so "a preview
+                   is running" is never the whole story. -->
+              <span v-if="ui.active.preview.label" class="preview-target-name">
+                {{ ui.active.preview.label }}
+              </span>
               <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
                 <ExternalLink class="size-3.5" />
                 {{ ui.active.preview.url }}
               </a>
+              <!-- Which target/frontend is being served (#0379), so "a preview
+                   is running" is never the whole story. -->
+              <span v-if="ui.active.preview.label" class="preview-target-name">
+                {{ ui.active.preview.label }}
+              </span>
             </div>
             <span
-              v-if="previewBusy && previewAction === 'stop'"
+              v-if="isPreviewBusyForActive && previewAction === 'stop'"
               class="preview-progress"
               role="status"
             >
@@ -2819,7 +2816,7 @@ watch(
             <Button
               v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy"
+              :disabled="ui.saving || isPreviewBusyForActive"
               @click="stopPreview"
             >
               <Square class="size-3.5" />
@@ -2850,15 +2847,41 @@ watch(
           </p>
           <div v-else-if="ui.active.status === 'review' && !ui.active.preview" class="quickbar-row">
             <p class="preview-hint">
-              No preview running — the agent didn't request one before handoff.
+              <template v-if="previewTargetChoiceRequired">
+                This task's area matches more than one preview target — choose which to serve.
+              </template>
+              <template v-else> No preview running. </template>
             </p>
+            <!-- #0379: when several targets match the task's area, make the
+                 choice explicit rather than silently serving the first one. -->
+            <select
+              v-if="previewTargetChoiceRequired"
+              v-model="previewTarget"
+              class="preview-target-select"
+              :disabled="ui.saving || isPreviewBusyForActive"
+              aria-label="Preview target"
+            >
+              <option :value="null" disabled>Choose target…</option>
+              <option v-for="t in previewTargets" :key="t.name" :value="t.name">
+                {{ t.name }}
+              </option>
+            </select>
             <span
-              v-if="previewBusy && previewAction === 'start'"
+              v-else-if="effectivePreviewTarget"
+              class="preview-target-name"
+              :title="`Preview target: ${effectivePreviewTarget}`"
+            >
+              {{ effectivePreviewTarget }}
+            </span>
+            <span
+              v-if="isPreviewBusyForActive && previewAction === 'start'"
               class="preview-progress"
               role="status"
             >
               <ActivityIndicator label="Starting preview" />
-              Starting preview…
+              Starting preview<span v-if="previewStartingTarget">
+                — {{ previewStartingTarget }}</span
+              >…
               <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
                 {{ formatDuration(previewElapsedMs) }}
               </span>
@@ -2866,7 +2889,11 @@ watch(
             <Button
               v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy"
+              :disabled="
+                ui.saving ||
+                isPreviewBusyForActive ||
+                (previewTargetChoiceRequired && !effectivePreviewTarget)
+              "
               @click="startPreview"
             >
               <Play class="size-3.5" />
@@ -2892,6 +2919,13 @@ watch(
           >
             <MessageSquare class="tab-icon" />
             PM
+            <!-- 0381: the PM is doing something on this task (chat turn or
+                 draft flesh-out) while another tab is open — surface it here
+                 so it's visible without switching to the PM tab. -->
+            <ActivityIndicator
+              v-if="ui.activeTab !== 'pm' && ui.active && repo.pmWorkingFor(ui.active.id)"
+              label="PM working"
+            />
           </button>
           <button
             type="button"
@@ -3689,50 +3723,62 @@ watch(
               <span class="agent-stat-value">{{ fmtCost(sessionStats?.costUsd) }}</span>
             </span>
           </div>
-          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-usage">
-            <div class="task-usage-title">usage — all roles &amp; sessions</div>
-            <div class="task-usage-grid">
-              <span class="agent-stat">
-                <span class="agent-stat-label">total time</span>
-                <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total tokens</span>
-                <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
-              </span>
-              <span
-                class="agent-stat"
-                title="Input tokens served from the provider's prompt cache ÷ all input tokens, summed across this task's sessions. '—' when no CLI reported cache figures."
-              >
-                <span class="agent-stat-label">cache hit</span>
-                <span class="agent-stat-value">{{
-                  cacheHitPct(
-                    taskUsage.totalInputTokens,
-                    taskUsage.totalCacheReadTokens,
-                    taskUsage.totalCacheCreationTokens,
-                  )
-                }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">total cost</span>
-                <span class="agent-stat-value">{{
-                  fmtCost(taskUsage.totalCostUsd, taskUsage.costSource)
-                }}</span>
-              </span>
-              <span
-                class="agent-stat"
-                title="Total model round-trips across this task's sessions (one turn may run several tool calls). '—' when no CLI reported it."
-              >
-                <span class="agent-stat-label">turns</span>
-                <span class="agent-stat-value">{{ taskUsage.totalTurns ?? "—" }}</span>
-              </span>
-              <span class="agent-stat">
-                <span class="agent-stat-label">sessions</span>
-                <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
-              </span>
-            </div>
-            <div v-if="taskUsage.roles && taskUsage.roles.length > 1" class="task-usage-roles">
-              <span class="agent-stat-label">by role</span>
+          <div v-if="taskUsage && taskUsage.totalSessions > 0" class="task-sections">
+            <section class="task-section">
+              <header class="task-section-head">
+                <div class="task-section-title">task totals</div>
+                <div class="task-section-desc">Whole-task summary across every session.</div>
+              </header>
+              <div class="task-usage-grid">
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total time</span>
+                  <span class="agent-stat-value">{{ fmtElapsed(taskUsage.totalElapsedMs) }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total tokens</span>
+                  <span class="agent-stat-value">{{ fmtTokens(taskUsage.totalTokens) }}</span>
+                </span>
+                <span
+                  class="agent-stat"
+                  title="Input tokens served from the provider's prompt cache ÷ all input tokens, summed across this task's sessions. '—' when no CLI reported cache figures."
+                >
+                  <span class="agent-stat-label">cache hit</span>
+                  <span class="agent-stat-value">{{
+                    cacheHitPct(
+                      taskUsage.totalInputTokens,
+                      taskUsage.totalCacheReadTokens,
+                      taskUsage.totalCacheCreationTokens,
+                    )
+                  }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">total cost</span>
+                  <span class="agent-stat-value">{{
+                    fmtCost(taskUsage.totalCostUsd, taskUsage.costSource)
+                  }}</span>
+                </span>
+                <span
+                  class="agent-stat"
+                  title="Total model round-trips across this task's sessions (one turn may run several tool calls). '—' when no CLI reported it."
+                >
+                  <span class="agent-stat-label">turns</span>
+                  <span class="agent-stat-value">{{ taskUsage.totalTurns ?? "—" }}</span>
+                </span>
+                <span class="agent-stat">
+                  <span class="agent-stat-label">sessions</span>
+                  <span class="agent-stat-value">{{ taskUsage.totalSessions }}</span>
+                </span>
+              </div>
+            </section>
+            <section
+              v-if="taskUsage.roles && taskUsage.roles.length > 1"
+              class="task-section"
+              aria-labelledby="task-section-role"
+            >
+              <header class="task-section-head">
+                <div id="task-section-role" class="task-section-title">by role</div>
+                <div class="task-section-desc">Who spent what, broken down by role.</div>
+              </header>
               <div class="task-usage-table-wrap">
                 <table class="task-usage-table">
                   <thead>
@@ -3753,12 +3799,16 @@ watch(
                   </tbody>
                 </table>
               </div>
-            </div>
-            <div
+            </section>
+            <section
               v-if="taskUsage.sessions && taskUsage.sessions.length > 0"
-              class="task-usage-sessions"
+              class="task-section"
+              aria-labelledby="task-section-sessions"
             >
-              <div class="task-usage-title">individual sessions</div>
+              <header class="task-section-head">
+                <div id="task-section-sessions" class="task-section-title">individual sessions</div>
+                <div class="task-section-desc">The raw session log — one row per session.</div>
+              </header>
               <div class="task-usage-table-wrap">
                 <table class="task-usage-table">
                   <thead>
@@ -3845,7 +3895,7 @@ watch(
                   </tbody>
                 </table>
               </div>
-            </div>
+            </section>
           </div>
           <div
             v-if="!showStats && (!taskUsage || taskUsage.totalSessions === 0)"
@@ -3942,36 +3992,43 @@ watch(
               <span>{{ msg }}</span>
             </div>
           </div>
-          <div v-if="pmShotRefs.length" class="pm-shot-chips" aria-label="Attached screenshots">
-            <div
-              v-for="(shot, i) in pmShotRefs"
-              :key="shot.url + i"
-              class="pm-shot-chip"
-              :title="shot.name"
-            >
-              <img :src="shot.url" :alt="shot.name" />
-              <span class="pm-shot-name">{{ shot.name }}</span>
+          <!-- 0381: screenshots picked for this message — attached to any
+               task the PM creates from it, on the server, once it exists. -->
+          <div v-if="ui.pmScreenshots.length" class="pm-shots" aria-label="Attached screenshots">
+            <div v-for="(s, i) in ui.pmScreenshots" :key="s.name + i" class="pm-shot">
+              <img :src="s.dataUrl" :alt="s.name" />
+              <button
+                type="button"
+                class="pm-shot-remove"
+                :aria-label="`Remove ${s.name}`"
+                title="Remove screenshot"
+                @click.stop="ui.removePmScreenshot(i)"
+              >
+                <X class="size-3" />
+              </button>
             </div>
           </div>
           <form class="pm-compose" @submit.prevent="pmSend">
+            <input
+              ref="pmShotInput"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+              multiple
+              class="pm-shot-input"
+              aria-hidden="true"
+              tabindex="-1"
+              @change="onPmShotFiles"
+            />
             <button
+              v-if="!pmBusy"
               type="button"
               class="pm-attach"
-              :disabled="!pmAgentEnabled || pmBusy"
-              aria-label="Attach screenshot"
-              title="Attach a screenshot — also accepts drag &amp; drop"
+              aria-label="Attach screenshots"
+              title="Attach screenshots — they're added to any task the PM creates from this message"
+              :disabled="!pmAgentEnabled"
               @click="pmShotInput?.click()"
             >
-              <Paperclip class="size-[15px]" />
-              <input
-                ref="pmShotInput"
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-                multiple
-                class="sr-only"
-                @change="pmOnShotFiles"
-                @click.stop
-              />
+              <ImagePlus />
             </button>
             <textarea
               ref="pmDraftTextarea"
@@ -4282,42 +4339,6 @@ watch(
   background: var(--panel-solid);
 }
 
-.pm-shot-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin: 0 12px 8px;
-}
-
-.pm-shot-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 9px 4px 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel-solid);
-  color: var(--txt-secondary);
-  font-size: 11.5px;
-  max-width: 200px;
-}
-
-.pm-shot-chip img {
-  width: 22px;
-  height: 22px;
-  flex: none;
-  object-fit: cover;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-}
-
-.pm-shot-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .pm-compose:focus-within {
   border-color: var(--border-bright);
   box-shadow: 0 0 0 3px var(--violet-dim);
@@ -4368,16 +4389,73 @@ watch(
   color: var(--red, #ef5b5b);
 }
 
+/* 0381: compose-box attach — a muted sibling of the send button, plus the
+   thumbnail strip shown above the form while images are pending. */
 .pm-compose button.pm-attach {
   background: transparent;
-  color: var(--txt-faint);
   border: 1px solid var(--border);
+  color: var(--txt-dim);
 }
 
-.pm-compose button.pm-attach:hover {
+.pm-compose button.pm-attach:hover:not(:disabled) {
+  border-color: var(--violet);
   color: var(--violet);
-  border-color: var(--border-focus);
-  background: transparent;
+}
+
+.pm-compose button.pm-attach svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pm-shot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pm-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+
+.pm-shot {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--panel-solid);
+}
+
+.pm-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pm-shot-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+
+.pm-shot-remove:hover {
+  color: var(--red, #ef5b5b);
 }
 
 .pm-canned {

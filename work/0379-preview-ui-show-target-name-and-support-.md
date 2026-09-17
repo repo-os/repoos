@@ -2,14 +2,15 @@
 id: "0379"
 title: "Preview UI: show target name and support multi-area matches"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/preview-ui-show-target-name-and-support-
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-16T17:18:21Z"
-updated_at: "2026-09-16T17:18:21Z"
+updated_at: "2026-09-17T07:53:14Z"
 ---
 ## Problem
 
@@ -77,3 +78,8 @@ separate concerns even though both touch the preview quickbar.
 ## Activity
 
 - 2026-09-16T17:18:21Z · created · unknown
+- 2026-09-17T06:07:24Z · status inbox→ready
+- 2026-09-17T06:54:02Z · model_override
+- 2026-09-17T06:54:03Z · status ready→active, branch
+- 2026-09-17T07:12:20Z · status active→review
+- 2026-09-17T07:53:14Z · status review→done, release:success

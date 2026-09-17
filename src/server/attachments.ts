@@ -11,6 +11,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { SCREENSHOTS_HEADING, extractSection, removeSection } from "../core/task.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -110,89 +111,30 @@ export function saveScreenshot(
 }
 
 /**
- * Insert a `## Screenshots` section into a task body, keeping it BEFORE the
- * append-only Activity section so the activity log stays the last thing in the
- * body. Appends at the end when there is no Activity section. When the body
- * already has a Screenshots section, the new metas are MERGED with the
- * existing entries (deduped by URL, with the on-disk copy preserved first)
- * so a multi-shot upload or repeated `addScreenshot` patch never drops
- * earlier images (#0382). The section is REBUILT, not appended to, so it
- * still lives in exactly one place even after many `addScreenshot` calls —
- * including when `## Screenshots` is the LAST section in the body (no
- * Activity), which a JS regex `(?=^## |\Z)` would NOT match (`\Z` is PCRE
- * syntax; in JS it's a literal `Z` and silently fails the lookahead, so the
- * old section is never stripped and a second `## Screenshots` header lands
- * next to it — review round 2 bug).
+ * Insert screenshots into a task body's `## Screenshots` section, keeping it
+ * BEFORE the append-only Activity section so the activity log stays the last
+ * thing in the body. Appends the section at the end when there is no Activity
+ * section. When a Screenshots section already exists (a second upload batch,
+ * or the 0381 pending-batch attach landing on a task that has one), the new
+ * images merge into that section — repeated uploads must not stack duplicate
+ * headings.
  */
 export function appendScreenshotsSection(body: string, metas: ScreenshotMeta[]): string {
+  const links = metas.map((m) => `![${m.name.replace(/[[\]]/g, "")}](${m.url})`);
   const trimmed = body.replace(/\s+$/, "");
-  const lines = trimmed === "" ? [] : trimmed.split("\n");
-
-  // Locate the existing ## Screenshots section by its heading line, and the
-  // index of the next top-level `## ` heading (or end of body) — the same
-  // boundary convention as core/task.ts's section helpers, so a section
-  // that's the last in the body is handled identically to one followed by
-  // ## Activity. Only image lines INSIDE this range are carried over, so a
-  // markdown image embedded in `## Problem` text or `## Original prompt` is
-  // never swept into `## Screenshots` (#0382 review round 2).
-  const shotsStart = lines.findIndex((l) => l.trim() === "## Screenshots");
-  let existingEnd = lines.length;
-  if (shotsStart >= 0) {
-    for (let i = shotsStart + 1; i < lines.length; i++) {
-      if (/^##\s/.test(lines[i].trim())) {
-        existingEnd = i;
-        break;
-      }
-    }
+  const activityIndex = trimmed.lastIndexOf("\n## Activity\n");
+  const before =
+    activityIndex === -1 ? trimmed : trimmed.slice(0, activityIndex).replace(/\s+$/, "");
+  const after = activityIndex === -1 ? "" : trimmed.slice(activityIndex + 1);
+  const existing = extractSection(before, SCREENSHOTS_HEADING);
+  let next: string;
+  if (existing !== null) {
+    const without = removeSection(before, SCREENSHOTS_HEADING).replace(/\s+$/, "");
+    next = [without, [existing, ...links].join("\n")].filter(Boolean).join("\n\n");
+  } else {
+    next = [before, ["## Screenshots", "", ...links].join("\n")].filter(Boolean).join("\n\n");
   }
-
-  const ordered: string[] = [];
-  const seen = new Set<string>();
-  if (shotsStart >= 0) {
-    const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)\s*$/;
-    for (let i = shotsStart + 1; i < existingEnd; i++) {
-      const m = lines[i].match(imgRe);
-      if (!m) continue;
-      const line = m[0].replace(/\s+$/, "");
-      if (!seen.has(line)) {
-        seen.add(line);
-        ordered.push(line);
-      }
-    }
-  }
-
-  // Merge the new metas in the order they were supplied, deduped by the
-  // rendered markdown line so a re-saved screenshot with the same URL never
-  // doubles up.
-  for (const m of metas) {
-    const line = `![${m.name.replace(/[[\]]/g, "")}](${m.url})`;
-    if (!seen.has(line)) {
-      seen.add(line);
-      ordered.push(line);
-    }
-  }
-
-  // Build the rebuilt section. Callers always pass at least one meta (see
-  // patchTaskFile: addScreenshot), so the ordered list is never empty here.
-  const sectionLines = ["## Screenshots", ...ordered];
-
-  // Strip the old ## Screenshots section (if any) so the rebuilt one can
-  // take its place. Without this step a body that already had a section
-  // would get a second `## Screenshots` header — the bug the line-based
-  // boundary above already prevents at the regex level.
-  const baseLines =
-    shotsStart >= 0 ? [...lines.slice(0, shotsStart), ...lines.slice(existingEnd)] : [...lines];
-
-  // Place the rebuilt section before ## Activity when present, else append
-  // it at the end (preserving the canonical "Activity is always the last
-  // section" invariant).
-  const activityIdx = baseLines.findIndex((l) => l.trim() === "## Activity");
-  const finalLines =
-    activityIdx >= 0
-      ? [...baseLines.slice(0, activityIdx), ...sectionLines, ...baseLines.slice(activityIdx)]
-      : [...baseLines, "", ...sectionLines];
-
-  return finalLines.join("\n") + "\n";
+  return after ? `${next}\n\n${after}\n` : `${next}\n`;
 }
 
 /**

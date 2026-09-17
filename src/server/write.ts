@@ -101,6 +101,13 @@ export interface TaskPatch {
    * it (see {@link PROTECTED_SECTIONS}).
    */
   addScreenshot?: ScreenshotMeta;
+  /**
+   * Append several screenshots in one patch (0381): the PM chat's pending
+   * images land on a freshly created task as a batch, so the section is
+   * written once with a single activity entry instead of one rewrite per
+   * image. Same section rules as `addScreenshot`.
+   */
+  addScreenshots?: ScreenshotMeta[];
   /** Set hotfix mode (true to enable, false to disable). */
   hotfix?: boolean;
   /** Hotfix merge target. */
@@ -232,6 +239,10 @@ export function patchTaskFile(
   }
   if (patch.addScreenshot) {
     current.body = appendScreenshotsSection(current.body, [patch.addScreenshot]);
+    changes.push("screenshots");
+  }
+  if (patch.addScreenshots && patch.addScreenshots.length > 0) {
+    current.body = appendScreenshotsSection(current.body, patch.addScreenshots);
     changes.push("screenshots");
   }
   if (patch.agentOverride !== undefined) {

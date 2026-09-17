@@ -1,5 +1,5 @@
 {
-  "name": "repoos",
+  "name": "@repo-os/repoos",
   "version": "0.5.44",
   "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
   "type": "module",
@@ -52,6 +52,17 @@
     "node": ">=20.6.0"
   },
   "license": "SEE LICENSE IN LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/repo-os/repoos.git"
+  },
+  "homepage": "https://repoos.org",
+  "bugs": {
+    "url": "https://github.com/repo-os/repoos/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@playwright/test": "1.40.0",
     "@tailwindcss/vite": "^4.3.3",

@@ -864,14 +864,21 @@ export async function cmdCheck(): Promise<void> {
   // manual audit). This makes the claim self-enforcing instead of
   // convention-only.
   //
-  // Scoped to RepoOS's own package.json (`name === "repoos"`) rather than
-  // running for every managed project: this constraint is specific to this
-  // repo, not a general rule `repoos check` should impose on projects it
-  // manages (a typical managed project has legitimate runtime deps). #0348
-  // tracks making check steps like this declarable per-project instead of
+  // Scoped to RepoOS's own package.json rather than running for every
+  // managed project: this constraint is specific to this repo, not a
+  // general rule `repoos check` should impose on projects it manages (a
+  // typical managed project has legitimate runtime deps). #0348 tracks
+  // making check steps like this declarable per-project instead of
   // hardcoded here; do not widen this scope without that mechanism.
+  //
+  // Matches the unscoped OR scoped package name (`repoos` / `@.../repoos`):
+  // the package was renamed to `@repo-os/repoos` after this guard was
+  // written with a literal `=== "repoos"` check, which silently disabled
+  // it — the exact "constraint silently stops being enforced" failure mode
+  // #0343 exists to catch, now recurring in the guard meant to catch it.
   heading("Zero runtime dependencies guard");
-  if (pkg.name !== "repoos") {
+  const pkgBaseName = typeof pkg.name === "string" ? pkg.name.split("/").pop() : undefined;
+  if (pkgBaseName !== "repoos") {
     results.push(pass("zero-runtime-deps", "skipped — not RepoOS's own package.json"));
   } else {
     const deps = Object.keys(pkg.dependencies ?? {});

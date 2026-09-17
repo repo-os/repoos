@@ -1,4 +1,4 @@
-import type { Status, Agent, Task } from "../../core/types.js";
+import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
@@ -21,7 +21,14 @@ import {
   parseOneShotLine,
   extractOneShotReportText,
 } from "../agents.js";
-import { markPmWorking, clearPmWorking, withPmWorking } from "../pm-runs.js";
+import {
+  markPmWorking,
+  clearPmWorking,
+  withPmWorking,
+  markPmChatSession,
+  isPmWorking,
+} from "../pm-runs.js";
+import { queuePmImages, dropPmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
@@ -52,6 +59,7 @@ import { parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
+import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -67,8 +75,20 @@ function withReviewStatus<T extends { id: string }>(
   };
 }
 
+/**
+ * Add the preview targets a task can be served from (#0379). The drawer reads
+ * this to show the active target's name and, when the task's area matches more
+ * than one target, to offer a picker instead of silently previewing the first.
+ */
+function withPreviewTargets<T extends Task>(
+  task: T,
+  config: RepoOSConfig,
+): T & { previewTargets: PreviewTargetOption[] } {
+  return { ...task, previewTargets: previewTargetOptions(config, task) };
+}
+
 export const getTasks: RouteHandler = (ctx, req, res) => {
-  const { index, reviews } = ctx;
+  const { config, index, reviews } = ctx;
   const url = new URL(req.url ?? "/", "http://localhost");
   const status = url.searchParams.get("status") as Status | null;
   if (status && !(STATUSES as readonly string[]).includes(status)) {
@@ -76,7 +96,7 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
   }
   const tasks = index
     .getTasks(status ?? undefined)
-    .map((t) => withPmWorking(withReviewStatus(t, reviews)));
+    .map((t) => withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)));
   return json(res, 200, tasks);
 };
 
@@ -370,9 +390,13 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
       // 0335: cleared on EVERY exit path — success (the promotion's own
       // task.updated event lands first, so the card swaps its indicator for
       // its new column), failure, or a thrown error — so the indicator can
-      // never get stuck showing "working".
+      // never get stuck showing "working". 0381: a live PM chat session on
+      // this task keeps the flag up — only emit pmFinished when nothing
+      // else is still working it.
       clearPmWorking(created.id);
-      emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
+      if (!isPmWorking(created.id)) {
+        emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
+      }
     }
   })();
 
@@ -384,12 +408,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
 };
 
 export const getTask: RouteHandler = (ctx, _req, res, params) => {
-  const { index, previews, reviews } = ctx;
+  const { config, index, previews, reviews } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
   return t
     ? json(res, 200, {
-        ...withPmWorking(withReviewStatus(t, reviews)),
+        ...withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)),
         preview: previews.get(t.id) ?? null,
       })
     : json(res, 404, { error: `Task #${id} not found` });
@@ -1091,18 +1115,23 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 };
 
 // Preview routes
-export const startPreview: RouteHandler = async (ctx, _req, res, params) => {
+export const startPreview: RouteHandler = async (ctx, req, res, params) => {
   const { index, previews } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
   if (!t) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  const result = await previews.start(t);
+  // The drawer's picker passes the chosen target when the task's area matches
+  // more than one (#0379); omitting it starts the first match.
+  const body = (await readBody(req)) as { target?: unknown };
+  const target =
+    typeof body?.target === "string" && body.target.trim() ? body.target.trim() : undefined;
+  const result = await previews.start(t, target);
   if (!result.ok) {
     return json(res, 400, { error: result.error ?? "could not start preview" });
   }
-  return json(res, 200, { ok: true, port: result.port, url: result.url });
+  return json(res, 200, { ok: true, port: result.port, url: result.url, label: result.label });
 };
 
 export const stopPreview: RouteHandler = async (ctx, _req, res, params) => {
@@ -1238,7 +1267,7 @@ export function buildPmShotContext(incoming: ReadonlyArray<unknown>): string {
 }
 
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, runner } = ctx;
+  const { config, index, runner, logger, emitEvent } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -1308,6 +1337,23 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  // 0381: chat-input screenshots ride along as a pending batch keyed to this
+  // PM session. The task the PM creates from the message doesn't exist yet,
+  // so the batch is parked on disk now and attached to the created task by
+  // the server's task.created hook while the session is still running.
+  const rawImages = Array.isArray(body?.images) ? (body?.images as IncomingPmImage[]) : [];
+  let imageBatchId: string | null = null;
+  if (rawImages.length > 0) {
+    const queuedImages = queuePmImages(config, pmSessionId, rawImages);
+    imageBatchId = queuedImages.batchId;
+    if (queuedImages.errors.length > 0) {
+      // Best-effort: a rejected image never blocks the message itself.
+      logger.task(id, "warn", "Some PM chat attachments were rejected", {
+        errors: queuedImages.errors,
+      });
+    }
+  }
+
   // Build context about the current task for the PM
   const taskContext = `Task #${id}: ${existing.title}
 Status: ${existing.status}
@@ -1337,11 +1383,21 @@ ${existing.body || "(no description)"}`;
     : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt);
 
   if (!result.ok && result.busy) {
+    dropPmImages(imageBatchId);
     return json(res, 409, { error: result.reason ?? "PM is busy" });
   }
   if (!result.ok) {
+    dropPmImages(imageBatchId);
     return json(res, 400, { error: result.reason ?? "could not send message to PM" });
   }
+
+  // 0381: the runner accepted the turn (running now, or queued behind
+  // maxConcurrentAgents) — flag the task so its card and panel show "PM is
+  // working". Cleared by the emit hook in server.ts when the runner reports
+  // the session's exit (success, error, or user interrupt).
+  markPmChatSession(pmSessionId, id);
+  emitEvent({ type: "task.pmWorking", id, at: new Date().toISOString() });
+
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
 };
 

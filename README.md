@@ -129,7 +129,7 @@ The CLI is a thin shell over a programmatic API. The same API powers the
 local server and can be called from your own scripts or agents.
 
 ```ts
-import { createRepoOS } from "repoos";
+import { createRepoOS } from "@repo-os/repoos";
 
 const repoos = createRepoOS();              // resolves repo root + config
 

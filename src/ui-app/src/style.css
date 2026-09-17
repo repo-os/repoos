@@ -1661,8 +1661,9 @@
 .task-card.coding {
   border-color: var(--violet-border-tint);
 }
-/* PM flesh-out in flight (0335): same violet "AI at work" language as the
-   coding border, but for a draft the PM agent is authoring. */
+/* PM run in flight (0335, 0381): same violet "AI at work" language as the
+   coding border, but for the PM agent — a draft it is authoring, or a PM
+   chat turn it is processing on a task in any status. */
 .task-card.pm-working {
   border-color: var(--violet-border-tint);
 }
@@ -4884,20 +4885,46 @@
   margin-top: 2px;
   line-height: 1.5;
 }
-.task-usage {
-  margin-bottom: 12px;
+.task-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: "JetBrains Mono", monospace;
+}
+.task-section {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--panel-solid);
-  font-family: "JetBrains Mono", monospace;
 }
-.task-usage-title {
-  font-size: 9.5px;
+.task-section:last-child {
+  margin-bottom: 12px;
+}
+.task-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.task-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--txt-faint);
-  margin-bottom: 8px;
+}
+.task-section-desc {
+  font-size: 11px;
+  color: var(--txt-dim);
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .task-usage-grid {
   display: flex;
@@ -4905,13 +4932,8 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.task-usage-roles {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border);
-}
 .task-usage-table-wrap {
-  margin-top: 6px;
+  margin-top: 2px;
   overflow-x: auto;
 }
 .task-usage-table {
@@ -4951,11 +4973,6 @@
 .task-usage-role-name {
   text-transform: capitalize;
   color: var(--cyan);
-}
-.task-usage-sessions {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border);
 }
 .task-usage-session-type {
   text-transform: capitalize;
@@ -5059,6 +5076,38 @@
   color: var(--txt-dim);
   font-family: "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
+}
+/* Which preview target/frontend a row refers to (#0379) — the target's name so
+   "a preview is running" is never the whole story. */
+.preview-target-name {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* Pick-one-target control when a task's area matches several targets (#0379). */
+.preview-target-select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 180px;
+}
+.preview-target-select:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .new-btn {
   display: flex;

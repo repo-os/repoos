@@ -2,14 +2,16 @@
 id: "0380"
 title: Redesign task drawer Tokens tab into distinct sections
 type: feature
-status: inbox
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/redesign-task-drawer-tokens-tab-into-dis
+model_override: opencode-go/minimax-m3
 created_at: "2026-09-17T03:22:19Z"
-updated_at: "2026-09-17T05:18:30Z"
+updated_at: "2026-09-17T06:10:59Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -131,3 +133,8 @@ The token tabs of the task panel needs some cleanup, the top section isn't reall
 - 2026-09-17T03:22:19Z · created · hello@repoos.org
 - 2026-09-17T03:24:08Z · status draft→inbox, title, area, body
 - 2026-09-17T05:18:30Z · body
+- 2026-09-17T05:35:04Z · model_override
+- 2026-09-17T05:35:06Z · status inbox→ready
+- 2026-09-17T05:35:12Z · status ready→active, branch
+- 2026-09-17T05:37:35Z · status active→review
+- 2026-09-17T06:10:59Z · status review→done, release:success

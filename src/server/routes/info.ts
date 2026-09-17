@@ -5,6 +5,7 @@ import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers
 import { sampleSystem } from "../system.js";
 import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
 import { withPmWorking } from "../pm-runs.js";
+import { previewTargetOptions } from "../preview.js";
 import { CANARY_COUNTER } from "../../core/canary.js";
 
 // These will be passed via context in server.ts during integration
@@ -86,7 +87,7 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
 
 /** Lightweight board endpoint — returns only the fields TaskCard.vue needs. */
 export const getBoard: RouteHandler = async (ctx, _req, res) => {
-  const { index, reviews, indexReady } = ctx;
+  const { config, index, reviews, indexReady } = ctx;
   // A reload handoff spawns the replacement with the listener already accepting
   // connections while the full index build runs in the background (0285). Await
   // boot readiness so a sharp reconnect can never be answered from a stale or
@@ -99,6 +100,8 @@ export const getBoard: RouteHandler = async (ctx, _req, res) => {
       running: reviews.isRunning(t.id),
       enabled: reviews.enabled(),
     },
+    // #0379: preview target identity/multiplicity, same as GET /api/tasks/:id.
+    previewTargets: previewTargetOptions(config, t),
   });
   return json(res, 200, {
     ...snapshot,

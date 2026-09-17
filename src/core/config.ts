@@ -456,6 +456,13 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
 
   if (Array.isArray(parsed["preview.targets"])) {
     const targets: PreviewTargetConfig[] = [];
+    // Target names are the pick/label key the UI and resolution use (#0379), so
+    // they must be unique. Auto-derived names (`areas.join("/")`) collide the
+    // moment two targets claim the same area, and explicit duplicates are just
+    // as easy to write; either would render two identical picker options and
+    // make `resolvePreviewTarget(name)` select the first silently. Disambiguate
+    // deterministically with a numeric suffix instead of dropping a target.
+    const usedNames = new Set<string>();
     for (const raw of parsed["preview.targets"]) {
       if (typeof raw !== "object" || raw === null) continue;
       const r = raw as Record<string, unknown>;
@@ -465,8 +472,11 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
         .map((a) => (typeof a === "string" ? a.trim() : ""))
         .filter(Boolean);
-      const name =
+      const base =
         typeof r.name === "string" && r.name.trim() ? r.name.trim() : areas.join("/") || "target";
+      let name = base;
+      for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
+      usedNames.add(name);
       const target: PreviewTargetConfig = { name, areas, command: targetCommand };
       const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
       if (targetCwd) target.cwd = targetCwd;

@@ -238,6 +238,16 @@ command = "bun run build && bun dist/cli/index.js serve --port {port} --host {ho
 # Matches the old ensureFreshBuild's 240s build allowance plus boot time
 # (#0370 review).
 readyTimeoutMs = 240000
+# CRITICAL: this repo has auth.enabled = true, so the default readyPath ("/")
+# is auth-gated and returns 401 forever — waitForReady would poll it until
+# readyTimeoutMs expires on EVERY preview, even once the server is genuinely
+# up (confirmed live, 2026-09-17: the child was healthy and serving within
+# seconds, but the UI sat on "Starting preview..." for 80s+ because it was
+# polling the wrong path). /api/health is unauthenticated by design (#0121)
+# and is what #0370's own removed "repoos" fallback used to assume
+# implicitly — now that this is a plain declared command, it must be set
+# explicitly, or every preview here silently regresses to the full timeout.
+readyPath = "/api/health"
 
 [[preview.targets]]
 name = "Landing page"
