@@ -295,3 +295,81 @@ describe("close-out candidate cleanup on failure (worktree leak)", () => {
     }
   });
 });
+
+describe("publish-time main-drift retry cap (#0386)", () => {
+  it("resyncs a few times on drift, then gives up instead of looping forever", async () => {
+    // Real git operations (worktree add/remove, lock-acquire retries) up to
+    // 8 times over — the default 5s test timeout isn't enough.
+    // Reproduced live twice (#0376, #0382): main advancing (even just
+    // unrelated task-bookkeeping commits) between validation and publish
+    // repeatedly reset the job to "syncing" with no cap. This drives the
+    // exact publish-time check directly rather than the full sync/validate
+    // pipeline: after each reset, main is advanced by one commit and the
+    // job is put back in "publishing" with the now-stale baseMainSha, so
+    // every processNext() call hits the drift branch again.
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T10";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T10", branch } as any);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      // Captured once, before any drift commits — every iteration below
+      // advances main further, so this stays stale by construction without
+      // needing to recompute it, exactly mirroring a job whose baseMainSha
+      // was set once at sync time and never catches up.
+      const staleMainSha = git(root, ["rev-parse", "main"]);
+
+      let lastResult: { ok: boolean; reason?: string } = { ok: true };
+      for (let i = 0; i < 8; i++) {
+        // Advance main so baseMainSha is stale again, same as an unrelated
+        // task's routine `docs(<id>): update task` commit landing.
+        writeFileSync(join(root, `drift-${i}.txt`), "x\n");
+        git(root, ["add", `drift-${i}.txt`]);
+        git(root, ["commit", "-m", `drift ${i}`]);
+
+        // The drift path removes the candidate worktree (real production
+        // behavior — it's rebuilt during the "syncing" phase this test
+        // skips over by jumping straight back to "publishing"). Recreate it
+        // each iteration, or publishCandidate would fail on "candidate
+        // worktree missing" instead of exercising the drift cap at all.
+        if (i > 0) expect(ensureWorktree(root, branch).ok).toBe(true);
+
+        coordinator.updateJob("T10", {
+          phase: "publishing",
+          startedAt: new Date().toISOString(),
+          baseMainSha: staleMainSha,
+          branchSha: candidateSha,
+          candidateSha,
+        });
+
+        lastResult = await orchestrator.processNext();
+        const job = coordinator.getJob("T10");
+
+        if (job?.phase === "failed") {
+          // Gave up — must not have looped past the cap.
+          expect(i).toBeGreaterThanOrEqual(5); // MAX_PUBLISH_DRIFT_RETRIES
+          expect(lastResult.reason).toMatch(/advanced \d+ times in a row/i);
+          expect(lastResult.reason).toMatch(/giving up/i);
+          return;
+        }
+        // Still retrying: back to syncing, drift count recorded.
+        expect(job?.phase).toBe("syncing");
+        expect(job?.publishDriftCount).toBe(i + 1);
+      }
+      throw new Error("expected the job to give up within 8 drift cycles, it never did");
+    } finally {
+      clean();
+    }
+  }, 30_000);
+});

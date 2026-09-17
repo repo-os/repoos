@@ -50,6 +50,13 @@ export interface IntegrationJob {
   reason?: string;
   /** Queue position (0-indexed; set by coordinator) */
   queuePosition?: number;
+  /**
+   * Consecutive publish-time "main advanced" resyncs for this job (#0386).
+   * Capped at MAX_PUBLISH_DRIFT_RETRIES in integration-orchestrator.ts, same
+   * shape as the other close-out retry caps — bounds a job that keeps losing
+   * the race to publish on a busy board instead of resyncing forever.
+   */
+  publishDriftCount?: number;
 }
 
 export interface JobCoordinator {
@@ -122,6 +129,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       branchSha: stored.branchSha,
       candidateSha: stored.candidateSha,
       reason: stored.reason,
+      publishDriftCount: stored.publishDriftCount,
     };
   } catch {
     return null;

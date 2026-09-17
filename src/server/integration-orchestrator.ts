@@ -52,6 +52,17 @@ const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
 /** Shared literal for the failed job phase so recovery paths stay consistent. */
 const PHASE_FAILED = "failed";
 
+/**
+ * Cap on consecutive publish-time "main advanced" resyncs (#0386). Every
+ * OTHER retry path in the close-out pipeline is capped (#0216's validate
+ * retry, handoff.ts's MAX_*_RETRY_ATTEMPTS) — this one wasn't, so on a busy
+ * board a task could restart forever, never winning the race to publish.
+ * Deliberately generous: a single trivial `docs(<id>): update task` commit
+ * for an unrelated task is common and harmless to resync past once or
+ * twice; this only fires once retries are clearly not converging.
+ */
+const MAX_PUBLISH_DRIFT_RETRIES = 5;
+
 function candidateBranchName(taskId: string): string {
   return `${CANDIDATE_BRANCH_PREFIX}${taskId}`;
 }
@@ -1192,12 +1203,36 @@ export class CloseOutOrchestrator {
       const currentMainSha = currentMainRes.stdout.trim();
 
       if (job.baseMainSha !== currentMainSha) {
-        // Main advanced between validation and publishing: go back to syncing.
+        // Main advanced between validation and publishing. Every OTHER retry
+        // path in this close-out pipeline is capped (#0216's validate-phase
+        // 2-attempt cap; handoff.ts's MAX_*_RETRY_ATTEMPTS for merge-conflict/
+        // check-failure/handoff-signal repairs) — this one wasn't, so a task
+        // whose sync→validate→publish cycle takes longer than the interval
+        // between OTHER tasks landing on main could retry forever, never
+        // winning the race. Reproduced live twice in one session (#0376,
+        // #0382): 3-4 consecutive resets, ~2 minutes each, on a busy board.
+        const driftCount = (job.publishDriftCount ?? 0) + 1;
+        if (driftCount > MAX_PUBLISH_DRIFT_RETRIES) {
+          // Deliberately do NOT set phase: "syncing" here — leaving it
+          // unchanged (still "publishing") means processJob's own existing
+          // `currentJob.phase === "syncing"` check below is false, so it
+          // falls through to failOrReconcile exactly the way a genuine
+          // publish failure already does. No new give-up path needed; this
+          // reuses the one that's already there.
+          return {
+            ok: false,
+            reason:
+              `main advanced ${driftCount} times in a row while trying to publish — giving up ` +
+              "rather than retrying forever. The branch itself is fine, it's just losing the race " +
+              "to land; retry Move-to-done once main quiets down.",
+          };
+        }
         removeWorktree(root, branch);
         this.coordinator.updateJob(job.taskId, {
           phase: "syncing",
           baseMainSha: null,
           candidateSha: null,
+          publishDriftCount: driftCount,
         });
         return { ok: false, reason: "main advanced, revalidating" };
       }
