@@ -20,6 +20,7 @@ import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/s
 import { cmdStop } from "../commands/stop.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
+import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
@@ -85,6 +86,7 @@ function help(): void {
     ${c.cyan("upgrade")} [--channel beta|canary|rc]
                           Self-update a standalone (curl-installed) repoos to the latest release
                           (stable by default; --channel tracks a prerelease line instead)
+    ${c.cyan("uninstall")} [--yes]     Remove the standalone (curl-installed) repoos from this machine
 
   ${c.bold("EXAMPLES")}
     ${c.dim("$")} repoos init
@@ -135,6 +137,7 @@ function main(): void {
     "--help",
     "-h",
     "upgrade",
+    "uninstall",
   ]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
@@ -215,6 +218,9 @@ function main(): void {
       break;
     case "upgrade":
       void cmdUpgrade(rest);
+      break;
+    case "uninstall":
+      void cmdUninstall(rest);
       break;
     case "version":
     case "--version":

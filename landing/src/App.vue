@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-const INSTALL_CMD =
-  "curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash";
+const INSTALL_CMD = "curl -fsSL https://repoos.org/install.sh | bash";
+const PACKAGE_MANAGER_OPTIONS = [
+  "npm install -g @repo-os/repoos",
+  "bun add -g @repo-os/repoos",
+  "pnpm add -g @repo-os/repoos",
+  "mise use -g npm:@repo-os/repoos",
+];
 
 type Theme = "dark" | "light";
 const THEME_KEY = "repoos-theme";
@@ -308,6 +313,13 @@ const year = new Date().getFullYear();
           </div>
 
           <p class="mt-4 text-[13px] text-[var(--txt-faint)]">
+            Or install with
+            <template v-for="(option, index) in PACKAGE_MANAGER_OPTIONS" :key="option">
+              <span v-if="index > 0"> · </span>
+              <span class="font-mono text-[12px] text-[var(--txt-dim)]">{{ option }}</span>
+            </template>
+          </p>
+          <p class="mt-1 text-[13px] text-[var(--txt-faint)]">
             Runs on Bun or Node 20+. No account, no telemetry.
           </p>
         </div>
@@ -657,6 +669,13 @@ const year = new Date().getFullYear();
             {{ copied ? "copied" : "copy" }}
           </button>
         </div>
+        <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
+          Package manager?
+          <template v-for="(option, index) in PACKAGE_MANAGER_OPTIONS" :key="option">
+            <span v-if="index > 0"> · </span>
+            <span class="font-mono text-[12px] text-[var(--txt-dim)]">{{ option }}</span>
+          </template>
+        </p>
         <a
           href="https://docs.repoos.org"
           class="mt-5 inline-block text-[13px] text-[var(--cyan)] hover:underline"

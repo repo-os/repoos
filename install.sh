@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # RepoOS installer.
-#   curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
+#   curl -fsSL https://repoos.org/install.sh | bash
 #
 # Downloads the latest prebuilt release tarball from GitHub Releases and
 # installs a `repoos` launcher on PATH. Runs on Bun when it's installed

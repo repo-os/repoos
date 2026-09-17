@@ -38,13 +38,52 @@ first-class participants, but humans always hold the gate.
 
 ## Install
 
-Install a standalone `repoos` command straight from GitHub Releases:
+Choose one installation method:
+
+### curl
+
+Install the standalone `repoos` command. This is the quickest option when you
+want a self-contained release build:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
+curl -fsSL https://repoos.org/install.sh | bash
 ```
 
-Runs on Bun when it's installed (recommended); otherwise requires Node.js >= 20.6.0. Installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
+It runs on Bun when available (recommended), otherwise requires Node.js >=
+20.6.0. It installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
+
+### npm
+
+```bash
+npm install -g @repo-os/repoos
+```
+
+### Bun
+
+```bash
+bun add -g @repo-os/repoos
+```
+
+### pnpm
+
+```bash
+pnpm add -g @repo-os/repoos
+```
+
+### mise
+
+```bash
+mise use --global npm:@repo-os/repoos
+```
+
+This uses mise's built-in npm backend and records RepoOS in your global mise
+configuration. Make sure [mise shell activation](https://mise.jdx.dev/getting-started.html)
+is enabled so its `repoos` shim is on your PATH.
+
+Use the same tool to update a package-manager install: `npm update -g
+@repo-os/repoos`, `bun update -g @repo-os/repoos`, `pnpm update -g
+@repo-os/repoos`, or `mise upgrade npm:@repo-os/repoos`. A standalone install
+updates with `repoos upgrade` and removes with `repoos uninstall`.
 
 Then in any repo:
 

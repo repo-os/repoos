@@ -6,13 +6,47 @@ local server that reads them.
 
 ## Install
 
+Choose one:
+
+### curl — standalone build
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
+curl -fsSL https://repoos.org/install.sh | bash
 ```
 
-This installs a standalone build. Once you prefer a package-manager install,
-use `bun add -g @repo-os/repoos` or `npm i -g @repo-os/repoos`; you can also
-run from a source checkout.
+### npm
+
+```bash
+npm install -g @repo-os/repoos
+```
+
+### Bun
+
+```bash
+bun add -g @repo-os/repoos
+```
+
+### pnpm
+
+```bash
+pnpm add -g @repo-os/repoos
+```
+
+### mise
+
+```bash
+mise use --global npm:@repo-os/repoos
+```
+
+This uses mise's npm backend and saves RepoOS to your global mise
+configuration. Enable mise shell activation so its `repoos` shim is on PATH.
+
+The curl installer puts a self-contained release build in `~/.repoos` and a
+`repoos` launcher in `~/.local/bin`. Update it with `repoos upgrade`.
+Remove it later with `repoos uninstall`.
+Package-manager installs update with `npm update -g @repo-os/repoos`,
+`bun update -g @repo-os/repoos`, `pnpm update -g @repo-os/repoos`, or
+`mise upgrade npm:@repo-os/repoos`.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
 otherwise — see [Configuration](/configuration#runtime) if you want to pin one.
