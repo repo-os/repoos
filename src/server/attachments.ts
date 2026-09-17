@@ -117,50 +117,82 @@ export function saveScreenshot(
  * existing entries (deduped by URL, with the on-disk copy preserved first)
  * so a multi-shot upload or repeated `addScreenshot` patch never drops
  * earlier images (#0382). The section is REBUILT, not appended to, so it
- * still lives in exactly one place even after many `addScreenshot` calls.
+ * still lives in exactly one place even after many `addScreenshot` calls —
+ * including when `## Screenshots` is the LAST section in the body (no
+ * Activity), which a JS regex `(?=^## |\Z)` would NOT match (`\Z` is PCRE
+ * syntax; in JS it's a literal `Z` and silently fails the lookahead, so the
+ * old section is never stripped and a second `## Screenshots` header lands
+ * next to it — review round 2 bug).
  */
 export function appendScreenshotsSection(body: string, metas: ScreenshotMeta[]): string {
-  // Build the merged, deduped list of image lines: existing entries from the
-  // body first, then the new metas in the order they were supplied. Dedup by
-  // the rendered markdown line so a re-saved screenshot with the same URL
-  // never doubles up.
-  const existing = new Set<string>();
-  const ordered: string[] = [];
-  const re = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  for (const match of body.matchAll(re)) {
-    const line = match[0];
-    if (!existing.has(line)) {
-      existing.add(line);
-      ordered.push(line);
+  const trimmed = body.replace(/\s+$/, "");
+  const lines = trimmed === "" ? [] : trimmed.split("\n");
+
+  // Locate the existing ## Screenshots section by its heading line, and the
+  // index of the next top-level `## ` heading (or end of body) — the same
+  // boundary convention as core/task.ts's section helpers, so a section
+  // that's the last in the body is handled identically to one followed by
+  // ## Activity. Only image lines INSIDE this range are carried over, so a
+  // markdown image embedded in `## Problem` text or `## Original prompt` is
+  // never swept into `## Screenshots` (#0382 review round 2).
+  const shotsStart = lines.findIndex((l) => l.trim() === "## Screenshots");
+  let existingEnd = lines.length;
+  if (shotsStart >= 0) {
+    for (let i = shotsStart + 1; i < lines.length; i++) {
+      if (/^##\s/.test(lines[i].trim())) {
+        existingEnd = i;
+        break;
+      }
     }
   }
+
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  if (shotsStart >= 0) {
+    const imgRe = /^!\[([^\]]*)\]\(([^)]+)\)\s*$/;
+    for (let i = shotsStart + 1; i < existingEnd; i++) {
+      const m = lines[i].match(imgRe);
+      if (!m) continue;
+      const line = m[0].replace(/\s+$/, "");
+      if (!seen.has(line)) {
+        seen.add(line);
+        ordered.push(line);
+      }
+    }
+  }
+
+  // Merge the new metas in the order they were supplied, deduped by the
+  // rendered markdown line so a re-saved screenshot with the same URL never
+  // doubles up.
   for (const m of metas) {
     const line = `![${m.name.replace(/[[\]]/g, "")}](${m.url})`;
-    if (!existing.has(line)) {
-      existing.add(line);
+    if (!seen.has(line)) {
+      seen.add(line);
       ordered.push(line);
     }
   }
-  const section = ["## Screenshots", ""].concat(ordered).join("\n");
 
-  // If the body already has a Screenshots section, strip it out first so we
-  // can place the rebuilt one in the same spot. Match on the heading line and
-  // everything up to (but not including) the next `## ` heading — that's the
-  // canonical boundary used by the rest of the body code.
-  const SCREENSHOTS_RE = /^## Screenshots\s*\n[\s\S]*?(?=^## |\Z)/m;
-  const trimmed = body.replace(/\s+$/, "");
-  let withoutScreenshots = trimmed;
-  if (SCREENSHOTS_RE.test(withoutScreenshots)) {
-    withoutScreenshots = withoutScreenshots.replace(SCREENSHOTS_RE, "").replace(/\n+$/, "");
-  }
+  // Build the rebuilt section. Callers always pass at least one meta (see
+  // patchTaskFile: addScreenshot), so the ordered list is never empty here.
+  const sectionLines = ["## Screenshots", ...ordered];
 
-  const activityIndex = withoutScreenshots.lastIndexOf("\n## Activity\n");
-  if (activityIndex === -1) {
-    return `${withoutScreenshots}\n\n${section}\n`;
-  }
-  const before = withoutScreenshots.slice(0, activityIndex).replace(/\s+$/, "");
-  const after = withoutScreenshots.slice(activityIndex + 1); // strip leading newline of "\n## Activity"
-  return `${before}\n\n${section}\n\n${after}\n`;
+  // Strip the old ## Screenshots section (if any) so the rebuilt one can
+  // take its place. Without this step a body that already had a section
+  // would get a second `## Screenshots` header — the bug the line-based
+  // boundary above already prevents at the regex level.
+  const baseLines =
+    shotsStart >= 0 ? [...lines.slice(0, shotsStart), ...lines.slice(existingEnd)] : [...lines];
+
+  // Place the rebuilt section before ## Activity when present, else append
+  // it at the end (preserving the canonical "Activity is always the last
+  // section" invariant).
+  const activityIdx = baseLines.findIndex((l) => l.trim() === "## Activity");
+  const finalLines =
+    activityIdx >= 0
+      ? [...baseLines.slice(0, activityIdx), ...sectionLines, ...baseLines.slice(activityIdx)]
+      : [...baseLines, "", ...sectionLines];
+
+  return finalLines.join("\n") + "\n";
 }
 
 /**

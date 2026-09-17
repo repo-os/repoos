@@ -154,14 +154,29 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // re-saved through `saveScreenshot` so it lands under the task's own
   // `.attachments/<taskId>/` folder and gets a numbered name — the task is
   // self-contained and unaffected by later input deletion (#0382).
+  //
+  // Audit round 2: track every skip explicitly. A missing file or an
+  // unsupported MIME on one attachment must not leave the carry silently
+  // incomplete — the resulting log line lists the dropped names so a
+  // human/agent reviewing the run can recover them rather than discover the
+  // gap after the input is gone.
   if (sourceInputId) {
     const input = listInputs(config).find((i) => i.id === sourceInputId);
     if (input) {
       const inputAttDir = join(config.root, config.inputsDir ?? "inputs", ".attachments", input.id);
       let carried = 0;
+      const skipped: string[] = [];
       for (const att of input.attachments) {
         const srcPath = join(inputAttDir, att.name);
-        if (!existsSync(srcPath)) continue;
+        if (!existsSync(srcPath)) {
+          logger.task(
+            created.id,
+            "warn",
+            `Skipping input attachment ${att.name}: file missing on disk`,
+          );
+          skipped.push(att.name);
+          continue;
+        }
         const bytes = readFileSync(srcPath);
         const result = saveScreenshot(config, created, {
           name: att.name,
@@ -170,6 +185,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         });
         if ("error" in result) {
           logger.task(created.id, "warn", `Skipping input attachment ${att.name}: ${result.error}`);
+          skipped.push(att.name);
           continue;
         }
         const updated = patchTaskFile(config, created.absPath, { addScreenshot: result });
@@ -180,6 +196,14 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         logger.task(created.id, "info", `Carried ${carried} input attachment(s) onto task`, {
           inputId: sourceInputId,
         });
+      }
+      if (skipped.length > 0) {
+        logger.task(
+          created.id,
+          "warn",
+          `Input carry incomplete: ${skipped.length}/${input.attachments.length} attachments dropped (${skipped.join(", ")})`,
+          { inputId: sourceInputId },
+        );
       }
     }
   }

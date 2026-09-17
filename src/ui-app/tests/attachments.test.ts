@@ -67,12 +67,73 @@ describe("appendScreenshotsSection", () => {
     expect(out.split("## Screenshots").length - 1).toBe(1);
   });
 
-  it("dedupes by url when the same screenshot is appended twice", () => {
+  it("dedupes by url when the same screenshot is appended twice (#0382, audit round 2)", () => {
+    // The dedup check must assert SINGLE SECTION, not just the image appearing
+    // once — the previous assertion only counted image matches, which silently
+    // passed even when two `## Screenshots` headers landed next to each other.
     const prior = "## Screenshots\n\n![first](a.png)\n";
     const out = appendScreenshotsSection(prior, [META, META]);
     expect(out.split("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)").length - 1).toBe(
       1,
     );
+    expect(out.split("## Screenshots").length - 1).toBe(1);
+    expect(out).toContain("![first](a.png)");
+  });
+
+  it("keeps exactly one Screenshots section across repeated calls when ## Activity is absent (#0382, audit round 2)", () => {
+    // The previous regex used `(?=^## |\Z)` — `\Z` is PCRE syntax and a literal
+    // `Z` in JS, so the lookahead silently failed when `## Screenshots` was the
+    // LAST section (no Activity after it). The old section was never stripped
+    // and a second `## Screenshots` header landed next to it. Two calls on a
+    // body without Activity reproduces that path and would surface as 2
+    // headers; this test pins down the invariant.
+    let body = "## Problem\n\nNo activity yet.\n";
+    body = appendScreenshotsSection(body, [META]);
+    expect(body.split("## Screenshots").length - 1).toBe(1);
+    body = appendScreenshotsSection(body, [
+      {
+        ...META,
+        id: "2",
+        url: "/api/tasks/0001/attachments/screenshot-2.png",
+        path: "work/.attachments/0001/screenshot-2.png",
+      },
+    ]);
+    expect(body.split("## Screenshots").length - 1).toBe(1);
+    expect(body).toContain("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)");
+    expect(body).toContain("screenshot-2.png");
+    // Old content is preserved (still only one header).
+    expect(body).toContain("## Problem");
+    expect(body).toContain("No activity yet.");
+  });
+
+  it("only carries images from inside ## Screenshots, not images embedded in other sections (#0382, audit round 2)", () => {
+    // An image embedded in `## Original prompt` (a user-supplied section that
+    // may legitimately contain a markdown screenshot) must NOT be swept into
+    // `## Screenshots`. The previous global regex over the whole body did
+    // exactly that, which would re-list the same image twice in two sections.
+    const prior = [
+      "## Problem",
+      "",
+      "See [the spec image](spec.png) for context.",
+      "",
+      "## Original prompt",
+      "",
+      "Please fix the layout — see ![user-pasted](prompt.png) for the broken state.",
+      "",
+      "## Activity",
+      "",
+      "- 2026-08-01T00:00:00Z · created · unknown",
+    ].join("\n");
+    const out = appendScreenshotsSection(prior, [META]);
+    expect(out).toContain("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)");
+    expect(out).toContain("![user-pasted](prompt.png)");
+    // The user-pasted image must stay inside ## Original prompt — the
+    // Screenshots section must contain ONLY the freshly added bug.png.
+    const shotsIdx = out.indexOf("## Screenshots");
+    const activityIdx = out.indexOf("## Activity");
+    const screenshotsBlock = out.slice(shotsIdx, activityIdx);
+    expect(screenshotsBlock).toContain("![bug.png](/api/tasks/0001/attachments/screenshot-1.png)");
+    expect(screenshotsBlock).not.toContain("prompt.png");
   });
 });
 
