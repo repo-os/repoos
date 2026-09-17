@@ -21,6 +21,7 @@ import {
   deriveStatus,
   readServeLockPid,
   reapOrphan,
+  queryLaunchdStatus,
   type ServiceEntry,
 } from "./service-manager.js";
 
@@ -177,6 +178,55 @@ describe("readServeLockPid / reapOrphan", () => {
   it("reapOrphan is a no-op when nothing is registered on the port", async () => {
     const root = tmpDir("repoos-orphan-");
     await expect(reapOrphan(root, 7200)).resolves.toBeUndefined();
+  });
+});
+
+describe("queryLaunchdStatus", () => {
+  const originalPath = process.env.PATH;
+
+  afterEach(() => {
+    process.env.PATH = originalPath;
+  });
+
+  function fakeLaunchctl(root: string, output: string): void {
+    writeFileSync(join(root, "launchctl"), `#!/bin/sh\ncat <<'EOF'\n${output}\nEOF\n`);
+    chmodSync(join(root, "launchctl"), 0o755);
+    process.env.PATH = `${root}:${originalPath}`;
+  }
+
+  it("reports running when the dict has a PID key", () => {
+    if (process.platform !== "darwin") return;
+    // Regression: `launchctl list <label>` prints a property-list dict, NOT
+    // the tabular `PID  Status  Label` form (that's what plain `launchctl
+    // list` with no argument prints, for every job at once). The previous
+    // regex only matched the tabular form and so never matched real output,
+    // always reporting "stopped". Sample captured from a real macOS job
+    // (`launchctl list com.apple.Finder`).
+    const bin = tmpDir("repoos-launchctl-");
+    fakeLaunchctl(
+      bin,
+      `{\n\t"LimitLoadToSessionType" = "Aqua";\n\t"Label" = "com.apple.Finder";\n\t"PID" = 947;\n\t"Program" = "/System/Library/CoreServices/Finder.app/Contents/MacOS/Finder";\n}`,
+    );
+    expect(queryLaunchdStatus("com.repoos.serve.test")).toBe("running");
+  });
+
+  it("reports stopped when the dict has no PID key", () => {
+    if (process.platform !== "darwin") return;
+    const bin = tmpDir("repoos-launchctl-");
+    fakeLaunchctl(
+      bin,
+      `{\n\t"LimitLoadToSessionType" = "Aqua";\n\t"Label" = "com.apple.enhancedloggingd";\n\t"OnDemand" = true;\n\t"LastExitStatus" = 0;\n}`,
+    );
+    expect(queryLaunchdStatus("com.repoos.serve.test")).toBe("stopped");
+  });
+
+  it("reports stopped when the job isn't loaded (non-zero exit)", () => {
+    if (process.platform !== "darwin") return;
+    const bin = tmpDir("repoos-launchctl-");
+    writeFileSync(join(bin, "launchctl"), "#!/bin/sh\nexit 1\n");
+    chmodSync(join(bin, "launchctl"), 0o755);
+    process.env.PATH = `${bin}:${originalPath}`;
+    expect(queryLaunchdStatus("com.repoos.serve.test")).toBe("stopped");
   });
 });
 

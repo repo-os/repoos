@@ -163,6 +163,7 @@ function repoosBinary(): string {
       encoding: "utf8",
       timeout: 5000,
       stdio: ["pipe", "pipe", "pipe"],
+      env: process.env,
     }).trim();
     if (result) return result;
   } catch {
@@ -325,6 +326,7 @@ function launchctl(
       encoding: "utf8",
       timeout: 10_000,
       stdio: ["pipe", "pipe", "pipe"],
+      env: process.env,
     });
     return { ok: true, stdout, stderr: "" };
   } catch (err) {
@@ -346,6 +348,7 @@ function systemctl(
       encoding: "utf8",
       timeout: 10_000,
       stdio: ["pipe", "pipe", "pipe"],
+      env: process.env,
     });
     return { ok: true, stdout, stderr: "" };
   } catch (err) {
@@ -358,11 +361,15 @@ function systemctl(
   }
 }
 
-function queryLaunchdStatus(label: string): ServiceStatus {
+export function queryLaunchdStatus(label: string): ServiceStatus {
   const result = launchctl("list", label);
-  if (!result.ok) return "stopped";
-  // Check if the process is actually running (has a PID entry > 0)
-  const pidMatch = result.stdout.match(/^\S+\s+(\d+)/m);
+  if (!result.ok) return "stopped"; // unloaded / not found
+  // `launchctl list <label>` prints a property-list dict, not the tabular
+  // `PID  Status  Label` form `launchctl list` (no args, listing ALL jobs)
+  // prints — e.g. `{\n\t"PID" = 89613;\n\t"LimitLoadToSessionType" = ...\n}`.
+  // A PID key present (and > 0) means it's actually running; absent means
+  // loaded-but-stopped.
+  const pidMatch = result.stdout.match(/"PID"\s*=\s*(\d+)/);
   if (pidMatch && Number(pidMatch[1]) > 0) return "running";
   return "stopped";
 }
@@ -394,6 +401,7 @@ export function isLingerEnabled(): boolean | null {
         encoding: "utf8",
         timeout: 3000,
         stdio: ["pipe", "pipe", "pipe"],
+        env: process.env,
       },
     ).trim();
     return out === "yes";
