@@ -60,7 +60,7 @@ threat model.
 
 ### HTTPS-only, reachability-gated add flow
 
-`src/reachability.ts` enforces, before a server can be saved:
+`mobile/src/reachability.ts` enforces, before a server can be saved:
 
 1. Normalize the input; require an `https:` origin (explicitly entered `http://`
    is rejected).
