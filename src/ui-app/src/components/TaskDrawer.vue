@@ -206,6 +206,14 @@ watch(
     draftSaved.value = null;
     freeformSubmitted.value = false;
     submittedTask.value = null;
+    // Unlike freeformText, a leftover freeformRunId is NOT something to keep:
+    // it only gets set once the user actually clicks "Create task" (not just by
+    // typing), and closing the drawer before that run's stream finishes left it
+    // dangling — reopening then rendered the old run's buffered output as if a
+    // PM agent were live right now. Drop it so a reopen always starts clean.
+    if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+    freeformRunId.value = null;
+    freeformRunning.value = false;
     initFreeformOverrides();
   },
 );
