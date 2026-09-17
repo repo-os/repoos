@@ -177,6 +177,36 @@ body {
 }
 
 /* install command box */
+.install-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.install-tab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--txt-faint);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.install-tab:hover {
+  color: var(--txt-dim);
+}
+.install-tab.active {
+  color: var(--cyan);
+  background: var(--panel-solid);
+  box-shadow: 0 0 0 1px var(--border-bright);
+}
 .install-box {
   display: flex;
   align-items: center;
@@ -184,7 +214,9 @@ body {
   background: var(--code-bg);
   border: 1px solid var(--border-bright);
   border-radius: 12px;
+  border-top-left-radius: 4px;
   padding: 14px 18px;
+  margin-top: 8px;
   max-width: 640px;
 }
 .install-box code {

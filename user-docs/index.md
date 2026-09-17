@@ -34,3 +34,43 @@ features:
     link: /configuration
     linkText: Configure it
 ---
+
+## Try it now
+
+Three commands, inside a repo you already have:
+
+::: code-group
+
+```bash [curl]
+curl -fsSL https://repoos.org/install.sh | bash
+```
+
+```bash [brew]
+brew install repo-os/tap/repoos
+```
+
+```bash [npm]
+npm install -g @repo-os/repoos
+```
+
+```bash [bun]
+bun add -g @repo-os/repoos
+```
+
+```bash [pnpm]
+pnpm add -g @repo-os/repoos
+```
+
+:::
+
+```bash
+repoos init    # scaffolds work/, docs/, AGENTS.md — touches nothing else
+repoos serve   # opens the board at http://127.0.0.1:7171
+```
+
+`repoos init` seeds a real starter task, so the board is never empty on first
+run — read it and follow along, no agent required. Runs on Bun or Node 20+.
+No account, no telemetry.
+
+Next: the full [Getting started](/getting-started) walkthrough, or jump
+straight to the [CLI reference](/cli).

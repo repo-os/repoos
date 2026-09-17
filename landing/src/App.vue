@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
-
-const INSTALL_CMD = "curl -fsSL https://repoos.org/install.sh | bash";
-const PACKAGE_MANAGER_OPTIONS = [
-  "brew install repo-os/tap/repoos",
-  "npm install -g @repo-os/repoos",
-  "bun add -g @repo-os/repoos",
-  "pnpm add -g @repo-os/repoos",
-  "mise use -g npm:@repo-os/repoos",
-];
+import InstallBox from "./components/InstallBox.vue";
 
 type Theme = "dark" | "light";
 const THEME_KEY = "repoos-theme";
@@ -56,31 +48,7 @@ onMounted(() => {
   window.addEventListener("keydown", onKeydown);
 });
 
-const copied = ref(false);
-let copyTimer: ReturnType<typeof setTimeout> | undefined;
-
-async function copyInstall(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(INSTALL_CMD);
-  } catch {
-    // Clipboard API can be denied (e.g. non-secure context). Fall back to a
-    // hidden textarea so the button still works on http:// previews.
-    const ta = document.createElement("textarea");
-    ta.value = INSTALL_CMD;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-  }
-  copied.value = true;
-  clearTimeout(copyTimer);
-  copyTimer = setTimeout(() => (copied.value = false), 1600);
-}
-
 onBeforeUnmount(() => {
-  clearTimeout(copyTimer);
   desktopQuery?.removeEventListener("change", closeMenu);
   window.removeEventListener("keydown", onKeydown);
 });
@@ -276,53 +244,7 @@ const year = new Date().getFullYear();
             each other's way. RepoOS is the machinery around the agents that handles that.
           </p>
 
-          <div class="install-box mt-8">
-            <span class="dollar font-mono text-[13.5px]">$</span>
-            <code>{{ INSTALL_CMD }}</code>
-            <button
-              class="copy-btn"
-              :class="{ copied }"
-              type="button"
-              :aria-label="copied ? 'Copied' : 'Copy install command'"
-              @click="copyInstall"
-            >
-              <svg
-                v-if="!copied"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                class="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                class="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              {{ copied ? "copied" : "copy" }}
-            </button>
-          </div>
-
-          <p class="mt-4 text-[13px] text-[var(--txt-faint)]">
-            Or install with
-            <template v-for="(option, index) in PACKAGE_MANAGER_OPTIONS" :key="option">
-              <span v-if="index > 0"> · </span>
-              <span class="font-mono text-[12px] text-[var(--txt-dim)]">{{ option }}</span>
-            </template>
-          </p>
-          <p class="mt-1 text-[13px] text-[var(--txt-faint)]">
-            Runs on Bun or Node 20+. No account, no telemetry.
-          </p>
+          <InstallBox class="mt-8" show-note />
         </div>
 
         <figure class="min-w-0">
@@ -634,49 +556,9 @@ const year = new Date().getFullYear();
           repo. It sets up the project and opens the board in your browser. From there you add
           tasks, choose agents and review work in the UI.
         </p>
-        <div class="install-box mx-auto mt-6">
-          <span class="dollar font-mono text-[13.5px]">$</span>
-          <code>{{ INSTALL_CMD }}</code>
-          <button
-            class="copy-btn"
-            :class="{ copied }"
-            type="button"
-            :aria-label="copied ? 'Copied' : 'Copy install command'"
-            @click="copyInstall"
-          >
-            <svg
-              v-if="!copied"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="h-3.5 w-3.5"
-              aria-hidden="true"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-            <svg
-              v-else
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              class="h-3.5 w-3.5"
-              aria-hidden="true"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            {{ copied ? "copied" : "copy" }}
-          </button>
+        <div class="mx-auto mt-6 flex justify-center">
+          <InstallBox />
         </div>
-        <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
-          Package manager?
-          <template v-for="(option, index) in PACKAGE_MANAGER_OPTIONS" :key="option">
-            <span v-if="index > 0"> · </span>
-            <span class="font-mono text-[12px] text-[var(--txt-dim)]">{{ option }}</span>
-          </template>
-        </p>
         <a
           href="https://docs.repoos.org"
           class="mt-5 inline-block text-[13px] text-[var(--cyan)] hover:underline"
