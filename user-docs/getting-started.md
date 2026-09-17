@@ -10,8 +10,9 @@ local server that reads them.
 curl -fsSL https://raw.githubusercontent.com/repo-os/repoos/main/install.sh | bash
 ```
 
-This installs a standalone build. You can also install it as a package
-(`bun add -g repoos` / `npm i -g repoos`) or run from a source checkout.
+This installs a standalone build. Once you prefer a package-manager install,
+use `bun add -g @repo-os/repoos` or `npm i -g @repo-os/repoos`; you can also
+run from a source checkout.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
 otherwise — see [Configuration](/configuration#runtime) if you want to pin one.

@@ -97,7 +97,11 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   if (root.includes("node_modules")) {
     console.log(c.yellow("  repoos was installed via a package manager."));
     console.log(c.dim("  Update it the same way:"));
-    console.log(c.dim("    bun update -d repoos") + c.dim("   or   ") + c.dim("npm update repoos"));
+    console.log(
+      c.dim("    bun update -g @repo-os/repoos") +
+        c.dim("   or   ") +
+        c.dim("npm update -g @repo-os/repoos"),
+    );
     return;
   }
 
