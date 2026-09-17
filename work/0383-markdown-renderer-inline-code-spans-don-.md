@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: ui
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-17T07:55:51Z"
-updated_at: "2026-09-17T07:55:51Z"
+updated_at: "2026-09-17T07:58:26Z"
 ---
 ## Problem
 
@@ -100,3 +101,4 @@ already safe; just don't let it pass through the OTHER regexes a second time.
 ## Activity
 
 - 2026-09-17T07:55:51Z · created · unknown
+- 2026-09-17T07:58:26Z · review_model_override
