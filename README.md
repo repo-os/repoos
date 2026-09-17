@@ -52,6 +52,12 @@ curl -fsSL https://repoos.org/install.sh | bash
 It runs on Bun when available (recommended), otherwise requires Node.js >=
 20.6.0. It installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
 
+### Homebrew
+
+```bash
+brew install repo-os/tap/repoos
+```
+
 ### npm
 
 ```bash
@@ -82,8 +88,9 @@ is enabled so its `repoos` shim is on your PATH.
 
 Use the same tool to update a package-manager install: `npm update -g
 @repo-os/repoos`, `bun update -g @repo-os/repoos`, `pnpm update -g
-@repo-os/repoos`, or `mise upgrade npm:@repo-os/repoos`. A standalone install
-updates with `repoos upgrade` and removes with `repoos uninstall`.
+@repo-os/repoos`, `mise upgrade npm:@repo-os/repoos`, or `brew upgrade
+repo-os/tap/repoos`. A standalone install updates with `repoos upgrade` and
+removes with `repoos uninstall`.
 
 Then in any repo:
 

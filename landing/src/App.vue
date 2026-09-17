@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const INSTALL_CMD = "curl -fsSL https://repoos.org/install.sh | bash";
 const PACKAGE_MANAGER_OPTIONS = [
+  "brew install repo-os/tap/repoos",
   "npm install -g @repo-os/repoos",
   "bun add -g @repo-os/repoos",
   "pnpm add -g @repo-os/repoos",

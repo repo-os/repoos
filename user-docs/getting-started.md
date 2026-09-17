@@ -14,6 +14,12 @@ Choose one:
 curl -fsSL https://repoos.org/install.sh | bash
 ```
 
+### Homebrew
+
+```bash
+brew install repo-os/tap/repoos
+```
+
 ### npm
 
 ```bash
@@ -46,7 +52,7 @@ The curl installer puts a self-contained release build in `~/.repoos` and a
 Remove it later with `repoos uninstall`.
 Package-manager installs update with `npm update -g @repo-os/repoos`,
 `bun update -g @repo-os/repoos`, `pnpm update -g @repo-os/repoos`, or
-`mise upgrade npm:@repo-os/repoos`.
+`mise upgrade npm:@repo-os/repoos`, or `brew upgrade repo-os/tap/repoos`.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
 otherwise — see [Configuration](/configuration#runtime) if you want to pin one.
