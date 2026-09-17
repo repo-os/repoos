@@ -154,10 +154,26 @@ function logDir(): string {
   return join(SERVICES_DIR, "logs");
 }
 
-function repoosBinary(): string {
-  // The service unit must point at a real, runnable `repoos` command. Try PATH
-  // first — this covers global installs (`npm i -g`, `bun link`) and any
-  // environment where the user can already run `repoos serve`.
+/**
+ * Resolve the command to launch `repoos serve` under. `which repoos` finds a
+ * real `repoos` — ALWAYS a shebang script (`#!/usr/bin/env node`, whether
+ * from an npm/bun-link install or `bun link` to this repo's own CLI entry),
+ * never an interpreter binary itself — so it is always directly runnable
+ * with no separate entry-point argument, regardless of what its own path
+ * happens to contain (a bun-managed install path like
+ * `/Users/x/.bun/bin/repoos` contains the substring "bun" despite being a
+ * plain script — a prior version of this function used exactly that
+ * substring match to decide whether to also pass a cliEntry argument, which
+ * broke every `which`-resolved install: `repoos <cliEntry> serve` is not a
+ * valid invocation, "cliEntry" is not a known subcommand).
+ *
+ * `needsCliEntry` is true ONLY for the no-PATH-install fallback below, which
+ * returns the raw node/bun interpreter itself (`process.execPath`) and
+ * therefore genuinely does need the compiled entry point as a separate arg.
+ */
+export function repoosBinary(): { bin: string; needsCliEntry: boolean } {
+  // Try PATH first — this covers global installs (`npm i -g`, `bun link`)
+  // and any environment where the user can already run `repoos serve`.
   try {
     const result = execFileSync("which", ["repoos"], {
       encoding: "utf8",
@@ -165,7 +181,7 @@ function repoosBinary(): string {
       stdio: ["pipe", "pipe", "pipe"],
       env: process.env,
     }).trim();
-    if (result) return result;
+    if (result) return { bin: result, needsCliEntry: false };
   } catch {
     // repoos not on PATH
   }
@@ -175,7 +191,7 @@ function repoosBinary(): string {
   const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
   const cliEntry = join(srcDir, "dist", "cli", "index.js");
   if (existsSync(cliEntry)) {
-    return process.execPath;
+    return { bin: process.execPath, needsCliEntry: true };
   }
   // Nothing found — caller should surface an error rather than generating
   // a unit that will fail to start.
@@ -186,15 +202,13 @@ function repoosBinary(): string {
 }
 
 function generatePlist(entry: ServiceEntry): string {
-  const bin = repoosBinary();
-  const isInterpreter =
-    bin.includes("node") || bin.endsWith("node") || bin.includes("bun") || bin.endsWith("bun");
-  // When the binary is an interpreter (node/bun), we need the CLI entry point
-  // script. Derive it from this module's location (src/core/service-manager.ts
-  // → ../../dist/cli/index.js) rather than guessing from the binary path.
+  const { bin, needsCliEntry } = repoosBinary();
+  // Derive the compiled entry point from this module's location
+  // (src/core/service-manager.ts → ../../dist/cli/index.js) rather than
+  // guessing from the binary path.
   const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
   const cliEntry = join(srcDir, "dist", "cli", "index.js");
-  const programArgs = isInterpreter
+  const programArgs = needsCliEntry
     ? [
         `<string>${xmlEscape(bin)}</string>`,
         `<string>${xmlEscape(existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js"))}</string>`,
@@ -287,12 +301,10 @@ function systemdUnitPath(label: string): string {
 }
 
 function generateUnit(entry: ServiceEntry): string {
-  const bin = repoosBinary();
-  const isInterpreter =
-    bin.includes("node") || bin.endsWith("node") || bin.includes("bun") || bin.endsWith("bun");
+  const { bin, needsCliEntry } = repoosBinary();
   const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
   const cliEntry = join(srcDir, "dist", "cli", "index.js");
-  const execStart = isInterpreter
+  const execStart = needsCliEntry
     ? `${bin} ${existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js")} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
     : `${bin} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`;
 

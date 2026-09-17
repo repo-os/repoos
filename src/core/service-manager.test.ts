@@ -22,6 +22,7 @@ import {
   readServeLockPid,
   reapOrphan,
   queryLaunchdStatus,
+  repoosBinary,
   type ServiceEntry,
 } from "./service-manager.js";
 
@@ -227,6 +228,42 @@ describe("queryLaunchdStatus", () => {
     chmodSync(join(bin, "launchctl"), 0o755);
     process.env.PATH = `${bin}:${originalPath}`;
     expect(queryLaunchdStatus("com.repoos.serve.test")).toBe("stopped");
+  });
+});
+
+describe("repoosBinary", () => {
+  const originalPath = process.env.PATH;
+
+  afterEach(() => {
+    process.env.PATH = originalPath;
+  });
+
+  function fakeWhich(root: string, resolvedPath: string): void {
+    writeFileSync(join(root, "which"), `#!/bin/sh\necho '${resolvedPath}'\n`);
+    chmodSync(join(root, "which"), 0o755);
+    process.env.PATH = `${root}:${originalPath}`;
+  }
+
+  it("does not treat a bun-managed install path as an interpreter", () => {
+    // Regression: `which repoos` resolving to a bun-link path like
+    // /Users/x/.bun/bin/repoos used to be misclassified as "the bun
+    // interpreter itself" purely because the path CONTAINS the substring
+    // "bun" — even though it's always a plain `#!/usr/bin/env node` shebang
+    // script, directly runnable with no separate entry-point argument. The
+    // resulting unit ran `repoos <cliEntry> serve`, which the CLI rejects as
+    // an unknown subcommand, so the managed service never actually started.
+    const bin = tmpDir("repoos-which-");
+    fakeWhich(bin, "/Users/x/.bun/bin/repoos");
+    const result = repoosBinary();
+    expect(result.bin).toBe("/Users/x/.bun/bin/repoos");
+    expect(result.needsCliEntry).toBe(false);
+  });
+
+  it("does not treat a node-managed install path as an interpreter either", () => {
+    const bin = tmpDir("repoos-which-");
+    fakeWhich(bin, "/usr/local/lib/node_modules/.bin/repoos");
+    const result = repoosBinary();
+    expect(result.needsCliEntry).toBe(false);
   });
 });
 
