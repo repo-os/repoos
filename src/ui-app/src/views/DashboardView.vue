@@ -20,6 +20,30 @@ const config = useConfigStore();
 const { counts, repoName } = storeToRefs(repo);
 
 const labels = computed(() => config.columnLabels);
+/** Dashboard-specific defaults: original labels for stat cards, overridden by config. */
+const DASH_DEFAULTS: Record<string, string> = {
+  draft: "drafts",
+  inbox: "inbox",
+  ready: "ready to start",
+  active: "in progress",
+  review: "awaiting review",
+  done: "done",
+};
+const dashLabel = (status: string) => {
+  // Use configured label only when explicitly set in [board.columns];
+  // otherwise keep the original dashboard label.
+  const configured = labels.value[status];
+  const boardDefaults: Record<string, string> = {
+    draft: "Proposed / Drafts",
+    inbox: "Inbox",
+    ready: "Ready",
+    active: "Active",
+    review: "Review",
+    done: "Done",
+  };
+  const boardDefault = boardDefaults[status] ?? "";
+  return configured && configured !== boardDefault ? configured : (DASH_DEFAULTS[status] ?? status);
+};
 </script>
 
 <template>
@@ -58,7 +82,7 @@ const labels = computed(() => config.columnLabels);
     <div class="stat-grid">
       <router-link :to="{ path: '/work', query: { status: 'draft' } }" class="stat-link">
         <StatCard
-          :label="labels.draft"
+          :label="dashLabel('draft')"
           :value="counts.draft || 0"
           bg="var(--chip-bg)"
           color="var(--txt-faint)"
@@ -75,7 +99,7 @@ const labels = computed(() => config.columnLabels);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'inbox' } }" class="stat-link">
         <StatCard
-          :label="labels.inbox"
+          :label="dashLabel('inbox')"
           :value="counts.inbox || 0"
           bg="rgba(138,150,180,0.12)"
           color="var(--txt-dim)"
@@ -92,7 +116,7 @@ const labels = computed(() => config.columnLabels);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'ready' } }" class="stat-link">
         <StatCard
-          :label="labels.ready"
+          :label="dashLabel('ready')"
           :value="counts.ready || 0"
           bg="var(--cyan-dim)"
           color="var(--cyan)"
@@ -106,7 +130,7 @@ const labels = computed(() => config.columnLabels);
       <router-link :to="{ path: '/work', query: { status: 'active' } }" class="stat-link">
         <StatCard
           glow
-          :label="labels.active"
+          :label="dashLabel('active')"
           :value="counts.active || 0"
           bg="var(--violet-tint)"
           color="var(--violet)"
@@ -124,7 +148,7 @@ const labels = computed(() => config.columnLabels);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'review' } }" class="stat-link">
         <StatCard
-          :label="labels.review"
+          :label="dashLabel('review')"
           :value="counts.review || 0"
           bg="var(--amber-tint)"
           color="var(--amber)"
@@ -143,7 +167,7 @@ const labels = computed(() => config.columnLabels);
       </router-link>
       <router-link :to="{ path: '/work', query: { status: 'done' } }" class="stat-link">
         <StatCard
-          :label="labels.done"
+          :label="dashLabel('done')"
           :value="counts.done || 0"
           bg="var(--green-tint)"
           color="var(--green)"

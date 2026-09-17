@@ -32,11 +32,6 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import type { Task } from "../types";
 
-const DRAFT_COL_DEFAULT: Column = {
-  id: "draft",
-  label: "Proposed / Drafts",
-  color: "var(--txt-faint)",
-};
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
 const DRAFT_BAR = "#3a4055";
 

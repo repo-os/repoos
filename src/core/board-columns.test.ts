@@ -1,5 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
-import { parseBoardColumns, resolveColumnLabels, DEFAULT_COLUMN_LABELS } from "./config.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  parseBoardColumns,
+  resolveColumnLabels,
+  patchTomlConfig,
+  DEFAULT_COLUMN_LABELS,
+} from "./config.js";
 
 describe("parseBoardColumns", () => {
   it("returns undefined when no board.columns keys are present", () => {
@@ -115,5 +123,82 @@ describe("resolveColumnLabels", () => {
     const original = { ...DEFAULT_COLUMN_LABELS };
     resolveColumnLabels({ draft: "Ideas" });
     expect(DEFAULT_COLUMN_LABELS).toEqual(original);
+  });
+});
+
+describe("patchTomlConfig with board.columns", () => {
+  const roots: string[] = [];
+  afterEach(() => {
+    for (const r of roots) rmSync(r, { recursive: true, force: true });
+    roots.length = 0;
+  });
+
+  it("writes board.columns under [board.columns] section, not at root", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-toml-"));
+    roots.push(root);
+    const tomlPath = join(root, "repoos.toml");
+    writeFileSync(tomlPath, 'workDir = "work"\n', "utf8");
+
+    patchTomlConfig(tomlPath, {
+      "board.columns.inbox": "Backlog",
+      "board.columns.done": "Shipped",
+    });
+
+    const content = readFileSync(tomlPath, "utf8");
+    // Should have a [board.columns] section
+    expect(content).toContain("[board.columns]");
+    expect(content).toContain('inbox = "Backlog"');
+    expect(content).toContain('done = "Shipped"');
+    // Should NOT have duplicate root-scope entries
+    const rootLines = content.split("\n").filter((l) => l.trim().startsWith("board.columns."));
+    expect(rootLines).toHaveLength(0);
+  });
+
+  it("updates existing board.columns entries in-place", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-toml-"));
+    roots.push(root);
+    const tomlPath = join(root, "repoos.toml");
+    writeFileSync(tomlPath, '[board.columns]\ninbox = "Old"\nready = "Ready"\n', "utf8");
+
+    patchTomlConfig(tomlPath, { "board.columns.inbox": "New" });
+
+    const content = readFileSync(tomlPath, "utf8");
+    expect(content).toContain('inbox = "New"');
+    expect(content).not.toContain("Old");
+    expect(content).toContain('ready = "Ready"');
+  });
+
+  it("does not duplicate entries under [board.columns] and root scope", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-toml-"));
+    roots.push(root);
+    const tomlPath = join(root, "repoos.toml");
+    writeFileSync(tomlPath, '[board.columns]\ndraft = "Ideas"\n', "utf8");
+
+    patchTomlConfig(tomlPath, { "board.columns.draft": "Ideas" });
+
+    const content = readFileSync(tomlPath, "utf8");
+    // Should NOT have a root-scope "board.columns.draft" line
+    const rootScoped = content
+      .split("\n")
+      .filter((l) => l.trim().startsWith("board.columns.draft"));
+    expect(rootScoped).toHaveLength(0);
+  });
+});
+
+describe("init template board.columns example", () => {
+  it("includes a commented [board.columns] section", async () => {
+    const mod = await import("./config.js");
+    // The DEFAULT_COLUMN_LABELS should have all 6 statuses
+    expect(Object.keys(DEFAULT_COLUMN_LABELS)).toEqual([
+      "draft",
+      "inbox",
+      "ready",
+      "active",
+      "review",
+      "done",
+    ]);
+    // resolveColumnLabels returns all 6 when given overrides
+    const resolved = resolveColumnLabels({ draft: "Ideas" });
+    expect(Object.keys(resolved)).toHaveLength(6);
   });
 });

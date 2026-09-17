@@ -109,10 +109,17 @@ const autoRepairRetryHint = computed(() => {
   });
 });
 
-const allStatuses = computed(() => [
-  { id: "draft", label: config.columnLabels.draft ?? "Draft", color: statusColor("draft") },
-  ...columnsWithLabels(config.columnLabels),
-]);
+const allStatuses = computed(() => {
+  const draftLabel = config.columnLabels.draft;
+  return [
+    {
+      id: "draft",
+      label: draftLabel !== "Proposed / Drafts" ? draftLabel : "Draft",
+      color: statusColor("draft"),
+    },
+    ...columnsWithLabels(config.columnLabels),
+  ];
+});
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;
   const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];

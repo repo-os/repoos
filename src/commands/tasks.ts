@@ -50,7 +50,9 @@ function pad(s: string, n: number): string {
 export function cmdList(statusArg?: string): void {
   const repoos = boardRepoOS();
   const idx = repoos.reindex();
-  const labels = resolveColumnLabels(loadConfig(idx.root).boardColumns);
+  const cfg = loadConfig(idx.root);
+  const hasCustomLabels = !!cfg.boardColumns && Object.keys(cfg.boardColumns).length > 0;
+  const labels = hasCustomLabels ? resolveColumnLabels(cfg.boardColumns) : null;
 
   if (idx.taskCount === 0) {
     console.log(
@@ -71,7 +73,7 @@ export function cmdList(statusArg?: string): void {
     const tasks = idx.tasks.filter((t) => t.status === status);
     if (tasks.length === 0 && statusArg === undefined) continue;
     const sc = statusColor(status);
-    const label = labels[status] ?? status.toUpperCase();
+    const label = labels ? labels[status] : status.toUpperCase();
     console.log("  " + sc("● ") + c.bold(label) + c.dim(`  (${tasks.length})`));
     for (const t of tasks) {
       const line =

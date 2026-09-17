@@ -486,15 +486,20 @@ function parseFlatToml(text: string): Record<string, unknown> {
 
 /**
  * Parse `[board.columns]` from the flat TOML output. Invalid entries (blank,
- * non-string, >40 chars after trim, or duplicate of another column's label)
- * fall back to the default for that column. Returns undefined when no
+ * non-string, >40 chars after trim, or duplicate of another column's final
+ * label) fall back to the default for that column. Returns undefined when no
  * override is configured.
  */
 export function parseBoardColumns(
   parsed: Record<string, unknown>,
 ): Record<string, string> | undefined {
   const overrides: Record<string, string> = {};
-  const usedLabels = new Map<string, string>(); // label → status id (for dup check)
+  // Seed with default labels so overrides that collide with another column's
+  // default are caught (e.g. ready = "Done" while done keeps its default).
+  const usedLabels = new Map<string, string>();
+  for (const [status, label] of Object.entries(DEFAULT_COLUMN_LABELS)) {
+    usedLabels.set(label.toLowerCase(), status);
+  }
 
   for (const status of STATUSES) {
     const key = `board.columns.${status}`;
@@ -1398,6 +1403,7 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   // Scalars and plain arrays: in-place line-preserving patch.
   for (const [key, rawVal] of Object.entries(patch)) {
     if (isTableArray(rawVal)) continue;
+    if (key.startsWith("board.columns.")) continue; // handled above
     const serialized = serializeTomlVal(rawVal);
     let found = false;
 

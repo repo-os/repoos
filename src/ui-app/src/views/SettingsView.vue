@@ -253,6 +253,8 @@ function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
     if (f.tier === "guarded" && !config.showAdvanced) continue;
+    // Board column labels are raw TOML-only — never sent via the curated save.
+    if (f.key.startsWith("board.columns.")) continue;
     let val = form[f.key];
     if (f.type === "array" && typeof val === "string") {
       val = val
