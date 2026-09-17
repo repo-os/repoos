@@ -3,21 +3,15 @@
  * These agents are triggered on-demand or on a schedule.
  */
 
-import {
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-  statSync,
-  accessSync,
-  existsSync,
-  mkdirSync,
-} from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, statSync, accessSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { join, extname, basename } from "node:path";
+import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
 import { commitTaskFile } from "../core/git.js";
 import type { Logger } from "../core/logger.js";
+import { runSkillGuidedAgent, saveLastRunAt } from "./built-in-agent-runner.js";
+import { isSafeToAutoCommit } from "./auto-fix-gate.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -192,43 +186,10 @@ const MAX_PERF_SCAN_FILES = 500;
 const MAX_PERF_ISSUES = 30;
 
 /** Docs Debt Agent bounds (#0354): a periodic sweep, never an unbounded crawl. */
-const DOC_ROOTS = ["AGENTS.md", "docs", "user-docs"];
 const MAX_DOCS = 120;
 const MAX_DOC_BYTES = 300_000;
-const MAX_REPO_INDEX_FILES = 2_000;
 /** At most this many mechanical doc fixes land per run; the rest become a task. */
 export const MAX_TRIVIAL_FIXES_PER_RUN = 5;
-/** Phrases that assert a hard constraint we can verify against package.json. */
-const ZERO_RUNTIME_DEPS_RE = /\b(?:zero|no)\s+runtime\s+dependenc/i;
-/** Backtick-quoted commands whose `<script>` must exist in package.json. */
-const SCRIPT_CLAIM_RE = /^(?:bun|npm|pnpm|yarn)\s+run\s+([A-Za-z0-9:_-]+)$/;
-const TEST_CLAIM_RE = /^(?:bun|npm|pnpm|yarn)\s+test$/;
-/** Root-relative prefixes and files a doc may cite as a concrete path claim. */
-const KNOWN_PATH_PREFIXES = [
-  "src/",
-  "docs/",
-  "user-docs/",
-  "work/",
-  "scripts/",
-  "tests/",
-  "inputs/",
-  "bin/",
-  ".github/",
-];
-const KNOWN_ROOT_FILES = new Set([
-  "package.json",
-  "repoos.toml",
-  "AGENTS.md",
-  "CLAUDE.md",
-  "README.md",
-  "bunfig.toml",
-  ".env.example",
-  ".oxfmtrc.json",
-  "tsconfig.json",
-  "LICENSE.md",
-]);
-/** Platform globals that look like camelCase but are not repo symbols. */
-const NON_REPO_SYMBOLS = new Set(["localStorage", "sessionStorage", "indexedDB"]);
 
 /** Walk the repo for scannable source files, bounded in count and size. */
 function collectSourceFiles(root: string): string[] {
@@ -1569,13 +1530,22 @@ export interface DocsDebtTrivialFix {
   evidence: string;
 }
 
+/** A doc correction the agent applied on its own, for the run banner. */
+export interface DocsDebtAutoFixed {
+  doc: string;
+  from: string;
+  to: string;
+}
+
 export interface DocsDebtScanResult {
   trivialFixes: DocsDebtTrivialFix[];
   needsHuman: DocsDebtFinding[];
-  /** Number of doc files actually read (bounded by the scan cap). */
+  /** Number of doc files present (bounded by the scan cap). */
   scannedDocs: number;
-  /** Number of backtick-quoted claims checked against the repo. */
+  /** Number of findings + proposed fixes the agent returned. */
   claimsChecked: number;
+  /** Set when the LLM run itself failed; findings are then empty. */
+  error?: string;
 }
 
 export interface DocsDebtApplyResult {
@@ -1585,7 +1555,17 @@ export interface DocsDebtApplyResult {
   skipped: number;
   /** Fixes that were applied AND committed to git. */
   committed: number;
+  /** The docs changed this run (doc + old→new), for the run banner. */
+  fixed: DocsDebtAutoFixed[];
   errors: string[];
+}
+
+export interface CreateDocsDebtTaskResult {
+  created: number;
+  failed: number;
+  errors: string[];
+  /** The new task's id, or null when nothing was filed. */
+  taskId: string | null;
 }
 
 export interface DocsDebtRunResult {
@@ -1598,18 +1578,140 @@ export interface DocsDebtRunResult {
   findingsFound: number;
   /** 0 or 1 — a run never files more than one task. */
   taskCreated: number;
+  /** The bundled finding task's id, or null when no task was filed. */
+  taskId: string | null;
+  /** Docs the agent corrected automatically this run. */
+  autoFixed: DocsDebtAutoFixed[];
   /** Alias kept so the server's generic `taskCount` field stays accurate. */
   created: number;
   failed: number;
   errors: string[];
+  /** Set when the agent run itself failed (e.g. the model was unreachable). */
+  error?: string;
 }
 
 /** Raised when the Docs Debt Agent cannot do its job at all (e.g. missing work dir). */
 export class DocsDebtError extends Error {}
 
-interface RepoFileEntry {
-  rel: string;
-  base: string;
+/**
+ * Skill doc that tells the model what "docs debt" means. The agent reads it as
+ * its role guidance; it is what lets the concern generalize past RepoOS's own
+ * language and layout instead of a hardcoded extension/path list.
+ */
+export const DOCS_DEBT_SKILL_PATH = "docs/agents/skills/docs-debt.md";
+
+/**
+ * Used only when the skill doc is missing (e.g. a fresh repo where the file
+ * hasn't been created). Keeps the agent runnable rather than silently useful.
+ */
+const DOCS_DEBT_SKILL_FALLBACK = [
+  "You keep this project's documentation honest.",
+  "Verify concrete, checkable claims in the project's own docs (AGENTS.md,",
+  "docs/, user-docs/) against the actual repository. Search the whole repo for",
+  "the real source layout instead of assuming src/. Do not flag identifiers that",
+  "belong to third-party tools rather than this project. Report only claims you",
+  "have independently confirmed are stale, with precise evidence.",
+].join("\n");
+
+/** Read the docs-debt skill doc, falling back to embedded guidance. */
+function loadDocsDebtSkill(root: string): string {
+  try {
+    const content = readFileSync(join(root, DOCS_DEBT_SKILL_PATH), "utf8").trim();
+    return content || DOCS_DEBT_SKILL_FALLBACK;
+  } catch {
+    return DOCS_DEBT_SKILL_FALLBACK;
+  }
+}
+
+/**
+ * The runner refuses to invoke an agent with no config entry. A fresh install
+ * has no docs-debt entry until the user enables it, but the old deterministic
+ * agent ran anyway (the UI gates on `enabled`), so supply a default when absent
+ * while still honoring an explicit `{ enabled: false }`.
+ */
+function configWithDocsDebtAgent(config: RepoOSConfig): RepoOSConfig {
+  if (config.builtInAgents?.["docs-debt"]) return config;
+  return {
+    ...config,
+    builtInAgents: {
+      ...(config.builtInAgents ?? {}),
+      "docs-debt": { enabled: true },
+    },
+  };
+}
+
+const DOCS_DEBT_FINDING_KINDS: readonly DocsDebtFindingKind[] = [
+  "missing-path",
+  "missing-symbol",
+  "false-constraint",
+  "missing-script",
+];
+
+/** Coerce the model's free-form issue type to the finding kinds the UI knows. */
+function mapFindingKind(type: string): DocsDebtFindingKind {
+  return (DOCS_DEBT_FINDING_KINDS as readonly string[]).includes(type)
+    ? (type as DocsDebtFindingKind)
+    : "missing-symbol";
+}
+
+/** 1-based line of the first occurrence of `needle` in a doc, or 1. */
+function lineOfText(root: string, doc: string, needle: string): number {
+  try {
+    const content = readFileSync(join(root, doc), "utf8");
+    const idx = content.indexOf(needle);
+    if (idx < 0) return 1;
+    return content.slice(0, idx).split("\n").length;
+  } catch {
+    return 1;
+  }
+}
+
+/** Count non-overlapping occurrences of `needle` in `haystack`. */
+function countOccurrences(haystack: string, needle: string): number {
+  if (!needle) return 0;
+  let count = 0;
+  let idx = haystack.indexOf(needle);
+  while (idx !== -1) {
+    count++;
+    idx = haystack.indexOf(needle, idx + needle.length);
+  }
+  return count;
+}
+
+/**
+ * The agent may only ever write to the project's own docs. `fix.doc` comes
+ * straight from model output, so this allowlist (root `AGENTS.md`, any nested
+ * `AGENTS.md`, and anything under `docs/`/`user-docs/`) is enforced here rather
+ * than assumed — a "fix" naming `package.json` or a source file must never
+ * auto-commit.
+ */
+function isDocsDebtDocPath(doc: string): boolean {
+  if (!doc) return false;
+  if (doc === "AGENTS.md" || doc.endsWith("/AGENTS.md")) return true;
+  return doc.startsWith("docs/") || doc.startsWith("user-docs/");
+}
+
+/**
+ * Whether a proposed fix is safe to apply mechanically and auto-commit:
+ * it targets an allowed doc, clears the deterministic gate, and its `oldText`
+ * appears exactly once in that doc — otherwise `split/join` would silently
+ * rewrite every occurrence, not just the one the agent cited.
+ */
+function isSafeDocsDebtFix(
+  config: RepoOSConfig,
+  doc: string,
+  oldText: string,
+  newText: string,
+): boolean {
+  if (!isDocsDebtDocPath(doc)) return false;
+  if (!isSafeToAutoCommit({ doc, oldText, newText }, config.root)) return false;
+  let content: string;
+  try {
+    content = readFileSync(join(config.root, doc), "utf8");
+  } catch {
+    return false;
+  }
+  return countOccurrences(content, oldText) === 1;
 }
 
 /** Collect the docs this agent may read (and, for trivial fixes, edit). */
@@ -1655,271 +1757,83 @@ function collectDocFiles(root: string): string[] {
   return out;
 }
 
-/** Bounded index of every repo file, used to find a unique replacement path. */
-function collectRepoFileIndex(root: string): RepoFileEntry[] {
-  const out: RepoFileEntry[] = [];
-  const walk = (dir: string, relPrefix: string): void => {
-    if (out.length >= MAX_REPO_INDEX_FILES) return;
-    let entries: string[];
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const name of entries) {
-      if (out.length >= MAX_REPO_INDEX_FILES) return;
-      if (name === ".github") {
-        walk(join(dir, name), relPrefix ? `${relPrefix}/${name}` : name);
-        continue;
-      }
-      if (IGNORED_DIRS.has(name) || name.startsWith(".")) continue;
-      const abs = join(dir, name);
-      let st;
-      try {
-        st = statSync(abs);
-      } catch {
-        continue;
-      }
-      const rel = relPrefix ? `${relPrefix}/${name}` : name;
-      if (st.isDirectory()) walk(abs, rel);
-      else if (st.isFile()) out.push({ rel, base: name });
-    }
-  };
-  walk(root, "");
-  return out;
-}
-
 /**
- * Every identifier appearing in real `src/` code (comments and string literals
- * are stripped first). A doc claim naming a symbol absent from this set points
- * at something the code no longer has — the #0343 class of drift, one level up.
+ * Ask the skill-guided runner to verify the project's own docs against the
+ * real repo, then split its output: findings the agent is confident about are
+ * bundled for a human, and proposed fixes are only accepted as mechanical
+ * auto-fixes when they clear the independent verification gate. A fix that
+ * does not clear the gate is downgraded to a needs-human finding — the agent's
+ * own confidence is never what authorizes a write to `main`.
  */
-function collectSourceWords(root: string): Set<string> {
-  const words = new Set<string>();
-  let files: string[] = [];
-  try {
-    files = collectSourceFiles(join(root, "src"));
-  } catch {
-    files = [];
+export async function scanForDocsDebt(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<DocsDebtScanResult> {
+  const skillDoc = loadDocsDebtSkill(config.root);
+  const run = await runSkillGuidedAgent(
+    "docs-debt",
+    configWithDocsDebtAgent(config),
+    skillDoc,
+    DOCS_DEBT_SKILL_PATH,
+    logger,
+  );
+
+  const scannedDocs = collectDocFiles(config.root).length;
+
+  if (!run.ok) {
+    const error = run.error ?? "Docs Debt Agent run failed";
+    logger?.agent("docs-debt", "error", error);
+    return { trivialFixes: [], needsHuman: [], scannedDocs, claimsChecked: 0, error };
   }
-  const scanned = readScannedFiles(join(root, "src"), files);
-  const WORD_RE = /[A-Za-z_$][\w$]*/g;
-  for (const file of scanned) {
-    const cleaned = stripCommentsAndStrings(file.content);
-    let m: RegExpExecArray | null;
-    while ((m = WORD_RE.exec(cleaned)) !== null) words.add(m[0]);
-  }
-  return words;
-}
 
-function readPackageScripts(root: string): Set<string> {
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
-      string,
-      unknown
-    >;
-    const scripts = pkg.scripts;
-    if (typeof scripts === "object" && scripts !== null) {
-      return new Set(Object.keys(scripts as Record<string, unknown>));
-    }
-  } catch {
-    /* no package.json — no script claims to verify */
-  }
-  return new Set();
-}
-
-function readRuntimeDependencies(root: string): string[] {
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
-      string,
-      unknown
-    >;
-    const deps = pkg.dependencies;
-    if (typeof deps === "object" && deps !== null) {
-      return Object.keys(deps as Record<string, unknown>);
-    }
-  } catch {
-    /* no package.json — no dependency constraint to verify */
-  }
-  return [];
-}
-
-function looksLikeRepoPath(value: string): boolean {
-  if (value.startsWith("dist/") || value.startsWith(".repoos/")) return false;
-  if (value.endsWith("/")) {
-    return KNOWN_PATH_PREFIXES.some((prefix) => value === prefix);
-  }
-  if (KNOWN_ROOT_FILES.has(value)) return true;
-  return KNOWN_PATH_PREFIXES.some((prefix) => value.startsWith(prefix));
-}
-
-/** Camel-case identifiers read as function/const references, not prose words. */
-function isSymbolClaim(value: string): boolean {
-  return /^[a-z][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*$/.test(value) && !NON_REPO_SYMBOLS.has(value);
-}
-
-interface ClassifiedSpan {
-  script?: string;
-  path?: { path: string; suffix: string };
-  symbol?: string;
-}
-
-/**
- * Decide what kind of concrete claim a backtick span makes. Returns null for
- * prose, globs, URLs, function calls with arguments, and anything not worth
- * verifying — the scan prefers signal over breadth.
- */
-function classifyBacktickSpan(span: string): ClassifiedSpan | null {
-  const raw = span.trim();
-  if (!raw || raw.includes("://")) return null;
-  // Script claims are distinctive and deliberately contain a space.
-  const script = raw.match(SCRIPT_CLAIM_RE)?.[1] ?? (TEST_CLAIM_RE.test(raw) ? "test" : undefined);
-  if (script) return { script };
-  if (/[\s<>{}#|="'[\],;]/.test(raw)) return null;
-  const core = raw.endsWith("()") ? raw.slice(0, -2) : raw;
-  if (/[()*]/.test(core)) return null;
-  const lineMatch = core.match(/^(.*?):(\d+)(?:-\d+)?$/);
-  const pathPart = lineMatch ? lineMatch[1] : core;
-  if (looksLikeRepoPath(pathPart)) {
-    return { path: { path: pathPart, suffix: lineMatch ? core.slice(pathPart.length) : "" } };
-  }
-  if (isSymbolClaim(pathPart)) return { symbol: pathPart };
-  return null;
-}
-
-/**
- * Scan `AGENTS.md`/`docs/`/`user-docs/` for concrete, checkable claims and
- * verify each against the real repo: file paths are tested for existence,
- * symbols against identifiers present in `src/`, `bun run <script>` against
- * package.json, and "zero runtime dependencies" against `dependencies`.
- * Bounded in doc count and size so a periodic sweep can never stall the server.
- */
-export async function scanForDocsDebt(config: RepoOSConfig): Promise<DocsDebtScanResult> {
   const trivialFixes: DocsDebtTrivialFix[] = [];
   const needsHuman: DocsDebtFinding[] = [];
-  let claimsChecked = 0;
 
-  const docs = collectDocFiles(config.root);
-  const sourceWords = collectSourceWords(config.root);
-  const scripts = readPackageScripts(config.root);
-  const runtimeDeps = readRuntimeDependencies(config.root);
+  for (const finding of run.findings) {
+    needsHuman.push({
+      kind: mapFindingKind(finding.type),
+      doc: finding.file ?? "",
+      line: finding.line ?? 1,
+      claim: finding.claim ?? finding.description,
+      evidence: finding.evidence ?? finding.description,
+      severity: finding.severity,
+      recommendation: finding.recommendation,
+    });
+  }
 
-  let repoIndex: RepoFileEntry[] | null = null;
-  const fileIndex = (): RepoFileEntry[] => (repoIndex ??= collectRepoFileIndex(config.root));
-  const seen = new Set<string>();
-
-  for (const abs of docs) {
-    const doc = abs.slice(config.root.length).replace(/^[/\\]/, "") || abs;
-    let content: string;
-    try {
-      content = readFileSync(abs, "utf8");
-    } catch {
-      continue;
-    }
-    const lines = content.split("\n");
-    let zeroDepsLine: number | null = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (zeroDepsLine === null && ZERO_RUNTIME_DEPS_RE.test(line)) zeroDepsLine = i + 1;
-
-      const BACKTICK_RE = /`([^`\n]+)`/g;
-      let m: RegExpExecArray | null;
-      while ((m = BACKTICK_RE.exec(line)) !== null) {
-        const span = m[1];
-        const classified = classifyBacktickSpan(span);
-        if (!classified) continue;
-        claimsChecked++;
-
-        if (classified.script !== undefined) {
-          const key = `${doc}\u0000script:${classified.script}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          if (!scripts.has(classified.script)) {
-            needsHuman.push({
-              kind: "missing-script",
-              doc,
-              line: i + 1,
-              claim: span.trim(),
-              evidence: `package.json has no \`${classified.script}\` script`,
-              severity: "medium",
-              recommendation: `Update the command or add the \`${classified.script}\` script.`,
-            });
-          }
-          continue;
-        }
-
-        if (classified.path) {
-          const { path: pathPart, suffix } = classified.path;
-          const key = `${doc}\u0000path:${pathPart}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          if (existsSync(join(config.root, pathPart))) continue;
-
-          const base = basename(pathPart);
-          const candidates = pathPart.endsWith("/")
-            ? []
-            : fileIndex().filter((f) => f.base === base);
-          if (candidates.length === 1 && candidates[0].rel !== pathPart) {
-            trivialFixes.push({
-              kind: "renamed-path",
-              doc,
-              line: i + 1,
-              from: span.trim(),
-              to: `${candidates[0].rel}${suffix}`,
-              evidence: `\`${pathPart}\` does not exist; the only file named \`${base}\` is \`${candidates[0].rel}\``,
-            });
-          } else {
-            needsHuman.push({
-              kind: "missing-path",
-              doc,
-              line: i + 1,
-              claim: span.trim(),
-              evidence: `\`${pathPart}\` is referenced but does not exist in the repo`,
-              severity: "medium",
-              recommendation: "Update the reference or restore the path.",
-            });
-          }
-          continue;
-        }
-
-        if (classified.symbol && !sourceWords.has(classified.symbol)) {
-          const key = `${doc}\u0000symbol:${classified.symbol}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          needsHuman.push({
-            kind: "missing-symbol",
-            doc,
-            line: i + 1,
-            claim: span.trim(),
-            evidence: `\`${classified.symbol}\` does not appear anywhere under \`src/\``,
-            severity: "medium",
-            recommendation: "Confirm the symbol was renamed or removed, then update the doc.",
-          });
-        }
-      }
-    }
-
-    if (zeroDepsLine !== null && runtimeDeps.length > 0) {
-      const key = `${doc}\u0000deps`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        const shown = runtimeDeps.slice(0, 5).join(", ");
-        needsHuman.push({
-          kind: "false-constraint",
-          doc,
-          line: zeroDepsLine,
-          claim: "zero runtime dependencies",
-          evidence: `This doc claims zero runtime dependencies, but package.json declares ${runtimeDeps.length}: ${shown}${runtimeDeps.length > 5 ? ", …" : ""}`,
-          severity: "high",
-          recommendation:
-            "Either remove the runtime dependency (zero-deps is a hard constraint) or correct the doc.",
-        });
-      }
+  for (const fix of run.fixes) {
+    const line = lineOfText(config.root, fix.doc, fix.oldText);
+    const safe = isSafeDocsDebtFix(config, fix.doc, fix.oldText, fix.newText);
+    if (safe) {
+      trivialFixes.push({
+        kind: "renamed-path",
+        doc: fix.doc,
+        line,
+        from: fix.oldText,
+        to: fix.newText,
+        evidence:
+          fix.evidence ||
+          `\`${fix.oldText}\` → \`${fix.newText}\` verified against the repo by the auto-fix gate`,
+      });
+    } else {
+      needsHuman.push({
+        kind: "missing-path",
+        doc: fix.doc,
+        line,
+        claim: fix.oldText,
+        evidence: `${fix.evidence ? `${fix.evidence} — ` : ""}the proposed fix did not clear the independent auto-fix verification gate`,
+        severity: "medium",
+        recommendation: `Review and apply \`${fix.oldText}\` → \`${fix.newText}\` manually.`,
+      });
     }
   }
 
-  return { trivialFixes, needsHuman, scannedDocs: docs.length, claimsChecked };
+  return {
+    trivialFixes,
+    needsHuman,
+    scannedDocs,
+    claimsChecked: run.findings.length + run.fixes.length,
+  };
 }
 
 /**
@@ -1932,20 +1846,33 @@ export async function applyDocsDebtFixes(
   config: RepoOSConfig,
   fixes: DocsDebtTrivialFix[],
 ): Promise<DocsDebtApplyResult> {
-  const result: DocsDebtApplyResult = { applied: 0, skipped: 0, committed: 0, errors: [] };
+  const result: DocsDebtApplyResult = {
+    applied: 0,
+    skipped: 0,
+    committed: 0,
+    fixed: [],
+    errors: [],
+  };
   const toApply = fixes.slice(0, MAX_TRIVIAL_FIXES_PER_RUN);
   result.skipped = fixes.length - toApply.length;
 
   for (const fix of toApply) {
     const abs = join(config.root, fix.doc);
     try {
-      const content = readFileSync(abs, "utf8");
-      const updated = content.split(`\`${fix.from}\``).join(`\`${fix.to}\``);
-      if (updated === content) {
-        result.errors.push(`${fix.doc}: nothing to replace for \`${fix.from}\``);
+      // Defense in depth: the scan already filters through the gate, but the
+      // write itself must never be reachable without a fresh, independent pass.
+      if (!isSafeDocsDebtFix(config, fix.doc, fix.from, fix.to)) {
+        result.errors.push(`${fix.doc}: fix did not clear the auto-fix gate`);
         result.skipped++;
         continue;
       }
+      const content = readFileSync(abs, "utf8");
+      if (!content.includes(fix.from)) {
+        result.errors.push(`${fix.doc}: \`${fix.from}\` is no longer present`);
+        result.skipped++;
+        continue;
+      }
+      const updated = content.split(fix.from).join(fix.to);
       writeFileSync(abs, updated, "utf8");
       const message = [
         `docs: fix stale reference in ${fix.doc}`,
@@ -1955,6 +1882,7 @@ export async function applyDocsDebtFixes(
       ].join("\n");
       if (commitTaskFile(config.root, abs, message)) result.committed++;
       result.applied++;
+      result.fixed.push({ doc: fix.doc, from: fix.from, to: fix.to });
     } catch (err) {
       result.skipped++;
       result.errors.push(`${fix.doc}: ${err instanceof Error ? err.message : String(err)}`);
@@ -1985,7 +1913,7 @@ function fixesToFindings(fixes: DocsDebtTrivialFix[]): DocsDebtFinding[] {
 export async function createDocsDebtTask(
   config: RepoOSConfig,
   findings: DocsDebtFinding[],
-): Promise<CreateTechDebtResult> {
+): Promise<CreateDocsDebtTaskResult> {
   const workDir = join(config.root, config.workDir);
   let workDirStats;
   try {
@@ -2004,7 +1932,7 @@ export async function createDocsDebtTask(
     throw new DocsDebtError(`Task directory "${config.workDir}" is not writable`);
   }
 
-  const result: CreateTechDebtResult = { created: 0, failed: 0, errors: [] };
+  const result: CreateDocsDebtTaskResult = { created: 0, failed: 0, errors: [], taskId: null };
   if (findings.length === 0) return result;
 
   const title = "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/";
@@ -2016,7 +1944,9 @@ export async function createDocsDebtTask(
   body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\`/\`docs/\`/\`user-docs/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
   findings.forEach((finding, index) => {
     body += `### ${index + 1}. ${finding.claim}\n`;
-    body += `- **Doc**: \`${finding.doc}\`:${finding.line}\n`;
+    body += finding.doc
+      ? `- **Doc**: \`${finding.doc}\`${finding.line ? `:${finding.line}` : ""}\n`
+      : `- **Doc**: not specified\n`;
     body += `- **Kind**: ${finding.kind}\n`;
     body += `- **Severity**: ${finding.severity}\n`;
     body += `- **Evidence**: ${finding.evidence}\n`;
@@ -2044,6 +1974,7 @@ updated_at: "${now}"
   try {
     await writeFile(taskPath, `${frontmatter}\n${body}`, "utf8");
     result.created++;
+    result.taskId = taskId;
   } catch (err) {
     result.failed++;
     result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
@@ -2062,12 +1993,13 @@ export async function runDocsDebtAgent(
   logger?: Logger,
 ): Promise<DocsDebtRunResult> {
   logger?.agent("docs-debt", "info", "Docs Debt Agent scan started");
-  const scan = await scanForDocsDebt(config);
+  const scan = await scanForDocsDebt(config, logger);
   logger?.agent("docs-debt", "info", "Docs Debt scan completed", {
     scannedDocs: scan.scannedDocs,
     claimsChecked: scan.claimsChecked,
     trivialFixes: scan.trivialFixes.length,
     needsHuman: scan.needsHuman.length,
+    error: scan.error,
   });
 
   const apply = await applyDocsDebtFixes(config, scan.trivialFixes);
@@ -2089,10 +2021,7 @@ export async function runDocsDebtAgent(
     logger?.agent("docs-debt", "info", `Created ${task.created} docs debt task`);
   }
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["docs-debt"] = { ...(agents["docs-debt"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
+  saveLastRunAt(config.root, "docs-debt", config);
 
   logger?.agent("docs-debt", "info", "Docs Debt Agent run completed", {
     trivialFixesApplied: apply.applied,
@@ -2107,9 +2036,12 @@ export async function runDocsDebtAgent(
     trivialFixesApplied: apply.applied,
     findingsFound: findings.length,
     taskCreated: task.created,
+    taskId: task.taskId,
+    autoFixed: apply.fixed,
     created: task.created,
     failed: task.failed,
-    errors: [...apply.errors, ...task.errors],
+    errors: [...(scan.error ? [scan.error] : []), ...apply.errors, ...task.errors],
+    error: scan.error,
   };
 }
 

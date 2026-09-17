@@ -1970,6 +1970,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           findingsFound: "findingsFound" in result ? result.findingsFound : 0,
           trivialFixesApplied: "trivialFixesApplied" in result ? result.trivialFixesApplied : 0,
           scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
+          taskId: "taskId" in result ? result.taskId : null,
+          autoFixed: "autoFixed" in result ? result.autoFixed : [],
+          error: "error" in result ? result.error : undefined,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to run built-in agent";

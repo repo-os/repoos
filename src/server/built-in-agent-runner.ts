@@ -45,6 +45,13 @@ export interface SkillGuidedFinding {
   severity: FindingSeverity;
   /** Agent-specific recommendation, if applicable. */
   recommendation?: string;
+  /**
+   * For claim-verification agents: the exact stale claim text, if the finding
+   * is about a concrete claim rather than a general observation.
+   */
+  claim?: string;
+  /** For claim-verification agents: what was checked and what was found. */
+  evidence?: string;
 }
 
 /** A proposed fix that may be eligible for auto-commit via the verification gate. */
@@ -137,6 +144,8 @@ function buildSkillGuidedPrompt(agentName: string, skillDoc: string, repoContext
     "- `description` (string): Human-readable description of the finding.",
     '- `severity` (string): "high", "medium", or "low".',
     "- `recommendation` (string, optional): What should be done about this.",
+    "- `claim` (string, optional): For claim-verification agents, the exact stale claim text.",
+    "- `evidence` (string, optional): For claim-verification agents, what was checked and found.",
     "",
     "If you also propose specific fixes, include a `fixes` array at the top level with objects containing:",
     "- `doc` (string): Repo-relative path of the file to edit.",
@@ -313,6 +322,8 @@ function normalizeFinding(raw: unknown): SkillGuidedFinding {
     description: typeof obj.description === "string" ? obj.description : "",
     severity: isValidSeverity(obj.severity) ? obj.severity : "medium",
     recommendation: typeof obj.recommendation === "string" ? obj.recommendation : undefined,
+    claim: typeof obj.claim === "string" ? obj.claim : undefined,
+    evidence: typeof obj.evidence === "string" ? obj.evidence : undefined,
   };
 }
 
