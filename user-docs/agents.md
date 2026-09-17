@@ -46,6 +46,10 @@ session Cursor reported; RepoOS deliberately never uses `--continue`, which
 could attach a different task's most recent session. Models come from
 `cursor-agent --list-models`, with `default` meaning Cursor's own choice.
 
+Cursor's current stream-JSON output does not include token or cost usage. The
+Tokens page therefore records the session but can show zero usage for Cursor;
+that is a CLI limitation rather than an indication that RepoOS lost the run.
+
 ## The Agents page
 
 The page is organised into tabs:

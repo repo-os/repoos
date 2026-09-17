@@ -67,18 +67,29 @@ describe("parseCursorEvent", () => {
     });
   });
 
+  it("marks an explicit false success result as an error", () => {
+    const line =
+      '{"type":"tool_call","subtype":"completed","call_id":"c3",' +
+      '"tool_call":{"readToolCall":{"result":{"success":false}}},"session_id":"s1"}';
+    expect(parseCursorEvent(line)?.toolResult).toEqual({
+      id: "c3",
+      output: "Cursor tool reported failure",
+      isError: true,
+    });
+  });
+
   it("turns an error event into a sys line", () => {
     expect(parseCursorEvent('{"type":"error","message":"rate limited","session_id":"s1"}')).toEqual(
       { entry: { type: "sys", d: "error: rate limited" }, sessionID: "s1" },
     );
   });
 
-  it("swallows the terminal result but keeps duration and session", () => {
+  it("swallows a successful terminal result while keeping its session", () => {
     expect(
       parseCursorEvent(
         '{"type":"result","subtype":"success","is_error":false,"duration_ms":5234,"result":"done","session_id":"s1"}',
       ),
-    ).toEqual({ sessionID: "s1", durationMs: 5234 });
+    ).toEqual({ sessionID: "s1" });
   });
 
   it("surfaces a failed terminal result as a sys error", () => {
@@ -107,6 +118,7 @@ describe("cursorErrorHint", () => {
     expect(cursorErrorHint("Error: not authenticated")).toContain("cursor-agent login");
     expect(cursorErrorHint("permission denied for command")).toContain("--force");
     expect(cursorErrorHint("unknown option '--nope'")).toContain("cursor-agent update");
+    expect(cursorErrorHint("session not found")).toContain("fresh session");
   });
 
   it("returns null for ordinary tool output", () => {

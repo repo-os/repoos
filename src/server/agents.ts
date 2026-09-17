@@ -1421,8 +1421,6 @@ export interface CursorParseResult {
   sessionID?: string;
   /** Display model reported by `system/init` (informational only). */
   model?: string;
-  /** Terminal `result` duration in ms, when reported. */
-  durationMs?: number;
   pendingTool?: { id: string; name: string; input?: string };
   toolResult?: { id: string; output?: string; isError?: boolean };
 }
@@ -1472,6 +1470,9 @@ function cursorToolResult(result: unknown): { output?: string; isError?: boolean
   if (!result || typeof result !== "object") return {};
   const r = result as Record<string, unknown>;
   if (r.success !== undefined) {
+    // Some Cursor tools report a boolean instead of an `error` sibling. An
+    // explicit false is a failed card, not an opaque successful JSON payload.
+    if (r.success === false) return { output: "Cursor tool reported failure", isError: true };
     if (typeof r.success === "string" && r.success) return { output: r.success };
     if (r.success && typeof r.success === "object") {
       const s = r.success as Record<string, unknown>;
@@ -1531,11 +1532,9 @@ export function parseCursorEvent(raw: string): CursorParseResult | null {
       : typeof ev.sessionId === "string" && ev.sessionId
         ? ev.sessionId
         : undefined;
-  const durationMs = typeof ev.duration_ms === "number" ? ev.duration_ms : undefined;
   const withMeta = (base: CursorParseResult): CursorParseResult => ({
     ...base,
     ...(sessionID ? { sessionID } : {}),
-    ...(durationMs !== undefined ? { durationMs } : {}),
   });
 
   switch (type) {
@@ -1624,6 +1623,10 @@ const CURSOR_ERROR_HINTS: ReadonlyArray<{ re: RegExp; hint: string }> = [
   {
     re: /unknown (?:option|argument|command)|unsupported (?:flag|option)|unrecognized (?:option|argument)/i,
     hint: "Cursor Agent may be out of date for this RepoOS driver — run `cursor-agent update`.",
+  },
+  {
+    re: /\bsession (?:not found|expired|invalid)\b|\bno (?:such|matching) session\b/i,
+    hint: "Cursor session is no longer available. Retry the follow-up to start a fresh session for this task.",
   },
 ];
 
