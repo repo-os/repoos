@@ -153,6 +153,15 @@ export const useUiStore = defineStore("ui", () => {
 
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
+  /**
+   * Screenshots picked in the PM tab's compose box (0381), held until the
+   * message is sent. Kept separate from `pendingScreenshots` (the New-task
+   * panel's queue) so the two drawers can never leak into each other, and
+   * cleared whenever a different task is opened — the PM conversation is
+   * per-task, so its compose state is too.
+   */
+  const pmScreenshots = reactive<PendingScreenshot[]>([]);
+
   /** Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human"). */
   function openNewTask(assignedTo = ""): void {
     isNew.value = true;
@@ -224,6 +233,32 @@ export const useUiStore = defineStore("ui", () => {
     pendingScreenshots.splice(0);
   }
 
+  /** Read PM-compose images into memory as data URLs, capped like the New-task panel. */
+  function addPmScreenshots(files: File[]): void {
+    for (const file of files) {
+      if (pmScreenshots.length >= MAX_PENDING_SCREENSHOTS) break;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== "string") return;
+        pmScreenshots.push({
+          name: file.name,
+          mime: file.type,
+          dataUrl: reader.result,
+          size: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removePmScreenshot(index: number): void {
+    pmScreenshots.splice(index, 1);
+  }
+
+  function clearPmScreenshots(): void {
+    pmScreenshots.splice(0);
+  }
+
   /** Tasks the agent has already started on default straight to the live action. */
   function defaultTabFor(t: Task): "details" | "agent" | "review" | "pm" {
     if (t.status === "review") return "review";
@@ -235,6 +270,9 @@ export const useUiStore = defineStore("ui", () => {
     active.value = t;
     activeTab.value = defaultTabFor(t);
     debugView.value = "logs";
+    // The PM conversation is per task — a compose draft (and its picked
+    // screenshots) never carries over to a different task's drawer.
+    clearPmScreenshots();
   }
 
   /**
@@ -277,6 +315,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewInput.value = false;
     activeTab.value = "details";
     debugView.value = "logs";
+    clearPmScreenshots();
   }
 
   function openTunnel(): void {
@@ -332,6 +371,10 @@ export const useUiStore = defineStore("ui", () => {
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
+    pmScreenshots,
+    addPmScreenshots,
+    removePmScreenshot,
+    clearPmScreenshots,
     openNewTask,
     openNewDoc,
     openNewSkill,

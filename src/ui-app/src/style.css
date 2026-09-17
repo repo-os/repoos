@@ -1661,8 +1661,9 @@
 .task-card.coding {
   border-color: var(--violet-border-tint);
 }
-/* PM flesh-out in flight (0335): same violet "AI at work" language as the
-   coding border, but for a draft the PM agent is authoring. */
+/* PM run in flight (0335, 0381): same violet "AI at work" language as the
+   coding border, but for the PM agent — a draft it is authoring, or a PM
+   chat turn it is processing on a task in any status. */
 .task-card.pm-working {
   border-color: var(--violet-border-tint);
 }
