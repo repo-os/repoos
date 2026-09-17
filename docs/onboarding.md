@@ -1,28 +1,35 @@
 # Onboarding: what `repoos init` leaves on the board
 
-`repoos init` scaffolds `work/`, `docs/`, `AGENTS.md`, `repoos.toml` and a
-`.gitignore` entry. It also seeds the first tasks, and the choice of *which*
-tasks is deliberate: a brand-new project and an existing codebase start from
-different information, so they get different starter tasks.
+`repoos init` scaffolds RepoOS files, `AGENTS.md`, `repoos.toml` and a
+`.gitignore` entry. By default everything goes under a `repoos/` subdirectory
+(e.g. `repoos/work/`, `repoos/docs/`); the interactive prompt lets you choose
+a different location or `/` for the repo root. `repoos.toml` and `AGENTS.md`
+always stay at the root regardless of the layout choice.
+
+It also seeds the first tasks, and the choice of *which* tasks is deliberate:
+a brand-new project and an existing codebase start from different information,
+so they get different starter tasks.
 
 ## Task 0001 is `done`, on purpose
 
-`work/0001-set-up-repoos.md` was scaffolded `status: ready` historically, which
-was misleading — running `repoos init` already satisfies everything in it, so
-there was never anything to "work". It is now scaffolded `done`, which left the
-`ready` column empty immediately after init (task #0364). 0001 still exists as
-a worked example of the task-file shape, and its `## Overview` carries the
-one-line project description collected during the guided flow.
+`repoos/work/0001-set-up-repoos.md` (or `work/0001-set-up-repoos.md` with the
+root layout) was scaffolded `status: ready` historically, which was misleading
+— running `repoos init` already satisfies everything in it, so there was never
+anything to "work". It is now scaffolded `done`, which left the `ready` column
+empty immediately after init (task #0364). 0001 still exists as a worked example
+of the task-file shape, and its `## Overview` carries the one-line project
+description collected during the guided flow.
 
 ## The starter task (task #0364)
 
 Because 0001 is done, `repoos init` now also writes one genuinely workable
-`ready` task (id 0002 on a fresh board; the helper scans `work/` and takes the
-next free 4-digit id, matching `createTask`). Which task depends on the path:
+`ready` task (id 0002 on a fresh board; the helper scans the work directory and
+takes the next free 4-digit id, matching `createTask`). Which task depends on
+the path:
 
 | Path | Seeded task | Why |
 | --- | --- | --- |
-| Guided new-project flow (not a git repo) | "Flesh out the product vision and initial architecture" | There's a one-line description but no code. The task embeds the description and carries the questions (audience, first release, stack, out-of-scope) that turn it into `docs/` content and a real backlog. |
+| Guided new-project flow (not a git repo) | "Flesh out the product vision and initial architecture" | There's a one-line description but no code. The task embeds the description and carries the questions (audience, first release, stack, out-of-scope) that turn it into docs content and a real backlog. |
 | Existing repo (`repoos init` inside a git repo) | "Read this codebase and propose docs/ + an initial task backlog" | There's a codebase to read but no description was collected. The task asks for real architecture/convention notes from what the code actually does, plus concrete follow-on tasks. |
 
 Both bodies are self-contained prompts and both are workable by a human alone —
