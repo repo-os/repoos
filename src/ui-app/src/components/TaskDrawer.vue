@@ -1191,6 +1191,14 @@ const pmDraft = ref("");
 const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
+/** Hidden file input behind the PM compose box's attach button (0381). */
+const pmShotInput = ref<HTMLInputElement | null>(null);
+
+function onPmShotFiles(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  if (input.files) ui.addPmScreenshots(Array.from(input.files));
+  input.value = "";
+}
 
 /** Check if PM agent is enabled. */
 const pmAgentEnabled = computed(() => {
@@ -1275,6 +1283,14 @@ async function pmSend(): Promise<void> {
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
   pmDraft.value = "";
+  // Same wire shape as the per-task attachment upload: base64 without the
+  // data-URL prefix. Kept locally until the send succeeds so a failure
+  // doesn't lose the user's picks.
+  const shots = ui.pmScreenshots.map((s) => ({
+    name: s.name,
+    mime: s.mime,
+    data: s.dataUrl.split(",")[1] ?? "",
+  }));
   pmScrollToLatest();
 
   try {
@@ -1285,8 +1301,10 @@ async function pmSend(): Promise<void> {
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
+        images: shots.length ? shots : undefined,
       }),
     );
+    ui.clearPmScreenshots();
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
@@ -2682,12 +2700,16 @@ watch(
           >
             <ActivityIndicator /> agent coding
           </span>
-          <span
-            v-if="ui.active.status === 'draft' && repo.pmWorkingFor(ui.active.id)"
-            class="drawer-run"
-            role="status"
-          >
-            <ActivityIndicator /> PM is working on this draft…
+          <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
+               chat turn (the flag is the same server-side registry). Cleared
+               on every run exit path server-side. -->
+          <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
+            <ActivityIndicator />
+            {{
+              ui.active.status === "draft"
+                ? "PM is working on this draft…"
+                : "PM is working on this task…"
+            }}
           </span>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -2805,6 +2827,13 @@ watch(
           >
             <MessageSquare class="tab-icon" />
             PM
+            <!-- 0381: the PM is doing something on this task (chat turn or
+                 draft flesh-out) while another tab is open — surface it here
+                 so it's visible without switching to the PM tab. -->
+            <ActivityIndicator
+              v-if="ui.activeTab !== 'pm' && ui.active && repo.pmWorkingFor(ui.active.id)"
+              label="PM working"
+            />
           </button>
           <button
             type="button"
@@ -3855,7 +3884,44 @@ watch(
               <span>{{ msg }}</span>
             </div>
           </div>
+          <!-- 0381: screenshots picked for this message — attached to any
+               task the PM creates from it, on the server, once it exists. -->
+          <div v-if="ui.pmScreenshots.length" class="pm-shots" aria-label="Attached screenshots">
+            <div v-for="(s, i) in ui.pmScreenshots" :key="s.name + i" class="pm-shot">
+              <img :src="s.dataUrl" :alt="s.name" />
+              <button
+                type="button"
+                class="pm-shot-remove"
+                :aria-label="`Remove ${s.name}`"
+                title="Remove screenshot"
+                @click.stop="ui.removePmScreenshot(i)"
+              >
+                <X class="size-3" />
+              </button>
+            </div>
+          </div>
           <form class="pm-compose" @submit.prevent="pmSend">
+            <input
+              ref="pmShotInput"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+              multiple
+              class="pm-shot-input"
+              aria-hidden="true"
+              tabindex="-1"
+              @change="onPmShotFiles"
+            />
+            <button
+              v-if="!pmBusy"
+              type="button"
+              class="pm-attach"
+              aria-label="Attach screenshots"
+              title="Attach screenshots — they're added to any task the PM creates from this message"
+              :disabled="!pmAgentEnabled"
+              @click="pmShotInput?.click()"
+            >
+              <ImagePlus />
+            </button>
             <textarea
               ref="pmDraftTextarea"
               v-model="pmDraft"
@@ -4212,6 +4278,75 @@ watch(
 
 .pm-compose button.pm-stop {
   background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
+  color: var(--red, #ef5b5b);
+}
+
+/* 0381: compose-box attach — a muted sibling of the send button, plus the
+   thumbnail strip shown above the form while images are pending. */
+.pm-compose button.pm-attach {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--txt-dim);
+}
+
+.pm-compose button.pm-attach:hover:not(:disabled) {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.pm-compose button.pm-attach svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pm-shot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pm-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+
+.pm-shot {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--panel-solid);
+}
+
+.pm-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pm-shot-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+
+.pm-shot-remove:hover {
   color: var(--red, #ef5b5b);
 }
 

@@ -11,6 +11,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { SCREENSHOTS_HEADING, extractSection, removeSection } from "../core/task.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -110,22 +111,30 @@ export function saveScreenshot(
 }
 
 /**
- * Insert a `## Screenshots` section into a task body, keeping it BEFORE the
- * append-only Activity section so the activity log stays the last thing in the
- * body. Appends at the end when there is no Activity section.
+ * Insert screenshots into a task body's `## Screenshots` section, keeping it
+ * BEFORE the append-only Activity section so the activity log stays the last
+ * thing in the body. Appends the section at the end when there is no Activity
+ * section. When a Screenshots section already exists (a second upload batch,
+ * or the 0381 pending-batch attach landing on a task that has one), the new
+ * images merge into that section — repeated uploads must not stack duplicate
+ * headings.
  */
 export function appendScreenshotsSection(body: string, metas: ScreenshotMeta[]): string {
-  const section = ["## Screenshots", ""]
-    .concat(metas.map((m) => `![${m.name.replace(/[[\]]/g, "")}](${m.url})`))
-    .join("\n");
+  const links = metas.map((m) => `![${m.name.replace(/[[\]]/g, "")}](${m.url})`);
   const trimmed = body.replace(/\s+$/, "");
   const activityIndex = trimmed.lastIndexOf("\n## Activity\n");
-  if (activityIndex === -1) {
-    return `${trimmed}\n\n${section}\n`;
+  const before =
+    activityIndex === -1 ? trimmed : trimmed.slice(0, activityIndex).replace(/\s+$/, "");
+  const after = activityIndex === -1 ? "" : trimmed.slice(activityIndex + 1);
+  const existing = extractSection(before, SCREENSHOTS_HEADING);
+  let next: string;
+  if (existing !== null) {
+    const without = removeSection(before, SCREENSHOTS_HEADING).replace(/\s+$/, "");
+    next = [without, [existing, ...links].join("\n")].filter(Boolean).join("\n\n");
+  } else {
+    next = [before, ["## Screenshots", "", ...links].join("\n")].filter(Boolean).join("\n\n");
   }
-  const before = trimmed.slice(0, activityIndex).replace(/\s+$/, "");
-  const after = trimmed.slice(activityIndex + 1); // strip the leading newline of "\n## Activity"
-  return `${before}\n\n${section}\n\n${after}\n`;
+  return after ? `${next}\n\n${after}\n` : `${next}\n`;
 }
 
 /**

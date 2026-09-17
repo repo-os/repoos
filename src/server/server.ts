@@ -110,6 +110,8 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
+import { attachPendingPmImages } from "./pm-attachments.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
@@ -1149,6 +1151,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     (e) => {
       emitEvent(e);
       if (e.type !== "agent.exited") return;
+      // 0381: a PM chat session ended — clear its "PM is working" flag for
+      // the task. Fires on every exit path (clean finish, error, or user
+      // interrupt, which kills the process into the same cleanup), so the
+      // card/panel indicator can never get stuck. Other live sessions for
+      // the same task (another user's chat, a freeform flesh-out) keep it up.
+      const pmTaskId = pmChatSessionTaskId(e.id);
+      if (pmTaskId) {
+        clearPmChatSession(e.id);
+        if (!isPmWorking(pmTaskId)) {
+          emitEvent({ type: "task.pmFinished", id: pmTaskId, at: new Date().toISOString() });
+        }
+      }
       if (pendingReview.delete(e.id)) {
         const task = index.getTask(e.id);
         if (task?.status === "review") void reviews.run(task);
@@ -1581,6 +1595,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
       notifyTaskCreated(config, e.task);
+      // 0381: a PM chat session with pending screenshots may have just
+      // created this task through `repoos new` — attach its parked images
+      // now, while the session is still running. Best-effort and a no-op
+      // when nothing is pending; the re-parsed task goes back through the
+      // index so every client sees the Screenshots section.
+      const withShots = attachPendingPmImages(config, e.task, (key) => runner.isRunning(key));
+      if (withShots) index.applyFileChange(withShots.absPath);
       return;
     }
     if (e.type !== "task.updated") return;
