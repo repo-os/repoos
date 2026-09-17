@@ -624,7 +624,7 @@ export function validateNamespace(input: string): string {
     return "!Leading ./ is not needed — type the path directly (e.g. repoos).";
   // reject bare dot (cwd) — meaningless as a namespace
   if (trimmed === ".")
-    return "! is not a valid namespace — use / for root or type a directory name.";
+    return "!. is not a valid namespace — use / for root or type a directory name.";
   // reject unsafe characters
   if (!/^[A-Za-z0-9._\-/]+$/.test(trimmed)) return "!Only letters, digits, . _ - / are allowed.";
   // reject a namespace that collides with a root marker file — mkdir would
@@ -1000,11 +1000,20 @@ export async function cmdInit(args: string[]): Promise<void> {
         namespace = await askLayout();
       }
 
-      // Show the resolved layout preview
+      // Show the resolved layout preview. For an existing install, read the
+      // actual configured paths rather than re-deriving them from `namespace`
+      // — a non-standard workDir (e.g. "tasks", not ending in "/work") can't
+      // round-trip through the namespace derivation above, and previewing
+      // "work/"/"docs/" in that case would lie about what scaffoldInto (which
+      // does use the real config) actually does.
       const config = loadConfig(root);
-      const workDir = namespace ? `${namespace}/work` : "work";
-      const docsDir = namespace ? `${namespace}/docs` : "docs";
-      const cacheDir = namespace ? `${namespace}/.repoos` : ".repoos";
+      const workDir = hasExisting ? config.workDir : namespace ? `${namespace}/work` : "work";
+      const docsDir = hasExisting ? config.docsDir : namespace ? `${namespace}/docs` : "docs";
+      const cacheDir = hasExisting
+        ? config.cacheDir
+        : namespace
+          ? `${namespace}/.repoos`
+          : ".repoos";
       console.log(c.dim("\n  Resolved layout:"));
       console.log(c.dim("    repoos.toml   (root)"));
       console.log(c.dim("    AGENTS.md     (root)"));

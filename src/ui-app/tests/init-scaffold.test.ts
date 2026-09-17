@@ -78,8 +78,12 @@ describe("validateNamespace", () => {
     expect(validateNamespace("repoos@home")).toContain("!");
   });
 
-  it("rejects bare dot (cwd)", () => {
-    expect(validateNamespace(".")).toContain("!");
+  it("rejects bare dot (cwd) with a message that names what was typed", () => {
+    const result = validateNamespace(".");
+    expect(result).toContain("!");
+    // Regression: the message used to read "! is not a valid namespace…" with
+    // no reference to the input, because the leading "." was left out.
+    expect(result.slice(1)).toMatch(/^\. is not a valid namespace/);
   });
 
   it("trims whitespace", () => {
