@@ -77,6 +77,10 @@ const modelsFor = config.modelsFor;
 const isRunning = ref(false);
 const error = ref("");
 const message = ref("");
+// Docs Debt surfaces its two concrete outcomes — the bundled findings task and
+// the docs it corrected on its own — as structured data, not just a count.
+const bannerTaskId = ref<string | null>(null);
+const bannerAutoFixed = ref<{ doc: string; from: string; to: string }[]>([]);
 
 const agentMeta = computed(() => {
   if (props.agent === "debugger") {
@@ -123,7 +127,7 @@ const agentMeta = computed(() => {
     return {
       name: "Docs Debt Agent",
       description:
-        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — verifying file paths, symbols, scripts, and stated constraints against the real repo. Applies small mechanical fixes directly and bundles anything needing a human decision into one task.",
+        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — a skill-guided agent verifies file paths, symbols, scripts, and stated constraints against the real repo, whatever its layout. A fix auto-commits only after an independent verification passes; everything else is bundled into one task.",
       icon: "📖",
     };
   }
@@ -203,6 +207,8 @@ async function runNow(): Promise<void> {
   isRunning.value = true;
   error.value = "";
   message.value = "";
+  bannerTaskId.value = null;
+  bannerAutoFixed.value = [];
   try {
     const response = (await api(
       `/api/agents/built-in/${props.agent}/run`,
@@ -216,6 +222,9 @@ async function runNow(): Promise<void> {
       findingsFound?: number;
       trivialFixesApplied?: number;
       scannedFiles?: number;
+      taskId?: string | null;
+      autoFixed?: { doc: string; from: string; to: string }[];
+      error?: string | null;
     };
     if (response.ok) {
       state.value.lastRunAt = new Date().toISOString();
@@ -228,12 +237,18 @@ async function runNow(): Promise<void> {
       } else if (props.agent === "architect") {
         message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Architect/.`;
       } else if (props.agent === "docs-debt") {
-        const fixes = response.trivialFixesApplied ?? 0;
-        const fixesText = fixes > 0 ? `applied ${fixes} small fix(es); ` : "";
-        message.value =
-          (response.findingsFound ?? 0) > 0
-            ? `Check complete — ${fixesText}${response.findingsFound ?? 0} claim(s) need a human decision, bundled into one task (${response.scannedFiles ?? 0} docs scanned).`
-            : `Check complete — ${fixesText}docs match the code (${response.scannedFiles ?? 0} docs scanned).`;
+        if (response.error) {
+          error.value = response.error;
+        } else {
+          const fixes = response.trivialFixesApplied ?? 0;
+          bannerTaskId.value = response.taskId ?? null;
+          bannerAutoFixed.value = response.autoFixed ?? [];
+          const fixesText = fixes > 0 ? `corrected ${fixes} stale reference(s); ` : "";
+          message.value =
+            (response.findingsFound ?? 0) > 0
+              ? `Check complete — ${fixesText}${response.findingsFound ?? 0} claim(s) need a human decision, bundled into one task (${response.scannedFiles ?? 0} docs scanned).`
+              : `Check complete — ${fixesText}docs match the code (${response.scannedFiles ?? 0} docs scanned).`;
+        }
       } else if (response.taskCount > 0) {
         const agentType = props.agent === "performance" ? "performance" : "tech debt";
         message.value = `Scan complete — ${response.taskCount} ${agentType} task(s) created from ${response.issuesFound ?? 0} issue(s).`;
@@ -313,7 +328,21 @@ async function runNow(): Promise<void> {
         </div>
       </div>
       <div v-if="message || error" class="agent-field built-in-status-field">
-        <div v-if="message" class="built-in-status success">{{ message }}</div>
+        <div v-if="message" class="built-in-status success">
+          <span>{{ message }}</span>
+          <ul v-if="bannerAutoFixed.length" class="built-in-autofixed">
+            <li v-for="fix in bannerAutoFixed" :key="`${fix.doc}:${fix.from}`">
+              <code>{{ fix.doc }}</code
+              >: <code>{{ fix.from }}</code> →
+              <code>{{ fix.to }}</code>
+            </li>
+          </ul>
+          <div v-if="bannerTaskId" class="built-in-task-link">
+            <router-link :to="`/work?id=${bannerTaskId}`">
+              #{{ bannerTaskId }} — review the findings task
+            </router-link>
+          </div>
+        </div>
         <div v-if="error" class="built-in-status error">{{ error }}</div>
       </div>
     </div>
@@ -368,5 +397,32 @@ async function runNow(): Promise<void> {
 .built-in-status.error {
   background: rgba(239, 68, 68, 0.1);
   color: var(--red);
+}
+
+.built-in-autofixed {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  list-style: disc;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.built-in-autofixed code {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--txt-secondary);
+}
+
+.built-in-task-link {
+  margin-top: 6px;
+}
+
+.built-in-task-link a {
+  color: var(--accent-foreground);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.built-in-task-link a:hover {
+  text-decoration: underline;
 }
 </style>
