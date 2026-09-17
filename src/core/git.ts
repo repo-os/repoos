@@ -4,10 +4,18 @@
  * We shell out rather than depend on a git library (zero deps).
  */
 import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
-import { worktreesDir } from "./config.js";
+import { worktreesDir, worktreesInheritEnv } from "./config.js";
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -455,6 +463,65 @@ function healMissingTaskFile(root: string, worktreePath: string, taskRelPath: st
 }
 
 /**
+ * Give a task worktree access to the main checkout's gitignored `.env`, when
+ * the repo has opted in via `[worktrees] inheritEnv = true` in `repoos.toml`
+ * (#0373). Symlinks the main `.env` into the worktree — the same shape
+ * `syncCandidate` uses for `node_modules` — so there is a single source of
+ * truth: a secret added to the main file later is immediately visible, nothing
+ * extra physically lives on disk, and the worktree's committed `.gitignore`
+ * already ignores `.env`.
+ *
+ * Best-effort and idempotent: an already-valid link, a real `.env` a task made
+ * itself, or a main checkout with no `.env` is a silent no-op. A *dangling*
+ * symlink left by a later deletion of main's `.env` is dropped and repointed
+ * once main's file is back, rather than throwing `EEXIST` forever. Never
+ * touches the main checkout.
+ *
+ * Exported because the preview path (`PreviewManager.doStart`) calls it for an
+ * already-existing worktree: a task cut before the repo opted in (or one that
+ * lost its link) must be repaired when a preview is requested, not only at the
+ * next task start.
+ */
+export function linkInheritedEnv(root: string, worktreePath: string): void {
+  if (root === worktreePath) return; // the main checkout already has the real file
+  if (!worktreesInheritEnv(root)) return;
+  const mainEnv = join(root, ".env");
+  const worktreeEnv = join(worktreePath, ".env");
+  if (!existsSync(mainEnv)) return; // nothing worth linking to
+
+  // `lstatSync` (not `existsSync`) so a dangling symlink still counts as
+  // present. A real file is the worktree's own and never clobbered; a symlink
+  // that already resolves is doing its job; only a dangling one is replaced.
+  let entry: ReturnType<typeof lstatSync> | null = null;
+  try {
+    entry = lstatSync(worktreeEnv);
+  } catch {
+    /* absent — create below */
+  }
+  if (entry) {
+    if (!entry.isSymbolicLink() || existsSync(worktreeEnv)) return;
+    try {
+      rmSync(worktreeEnv);
+    } catch {
+      return; // could not clear it — leave the worktree as it was
+    }
+  }
+
+  // Never place a secret where git could commit it: only link when the
+  // worktree's own ignore rules actually cover `.env`. If the repo opted in but
+  // doesn't ignore the file, linking would risk a committed secret, so skip it
+  // (`check-ignore` exits non-zero — hence a null from `git()` — when the path
+  // is not ignored, and also on any git failure: fail safe either way).
+  if (git(worktreePath, ["check-ignore", ".env"]) === null) return;
+
+  try {
+    symlinkSync(mainEnv, worktreeEnv, "file");
+  } catch {
+    /* best-effort: no .env in the worktree, exactly as before the opt-in */
+  }
+}
+
+/**
  * Make sure the agent for `branch` has a dedicated working directory WITHOUT
  * touching the main worktree's checkout. Three outcomes:
  *
@@ -469,6 +536,8 @@ function healMissingTaskFile(root: string, worktreePath: string, taskRelPath: st
  * `taskRelPath`, when given, is the task's own file path relative to `root`
  * (e.g. `work/0151-....md`). Whichever worktree is resolved — new or reused —
  * is healed if that file is missing from it; see `healMissingTaskFile`.
+ * The worktree is likewise given the main `.env` when the repo opted in; see
+ * `linkInheritedEnv`.
  */
 export function ensureWorktree(
   root: string,
@@ -484,6 +553,7 @@ export function ensureWorktree(
   const existing = worktreePaths(root).get(branch);
   if (existing) {
     if (taskRelPath) healMissingTaskFile(root, existing, taskRelPath);
+    linkInheritedEnv(root, existing);
     return { ok: true, path: existing, created: false };
   }
 
@@ -510,6 +580,7 @@ export function ensureWorktree(
           /* keep */
         }
         if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
+        linkInheritedEnv(root, path);
         return { ok: true, path, created: true };
       }
     }
@@ -529,6 +600,7 @@ export function ensureWorktree(
     /* keep the composed path */
   }
   if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
+  linkInheritedEnv(root, path);
   return { ok: true, path, created: true };
 }
 

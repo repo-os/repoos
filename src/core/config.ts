@@ -195,6 +195,24 @@ export function worktreesDir(root: string): string {
   return join(dirname(root), `${basename(root)}-worktrees`);
 }
 
+/**
+ * Read just the `[worktrees] inheritEnv` opt-in straight from `repoos.toml`,
+ * without a full `loadConfig` (which would also run `loadDotEnv` and mutate
+ * `process.env`). `ensureWorktree` calls this per worktree resolution to decide
+ * whether to link the main checkout's `.env` into the worktree (#0373). A
+ * missing file, a missing key, a non-boolean value, or any read/parse failure
+ * all yield `false` — the safe default is no secrets in worktrees.
+ */
+export function worktreesInheritEnv(root: string): boolean {
+  const tomlPath = join(root, "repoos.toml");
+  if (!existsSync(tomlPath)) return false;
+  try {
+    return parseFlatToml(readFileSync(tomlPath, "utf8"))["worktrees.inheritEnv"] === true;
+  } catch {
+    return false;
+  }
+}
+
 /** The port range `deriveServePort` picks from — deliberately just above the
  *  classic 7171 so a derived port never collides with a repo that pins it. */
 const DERIVED_PORT_BASE = 7200;
@@ -611,6 +629,12 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
     else if (typeof worktreeWarnThreshold === "string" && /^\d+$/.test(worktreeWarnThreshold))
       cfg.worktreeWarnThreshold = Number(worktreeWarnThreshold);
+    // [worktrees] section (#0373): opt-in to linking the main checkout's
+    // gitignored `.env` into task worktrees. Absent means false (unchanged).
+    const worktreesInheritEnvFlag = get("worktrees.inheritEnv");
+    if (typeof worktreesInheritEnvFlag === "boolean") {
+      cfg.worktrees = { ...cfg.worktrees, inheritEnv: worktreesInheritEnvFlag };
+    }
     const servePort = get("servePort");
     const servePortNum =
       typeof servePort === "number"

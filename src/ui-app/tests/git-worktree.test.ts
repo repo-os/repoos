@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,6 +16,7 @@ import { rmFixture } from "./helpers";
 import { join, dirname } from "node:path";
 import {
   ensureWorktree,
+  linkInheritedEnv,
   worktreeStatus,
   resetWorktree,
   removeWorktree,
@@ -175,6 +178,169 @@ describe("ensureWorktree", () => {
       expect(res.reason).toMatch(/not a git repository/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * `.env` inheritance is opt-in per repo (#0373): a repo with
+ * `[worktrees] inheritEnv = true` gets the main checkout's gitignored `.env`
+ * symlinked into each task worktree, so a worktree-local preview that needs
+ * local secrets can boot. Off by default — no worktree behavior changes.
+ */
+describe("ensureWorktree .env inheritance (#0373)", () => {
+  // Opt a repo in AND make sure `.env` is gitignored — both are prerequisites:
+  // `linkInheritedEnv` refuses to link a secret into a committable path.
+  function optIn(root: string): void {
+    writeFileSync(join(root, ".gitignore"), ".env\n");
+    writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+    git(root, ["add", ".gitignore", "repoos.toml"]);
+    git(root, ["commit", "-m", "opt in to worktree .env"]);
+  }
+
+  it("does not link .env by default, even when the main checkout has one", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+
+      const wt = ensureWorktree(root, "feat/no-env");
+
+      expect(wt.ok).toBe(true);
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("symlinks the main checkout's .env when the repo opts in", () => {
+    const { root, clean } = makeRepo();
+    try {
+      optIn(root);
+      writeFileSync(join(root, ".env"), "REPOOS_RESEND_API_KEY=secret\n");
+
+      const wt = ensureWorktree(root, "feat/with-env");
+
+      const wtEnv = join(wt.path, ".env");
+      expect(lstatSync(wtEnv).isSymbolicLink()).toBe(true);
+      expect(readFileSync(wtEnv, "utf8")).toBe("REPOOS_RESEND_API_KEY=secret\n");
+      // One source of truth: a later change to the main file is visible.
+      writeFileSync(join(root, ".env"), "REPOOS_RESEND_API_KEY=updated\n");
+      expect(readFileSync(wtEnv, "utf8")).toContain("updated");
+    } finally {
+      clean();
+    }
+  });
+
+  it("stays a silent no-op when opted in but the main checkout has no .env", () => {
+    const { root, clean } = makeRepo();
+    try {
+      optIn(root);
+
+      const wt = ensureWorktree(root, "feat/missing-env");
+
+      expect(wt.ok).toBe(true);
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses to link when the repo has not gitignored .env", () => {
+    const { root, clean } = makeRepo();
+    try {
+      // Opted in, but `.gitignore` does not cover `.env`: linking would put a
+      // secret in a committable path, so it is skipped rather than risk it.
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+
+      const wt = ensureWorktree(root, "feat/unguarded-env");
+
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+      expect(git(wt.path, ["status", "--porcelain"])).toBe("");
+    } finally {
+      clean();
+    }
+  });
+
+  it("links the opt-in .env when an existing worktree is reused", () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, ".gitignore"), ".env\n");
+      git(root, ["add", ".gitignore"]);
+      git(root, ["commit", "-m", "ignore .env"]);
+      const wt = ensureWorktree(root, "feat/reuse-env");
+      expect(existsSync(join(wt.path, ".env"))).toBe(false);
+
+      // Opt in only after the worktree already exists.
+      writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+      writeFileSync(join(root, ".env"), "KEY=value\n");
+
+      const again = ensureWorktree(root, "feat/reuse-env");
+
+      expect(again.created).toBe(false);
+      expect(lstatSync(join(again.path, ".env")).isSymbolicLink()).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("repairs a lost link when called directly (the preview path's use)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      optIn(root);
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+      const wt = ensureWorktree(root, "feat/preview-repair");
+      const wtEnv = join(wt.path, ".env");
+      expect(lstatSync(wtEnv).isSymbolicLink()).toBe(true);
+
+      // Simulate the link being lost (a `git clean`, or a worktree cut before
+      // the repo opted in): a preview request repairs it without a task start.
+      rmSync(wtEnv);
+      linkInheritedEnv(root, wt.path);
+
+      expect(lstatSync(wtEnv).isSymbolicLink()).toBe(true);
+      expect(readFileSync(wtEnv, "utf8")).toBe("SECRET=1\n");
+    } finally {
+      clean();
+    }
+  });
+
+  it("repoints a dangling link instead of failing with EEXIST", () => {
+    const { root, clean } = makeRepo();
+    try {
+      optIn(root);
+      writeFileSync(join(root, ".env"), "FRESH=1\n");
+      const wt = ensureWorktree(root, "feat/dangling-env");
+      const wtEnv = join(wt.path, ".env");
+
+      // Replace the good link with one pointing at a file that no longer
+      // exists — a dangling symlink the old existsSync check could not see.
+      rmSync(wtEnv);
+      symlinkSync(join(root, "gone.env"), wtEnv, "file");
+      expect(existsSync(wtEnv)).toBe(false);
+
+      linkInheritedEnv(root, wt.path);
+
+      expect(lstatSync(wtEnv).isSymbolicLink()).toBe(true);
+      expect(readFileSync(wtEnv, "utf8")).toBe("FRESH=1\n");
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps the inherited .env gitignored in the worktree", () => {
+    const { root, clean } = makeRepo();
+    try {
+      optIn(root);
+      writeFileSync(join(root, ".env"), "SECRET=1\n");
+
+      const wt = ensureWorktree(root, "feat/ignored-env");
+
+      expect(lstatSync(join(wt.path, ".env")).isSymbolicLink()).toBe(true);
+      expect(git(wt.path, ["check-ignore", ".env"])).toBe(".env");
+      expect(git(wt.path, ["status", "--porcelain"])).toBe("");
+    } finally {
+      clean();
     }
   });
 });

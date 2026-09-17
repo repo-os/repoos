@@ -81,6 +81,24 @@ cwd     = "landing"                       # relative to the task's worktree
 Previews are on demand and one runs at a time — starting another evicts the
 previous one.
 
+A preview runs from the task's fresh worktree, which does **not** have the
+repo's gitignored `.env` by default. If your preview command needs secrets that
+live there (for example, a server that refuses to start with auth enabled and
+no provider key), opt in:
+
+```toml
+[worktrees]
+inheritEnv = true   # symlink the main checkout's .env into task worktrees
+```
+
+It is off by default, so most projects never place secrets in a worktree.
+When on, RepoOS symlinks the main `.env` in at worktree creation; the secret
+file stays gitignored there and is never committed. Your `.gitignore` must
+ignore `.env` for this to kick in — if it doesn't, RepoOS skips the link rather
+than risk committing the secret. A repo that ignores `.env` on `main` is
+covered automatically, since the committed `.gitignore` comes along to every
+worktree.
+
 ## Agents
 
 ```toml
