@@ -10,7 +10,6 @@ import type {
   OpenRouterUsage,
 } from "../types";
 import Button from "./ui/button.vue";
-import Card from "./ui/card.vue";
 
 const rows = ref<ModelProviderRow[]>([]);
 const loading = ref(false);
@@ -125,7 +124,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Card class="mp-panel">
+  <div class="mp-panel agent-tab-panel">
     <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
       <span class="live-dot"></span>Model providers
     </div>
@@ -137,7 +136,7 @@ onMounted(() => {
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
     <div v-else-if="loading && !rows.length" class="agent-empty">Loading providers…</div>
 
-    <div v-for="(row, i) in rows" :key="row.id" class="mp-row" :class="{ first: i === 0 }">
+    <div v-for="row in rows" :key="row.id" class="mp-row">
       <div class="mp-row-head">
         <div class="mp-row-title">
           <span class="agent-name">{{ row.label }}</span>
@@ -306,22 +305,25 @@ onMounted(() => {
         </template>
       </template>
     </div>
-  </Card>
+  </div>
 </template>
 
 <style scoped>
-/* Matches the tab Cards in AgentsView (padding: 0 18px 6px; margin-bottom: 16px). */
+/* Matches the tab panels in AgentsView (padding: 0 18px 6px; margin-bottom: 16px). */
 .mp-panel {
   padding: 0 18px 14px;
   margin-bottom: 16px;
 }
+/* Card treatment matches .agent-card / .detect-row (#0384 follow-up):
+   own border + radius + surface fill, separated by margin between rows. */
 .mp-row {
-  padding: 14px 0 12px;
-  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
 }
-.mp-row.first {
-  border-top: 0;
-  padding-top: 6px;
+.mp-row + .mp-row {
+  margin-top: 12px;
 }
 .mp-row-head {
   display: flex;

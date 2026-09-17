@@ -157,7 +157,7 @@ watch(
   <Teleport to="body">
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
       <DialogOverlay />
-      <DialogContent class="am-modal">
+      <DialogContent class="am-modal am-modal-wide">
         <div class="am-modal-head">
           <div class="am-modal-head-text">
             <DialogTitle>Coding Agent + Model</DialogTitle>

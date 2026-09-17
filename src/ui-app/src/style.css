@@ -5561,9 +5561,26 @@
 .agents-tab-content::-webkit-scrollbar {
   display: none;
 }
+/*
+ * Each tab's list used to sit inside a translucent <Card> (bg: --panel) that
+ * wrapped the already-solid .agent-card / .detect-row items (bg:
+ * --panel-solid) — two nearly-identical dark blues stacked on top of each
+ * other read as one muddy nested box rather than distinct cards (#0384
+ * follow-up). The tab content now sits directly on the page background, the
+ * same flat layering the Tokens tab's .task-section cards already use.
+ */
+.agent-tab-panel {
+  background: transparent;
+  border: none;
+}
 .agent-card {
-  border-top: 1px solid var(--border);
-  padding: 14px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
+  padding: 14px 16px;
+}
+.agent-card + .agent-card {
+  margin-top: 12px;
 }
 .agent-card.off {
   opacity: 0.55;
@@ -5800,9 +5817,14 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
   flex-wrap: wrap;
+}
+.detect-row + .detect-row {
+  margin-top: 12px;
 }
 .detect-row-left {
   display: flex;
@@ -7087,6 +7109,11 @@
   flex-direction: column;
   overflow: hidden;
   animation: am-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Only the Coding Agent + Model selector opts into the wider desktop cap; the
+   skills modal reuses .am-modal and keeps the narrower default. */
+.am-modal.drawer-wrap.drawer.am-modal-wide {
+  width: min(700px, 92vw);
 }
 @keyframes am-modal-in {
   from {
