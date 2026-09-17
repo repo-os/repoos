@@ -373,6 +373,24 @@ export function mainCheckoutRoot(dir: string): string | null {
 }
 
 /**
+ * The project display name: `basename(mainCheckoutRoot(root) ?? root)` — never
+ * the raw worktree basename. When the server runs inside a task worktree this
+ * resolves to the main checkout's directory name (e.g. "repoos"), not the
+ * branch name that the worktree directory is named after.
+ */
+export function projectDisplayName(root: string): string {
+  return basename(mainCheckoutRoot(root) ?? root) || "repoos";
+}
+
+/**
+ * The branch name when `root` is a linked worktree, or null when it is the
+ * main checkout. Useful for "repo × branch" display combinations.
+ */
+export function projectDisplayBranch(root: string): string | null {
+  return mainCheckoutRoot(root) !== null ? basename(root) : null;
+}
+
+/**
  * The root LIVE-BOARD reads (`repoos show`/`list`/`index`) should resolve to:
  * the MAIN checkout even when the CLI runs inside a task worktree, so a
  * readback can never false-positive on the worktree's own copy. `fromWorktree`

@@ -19,7 +19,6 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createVerify, createPublicKey } from "node:crypto";
-import { basename } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { getAuthStore, type AuthStore } from "../../core/auth-store.js";
@@ -41,6 +40,7 @@ import {
   randomHex,
 } from "../../core/auth.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import { projectDisplayName, projectDisplayBranch } from "../../core/config.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,7 +109,7 @@ function requireAdmin(
  * notification in notify.ts). auth.emailProvider.fromName overrides it.
  */
 function defaultFromName(config: RepoOSConfig): string {
-  return `RepoOS at ${basename(config.root)}`;
+  return `RepoOS at ${projectDisplayName(config.root)}`;
 }
 
 /**
@@ -158,20 +158,22 @@ async function sendResendEmail(
 }
 
 async function sendOtpEmail(config: RepoOSConfig, toEmail: string, code: string): Promise<boolean> {
-  const repoName = basename(config.root);
+  const repoName = projectDisplayName(config.root);
+  const branch = projectDisplayBranch(config.root);
+  const subjectSuffix = branch ? `${repoName} \u00d7 ${branch}` : repoName;
   return sendResendEmail(
     config,
     toEmail,
-    `${code} Your RepoOS Login Code — ${repoName}`,
+    `${code} Your RepoOS Login Code \u2014 ${subjectSuffix}`,
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="margin-bottom: 16px;">RepoOS Login Code — ${repoName}</h2>
+        <h2 style="margin-bottom: 16px;">RepoOS Login Code \u2014 ${subjectSuffix}</h2>
         <p>Your one-time login code for <strong>${repoName}</strong> is:</p>
         <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0; text-align: center; color: #333;">
           ${code}
         </div>
         <p style="color: #666; font-size: 14px;">This code expires in 10 minutes and can only be used once.</p>
-        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this code only works for <strong>${repoName}</strong> — check you're on the right one before entering it.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this code only works for <strong>${repoName}</strong> \u2014 check you're on the right one before entering it.</p>
         <p style="color: #999; font-size: 12px; margin-top: 8px;">If you didn't request this code, you can safely ignore this email.</p>
       </div>
     `,
@@ -189,19 +191,21 @@ async function sendInviteEmail(
   toEmail: string,
   loginUrl: string,
 ): Promise<boolean> {
-  const repoName = basename(config.root);
+  const repoName = projectDisplayName(config.root);
+  const branch = projectDisplayBranch(config.root);
+  const subjectSuffix = branch ? `${repoName} \u00d7 ${branch}` : repoName;
   return sendResendEmail(
     config,
     toEmail,
-    `You're invited to RepoOS at ${repoName}`,
+    `You're invited to RepoOS at ${subjectSuffix}`,
     `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${repoName}</h2>
+        <h2 style="margin-bottom: 16px;">You're invited to RepoOS at ${subjectSuffix}</h2>
         <p>An admin has added <strong>${toEmail}</strong> to the allowlist for the <strong>${repoName}</strong> repo. Sign in any time with a one-time email code${config.auth?.google ? " or Google" : ""}:</p>
         <p style="margin: 24px 0; text-align: center;">
           <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Sign in to RepoOS</a>
         </p>
-        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this invite is only for <strong>${repoName}</strong> — check you're on the right one before signing in.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 24px;">If you use RepoOS on more than one repo, this invite is only for <strong>${repoName}</strong> \u2014 check you're on the right one before signing in.</p>
         <p style="color: #999; font-size: 12px; margin-top: 8px;">If you weren't expecting this, you can safely ignore this email.</p>
       </div>
     `,
@@ -352,8 +356,9 @@ export const authStatus: RouteHandler = (ctx, _req, res) => {
     hasEmailProvider: !!(auth.emailProvider?.apiKey && auth.emailProvider?.fromAddress),
     // So the login page can show which instance you're signing into — the
     // same "RepoOS at <repo>" convention used in outbound email. Just the
-    // directory name, never the full server filesystem path.
-    repoName: basename(config.root),
+    // project display name, never the full server filesystem path or the
+    // worktree branch name.
+    repoName: projectDisplayName(config.root),
   });
 };
 

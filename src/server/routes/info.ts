@@ -7,6 +7,7 @@ import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
 import { withPmWorking } from "../pm-runs.js";
 import { previewTargetOptions } from "../preview.js";
 import { CANARY_COUNTER } from "../../core/canary.js";
+import { projectDisplayName, projectDisplayBranch } from "../../core/config.js";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -35,6 +36,8 @@ export const health: RouteHandler = (ctx, req, res) => {
   return json(res, 200, {
     ok: true,
     root: ctx.config.root,
+    projectName: projectDisplayName(ctx.config.root),
+    branch: projectDisplayBranch(ctx.config.root),
     taskCount: snap.taskCount,
     workDir: ctx.config.workDir,
     version: build.version,

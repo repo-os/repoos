@@ -1,4 +1,4 @@
-import { basename, extname, resolve, join, dirname } from "node:path";
+import { extname, resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -7,6 +7,7 @@ import { connect } from "node:net";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { STATUSES } from "../../core/types.js";
 import { readBuildMeta } from "../../core/build.js";
+import { projectDisplayName } from "../../core/config.js";
 
 export const UI_MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -161,5 +162,5 @@ export function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   const docs = listDocs(config)
     .map((doc) => `- ${doc.title} (${doc.path})`)
     .join("\n");
-  return `Repository: ${basename(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
+  return `Repository: ${projectDisplayName(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
 }

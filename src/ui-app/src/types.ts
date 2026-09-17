@@ -127,6 +127,10 @@ export interface ScreenshotMeta {
 export interface Health {
   ok: boolean;
   root: string;
+  /** The project display name — basename of the main checkout, never the worktree branch. */
+  projectName: string;
+  /** The branch name when running from a worktree, or null for the main checkout. */
+  branch: string | null;
   taskCount: number;
   workDir: string;
   /** App version (package.json), or null when unavailable. */

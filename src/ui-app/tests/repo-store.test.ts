@@ -70,7 +70,14 @@ function mockFetch(): void {
   const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
   const fetchMock = vi.fn(async (url: string) => {
     if (url.includes("/api/health"))
-      return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      return json({
+        ok: true,
+        root: "/tmp/repo",
+        projectName: "repo",
+        branch: null,
+        taskCount: 0,
+        workDir: "work",
+      });
     if (url.includes("/api/board") || url.includes("/api/index"))
       return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
     if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -110,7 +117,14 @@ describe("freeform task creation", () => {
     const task = makeTask({ id: "0043", title: "Generated task" });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -136,7 +150,14 @@ describe("freeform task creation", () => {
     const draft = makeTask({ id: "0043", status: "draft" });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -158,7 +179,14 @@ describe("freeform task creation", () => {
     const task = makeTask({ id: "0044", title: "Generated task" });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -182,7 +210,14 @@ describe("freeform task creation", () => {
     const json = async (data: unknown) => ({ ok: false, status: 500, json: async () => data });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -237,7 +272,14 @@ describe("repo store SSE ingestion", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board"))
           return json({ tasks: [boardTask], counts: { ...EMPTY_COUNTS, inbox: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -363,7 +405,14 @@ describe("automatic review state", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [reviewing], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -401,7 +450,14 @@ describe("automatic review state", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({
             tasks: [indexReads++ === 0 ? idle : running],
@@ -451,7 +507,14 @@ describe("automatic review state", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -503,7 +566,14 @@ describe("reviewer conversation (0110)", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [reviewing], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -555,7 +625,14 @@ describe("CTO board monitor (0174)", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 0,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -760,7 +837,14 @@ describe("agent output transcript", () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -851,7 +935,14 @@ describe("error toasts", () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
-        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        return json({
+          ok: true,
+          root: "/tmp/repo",
+          projectName: "repo",
+          branch: null,
+          taskCount: 0,
+          workDir: "work",
+        });
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -1146,7 +1237,14 @@ describe("fresh-done acknowledgement (0278)", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 1,
+            workDir: "work",
+          });
         if (url.includes("/api/board"))
           return json({
             tasks: [recentlyDone],
@@ -1488,7 +1586,14 @@ describe("sync task branch with main (rebase-onto-main button)", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 0,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
@@ -1522,7 +1627,14 @@ describe("sync task branch with main (rebase-onto-main button)", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/health"))
-          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 0,
+            workDir: "work",
+          });
         if (url.includes("/api/board") || url.includes("/api/index"))
           return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });

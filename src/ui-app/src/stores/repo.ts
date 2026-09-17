@@ -480,7 +480,8 @@ export const useRepoStore = defineStore("repo", () => {
   let flashTimer: ReturnType<typeof setTimeout> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const repoName = computed(() => (health.value ? (health.value.root.split("/").pop() ?? "") : ""));
+  const repoName = computed(() => (health.value ? health.value.projectName : ""));
+  const branch = computed(() => (health.value ? health.value.branch : null));
   const workDir = computed(() => (health.value ? health.value.workDir : "work"));
   const total = computed(() => tasks.value.length);
   const aiTasks = computed(() =>
@@ -2236,6 +2237,7 @@ export const useRepoStore = defineStore("repo", () => {
     restartServer,
     clearNewVersion,
     repoName,
+    branch,
     workDir,
     total,
     aiTasks,
