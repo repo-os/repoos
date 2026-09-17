@@ -12,7 +12,7 @@ interface ServiceInfo {
   platform: string;
   label: string;
   autoStart: boolean;
-  status: "running" | "stopped" | "error" | "unknown";
+  status: "running" | "stopped" | "error" | "unknown" | "disabled";
   lastHealthCheck: string | null;
   healthError: string | null;
   createdAt: string;

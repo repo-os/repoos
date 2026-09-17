@@ -34,7 +34,7 @@ import { realpathSync } from "node:fs";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type ServicePlatform = "launchd" | "systemd";
-export type ServiceStatus = "running" | "stopped" | "error" | "unknown";
+export type ServiceStatus = "running" | "stopped" | "error" | "unknown" | "disabled";
 
 export interface ServiceEntry {
   /** Collision-safe id: `<repo-name>-<8-char-hash>` */
@@ -149,7 +149,7 @@ function plistPath(label: string): string {
 }
 
 function logDir(): string {
-  return join(homedir(), "Library", "Logs");
+  return join(SERVICES_DIR, "logs");
 }
 
 function repoosBinary(): string {
@@ -481,11 +481,12 @@ export async function getServiceStatus(root: string): Promise<ServiceEntry | nul
       : existsSync(systemdUnitPath(entry.label));
 
   if (!artifactExists) {
-    // The plist/unit was removed outside RepoOS — mark as stopped with a
-    // clear error so the UI surfaces it as "Needs attention".
-    if (entry.status !== "stopped" || entry.healthError !== "Service file removed externally") {
-      entry.status = "stopped";
-      entry.healthError = "Service file removed externally — reinstall to restore";
+    // The plist/unit was removed outside RepoOS — mark as "error" (Needs
+    // attention) so the UI surfaces the drift clearly.
+    const driftMsg = "Service file removed externally — reinstall to restore";
+    if (entry.status !== "error" || entry.healthError !== driftMsg) {
+      entry.status = "error";
+      entry.healthError = driftMsg;
       entry.updatedAt = new Date().toISOString();
       writeRegistry(entries);
     }
@@ -565,19 +566,28 @@ export async function installService(
     }
     writeFileSync(dest, unit, "utf8");
 
-    // Reload systemd
-    systemctl("daemon-reload");
-    // Enable/disable controls auto-start; always reload the unit first
+    // Reload systemd — if this fails, clean up the unit file
+    const reloadResult = systemctl("daemon-reload");
+    if (!reloadResult.ok) {
+      rmSync(dest, { force: true });
+      return { ok: false, error: `systemd daemon-reload failed: ${reloadResult.stderr}` };
+    }
+    // Enable/disable controls auto-start
     if (entry.autoStart) {
-      systemctl("enable", `${label}.service`);
+      const enableResult = systemctl("enable", `${label}.service`);
+      if (!enableResult.ok) {
+        rmSync(dest, { force: true });
+        systemctl("daemon-reload");
+        return { ok: false, error: `systemctl enable failed: ${enableResult.stderr}` };
+      }
     }
   }
 
   entries.push(entry);
   writeRegistry(entries);
 
-  // Start the service immediately after install
-  const startResult = await startService(root);
+  // Start the service immediately after install — but only if install succeeded
+  await startService(root);
 
   return { ok: true, entry };
 }
@@ -624,6 +634,9 @@ export async function removeService(root: string): Promise<{ ok: boolean; error?
 
 /**
  * Start a background service.
+ * macOS: `launchctl load` re-registers and starts the agent (idempotent if
+ * already loaded). `launchctl start` alone fails when the job isn't loaded.
+ * Linux: `systemctl start` works for both loaded and enabled units.
  */
 export async function startService(root: string): Promise<{ ok: boolean; error?: string }> {
   const entries = readRegistry();
@@ -631,8 +644,14 @@ export async function startService(root: string): Promise<{ ok: boolean; error?:
   if (!entry) return { ok: false, error: "No service found for this repository" };
 
   if (entry.platform === "launchd") {
-    const result = launchctl("start", entry.label);
-    if (!result.ok) return { ok: false, error: `launchctl start failed: ${result.stderr}` };
+    // load is idempotent — if already loaded, launchd is a no-op. This
+    // handles the unload-then-start recovery cycle.
+    const dest = plistPath(entry.label);
+    if (!existsSync(dest)) {
+      return { ok: false, error: "LaunchAgent plist missing — reinstall the service" };
+    }
+    const result = launchctl("load", dest);
+    if (!result.ok) return { ok: false, error: `launchctl load failed: ${result.stderr}` };
   } else {
     const result = systemctl("start", `${entry.label}.service`);
     if (!result.ok) return { ok: false, error: `systemctl start failed: ${result.stderr}` };
@@ -652,6 +671,10 @@ export async function startService(root: string): Promise<{ ok: boolean; error?:
 
 /**
  * Stop a background service.
+ * macOS: `launchctl unload` removes the job from launchd's management, so
+ * KeepAlive won't respawn it. `launchctl stop` alone is overridden by
+ * KeepAlive.Crashed=true and the process restarts immediately.
+ * Linux: `systemctl stop` is sufficient — no respawn loop.
  */
 export async function stopService(root: string): Promise<{ ok: boolean; error?: string }> {
   const entries = readRegistry();
@@ -660,17 +683,18 @@ export async function stopService(root: string): Promise<{ ok: boolean; error?: 
 
   let stopError: string | undefined;
   if (entry.platform === "launchd") {
-    const result = launchctl("stop", entry.label);
-    if (!result.ok) stopError = `launchctl stop failed: ${result.stderr}`;
+    const dest = plistPath(entry.label);
+    if (existsSync(dest)) {
+      const result = launchctl("unload", dest);
+      if (!result.ok) stopError = `launchctl unload failed: ${result.stderr}`;
+    }
   } else {
     const result = systemctl("stop", `${entry.label}.service`);
     if (!result.ok) stopError = `systemctl stop failed: ${result.stderr}`;
   }
 
   // Always update status — even on failure, the service is no longer
-  // managed as "running" from RepoOS's perspective. The OS may have
-  // already stopped it, or the stop may have failed because it was
-  // already stopped.
+  // managed as "running" from RepoOS's perspective.
   entry.status = "stopped";
   entry.updatedAt = new Date().toISOString();
   writeRegistry(entries);

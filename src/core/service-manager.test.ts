@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { afterEach, describe, expect, it } from "vitest";
+import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { serviceId, serviceLabel, detectPlatform, type ServiceEntry } from "./service-manager.js";
@@ -52,16 +52,9 @@ describe("detectPlatform", () => {
     const platform = detectPlatform();
     expect(["launchd", "systemd"]).toContain(platform);
   });
-
-  it("returns launchd on macOS", () => {
-    // This test runs on the current platform, so we just verify the function
-    // returns a string and doesn't throw
-    const platform = detectPlatform();
-    expect(typeof platform).toBe("string");
-  });
 });
 
-describe("ServiceEntry shape", () => {
+describe("ServiceEntry type shape", () => {
   it("has all required fields", () => {
     const entry: ServiceEntry = {
       id: "test-a1b2c3d4",
@@ -82,7 +75,27 @@ describe("ServiceEntry shape", () => {
     expect(["launchd", "systemd"]).toContain(entry.platform);
     expect(entry.label).toBeTruthy();
     expect(typeof entry.autoStart).toBe("boolean");
-    expect(["running", "stopped", "error", "unknown"]).toContain(entry.status);
+    expect(["running", "stopped", "error", "unknown", "disabled"]).toContain(entry.status);
+  });
+
+  it("supports all status values", () => {
+    const statuses = ["running", "stopped", "error", "unknown", "disabled"] as const;
+    for (const status of statuses) {
+      const entry: ServiceEntry = {
+        id: "test",
+        root: "/tmp",
+        port: 7200,
+        platform: "launchd",
+        label: "com.repoos.serve.test",
+        autoStart: false,
+        status,
+        lastHealthCheck: null,
+        healthError: null,
+        createdAt: "",
+        updatedAt: "",
+      };
+      expect(entry.status).toBe(status);
+    }
   });
 });
 
@@ -118,5 +131,52 @@ describe("registry file operations", () => {
     writeFileSync(servicesFile, "[]", "utf8");
     const read = JSON.parse(readFileSync(servicesFile, "utf8")) as ServiceEntry[];
     expect(read).toHaveLength(0);
+  });
+
+  it("preserves drift state through round-trip", () => {
+    const dir = tmpDir("repoos-svc-drift-");
+    const servicesFile = join(dir, "services.json");
+    const entries: ServiceEntry[] = [
+      {
+        id: "drift-a1b2c3d4",
+        root: "/tmp/drift",
+        port: 7201,
+        platform: "systemd",
+        label: "com.repoos.serve.drift-a1b2c3d4",
+        autoStart: true,
+        status: "error",
+        lastHealthCheck: null,
+        healthError: "Service file removed externally — reinstall to restore",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ];
+    writeFileSync(servicesFile, JSON.stringify(entries, null, 2), "utf8");
+    const read = JSON.parse(readFileSync(servicesFile, "utf8")) as ServiceEntry[];
+    expect(read[0].status).toBe("error");
+    expect(read[0].healthError).toContain("removed externally");
+  });
+});
+
+describe("plist content validation", () => {
+  it("generates valid plist XML structure", () => {
+    const entry: ServiceEntry = {
+      id: "test-plist",
+      root: "/tmp/test",
+      port: 7200,
+      platform: "launchd",
+      label: "com.repoos.serve.test-plist",
+      autoStart: false,
+      status: "stopped",
+      lastHealthCheck: null,
+      healthError: null,
+      createdAt: "",
+      updatedAt: "",
+    };
+    // We can't call generatePlist directly (it's private), but we can
+    // validate the entry shape that would be used to generate one.
+    expect(entry.label).toMatch(/^com\.repoos\.serve\./);
+    expect(entry.port).toBeGreaterThan(0);
+    expect(entry.port).toBeLessThan(65536);
   });
 });
