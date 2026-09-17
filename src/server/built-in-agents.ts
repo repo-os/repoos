@@ -18,6 +18,12 @@ import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
 import { commitTaskFile } from "../core/git.js";
 import type { Logger } from "../core/logger.js";
+import {
+  runSkillGuidedAgent,
+  saveLastRunAt,
+  type SkillGuidedFinding,
+} from "./built-in-agent-runner.js";
+import { PERFORMANCE_SKILL_DOC } from "./built-in-agent-skill-docs.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -78,12 +84,6 @@ export interface TechDebtRunResult extends CreateTechDebtResult {
 
 /** Raised when the Tech Debt Agent cannot do its job at all (e.g. missing work dir). */
 export class TechDebtError extends Error {}
-
-export interface PerformanceScanResult {
-  issues: PerformanceIssue[];
-  /** Number of files actually read (bounded by the scan cap). */
-  scannedFiles: number;
-}
 
 export interface CreatePerformanceResult {
   /** Tasks successfully written to the inbox. */
@@ -185,11 +185,6 @@ const MIN_EXPORT_NAME_LENGTH = 3;
 const MAX_REGISTRY_PROBES = 12;
 const REGISTRY_CONCURRENCY = 4;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-/** Performance thresholds */
-const SLOW_FUNCTION_LINES = 300;
-const NESTED_LOOP_DEPTH = 3;
-const MAX_PERF_SCAN_FILES = 500;
-const MAX_PERF_ISSUES = 30;
 
 /** Docs Debt Agent bounds (#0354): a periodic sweep, never an unbounded crawl. */
 const DOC_ROOTS = ["AGENTS.md", "docs", "user-docs"];
@@ -692,166 +687,6 @@ export function isDueForScheduledRun(
 }
 
 /**
- * Scan the repository for performance issues.
- * Returns the identified issues plus scan bounds, so callers can tell a
- * successful-but-empty scan apart from a failed one.
- */
-export async function scanForPerformanceIssues(
-  config: RepoOSConfig,
-): Promise<PerformanceScanResult> {
-  const issues: PerformanceIssue[] = [];
-
-  const files = collectSourceFiles(config.root);
-  const scanned = readScannedFiles(config.root, files);
-
-  let perfIssuesCount = 0;
-
-  for (const file of scanned) {
-    if (perfIssuesCount >= MAX_PERF_ISSUES) break;
-
-    const lines = file.content.split("\n");
-
-    // 1. Functions that are too long (likely doing too much).
-    if (file.lineCount > SLOW_FUNCTION_LINES) {
-      issues.push({
-        type: "slow-function",
-        file: file.rel,
-        line: 1,
-        description: `Function/file is ${file.lineCount} lines long — consider breaking it into smaller functions for better performance and readability`,
-        severity: "medium",
-      });
-      perfIssuesCount++;
-    }
-
-    // 2. Detect deeply nested loops (N² or worse performance).
-    const cleaned = stripCommentsAndStrings(file.content);
-    let maxDepth = 0;
-    let currentDepth = 0;
-    let lineNum = 1;
-    let maxDepthLine = 1;
-
-    for (let i = 0; i < cleaned.length; i++) {
-      const char = cleaned[i];
-      if (char === "\n") lineNum++;
-      if (
-        char === "{" &&
-        cleaned.substring(Math.max(0, i - 50), i).match(/\b(?:for|while|forEach)\s*[\(\{]/)
-      ) {
-        currentDepth++;
-        if (currentDepth > maxDepth) {
-          maxDepth = currentDepth;
-          maxDepthLine = lineNum;
-        }
-      }
-      if (char === "}") currentDepth = Math.max(0, currentDepth - 1);
-    }
-
-    if (maxDepth >= NESTED_LOOP_DEPTH) {
-      issues.push({
-        type: "blocking-operation",
-        file: file.rel,
-        line: maxDepthLine,
-        description: `Nested loops detected (depth ${maxDepth}) — this could cause O(n²) or worse performance; consider refactoring`,
-        severity: maxDepth > 4 ? "high" : "medium",
-      });
-      perfIssuesCount++;
-    }
-
-    // 3. Look for synchronous operations that should be async.
-    const syncPatterns = [
-      { pattern: /\bfs\.readFileSync\b/, desc: "Synchronous file read blocks the event loop" },
-      { pattern: /\bfs\.writeFileSync\b/, desc: "Synchronous file write blocks the event loop" },
-      {
-        pattern: /\bJSON\.stringify\(.*\)\s*;/,
-        desc: "Large object serialization could block; consider streaming",
-      },
-    ];
-
-    for (const { pattern, desc } of syncPatterns) {
-      if (pattern.test(cleaned)) {
-        let m: RegExpExecArray | null;
-        const globalPattern = new RegExp(pattern.source, "g");
-        while ((m = globalPattern.exec(cleaned)) !== null) {
-          if (perfIssuesCount >= MAX_PERF_ISSUES) break;
-          issues.push({
-            type: "blocking-operation",
-            file: file.rel,
-            line: findLineAt(file.content, m.index),
-            description: `${desc}`,
-            severity: "high",
-          });
-          perfIssuesCount++;
-        }
-      }
-    }
-
-    // 4. Detect potential unbounded growth (array/object accumulation without cleanup).
-    const unboundedPatterns = [
-      { pattern: /\w+\.push\s*\(/g, label: "array push" },
-      { pattern: /Map\s*\(/g, label: "Map construction" },
-    ];
-
-    for (const { pattern, label } of unboundedPatterns) {
-      if (perfIssuesCount >= MAX_PERF_ISSUES) break;
-      const matches = (cleaned.match(pattern) || []).length;
-      if (matches > 10) {
-        issues.push({
-          type: "unbounded-growth",
-          file: file.rel,
-          line: 1,
-          description: `File uses "${label}" frequently (${matches} times) — ensure proper cleanup to prevent memory leaks`,
-          severity: "low",
-        });
-        perfIssuesCount++;
-        break;
-      }
-    }
-
-    // 5. Detect duplicate computations (expensive operations inside loops).
-    const lines_trimmed = lines.map((l) => l.trim()).filter((l) => l);
-    for (let i = 0; i < lines_trimmed.length - 2; i++) {
-      if (perfIssuesCount >= MAX_PERF_ISSUES) break;
-      const line = lines_trimmed[i];
-      // Match loop constructs: for(...), while(...), do...while
-      const loopMatch = /^\s*(for|while|do)\s*[\(\{]/.test(line);
-      if (loopMatch) {
-        // Look for expensive operations in the next few lines
-        const loopBody = lines_trimmed.slice(i + 1, Math.min(i + 5)).join(" ");
-        if (
-          loopBody.includes("JSON.parse") ||
-          loopBody.includes("JSON.stringify") ||
-          loopBody.includes("fetch") ||
-          loopBody.includes("database") ||
-          loopBody.includes("query")
-        ) {
-          // Find the actual line number by searching for the loop start from position i
-          // Count lines up to this point
-          let lineNum = 1;
-          let charIndex = 0;
-          for (let j = 0; j < lines.length; j++) {
-            const currentLine = lines[j].trim();
-            if (currentLine === line) {
-              lineNum = j + 1;
-              break;
-            }
-          }
-          issues.push({
-            type: "duplicated-computation",
-            file: file.rel,
-            line: lineNum,
-            description: `Potentially expensive operation detected inside loop — move it outside the loop if possible`,
-            severity: "medium",
-          });
-          perfIssuesCount++;
-        }
-      }
-    }
-  }
-
-  return { issues, scannedFiles: scanned.length };
-}
-
-/**
  * Create tasks in the inbox for performance issues.
  * Returns counts for created and failed writes, so callers never see a
  * silently-truncated task list. Throws PerformanceError when the work dir itself
@@ -970,21 +805,97 @@ export async function runTechDebtAgent(
 }
 
 /**
- * Run the Performance Agent end to end: scan, create tasks, record lastRunAt.
- * The caller owns overlap protection (a single in-flight guard in server.ts).
+ * Normalize a skill-guided finding type to the Performance agent's canonical
+ * issue types. The skill doc asks the model to use one of the four, but an
+ * unexpected label must never drop a real finding or misfile it into the wrong
+ * task bucket.
  */
-export async function runPerformanceAgent(config: RepoOSConfig): Promise<PerformanceRunResult> {
-  const scan = await scanForPerformanceIssues(config);
-  const created = await createPerformanceTasks(config, scan.issues);
+export function normalizePerformanceIssueType(type: string): PerformanceIssueType {
+  switch (type) {
+    case "slow-function":
+    case "blocking-operation":
+    case "unbounded-growth":
+    case "duplicated-computation":
+      return type;
+    default: {
+      const t = type.toLowerCase();
+      if (/(unbounded|memory|leak|growth|accumulat)/.test(t)) return "unbounded-growth";
+      if (/(nested|block|loop|sync|io|await|contention|scan)/.test(t)) return "blocking-operation";
+      if (/(duplicat|recomput|redundant|cache|memo)/.test(t)) return "duplicated-computation";
+      return "slow-function";
+    }
+  }
+}
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["performance"] = { ...(agents["performance"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
+/** Convert the shared runner's findings into the Performance agent's issue shape. */
+function toPerformanceIssues(findings: SkillGuidedFinding[]): PerformanceIssue[] {
+  return findings.map((finding) => ({
+    type: normalizePerformanceIssueType(finding.type),
+    file: finding.file ?? "(repository)",
+    line: finding.line,
+    description: finding.description || "Performance issue reported by the agent",
+    severity: finding.severity,
+  }));
+}
+
+/**
+ * Run the Performance Agent end to end through the shared skill-guided runner:
+ * the configured CLI/model reviews the repo (in whatever language it uses) for
+ * performance issues, findings become deduplicated inbox tasks, and lastRunAt
+ * is recorded.
+ *
+ * Replaces the old `SOURCE_EXTS`-filtered deterministic scan, which silently
+ * matched zero files in any non-JS/TS project. The caller owns overlap
+ * protection (a single in-flight guard in server.ts).
+ *
+ * A model/connector failure throws {@link PerformanceError} with the agent
+ * named, so the run route surfaces it on this agent's own settings card rather
+ * than silently reporting "no issues found".
+ */
+export async function runPerformanceAgent(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<PerformanceRunResult> {
+  const run = await runSkillGuidedAgent(
+    "performance",
+    config,
+    PERFORMANCE_SKILL_DOC,
+    "src/server/built-in-agent-skill-docs.ts",
+    logger,
+  );
+
+  if (!run.ok) {
+    const message = run.error ?? "Performance Agent run failed";
+    logger?.agent("performance", "error", message);
+    throw new PerformanceError(message);
+  }
+
+  const issues = toPerformanceIssues(run.findings);
+  logger?.agent("performance", "info", "Performance review completed", {
+    issuesFound: issues.length,
+    scannedFiles: run.scannedFiles ?? 0,
+  });
+
+  const created = await createPerformanceTasks(config, issues);
+  if (created.failed > 0) {
+    logger?.agent(
+      "performance",
+      "error",
+      `Failed to create ${created.failed} performance task(s)`,
+      {
+        errors: created.errors,
+      },
+    );
+  }
+  if (created.created > 0) {
+    logger?.agent("performance", "info", `Created ${created.created} performance task(s)`);
+  }
+
+  saveLastRunAt(config.root, "performance", config);
 
   return {
-    issuesFound: scan.issues.length,
-    scannedFiles: scan.scannedFiles,
+    issuesFound: issues.length,
+    scannedFiles: run.scannedFiles ?? 0,
     ...created,
   };
 }
@@ -2130,7 +2041,7 @@ export async function runBuiltInAgent(
     return runTechDebtAgent(config, {}, logger);
   }
   if (name === "performance") {
-    return runPerformanceAgent(config);
+    return runPerformanceAgent(config, logger);
   }
   if (name === "architect") {
     return runArchitectAgent(config);
