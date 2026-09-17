@@ -5039,6 +5039,27 @@
   margin-top: 8px;
   line-height: 1.5;
 }
+/* Live progress while a preview start/stop is in flight (#0374). Kept visually
+   distinct from the disabled button it replaces: full opacity, an animated
+   spinner, and a ticking elapsed time once the wait passes a second. */
+.preview-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.preview-progress-elapsed {
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
 .new-btn {
   display: flex;
   align-items: center;
