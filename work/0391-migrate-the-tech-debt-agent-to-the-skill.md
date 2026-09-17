@@ -8,9 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-tech-debt-agent-to-the-skill
-cli_override: opencode
+cli_override: claude code
 created_at: "2026-09-17T14:03:23Z"
-updated_at: "2026-09-17T18:49:03Z"
+updated_at: "2026-09-17T18:49:04Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T18:48:47Z · status active→ready
 - 2026-09-17T18:48:58Z · cli_override
 - 2026-09-17T18:49:03Z · cli_override
+- 2026-09-17T18:49:04Z · cli_override
