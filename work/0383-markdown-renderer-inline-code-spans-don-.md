@@ -2,7 +2,7 @@
 id: "0383"
 title: "Markdown renderer: inline code spans don't protect their content from later formatting passes"
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/markdown-renderer-inline-code-spans-don-
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T07:55:51Z"
-updated_at: "2026-09-17T07:58:30Z"
+updated_at: "2026-09-17T07:59:35Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ already safe; just don't let it pass through the OTHER regexes a second time.
 - 2026-09-17T07:58:26Z · review_model_override
 - 2026-09-17T07:58:28Z · status inbox→ready
 - 2026-09-17T07:58:30Z · status ready→active, branch
+- 2026-09-17T07:59:35Z · status active→review
