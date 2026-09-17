@@ -51,7 +51,13 @@ describe("close-out gate retry (0216)", () => {
 
   /** An orchestrator whose sync/validate/publish steps are stubbed. */
   function orchestrator(
-    validateResults: { ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }[],
+    validateResults: {
+      ok: boolean;
+      reason?: string;
+      candidateSha?: string;
+      retryable?: boolean;
+      resynced?: boolean;
+    }[],
   ) {
     const coordinator = createJobCoordinator(repo);
     coordinator.enqueue({ id: "0001", branch: "feat/x" } as never);
@@ -137,5 +143,26 @@ describe("close-out gate retry (0216)", () => {
     ]);
     await orch.processNext();
     expect(calls).toHaveLength(2);
+  });
+
+  it("treats a resync discovered on the retry as a retry, not a gate failure (#0399)", async () => {
+    // The first call fails retryably (gate flake); before the second runs, main
+    // advances, so the retry discovers drift and returns `resynced`. That must
+    // be checked before the retry-failure classification, or the job is failed
+    // with a misleading "main advanced … revalidating" reason.
+    const { orch, coordinator, calls } = orchestrator([
+      { ok: false, reason: "check failed: waitFor timed out" },
+      {
+        ok: false,
+        resynced: true,
+        reason: "main advanced during validation (abc → def); revalidating from the new tip",
+      },
+    ]);
+    const res = await orch.processNext();
+    expect(calls).toHaveLength(2);
+    const job = coordinator.getJob("0001");
+    expect(job?.phase).not.toBe("failed");
+    expect(job?.reason).toBeUndefined();
+    expect(res.reason).toContain("main advanced");
   });
 });
