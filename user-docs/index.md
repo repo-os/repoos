@@ -4,7 +4,7 @@ layout: home
 hero:
   name: 'RepoOS'
   text: The repo is the operating system.
-  tagline: Tasks are markdown files in your repo. AI agents work them in git worktrees. You stay at the sign-off gate.
+  tagline: Tasks are markdown files in your repo, worked by agents in isolated git worktrees — you review and merge, not them.
   actions:
     - theme: brand
       text: Get started
@@ -65,7 +65,7 @@ pnpm add -g @repo-os/repoos
 
 ```bash
 repoos init    # scaffolds work/, docs/, AGENTS.md — touches nothing else
-repoos serve   # opens the board at http://127.0.0.1:7171
+repoos serve   # starts the board — prints the local URL to open
 ```
 
 `repoos init` seeds a real starter task, so the board is never empty on first
