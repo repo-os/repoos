@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "0185"
 title: Per-repo background service management (launchd/systemd)
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/per-repo-background-service-management-l
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-08-14T04:16:57Z"
-updated_at: "2026-09-17T15:59:38Z"
+updated_at: "2026-09-17T16:18:25Z"
+handoff_signal_retry_count: 2
 review_rounds: 2
 review_passes: 2
 ---
@@ -87,4 +87,4 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - 2026-09-17T15:41:17Z · status review→active
 - 2026-09-17T15:57:55Z · status active→review
 - 2026-09-17T15:59:38Z · status review→active
-
+- 2026-09-17T16:18:25Z · status active→review
