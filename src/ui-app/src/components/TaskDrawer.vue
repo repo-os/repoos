@@ -806,6 +806,19 @@ function cancelDraft(): void {
 
 /** True while a preview start/stop request is in flight. */
 const previewBusy = ref(false);
+/**
+ * Which task the in-flight preview action belongs to. The drawer is a single
+ * component instance whose content swaps to whatever `ui.active` is — if the
+ * user opens a different task while a previous task's preview request is
+ * still in flight, `previewBusy` alone would make the NEW task's drawer show
+ * "Starting preview…" too, even though that request is for a different task
+ * entirely (found live, 2026-09-17). `isPreviewBusyForActive` below is what
+ * the template must check, never the bare `previewBusy`.
+ */
+const previewTaskId = ref<string | null>(null);
+const isPreviewBusyForActive = computed(
+  () => previewBusy.value && previewTaskId.value === ui.active?.id,
+);
 /** Which preview action is in flight, so the progress state can name it. */
 const previewAction = ref<"start" | "stop" | null>(null);
 /** When the in-flight preview action began, for the live elapsed readout. */
@@ -854,6 +867,7 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   if (!ui.active || previewBusy.value) return;
   const task = ui.active;
   previewBusy.value = true;
+  previewTaskId.value = task.id;
   previewAction.value = action;
   previewStartedAt.value = Date.now();
   startPreviewTimer();
@@ -864,6 +878,7 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
     repo.onError(err);
   } finally {
     previewBusy.value = false;
+    previewTaskId.value = null;
     previewAction.value = null;
     previewStartedAt.value = null;
     stopPreviewTimer();
@@ -2741,7 +2756,7 @@ watch(
               </a>
             </div>
             <span
-              v-if="previewBusy && previewAction === 'stop'"
+              v-if="isPreviewBusyForActive && previewAction === 'stop'"
               class="preview-progress"
               role="status"
             >
@@ -2754,7 +2769,7 @@ watch(
             <Button
               v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy"
+              :disabled="ui.saving || isPreviewBusyForActive"
               @click="stopPreview"
             >
               <Square class="size-3.5" />
@@ -2788,7 +2803,7 @@ watch(
               No preview running — the agent didn't request one before handoff.
             </p>
             <span
-              v-if="previewBusy && previewAction === 'start'"
+              v-if="isPreviewBusyForActive && previewAction === 'start'"
               class="preview-progress"
               role="status"
             >
@@ -2801,7 +2816,7 @@ watch(
             <Button
               v-else
               variant="outline"
-              :disabled="ui.saving || previewBusy"
+              :disabled="ui.saving || isPreviewBusyForActive"
               @click="startPreview"
             >
               <Play class="size-3.5" />

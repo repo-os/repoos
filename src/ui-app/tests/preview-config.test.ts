@@ -178,7 +178,14 @@ describe("this repo's own [preview] config", () => {
       expect(result.command).toContain("bun run build");
       expect(result.command).toContain("dist/cli/index.js");
       expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
-      expect(result.readyPath).toBe("/");
+      // NOT "/": this repo has auth.enabled = true, so the default readyPath
+      // ("/") is auth-gated and returns 401 forever — waitForReady would
+      // poll it until readyTimeoutMs (240s) expires on every single preview,
+      // even once the server is genuinely healthy. Confirmed live,
+      // 2026-09-17: previews sat on "Starting preview…" for 80s+ despite the
+      // child being up and serving within seconds. /api/health is
+      // unauthenticated by design (#0121).
+      expect(result.readyPath).toBe("/api/health");
       expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(60_000);
     }
   });
