@@ -63,6 +63,17 @@ const PHASE_FAILED = "failed";
  */
 const MAX_PUBLISH_DRIFT_RETRIES = 5;
 
+/**
+ * Cap on consecutive validate-time "main advanced" resyncs (#0399). The
+ * validate-phase resync has the same exposure as its publish-time twin above:
+ * this repo's background bookkeeping commits land on main continuously, so a
+ * candidate whose validation window keeps getting invalidated would otherwise
+ * be discarded and rebuilt forever with no terminal state. Once retries are
+ * clearly not converging, fail with an actionable reason instead. Same value as
+ * the publish cap (a busy board can strand either path the same way).
+ */
+const MAX_VALIDATE_DRIFT_RETRIES = 5;
+
 function candidateBranchName(taskId: string): string {
   return `${CANDIDATE_BRANCH_PREFIX}${taskId}`;
 }
@@ -616,6 +627,17 @@ export class CloseOutOrchestrator {
       // the cap — this must never loop.
       if (job.phase === "validating") {
         let validateRes = await this.validateCandidate(job);
+        if (validateRes.resynced) {
+          // Main advanced while the candidate was being validated: it was
+          // discarded and the job reset to `syncing`. Return now so the next
+          // processNext() re-runs the whole syncing → validating cycle —
+          // including the feature-branch merge and detectDroppedMerge.
+          // Promoting this now-empty candidate to `publishing` (the previous
+          // behaviour) merged bare main into itself and marked the task done
+          // with none of the branch's work integrated (#0399, same class as
+          // #0306/#0307/#0309/#0312).
+          return { ok: false, reason: validateRes.reason };
+        }
         if (!validateRes.ok && validateRes.retryable === false) {
           // Deterministic by construction — a second run proves nothing and
           // costs the user another full gate cycle.
@@ -640,6 +662,16 @@ export class CloseOutOrchestrator {
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
           validateRes = await this.validateCandidate(job);
+          if (validateRes.resynced) {
+            // Main advanced before the retry could run: identical to the first
+            // call's drift branch — candidate discarded, job reset to
+            // `syncing`. This MUST be checked before the retry-failure
+            // classification below; otherwise the resync's `ok: false` is
+            // reported as a genuine validation failure and the job is failed
+            // with a misleading "main advanced … revalidating" reason instead
+            // of being revalidated (#0399, one loop later).
+            return { ok: false, reason: validateRes.reason };
+          }
           if (!validateRes.ok) {
             const secondReason = validateRes.reason ?? "unknown";
             const reason =
@@ -849,9 +881,19 @@ export class CloseOutOrchestrator {
    * the point. Everything else defaults to retryable: build and check failures
    * are where genuine flakiness lives.
    */
-  private async validateCandidate(
-    job: IntegrationJob,
-  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string; retryable?: boolean }> {
+  private async validateCandidate(job: IntegrationJob): Promise<{
+    ok: boolean;
+    reason?: string;
+    candidateSha?: string;
+    retryable?: boolean;
+    /**
+     * Main advanced between sync and validate, so the candidate was discarded
+     * and the job reset to `syncing`. Distinguishes this retry from a genuine
+     * validation failure — `processJob` must return to the phase machine
+     * instead of promoting the (now un-merged) candidate to publishing.
+     */
+    resynced?: boolean;
+  }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
     const wtPath = worktreePathForBranch(root, branch);
@@ -868,20 +910,43 @@ export class CloseOutOrchestrator {
     const currentMainSha = currentMainRes.stdout.trim();
 
     if (job.baseMainSha && currentMainSha !== job.baseMainSha) {
-      // Main advanced: discard candidate, rebuild from new SHA, and revalidate.
+      // Main advanced: discard the candidate and reset the job to `syncing` so
+      // the next processNext() rebuilds from the new tip and re-runs the full
+      // syncing → validating cycle. Do NOT merge or validate here, and do NOT
+      // report success: returning syncCandidate's result as success let
+      // processJob promote this un-merged candidate to publishing, which then
+      // merged bare main into itself and published the task as done with none
+      // of its branch's work integrated (#0399). The next syncing phase runs
+      // the same pre-flight conflict check, so a real conflict still reaches
+      // the repair handoff with the identical non-retryable classification.
+      //
+      // Bounded exactly like the publish-time resync (#0386): on a busy board
+      // with a stream of background bookkeeping commits, a candidate whose
+      // validation window keeps being invalidated would otherwise be discarded
+      // and rebuilt forever with no terminal state.
+      const driftCount = (job.validateDriftCount ?? 0) + 1;
+      if (driftCount > MAX_VALIDATE_DRIFT_RETRIES) {
+        return {
+          ok: false,
+          retryable: false,
+          reason:
+            `main advanced ${driftCount} times in a row while validating the candidate — giving up ` +
+            "rather than revalidating forever. The branch itself is fine, it's just losing the race " +
+            "to land; retry Move-to-done once main quiets down.",
+        };
+      }
       removeWorktree(root, branch);
       this.coordinator.updateJob(job.taskId, {
         phase: "syncing",
         baseMainSha: null,
         candidateSha: null,
+        validateDriftCount: driftCount,
       });
-      // The resync runs the same pre-flight; a conflict it finds must keep the
-      // non-retryable classification so the caller still routes it to repair.
-      const resync = await this.syncCandidate(job);
-      if (!resync.ok && resync.conflict) {
-        return { ok: false, retryable: false, reason: resync.reason };
-      }
-      return resync;
+      return {
+        ok: false,
+        resynced: true,
+        reason: `main advanced during validation (${job.baseMainSha} → ${currentMainSha}); revalidating from the new tip`,
+      };
     }
 
     // Merge feature branch into candidate.

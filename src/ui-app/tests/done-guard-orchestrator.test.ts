@@ -522,3 +522,130 @@ describe("publish-time drift with bookkeeping-only advance (#0386)", () => {
     }
   }, 30_000);
 });
+
+describe("validate-phase main-advance resync still merges the branch (#0399)", () => {
+  it("does not reach done with an un-merged candidate when main advanced mid-validation", async () => {
+    // #0389 published as `done` (candidateSha === baseMainSha in its job file)
+    // while a real 1346-line branch delta never reached main. Mechanism: when
+    // main advanced *during* validating, validateCandidate discarded the
+    // candidate and returned syncCandidate's result as SUCCESS, so processJob
+    // promoted the now-empty candidate straight to publishing. The publish
+    // merge was a no-op against bare main (candidateSha === baseMainSha) and
+    // detectDroppedMerge — which compares main against the *candidate* branch
+    // at publish time — saw no delta, so the class-#1 guard never fired.
+    //
+    // This drives the real phase machine the way the server's job loop does.
+    const { root, clean } = makeRepo();
+    try {
+      // The task's feature branch carries a real delta (docs-only keeps the
+      // gate cheap; the dropped-merge class is independent of path type).
+      const feature = ensureWorktree(root, "feat/T20");
+      expect(feature.ok).toBe(true);
+      mkdirSync(join(feature.path, "docs"), { recursive: true });
+      writeFileSync(join(feature.path, "docs", "feature.md"), "# feature\n");
+      git(feature.path, ["add", "docs/feature.md"]);
+      git(feature.path, ["commit", "-m", "feature work"]);
+      const featureSha = git(feature.path, ["rev-parse", "HEAD"]);
+      const oldMainSha = git(root, ["rev-parse", "main"]);
+
+      // Candidate worktree reset to the pre-drift main, as `syncing` leaves it.
+      const cand = ensureWorktree(root, "repoos/integrate/T20");
+      expect(cand.ok).toBe(true);
+      git(cand.path, ["reset", "--hard", "main"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T20", branch: "feat/T20" } as any);
+      coordinator.updateJob("T20", {
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+        baseMainSha: oldMainSha,
+        branchSha: featureSha,
+        candidateSha: oldMainSha,
+      });
+
+      // Main advances after the candidate was synced, so validating sees drift.
+      mkdirSync(join(root, "docs"), { recursive: true });
+      writeFileSync(join(root, "docs", "drift.md"), "# drift\n");
+      git(root, ["add", "docs/drift.md"]);
+      git(root, ["commit", "-m", "docs: unrelated main advance"]);
+      const driftedMainSha = git(root, ["rev-parse", "main"]);
+      expect(driftedMainSha).not.toBe(oldMainSha);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      // Re-drive processNext until the job leaves the queue, the way the
+      // server's triggerJobProcessing loop does while a job is still pending.
+      for (let i = 0; i < 8; i++) {
+        const job = coordinator.getJob("T20");
+        if (!job || job.phase === "done" || job.phase === "failed") break;
+        await orchestrator.processNext();
+      }
+
+      const job = coordinator.getJob("T20");
+      expect(job?.phase).toBe("done");
+      // The whole point: the branch's work must actually be on main, and the
+      // recorded candidate must be a real merge — not bare main, which is the
+      // `candidateSha === baseMainSha` signature #0389 left behind.
+      expect(existsSync(join(root, "docs", "feature.md"))).toBe(true);
+      expect(job?.candidateSha).not.toBe(job?.baseMainSha);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
+  it("gives up after repeated validate-time drift instead of revalidating forever", async () => {
+    // Same exposure as the publish-time resync (#0386): on a busy board a
+    // stream of bookkeeping commits can invalidate every validation window, so
+    // the resync must be capped rather than livelocking the job. One drift past
+    // the cap must fail with an actionable reason.
+    const { root, clean } = makeRepo();
+    try {
+      const feature = ensureWorktree(root, "feat/T21");
+      expect(feature.ok).toBe(true);
+      mkdirSync(join(feature.path, "docs"), { recursive: true });
+      writeFileSync(join(feature.path, "docs", "feature.md"), "# feature\n");
+      git(feature.path, ["add", "docs/feature.md"]);
+      git(feature.path, ["commit", "-m", "feature work"]);
+
+      const cand = ensureWorktree(root, "repoos/integrate/T21");
+      expect(cand.ok).toBe(true);
+      git(cand.path, ["reset", "--hard", "main"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T21", branch: "feat/T21" } as any);
+      coordinator.updateJob("T21", {
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+        baseMainSha: git(root, ["rev-parse", "main"]),
+        validateDriftCount: 5, // MAX_VALIDATE_DRIFT_RETRIES
+      });
+
+      // Main advances, so validating sees drift and would resync once more.
+      mkdirSync(join(root, "docs"), { recursive: true });
+      writeFileSync(join(root, "docs", "drift.md"), "# drift\n");
+      git(root, ["add", "docs/drift.md"]);
+      git(root, ["commit", "-m", "docs: unrelated main advance"]);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+      const job = coordinator.getJob("T21");
+      expect(result.ok).toBe(false);
+      expect(job?.phase).toBe("failed");
+      expect(job?.reason).toMatch(/advanced 6 times in a row while validating/i);
+      expect(job?.reason).toMatch(/giving up/i);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+});

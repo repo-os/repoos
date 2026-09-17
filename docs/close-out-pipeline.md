@@ -375,6 +375,29 @@ after the validate-phase merge and (since `a7f1d98c`) after the publish-phase
 merge too, because that path gained conflict auto-resolution at the same time
 and would otherwise have reintroduced the same failure mode one step later.
 
+**Second mechanism, fixed 2026-09-18 (#0399).** `detectDroppedMerge` can only
+fire if the feature branch is actually *merged* somewhere first. When main
+advanced *during* `validating`, `validateCandidate` discarded the candidate and
+returned `syncCandidate`'s result as **success**; `processJob` then promoted
+that now-empty candidate straight to `publishing`. The publish merge of the
+candidate branch (which was sitting at bare main) into main was a no-op, and
+the publish-time guard compares main against the *candidate* branch — which
+also had no delta — so it saw nothing to catch. #0389 shipped `done` this way
+with a 1346-line branch delta that never reached main; its job file has the
+same `candidateSha == baseMainSha` signature. The fix: `validateCandidate`
+returns a distinct `resynced: true` result and `processJob` returns without
+promoting, so the phase machine re-runs `syncing → validating` (real merge,
+real gate, real guard) from the new tip. It is bounded like the publish-time
+resync — `MAX_VALIDATE_DRIFT_RETRIES` (5) consecutive drifts fail the job with
+an actionable reason instead of revalidating forever (this repo's background
+bookkeeping commits can invalidate every validation window on a busy board).
+Do not "simplify" this back into returning the sync result from the drift
+branch — that is the bug. And `resynced` must be checked after **both**
+`validateCandidate` calls in `processJob`: the #0216 gate-retry second call can
+also discover drift, and there it would otherwise be misclassified as a real
+gate failure and fail the job with a misleading "main advanced … revalidating"
+reason.
+
 ### 2. Foreign `work/*.md` drift published to main
 
 Distinct from #1: this is *extra* stale content rather than dropped content. A
