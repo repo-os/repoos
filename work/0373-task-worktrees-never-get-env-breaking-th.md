@@ -2,14 +2,14 @@
 id: "0373"
 title: "Task worktrees never get .env, breaking this repo's own default preview (auth requires it)"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/task-worktrees-never-get-env-breaking-th
 created_at: "2026-09-16T07:47:49Z"
-updated_at: "2026-09-17T11:53:51Z"
+updated_at: "2026-09-17T12:01:59Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -131,3 +131,4 @@ Mechanism options to weigh, contingent on the opt-in design:
 - 2026-09-17T11:43:52Z · status ready→active, branch
 - 2026-09-17T11:50:49Z · status active→review
 - 2026-09-17T11:53:51Z · status review→active
+- 2026-09-17T12:01:59Z · status active→review
