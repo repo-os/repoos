@@ -161,15 +161,28 @@ projects never need `.env` in a worktree, and each worktree is another place
 secrets would live on disk. Absent, malformed, or with no `.env` at the main
 root, the link is a silent no-op and worktrees behave exactly as before.
 
-A symlink (not a copy) is used on purpose: there is one source of truth, so a
-secret added to the main `.env` later is immediately visible in every live
-worktree instead of going stale in per-worktree copies, and no extra physical
-copy of every secret lands on disk. `.env` stays gitignored in the worktree
-because the committed `.gitignore` that ignores it comes along with the branch.
-The one thing a copy would avoid — a worktree process writing *through* the
-symlink back into main's `.env` — is narrow: the only writer,
-`setDotEnvSecret`, is called by the server's model-provider settings and
-targets its own config root.
+**Prerequisite: the repo's `.gitignore` must ignore `.env`.** `linkInheritedEnv`
+runs `git check-ignore .env` in the worktree before linking and skips it when
+the path is not ignored — placing a secret in a path git could commit is worse
+than a preview that can't boot. The committed `.gitignore` propagates to every
+worktree, so a repo that ignores `.env` on `main` is covered automatically.
+`.env` therefore stays gitignored in the worktree, never enters git history,
+and `git status` in the worktree stays clean.
+
+The preview path repairs a missing link too: `PreviewManager.doStart` calls
+`linkInheritedEnv` for the resolved worktree, so a task cut *before* the repo
+opted in — or one whose link was removed — gets it on the next preview request
+instead of waiting for another task start. (This cannot repair a worktree
+before the opt-in reaches `main`: task creation and preview both read the
+opt-in from the main checkout's `repoos.toml`.) A dangling link left by a later
+deletion of `main`'s `.env` is repointed once that file returns, rather than
+throwing `EEXIST` forever. A symlink (not a copy) is used on purpose: there is
+one source of truth, so a secret added to the main `.env` later is immediately
+visible in every live worktree instead of going stale in per-worktree copies,
+and no extra physical copy of every secret lands on disk. The one thing a copy
+would avoid — a worktree process writing *through* the symlink back into main's
+`.env` — is narrow: the only writer, `setDotEnvSecret`, is called by the
+server's model-provider settings and targets its own config root.
 
 ## Open question: `area` is free text and single-valued
 

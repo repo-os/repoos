@@ -93,7 +93,11 @@ inheritEnv = true   # symlink the main checkout's .env into task worktrees
 
 It is off by default, so most projects never place secrets in a worktree.
 When on, RepoOS symlinks the main `.env` in at worktree creation; the secret
-file stays gitignored there and is never committed.
+file stays gitignored there and is never committed. Your `.gitignore` must
+ignore `.env` for this to kick in — if it doesn't, RepoOS skips the link rather
+than risk committing the secret. A repo that ignores `.env` on `main` is
+covered automatically, since the committed `.gitignore` comes along to every
+worktree.
 
 ## Agents
 

@@ -4,7 +4,15 @@
  * We shell out rather than depend on a git library (zero deps).
  */
 import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, realpathSync, rmSync, symlinkSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir, worktreesInheritEnv } from "./config.js";
@@ -463,18 +471,49 @@ function healMissingTaskFile(root: string, worktreePath: string, taskRelPath: st
  * extra physically lives on disk, and the worktree's committed `.gitignore`
  * already ignores `.env`.
  *
- * Best-effort and idempotent: an already-present `.env` (symlink or real file)
- * or a main checkout with no `.env` is a silent no-op, so the worktree simply
- * behaves as it did before the opt-in existed. Called on both creation and
- * reuse so a worktree that lost its link (a `git clean`, say) is repaired on
- * the next start. The main checkout itself is never touched.
+ * Best-effort and idempotent: an already-valid link, a real `.env` a task made
+ * itself, or a main checkout with no `.env` is a silent no-op. A *dangling*
+ * symlink left by a later deletion of main's `.env` is dropped and repointed
+ * once main's file is back, rather than throwing `EEXIST` forever. Never
+ * touches the main checkout.
+ *
+ * Exported because the preview path (`PreviewManager.doStart`) calls it for an
+ * already-existing worktree: a task cut before the repo opted in (or one that
+ * lost its link) must be repaired when a preview is requested, not only at the
+ * next task start.
  */
-function linkInheritedEnv(root: string, worktreePath: string): void {
+export function linkInheritedEnv(root: string, worktreePath: string): void {
   if (root === worktreePath) return; // the main checkout already has the real file
   if (!worktreesInheritEnv(root)) return;
   const mainEnv = join(root, ".env");
   const worktreeEnv = join(worktreePath, ".env");
-  if (existsSync(worktreeEnv) || !existsSync(mainEnv)) return;
+  if (!existsSync(mainEnv)) return; // nothing worth linking to
+
+  // `lstatSync` (not `existsSync`) so a dangling symlink still counts as
+  // present. A real file is the worktree's own and never clobbered; a symlink
+  // that already resolves is doing its job; only a dangling one is replaced.
+  let entry: ReturnType<typeof lstatSync> | null = null;
+  try {
+    entry = lstatSync(worktreeEnv);
+  } catch {
+    /* absent — create below */
+  }
+  if (entry) {
+    if (!entry.isSymbolicLink() || existsSync(worktreeEnv)) return;
+    try {
+      rmSync(worktreeEnv);
+    } catch {
+      return; // could not clear it — leave the worktree as it was
+    }
+  }
+
+  // Never place a secret where git could commit it: only link when the
+  // worktree's own ignore rules actually cover `.env`. If the repo opted in but
+  // doesn't ignore the file, linking would risk a committed secret, so skip it
+  // (`check-ignore` exits non-zero — hence a null from `git()` — when the path
+  // is not ignored, and also on any git failure: fail safe either way).
+  if (git(worktreePath, ["check-ignore", ".env"]) === null) return;
+
   try {
     symlinkSync(mainEnv, worktreeEnv, "file");
   } catch {

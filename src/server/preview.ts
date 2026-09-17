@@ -21,7 +21,7 @@ import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
-import { worktreePathForBranch } from "../core/git.js";
+import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
 import type { RepoEvent } from "./live-index.js";
 
 export interface PreviewInfo {
@@ -528,6 +528,13 @@ export class PreviewManager {
     if (!root) {
       return { ok: false, error: `No git worktree exists for branch "${task.branch}"` };
     }
+
+    // A preview is the thing that needs the repo's local secrets, so make sure
+    // an opted-in worktree has its `.env` link (#0373) even when it was created
+    // before the repo opted in, or lost the link since. Idempotent and
+    // fail-soft; on a worktree that already has it (or a repo that didn't opt
+    // in) this is a no-op.
+    linkInheritedEnv(this.config.root, root);
 
     // Decide how to preview this task (#0362): a project-declared command
     // selected by area. A task whose area matches no configured target — or a
