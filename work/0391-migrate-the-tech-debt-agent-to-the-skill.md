@@ -2,7 +2,7 @@
 id: "0391"
 title: Migrate the Tech Debt Agent to the skill-guided runner
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/migrate-the-tech-debt-agent-to-the-skill
 cli_override: claude code
 model_override: haiku
 created_at: "2026-09-17T14:03:23Z"
-updated_at: "2026-09-17T18:49:09Z"
+updated_at: "2026-09-17T18:55:47Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T18:49:04Z · cli_override
 - 2026-09-17T18:49:06Z · model_override
 - 2026-09-17T18:49:09Z · status ready→active
+- 2026-09-17T18:55:47Z · status active→review
