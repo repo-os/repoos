@@ -1958,11 +1958,16 @@ export const useRepoStore = defineStore("repo", () => {
    * Freeform create: routes the explanation through the PM agent server-side.
    * `runId` (optional) tags the streamed `agent.output` events the server
    * emits for this run, so the caller can show the PM agent's output live.
+   * `inputId` (optional, #0382) carries an input's attachments onto the new
+   * task so a freeform task created from a resolved input is self-contained
+   * (sits in its own `## Screenshots` and isn't affected by later input
+   * deletion).
    */
   async function createFreeformTask(
     explanation: string,
     runId?: string,
     overrides?: { agent?: string; cli?: string; model?: string },
+    inputId?: string,
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -1975,6 +1980,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (overrides?.agent) body.agentOverride = overrides.agent;
     if (overrides?.cli) body.cliOverride = overrides.cli;
     if (overrides?.model) body.modelOverride = overrides.model;
+    if (inputId) body.inputId = inputId;
     const r = await api<{
       ok: boolean;
       fallback?: boolean;

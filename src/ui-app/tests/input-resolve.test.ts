@@ -51,14 +51,14 @@ function stubApi(opts: {
   freeform?: unknown;
   resolved?: Input;
   resolveError?: boolean;
-}): { resolveCalls: Array<Record<string, unknown>>; freeformCalls: string[] } {
+}): { resolveCalls: Array<Record<string, unknown>>; freeformBodies: Record<string, unknown>[] } {
   const resolveCalls: Array<Record<string, unknown>> = [];
-  const freeformCalls: string[] = [];
+  const freeformBodies: Record<string, unknown>[] = [];
   api.mockImplementation(async (path: string, init?: RequestInit) => {
     if (path === "/api/inputs") return opts.inputs;
     if (path === "/api/tasks/freeform") {
-      const body = init?.body ? (JSON.parse(String(init.body)) as { explanation: string }) : null;
-      freeformCalls.push(body?.explanation ?? "");
+      const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+      freeformBodies.push(body);
       return opts.freeform;
     }
     if (path.endsWith("/resolve")) {
@@ -68,7 +68,7 @@ function stubApi(opts: {
     }
     throw new Error("unexpected api: " + path);
   });
-  return { resolveCalls, freeformCalls };
+  return { resolveCalls, freeformBodies };
 }
 
 async function mountView(): Promise<VueWrapper> {
@@ -194,7 +194,7 @@ describe("inputs side-panel resolve actions (#0359)", () => {
 
   it("Create task routes the input body through the freeform PM flow, then resolves to the task", async () => {
     const input = makeInput();
-    const { resolveCalls, freeformCalls } = stubApi({
+    const { resolveCalls, freeformBodies } = stubApi({
       inputs: [input],
       freeform: { ok: true, fallback: false, task: { id: "0400", pmWorking: true } },
       resolved: makeInput({
@@ -212,7 +212,10 @@ describe("inputs side-panel resolve actions (#0359)", () => {
     await btn!.trigger("click");
     await flushPromises();
 
-    expect(freeformCalls).toEqual([input.body]);
+    expect(freeformBodies).toHaveLength(1);
+    expect(freeformBodies[0].explanation).toBe(input.body);
+    // #0382: the input id is passed so the server can carry attachments.
+    expect(freeformBodies[0].inputId).toBe(input.id);
     expect(resolveCalls).toEqual([{ resolution: "task", taskId: "0400" }]);
     expect(drawer(wrapper).text()).toContain("task #0400");
 

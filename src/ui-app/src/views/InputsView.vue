@@ -89,7 +89,10 @@ async function createTaskFromInput(): Promise<void> {
   try {
     // The input's text goes through the same freeform/PM path as manual
     // new-task creation; the PM agent fleshes it out and records its usage.
-    const res = await repo.createFreeformTask(input.body);
+    // Pass the input id (#0382) so the server carries the input's screenshots
+    // onto the new task before the PM rewrite — otherwise they stay on the
+    // input and the new task has no way to reference them.
+    const res = await repo.createFreeformTask(input.body, undefined, undefined, input.id);
     if (res.fallback) {
       // No PM agent (or it failed) — the input stays exactly as it was so the
       // capture can be retried.

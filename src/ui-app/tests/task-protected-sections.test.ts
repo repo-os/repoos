@@ -163,6 +163,145 @@ The stop work confirm should be a proper modal.
     }
   });
 
+  it("a screenshot uploaded while chatting on a task lands in ## Screenshots exactly once (#0382)", () => {
+    const plain = `---
+id: "0382"
+title: PM tab screenshot upload
+type: feature
+status: ready
+---
+Initial problem statement.
+
+## Activity
+
+- 2026-09-17T05:19:55Z · created · hello@repoos.org
+`;
+    const { root, absPath, clean } = setupFile(plain);
+    try {
+      // Simulate the PM tab's "add screenshot" hitting the server: a single
+      // `addScreenshot` patch. The image should appear in `## Screenshots`
+      // (before `## Activity`), exactly once, with its API URL.
+      const withShot = patchTaskFile(config(root), absPath, {
+        addScreenshot: {
+          id: "1",
+          name: "bug.png",
+          path: "work/.attachments/0382/screenshot-1.png",
+          url: "/api/tasks/0382/attachments/screenshot-1.png",
+          size: 1,
+          mime: "image/png",
+        },
+      });
+      expect(withShot.body.split("## Screenshots").length - 1).toBe(1);
+      expect(withShot.body).toContain("![bug.png](/api/tasks/0382/attachments/screenshot-1.png)");
+      expect(withShot.body.indexOf("## Screenshots")).toBeLessThan(
+        withShot.body.indexOf("## Activity"),
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("successive addScreenshot patches append and never drop earlier images (#0382)", () => {
+    const plain = `---
+id: "0382"
+title: PM tab screenshot upload
+type: feature
+status: ready
+---
+Initial problem.
+
+## Activity
+
+- 2026-09-17T05:19:55Z · created · hello@repoos.org
+`;
+    const { root, absPath, clean } = setupFile(plain);
+    try {
+      const meta1 = {
+        id: "1",
+        name: "first.png",
+        path: "work/.attachments/0382/screenshot-1.png",
+        url: "/api/tasks/0382/attachments/screenshot-1.png",
+        size: 1,
+        mime: "image/png" as const,
+      };
+      const meta2 = {
+        id: "2",
+        name: "second.png",
+        path: "work/.attachments/0382/screenshot-2.png",
+        url: "/api/tasks/0382/attachments/screenshot-2.png",
+        size: 1,
+        mime: "image/png" as const,
+      };
+      const meta3 = {
+        id: "3",
+        name: "third.png",
+        path: "work/.attachments/0382/screenshot-3.png",
+        url: "/api/tasks/0382/attachments/screenshot-3.png",
+        size: 1,
+        mime: "image/png" as const,
+      };
+      patchTaskFile(config(root), absPath, { addScreenshot: meta1 });
+      patchTaskFile(config(root), absPath, { addScreenshot: meta2 });
+      const final = patchTaskFile(config(root), absPath, { addScreenshot: meta3 });
+      expect(final.body).toContain("![first.png](/api/tasks/0382/attachments/screenshot-1.png)");
+      expect(final.body).toContain("![second.png](/api/tasks/0382/attachments/screenshot-2.png)");
+      expect(final.body).toContain("![third.png](/api/tasks/0382/attachments/screenshot-3.png)");
+      // Exactly one Screenshots section.
+      expect(final.body.split("## Screenshots").length - 1).toBe(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("repeated body rewrites never drop screenshots once they are attached (#0382)", () => {
+    const plain = `---
+id: "0382"
+title: PM tab screenshot upload
+type: feature
+status: ready
+---
+Initial problem.
+
+## Activity
+
+- 2026-09-17T05:19:55Z · created · hello@repoos.org
+`;
+    const { root, absPath, clean } = setupFile(plain);
+    try {
+      const meta1 = {
+        id: "1",
+        name: "first.png",
+        path: "work/.attachments/0382/screenshot-1.png",
+        url: "/api/tasks/0382/attachments/screenshot-1.png",
+        size: 1,
+        mime: "image/png" as const,
+      };
+      const meta2 = {
+        id: "2",
+        name: "second.png",
+        path: "work/.attachments/0382/screenshot-2.png",
+        url: "/api/tasks/0382/attachments/screenshot-2.png",
+        size: 1,
+        mime: "image/png" as const,
+      };
+      patchTaskFile(config(root), absPath, { addScreenshot: meta1 });
+      patchTaskFile(config(root), absPath, { addScreenshot: meta2 });
+      // First PM rewrite.
+      const r1 = patchTaskFile(config(root), absPath, { body: PM_REWRITE });
+      expect(r1.body).toContain("![first.png](/api/tasks/0382/attachments/screenshot-1.png)");
+      expect(r1.body).toContain("![second.png](/api/tasks/0382/attachments/screenshot-2.png)");
+      // A second rewrite (PM iterates, hotfix recovery, etc.).
+      const r2 = patchTaskFile(config(root), absPath, {
+        body: `${PM_REWRITE}\n## Hotfix notes\n\nRecovered.\n`,
+      });
+      expect(r2.body).toContain("![first.png](/api/tasks/0382/attachments/screenshot-1.png)");
+      expect(r2.body).toContain("![second.png](/api/tasks/0382/attachments/screenshot-2.png)");
+      expect(r2.body.split("## Screenshots").length - 1).toBe(1);
+    } finally {
+      clean();
+    }
+  });
+
   it("lets a caller-supplied Original prompt section override the stale on-disk copy (#0345)", () => {
     const { root, absPath, clean } = setupFile(WITH_SECTIONS);
     try {
