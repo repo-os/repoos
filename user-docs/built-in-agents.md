@@ -102,20 +102,28 @@ layout RepoOS itself uses.
 
 ## Docs Debt agent
 
-Checks that your documentation still tells the truth about the code. It reads
-`AGENTS.md`, `docs/`, and `user-docs/` and verifies concrete, checkable claims:
-that backticked repo paths exist, that camelCase symbols appear somewhere under
-`src/`, that `bun run <script>` names exist in `package.json`, and that a
-"zero runtime dependencies" claim matches the actual `dependencies`.
+Checks that your documentation still tells the truth about the code. Unlike the
+other scanners, it is **skill-guided**: the model reads a guidance doc
+(`docs/agents/skills/docs-debt.md`) describing what documentation debt means,
+then verifies concrete, checkable claims in `AGENTS.md`, `docs/`, and
+`user-docs/` against the actual repository. It finds where your code really
+lives rather than assuming a language or layout, and it distinguishes claims
+about *your* code from a doc's prose naming some third-party tool's own
+convention — so it won't flag a formatter's config key or another agent's
+parameter name as a missing symbol.
 
-It fixes what it safely can. A stale path with exactly one obvious replacement is
-replaced in place and committed with the evidence, capped at five such fixes per
-run. Everything that needs a judgment call is left alone.
+It fixes what it safely can, but never on its own say-so. A proposed fix is
+applied and committed only when an independent, deterministic gate confirms
+both halves against the files on disk: the doc still contains the exact text
+being replaced, and the repo actually contains the replacement. Anything that
+doesn't clear that gate — and any change that needs a judgment call — is left
+alone for a human. Auto-applied fixes are capped at five per run.
 
 **Good output:** usually the best kind — the docs already match the code, so
 there's nothing to report. When there are real findings, they're bundled into a
 **single** inbox task (`area: docs-debt`), not one task per finding, each entry
-naming the doc, line, evidence, and a suggested fix.
+naming the doc, line, evidence, and a suggested fix. The run banner also links
+straight to that task and lists any docs it corrected on its own.
 
 ## Debugger
 
