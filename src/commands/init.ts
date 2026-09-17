@@ -307,6 +307,14 @@ defaultAssignee = "unassigned"
 # ntfyEnabled = true                    # push notifications on task lifecycle events
 # ntfyTopic = "repoos_myproject"
 # ntfyBaseUrl = "https://ntfy.sh"       # or your self-hosted ntfy server
+
+# [board.columns]                       # rename display labels (docs/user-docs/configuration.md)
+# draft  = "Ideas"                      # status IDs are fixed; this only changes what you see
+# inbox  = "Backlog"
+# ready  = "Selected for development"
+# active = "In progress"
+# review = "Code review"
+# done   = "Shipped"
 `;
 }
 

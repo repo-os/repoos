@@ -13,6 +13,8 @@ model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T14:26:27Z"
 updated_at: "2026-09-17T16:18:00Z"
+review_passes: 5
+review_rounds: 2
 ---
 ## Problem
 
@@ -97,4 +99,12 @@ Update new-project and existing-repo onboarding plus configuration/layout docume
 - 2026-09-17T14:52:06Z · status inbox→ready
 - 2026-09-17T14:52:07Z · status ready→active, branch
 - 2026-09-17T15:09:21Z · status active→review
+- 2026-09-17T15:11:22Z · status review→active
+- 2026-09-17T15:17:43Z · status active→review
+- 2026-09-17T15:27:28Z · status review→active
+- 2026-09-17T15:31:17Z · status active→review
+- 2026-09-17T15:43:05Z · status review→active
+- 2026-09-17T15:43:12Z · status active→review
+- 2026-09-17T15:47:55Z · status review→active
+- 2026-09-17T15:47:56Z · status active→review
 - 2026-09-17T16:18:00Z · needs_merge

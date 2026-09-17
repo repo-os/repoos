@@ -13,6 +13,7 @@ import {
   loadConfig,
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
+  resolveColumnLabels,
 } from "../../core/config.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
@@ -61,6 +62,10 @@ function safeConfigForBrowser(config: Record<string, unknown>): Record<string, u
     auth: safeAuth,
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
+    board: {
+      ...((rest as Record<string, unknown>).board as Record<string, unknown> | undefined),
+      columns: resolveColumnLabels(rest.boardColumns as Record<string, string> | undefined),
+    },
   };
 }
 

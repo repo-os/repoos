@@ -23,7 +23,13 @@ import {
   Bug,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage } from "../types";
-import { COLUMNS, pmCannedMessagesFor, statusColor, useRepoStore } from "../stores/repo";
+import {
+  COLUMNS,
+  columnsWithLabels,
+  pmCannedMessagesFor,
+  statusColor,
+  useRepoStore,
+} from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
@@ -103,10 +109,17 @@ const autoRepairRetryHint = computed(() => {
   });
 });
 
-const allStatuses = computed(() => [
-  { id: "draft", label: "Draft", color: statusColor("draft") },
-  ...COLUMNS,
-]);
+const allStatuses = computed(() => {
+  const draftLabel = config.columnLabels.draft;
+  return [
+    {
+      id: "draft",
+      label: draftLabel !== "Proposed / Drafts" ? draftLabel : "Draft",
+      color: statusColor("draft"),
+    },
+    ...columnsWithLabels(config.columnLabels),
+  ];
+});
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;
   const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];
@@ -206,6 +219,14 @@ watch(
     draftSaved.value = null;
     freeformSubmitted.value = false;
     submittedTask.value = null;
+    // Unlike freeformText, a leftover freeformRunId is NOT something to keep:
+    // it only gets set once the user actually clicks "Create task" (not just by
+    // typing), and closing the drawer before that run's stream finishes left it
+    // dangling — reopening then rendered the old run's buffered output as if a
+    // PM agent were live right now. Drop it so a reopen always starts clean.
+    if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+    freeformRunId.value = null;
+    freeformRunning.value = false;
     initFreeformOverrides();
   },
 );
