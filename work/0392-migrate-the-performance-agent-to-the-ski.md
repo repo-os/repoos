@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-17T18:12:44Z"
 review_passes: 2
 id: "0392"
@@ -44,5 +45,6 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T15:15:49Z · status inbox→ready
 - 2026-09-17T16:32:36Z · status ready→active, branch
 - 2026-09-17T16:44:57Z · status active→review
+
 
 
