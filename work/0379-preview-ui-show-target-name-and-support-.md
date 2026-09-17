@@ -2,14 +2,14 @@
 id: "0379"
 title: "Preview UI: show target name and support multi-area matches"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T17:18:21Z"
-updated_at: "2026-09-16T17:18:21Z"
+updated_at: "2026-09-17T06:07:24Z"
 ---
 ## Problem
 
@@ -77,3 +77,4 @@ separate concerns even though both touch the preview quickbar.
 ## Activity
 
 - 2026-09-16T17:18:21Z · created · unknown
+- 2026-09-17T06:07:24Z · status inbox→ready
