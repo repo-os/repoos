@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode-go/minimax-m3
 created_at: "2026-09-17T03:22:19Z"
-updated_at: "2026-09-17T05:18:30Z"
+updated_at: "2026-09-17T05:35:04Z"
 ---
 ## Problem
 
@@ -131,3 +132,4 @@ The token tabs of the task panel needs some cleanup, the top section isn't reall
 - 2026-09-17T03:22:19Z · created · hello@repoos.org
 - 2026-09-17T03:24:08Z · status draft→inbox, title, area, body
 - 2026-09-17T05:18:30Z · body
+- 2026-09-17T05:35:04Z · model_override
