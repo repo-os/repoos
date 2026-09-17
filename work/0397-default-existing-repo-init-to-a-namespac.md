@@ -2,16 +2,16 @@
 id: "0397"
 title: Default existing-repo init to a namespaced RepoOS directory
 type: feature
-status: ready
+status: active
 priority: p1
 area: init
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/default-existing-repo-init-to-a-namespac
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-17T14:26:27Z"
-updated_at: "2026-09-17T14:52:06Z"
+updated_at: "2026-09-17T14:52:07Z"
 ---
 ## Problem
 
@@ -94,3 +94,4 @@ Update new-project and existing-repo onboarding plus configuration/layout docume
 - 2026-09-17T14:51:52Z · model_override
 - 2026-09-17T14:52:04Z · review_model_override
 - 2026-09-17T14:52:06Z · status inbox→ready
+- 2026-09-17T14:52:07Z · status ready→active, branch
