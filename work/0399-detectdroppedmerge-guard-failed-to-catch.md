@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-17T17:59:13Z"
+review_passes: 1
 id: "0399"
 title: "detectDroppedMerge guard failed to catch #0389's dropped merge to done"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/detectdroppedmerge-guard-failed-to-catch
 created_at: "2026-09-17T17:36:38Z"
-updated_at: "2026-09-17T17:55:57Z"
 ---
 ## Problem
 
@@ -105,3 +106,4 @@ since it's a safety-critical guard for the close-out pipeline generally
 - 2026-09-17T17:44:28Z · status inbox→ready
 - 2026-09-17T17:44:31Z · status ready→active, branch
 - 2026-09-17T17:55:57Z · status active→review
+
