@@ -411,6 +411,28 @@ describe("runTechDebtAgent", () => {
     });
     mkdirSync(join(root, "work"));
     const config = configFor(root);
+
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        findings: [
+          {
+            type: "deprecated-api",
+            file: "src/a.ts",
+            line: 1,
+            description: "File uses 'var' declarations — modernize to 'const' or 'let'",
+            severity: "low",
+          },
+          {
+            type: "unused-code",
+            file: "src/a.ts",
+            line: 2,
+            description: "Exported 'fine' is never referenced by any other file",
+            severity: "low",
+          },
+        ],
+      }),
+    );
+
     const result = await runTechDebtAgent(config, { fetchImpl: offlineFetch });
 
     expect(result.issuesFound).toBeGreaterThan(0);

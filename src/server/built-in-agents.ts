@@ -14,8 +14,9 @@ import {
   runSkillGuidedAgent,
   saveLastRunAt,
   type SkillGuidedFinding,
+  type SkillGuidedRunResult,
 } from "./built-in-agent-runner.js";
-import { PERFORMANCE_SKILL_DOC } from "./built-in-agent-skill-docs.js";
+import { PERFORMANCE_SKILL_DOC, TECH_DEBT_SKILL_DOC } from "./built-in-agent-skill-docs.js";
 import { isSafeToAutoCommit } from "./auto-fix-gate.js";
 
 export type TechDebtIssueType =
@@ -725,41 +726,83 @@ updated_at: "${now}"
  * Run the Tech Debt Agent end to end: scan, create tasks, record lastRunAt.
  * The caller owns overlap protection (a single in-flight guard in server.ts).
  */
+function toTechDebtIssues(findings: SkillGuidedFinding[]): TechDebtIssue[] {
+  return findings.map((finding) => ({
+    type: normalizeTechDebtIssueType(finding.type),
+    file: finding.file ?? "(repository)",
+    line: finding.line,
+    description: finding.description || "Tech debt issue reported by the agent",
+    severity: finding.severity,
+  }));
+}
+
+function normalizeTechDebtIssueType(type: string): TechDebtIssueType {
+  const validTypes: TechDebtIssueType[] = [
+    "outdated-dependency",
+    "code-duplication",
+    "high-complexity",
+    "unused-code",
+    "deprecated-api",
+  ];
+  return validTypes.includes(type as TechDebtIssueType)
+    ? (type as TechDebtIssueType)
+    : "unused-code";
+}
+
+/**
+ * Run the Tech Debt Agent end to end through the shared skill-guided runner:
+ * the configured CLI/model reviews the repo (in whatever language it uses) for
+ * technical debt, findings become deduplicated inbox tasks, and lastRunAt
+ * is recorded.
+ *
+ * Replaces the old `SOURCE_EXTS`-filtered deterministic scan, which silently
+ * matched zero files in any non-JS/TS project. The caller owns overlap
+ * protection (a single in-flight guard in server.ts).
+ *
+ * A model/connector failure throws {@link TechDebtError} with the agent
+ * named, so the run route surfaces it on this agent's own settings card rather
+ * than silently reporting "no issues found".
+ */
 export async function runTechDebtAgent(
   config: RepoOSConfig,
   options: TechDebtScanOptions = {},
   logger?: Logger,
 ): Promise<TechDebtRunResult> {
-  logger?.agent("tech-debt", "info", "Tech Debt Agent scan started");
-  const scan = await scanForTechDebt(config, options);
-  logger?.agent("tech-debt", "info", `Tech Debt scan completed`, {
-    issuesFound: scan.issues.length,
-    scannedFiles: scan.scannedFiles,
+  const run = await runSkillGuidedAgent(
+    "tech-debt",
+    config,
+    TECH_DEBT_SKILL_DOC,
+    "src/server/built-in-agent-skill-docs.ts",
+    logger,
+  );
+
+  if (!run.ok) {
+    const message = run.error ?? "Tech Debt Agent run failed";
+    logger?.agent("tech-debt", "error", message);
+    throw new TechDebtError(message);
+  }
+
+  const issues = toTechDebtIssues(run.findings);
+  logger?.agent("tech-debt", "info", "Tech debt review completed", {
+    issuesFound: issues.length,
+    scannedFiles: run.scannedFiles ?? 0,
   });
 
-  const created = await createTechDebtTasks(config, scan.issues);
+  const created = await createTechDebtTasks(config, issues);
   if (created.failed > 0) {
-    logger?.agent("tech-debt", "error", `Failed to create ${created.failed} tech debt tasks`, {
+    logger?.agent("tech-debt", "error", `Failed to create ${created.failed} tech debt task(s)`, {
       errors: created.errors,
     });
   }
   if (created.created > 0) {
-    logger?.agent("tech-debt", "info", `Created ${created.created} tech debt tasks`);
+    logger?.agent("tech-debt", "info", `Created ${created.created} tech debt task(s)`);
   }
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["tech-debt"] = { ...(agents["tech-debt"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
-
-  logger?.agent("tech-debt", "info", "Tech Debt Agent run completed", {
-    created: created.created,
-    failed: created.failed,
-  });
+  saveLastRunAt(config.root, "tech-debt", config);
 
   return {
-    issuesFound: scan.issues.length,
-    scannedFiles: scan.scannedFiles,
+    issuesFound: issues.length,
+    scannedFiles: run.scannedFiles ?? 0,
     ...created,
   };
 }

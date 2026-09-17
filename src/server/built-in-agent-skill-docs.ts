@@ -74,3 +74,74 @@ The same expensive work done more than once.
 - If the repo is already clean, return an empty findings list. Do not invent
   issues to fill a quota.
 `;
+
+/**
+ * Guidance for the Tech Debt Agent. Describes what "tech debt" means in a
+ * language-agnostic way so the agent reasons about whatever the repo is
+ * actually written in, not a JS/TS-only extension list.
+ */
+export const TECH_DEBT_SKILL_DOC = `# Tech debt review
+
+You are reviewing this repository for **technical debt** — maintenance burden
+that slows development or increases risk. Find the language(s), frameworks and
+architecture this repo actually uses (manifests, lockfiles, build config,
+directory layout) and judge tech debt in those terms. A Python web service, a
+Rust CLI, a Java backend and a Vue frontend all have different debt patterns;
+do not assume JavaScript.
+
+## What counts as tech debt
+
+Look for concrete, code-grounded problems in these five families. Each finding
+must use one of these exact \`type\` values:
+
+### \`outdated-dependency\`
+Dependencies that are stale or pose security/compatibility risk.
+- Package versions far behind their latest release, especially with known CVEs.
+- Deprecated frameworks or runtimes nearing end-of-life.
+- Conflicting transitive dependency versions that could cause instability.
+- Dependencies with no activity for years that have been superseded.
+
+### \`code-duplication\`
+Identical or near-identical code repeated across multiple files.
+- Copy-pasted helper functions, constants, or logic blocks.
+- Duplicate export definitions or type declarations.
+- Duplicated error handling or validation patterns.
+- Same business logic implemented multiple ways in different files.
+
+### \`high-complexity\`
+Code that is too complex to understand, test, or modify safely.
+- Functions or files with too many lines (>300 lines suggests refactoring).
+- Functions with high cyclomatic complexity (deeply nested conditionals).
+- Type systems or type declarations too complex to reason about.
+- Tightly coupled modules that are hard to test in isolation.
+
+### \`unused-code\`
+Code that is no longer used anywhere in the repository.
+- Exported functions or types never imported by other modules.
+- Dead code branches that will never execute.
+- Configuration, constants, or helper functions with no references.
+- Commented-out code blocks that are outdated.
+
+### \`deprecated-api\`
+Uses of APIs, patterns, or language features that are outdated or discouraged.
+- Use of deprecated built-in functions or methods.
+- Legacy patterns that have modern replacements (e.g., \`var\` instead of \`const\`).
+- Incorrect or deprecated framework APIs.
+- Unsafe language constructs that should be replaced.
+
+## How to review
+
+- Read the actual source for each candidate; do not report from a filename
+  alone. Cite the repo-relative \`file\` and the \`line\` where the problem starts.
+- Prefer a few high-confidence findings over a long speculative list. If you
+  are not confident something is real tech debt, lower its severity or omit it.
+- Weigh severity by maintenance burden and risk: a widely-duplicated pattern
+  beats a one-off unused export. Use \`high\` for debt that blocks progress or
+  poses risk, \`medium\` for maintenance burden, \`low\` for minor cleanups.
+- Ignore test fixtures, build output, and generated code unless the generator
+  itself is broken.
+- Do **not** report style, naming, or refactoring for elegance — those belong to
+  code review and other agents.
+- If the repo is already clean, return an empty findings list. Do not invent
+  issues to fill a quota.
+`;
