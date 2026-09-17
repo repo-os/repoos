@@ -11,7 +11,7 @@ branch: feat/convert-deterministic-built-in-scanners-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T07:16:50Z"
-updated_at: "2026-08-28T11:51:37Z"
+updated_at: "2026-09-17T14:02:16Z"
 check_retry_count: 1
 ---
 ## Problem
@@ -69,3 +69,4 @@ Convert each scanner into a real AI agent with its own configurable coding CLI a
 - 2026-08-25T05:58:07Z · model_override
 - 2026-08-25T16:16:08Z · model_override
 - 2026-08-28T11:51:37Z · status active→ready, needs_input
+- 2026-09-17T14:02:16Z · note: Superseded 2026-09-17: splitting into a foundational task (shared skill-guided runner + deterministic auto-fix verification gate) plus one migration task per agent, and folding in Docs Debt (a 5th deterministic scanner that didn't exist when this task was written). This task's own scope was sound but it failed twice as one unit (watchdog-stuck: agent exited without the handoff signal; then a monthly model quota error mid-run) — splitting it should make each piece small enough to complete and review independently instead of re-attempting one large run. See the new tasks for the actual work; this one is parked, not picked up.
