@@ -135,6 +135,18 @@ interface PreviewCandidate {
   areas: string[];
 }
 
+/** Options for `PreviewManager.start` (#0379). */
+export interface PreviewStartOptions {
+  /**
+   * Permit starting the config-order first match when the task's area resolves
+   * to more than one target. The UI never sets this — it must make the user
+   * choose — so an ambiguous start with no `targetName` is rejected. The
+   * agent-request path has no picker, so it opts in and reports the chosen
+   * label in its transcript instead of claiming a choice was made.
+   */
+  allowAmbiguous?: boolean;
+}
+
 /**
  * The actionable message shown when nothing resolves for a task (#0370). Both
  * "no `[preview]` section at all" and "section present but no area match" reach
@@ -429,11 +441,15 @@ export class PreviewManager {
    * return the existing healthy preview.
    *
    * When the task's area matches more than one target (#0379), `targetName`
-   * picks the one the user chose in the drawer; omitting it (the agent-request
-   * path) starts the first match and reports its label so the choice is never
-   * silent.
+   * picks the one the user chose in the drawer. Starting without a choice is
+   * rejected (never a silent first pick) unless the caller is the agent-request
+   * path, which opts in via `allowAmbiguous` and reports the label it got.
    */
-  async start(task: Task, targetName?: string): Promise<PreviewResult> {
+  async start(
+    task: Task,
+    targetName?: string,
+    opts: PreviewStartOptions = {},
+  ): Promise<PreviewResult> {
     // A preview is a read-only leaf in the process tree. It still hosts the
     // normal API for static rendering, but it must never become an authority
     // that can create another preview (which otherwise permits recursive
@@ -456,6 +472,17 @@ export class PreviewManager {
     }
     const existing = this.registry.get(task.id);
     if (existing) {
+      // A request for a DIFFERENT target while one runs is not the idempotent
+      // repeat it looks like: returning the running preview would hand back a
+      // target the caller didn't ask for. Make the mismatch explicit (#0379).
+      if (targetName && existing.label && existing.label !== targetName) {
+        return {
+          ok: false,
+          error:
+            `Task #${task.id} already has a preview running (target: ${existing.label}). ` +
+            `Stop it before starting "${targetName}".`,
+        };
+      }
       return {
         ok: true,
         port: existing.port,
@@ -468,6 +495,20 @@ export class PreviewManager {
     // must share one spawn — never double-spawn a process and leak one.
     const inflight = this.inflight.get(task.id);
     if (inflight) return inflight;
+    // Enforce the pick server-side, not just by disabling the drawer's button:
+    // an ambiguous area with no explicit choice is never resolved to the first
+    // target silently (#0379).
+    if (!targetName && !opts.allowAmbiguous) {
+      const candidates = previewCandidates(this.config, task);
+      if (candidates.length > 1) {
+        const names = candidates.map((c) => c.target.label).join(", ");
+        const error =
+          `Task #${task.id} matches more than one preview target (${names}). ` +
+          `Choose one to preview.`;
+        this.logLifecycle("start-skipped", task.id, error);
+        return { ok: false, error };
+      }
+    }
     const p = this.doStart(task, targetName);
     this.inflight.set(task.id, p);
     p.finally(() => this.inflight.delete(task.id)).catch(() => {

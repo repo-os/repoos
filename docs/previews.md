@@ -94,12 +94,19 @@ one target:
 - `previewTargetOptions(config, task)` returns every match, and the board /
   `GET /api/tasks/:id` responses carry it as `previewTargets` so the drawer can
   list them.
-- The drawer shows a picker and **disables Start until the user chooses** —
-  the server is never asked to pick silently. The choice is sent as
-  `{ "target": "<name>" }` on `POST /api/tasks/:id/preview`; an unknown name is
-  a clean error, never a silent fallback to a different target.
-- The agent-request path (`::repoos-preview-request::`) has no picker: it starts
-  the config-order first match, and the label is recorded in the transcript
+- The drawer shows a picker and **disables Start until the user chooses**. The
+  choice is sent as `{ "target": "<name>" }` on `POST /api/tasks/:id/preview`.
+  The server enforces this too — an ambiguous area started with no `target` is
+  rejected (`matches more than one preview target`), never resolved to the first
+  — and an unknown name is a clean error, never a silent fallback. Asking for a
+  *different* target while one is already running is likewise an explicit
+  mismatch error, not an idempotent `200` that hands back the wrong target.
+- Target names are the pick key, so `parsePreviewConfig` keeps them unique:
+  auto-derived (`areas.join("/")`) and explicit duplicates get a numeric suffix
+  (`web`, `web (2)`), so the picker can't render identical options and label
+  matching can't select the wrong target.
+- The agent-request path (`::repoos-preview-request::`) has no picker, so it
+  opts into the config-order first match and records the label in the transcript
   ("Managed preview ready (target: docs)") so the choice is not silent either.
 
 The single-match case (today's common case) is unchanged: one click starts the

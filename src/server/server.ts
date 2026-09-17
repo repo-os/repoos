@@ -1268,7 +1268,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         );
         // Reuse the existing PreviewManager: idempotent per task, RepoOS chooses
         // the port and owns the process lifecycle. Never a parallel implementation.
-        const result = await previews.start(task);
+        // The agent request has no picker, so it opts into the first match when
+        // the area is ambiguous (#0379) — the label below makes the pick visible.
+        const result = await previews.start(task, undefined, { allowAmbiguous: true });
         if (!result.ok) {
           runner.system(
             request.taskId,
