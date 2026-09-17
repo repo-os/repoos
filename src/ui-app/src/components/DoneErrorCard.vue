@@ -2,6 +2,8 @@
 import { onBeforeUnmount, onMounted, ref, useId } from "vue";
 import { CircleAlert, ChevronDown, Wrench } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
+import type { RetryHint } from "../lib/retryHints";
+import ActivityIndicator from "./ActivityIndicator.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -12,6 +14,13 @@ const props = withDefaults(
     detail?: string;
     /** Guidance paragraph; defaults to the merge-conflict guidance. */
     hint?: string;
+    /**
+     * The auto-repair hint in flight for this failure, or null when no covered
+     * retry is running (#0385). When set, the card explains that the engineer
+     * is already resolving it and the button becomes an explicit "start
+     * something additional" action instead of the only path forward.
+     */
+    retryHint?: RetryHint | null;
     taskId?: string;
     taskTitle?: string;
     /** "card": compact — the message is clamped and clicking it opens the task
@@ -92,6 +101,23 @@ const outputOpen = ref(true);
       <span ref="msgEl" class="done-error-msg">{{ message }}</span>
     </div>
 
+    <!-- Panel mode only: the board card already renders this same hint as its
+         own `.tc-hint` chip above, so repeating it inside the compact card
+         would be noise. The drawer has no such chip, so the banner carries the
+         framing there (#0385). -->
+    <div
+      v-if="retryHint && mode === 'panel'"
+      class="done-error-retry"
+      role="status"
+      :title="retryHint.title"
+    >
+      <ActivityIndicator />
+      <span class="done-error-retry-body">
+        <span class="done-error-retry-label">{{ retryHint.label }}</span>
+        <span class="done-error-retry-note">{{ retryHint.title }}</span>
+      </span>
+    </div>
+
     <div v-if="mode === 'panel'" :id="detailId" class="done-error-detail">
       <div class="done-error-head">
         Move to done failed
@@ -128,10 +154,23 @@ const outputOpen = ref(true);
       type="button"
       class="done-error-fix"
       :disabled="fixing || fixSent"
+      :title="
+        retryHint
+          ? 'Starts a separate debugger investigation. RepoOS is already repairing this automatically, so this is additional, not a replacement.'
+          : undefined
+      "
       @click="fix"
     >
       <Wrench class="size-3.5" />
-      {{ fixing ? "Sending…" : fixSent ? "Sent to Debugger" : "Fix" }}
+      {{
+        fixing
+          ? "Sending…"
+          : fixSent
+            ? "Sent to Debugger"
+            : retryHint
+              ? "Investigate anyway"
+              : "Fix"
+      }}
     </button>
   </div>
 </template>

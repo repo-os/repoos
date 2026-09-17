@@ -4,6 +4,7 @@ import { api, JSON_OPTS } from "../api";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
+import { retryCountFrom } from "../lib/retryHints";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -797,13 +798,15 @@ export const useRepoStore = defineStore("repo", () => {
         prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
-      // checkRetryCount lives in `extra` on the full Task the SSE payload
-      // carries (unlike the board fetch, which has it as a first-class
-      // field) — derive it the same way toBoardTask() does server-side.
-      const checkRetryCount =
-        typeof e.task.extra?.check_retry_count === "number"
-          ? e.task.extra.check_retry_count
-          : (before?.checkRetryCount ?? 0);
+      // The retry counters live in `extra` on the full Task the SSE payload
+      // carries (unlike the board fetch, which has them as first-class
+      // fields) — derive all three the same way toBoardTask() does (#0385),
+      // so the auto-repair messaging updates live without a reload.
+      const checkRetryCount = retryCountFrom(e.task, "check") ?? before?.checkRetryCount ?? 0;
+      const mergeConflictRetryCount =
+        retryCountFrom(e.task, "mergeConflict") ?? before?.mergeConflictRetryCount ?? 0;
+      const handoffSignalRetryCount =
+        retryCountFrom(e.task, "handoffSignal") ?? before?.handoffSignalRetryCount ?? 0;
       const merged = {
         ...e.task,
         preview: e.task.preview ?? before?.preview ?? null,
@@ -812,6 +815,8 @@ export const useRepoStore = defineStore("repo", () => {
         // the drawer's picker doesn't vanish on a background task.updated (#0379).
         previewTargets: e.task.previewTargets ?? before?.previewTargets ?? [],
         checkRetryCount,
+        mergeConflictRetryCount,
+        handoffSignalRetryCount,
       };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);

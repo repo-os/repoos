@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-17T09:47:36Z"
-review_passes: 1
 id: "0385"
 title: DoneErrorCard shows a dead-end error + Fix button even when auto-repair is already running
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/doneerrorcard-shows-a-dead-end-error-fix
 created_at: "2026-09-17T08:22:45Z"
+updated_at: "2026-09-17T09:41:58Z"
 ---
 ## Problem
 
@@ -102,4 +101,3 @@ the "Fix" button when a covered auto-repair is in flight:
 - 2026-09-17T09:24:33Z · status inbox→ready
 - 2026-09-17T09:24:35Z · status ready→active, branch
 - 2026-09-17T09:41:58Z · status active→review
-

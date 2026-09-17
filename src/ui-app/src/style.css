@@ -3315,6 +3315,34 @@
   align-items: flex-start;
   gap: 8px;
 }
+/* Auto-repair in progress (#0385): reframes the error while the engineer is
+     already fixing it, so the red block does not read as a dead end. */
+.done-error-retry {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 9px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan-dim);
+  color: var(--cyan);
+}
+.done-error-retry-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.done-error-retry-label {
+  font-weight: 700;
+  font-size: 11px;
+}
+.done-error-retry-note {
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.45;
+}
 .done-error-ico {
   width: 14px;
   height: 14px;

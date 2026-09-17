@@ -254,6 +254,51 @@ describe("inline move-to-done errors", () => {
   });
 });
 
+describe("auto-repair retry counts stay live via SSE (#0385)", () => {
+  it("derives all three counters from the full Task's extra on task.updated", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({
+        id: "0042",
+        status: "review",
+        extra: {
+          check_retry_count: 1,
+          merge_conflict_retry_count: 0,
+          handoff_signal_retry_count: 2,
+        },
+      }),
+      prev: { status: "review" },
+    });
+
+    const stored = repo.tasks.find((t) => t.id === "0042");
+    expect(stored?.checkRetryCount).toBe(1);
+    expect(stored?.mergeConflictRetryCount).toBe(0);
+    expect(stored?.handoffSignalRetryCount).toBe(2);
+  });
+
+  it("clears a counter once a successful handoff removes it from extra", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0042", status: "review", extra: { check_retry_count: 2 } }),
+      prev: { status: "review" },
+    });
+    expect(repo.tasks.find((t) => t.id === "0042")?.checkRetryCount).toBe(2);
+
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0042", status: "review", extra: {} }),
+      prev: { status: "review" },
+    });
+    expect(repo.tasks.find((t) => t.id === "0042")?.checkRetryCount).toBe(0);
+  });
+});
+
 const jsonNeedsCommit = async () => ({
   ok: false,
   status: 409,
