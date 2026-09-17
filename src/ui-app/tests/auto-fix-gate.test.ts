@@ -43,39 +43,46 @@ describe("repoSearchContains", () => {
     const root = makeRepo({
       "src/deep/nested/file.ts": "export const TARGET = 42;",
     });
-    expect(repoSearchContains(root, "TARGET = 42")).toBe(true);
+    const result = repoSearchContains(root, "TARGET = 42");
+    expect(result.found).toBe(true);
+    expect(result.exhausted).toBe(false);
   });
 
-  it("returns false when text is not found", () => {
+  it("returns not-found when text is absent", () => {
     const root = makeRepo({
       "src/file.ts": "export const X = 1;",
     });
-    expect(repoSearchContains(root, "DOES_NOT_EXIST")).toBe(false);
+    const result = repoSearchContains(root, "DOES_NOT_EXIST");
+    expect(result.found).toBe(false);
+    expect(result.exhausted).toBe(false);
   });
 
-  it("returns false for empty text", () => {
+  it("returns not-found for empty text", () => {
     const root = makeRepo({});
-    expect(repoSearchContains(root, "")).toBe(false);
+    const result = repoSearchContains(root, "");
+    expect(result.found).toBe(false);
   });
 
   it("skips node_modules", () => {
     const root = makeRepo({
       "node_modules/pkg/index.js": "export const FOUND = true;",
     });
-    expect(repoSearchContains(root, "FOUND = true")).toBe(false);
+    const result = repoSearchContains(root, "FOUND = true");
+    expect(result.found).toBe(false);
   });
 
   it("skips .git directory", () => {
     const root = makeRepo({
       ".git/config": "core.found = true",
     });
-    expect(repoSearchContains(root, "core.found = true")).toBe(false);
+    const result = repoSearchContains(root, "core.found = true");
+    expect(result.found).toBe(false);
   });
 
-  it("respects maxFiles limit", () => {
+  it("reports exhausted when maxFiles cap is hit", () => {
     // Create many files at root level as decoys, target in a subdirectory.
-    // The walk processes root-level files first (they're in the root dir entry list),
-    // so with a small maxFiles the subdirectory is never entered.
+    // The walk processes root-level files first, so with a small maxFiles
+    // the subdirectory is never entered and the search is exhausted.
     const files: Record<string, string> = {};
     for (let i = 0; i < 20; i++) {
       files[`decoy${String(i).padStart(2, "0")}.ts`] = `const d${i} = ${i};`;
@@ -83,21 +90,38 @@ describe("repoSearchContains", () => {
     files["nested/target.ts"] = "const TARGET = 42;";
     const root = makeRepo(files);
     // With maxFiles=3, only 3 root-level decoy files are checked
-    expect(repoSearchContains(root, "TARGET = 42", 3)).toBe(false);
+    const limited = repoSearchContains(root, "TARGET = 42", 3);
+    expect(limited.found).toBe(false);
+    expect(limited.exhausted).toBe(true);
     // With enough headroom, the nested dir is entered and target found
-    expect(repoSearchContains(root, "TARGET = 42", 30)).toBe(true);
+    const full = repoSearchContains(root, "TARGET = 42", 30);
+    expect(full.found).toBe(true);
+    expect(full.exhausted).toBe(false);
   });
 });
 
 describe("repoActuallyContains", () => {
   it("finds text present in the repo", () => {
-    const root = makeRepo({ "src/index.ts": "export const main = () => {};" });
-    expect(repoActuallyContains(root, "export const main")).toBe(true);
+    const root = makeRepo({ "src/index.ts": "export function mainModule() {}" });
+    expect(repoActuallyContains(root, "export function mainModule() {}")).toBe(true);
   });
 
-  it("returns false when text is absent", () => {
+  it("returns false when text is absent and has no verifiable identifiers", () => {
     const root = makeRepo({ "src/index.ts": "export const other = 1;" });
-    expect(repoActuallyContains(root, "DOES_NOT_EXIST")).toBe(false);
+    expect(repoActuallyContains(root, "zzzNonexistent999")).toBe(false);
+  });
+
+  it("passes when newText contains an identifier that exists in the repo", () => {
+    const root = makeRepo({
+      "src/util.ts": "export function parseConfig() { return {}; }",
+    });
+    // newText is a sentence, but contains the identifier `parseConfig` which exists
+    expect(repoActuallyContains(root, "Use parseConfig() instead of the old path")).toBe(true);
+  });
+
+  it("passes when newText is an existing file path", () => {
+    const root = makeRepo({ "src/new.ts": "export const x = 1;" });
+    expect(repoActuallyContains(root, "src/new.ts")).toBe(true);
   });
 });
 
@@ -122,7 +146,7 @@ describe("isSafeToAutoCommit", () => {
     });
     const fix: ProposedFix = {
       doc: "docs/guide.md",
-      oldText: "src/old.ts", // stale — doc has src/current.ts
+      oldText: "src/old.ts",
       newText: "src/new.ts",
     };
     expect(isSafeToAutoCommit(fix, root)).toBe(false);
@@ -135,7 +159,7 @@ describe("isSafeToAutoCommit", () => {
     const fix: ProposedFix = {
       doc: "docs/guide.md",
       oldText: "src/old.ts",
-      newText: "src/fake.ts", // hallucinated — doesn't exist
+      newText: "zzzFake999",
     };
     expect(isSafeToAutoCommit(fix, root)).toBe(false);
   });
@@ -147,7 +171,7 @@ describe("isSafeToAutoCommit", () => {
     const fix: ProposedFix = {
       doc: "docs/guide.md",
       oldText: "src/old.ts",
-      newText: "src/fake.ts",
+      newText: "zzzFake999",
     };
     expect(isSafeToAutoCommit(fix, root)).toBe(false);
   });
@@ -194,5 +218,18 @@ describe("isSafeToAutoCommit", () => {
     expect(
       isSafeToAutoCommit({ doc: "../etc/passwd", oldText: "x", newText: "src/new.ts" }, root),
     ).toBe(false);
+  });
+
+  it("passes when newText is a sentence with a verifiable identifier", () => {
+    const root = makeRepo({
+      "docs/guide.md": "Use `src/old.ts` for helpers.",
+      "src/config.ts": "export function loadConfig() { return {}; }",
+    });
+    const fix: ProposedFix = {
+      doc: "docs/guide.md",
+      oldText: "src/old.ts",
+      newText: "Use loadConfig() from src/config.ts",
+    };
+    expect(isSafeToAutoCommit(fix, root)).toBe(true);
   });
 });

@@ -151,33 +151,28 @@ function buildSkillGuidedPrompt(agentName: string, skillDoc: string, repoContext
 
 // ── Repo context gathering ──
 
+/** Maximum depth for the recursive directory tree in context. */
+const CONTEXT_TREE_DEPTH = 2;
+
+/** Maximum entries per directory in the context tree. */
+const CONTEXT_TREE_ENTRIES = 30;
+
 /**
- * Gather lightweight repo context for the LLM prompt: file tree, key
- * manifests, and skill doc content. This is bounded to avoid sending
- * the entire repo to the model.
+ * Gather lightweight repo context for the LLM prompt: bounded recursive
+ * file tree, key manifests, and doc titles. This is bounded to avoid
+ * sending the entire repo to the model.
  */
 export function gatherRepoContext(repoRoot: string): string {
   const lines: string[] = [];
 
-  // File tree (top-level + one level deep)
+  // Bounded recursive file tree
   try {
-    const topLevel = readdirSync(repoRoot, { withFileTypes: true });
-    const dirs: string[] = [];
-    const files: string[] = [];
-    for (const entry of topLevel) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-      if (entry.isDirectory()) {
-        dirs.push(entry.name);
-      } else {
-        files.push(entry.name);
-      }
-    }
-    lines.push("## Top-level structure");
-    lines.push(`Directories: ${dirs.join(", ") || "(none)"}`);
-    lines.push(`Files: ${files.join(", ") || "(none)"}`);
+    const tree = buildDirTree(repoRoot, 0, CONTEXT_TREE_DEPTH);
+    lines.push("## Repository tree");
+    lines.push(tree);
     lines.push("");
   } catch {
-    lines.push("## Top-level structure");
+    lines.push("## Repository tree");
     lines.push("(unable to read directory)");
     lines.push("");
   }
@@ -201,6 +196,57 @@ export function gatherRepoContext(repoRoot: string): string {
     // no package.json — skip
   }
 
+  // Doc titles from docs/ and user-docs/ (first heading of each .md file)
+  for (const dir of ["docs", "user-docs"]) {
+    try {
+      const docDir = join(repoRoot, dir);
+      const entries = readdirSync(docDir, { withFileTypes: true }).filter(
+        (e) => e.isFile() && e.name.endsWith(".md"),
+      );
+      if (entries.length === 0) continue;
+      lines.push(`## ${dir}/ titles`);
+      for (const entry of entries.slice(0, 15)) {
+        try {
+          const content = readFileSync(join(docDir, entry.name), "utf8");
+          const firstHeading = content.match(/^#\s+(.+)/m)?.[1] ?? entry.name;
+          lines.push(`- ${entry.name}: ${firstHeading}`);
+        } catch {
+          lines.push(`- ${entry.name}`);
+        }
+      }
+      lines.push("");
+    } catch {
+      // no docs/ or user-docs/ — skip
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Build a bounded recursive directory tree string. Stops at `maxDepth`
+ * and caps entries per directory.
+ */
+function buildDirTree(dir: string, depth: number, maxDepth: number): string {
+  if (depth >= maxDepth) return "";
+  const indent = "  ".repeat(depth);
+  const lines: string[] = [];
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true })
+      .filter((e) => !e.name.startsWith(".") && e.name !== "node_modules")
+      .slice(0, CONTEXT_TREE_ENTRIES);
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        lines.push(`${indent}${entry.name}/`);
+        const child = buildDirTree(join(dir, entry.name), depth + 1, maxDepth);
+        if (child) lines.push(child);
+      } else {
+        lines.push(`${indent}${entry.name}`);
+      }
+    }
+  } catch {
+    // skip unreadable dirs
+  }
   return lines.join("\n");
 }
 
@@ -209,14 +255,16 @@ export function gatherRepoContext(repoRoot: string): string {
 /**
  * Parse the LLM's JSON response into structured findings and fixes.
  * Handles both the `{ findings, fixes }` wrapper and a bare array.
- * Falls back to treating the whole report as a single finding on parse failure.
+ * Returns `parsed: false` on parse failure so the caller can treat the
+ * run as unparseable rather than filing a synthetic finding.
  */
 function parseAgentResponse(reportText: string): {
   findings: SkillGuidedFinding[];
   fixes: SkillGuidedFix[];
+  parsed: boolean;
 } {
   const trimmed = reportText.trim();
-  if (!trimmed) return { findings: [], fixes: [] };
+  if (!trimmed) return { findings: [], fixes: [], parsed: true };
 
   // Try to extract JSON from the report (may be wrapped in markdown fences)
   let jsonStr = trimmed;
@@ -232,6 +280,7 @@ function parseAgentResponse(reportText: string): {
       return {
         findings: parsed.findings.map(normalizeFinding),
         fixes: Array.isArray(parsed.fixes) ? parsed.fixes.map(normalizeFix) : [],
+        parsed: true,
       };
     }
     // Handle bare array
@@ -239,23 +288,17 @@ function parseAgentResponse(reportText: string): {
       return {
         findings: parsed.map(normalizeFinding),
         fixes: [],
+        parsed: true,
       };
     }
   } catch {
     // JSON parse failed — fall through to fallback
   }
 
-  // Fallback: treat the entire report as a single finding
-  return {
-    findings: [
-      {
-        type: "agent-report",
-        description: trimmed.slice(0, 500),
-        severity: "medium",
-      },
-    ],
-    fixes: [],
-  };
+  // Unparseable output: do NOT create a synthetic finding that would file
+  // a task. Return empty with parsed: false so the caller can surface the
+  // raw report as an error instead.
+  return { findings: [], fixes: [], parsed: false };
 }
 
 function normalizeFinding(raw: unknown): SkillGuidedFinding {
@@ -388,7 +431,24 @@ export async function runSkillGuidedAgent(
   const reportText = extractOneShotReportText(agent.cli, result.output ?? "");
 
   // Parse into structured findings
-  const { findings, fixes } = parseAgentResponse(reportText);
+  const { findings, fixes, parsed } = parseAgentResponse(reportText);
+
+  if (!parsed) {
+    const msg = `Built-in agent "${agentName}": agent output was not valid JSON — raw report preserved`;
+    logger?.agent(agentName, "warn", msg);
+    return {
+      ok: false,
+      findings: [],
+      fixes: [],
+      report: reportText,
+      error: msg,
+      elapsedMs: result.elapsedMs,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      totalTokens: result.totalTokens,
+      costUsd: result.costUsd,
+    };
+  }
 
   logger?.agent(agentName, "info", `Skill-guided agent run completed`, {
     findingsCount: findings.length,

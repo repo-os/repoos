@@ -63,20 +63,29 @@ const BINARY_EXTS = new Set([
 const MAX_BYTES_PER_FILE = 512_000; // 500 KB cap per file
 const MAX_TOTAL_BYTES = 5_000_000; // 5 MB total cap
 
+/** Result of a bounded repo search. */
+export interface SearchResult {
+  found: boolean;
+  /** True when the search hit the file or byte cap before finishing the walk. */
+  exhausted: boolean;
+}
+
 /**
- * Search up to `maxFiles` files in the repo for `text`. Returns true as soon
- * as any file contains it. Skips binary-like paths (node_modules, .git,
- * dist) and caps total bytes read.
+ * Search up to `maxFiles` files in the repo for `text`. Returns a
+ * {@link SearchResult} distinguishing "found", "not found", and "search
+ * exhausted" (cap hit before the walk finished). Skips binary-like paths
+ * (node_modules, .git, dist) and caps total bytes read.
  */
 export function repoSearchContains(
   repoRoot: string,
   text: string,
   maxFiles: number = 500,
-): boolean {
-  if (!text) return false; // empty text is never a meaningful match
+): SearchResult {
+  if (!text) return { found: false, exhausted: false };
 
   let filesChecked = 0;
   let totalBytes = 0;
+  let exhausted = false;
 
   const walk = (dir: string): boolean => {
     let entries;
@@ -86,7 +95,10 @@ export function repoSearchContains(
       return false;
     }
     for (const entry of entries) {
-      if (filesChecked >= maxFiles || totalBytes >= MAX_TOTAL_BYTES) return false;
+      if (filesChecked >= maxFiles || totalBytes >= MAX_TOTAL_BYTES) {
+        exhausted = true;
+        return false;
+      }
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
         if (entry.name.startsWith(".")) continue;
@@ -110,7 +122,70 @@ export function repoSearchContains(
     return false;
   };
 
-  return walk(repoRoot);
+  const found = walk(repoRoot);
+  return { found, exhausted: !found && exhausted };
+}
+
+/**
+ * Extract camelCase/PascalCase identifiers from text. These are the
+ * verifiable tokens that can be checked against the codebase to confirm
+ * a replacement is plausible.
+ */
+function extractIdentifiers(text: string): string[] {
+  const ids = new Set<string>();
+  const RE = /\b[A-Za-z_$][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = RE.exec(text)) !== null) {
+    if (m[0].length > 2) ids.add(m[0]);
+  }
+  return [...ids];
+}
+
+/**
+ * Collect a bounded set of identifiers present in the repo's source files.
+ * Used to verify that identifiers in a proposed replacement actually exist.
+ */
+function collectRepoIdentifiers(repoRoot: string, maxFiles: number = 500): Set<string> {
+  const ids = new Set<string>();
+  let filesChecked = 0;
+  let totalBytes = 0;
+
+  const walk = (dir: string): void => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (filesChecked >= maxFiles || totalBytes >= MAX_TOTAL_BYTES) return;
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".")) continue;
+        walk(join(dir, entry.name));
+      } else if (entry.isFile()) {
+        const ext = extname(entry.name).toLowerCase();
+        if (BINARY_EXTS.has(ext)) continue;
+        filesChecked++;
+        try {
+          const abs = join(dir, entry.name);
+          const stat = statSync(abs);
+          if (stat.size > MAX_BYTES_PER_FILE) continue;
+          const content = readFileSync(abs, "utf8");
+          totalBytes += content.length;
+          const RE = /\b[A-Za-z_$][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*\b/g;
+          let m: RegExpExecArray | null;
+          while ((m = RE.exec(content)) !== null) {
+            if (m[0].length > 2) ids.add(m[0]);
+          }
+        } catch {
+          // skip unreadable files
+        }
+      }
+    }
+  };
+
+  walk(repoRoot);
+  return ids;
 }
 
 /**
@@ -118,16 +193,20 @@ export function repoSearchContains(
  * This catches the case where the AI hallucinates a replacement that doesn't
  * match any real file content — the fix would silently break things.
  *
- * Checks two things:
- * 1. Whether `newText` is an existing file path in the repo (for path renames)
- * 2. Whether `newText` appears as content in any file (for text replacements)
+ * Verification strategy (fails closed):
+ * 1. If `newText` is a repo-relative path to an existing file → pass
+ * 2. If `newText` contains identifiers, at least one must exist in the repo → pass
+ * 3. Otherwise → fail
  */
 export function repoActuallyContains(repoRoot: string, newText: string): boolean {
   if (!newText) return false;
   // Check if the newText is a path to an existing file
   if (existsSync(join(repoRoot, newText))) return true;
-  // Check if the newText appears as content in any file
-  return repoSearchContains(repoRoot, newText);
+  // Check if identifiers in newText exist in the codebase
+  const ids = extractIdentifiers(newText);
+  if (ids.length === 0) return false;
+  const repoIds = collectRepoIdentifiers(repoRoot);
+  return ids.some((id) => repoIds.has(id));
 }
 
 /**

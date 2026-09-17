@@ -51,14 +51,14 @@ beforeEach(() => {
 });
 
 describe("gatherRepoContext", () => {
-  it("includes top-level directory structure", () => {
+  it("includes repository tree", () => {
     const root = makeRepo({
       "package.json": '{"name": "test"}',
       "src/index.ts": "export const x = 1;",
     });
     const ctx = gatherRepoContext(root);
-    expect(ctx).toContain("Top-level structure");
-    expect(ctx).toContain("src");
+    expect(ctx).toContain("Repository tree");
+    expect(ctx).toContain("src/");
     expect(ctx).toContain("package.json");
   });
 
@@ -70,6 +70,17 @@ describe("gatherRepoContext", () => {
     expect(ctx).toContain("package.json");
     expect(ctx).toContain("my-app");
     expect(ctx).toContain("build");
+  });
+
+  it("includes doc titles from docs/", () => {
+    const root = makeRepo({
+      "docs/architecture.md": "# Architecture\n\nThis is the arch doc.",
+      "docs/style.md": "# Style Guide\n\nRules for style.",
+    });
+    const ctx = gatherRepoContext(root);
+    expect(ctx).toContain("docs/ titles");
+    expect(ctx).toContain("Architecture");
+    expect(ctx).toContain("Style Guide");
   });
 });
 
@@ -194,7 +205,7 @@ describe("runSkillGuidedAgent", () => {
     expect(result.findings).toHaveLength(1);
   });
 
-  it("falls back to single finding when JSON parse fails", async () => {
+  it("returns error when JSON parse fails (no synthetic finding)", async () => {
     const root = makeRepo({});
     const config = configFor(root, {
       builtInAgents: { "tech-debt": { enabled: true } },
@@ -207,10 +218,10 @@ describe("runSkillGuidedAgent", () => {
     });
 
     const result = await runSkillGuidedAgent("tech-debt", config, "Scan.");
-    expect(result.ok).toBe(true);
-    expect(result.findings).toHaveLength(1);
-    expect(result.findings[0].type).toBe("agent-report");
-    expect(result.findings[0].description).toContain("I found some issues");
+    expect(result.ok).toBe(false);
+    expect(result.findings).toHaveLength(0);
+    expect(result.error).toContain("not valid JSON");
+    expect(result.report).toContain("I found some issues");
   });
 
   it("returns error when runPrompt fails", async () => {
