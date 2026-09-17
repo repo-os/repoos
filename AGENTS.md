@@ -422,7 +422,7 @@ two cheap things first:
 
 **Worked example (2026-08-15).** Task #0205's close-out failed the gate twice
 with `TypeError: Cannot read properties of undefined (reading 'removeItem')` at
-`tests/repo-store.test.ts:805` — `localStorage` was undefined. The same suite
+`src/ui-app/tests/repo-store.test.ts:805` — `localStorage` was undefined. The same suite
 passed every time when run by hand. It was initially misdiagnosed as load-
 induced flakiness (see `docs/dogfooding-vs-general.md`) and nearly written off
 as contention noise from #0216, which would have been wrong.
