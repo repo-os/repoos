@@ -2,15 +2,15 @@
 id: "0381"
 title: Show PM-working indicators on task card and task panel
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-pm-working-indicators-on-task-card-
 model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-09-17T05:13:21Z"
-updated_at: "2026-09-17T05:16:14Z"
+updated_at: "2026-09-17T05:16:24Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ FYI when I chat to the PM I would like a visual indicator on the task card that 
 - 2026-09-17T05:16:08Z · model_override
 - 2026-09-17T05:16:13Z · model_override
 - 2026-09-17T05:16:14Z · status inbox→ready
+- 2026-09-17T05:16:24Z · status ready→active, branch
