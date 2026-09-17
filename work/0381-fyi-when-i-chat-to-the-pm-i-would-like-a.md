@@ -8,9 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-model_override: opencode-go/hy3
+model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-09-17T05:13:21Z"
-updated_at: "2026-09-17T05:16:08Z"
+updated_at: "2026-09-17T05:16:13Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ FYI when I chat to the PM I would like a visual indicator on the task card that 
 - 2026-09-17T05:13:21Z · created · hello@repoos.org
 - 2026-09-17T05:14:52Z · status draft→inbox, title, area, body
 - 2026-09-17T05:16:08Z · model_override
+- 2026-09-17T05:16:13Z · model_override
