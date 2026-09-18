@@ -2,6 +2,7 @@
 import type { Input } from "../../../core/input.js";
 import Button from "./ui/button.vue";
 import { ArrowRight } from "lucide-vue-next";
+import CopyableNumber from "./CopyableNumber.vue";
 
 const props = defineProps<{
   input: Input;
@@ -24,7 +25,11 @@ const emit = defineEmits<{
   >
     <div class="flex flex-1 flex-col p-[13px]">
       <div class="flex items-center gap-[7px]">
-        <span class="font-mono text-[10px] text-[var(--txt-faint)]">{{ inputLabel }}</span>
+        <CopyableNumber
+          :label="inputLabel"
+          :path="`/inputs?input=${encodeURIComponent(input.number || input.id)}`"
+          :aria-label="`Copy link to input ${input.number || input.id}`"
+        />
         <span
           v-if="input.type"
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
