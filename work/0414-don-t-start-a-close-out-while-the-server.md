@@ -2,14 +2,14 @@
 id: "0414"
 title: Don't start a close-out while the server is mid-reload
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/don-t-start-a-close-out-while-the-server
 created_at: "2026-09-18T14:06:27Z"
-updated_at: "2026-09-18T14:57:49Z"
+updated_at: "2026-09-18T14:57:51Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ The same merge and resolution succeed when run by hand, and a retry works.
 - 2026-09-18T14:06:27Z · created · unknown
 - 2026-09-18T14:11:48Z · note: Root cause of no auto-retry: validateCandidate (src/server/integration-orchestrator.ts ~984) marks EVERY failed mergeBranch as retryable:false ('a conflict is a property of the two trees'). That's wrong when merge.conflicts is empty, i.e. auto-resolve succeeded but its commit failed. Only real conflicts should be non-retryable. Also, the self-heal repair handoff (~654) only fires for reasons starting 'merge conflict in ', so 'auto-resolve failed …' got neither a retry nor a repair and the job just failed.
 - 2026-09-18T14:57:49Z · status inbox→ready
+- 2026-09-18T14:57:51Z · status ready→active, branch
