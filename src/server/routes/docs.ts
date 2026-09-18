@@ -4,7 +4,7 @@
 import type { RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
-import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
+import { resolvePmAgent, runPrompt, recordOneShotSession, mergeAgentOverride } from "../agents.js";
 
 /** Apply optional `cliOverride` / `modelOverride` from a request body onto the base PM agent. */
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
@@ -12,7 +12,7 @@ function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
     typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
   const model =
     typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
-  return { ...base, ...(cli ? { cli } : {}), ...(model ? { model } : {}) };
+  return mergeAgentOverride(base, cli, model);
 }
 import {
   createDocument,
