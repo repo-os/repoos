@@ -2,19 +2,19 @@
 id: "0400"
 title: "New task panel: show PM's real model (not Default) and pin close button upper-right"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/new-task-panel-show-pm-s-real-model-not-
 model_override: auto
 pm_cli_override: cursor
 pm_model_override: auto
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-09-18T03:42:22Z"
-updated_at: "2026-09-18T03:50:46Z"
+updated_at: "2026-09-18T03:50:48Z"
 ---
 ## Problem
 
@@ -143,3 +143,4 @@ when I open the "New task" panel why does it show the agent as "opencode + Defau
 - 2026-09-18T03:50:39Z · review_cli_override
 - 2026-09-18T03:50:40Z · review_cli_override
 - 2026-09-18T03:50:46Z · review_model_override
+- 2026-09-18T03:50:48Z · status ready→active, branch
