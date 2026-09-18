@@ -38,6 +38,10 @@ import {
   worktreePathForBranch,
 } from "../core/git.js";
 import { parseTask, utcTimestamp } from "../core/task.js";
+import {
+  parseReviewVerdict as parseVerdictLabel,
+  parseReviewRelevance,
+} from "../core/review-verdict.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   estimateCostUsd,
@@ -292,35 +296,30 @@ interface Run {
 /** How long a guard revert stays claimable by the review trigger, in ms. */
 const REVERT_CLAIM_MS = 30_000;
 
-/** Parse the verdict from the review report markdown. */
+/**
+ * Parse the verdict from the review report markdown. Delegates to the shared,
+ * formatting-agnostic parser in `core/review-verdict.ts` — see that file's
+ * doc comment for why (a strict backtick-only match here once silently
+ * dropped a real "needs some work" verdict that the UI's badge, using the
+ * same lenient logic this now shares, displayed correctly for #0402).
+ */
 function parseVerdict(
   markdown: string,
 ): "good to go" | "needs some work" | "back to the drawing board" | null {
-  const lines = markdown.split("\n");
-  for (const line of lines) {
-    if (line.includes("`good to go`")) return "good to go";
-    if (line.includes("`needs some work`")) return "needs some work";
-    if (line.includes("`back to the drawing board`")) return "back to the drawing board";
-  }
-  return null;
+  return parseVerdictLabel(markdown);
 }
 
 /**
  * Parse the relevance label from the review report markdown (whether the task
  * is still worth having, independent of the diff's code quality). Absent on
  * reports written before this section existed — callers must treat `null` as
- * "unknown", not as "still relevant".
+ * "unknown", not as "still relevant". Delegates to the shared parser, same as
+ * `parseVerdict` above.
  */
 function parseRelevance(
   markdown: string,
 ): "still relevant" | "no longer needed" | "needs rescoping" | null {
-  const lines = markdown.split("\n");
-  for (const line of lines) {
-    if (line.includes("`still relevant`")) return "still relevant";
-    if (line.includes("`no longer needed`")) return "no longer needed";
-    if (line.includes("`needs rescoping`")) return "needs rescoping";
-  }
-  return null;
+  return parseReviewRelevance(markdown);
 }
 
 /** Extract Relevance, Bugs, Edge cases, and Suggestions sections from the report markdown. */
