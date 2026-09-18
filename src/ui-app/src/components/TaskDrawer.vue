@@ -3045,17 +3045,22 @@ watch(
             </p>
             <!-- #0379: when several configured targets exist, make the choice
                  explicit rather than silently serving the first one. -->
-            <select
-              v-if="previewTargetChoiceRequired"
-              v-model="previewTarget"
-              class="preview-target-select"
-              :disabled="ui.saving || isPreviewBusyForActive"
-              aria-label="Preview target"
-            >
-              <option v-for="t in previewTargets" :key="t.name" :value="t.name">
-                {{ t.name }}
-              </option>
-            </select>
+            <Select v-if="previewTargetChoiceRequired" v-model="previewTarget">
+              <SelectTrigger
+                class="preview-target-select h-[34px] max-w-[180px] rounded-[9px] px-[11px]"
+                :disabled="ui.saving || isPreviewBusyForActive"
+                aria-label="Preview target"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
+                    {{ t.name }}
+                  </SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
             <span
               v-else-if="effectivePreviewTarget"
               class="preview-target-name"

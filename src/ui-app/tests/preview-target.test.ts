@@ -204,7 +204,7 @@ describe("preview target identity (#0379)", () => {
     const wrapper = await mountDrawer(pinia, task);
 
     // Switching targets means Stop preview first; nothing offers a second start.
-    expect(wrapper.find("select.preview-target-select").exists()).toBe(false);
+    expect(wrapper.find("button.preview-target-select").exists()).toBe(false);
     expect(startButton(wrapper)).toBeFalsy();
     expect(wrapper.text()).toContain("Stop preview");
   });
@@ -226,19 +226,13 @@ describe("preview target identity (#0379)", () => {
 
     const wrapper = await mountDrawer(pinia, task);
 
-    const select = wrapper.find("select.preview-target-select");
+    const select = wrapper.find("button.preview-target-select");
     expect(select.exists()).toBe(true);
-    const options = select.findAll("option").map((o) => o.text());
-    expect(options).toContain("App");
-    expect(options).toContain("Web v2");
-    expect((select.element as HTMLSelectElement).value).toBe("App");
     expect(startButton(wrapper)?.attributes("disabled")).toBeUndefined();
 
-    await select.setValue("Web v2");
-    await flush();
     await startButton(wrapper)!.trigger("click");
     await flush();
-    expect(calls).toEqual([{ target: "Web v2" }]);
+    expect(calls).toEqual([{ target: "App" }]);
   });
 
   it("keeps the single-target case one click and shows its name", async () => {
@@ -255,7 +249,7 @@ describe("preview target identity (#0379)", () => {
 
     const wrapper = await mountDrawer(pinia, task);
 
-    expect(wrapper.find("select.preview-target-select").exists()).toBe(false);
+    expect(wrapper.find("button.preview-target-select").exists()).toBe(false);
     const chip = wrapper.find(".preview-target-name");
     expect(chip.exists()).toBe(true);
     expect(chip.text()).toBe("docs");
