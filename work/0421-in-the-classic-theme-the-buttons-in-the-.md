@@ -2,14 +2,14 @@
 id: "0421"
 title: Fix opacity issue in classic theme buttons
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T15:34:43Z"
-updated_at: "2026-09-18T15:34:56Z"
+updated_at: "2026-09-18T16:55:52Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ In the classic theme the buttons in the top right have an opacity issue that mak
 - 2026-09-18T15:34:44Z · screenshots
 - 2026-09-18T15:34:44Z · screenshots
 - 2026-09-18T15:34:56Z · status draft→inbox, title, priority, area, type, body
+- 2026-09-18T16:55:52Z · status inbox→ready
