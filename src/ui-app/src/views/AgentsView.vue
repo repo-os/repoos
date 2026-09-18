@@ -924,9 +924,6 @@ onUnmounted(() => {
                 :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
               ></span>
               <span class="agent-name detect-agent-name">{{ r.agent.name }}</span>
-              <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
-                >Deprecated</span
-              >
               <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
               <span
                 class="agent-badge"
@@ -934,6 +931,9 @@ onUnmounted(() => {
               >
                 {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
               </span>
+              <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
+                >Deprecated</span
+              >
               <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
                 r.agent.version
               }}</span>

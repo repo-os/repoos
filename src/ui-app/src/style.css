@@ -6056,7 +6056,8 @@
   flex: none;
   width: 6.5rem;
 }
-.detect-row > .agent-badge {
+.detect-row > .detect-driver-yes,
+.detect-row > .detect-driver-no {
   flex: none;
   width: 8.25rem;
   box-sizing: border-box;
