@@ -30,6 +30,7 @@ import {
   PerformanceError,
   DesignError,
   DocsDebtError,
+  normalizeTechDebtIssueType,
   normalizeArchitectureIssueType,
   type TechDebtIssue,
   type PerformanceIssue,
@@ -415,6 +416,28 @@ describe("runTechDebtAgent", () => {
     });
     mkdirSync(join(root, "work"));
     const config = configFor(root);
+
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        findings: [
+          {
+            type: "deprecated-api",
+            file: "src/a.ts",
+            line: 1,
+            description: "File uses 'var' declarations — modernize to 'const' or 'let'",
+            severity: "low",
+          },
+          {
+            type: "unused-code",
+            file: "src/a.ts",
+            line: 2,
+            description: "Exported 'fine' is never referenced by any other file",
+            severity: "low",
+          },
+        ],
+      }),
+    );
+
     const result = await runTechDebtAgent(config, { fetchImpl: offlineFetch });
 
     expect(result.issuesFound).toBeGreaterThan(0);
@@ -427,6 +450,29 @@ describe("runTechDebtAgent", () => {
 
     const files = readdirSync(join(root, "work"));
     expect(files.length).toBeGreaterThan(0);
+  });
+});
+
+describe("normalizeTechDebtIssueType", () => {
+  it("passes through canonical types unchanged", () => {
+    const types = [
+      "outdated-dependency",
+      "code-duplication",
+      "high-complexity",
+      "unused-code",
+      "deprecated-api",
+    ] as const;
+    for (const type of types) {
+      expect(normalizeTechDebtIssueType(type)).toBe(type);
+    }
+  });
+
+  it("buckets a non-canonical label by keyword instead of always defaulting to unused-code", () => {
+    expect(normalizeTechDebtIssueType("stale-dependency")).toBe("outdated-dependency");
+    expect(normalizeTechDebtIssueType("copy-paste")).toBe("code-duplication");
+    expect(normalizeTechDebtIssueType("cyclomatic-complexity")).toBe("high-complexity");
+    expect(normalizeTechDebtIssueType("legacy-api-usage")).toBe("deprecated-api");
+    expect(normalizeTechDebtIssueType("something-weird")).toBe("unused-code");
   });
 });
 
