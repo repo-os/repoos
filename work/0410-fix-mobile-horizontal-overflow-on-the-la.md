@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T17:31:51Z"
+skill_suggestion: "0424"
 id: "0410"
 title: Fix mobile horizontal overflow on the landing page and VitePress docs site
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/fix-mobile-horizontal-overflow-on-the-la
 created_at: "2026-09-18T12:51:45Z"
-updated_at: "2026-09-18T17:31:22Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -35,3 +36,4 @@ handoff_signal_retry_count: 1
 - 2026-09-18T17:22:37Z · status inbox→ready
 - 2026-09-18T17:23:04Z · status ready→active, branch
 - 2026-09-18T17:31:22Z · status active→review
+
