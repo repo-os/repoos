@@ -25,6 +25,7 @@ const state = reactive<UiRecoveryState>({
 
 let isDirty = () => false;
 let isBusy = () => false;
+let clearNewVersion = () => {};
 let configured = false;
 let healthCheckInFlight: Promise<void> | null = null;
 let clientBuild = (): string | null => {
@@ -46,10 +47,12 @@ let clientBuild = (): string | null => {
 export function configureUiRecovery(options: {
   isDirty: () => boolean;
   isBusy: () => boolean;
+  clearNewVersion?: () => void;
   clientBuild?: () => string | null;
 }): void {
   isDirty = options.isDirty;
   isBusy = options.isBusy;
+  clearNewVersion = options.clearNewVersion ?? (() => {});
   if (options.clientBuild) clientBuild = options.clientBuild;
   configured = true;
 }
@@ -89,6 +92,7 @@ export function showStaleUi(
   newBuild: string | null = null,
   buildAt: string | null = null,
 ): void {
+  clearNewVersion();
   rememberIntent(route);
   state.kind = "stale";
   state.message = "RepoOS was updated while this page was open. Reload to continue.";

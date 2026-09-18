@@ -22,10 +22,14 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
   let r: Response;
   const controller = new AbortController();
   let timedOut = false;
-  const timeout = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, API_TIMEOUT_MS);
+  const method = (opts?.method ?? "GET").toUpperCase();
+  const boundsRequest = method === "GET" || method === "HEAD";
+  const timeout = boundsRequest
+    ? setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS)
+    : undefined;
   const signal = opts?.signal;
   if (signal) {
     if (signal.aborted) controller.abort(signal.reason);
@@ -57,7 +61,7 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
       "Can't reach the RepoOS server — it may be down. Restart it (`repoos serve`), then reload.",
     );
   } finally {
-    clearTimeout(timeout);
+    if (timeout !== undefined) clearTimeout(timeout);
   }
   if (!r.ok) {
     let message = r.statusText;

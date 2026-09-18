@@ -799,6 +799,13 @@ function changedFields(): (keyof TaskDraft)[] {
 }
 
 const dirty = computed(() => changedFields().length > 0);
+watch(
+  dirty,
+  (value) => {
+    ui.taskEditorDraft = value;
+  },
+  { immediate: true },
+);
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
@@ -1856,6 +1863,12 @@ const displayEntries = computed<DisplayEntry[]>(() => {
 });
 /** A follow-up message typed in the Agent tab. */
 const draftMsg = ref("");
+function updateChatDraftDirty(): void {
+  ui.unsentTaskChatDraft =
+    pmDraft.value.trim().length > 0 ||
+    reviewDraftMsg.value.trim().length > 0 ||
+    draftMsg.value.trim().length > 0;
+}
 /** Stick-to-bottom: only when the user hasn't scrolled up the log. */
 const stick = ref(true);
 const logEl = ref<HTMLElement | null>(null);
@@ -2458,17 +2471,26 @@ watch(
 // Live typing is handled by each field's `@input` binding.
 watch(
   () => pmDraft.value,
-  () => nextTick(adjustPmHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustPmHeight);
+  },
   { immediate: true },
 );
 watch(
   () => reviewDraftMsg.value,
-  () => nextTick(adjustReviewHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustReviewHeight);
+  },
   { immediate: true },
 );
 watch(
   () => draftMsg.value,
-  () => nextTick(adjustDraftMsgHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustDraftMsgHeight);
+  },
   { immediate: true },
 );
 </script>

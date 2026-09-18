@@ -44,8 +44,11 @@ onMounted(async () => {
       ui.isNew ||
       ui.isNewDoc ||
       ui.isNewSkill ||
-      ui.isNewInput,
+      ui.isNewInput ||
+      ui.unsentTaskChatDraft ||
+      ui.taskEditorDraft,
     isBusy: () => repo.runningIds.length > 0 || repo.testRun.running,
+    clearNewVersion: repo.clearNewVersion,
   });
   window.addEventListener("focus", checkUiBuild);
   window.addEventListener("repoos:api-timeout", onApiTimeout);

@@ -35,6 +35,8 @@ import { c } from "../cli/colors.js";
 // ── Snapshot shape (the documented, stable --json contract) ─────────────────
 
 export interface StatusServer {
+  /** Whether the listener is covered by a serve lock, alive without one, or stopped. */
+  lifecycle: "managed" | "unmanaged" | "stopped";
   /**
    * True when a serve process for THIS repo is actually reachable: the
    * lockfile's PID is alive AND names a repoos serve process AND its port is
@@ -138,6 +140,11 @@ export interface CollectStatusOptions {
   probeTimeoutMs?: number;
   /** Overrides the probed port (lockfile → default derivation) — for hermetic tests. */
   probePort?: number;
+}
+
+export function serverLifecycle(running: boolean, locks: number): StatusServer["lifecycle"] {
+  if (!running) return "stopped";
+  return locks > 0 ? "managed" : "unmanaged";
 }
 
 // ── Collection ───────────────────────────────────────────────────────────────
@@ -345,6 +352,7 @@ export async function collectStatus(
   const portActive =
     health.state !== "unreachable" || (await isPortListening(probePort, "127.0.0.1"));
   const running = primaryAlive ? portActive : health.state === "ok";
+  const lifecycle = serverLifecycle(running, locks.length);
 
   let startedAt = primary?.startedAt ?? null;
   let startedAtSource: "lockfile" | "health" | null = startedAt ? "lockfile" : null;
@@ -355,6 +363,7 @@ export async function collectStatus(
   }
   const uptimeMs = startedAt !== null ? Math.max(0, now.getTime() - Date.parse(startedAt)) : null;
   const server: StatusServer = {
+    lifecycle,
     running,
     port: primary?.port ?? probePort,
     pid: primary?.pid ?? null,
@@ -590,7 +599,13 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
     } else {
       bits.push("start time unknown");
     }
-    row("server", c.green("● running") + c.dim(" · ") + bits.join(c.dim(" · ")));
+    row(
+      "server",
+      c.green("● running") +
+        c.dim(sv.lifecycle === "unmanaged" ? " · outside serve-lock lifecycle" : " · managed") +
+        c.dim(" · ") +
+        bits.join(c.dim(" · ")),
+    );
     if (sv.health === "foreign") {
       sub(
         c.yellow(

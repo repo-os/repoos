@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   consumeRouteIntent,
+  configureUiRecovery,
   dismissRecovery,
   isStaleImportError,
   showOffline,
@@ -77,5 +78,12 @@ describe("stale UI recovery", () => {
     expect(uiRecoveryState().kind).toBe("offline");
     dismissRecovery();
     expect(uiRecoveryState().kind).toBeNull();
+  });
+
+  it("clears the normal new-version notice whenever stale recovery starts", () => {
+    const clearNewVersion = vi.fn();
+    configureUiRecovery({ isDirty: () => true, isBusy: () => false, clearNewVersion });
+    showStaleUi("/agents");
+    expect(clearNewVersion).toHaveBeenCalledOnce();
   });
 });

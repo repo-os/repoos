@@ -23,6 +23,7 @@ import {
   formatRel,
   cmdStatus,
   readServeLocks,
+  serverLifecycle,
 } from "../../commands/status.js";
 
 function git(root: string, args: string[]): string {
@@ -206,12 +207,19 @@ describe("formatUptime / formatSince / formatRel", () => {
 });
 
 describe("collectStatus — server stopped", () => {
+  it("classifies a healthy listener without a serve lock as unmanaged", () => {
+    expect(serverLifecycle(true, 0)).toBe("unmanaged");
+    expect(serverLifecycle(true, 1)).toBe("managed");
+    expect(serverLifecycle(false, 1)).toBe("stopped");
+  });
+
   it("reports the dead lockfile, stale build, board, leak and git facts without crashing", async () => {
     const fx = await makeGitFixture();
     const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
 
     // server: dead PID, no /api/health → stopped, but the lock's facts survive
     expect(s.server.running).toBe(false);
+    expect(s.server.lifecycle).toBe("stopped");
     expect(s.server.health).toBe("unreachable");
     expect(s.server.pid).toBe(fx.deadPid);
     expect(s.server.port).toBe(fx.lockPort);
@@ -344,6 +352,7 @@ describe("collectStatus — server stopped", () => {
 
     expect(s.server.running).toBe(false);
     expect(s.server.locks).toBe(0);
+    expect(s.server.lifecycle).toBe("stopped");
     expect(s.server.pid).toBeNull();
     expect(s.server.port).toBe(port); // probed port reported back even with no lock
     expect(s.server.health).toBe("unreachable");
@@ -440,6 +449,7 @@ describe("status --json shape", () => {
       "health",
       "healthRoot",
       "host",
+      "lifecycle",
       "locks",
       "pid",
       "port",

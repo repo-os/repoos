@@ -93,4 +93,25 @@ describe("api()", () => {
     });
     vi.useRealTimers();
   });
+
+  it("does not abort a deliberately slow write", async () => {
+    vi.useFakeTimers();
+    let resolveWrite: ((value: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, opts?: RequestInit) =>
+          new Promise<Response>((resolve) => {
+            resolveWrite = resolve;
+            expect(opts?.signal?.aborted).toBe(false);
+          }),
+      ),
+    );
+    const request = api("/api/tasks/1", { method: "POST" });
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS);
+    expect(resolveWrite).toBeDefined();
+    resolveWrite!({ ok: true, json: async () => ({ saved: true }) } as Response);
+    await expect(request).resolves.toEqual({ saved: true });
+    vi.useRealTimers();
+  });
 });

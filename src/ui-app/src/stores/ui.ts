@@ -57,6 +57,10 @@ export const useUiStore = defineStore("ui", () => {
   const isNewSkill = ref(false);
   const isNewInput = ref(false);
   const inputText = ref("");
+  /** Unsent text in one of the task drawer's chat composers. */
+  const unsentTaskChatDraft = ref(false);
+  /** Unsaved title/body (or related field) edits in the task editor. */
+  const taskEditorDraft = ref(false);
 
   const GLIDE_PERSIST_KEY = "repoos.board.glide";
   /** Off by default; when on, cards glide between columns on a status change
@@ -362,6 +366,8 @@ export const useUiStore = defineStore("ui", () => {
     isNewSkill,
     isNewInput,
     inputText,
+    unsentTaskChatDraft,
+    taskEditorDraft,
     saving,
     drawerWidth,
     tunnelOpen,

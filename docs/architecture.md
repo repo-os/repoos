@@ -113,7 +113,8 @@ shape, covered by test):
 
 ```
 { generatedAt, root,
-  server: { running, port, pid, host, startedAt, startedAtSource,
+  server: { lifecycle: "managed"|"unmanaged"|"stopped",
+            running, port, pid, host, startedAt, startedAtSource,
             uptimeSeconds, health: "ok"|"foreign"|"unreachable",
             healthRoot, locks },
   build:  { code, stale, message, version, buildAt },
