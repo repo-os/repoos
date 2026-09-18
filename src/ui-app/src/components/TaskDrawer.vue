@@ -68,6 +68,7 @@ import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
+import CopyableNumber from "./CopyableNumber.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -2743,6 +2744,11 @@ watch(
         <div class="drawer-head">
           <div style="flex: 1">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 7px">
+              <CopyableNumber
+                :label="`#${ui.active.id}`"
+                :path="`/work?task=${encodeURIComponent(ui.active.id)}`"
+                :aria-label="`Copy link to task ${ui.active.id}`"
+              />
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <span class="cdot" :style="{ background: statusColor(ui.active.status) }"></span>
               <span

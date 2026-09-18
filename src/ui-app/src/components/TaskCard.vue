@@ -16,6 +16,7 @@ import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import CopyableNumber from "./CopyableNumber.vue";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -606,7 +607,11 @@ async function openDebuggerFromError(): Promise<void> {
   >
     <div class="flex flex-1 flex-col p-[13px]">
       <div class="flex items-center gap-[7px]">
-        <span class="font-mono text-[10px] text-[var(--txt-faint)]">#{{ task.id }}</span>
+        <CopyableNumber
+          :label="`#${task.id}`"
+          :path="`/work?task=${encodeURIComponent(task.id)}`"
+          :aria-label="`Copy link to task ${task.id}`"
+        />
         <span
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ task.type }}</span

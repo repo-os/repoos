@@ -22,6 +22,7 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import Checkbox from "../components/ui/checkbox.vue";
 import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
+import CopyableNumber from "../components/CopyableNumber.vue";
 
 type InputsViewMode = "list" | "board";
 
@@ -116,9 +117,9 @@ function statusLabel(status: Input["status"]): string {
 function openInput(input: Input): void {
   activeInput.value = input;
 }
-/** "Input #0001" for a numbered input, or just "Input" for one not yet migrated. */
+/** A concise number matching task presentation, or "Input" before numbering. */
 function inputLabel(input: Input): string {
-  return input.number ? `Input #${input.number}` : "Input";
+  return input.number ? `#${input.number}` : "Input";
 }
 // ── Resolve actions (#0359): turn an input into a task via the freeform PM
 // flow, or close it as "no action". Both persist the outcome on the input so
@@ -299,8 +300,13 @@ function tryOpenInput(ref: string, attempt: number): void {
         >
           <div class="input-row-main">
             <div class="input-row-meta">
-              <span class="input-number">{{ inputLabel(i) }}</span
-              ><span class="input-status" :class="i.status"
+              <CopyableNumber
+                class="input-number"
+                :label="inputLabel(i)"
+                :path="`/inputs?input=${encodeURIComponent(i.number || i.id)}`"
+                :aria-label="`Copy link to input ${i.number || i.id}`"
+              />
+              <span class="input-status" :class="i.status"
                 ><span class="state-dot"></span>{{ i.status }}</span
               ><span v-if="i.type">{{ i.type }}</span
               ><span v-if="i.area">{{ i.area }}</span
@@ -402,8 +408,12 @@ function tryOpenInput(ref: string, attempt: number): void {
             <template v-else>No resolution recorded.</template>
           </div>
           <div class="detail-meta">
-            <span class="input-number">{{ inputLabel(activeInput) }}</span
-            ><span>{{ activeInput.type || "other" }}</span
+            <CopyableNumber
+              class="input-number"
+              :label="inputLabel(activeInput)"
+              :path="`/inputs?input=${encodeURIComponent(activeInput.number || activeInput.id)}`"
+              :aria-label="`Copy link to input ${activeInput.number || activeInput.id}`"
+            /><span>{{ activeInput.type || "other" }}</span
             ><span>{{ activeInput.area || "Unknown area" }}</span
             ><span>Created by {{ activeInput.createdBy || "Unknown" }}</span
             ><span v-if="activeInput.createdAt">Created {{ relTime(activeInput.createdAt) }}</span>
