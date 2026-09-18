@@ -12,6 +12,37 @@ import {
 } from "../../server/freeform";
 
 describe("parseGeneratedTask", () => {
+  it("unwraps a spec the model returned inside one code block (#0417)", () => {
+    const spec = [
+      "---",
+      "title: Add fullscreen diff modal in changes tab",
+      "type: feature",
+      "priority: p2",
+      "area: web",
+      "---",
+      "",
+      "## Problem",
+      "",
+      "The changes tab is cramped.",
+    ].join("\n");
+    for (const fence of ["```yaml", "```", "```markdown", "~~~"]) {
+      const close = fence.startsWith("~") ? "~~~" : "```";
+      const parsed = parseGeneratedTask(`${fence}\n${spec}\n${close}\n`);
+      expect(parsed.hadFrontmatter).toBe(true);
+      expect(parsed.title).toBe("Add fullscreen diff modal in changes tab");
+      expect(parsed.area).toBe("web");
+      expect(parsed.body).toContain("## Problem");
+      expect(parsed.body).not.toContain("```");
+    }
+  });
+
+  it("leaves a code block inside the body alone", () => {
+    const out = "---\ntitle: T\n---\n\n## Notes\n\n```ts\nconst x = 1;\n```\n";
+    const parsed = parseGeneratedTask(out);
+    expect(parsed.hadFrontmatter).toBe(true);
+    expect(parsed.body).toContain("```ts");
+  });
+
   it("extracts title, fields, and body from the agent's generated file", () => {
     const out = [
       "---",

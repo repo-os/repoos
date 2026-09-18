@@ -127,7 +127,7 @@ export function stripToolCallMarkup(output: string): string {
  * leaked token can never become the title either.
  */
 export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
-  const output = stripToolCallMarkup(rawOutput);
+  const output = unwrapWholeCodeFence(stripToolCallMarkup(rawOutput));
   const { data, body, hadFrontmatter } = parseDocument(output.trim());
   const rawTitle =
     typeof data.title === "string" && data.title.trim()
@@ -160,6 +160,17 @@ export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
   // `hadFrontmatter: false` tells the caller this is not real task content —
   // it must not be allowed to overwrite the draft.
   return { title: explanationTitle(output), body: output.trim(), hadFrontmatter: false };
+}
+
+/**
+ * Models often wrap a structured answer in one code block (```yaml … ```),
+ * which hides the leading `---` and made a complete spec read as "unusable
+ * output" (#0417). When the entire answer is a single fenced block, return its
+ * contents; anything else passes through untouched.
+ */
+function unwrapWholeCodeFence(output: string): string {
+  const match = /^\s*(`{3,}|~{3,})[\w-]*[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*\1[ \t]*\s*$/.exec(output);
+  return match ? match[2]! : output;
 }
 
 /** The task-file conventions the PM agent must follow, inlined into its prompt. */
