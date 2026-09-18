@@ -1857,8 +1857,21 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  *   killed. Same blast radius as the other engines: the task's own worktree.
  */
 function modelArgs(cli: string, model: string): string[] {
+  if (cli === "github copilot") {
+    // Copilot Auto chooses an account-available model. Keep `default` as the
+    // persisted sentinel used across RepoOS, but make its Copilot meaning the
+    // least-expensive Auto tier rather than the CLI's opaque current default.
+    const tier =
+      model === "copilot-auto-balance"
+        ? "balance"
+        : model === "copilot-auto-intelligence"
+          ? "intelligence"
+          : model === "default" || !model
+            ? "efficiency"
+            : null;
+    if (tier) return ["--model", "auto", "--auto-tier", tier];
+  }
   if (!model || model === "default") return [];
-  if (cli === "codex") return ["--model", model];
   return ["--model", model];
 }
 

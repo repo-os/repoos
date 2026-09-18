@@ -8,6 +8,8 @@ const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
 
 const MODEL_LABELS: Record<string, string> = {
   default: "Default",
+  "copilot-auto-balance": "Auto · Balance",
+  "copilot-auto-intelligence": "Auto · Intelligence",
   opus: "Opus",
   sonnet: "Sonnet",
   haiku: "Haiku",
@@ -16,7 +18,8 @@ const MODEL_LABELS: Record<string, string> = {
 };
 
 /** Display label for a model id; unknown ids render as-is. */
-export function labelForModel(m: string): string {
+export function labelForModel(m: string, cli?: string): string {
+  if (m === "default" && cli === "github copilot") return "Auto · Efficiency";
   return MODEL_LABELS[m] ?? m;
 }
 
@@ -140,7 +143,7 @@ export const useConfigStore = defineStore("config", () => {
     const push = (m: string): void => {
       if (seen.has(m)) return;
       seen.add(m);
-      out.push({ value: m, label: labelForModel(m), disabled: false });
+      out.push({ value: m, label: labelForModel(m, cli), disabled: false });
     };
     if (cli === "claude code") {
       for (const m of CLAUDE_CODE_MODELS) push(m);

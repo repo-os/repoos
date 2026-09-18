@@ -208,8 +208,10 @@ The driver intentionally never passes `--allow-all`, `--allow-all-tools`, or
 needed for a RepoOS task (`bun`, `node`, `npm`, `npx`, `git`, `curl`, `ls`, and
 `cat`), while the CLI's default worktree path boundary remains in force.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
-page offers `default`; any configured model id can still be checked through the
-existing compatibility probe.
+page offers its three documented Auto tiers instead of guessing account-specific
+model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass
+`--model auto --auto-tier <tier>`. A tier lets Copilot choose among models the
+account and policy permit.
 
 ## Cursor Agent CLI driver
 

@@ -171,13 +171,22 @@ describe("model-aware driver commands", () => {
     expect(command.args).toEqual(expect.arrayContaining(["--model", "provider/model-x"]));
   });
 
-  it.each(["opencode", "claude code", "qwen code", "codex", "github copilot"])(
+  it.each(["opencode", "claude code", "qwen code", "codex"])(
     "omits the model flag for %s default",
     (cli) => {
       const command = promptCommand({ ...agent(cli), model: "default" }, "ping");
       expect(command.args).not.toContain("--model");
     },
   );
+
+  it.each([
+    ["default", "efficiency"],
+    ["copilot-auto-balance", "balance"],
+    ["copilot-auto-intelligence", "intelligence"],
+  ])("uses Copilot Auto %s tier", (model, tier) => {
+    const command = promptCommand({ ...agent("github copilot"), model }, "ping");
+    expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
+  });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {
     const command = promptCommand(agent("github copilot"), "write a task file");
