@@ -8,6 +8,7 @@ import { api, JSON_OPTS } from "../api";
 import { copyToClipboard } from "../lib/clipboard";
 import type {
   Agent,
+  AgentUpdate,
   DetectedAgent,
   ModelSourcesResponse,
   ModelTestResponse,
@@ -325,6 +326,9 @@ const detected = ref<DetectedAgent[]>([]);
 const detectLoading = ref(false);
 const detectError = ref(false);
 const detectHintCopied = ref<string>("");
+const updateLoading = ref(false);
+const updateError = ref(false);
+const updates = ref<Record<string, AgentUpdate>>({});
 
 const { isAgentFavorite, toggleAgentFavorite } = useAgentFavorites();
 
@@ -404,6 +408,47 @@ async function checkAgents(): Promise<void> {
     detected.value = [];
   } finally {
     detectLoading.value = false;
+  }
+
+  async function checkForUpdates(refresh = false): Promise<void> {
+    updateLoading.value = true;
+    updateError.value = false;
+    try {
+      const data = await api<{ updates: Record<string, AgentUpdate> }>(
+        "/api/agents/updates",
+        JSON_OPTS("POST", { refresh }),
+      );
+      updates.value = data.updates;
+      detected.value = detected.value.map((agent) => ({
+        ...agent,
+        update: data.updates[agent.id],
+      }));
+    } catch {
+      updateError.value = true;
+    } finally {
+      updateLoading.value = false;
+    }
+  }
+
+  function updateLabel(update: AgentUpdate | undefined): string {
+    if (!update) return "not checked";
+    if (update.status === "up_to_date") return "up to date";
+    if (update.status === "update_available") {
+      return `Update available: ${update.installedVersion} → ${update.latestVersion}`;
+    }
+    if (update.status === "unavailable") return "could not check";
+    return "check manually";
+  }
+
+  function updateColor(update: AgentUpdate | undefined): string {
+    if (update?.status === "update_available") return "var(--amber)";
+    if (update?.status === "up_to_date") return "var(--green)";
+    if (update?.status === "unavailable") return "var(--red)";
+    return "var(--muted)";
+  }
+
+  function checkedLabel(update: AgentUpdate | undefined): string {
+    return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
   }
 }
 
@@ -792,10 +837,23 @@ onUnmounted(() => {
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
             <span class="live-dot" style="background: var(--violet, var(--cyan))"></span>
             Detected coding agents
+            <Button
+              variant="outline"
+              size="sm"
+              class="detect-updates-btn"
+              :disabled="updateLoading || detectLoading"
+              @click="checkForUpdates(true)"
+            >
+              {{ updateLoading ? "Checking for updates…" : "Check for updates" }}
+            </Button>
           </div>
           <div class="agent-desc">
             What's on this machine's PATH — installed &amp; headless-ready, desktop-only, or
-            missing. Click a hint to copy it.
+            missing. Update checks contact only the supported public source after you request them;
+            results are cached for 6 hours.
+          </div>
+          <div v-if="updateError" class="detect-update-error">
+            Update checks are temporarily unavailable.
           </div>
 
           <div v-if="detectLoading && !detected.length" class="detect-loading">Probing PATH…</div>
@@ -820,6 +878,28 @@ onUnmounted(() => {
               <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
                 r.agent.version
               }}</span>
+              <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
+                <summary :style="{ color: updateColor(r.agent.update) }">
+                  {{ updateLabel(r.agent.update) }}
+                </summary>
+                <span class="detect-update-meta">
+                  <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
+                  <span v-if="checkedLabel(r.agent.update)">{{
+                    checkedLabel(r.agent.update)
+                  }}</span>
+                  <button
+                    v-if="r.agent.update.updateCommand"
+                    class="detect-copy"
+                    @click="copyHint(r.agent.update.updateCommand)"
+                  >
+                    {{
+                      detectHintCopied === r.agent.update.updateCommand
+                        ? "copied"
+                        : "copy update command"
+                    }}
+                  </button>
+                </span>
+              </details>
               <span v-if="r.status === 'auth'" class="detect-hint-inline">
                 <code
                   class="detect-hint-code"
@@ -878,6 +958,9 @@ onUnmounted(() => {
               <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
                 {{ detectLoading ? "Checking…" : "Check again" }}
               </Button>
+              <span v-if="Object.keys(updates).length" class="detect-checked-note">
+                Update results are cached for 6 hours; check again to refresh.
+              </span>
             </div>
           </template>
         </div>

@@ -607,6 +607,18 @@ export interface DetectedAgent {
   capability?: string;
   /** Auth state from the CLI's own status probe: true/false/null (unknown). */
   auth: boolean | null;
+  update?: AgentUpdate;
+}
+
+export interface AgentUpdate {
+  status: "up_to_date" | "update_available" | "unavailable" | "manual";
+  installedVersion: string | null;
+  latestVersion: string | null;
+  source: string | null;
+  sourceUrl: string | null;
+  checkedAt: string | null;
+  updateCommand: string | null;
+  error?: string;
 }
 
 /** Live model result for one coding agent (GET /api/models). */

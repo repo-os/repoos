@@ -5982,6 +5982,36 @@
   white-space: nowrap;
   flex: none;
 }
+.detect-updates-btn {
+  margin-left: auto;
+}
+.detect-update-error,
+.detect-checked-note {
+  color: var(--txt-faint);
+  font-size: 11px;
+  padding-top: 6px;
+}
+.detect-update-error {
+  color: var(--red);
+}
+.detect-update-detail {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.detect-update-detail summary {
+  cursor: pointer;
+  list-style: none;
+}
+.detect-update-detail summary::-webkit-details-marker {
+  display: none;
+}
+.detect-update-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--txt-faint);
+  margin-top: 4px;
+}
 .detect-hint-inline {
   display: flex;
   align-items: center;

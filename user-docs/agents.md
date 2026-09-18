@@ -25,6 +25,17 @@ tab tells you whether it's installed and headless-ready, desktop-only, or
 missing. For agents that report it (Cursor), the tab also shows whether the
 CLI is signed in and the exact command to authenticate.
 
+Use **Check for updates** in the Detected Coding Agents tab when you want to
+compare installed versions. RepoOS does not check the network during startup or
+ordinary detection, and it never installs or upgrades a CLI. On demand it uses
+only a source it can establish from the binary path (currently npm, Homebrew,
+or an official GitHub release endpoint); otherwise the row says **check
+manually**. Results are cached for six hours and show the source and checked
+time. A copyable upgrade command appears only when the source provides a
+matching safe command; you must run it yourself. Registry failures, timeouts,
+and opaque vendor versions remain per-agent **could not check** or **check
+manually** states rather than hiding the detected-agent list.
+
 ### Cursor Agent CLI
 
 Install with Cursor's official installer:
