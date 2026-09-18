@@ -2,7 +2,7 @@
 id: "0400"
 title: "New task panel: show PM's real model (not Default) and pin close button upper-right"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: auto
 pm_cli_override: cursor
 pm_model_override: auto
 created_at: "2026-09-18T03:42:22Z"
-updated_at: "2026-09-18T03:50:22Z"
+updated_at: "2026-09-18T03:50:23Z"
 ---
 ## Problem
 
@@ -135,3 +135,4 @@ when I open the "New task" panel why does it show the agent as "opencode + Defau
 - 2026-09-18T03:48:43Z · title, area, type, body
 - 2026-09-18T03:50:19Z · model_override
 - 2026-09-18T03:50:22Z · status draft→inbox
+- 2026-09-18T03:50:23Z · status inbox→ready
