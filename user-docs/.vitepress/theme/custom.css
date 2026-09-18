@@ -173,8 +173,22 @@
 
 /* keep Sora's wide glyphs in check for long-form prose */
 .vp-doc {
+  min-inline-size: 0;
   font-size: 16px;
   line-height: 1.75;
+}
+
+.vp-doc > * {
+  min-inline-size: 0;
+}
+
+.vp-doc p,
+.vp-doc li {
+  min-inline-size: 0;
+}
+
+.vp-doc a {
+  overflow-wrap: anywhere;
 }
 
 /* the softened prose color is a dark-mode readability choice; light prose

@@ -177,15 +177,28 @@ body {
 }
 
 /* install command box */
+.install-widget {
+  /* This component is also a child of the closing CTA's flex row. Without a
+     definite inline size, that flex item uses the command's intrinsic width
+     and can widen the whole page before the inner scroller gets a chance to
+     constrain it. */
+  inline-size: min(100%, 640px);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
 .install-tabs {
   display: inline-flex;
+  max-width: 100%;
   gap: 2px;
   padding: 3px;
   background: var(--chip-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .install-tab {
+  flex: none;
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.02em;
@@ -198,6 +211,12 @@ body {
   transition:
     color 0.15s ease,
     background 0.15s ease;
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .hero-title {
+    font-size: 44px;
+  }
 }
 .install-tab:hover {
   color: var(--txt-dim);
@@ -212,6 +231,11 @@ body {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  /* `max-width` alone leaves an auto-sized flex box vulnerable to an
+     over-wide child establishing its used width. Bound the shell itself so
+     the command's own scroll region—not the page—owns long install strings. */
+  inline-size: min(100%, 640px);
+  max-inline-size: 100%;
   background: var(--code-bg);
   border: 1px solid var(--border-bright);
   border-radius: 12px;
@@ -221,7 +245,8 @@ body {
   max-width: 640px;
 }
 .install-command-scroll {
-  min-width: 0;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   flex: 1 1 auto;
   overflow-x: auto;
   overscroll-behavior-x: contain;
