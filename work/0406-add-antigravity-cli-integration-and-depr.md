@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: agent
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
 created_at: "2026-09-18T08:54:55Z"
-updated_at: "2026-09-18T08:54:55Z"
+updated_at: "2026-09-18T09:14:28Z"
 ---
 ## Problem
 
@@ -58,3 +59,4 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 ## Activity
 
 - 2026-09-18T08:54:55Z · created · unknown
+- 2026-09-18T09:14:28Z · cli_override
