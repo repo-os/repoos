@@ -1,0 +1,22 @@
+---
+id: "0416"
+title: "The [x] close button on the \"new input\" panel should be i…"
+type: feature
+status: draft
+priority: p2
+area: general
+assigned_to: ""
+created_by: hello@repoos.org
+branch: ""
+created_at: "2026-09-18T14:45:27Z"
+updated_at: "2026-09-18T14:45:27Z"
+---
+The [x] close button on the "new input" panel should be in the top right corner like all the other close panel buttons everywhere else. Also the "create task" and "do nothing" buttons should be on the right hand side of the input panel, not on the left hand side, and "create task" button should be furthest to the right.
+
+## Original prompt
+
+The [x] close button on the "new input" panel should be in the top right corner like all the other close panel buttons everywhere else. Also the "create task" and "do nothing" buttons should be on the right hand side of the input panel, not on the left hand side, and "create task" button should be furthest to the right.
+
+## Activity
+
+- 2026-09-18T14:45:27Z · created · hello@repoos.org
