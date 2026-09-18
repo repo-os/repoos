@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T16:55:22Z"
-updated_at: "2026-09-18T16:55:22Z"
+updated_at: "2026-09-18T16:55:23Z"
 ---
 The status at the top line of the task panel is not necessary because it's shown in the dropdown right below the title. Let's remove it since it's a duplicate and causing the top line to be cramped anyway. Also please double check on the inputs panel that the status is not duplicated there as well.
 
@@ -17,6 +17,11 @@ The status at the top line of the task panel is not necessary because it's shown
 
 The status at the top line of the task panel is not necessary because it's shown in the dropdown right below the title. Let's remove it since it's a duplicate and causing the top line to be cramped anyway. Also please double check on the inputs panel that the status is not duplicated there as well.
 
+## Screenshots
+
+![Screenshot-2026-09-19-at-00.53.35](/api/tasks/0423/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-18T16:55:22Z · created · hello@repoos.org
+- 2026-09-18T16:55:23Z · screenshots
