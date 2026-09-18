@@ -2,14 +2,14 @@
 id: "0425"
 title: Style preview target dropdown consistently and add dropdown standard to AGENTS.md
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/style-preview-target-dropdown-consistent
 created_at: "2026-09-18T17:44:12Z"
-updated_at: "2026-09-18T17:46:21Z"
+updated_at: "2026-09-18T17:51:15Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Make the new preview target dropdown in the same style as the status dropdown. a
 - 2026-09-18T17:44:30Z · status draft→inbox, title, area, body
 - 2026-09-18T17:46:17Z · status inbox→ready
 - 2026-09-18T17:46:21Z · status ready→active, branch
+- 2026-09-18T17:51:15Z · status active→review
