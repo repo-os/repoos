@@ -13,6 +13,7 @@ import {
   AgentRunner,
   antigravityErrorHint,
   foldUsage,
+  oneShotResultFromLog,
   parseAntigravityEvent,
   promptCommand,
   runPrompt,
@@ -346,6 +347,38 @@ it("refuses an Antigravity task turn in the main checkout before spawning", () =
     expect(runner.isRunning(TASK.id)).toBe(false);
     expect(spawnLog(fx)).toEqual([]);
   }));
+
+it("refuses a board-level Antigravity chat, which would run in the main checkout", () =>
+  withFakeAgy(async (fx) => {
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    const res = runner.startChat("ross", "hello", agent, "context");
+    expect(res.ok).toBe(false);
+    expect(res.reason).toContain("board-level chats");
+    expect(spawnLog(fx)).toEqual([]);
+  }));
+
+it("rejects a zero-exit Antigravity one-shot envelope that reports an error", () => {
+  const dir = mkdtempSync(join(tmpdir(), "repoos-agy-oneshot-"));
+  try {
+    const out = join(dir, "out.log");
+    const err = join(dir, "err.log");
+    writeFileSync(out, JSON.stringify({ status: "ERROR", error: "invalid model selection" }));
+    writeFileSync(err, "");
+    // exitCode undefined: a run adopted from its logs after a server reload.
+    for (const exitCode of [0, undefined]) {
+      const result = oneShotResultFromLog(out, err, 10, exitCode, "antigravity");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("invalid model selection");
+      expect(result.error).toContain("agy models");
+    }
+    writeFileSync(out, "not json");
+    expect(oneShotResultFromLog(out, err, 10, 0, "antigravity").error).toContain("malformed JSON");
+    writeFileSync(out, JSON.stringify({ status: "SUCCESS", response: "ok" }));
+    expect(oneShotResultFromLog(out, err, 10, 0, "antigravity").ok).toBe(true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 it("drops another engine's session id when a task switches to Antigravity", () =>
   withFakeAgy(async (fx) => {

@@ -3083,37 +3083,9 @@ export function runPrompt(
         return;
       }
       if (agent.cli === "antigravity" && output) {
-        try {
-          const parsed: unknown = JSON.parse(output);
-          const envelope =
-            parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
-          if (!envelope || typeof envelope.status !== "string") {
-            resolve({
-              ok: false,
-              error: "agy returned malformed JSON; update Antigravity CLI and retry.",
-              ...usageFields,
-            });
-            return;
-          }
-          if (envelope.status.toUpperCase() !== "SUCCESS") {
-            const detail =
-              typeof envelope.error === "string" && envelope.error
-                ? envelope.error
-                : `status ${envelope.status}`;
-            const hint = antigravityErrorHint(detail) ?? antigravityErrorHint(stderr);
-            resolve({
-              ok: false,
-              error: `agy run failed: ${detail}${hint ? ` ${hint}` : ""}`,
-              ...usageFields,
-            });
-            return;
-          }
-        } catch {
-          resolve({
-            ok: false,
-            error: "agy returned malformed JSON; update Antigravity CLI and retry.",
-            ...usageFields,
-          });
+        const error = antigravityOneShotError(output, stderr);
+        if (error) {
+          resolve({ ok: false, error, ...usageFields });
           return;
         }
       }
@@ -3137,6 +3109,32 @@ export function runPrompt(
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
     });
   });
+}
+
+/**
+ * Validate an Antigravity one-shot `--output-format json` envelope. Exit code
+ * alone is not enough: agy can exit 0 with `{status: "ERROR"}`, and a reloaded
+ * server adopting a run from its logs has no exit code at all. Returns an
+ * actionable error, or null when the envelope reports SUCCESS.
+ */
+export function antigravityOneShotError(output: string, stderr: string): string | null {
+  const malformed = "agy returned malformed JSON; update Antigravity CLI and retry.";
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    return malformed;
+  }
+  const envelope =
+    parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+  if (!envelope || typeof envelope.status !== "string") return malformed;
+  if (envelope.status.toUpperCase() === "SUCCESS") return null;
+  const detail =
+    typeof envelope.error === "string" && envelope.error
+      ? envelope.error
+      : `status ${envelope.status}`;
+  const hint = antigravityErrorHint(detail) ?? antigravityErrorHint(stderr);
+  return `agy run failed: ${detail}${hint ? ` ${hint}` : ""}`;
 }
 
 /**
@@ -3180,6 +3178,10 @@ export function oneShotResultFromLog(
       error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
       ...usageFields,
     };
+  }
+  if (output && commandName === "antigravity") {
+    const error = antigravityOneShotError(output, stderr);
+    if (error) return { ok: false, error, ...usageFields };
   }
   if (output) return { ok: true, output, ...usageFields };
   const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
@@ -4134,15 +4136,18 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
-    // Antigravity runs with --dangerously-skip-permissions, so a task turn must
-    // never land in the main checkout. Routes fall back to config.root when
-    // worktree creation fails (and hotfixes use it on purpose); refuse here,
-    // the one choke point every task spawn passes through, before anything runs.
-    if (cmd === "agy" && task && this.samePath(cwd, this.config.root)) {
+    // Antigravity runs with --dangerously-skip-permissions, so it must never
+    // land in the main checkout: not a task turn (routes fall back to
+    // config.root when worktree creation fails, and hotfixes use it on
+    // purpose) and not a board-level chat (Ross, debugger, PM), which has no
+    // worktree at all. Refuse here, the one choke point every runner spawn
+    // passes through, before anything runs.
+    if (cmd === "agy" && this.samePath(cwd, this.config.root)) {
       return {
         ok: false,
-        reason:
-          "Antigravity only runs in a RepoOS task worktree, and this turn would run in the main checkout (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task.",
+        reason: task
+          ? "Antigravity only runs in a RepoOS task worktree, and this turn would run in the main checkout (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task."
+          : "Antigravity only runs in a RepoOS task worktree, so it can't drive board-level chats that run in the main checkout. Pick a different agent for this role.",
       };
     }
     if (this.entries.size < this.maxConcurrentAgents) {
