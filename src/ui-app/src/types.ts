@@ -594,6 +594,8 @@ export interface AgentsMeta {
 export interface DetectedAgent {
   id: string;
   name: string;
+  /** Canonical configured CLI id, when this detector row is drivable. */
+  cli?: string;
   binary: string;
   installed: boolean;
   path: string | null;

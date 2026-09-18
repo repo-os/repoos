@@ -1453,6 +1453,24 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  // Antigravity is worktree-bound for every turn, including an existing PM
+  // chat. Refuse to fall back to the main checkout when a task has no managed
+  // worktree or its registration has gone stale.
+  let pmCwd: string | undefined;
+  if (pm.cli === "antigravity") {
+    if (!existing.branch) {
+      return json(res, 400, {
+        error: "Antigravity PM chat requires a managed task worktree",
+      });
+    }
+    pmCwd = worktreePathForBranch(config.root, existing.branch) ?? undefined;
+    if (!pmCwd) {
+      return json(res, 400, {
+        error: `No managed worktree exists for task #${id}; start the task before using Antigravity PM chat`,
+      });
+    }
+  }
+
   // 0381: chat-input screenshots ride along as a pending batch keyed to this
   // PM session. The task the PM creates from the message doesn't exist yet,
   // so the batch is parked on disk now and attached to the created task by
@@ -1495,8 +1513,11 @@ ${existing.body || "(no description)"}`;
   const result = existing_session
     ? runner.send(pmSessionId, text, pm, {
         resumePreamble: `Task context:\n${fullContext}`,
+        ...(pmCwd ? { cwd: pmCwd } : {}),
       })
-    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt);
+    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt, {
+        ...(pmCwd ? { cwd: pmCwd } : {}),
+      });
 
   if (!result.ok && result.busy) {
     dropPmImages(imageBatchId);

@@ -1,8 +1,14 @@
 /** Fixture coverage for Google's documented Antigravity CLI (`agy`) driver. */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { createMemoryHistory, createRouter } from "vue-router";
+import AgentsView from "../src/views/AgentsView.vue";
+import { useConfigStore } from "../src/stores/config";
+import { flush, json } from "./component-test-helpers";
 import {
   AgentRunner,
   antigravityErrorHint,
@@ -204,6 +210,11 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: pr
 if (args[0] === "--version") { process.stdout.write("agy 1.2.6\\n"); process.exit(0); }
 if (args[0] === "models") { process.stdout.write("gemini-3.8-flash-medium Gemini 3.8 Flash\\nclaude-sonnet-4-6 Claude Sonnet\\n"); process.exit(0); }
 if (args.includes("/model")) { process.stdout.write(JSON.stringify({ status: "SUCCESS", response: "models" }) + "\\n"); process.exit(0); }
+if (args.includes("rejected-model")) {
+  process.stdout.write(JSON.stringify({ status: "ERROR", error: "invalid model selection" }) + "\\n");
+  process.stderr.write("invalid model selection\\n");
+  process.exit(2);
+}
 if (process.env.REPOOS_FAKE_AGY_EXIT) {
   process.stdout.write(JSON.stringify({ status: "SUCCESS", response: "done" }) + "\\n");
   process.stderr.write("simulated non-zero exit\\n");
@@ -284,7 +295,12 @@ const TASK: Task = {
 
 const agent: Agent = { name: "engineer", cli: "antigravity", model: "default", enabled: true };
 
-afterEach(() => delete process.env.REPOOS_FAKEBIN_LOG);
+afterEach(() => {
+  delete process.env.REPOOS_FAKEBIN_LOG;
+  delete process.env.REPOOS_FAKE_AGY_EXIT;
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 it("treats a non-zero one-shot exit as failure even with a SUCCESS envelope", async () => {
   const fx = fixture();
@@ -299,6 +315,25 @@ it("treats a non-zero one-shot exit as failure even with a SUCCESS envelope", as
   } finally {
     process.env.PATH = oldPath;
     delete process.env.REPOOS_FAKE_AGY_EXIT;
+    fx.clean();
+  }
+});
+
+it("surfaces the CLI diagnostic for a rejected Antigravity model pin", async () => {
+  const fx = fixture();
+  const oldPath = process.env.PATH;
+  process.env.PATH = `${fx.bin}:${oldPath ?? ""}`;
+  process.env.REPOOS_FAKEBIN_LOG = fx.log;
+  try {
+    const result = await runPrompt({ ...agent, model: "rejected-model" }, "write a task", {
+      cwd: fx.bin,
+      timeoutMs: 2_000,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("invalid model selection");
+    expect(result.error).toContain("agy models");
+  } finally {
+    process.env.PATH = oldPath;
     fx.clean();
   }
 });
@@ -365,8 +400,109 @@ it("detects auth, lists models, and runs/resumes in the exact task worktree", as
     expect(latest.at(-1)?.args).toEqual(
       expect.arrayContaining(["--conversation", "conversation-1"]),
     );
+    expect(
+      runner.startChat("pm-chat", "hello", agent, "context", undefined, { cwd: worktree }).ok,
+    ).toBe(true);
+    await waitFor(() => !runner.isRunning("pm-chat"), "agy chat turn");
+    const chatRun = readFileSync(fx.log, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { args: string[]; cwd: string })
+      .find((run) => run.args.includes("--output-format") && run.args.includes("stream-json"));
+    expect(chatRun?.cwd).toBe(realpathSync(worktree));
   } finally {
     process.env.PATH = oldPath;
     fx.clean();
   }
+});
+
+it("renders Gemini deprecation guidance and hides unavailable Antigravity selectors", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url.includes("/api/agents/detect")) {
+        return json({
+          agents: [
+            {
+              id: "gemini",
+              name: "Gemini CLI",
+              binary: "gemini",
+              installed: true,
+              path: "/usr/local/bin/gemini",
+              version: "gemini 1.0",
+              headless: true,
+              drivable: false,
+              installHint: "Use Antigravity CLI (agy) instead.",
+              deprecated: true,
+              migrationUrl: "https://antigravity.google/docs/cli/gcli-migration/",
+              migrationNote: "Enterprise and paid API-key Gemini CLI users may still have access.",
+              auth: null,
+            },
+          ],
+        });
+      }
+      if (url.includes("/api/models")) {
+        return json({
+          byCli: {
+            opencode: { supported: true, models: ["default"], refreshable: false },
+            antigravity: { supported: true, models: ["default"], refreshable: false },
+          },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }),
+  );
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const config = useConfigStore();
+  const engineer = { name: "engineer", cli: "opencode", model: "default", enabled: true };
+  config.agents = [engineer];
+  config.agentsMeta = {
+    clis: ["opencode", "antigravity"],
+    models: ["default"],
+    defaults: [engineer],
+    skills: [],
+  };
+  config.loaded = true;
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/", component: { template: "<div />" } }],
+  });
+  await router.push("/");
+  const wrapper = mount(AgentsView, {
+    global: {
+      plugins: [pinia, router],
+      stubs: {
+        teleport: true,
+        Transition: true,
+        AgentModelControl: {
+          props: ["cliOptions", "cli"],
+          template:
+            '<div class="am-control"><button v-for="option in cliOptions" :key="option" class="am-cli-btn">{{ option }}</button></div>',
+        },
+      },
+    },
+  });
+  await flush();
+
+  const detectedTab = wrapper
+    .findAll("button.tab-btn")
+    .find((button) => button.text() === "Detected Coding Agents");
+  expect(detectedTab).toBeTruthy();
+  await detectedTab!.trigger("click");
+  await flush();
+  expect(wrapper.text()).toContain("Deprecated");
+  expect(wrapper.text()).toContain("Use Antigravity CLI (agy) instead.");
+  expect(wrapper.text()).toContain(
+    "Enterprise and paid API-key Gemini CLI users may still have access.",
+  );
+
+  const defaultTab = wrapper
+    .findAll("button.tab-btn")
+    .find((button) => button.text() === "Default Agents");
+  await defaultTab!.trigger("click");
+  await flush();
+  const defaultPanel = wrapper.findAll(".agent-tab-panel")[0];
+  expect(defaultPanel.findAll(".am-cli-btn").map((button) => button.text())).toEqual(["opencode"]);
+  wrapper.unmount();
 });

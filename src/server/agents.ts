@@ -3881,6 +3881,7 @@ export class AgentRunner {
     agent: Agent,
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
+    opts: { cwd?: string } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -3895,12 +3896,13 @@ export class AgentRunner {
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
     }
+    const cwd = opts.cwd ?? this.config.root;
     const human: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     const session: Session = {
       lines: [human],
       pending: "",
       bytes: entryBytes(human),
-      workdir: this.config.root,
+      workdir: cwd,
       engine: engineForCli(agent.cli),
       agent: agent.name,
       model: agent.model,
@@ -3912,8 +3914,8 @@ export class AgentRunner {
       agent.name === DEBUGGER_NAME
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
-    const { cmd, args } = cliCommand(agent, mission, this.config.root);
-    return this.spawnOrQueue(sessionId, cmd, args, this.config.root);
+    const { cmd, args } = cliCommand(agent, mission, cwd);
+    return this.spawnOrQueue(sessionId, cmd, args, cwd);
   }
 
   /**
@@ -3989,7 +3991,7 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string; skipBoardDivergence?: boolean } = {},
+    opts: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -4013,6 +4015,8 @@ export class AgentRunner {
       };
     }
     this.sessions.set(taskId, session);
+    const cwd = opts.cwd ?? session.workdir ?? this.config.root;
+    session.workdir = cwd;
     this.captureUsageBaseline(session);
     const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
@@ -4046,21 +4050,10 @@ export class AgentRunner {
         d: "Antigravity conversation id unavailable; starting a clearly-labelled fresh turn instead of guessing a session.",
       });
     }
-    const { cmd, args } = resumeCommand(
-      agent,
-      fullText,
-      sessionId,
-      session.workdir ?? this.config.root,
-    );
-    return this.spawnOrQueue(
-      taskId,
-      cmd,
-      args,
-      session.workdir ?? this.config.root,
-      session.task,
-      session.branch,
-      { skipBoardDivergence: opts.skipBoardDivergence },
-    );
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
+    return this.spawnOrQueue(taskId, cmd, args, cwd, session.task, session.branch, {
+      skipBoardDivergence: opts.skipBoardDivergence,
+    });
   }
 
   /** The retained transcript for a task, or null when no session exists. */
