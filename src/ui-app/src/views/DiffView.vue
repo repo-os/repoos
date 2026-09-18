@@ -373,6 +373,11 @@ function switchFile(filename: string): void {
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
+  /* Single grid shared by all rows so both halves are always equal width */
+  display: grid;
+  grid-template-columns: 44px minmax(320px, 1fr) 44px minmax(320px, 1fr);
+  align-content: start;
+  min-width: max-content;
 }
 
 .diff-minimap {
@@ -385,19 +390,20 @@ function switchFile(filename: string): void {
   cursor: pointer;
 }
 
+/* Rows use display:contents so their children become direct grid items of .diff-page-content */
 .diff-side-header,
 .diff-side-row,
 .diff-sep-row {
-  display: grid;
-  grid-template-columns: 44px minmax(320px, 1fr) 44px minmax(320px, 1fr);
-  min-width: max-content;
+  display: contents;
 }
 
-.diff-side-header {
+/* Sticky header — span all 4 columns via a pseudo-wrapper trick isn't possible with
+   display:contents, so instead make each header span individually sticky */
+.diff-side-header > span {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 8px 0;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: #0d1117;
   color: var(--txt-faint);
@@ -405,7 +411,7 @@ function switchFile(filename: string): void {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.diff-side-header > span { padding: 0 12px; }
+.diff-side-header > span:nth-child(1) { padding: 6px; text-align: right; }
 .diff-side-header > span:nth-child(3),
 .diff-side-header > span:nth-child(4) { border-left: 1px solid var(--border); }
 
@@ -422,27 +428,30 @@ function switchFile(filename: string): void {
 .diff-ln-add { background: rgba(70,210,100,0.10); color: rgba(100,210,100,0.65); }
 .diff-ln-empty { background: rgba(120,140,200,0.03); }
 
+/* 3rd and 4th children in a row are the right side */
 .diff-side-row > .diff-ln-col:nth-child(3),
-.diff-side-row > .diff-side-cell:nth-child(4) { border-left: 1px solid var(--border); }
+.diff-side-row > .diff-side-cell:nth-child(4),
+.diff-sep-row > .diff-ln-col:nth-child(3),
+.diff-sep-row > .diff-sep-cell:nth-child(4) { border-left: 1px solid var(--border); }
 
 .diff-side-cell {
   padding: 0 12px;
   white-space: pre;
   min-height: 1.6em;
   overflow: hidden;
+  min-width: 0;
 }
 .diff-cell-ctx { color: #c9d1d9; }
 .diff-cell-rem { background: rgba(255,80,80,0.14); color: #ff9090; }
 .diff-cell-add { background: rgba(70,210,100,0.10); color: #7ee8a2; }
 .diff-cell-empty { background: rgba(120,140,200,0.03); }
 
-.diff-sep-row {
+/* With display:contents, sep-row borders go on the cells */
+.diff-sep-row > * {
   border-top: 1px solid rgba(255,255,255,0.05);
   border-bottom: 1px solid rgba(255,255,255,0.05);
   background: rgba(255,255,255,0.015);
 }
-.diff-sep-row > .diff-ln-col:nth-child(3),
-.diff-sep-row > .diff-sep-cell:nth-child(4) { border-left: 1px solid var(--border); }
 .diff-sep-cell {
   padding: 1px 12px;
   color: rgba(140,160,180,0.35);

@@ -2182,7 +2182,9 @@ const diffFiles = computed<DiffFile[]>(() => {
 
 function openFullDiff(file: DiffFile): void {
   if (!ui.active) return;
-  router.push({ name: "diff", params: { taskId: ui.active.id }, query: { file: file.filename } });
+  const taskId = ui.active.id;
+  ui.close();
+  router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
 }
 
 
