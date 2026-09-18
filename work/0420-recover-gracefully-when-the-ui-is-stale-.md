@@ -9,6 +9,19 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-18T15:33:49Z"
+updated_at: "2026-09-18T15:35:13Z"
+---
+---
+id: "0420"
+title: Recover gracefully when the UI is stale after a rebuild
+type: bug
+status: inbox
+priority: p1
+area: web
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-09-18T15:33:49Z"
 updated_at: "2026-09-18T15:33:49Z"
 ---
 ## Problem
@@ -28,7 +41,7 @@ RepoOS should detect stale UI/build state and recover with clear user feedback i
 - Add a bounded API-request timeout/abort path so stalled local requests fail visibly with retry/reload guidance rather than hanging forever.
 - Missing /assets/* files must return a real 404 instead of the SPA HTML fallback, making stale-asset failures unambiguous and preventing JavaScript MIME confusion.
 - Keep old UI asset generations available long enough for open tabs to finish loading, or make builds/deploys atomic so a browser never receives an HTML shell and incompatible asset set. Choose and document the approach that fits RepoOS's local/dev and deployed flows.
-- Separately, the UI can compare its own build ID to  on reconnect, focus, and normal route changes, then show the same banner before a click fails.
+- Separately, the UI can compare its own build ID to `/api/health` on reconnect, focus, and normal route changes, then show the same banner before a click fails.
 - Reconcile this with the existing /new-build notice and SSE reconnect behavior; do not create duplicate or conflicting banners.
 - The server-status view should distinguish a healthy listener that is outside the normal serve-lock lifecycle from a genuinely stopped server, or otherwise make that mismatch actionable.
 
@@ -51,3 +64,4 @@ RepoOS should detect stale UI/build state and recover with clear user feedback i
 ## Activity
 
 - 2026-09-18T15:33:49Z · created · unknown
+- 2026-09-18T15:35:13Z · body
