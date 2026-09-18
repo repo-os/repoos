@@ -2,14 +2,14 @@
 id: "0422"
 title: "New Skill Suggestion: Add a Radix Vue modal in RepoOS UI"
 type: spec
-status: inbox
+status: done
 priority: p2
 area: web
 assigned_to: human
 created_by: ""
 branch: ""
 created_at: "2026-09-18T15:46:27Z"
-updated_at: "2026-09-18T15:46:27Z"
+updated_at: "2026-09-18T17:35:54Z"
 ---
 ## Problem
 
@@ -77,3 +77,4 @@ spam). Mentioned here only:
 ## Activity
 
 - 2026-09-18T15:46:27Z · created · unknown
+- 2026-09-18T17:35:54Z · status inbox→done
