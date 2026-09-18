@@ -4,6 +4,7 @@ export interface Favorite {
   cli: string;
   model: string;
   addedAt: number;
+  recentlyUsedAt?: number;
 }
 
 const FAVORITES_STORAGE_KEY = "agent-model-favorites";
@@ -48,8 +49,21 @@ export function useFavorites() {
     saveFavorites(favorites.value);
   }
 
+  function markRecentlyUsed(cli: string, model: string): void {
+    const favorite = favorites.value.find((f) => f.cli === cli && f.model === model);
+    if (!favorite) return;
+    favorite.recentlyUsedAt = Date.now();
+    saveFavorites(favorites.value);
+  }
+
   function getFavoritesForCli(cli: string): Favorite[] {
-    return favorites.value.filter((f) => f.cli === cli).sort((a, b) => b.addedAt - a.addedAt);
+    return favorites.value
+      .filter((f) => f.cli === cli)
+      .sort(
+        (a, b) =>
+          (b.recentlyUsedAt ?? b.addedAt) - (a.recentlyUsedAt ?? a.addedAt) ||
+          b.addedAt - a.addedAt,
+      );
   }
 
   const hasFavorites = computed(() => favorites.value.length > 0);
@@ -58,6 +72,7 @@ export function useFavorites() {
     favorites,
     isFavorite,
     toggleFavorite,
+    markRecentlyUsed,
     getFavoritesForCli,
     hasFavorites,
   };

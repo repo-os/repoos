@@ -115,6 +115,30 @@ describe("useFavorites", () => {
       expect(favs[0].model).toBe("sonnet");
       expect(favs[1].model).toBe("opus");
     });
+
+    it("sorts by most recently used while preserving added order for unused favorites", () => {
+      const { toggleFavorite, markRecentlyUsed, getFavoritesForCli, favorites } = useFavorites();
+      toggleFavorite("claude", "opus");
+      toggleFavorite("claude", "sonnet");
+      favorites.value[0].addedAt = Date.now() - 2_000;
+      favorites.value[1].addedAt = Date.now() - 1_000;
+
+      markRecentlyUsed("claude", "opus");
+
+      expect(getFavoritesForCli("claude").map((f) => f.model)).toEqual(["opus", "sonnet"]);
+      expect(favorites.value[0].recentlyUsedAt).toBeDefined();
+      expect(
+        JSON.parse(localStorage.getItem("agent-model-favorites") || "[]")[0].recentlyUsedAt,
+      ).toBeDefined();
+    });
+
+    it("ignores usage updates for non-favorited models", () => {
+      const { markRecentlyUsed, getFavoritesForCli } = useFavorites();
+
+      markRecentlyUsed("claude", "opus");
+
+      expect(getFavoritesForCli("claude")).toEqual([]);
+    });
   });
 
   describe("hasFavorites", () => {
