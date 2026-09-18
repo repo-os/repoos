@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ArrowRight, ExternalLink, X } from "lucide-vue-next";
+import { ArrowRight, Columns3, ExternalLink, LayoutList, X } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import Button from "../components/ui/button.vue";
+import InputBoardColumn from "../components/InputBoardColumn.vue";
 import type { Input } from "../../../core/input.js";
 import { relTime } from "../lib/time";
 import Dialog from "../components/ui/dialog/root.vue";
@@ -20,6 +21,9 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import Checkbox from "../components/ui/checkbox.vue";
+
+type InputsViewMode = "list" | "board";
+
 const ui = useUiStore(),
   repo = useRepoStore(),
   inputs = ref<Input[]>([]),
@@ -28,10 +32,18 @@ const statuses = [
   { id: "new", label: "New", color: "#39e0ff" },
   { id: "reviewing", label: "Reviewing", color: "#ffb454" },
   { id: "processed", label: "Processed", color: "#4ef0a8" },
-];
+] as const;
 const storageKey = "inputs-filter-selected";
+const viewStorageKey = "inputs-view-mode";
 const selected = ref(new Set(["new", "reviewing"]));
+const viewMode = ref<InputsViewMode>("list");
 const visible = computed(() => inputs.value.filter((i) => selected.value.has(i.status)));
+/** Board columns follow the status filters so list and board stay in sync. */
+const boardColumns = computed(() => statuses.filter((s) => selected.value.has(s.id)));
+const boardColumnIds = computed(() => boardColumns.value.map((c) => c.id));
+function byStatus(statusId: string): Input[] {
+  return inputs.value.filter((i) => i.status === statusId);
+}
 async function load(): Promise<void> {
   inputs.value = await repo.loadInputs();
 }
@@ -46,6 +58,20 @@ function loadFiltersFromStorage(): void {
 function saveFiltersToStorage(): void {
   try {
     localStorage.setItem(storageKey, JSON.stringify(Array.from(selected.value)));
+  } catch {}
+}
+function loadViewFromStorage(): void {
+  try {
+    const stored = localStorage.getItem(viewStorageKey);
+    viewMode.value = stored === "board" ? "board" : "list";
+  } catch {
+    viewMode.value = "list";
+  }
+}
+function setViewMode(mode: InputsViewMode): void {
+  viewMode.value = mode;
+  try {
+    localStorage.setItem(viewStorageKey, mode);
   } catch {}
 }
 function toggle(id: string): void {
@@ -131,6 +157,7 @@ function onInputsUpdated(): void {
 }
 onMounted(() => {
   loadFiltersFromStorage();
+  loadViewFromStorage();
   void load();
   window.addEventListener("repoos:inputs-updated", onInputsUpdated);
 });
@@ -188,7 +215,7 @@ function tryOpenInput(ref: string, attempt: number): void {
 }
 </script>
 <template>
-  <div class="inputs-page">
+  <div class="inputs-page" :class="{ 'inputs-board-page': viewMode === 'board' }">
     <div class="inputs-header">
       <div>
         <div class="page-title">Inputs</div>
@@ -196,9 +223,33 @@ function tryOpenInput(ref: string, attempt: number): void {
           Ideas, questions, bugs, and feedback waiting to be shaped into work or knowledge.
         </div>
       </div>
-      <Button variant="accent" class="new-btn" @click="ui.openNewInput"
-        ><span class="plus">+</span> New input</Button
-      >
+      <div class="inputs-header-actions">
+        <div class="view-toggle" role="group" aria-label="Inputs view">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: viewMode === 'list' }"
+            :aria-pressed="viewMode === 'list'"
+            title="List view"
+            @click="setViewMode('list')"
+          >
+            <LayoutList class="size-3.5" /><span>List</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: viewMode === 'board' }"
+            :aria-pressed="viewMode === 'board'"
+            title="Board view"
+            @click="setViewMode('board')"
+          >
+            <Columns3 class="size-3.5" /><span>Board</span>
+          </button>
+        </div>
+        <Button variant="accent" class="new-btn" @click="ui.openNewInput"
+          ><span class="plus">+</span> New input</Button
+        >
+      </div>
     </div>
     <div class="input-filters" role="group" aria-label="Filter inputs by status">
       <label v-for="s in statuses" :key="s.id" class="input-filter"
@@ -212,49 +263,72 @@ function tryOpenInput(ref: string, attempt: number): void {
         }}</span></label
       >
     </div>
-    <div v-if="!visible.length" class="inputs-empty">
-      <div class="empty-title">No inputs here yet</div>
-      <div>Capture an idea, question, bug, or observation for the team.</div>
-      <Button variant="outline" @click="ui.openNewInput">Submit your first input</Button>
-    </div>
-    <div v-else class="input-list">
-      <article
-        v-for="i in visible"
-        :key="i.id"
-        class="input-row"
-        tabindex="0"
-        @click="openInput(i)"
-        @keyup.enter="openInput(i)"
-      >
-        <div class="input-row-main">
-          <div class="input-row-meta">
-            <span class="input-number">{{ inputLabel(i) }}</span
-            ><span class="input-status" :class="i.status"
-              ><span class="state-dot"></span>{{ i.status }}</span
-            ><span v-if="i.type">{{ i.type }}</span
-            ><span v-if="i.area">{{ i.area }}</span
-            ><span>by {{ i.createdBy || "Unknown" }}</span
-            ><span v-if="i.createdAt">{{ new Date(i.createdAt).toLocaleDateString() }}</span>
-          </div>
-          <h2>{{ i.title }}</h2>
-          <p>{{ i.body }}</p>
-          <div v-if="i.attachments.length" class="attachment-meta">
-            {{ i.attachments.length }} attachment{{ i.attachments.length === 1 ? "" : "s" }}
-          </div>
-        </div>
-        <Button
-          v-if="nextStatus(i.status)"
-          variant="outline"
-          class="move-next"
-          @click.stop="moveNext(i)"
-          ><ArrowRight class="size-3.5" /><span
-            class="state-dot"
-            :class="'state-' + nextStatus(i.status)"
-          ></span>
-          Move to {{ nextStatus(i.status) }}</Button
+    <template v-if="viewMode === 'list'">
+      <div v-if="!visible.length" class="inputs-empty">
+        <div class="empty-title">No inputs here yet</div>
+        <div>Capture an idea, question, bug, or observation for the team.</div>
+        <Button variant="outline" @click="ui.openNewInput">Submit your first input</Button>
+      </div>
+      <div v-else class="input-list">
+        <article
+          v-for="i in visible"
+          :key="i.id"
+          class="input-row"
+          tabindex="0"
+          @click="openInput(i)"
+          @keyup.enter="openInput(i)"
         >
-      </article>
-    </div>
+          <div class="input-row-main">
+            <div class="input-row-meta">
+              <span class="input-number">{{ inputLabel(i) }}</span
+              ><span class="input-status" :class="i.status"
+                ><span class="state-dot"></span>{{ i.status }}</span
+              ><span v-if="i.type">{{ i.type }}</span
+              ><span v-if="i.area">{{ i.area }}</span
+              ><span>by {{ i.createdBy || "Unknown" }}</span
+              ><span v-if="i.createdAt">{{ new Date(i.createdAt).toLocaleDateString() }}</span>
+            </div>
+            <h2>{{ i.title }}</h2>
+            <p>{{ i.body }}</p>
+            <div v-if="i.attachments.length" class="attachment-meta">
+              {{ i.attachments.length }} attachment{{ i.attachments.length === 1 ? "" : "s" }}
+            </div>
+          </div>
+          <Button
+            v-if="nextStatus(i.status)"
+            variant="outline"
+            class="move-next"
+            @click.stop="moveNext(i)"
+            ><ArrowRight class="size-3.5" /><span
+              class="state-dot"
+              :class="'state-' + nextStatus(i.status)"
+            ></span>
+            Move to {{ nextStatus(i.status) }}</Button
+          >
+        </article>
+      </div>
+    </template>
+    <template v-else>
+      <div v-if="!boardColumns.length" class="inputs-empty">
+        <div class="empty-title">No statuses selected</div>
+        <div>Turn on at least one status filter to show board columns.</div>
+      </div>
+      <div v-else class="board inputs-board">
+        <InputBoardColumn
+          v-for="col in boardColumns"
+          :key="col.id"
+          :col="col"
+          :items="byStatus(col.id)"
+          :all-column-ids="boardColumnIds"
+          :by-status="byStatus"
+          :input-label="inputLabel"
+          :next-status="nextStatus"
+          empty-text="—"
+          @open="openInput"
+          @move-next="moveNext"
+        />
+      </div>
+    </template>
     <Dialog
       :open="!!activeInput"
       @update:open="
@@ -355,12 +429,68 @@ function tryOpenInput(ref: string, attempt: number): void {
   padding: 0 0 80px;
   box-sizing: border-box;
 }
+.inputs-board-page {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+.inputs-board-page .input-filters {
+  flex-shrink: 0;
+}
+.inputs-board-page .inputs-board {
+  flex: 1;
+  min-height: 0;
+}
+.inputs-board-page .board-col {
+  height: auto;
+  min-height: 0;
+}
 .inputs-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 22px;
   gap: 20px;
+}
+.inputs-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--txt-faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.view-toggle-btn:hover {
+  color: var(--txt);
+  background: var(--nav-hover-bg);
+}
+.view-toggle-btn.active {
+  color: var(--txt);
+  background: var(--bg-secondary);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 .input-filters {
   display: flex;
@@ -616,9 +746,25 @@ function tryOpenInput(ref: string, attempt: number): void {
     padding: 20px 14px 70px;
     box-sizing: border-box;
   }
+  .inputs-board-page {
+    height: auto;
+    min-height: initial;
+    display: block;
+  }
+  .inputs-board-page .inputs-board {
+    min-height: initial;
+  }
+  .inputs-board-page .board-col {
+    height: auto;
+    min-height: initial;
+  }
   .inputs-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .inputs-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
   .input-row {
     flex-direction: column;
