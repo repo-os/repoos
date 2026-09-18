@@ -1,17 +1,50 @@
 ---
 id: "0401"
-title: Add a board view toggle to inputs page (currently there's…
+title: Add board view toggle to Inputs page
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
-assigned_to: ""
+area: ui
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:26:52Z"
+updated_at: "2026-09-18T04:27:32Z"
 ---
-Add a board view toggle to inputs page (currently there's only a list view). Do it in the same board style as the task board on the work page. In the board view columns should be collapsible just like on the tasks board.
+## Problem
+
+The Inputs page only offers a list view. There is no board layout, so inputs cannot be scanned and worked the same way tasks are on the Work page — by status columns with the same board look and collapsible columns.
+
+## Desired UX
+
+On the Inputs page, the user can switch between the existing list view and a board view.
+
+In board view, inputs are shown in columns in the same visual style as the task board on the Work page. Columns are collapsible the same way task-board columns are (click a column header/cap to collapse or expand).
+
+Switching views does not remove list-view behavior; both modes remain available via the toggle.
+
+## Acceptance criteria
+
+- [ ] Inputs page has a control to toggle between list view and board view
+- [ ] List view continues to work as it does today
+- [ ] Board view lays out inputs in columns in the same board style as the Work page task board
+- [ ] Board columns are individually collapsible / expandable, matching task-board collapse behavior
+- [ ] Existing input open / resolve / status flows still work from board view (cards remain actionable)
+
+## Notes for AI
+
+- Primary surface: `src/ui-app/src/views/InputsView.vue` (list + status filters today). Mirror patterns from `src/ui-app/src/views/WorkView.vue`, `src/ui-app/src/components/BoardColumn.vue`, and `src/ui-app/src/lib/boardCollapse.ts`.
+- **Assumption:** Board columns are the existing input statuses (`new`, `reviewing`, `processed`) already defined on the Inputs page — same labels/colors where practical.
+- **Assumption:** Default to list view on first visit; persist the chosen view (e.g. localStorage) so the preference survives reload. If collapse state is persisted, use a **separate** key from the task board so the two boards do not share collapse state.
+- Reuse existing board/collapse UI rather than inventing a new column component, unless inputs need a thin adapter (input cards vs task cards).
+- Do not change input status model, API, or resolve flows beyond what’s needed to render and use the board.
+- Do not remove or regress the current list + status filter UX.
+
+## Scope
+
+**In:** List/board toggle on Inputs; board layout styled like the Work board; collapsible columns.
+
+**Out:** New input statuses; redesign of input detail/resolve drawer; unrelated Work-board changes.
 
 ## Original prompt
 
@@ -20,3 +53,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 ## Activity
 
 - 2026-09-18T04:26:52Z · created · hello@repoos.org
+- 2026-09-18T04:27:32Z · status draft→inbox, title, area, body
