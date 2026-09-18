@@ -3,13 +3,15 @@ id: "0414"
 title: Don't start a close-out while the server is mid-reload
 type: bug
 status: review
+needs_input: true
+needs_input_reason: watchdog-stuck
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/don-t-start-a-close-out-while-the-server
 created_at: "2026-09-18T14:06:27Z"
-updated_at: "2026-09-18T17:02:19Z"
+updated_at: "2026-09-18T17:07:19Z"
 review_passes: 1
 skill_suggestion: "0418"
 handoff_signal_retry_count: 1
@@ -41,3 +43,4 @@ The same merge and resolution succeed when run by hand, and a retry works.
 - 2026-09-18T14:57:51Z · status ready→active, branch
 - 2026-09-18T15:13:29Z · status active→review
 - 2026-09-18T17:02:19Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-09-18T17:07:19Z · watchdog: escalated to needs_input · reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured · next step: resume the session manually from the task's worktree and check for uncommitted work
