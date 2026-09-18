@@ -201,6 +201,7 @@ function makeCtx(
     } as any,
     previews: { stop: vi.fn(async () => {}) } as any,
     cto: {} as any,
+    freeformRuns: {} as any,
     repoos: {} as any,
     emitEvent: () => {},
     closeOutLock: {} as any,

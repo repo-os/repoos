@@ -94,6 +94,7 @@ function makeCtx(
     previews: { stop: async () => {} } as any,
     reviews: { isRunning: () => opts.reviewing ?? false, cancel: () => {} } as any,
     cto: {} as any,
+    freeformRuns: {} as any,
     repoos: {} as any,
     emitEvent: () => {},
     closeOutLock: {} as any,

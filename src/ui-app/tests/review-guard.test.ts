@@ -155,6 +155,7 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
     runner: { isRunning: () => false } as unknown as RouteContext["runner"],
     previews: null as unknown as RouteContext["previews"],
     cto: null as unknown as RouteContext["cto"],
+    freeformRuns: null as unknown as RouteContext["freeformRuns"],
     repoos: null as unknown as RouteContext["repoos"],
     emitEvent: () => {},
     closeOutLock: null as unknown as RouteContext["closeOutLock"],

@@ -99,6 +99,7 @@ function makeCtx(root: string, task: Task, opts: { onEnqueue?: () => void } = {}
     previews: { stop: async () => {} } as any,
     reviews: { isRunning: () => false, cancel: () => {} } as any,
     cto: {} as any,
+    freeformRuns: {} as any,
     repoos: {} as any,
     emitEvent: () => {},
     closeOutLock: {} as any,

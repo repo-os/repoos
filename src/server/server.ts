@@ -111,6 +111,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
@@ -201,6 +202,8 @@ import {
   getTasks,
   createTask,
   createFreeformTask,
+  finalizeFreeformRun,
+  getFreeformRun,
   getTask,
   patchTask,
   deleteTask,
@@ -1564,6 +1567,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
 
+  // Durable freeform PM runs (#0403): the freeform-create route spawns the PM
+  // agent through this manager instead of a fire-and-forget closure, so the
+  // run (and its result/error) survives a server reload. Completion is
+  // post-processed by the same `finalizeFreeformRun` the route used to inline.
+  const freeformRuns = new FreeformRunManager(config, emitEvent, (record, result) =>
+    finalizeFreeformRun({ config, index, logger, emitEvent, onServerStatusChange }, record, result),
+  );
+
+  // Adopt freeform PM runs that survived a server restart (#0403): a still-live
+  // child is re-attached and streamed; one that already finished while no
+  // server was up is finalized from its durable log. Deferred until `indexReady`
+  // so an adopted completion can resolve its draft task.
+  const runFreeformAdoption = (): void => freeformRuns.adopt();
+  void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
+
   // #0210: every transition INTO `review` that bypasses the trusted PATCH and
   // handoff routes — a direct task-file edit picked up by the watcher — must
   // still pass the commit/vacuity gate. The index defers such transitions to
@@ -1833,6 +1851,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/tasks", getTasks);
   router.register("POST", "/api/tasks", createTask);
   router.register("POST", "/api/tasks/freeform", createFreeformTask);
+  // Durable freeform PM run state (#0403): in-flight record and/or persisted
+  // failure, keyed by the client's runId.
+  router.register("GET", /^\/api\/freeform\/runs\/([^/]+)$/, getFreeformRun);
   router.register("GET", /^\/api\/tasks\/([^/]+)$/, getTask);
   router.register("PATCH", /^\/api\/tasks\/([^/]+)$/, patchTask);
   router.register("DELETE", /^\/api\/tasks\/([^/]+)$/, deleteTask);
@@ -2178,6 +2199,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         previews,
         reviews,
         cto,
+        freeformRuns,
         repoos,
         logger,
         emitEvent: (e: RepoEvent) => {
@@ -2423,6 +2445,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           cto.cancelAll();
           if (!(reload?.isReloading ?? false)) {
             reviews.cancelAll();
+            // Freeform PM runs are durable (#0403): on a RELOAD handover they
+            // must survive so the replacement re-adopts them. Only a real
+            // shutdown kills them, so a one-shot PM child does not outlive the
+            // server that launched it.
+            freeformRuns.cancelAll();
           }
           await previews.stopAll();
           runner.flushAll();

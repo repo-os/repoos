@@ -13,13 +13,12 @@ import {
   resolveAgentForTask,
   resolvePmAgent,
   taskPmPrompt,
-  runPrompt,
   deriveBranch,
   isModelOverridePinned,
   recordOneShotSession,
   pmCommand,
-  parseOneShotLine,
   extractOneShotReportText,
+  type PromptResult,
 } from "../agents.js";
 import {
   markPmWorking,
@@ -30,6 +29,15 @@ import {
 } from "../pm-runs.js";
 import { queuePmImages, dropPmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
+import {
+  recordFreeformFailure,
+  readFreeformStore,
+  freeformLogPaths,
+  type FreeformRunRecord,
+} from "../freeform-runs.js";
+import { randomUUID } from "node:crypto";
+import type { LiveIndex, RepoEvent } from "../live-index.js";
+import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { listInputs } from "../../core/input.js";
@@ -135,6 +143,153 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   index.applyFileChange(created.absPath);
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
   return json(res, 201, index.getTask(created.id));
+};
+
+export interface FreeformFinalizeDeps {
+  config: RepoOSConfig;
+  index: LiveIndex;
+  logger: Logger;
+  emitEvent: (e: RepoEvent) => void;
+  onServerStatusChange?: (task: Task, prev: Status, next: Status) => void;
+}
+
+/**
+ * Post-process a finished freeform PM run (#0403): promote the draft, or keep
+ * it and persist a durable reason. Shared by the live `FreeformRunManager`
+ * callback and the boot-time adoption path, so a run that finishes after a
+ * server reload produces exactly the result the inline path would have.
+ *
+ * Idempotent enough for a racing re-finalize: the one-shot session row is
+ * keyed deterministically by runId, and a draft that was already promoted is
+ * never overwritten.
+ */
+export function finalizeFreeformRun(
+  deps: FreeformFinalizeDeps,
+  run: FreeformRunRecord,
+  result: PromptResult,
+): void {
+  const { config, index, logger, emitEvent } = deps;
+  const { taskId, runId, explanation, agent: pm } = run;
+  try {
+    const task = index.getTask(taskId);
+    if (!task) {
+      // The draft was deleted while the run was in flight — nothing to promote.
+      return;
+    }
+    // Book the run even on failure (it still spent tokens), keyed by runId so
+    // a racing re-finalize cannot double-count.
+    recordOneShotSession(config.root, pm, result, {
+      sessionType: "pm",
+      taskId,
+      sessionId: `pm-freeform:${taskId}:${runId}`,
+    });
+
+    const output = result.ok ? extractOneShotReportText(pm.cli, result.output ?? "") : "";
+    let fields: ReturnType<typeof parseGeneratedTask> | null = null;
+    let reason: string | null = null;
+    if (!result.ok || !output) {
+      reason = result.error ?? "the PM agent returned no usable output";
+    } else {
+      fields = parseGeneratedTask(output);
+      if (!fields.title || !fields.body || !fields.hadFrontmatter) {
+        fields = null;
+        reason = "the PM agent returned unusable output";
+      }
+    }
+
+    // A racing finalize (or a human) may already have promoted the draft; never
+    // overwrite real content, but still record a failure reason.
+    const stillDraft = task.status === "draft";
+
+    if (reason || !fields) {
+      const failureReason = reason ?? "the PM agent returned unusable output";
+      logger.task(taskId, "warn", "PM agent failed; keeping draft with original prompt", {
+        reason: failureReason,
+      });
+      recordFreeformFailure(config, {
+        runId,
+        taskId,
+        reason: failureReason,
+        failedAt: new Date().toISOString(),
+      });
+      if (stillDraft) {
+        // Durable, revisit-later trace: the activity note survives a page or
+        // server reload, unlike the ephemeral SSE toast.
+        try {
+          const updated = patchTaskFile(config, task.absPath, {
+            note: `Freeform PM run failed: ${failureReason}`,
+          });
+          index.applyFileChange(updated.absPath);
+        } catch (err) {
+          logger.task(taskId, "warn", "Could not record freeform failure note on draft", {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+      emitEvent({
+        type: "task.aiCreateFailed",
+        id: taskId,
+        reason: failureReason,
+        at: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (!stillDraft) return; // a racing finalize already promoted it
+
+    const finalBody = withOriginalPromptSection(fields.body, explanation);
+    const updated = patchTaskFile(
+      config,
+      task.absPath,
+      {
+        title: fields.title,
+        type: fields.type,
+        priority: fields.priority,
+        area: fields.area,
+        assignedTo: fields.assignedTo,
+        body: finalBody,
+        status: config.defaultStatus,
+      },
+      { onStatusChange: deps.onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    logger.task(taskId, "info", "PM agent fleshed out draft task", { title: updated.title });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    logger.task(taskId, "warn", "PM agent update failed; keeping draft with original prompt", {
+      reason,
+    });
+    emitEvent({ type: "task.aiCreateFailed", id: taskId, reason, at: new Date().toISOString() });
+  } finally {
+    // 0335: cleared on EVERY exit path so the indicator can never get stuck.
+    // 0381: a live PM chat session on this task keeps the flag up.
+    clearPmWorking(taskId);
+    if (!isPmWorking(taskId)) {
+      emitEvent({ type: "task.pmFinished", id: taskId, at: new Date().toISOString() });
+    }
+  }
+}
+
+/**
+ * The durable state of one freeform PM run (#0403), keyed by the client's
+ * `freeformRunId`. Reports an in-flight run and/or its persisted failure so a
+ * client that navigated away (or whose page reloaded) can still see the
+ * specific outcome, not just a generic draft.
+ */
+export const getFreeformRun: RouteHandler = (ctx, _req, res, params) => {
+  const runId = params.param1;
+  const store = readFreeformStore(ctx.config);
+  const run = store.runs.find((r) => r.runId === runId) ?? null;
+  const failure = store.failures.find((f) => f.runId === runId) ?? null;
+  if (!run && !failure) {
+    return json(res, 404, { error: `Freeform run ${runId} not found` });
+  }
+  return json(res, 200, {
+    ok: true,
+    run,
+    failure,
+    logs: freeformLogPaths(ctx.config, runId),
+  });
 };
 
 export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
@@ -269,136 +424,60 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
 
   // 0335: flag the draft as being fleshed out RIGHT NOW — the server-side
   // source of truth for the live "PM is working" indicator on the card and in
-  // the task panel. Cleared on every exit path below so a failed run can
-  // never leave the task looking like it is still being worked.
+  // the task panel. Cleared in `finalizeFreeformRun` on every exit path below
+  // so a failed run can never leave the task looking like it is still worked.
   markPmWorking(created.id);
   emitEvent({ type: "task.pmWorking", id: created.id, at: new Date().toISOString() });
 
-  // Spawn the PM agent asynchronously to replace the draft body with the
-  // structured version, keeping the `## Original prompt` section intact. The
-  // response is returned immediately so the user gets their draft right away.
-  void (async () => {
-    const prompt = pmPrompt(explanation);
-    try {
-      const result = await runPrompt(pm!, prompt, {
-        cwd: config.root,
-        // Structured output flags (0335): `promptCommand`'s plain stdout
-        // carries no usage figures, which is why the initial PM run used to
-        // land in the usage tab as a blank row. `pmCommand` keeps the same
-        // authoring-only blast radius while letting runPrompt's foldUsage see
-        // real tokens/cost — the treatment the reviewer got in 0273.
-        command: pmCommand(pm!, prompt, config.root),
-        onLine: runId
-          ? (line) => {
-              // Forward the parsed structured event so the freeform progress
-              // view renders clean text, not raw JSONL.
-              emitEvent({
-                type: "agent.output",
-                id: runId,
-                entry: parseOneShotLine(pm!.cli, line) ?? { s: "out", d: line },
-                stream: "out",
-                at: new Date().toISOString(),
-              });
-            }
-          : undefined,
-      });
-      // Book the PM authoring pass under the task (0311) — it aggregates into
-      // the drawer's "by role" breakdown like per-task PM chats already do.
-      // With pmCommand's structured output, `result` now carries the real
-      // tokens/cost the CLI reported, so this session shows figures.
-      recordOneShotSession(config.root, pm!, result, {
-        sessionType: "pm",
-        taskId: created.id,
-        sessionId: `pm-freeform:${created.id}:${new Date().toISOString()}`,
-      });
-      // Structured engines interleave step-by-step narration with the final
-      // answer — isolate the last text event before parsing the task fields.
-      const output = extractOneShotReportText(pm!.cli, result.output ?? "");
-      if (!result.ok || !output) {
-        const reason = result.error ?? "the PM agent returned no usable output";
-        logger.task(created.id, "warn", "PM agent failed; keeping draft with original prompt", {
-          reason,
-        });
-        // 0320: nothing will promote this draft now — tell every client so
-        // its "AI creation in flight" marker is dropped and a later manual
-        // move of the stale draft cannot falsely flag the card.
-        emitEvent({
-          type: "task.aiCreateFailed",
-          id: created.id,
-          reason,
-          at: new Date().toISOString(),
-        });
-        return;
-      }
-      const fields = parseGeneratedTask(output);
-      // #0345: a response with no frontmatter is not the requested file
-      // content — it's typically the agent narrating what it (claims to
-      // have) done instead of emitting the file. Treat it as a failed
-      // generation and keep the draft untouched, rather than overwriting the
-      // user's original prompt and structure with the agent's stray prose.
-      if (!fields.title || !fields.body || !fields.hadFrontmatter) {
-        logger.task(created.id, "warn", "PM agent returned unusable output; keeping draft", {
-          hadFrontmatter: fields.hadFrontmatter,
-        });
-        emitEvent({
-          type: "task.aiCreateFailed",
-          id: created.id,
-          reason: "the PM agent returned unusable output",
-          at: new Date().toISOString(),
-        });
-        return;
-      }
-      // Keep the raw prompt section, then promote the fleshed-out task to the
-      // config's default status (usually "inbox") so it lands on the board like
-      // the pre-0251 flow did, instead of lingering as a draft.
-      const finalBody = withOriginalPromptSection(fields.body, explanation);
-      const updated = patchTaskFile(
+  // Spawn the PM agent as a durable, detached run (#0403). The response is
+  // returned immediately so the user gets their draft right away; completion
+  // is delivered to the manager's finalizer, which survives a server reload:
+  // the run's PID + log are registered durably, and a replacement server
+  // re-adopts and finishes it. `pmCommand` keeps the same authoring-only blast
+  // radius while letting usage extraction see real tokens/cost (0335).
+  const effectiveRunId = runId ?? `freeform-${created.id}-${randomUUID()}`;
+  const prompt = pmPrompt(explanation);
+  const record: FreeformRunRecord = {
+    runId: effectiveRunId,
+    taskId: created.id,
+    pid: 0,
+    cwd: config.root,
+    explanation,
+    agent: pm,
+    startedAt: new Date().toISOString(),
+  };
+  const startRes = ctx.freeformRuns.start({
+    runId: effectiveRunId,
+    taskId: created.id,
+    cwd: config.root,
+    explanation,
+    agent: pm,
+    command: pmCommand(pm, prompt, config.root),
+  });
+  if (!startRes.ok) {
+    // The child never launched: finalize immediately so the same durable
+    // failure trace (session row, registry entry, activity note, SSE event)
+    // is produced as any other failed run.
+    record.pid = 0;
+    finalizeFreeformRun(
+      {
         config,
-        created.absPath,
-        {
-          title: fields.title,
-          type: fields.type,
-          priority: fields.priority,
-          area: fields.area,
-          assignedTo: fields.assignedTo,
-          body: finalBody,
-          status: config.defaultStatus,
-        },
-        { onStatusChange: ctx.onServerStatusChange },
-      );
-      index.applyFileChange(updated.absPath);
-      logger.task(created.id, "info", "PM agent fleshed out draft task", {
-        title: updated.title,
-      });
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      logger.task(
-        created.id,
-        "warn",
-        "PM agent update failed; keeping draft with original prompt",
-        {
-          reason,
-        },
-      );
-      emitEvent({
-        type: "task.aiCreateFailed",
-        id: created.id,
-        reason,
-        at: new Date().toISOString(),
-      });
-    } finally {
-      // 0335: cleared on EVERY exit path — success (the promotion's own
-      // task.updated event lands first, so the card swaps its indicator for
-      // its new column), failure, or a thrown error — so the indicator can
-      // never get stuck showing "working". 0381: a live PM chat session on
-      // this task keeps the flag up — only emit pmFinished when nothing
-      // else is still working it.
-      clearPmWorking(created.id);
-      if (!isPmWorking(created.id)) {
-        emitEvent({ type: "task.pmFinished", id: created.id, at: new Date().toISOString() });
-      }
-    }
-  })();
+        index,
+        logger,
+        emitEvent,
+        onServerStatusChange: ctx.onServerStatusChange,
+      },
+      record,
+      { ok: false, error: startRes.reason ?? "could not launch the PM agent", elapsedMs: 0 },
+    );
+    return json(res, 201, {
+      ok: true,
+      fallback: true,
+      fallbackReason: "agent-failed",
+      reason: startRes.reason,
+      task: withPmWorking(index.getTask(created.id)),
+    });
+  }
 
   return json(res, 201, {
     ok: true,

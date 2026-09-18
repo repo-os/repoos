@@ -58,6 +58,7 @@ function makeCtx(opts: {
     previews: {} as RouteContext["previews"],
     reviews: {} as RouteContext["reviews"],
     cto: {} as RouteContext["cto"],
+    freeformRuns: {} as RouteContext["freeformRuns"],
     logger: createLogger(opts.root),
     emitEvent: () => {},
     closeOutLock: {} as RouteContext["closeOutLock"],
